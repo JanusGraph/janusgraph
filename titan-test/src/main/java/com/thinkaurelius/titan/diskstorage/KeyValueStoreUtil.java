@@ -18,6 +18,9 @@ public class KeyValueStoreUtil {
     public static final Serializer serial = new KryoSerializer(true);
     public static final long idOffset = 1000;
 
+    public static final StaticBuffer MIN_KEY = ByteBufferUtil.getLongBuffer(0);
+    public static final StaticBuffer MAX_KEY = ByteBufferUtil.getLongBuffer(-1);
+
     public static String[] generateData(int numKeys) {
         String[] ret = new String[numKeys];
         for (int i = 0; i < numKeys; i++) {
@@ -63,7 +66,7 @@ public class KeyValueStoreUtil {
     public static String getString(ReadBuffer b) {
         return serial.readObjectNotNull(b, String.class);
     }
-    
+
     public static String getString(StaticBuffer b) {
         return serial.readObjectNotNull(b.asReadBuffer(), String.class);
     }

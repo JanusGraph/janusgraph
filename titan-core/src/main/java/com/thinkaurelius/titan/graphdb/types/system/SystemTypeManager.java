@@ -17,7 +17,7 @@ public abstract class SystemTypeManager {
 
     public static boolean isSystemRelationType(long id) {
         //TODO: also check if its a typeid?
-        return IDManager.getTypeCount(id)<=SYSTEM_TYPE_OFFSET;
+        return IDManager.getTypeCount(id) <= SYSTEM_TYPE_OFFSET;
     }
 
 
@@ -27,7 +27,7 @@ public abstract class SystemTypeManager {
             synchronized (SystemTypeManager.class) {
                 if (systemEdgeTypes == null) {
                     ImmutableMap.Builder<Long, SystemType> builder = ImmutableMap.builder();
-                    for (SystemType et : SystemKey.values()) {
+                    for (SystemType et : SystemKey.KEY_MAP.values()) {
                         builder.put(Long.valueOf(et.getID()), et);
                     }
 //                    for (SystemType et : SystemLabel.values()) {

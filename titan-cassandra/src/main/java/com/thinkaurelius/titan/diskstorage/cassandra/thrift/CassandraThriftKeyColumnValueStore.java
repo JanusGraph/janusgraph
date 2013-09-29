@@ -52,7 +52,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger logger =
             LoggerFactory.getLogger(CassandraThriftKeyColumnValueStore.class);
-    
+
     // Cassandra access
     private final CassandraThriftStoreManager storeManager;
     private final String keyspace;
@@ -103,19 +103,19 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,
-                                                     SliceQuery query,
-                                                     StoreTransaction txh) throws StorageException {
+                                                      SliceQuery query,
+                                                      StoreTransaction txh) throws StorageException {
         Preconditions.checkArgument(query.getLimit() >= 0);
         if (0 == query.getLimit())
             return Collections.emptyMap();
 
         ColumnParent parent = new ColumnParent(columnFamily);
         /*
-		 * Cassandra cannot handle columnStart = columnEnd.
+         * Cassandra cannot handle columnStart = columnEnd.
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
 		 */
-        if (ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd())>=0) {
+        if (ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd()) >= 0) {
             // Check for invalid arguments where columnEnd < columnStart
             if (ByteBufferUtil.isSmallerThan(query.getSliceEnd(), query.getSliceStart())) {
                 throw new PermanentStorageException("columnStart=" + query.getSliceStart() +
@@ -136,7 +136,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         range.setStart(query.getSliceStart().asByteBuffer());
         range.setFinish(query.getSliceEnd().asByteBuffer());
         predicate.setSlice_range(range);
-        
+
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(keyspace);
@@ -150,9 +150,9 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             }
 
             Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(requestKeys,
-                                                                                    parent,
-                                                                                    predicate,
-                                                                                    consistency);
+                    parent,
+                    predicate,
+                    consistency);
 
 			/*
 			 * The final size of the "result" List may be at most rows.size().
@@ -207,7 +207,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         range.setStart(empty);
         range.setFinish(empty);
         predicate.setSlice_range(range);
-        
+
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(keyspace);
@@ -228,11 +228,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        return getKeys((SliceQuery) null, txh);
-    }
-
-    @Override
     public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
         final IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
 
@@ -241,11 +236,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
         try {
             return new RowIterator(pool.borrowObject(keyspace),
-                                   partitioner,
-                                   ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
-                                   ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
-                                   sliceQuery,
-                                   storeManager.getPageSize());
+                    partitioner,
+                    ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
+                    ByteBuffer.wrap(ArrayUtils.EMPTY_BYTE_ARRAY),
+                    sliceQuery,
+                    storeManager.getPageSize());
         } catch (Exception e) {
             throw convertException(e);
         }
@@ -261,11 +256,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
         try {
             return new RowIterator(pool.borrowObject(keyspace),
-                                   partitioner,
-                                   keyRangeQuery.getKeyStart().asByteBuffer(),
-                                   keyRangeQuery.getKeyEnd().asByteBuffer(),
-                                   keyRangeQuery,
-                                   storeManager.getPageSize());
+                    partitioner,
+                    keyRangeQuery.getKeyStart().asByteBuffer(),
+                    keyRangeQuery.getKeyEnd().asByteBuffer(),
+                    keyRangeQuery,
+                    storeManager.getPageSize());
         } catch (Exception e) {
             throw convertException(e);
         }
@@ -323,10 +318,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token startToken, Token endToken, SliceQuery sliceQuery, int pageSize) throws StorageException {
         return getKeySlice(client,
-                           new KeyRange().setStart_token(startToken.token.toString())
-                                         .setEnd_token(endToken.token.toString())
-                                         .setCount(pageSize),
-                           sliceQuery);
+                new KeyRange().setStart_token(startToken.token.toString())
+                        .setEnd_token(endToken.token.toString())
+                        .setCount(pageSize),
+                sliceQuery);
     }
 
     private Iterator<KeySlice> getKeySlice(Cassandra.Client client,
@@ -336,12 +331,12 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
         if (sliceQuery == null) {
             sliceRange.setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
-                      .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
-                      .setCount(5);
+                    .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
+                    .setCount(5);
         } else {
             sliceRange.setStart(sliceQuery.getSliceStart().asByteBuffer())
-                      .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
-                      .setCount((sliceQuery.hasLimit()) ? sliceQuery.getLimit() : Integer.MAX_VALUE);
+                    .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
+                    .setCount((sliceQuery.hasLimit()) ? sliceQuery.getLimit() : Integer.MAX_VALUE);
         }
 
 
@@ -396,8 +391,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
             if (endKey.remaining() == 0) {
                 this.maximumToken = (partitioner instanceof RandomPartitioner)
-                                     ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
-                                     : new LongToken(Murmur3Partitioner.MAXIMUM);
+                        ? new BigIntegerToken(RandomPartitioner.MAXIMUM)
+                        : new LongToken(Murmur3Partitioner.MAXIMUM);
             } else {
                 this.maximumToken = partitioner.getToken(endKey);
             }
@@ -444,7 +439,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns = excludeLastColumn(currentRow.getColumns(),
-                                                                  sliceQuery.getSliceEnd().asByteBuffer()).iterator();
+                        sliceQuery.getSliceEnd().asByteBuffer()).iterator();
 
                 @Override
                 public boolean hasNext() throws StorageException {

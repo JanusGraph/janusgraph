@@ -86,6 +86,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private final IDInspector idInspector;
     private final AttributeHandling attributeHandler;
     private final BackendTransaction txHandle;
+    private final EdgeSerializer edgeSerializer;
 
     /* ###############################################
             Internal Data Structures
@@ -133,7 +134,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      * Caches Titan types by name so that they can be quickly retrieved once they are loaded in the transaction.
      * Since type retrieval by name is common and there are only a few types, since cache is a simple map (i.e. no release)
      */
-    private final Map<String, TitanType> typeCache;
+    private final Map<String, Long> typeCache;
 
     /**
      * Used to assign temporary ids to new vertices and relations added in this transaction.
@@ -158,6 +159,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         this.idInspector = graph.getIDInspector();
         this.attributeHandler = graph.getAttributeHandling();
         this.txHandle = txHandle;
+        this.edgeSerializer = graph.getEdgeSerializer();
 
         temporaryID = new AtomicLong(-1);
 
@@ -165,15 +167,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         if (config.isSingleThreaded()) {
             addedRelations = new SimpleBufferAddedRelations();
             concurrencyLevel = 1;
-            typeCache = new HashMap<String, TitanType>();
+            typeCache = new HashMap<String, Long>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 4;
-            typeCache = new ConcurrentHashMap<String, TitanType>();
+            typeCache = new ConcurrentHashMap<String, Long>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
-        for (SystemType st : SystemKey.values()) typeCache.put(st.getName(), st);
+//        for (SystemType st : SystemKey.values()) typeCache.put(st.getName(), st);
         vertexCache = new LRUVertexCache(config.getVertexCacheSize(), concurrencyLevel);
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<IndexQuery, List<Object>>() {
             @Override
@@ -184,6 +186,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         uniqueLocks = UNINITIALIZED_LOCKS;
         deletedRelations = EMPTY_DELETED_RELATIONS;
+
         this.isOpen = true;
     }
 
@@ -280,7 +283,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
             byte lifecycle = ElementLifeCycle.Loaded;
             if (verifyExistence) {
-                if (!graph.containsVertexID(vertexid, txHandle)) lifecycle = ElementLifeCycle.Removed;
+                if (graph.edgeQuery(vertexid, graph.vertexExistenceQuery, txHandle).isEmpty())
+                    lifecycle = ElementLifeCycle.Removed;
             }
 
             InternalVertex vertex = null;
@@ -293,7 +297,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                 }
                 //If its a newly created type, add to type cache
                 if (lifecycle == ElementLifeCycle.Loaded)
-                    typeCache.put(((TitanType) vertex).getName(), (TitanType) vertex);
+                    typeCache.put(((TitanType) vertex).getName(), vertexid);
             } else if (idInspector.isVertexID(vertexid)) {
                 vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
@@ -548,7 +552,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
         Preconditions.checkArgument(type.getID() > 0);
         vertexCache.add(type, type.getID());
-        typeCache.put(name, type);
+        typeCache.put(name, type.getID());
         return type;
 
     }
@@ -564,15 +568,21 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     @Override
     public boolean containsType(String name) {
         verifyOpen();
-        return (typeCache.containsKey(name) || !Iterables.isEmpty(getVertices(SystemKey.TypeName, name)));
+        return (typeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || !Iterables.isEmpty(getVertices(SystemKey.TypeName, name)));
     }
 
     @Override
     public TitanType getType(String name) {
         verifyOpen();
-        TitanType type = typeCache.get(name);
-        if (type == null) type = (TitanType) Iterables.getOnlyElement(getVertices(SystemKey.TypeName, name), null);
-        return type;
+        Long typeid = typeCache.get(name);
+        if (typeid != null) {
+            return (TitanType) vertexCache.get(typeid, existingVertexConstructor);
+        }
+        if (SystemKey.KEY_MAP.containsKey(name)) {
+            return SystemKey.KEY_MAP.get(name);
+        } else {
+            return (TitanType) Iterables.getOnlyElement(getVertices(SystemKey.TypeName, name), null);
+        }
     }
 
     public TitanType getExistingType(long typeid) {
@@ -619,12 +629,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
      */
 
     public VertexCentricQueryBuilder query(TitanVertex vertex) {
-        return new VertexCentricQueryBuilder((InternalVertex) vertex, graph.getEdgeSerializer());
+        return new VertexCentricQueryBuilder((InternalVertex) vertex, edgeSerializer);
     }
 
     @Override
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
-        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, graph.getEdgeSerializer());
+        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, edgeSerializer);
         for (TitanVertex v : vertices) builder.addVertex(v);
         return builder;
     }
@@ -693,7 +703,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             if (query.getVertex().isNew()) return Iterators.emptyIterator();
 
             final boolean filterDirection = (exeInfo != null) ? (Boolean) exeInfo : false;
-            final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
             final InternalVertex v = query.getVertex();
             Iterable<TitanRelation> result = null;
 

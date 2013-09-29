@@ -15,7 +15,7 @@ import java.util.*;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
- *
+ * <p/>
  * An optional key length parameter can be specified if it is known and guaranteed that all keys
  * passed into and read through the {@link KeyColumnValueStore} have that length. If this length is
  * static, specifying that length will make the representation of a {@link KeyColumnValueStore} in a {@link OrderedKeyValueStore}
@@ -57,8 +57,8 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()),
-                                      concatenatePrefix(query.getKey(), query.getSliceEnd()),
-                                      new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
+                concatenatePrefix(query.getKey(), query.getSliceEnd()),
+                new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
     }
 
     @Override
@@ -87,11 +87,6 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
                 store.insert(newkey, entry.getValue(), txh);
             }
         }
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return new KeysIterator(store.getKeys(txh));
     }
 
     @Override
@@ -193,23 +188,23 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
         byte[] result = new byte[length + end.length() + (addKeyLength ? variableKeyLengthSize : 0)];
         int position = 0;
-        for (int i=0;i<front.length();i++) result[position++]=front.getByte(i);
-        for (int i=0;i<end.length();i++) result[position++]=end.getByte(i);
+        for (int i = 0; i < front.length(); i++) result[position++] = front.getByte(i);
+        for (int i = 0; i < end.length(); i++) result[position++] = end.getByte(i);
 
         if (addKeyLength) {
-            result[position++] = (byte)(length >>> 8);
-            result[position++] = (byte)length;
+            result[position++] = (byte) (length >>> 8);
+            result[position++] = (byte) length;
         }
         return new StaticArrayBuffer(result);
     }
 
     private final StaticBuffer getColumn(StaticBuffer concat) {
         int offset = getKeyLength(concat);
-        int length = concat.length()-offset;
+        int length = concat.length() - offset;
         if (!hasFixedKeyLength()) { //variable key length => remove length at end
             length -= variableKeyLengthSize;
         }
-        return concat.subrange(offset,length);
+        return concat.subrange(offset, length);
     }
 
     private final int getKeyLength(StaticBuffer concat) {
@@ -221,12 +216,12 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     }
 
     private final StaticBuffer getKey(StaticBuffer concat) {
-        return concat.subrange(0,getKeyLength(concat));
+        return concat.subrange(0, getKeyLength(concat));
     }
 
     private final boolean equalKey(StaticBuffer concat, StaticBuffer key) {
         int keylen = getKeyLength(concat);
-        for (int i=0;i<keylen;i++) if (concat.getByte(i)!=key.getByte(i)) return false;
+        for (int i = 0; i < keylen; i++) if (concat.getByte(i) != key.getByte(i)) return false;
         return true;
     }
 
@@ -235,7 +230,7 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         StaticBuffer column = getColumn(concat);
         int startComp = columnStart.compareTo(column);
         int endComp = column.compareTo(columnEnd);
-        return (startComp<0 || (startComp==0 && startInc)) && (endComp<0 || (endComp==0 && endInc));
+        return (startComp < 0 || (startComp == 0 && startInc)) && (endComp < 0 || (endComp == 0 && endInc));
     }
 
     private class ContainsSelector implements KeySelector {
@@ -310,14 +305,14 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         }
 
         public KeysIterator(RecordIterator<StaticBuffer> iterator,
-                             KeyRangeQuery keyRangeQuery,
-                             StoreTransaction txn) throws StorageException {
+                            KeyRangeQuery keyRangeQuery,
+                            StoreTransaction txn) throws StorageException {
             this(iterator, keyRangeQuery.getKeyStart(), keyRangeQuery.getKeyEnd(), keyRangeQuery, txn);
         }
 
         public KeysIterator(RecordIterator<StaticBuffer> iterator,
-                             SliceQuery sliceQuery,
-                             StoreTransaction txn) throws StorageException {
+                            SliceQuery sliceQuery,
+                            StoreTransaction txn) throws StorageException {
             this(iterator, null, null, sliceQuery, txn);
         }
 

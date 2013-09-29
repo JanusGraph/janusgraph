@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     private final String name;
-    private final ConcurrentNavigableMap<StaticBuffer,ColumnValueStore> kcv;
+    private final ConcurrentNavigableMap<StaticBuffer, ColumnValueStore> kcv;
 
     public InMemoryKeyColumnValueStore(final String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
@@ -40,14 +40,14 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(key);
-        return cvs!=null && !cvs.isEmpty(txh);
+        return cvs != null && !cvs.isEmpty(txh);
     }
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(query.getKey());
-        if (cvs==null) return Lists.newArrayList();
-        else return cvs.getSlice(query,txh);
+        if (cvs == null) return Lists.newArrayList();
+        else return cvs.getSlice(query, txh);
     }
 
     @Override
@@ -64,22 +64,16 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(key);
-        if (cvs==null) {
-            kcv.putIfAbsent(key,new ColumnValueStore());
+        if (cvs == null) {
+            kcv.putIfAbsent(key, new ColumnValueStore());
             cvs = kcv.get(key);
         }
-        cvs.mutate(additions,deletions,txh);
+        cvs.mutate(additions, deletions, txh);
     }
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConsistencyLevel() == ConsistencyLevel.DEFAULT);
-        return new RowIterator(kcv.entrySet().iterator(), null, txh);
     }
 
     @Override

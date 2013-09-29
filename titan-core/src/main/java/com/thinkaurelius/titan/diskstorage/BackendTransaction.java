@@ -29,6 +29,7 @@ public class BackendTransaction implements TransactionHandle {
             LoggerFactory.getLogger(BackendTransaction.class);
 
     private final StoreTransaction storeTx;
+    private final StoreFeatures storeFeatures;
     private final KeyColumnValueStore edgeStore;
     private final KeyColumnValueStore vertexIndexStore;
     private final KeyColumnValueStore edgeIndexStore;
@@ -36,13 +37,14 @@ public class BackendTransaction implements TransactionHandle {
     private final int maxReadRetryAttempts;
     private final int retryStorageWaitTime;
 
-    private final Map<String,IndexTransaction> indexTx;
+    private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(StoreTransaction storeTx, KeyColumnValueStore edgeStore,
+    public BackendTransaction(StoreTransaction storeTx, StoreFeatures storeFeatures, KeyColumnValueStore edgeStore,
                               KeyColumnValueStore vertexIndexStore, KeyColumnValueStore edgeIndexStore,
                               int maxReadRetryAttempts, int retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx) {
         this.storeTx = storeTx;
+        this.storeFeatures = storeFeatures;
         this.edgeStore = edgeStore;
         this.vertexIndexStore = vertexIndexStore;
         this.edgeIndexStore = edgeIndexStore;
@@ -58,7 +60,7 @@ public class BackendTransaction implements TransactionHandle {
     public IndexTransaction getIndexTransactionHandle(String index) {
         Preconditions.checkArgument(StringUtils.isNotBlank(index));
         IndexTransaction itx = indexTx.get(index);
-        Preconditions.checkNotNull(itx,"Unknown index: " + index);
+        Preconditions.checkNotNull(itx, "Unknown index: " + index);
         return itx;
     }
 
@@ -158,10 +160,13 @@ public class BackendTransaction implements TransactionHandle {
         return executeRead(new Callable<List<Entry>>() {
             @Override
             public List<Entry> call() throws Exception {
-                return edgeStore.getSlice(query,storeTx);
+                return edgeStore.getSlice(query, storeTx);
             }
+
             @Override
-            public String toString() { return "EdgeStoreQuery"; }
+            public String toString() {
+                return "EdgeStoreQuery";
+            }
         });
     }
 
@@ -169,32 +174,65 @@ public class BackendTransaction implements TransactionHandle {
         return executeRead(new Callable<List<List<Entry>>>() {
             @Override
             public List<List<Entry>> call() throws Exception {
-                return edgeStore.getSlice(keys,query,storeTx);
+                return edgeStore.getSlice(keys, query, storeTx);
             }
+
             @Override
-            public String toString() { return "MultiEdgeStoreQuery"; }
+            public String toString() {
+                return "MultiEdgeStoreQuery";
+            }
         });
     }
 
-    public boolean edgeStoreContainsKey(final StaticBuffer key)  {
+    public boolean edgeStoreContainsKey(final StaticBuffer key) {
         return executeRead(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                return edgeStore.containsKey(key,storeTx);
+                return edgeStore.containsKey(key, storeTx);
             }
+
             @Override
-            public String toString() { return "EdgeStoreContainsKey"; }
+            public String toString() {
+                return "EdgeStoreContainsKey";
+            }
         });
     }
 
-    public RecordIterator<StaticBuffer> edgeStoreKeys() {
-        return executeRead(new Callable<RecordIterator<StaticBuffer>>() {
+    public KeyIterator edgeStoreKeys(final SliceQuery slice) {
+        if (!storeFeatures.supportsScan())
+            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
+        if (storeFeatures.isKeyOrdered())
+            throw new UnsupportedOperationException("Must use KeyRangeQuery for ordered storage backends");
+
+        return executeRead(new Callable<KeyIterator>() {
             @Override
-            public RecordIterator<StaticBuffer> call() throws Exception {
-                return edgeStore.getKeys(storeTx);
+            public KeyIterator call() throws Exception {
+                return edgeStore.getKeys(slice, storeTx);
             }
+
             @Override
-            public String toString() { return "EdgeStoreKeys"; }
+            public String toString() {
+                return "EdgeStoreKeys";
+            }
+        });
+    }
+
+    public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
+        if (!storeFeatures.supportsScan())
+            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
+        if (!storeFeatures.isKeyOrdered())
+            throw new UnsupportedOperationException("Cannot execute KeyRangeQuery on unordered storage backends");
+
+        return executeRead(new Callable<KeyIterator>() {
+            @Override
+            public KeyIterator call() throws Exception {
+                return edgeStore.getKeys(range, storeTx);
+            }
+
+            @Override
+            public String toString() {
+                return "EdgeStoreKeys";
+            }
         });
     }
 
@@ -202,10 +240,13 @@ public class BackendTransaction implements TransactionHandle {
         return executeRead(new Callable<List<Entry>>() {
             @Override
             public List<Entry> call() throws Exception {
-                return vertexIndexStore.getSlice(query,storeTx);
+                return vertexIndexStore.getSlice(query, storeTx);
             }
+
             @Override
-            public String toString() { return "VertexIndexQuery"; }
+            public String toString() {
+                return "VertexIndexQuery";
+            }
         });
 
     }
@@ -214,10 +255,13 @@ public class BackendTransaction implements TransactionHandle {
         return executeRead(new Callable<List<Entry>>() {
             @Override
             public List<Entry> call() throws Exception {
-                return edgeIndexStore.getSlice(query,storeTx);
+                return edgeIndexStore.getSlice(query, storeTx);
             }
+
             @Override
-            public String toString() { return "EdgeIndexQuery"; }
+            public String toString() {
+                return "EdgeIndexQuery";
+            }
         });
     }
 
@@ -228,16 +272,18 @@ public class BackendTransaction implements TransactionHandle {
             public List<String> call() throws Exception {
                 return indexTx.query(query);
             }
+
             @Override
-            public String toString() { return "IndexQuery"; }
+            public String toString() {
+                return "IndexQuery";
+            }
         });
     }
 
 
-    private final<V> V executeRead(Callable<V> exe) throws TitanException {
-        return BackendOperation.execute(exe,maxReadRetryAttempts,retryStorageWaitTime);
+    private final <V> V executeRead(Callable<V> exe) throws TitanException {
+        return BackendOperation.execute(exe, maxReadRetryAttempts, retryStorageWaitTime);
     }
-
 
 
 }

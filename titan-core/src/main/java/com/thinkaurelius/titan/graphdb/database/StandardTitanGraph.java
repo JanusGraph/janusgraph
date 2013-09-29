@@ -10,9 +10,7 @@ import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
@@ -64,7 +62,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     protected final EdgeSerializer edgeSerializer;
     protected final Serializer serializer;
 
-    private final SliceQuery vertexExistenceQuery;
+    public final SliceQuery vertexExistenceQuery;
 
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -80,9 +78,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.serializer = config.getSerializer();
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
         this.edgeSerializer = new EdgeSerializer(this.serializer, this.idManager);
-        isOpen = true;
-
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
+
+        isOpen = true;
     }
 
     @Override
@@ -156,15 +154,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     // ################### READ #########################
 
-    public boolean containsVertexID(long id, BackendTransaction tx) {
-        log.trace("Checking vertex existence for {}", id);
-        return !tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(id), vertexExistenceQuery)).isEmpty();
-    }
-
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
-        if (!backend.getStoreFeatures().supportsScan())
-            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        final RecordIterator<StaticBuffer> keyiter = tx.edgeStoreKeys();
+        final KeyIterator keyiter;
+        if (backend.getStoreFeatures().isKeyOrdered()) {
+            keyiter = tx.edgeStoreKeys(new KeyRangeQuery(IDHandler.MIN_KEY, IDHandler.MAX_KEY, vertexExistenceQuery));
+        } else {
+            keyiter = tx.edgeStoreKeys(vertexExistenceQuery);
+        }
+
         return new RecordIterator<Long>() {
 
             @Override

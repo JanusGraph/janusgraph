@@ -20,11 +20,10 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Wraps a {@link KeyColumnValueStore} and caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
  *
- * @see SliceQuery
- *
- * TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery and allow having a limit
- *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @see SliceQuery
+ *      <p/>
+ *      TODO: generalize cache to check for subsumption instead of equality of KeySliceQuery and allow having a limit
  */
 
 public class CachedKeyColumnValueStore implements KeyColumnValueStore {
@@ -34,62 +33,63 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     private static final long DEFAULT_CACHE_SIZE = 100000;
 
     private final KeyColumnValueStore store;
-    private final Cache<KeySliceQuery,List<Entry>> cache;
+    private final Cache<KeySliceQuery, List<Entry>> cache;
 
     private final AtomicLong cacheRetrieval = new AtomicLong(0);
     private final AtomicLong cacheMiss = new AtomicLong(0);
 
     public CachedKeyColumnValueStore(final KeyColumnValueStore store) {
-        this(store,DEFAULT_CACHE_SIZE);
+        this(store, DEFAULT_CACHE_SIZE);
     }
 
     public CachedKeyColumnValueStore(final KeyColumnValueStore store, long cacheSize) {
         Preconditions.checkNotNull(store);
-        this.store=store;
+        this.store = store;
         this.cache = CacheBuilder.newBuilder().weigher(new Weigher<KeySliceQuery, List<Entry>>() {
             @Override
             public int weigh(KeySliceQuery q, List<Entry> r) {
                 return 2 + r.size();
             }
         }).maximumWeight(cacheSize)
-        .build();
+                .build();
     }
 
     public final double getCacheHitRatio() {
-        if (cacheRetrieval.get()==0) return Double.NaN;
-        else return (cacheRetrieval.get()-cacheMiss.get())*1.0/cacheRetrieval.get();
+        if (cacheRetrieval.get() == 0) return Double.NaN;
+        else return (cacheRetrieval.get() - cacheMiss.get()) * 1.0 / cacheRetrieval.get();
     }
 
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return store.containsKey(key,txh);
+        return store.containsKey(key, txh);
     }
 
     @Override
     public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         if (query.isStatic() && !query.hasLimit()) {
             try {
-                if (log.isDebugEnabled()) log.debug("Cache Retrieval on "+store.getName()+". Attempts: {} | Misses: {}",cacheRetrieval.get(),cacheMiss.get());
+                if (log.isDebugEnabled())
+                    log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", cacheRetrieval.get(), cacheMiss.get());
                 cacheRetrieval.incrementAndGet();
-                List<Entry> result = cache.get(query,new Callable<List<Entry>>() {
+                List<Entry> result = cache.get(query, new Callable<List<Entry>>() {
                     @Override
                     public List<Entry> call() throws StorageException {
                         cacheMiss.incrementAndGet();
-                        return store.getSlice(query,txh);
+                        return store.getSlice(query, txh);
                     }
                 });
                 if (result.isEmpty()) cache.invalidate(query);
                 return result;
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
-                if (cause!=null && cause instanceof StorageException) {
-                    throw (StorageException)cause;
+                if (cause != null && cause instanceof StorageException) {
+                    throw (StorageException) cause;
                 } else {
-                    throw new TemporaryStorageException("Exception while accessing cache",e);
+                    throw new TemporaryStorageException("Exception while accessing cache", e);
                 }
             }
         } else {
-            return store.getSlice(query,txh);
+            return store.getSlice(query, txh);
         }
     }
 
@@ -102,23 +102,18 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
             }
             return results;
         } else {
-            return store.getSlice(keys,query,txh);
+            return store.getSlice(keys, query, txh);
         }
     }
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        store.mutate(key,additions,deletions,txh);
+        store.mutate(key, additions, deletions, txh);
     }
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        store.acquireLock(key,column,expectedValue,txh);
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return store.getKeys(txh);
+        store.acquireLock(key, column, expectedValue, txh);
     }
 
     @Override

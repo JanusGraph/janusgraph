@@ -50,11 +50,6 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-                return new EmptyRowIterator();
-            }
-
-            @Override
             public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
                 return new EmptyRowIterator();
             }
@@ -124,20 +119,20 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     @Override
     public StoreFeatures getFeatures() {
         StoreFeatures f = new StoreFeatures();
-        f.supportsScan=true;
-        f.supportsBatchMutation=true;
+        f.supportsScan = true;
+        f.supportsBatchMutation = true;
 
-        f.supportsTransactions=true;
-        f.supportsConsistentKeyOperations=false;
-        f.supportsLocking=true;
+        f.supportsTransactions = true;
+        f.supportsConsistentKeyOperations = false;
+        f.supportsLocking = true;
 
-        f.isKeyOrdered=false;
-        f.isDistributed=false;
-        f.hasLocalKeyPartition=false;
+        f.isKeyOrdered = false;
+        f.isDistributed = false;
+        f.hasLocalKeyPartition = false;
         return f;
     }
 
-    private final Map<String,String> config = Maps.newHashMap();
+    private final Map<String, String> config = Maps.newHashMap();
 
     @Override
     public String getConfigurationProperty(String key) throws StorageException {
@@ -146,7 +141,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
 
     @Override
     public void setConfigurationProperty(String key, String value) throws StorageException {
-        config.put(key,value);
+        config.put(key, value);
     }
 
     private static class EmptyRowIterator implements KeyIterator {
@@ -169,7 +164,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         public void close() throws StorageException {
         }
     }
-    
+
     @Override
     public String getName() {
         return toString();

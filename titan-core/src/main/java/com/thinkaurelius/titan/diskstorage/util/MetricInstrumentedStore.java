@@ -22,7 +22,7 @@ import java.util.concurrent.Callable;
  * calling {@link MetricRegistry#name(backendClass, methodName, identifier)},
  * where methodName is the exact name of the method including capitalization,
  * and identifier is "time", "calls", or "exceptions".
- * <p>
+ * <p/>
  * In addition to the three standard metrics, {@code getSlice} and
  * {@code getKeys} have some additional metrics related to their return values.
  * {@code getSlice} carries metrics with the identifiers "entries-returned" and
@@ -30,59 +30,59 @@ import java.util.concurrent.Callable;
  * The second is a histogram of the size of Entry lists returned.
  * {@code getKeys} returns a {@link RecordIterator} that manages metrics for its
  * methods.
- * <p>
+ * <p/>
  * This implementation does not catch any exceptions. Exceptions emitted by the
  * backend store implementation are guaranteed to pass through this
  * implementation's methods.
- * <p>
+ * <p/>
  * The implementation includes repeated {@code try...catch} boilerplate that
  * could be reduced by using reflection to determine the method name and by
  * delegating Metrics object handling to a common helper that takes a Callable
  * closure, but I'm not sure that the extra complexity and potential performance
  * hit is worth it.
- * 
+ *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class MetricInstrumentedStore implements KeyColumnValueStore {
-    
+
     private final KeyColumnValueStore backend;
-    
+
     // containsKey
-    private final Timer   containsKeyTimer;
+    private final Timer containsKeyTimer;
     private final Counter containsKeyInvocationCounter;
     private final Counter containsKeyFailureCounter;
     // getSlice
-    private final Timer   getSliceTimer;
+    private final Timer getSliceTimer;
     private final Counter getSliceColumnCounter;
     private final Histogram getSliceColumnHisto;
     private final Counter getSliceInvocationCounter;
     private final Counter getSliceFailureCounter;
     // mutate
-    private final Timer   mutateTimer;
+    private final Timer mutateTimer;
     private final Counter mutateInvocationCounter;
     private final Counter mutateFailureCounter;
     // acquireLock
-    private final Timer   acquireLockTimer;
+    private final Timer acquireLockTimer;
     private final Counter acquireLockInvocationCounter;
     private final Counter acquireLockFailureCounter;
     // getKeys
-    private final Timer   getKeysTimer;
+    private final Timer getKeysTimer;
     private final Counter getKeysInvocationCounter;
     private final Counter getKeysFailureCounter;
-    private final String  getKeysIteratorMetricPrefix;
+    private final String getKeysIteratorMetricPrefix;
     // getLocalKeyPartition
-    private final Timer   getLocalKeyPartitionTimer;
+    private final Timer getLocalKeyPartitionTimer;
     private final Counter getLocalKeyPartitionInvocationCounter;
     private final Counter getLocalKeyPartitionFailureCounter;
     // getName
-    private final Timer   getNameTimer;
+    private final Timer getNameTimer;
     private final Counter getNameInvocationCounter;
     private final Counter getNameFailureCounter;
     // close
-    private final Timer   closeTimer;
+    private final Timer closeTimer;
     private final Counter closeInvocationCounter;
     private final Counter closeFailureCounter;
-    
+
     private static final Logger log =
             LoggerFactory.getLogger(MetricInstrumentedStore.class);
 
@@ -90,16 +90,16 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         this.backend = backend;
 
         MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-        
+
         containsKeyTimer =
-                  metrics.timer(MetricRegistry.name(p, "containsKey", "time"));
+                metrics.timer(MetricRegistry.name(p, "containsKey", "time"));
         containsKeyInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "containsKey", "calls"));
         containsKeyFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "containsKey", "exceptions"));
-        
+
         getSliceTimer =
-                  metrics.timer(MetricRegistry.name(p, "getSlice", "time"));
+                metrics.timer(MetricRegistry.name(p, "getSlice", "time"));
         getSliceInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "getSlice", "calls"));
         getSliceFailureCounter =
@@ -107,51 +107,51 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         getSliceColumnCounter =
                 metrics.counter(MetricRegistry.name(p, "getSlice", "entries-returned"));
         getSliceColumnHisto =
-              metrics.histogram(MetricRegistry.name(p, "getSlice", "entries-histogram"));
-        
+                metrics.histogram(MetricRegistry.name(p, "getSlice", "entries-histogram"));
+
         mutateTimer =
-                  metrics.timer(MetricRegistry.name(p, "mutate", "time"));
+                metrics.timer(MetricRegistry.name(p, "mutate", "time"));
         mutateInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "mutate", "calls"));
         mutateFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "mutate", "exceptions"));
-        
+
         acquireLockTimer =
-                  metrics.timer(MetricRegistry.name(p, "acquireLock", "time"));
+                metrics.timer(MetricRegistry.name(p, "acquireLock", "time"));
         acquireLockInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "acquireLock", "calls"));
         acquireLockFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "acquireLock", "exceptions"));
-        
+
         getKeysTimer =
-                  metrics.timer(MetricRegistry.name(p, "getKeys", "time"));
+                metrics.timer(MetricRegistry.name(p, "getKeys", "time"));
         getKeysInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "getKeys", "calls"));
         getKeysFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "getKeys", "exceptions"));
         getKeysIteratorMetricPrefix = p + "." + "getKeys.iterator";
-        
+
         getLocalKeyPartitionTimer =
-                  metrics.timer(MetricRegistry.name(p, "getLocalKeyPartition", "time"));
+                metrics.timer(MetricRegistry.name(p, "getLocalKeyPartition", "time"));
         getLocalKeyPartitionInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "calls"));
         getLocalKeyPartitionFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "exceptions"));
-        
+
         getNameTimer =
-                  metrics.timer(MetricRegistry.name(p, "getName", "time"));
+                metrics.timer(MetricRegistry.name(p, "getName", "time"));
         getNameInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "getName", "calls"));
         getNameFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "getName", "exceptions"));
-        
+
         closeTimer =
-                  metrics.timer(MetricRegistry.name(p, "close", "time"));
+                metrics.timer(MetricRegistry.name(p, "close", "time"));
         closeInvocationCounter =
                 metrics.counter(MetricRegistry.name(p, "close", "calls"));
         closeFailureCounter =
                 metrics.counter(MetricRegistry.name(p, "close", "exceptions"));
-        
+
         log.debug("Wrapped Metrics around store {} (metric prefix {})", backend, p);
     }
 
@@ -227,7 +227,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         mutateInvocationCounter.inc();
         Timer.Context tc = mutateTimer.time();
 
-        try  {
+        try {
             backend.mutate(key, additions, deletions, txh);
         } catch (StorageException e) {
             mutateFailureCounter.inc();
@@ -253,38 +253,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         } finally {
             tc.stop();
         }
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        return getKeysWithMetrics(new KeyIteratorCommand() {
-            @Override
-            public KeyIterator call() throws StorageException {
-                return new KeyIterator() {
-                    final RecordIterator<StaticBuffer> keyIterator = backend.getKeys(txh);
-
-                    @Override
-                    public RecordIterator<Entry> getEntries() {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public boolean hasNext() throws StorageException {
-                        return keyIterator.hasNext();
-                    }
-
-                    @Override
-                    public StaticBuffer next() throws StorageException {
-                        return keyIterator.next();
-                    }
-
-                    @Override
-                    public void close() throws StorageException {
-                        keyIterator.close();
-                    }
-                };
-            }
-        });
     }
 
     @Override

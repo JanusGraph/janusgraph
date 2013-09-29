@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
@@ -10,6 +11,8 @@ import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+
+import java.util.Map;
 
 public class SystemKey extends SystemType implements TitanKey {
 
@@ -40,9 +43,8 @@ public class SystemKey extends SystemType implements TitanKey {
         }
     }
 
-    public static final Iterable<SystemKey> values() {
-        return ImmutableList.of(TypeDefinition, TypeName, TypeClass, VertexState);
-    }
+    public static final Map<String, SystemKey> KEY_MAP = ImmutableMap.of(TypeDefinition.getName(), TypeDefinition,
+            TypeName.getName(), TypeName, TypeClass.getName(), TypeClass, VertexState.getName(), VertexState);
 
     private final Class<?> dataType;
     private final boolean index;

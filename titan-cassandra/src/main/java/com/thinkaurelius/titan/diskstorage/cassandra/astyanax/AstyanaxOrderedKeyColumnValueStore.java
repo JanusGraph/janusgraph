@@ -120,16 +120,16 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
          *
          */
         RowSliceQuery rq = keyspace.prepareQuery(columnFamily)
-                                   .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                                   .withRetryPolicy(retryPolicy.duplicate())
-                                   .getKeySlice(requestKeys);
+                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                .withRetryPolicy(retryPolicy.duplicate())
+                .getKeySlice(requestKeys);
 
         // Thank you, Astyanax, for making builder pattern useful :(
         int limit = ((query.hasLimit()) ? query.getLimit() : Integer.MAX_VALUE - 1);
         rq.withColumnRange(query.getSliceStart().asByteBuffer(),
-                           query.getSliceEnd().asByteBuffer(),
-                           false,
-                           limit + 1);
+                query.getSliceEnd().asByteBuffer(),
+                false,
+                limit + 1);
 
         OperationResult<Rows<ByteBuffer, ByteBuffer>> r;
         try {
@@ -192,11 +192,6 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return getKeys((SliceQuery) null, txh);
-    }
-
-    @Override
     public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
         if (storeManager.getPartitioner() != Partitioner.RANDOM)
             throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
@@ -206,28 +201,28 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         if (sliceQuery != null) {
             int limit = (sliceQuery.hasLimit()) ? sliceQuery.getLimit() : Integer.MAX_VALUE;
             allRowsQuery.withColumnRange(sliceQuery.getSliceStart().asByteBuffer(),
-                                         sliceQuery.getSliceEnd().asByteBuffer(),
-                                         false,
-                                         limit);
+                    sliceQuery.getSliceEnd().asByteBuffer(),
+                    false,
+                    limit);
         }
 
         Rows<ByteBuffer, ByteBuffer> result;
         try {
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
             OperationResult op = allRowsQuery.setRowLimit(storeManager.getPageSize()) // pre-fetch that many rows at a time
-                                             .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
-                                             .setExceptionCallback(new ExceptionCallback() {
-                                                 private int retries = 0;
+                    .setConcurrencyLevel(1) // one execution thread for fetching portion of rows
+                    .setExceptionCallback(new ExceptionCallback() {
+                        private int retries = 0;
 
-                                                 @Override
-                                                 public boolean onException(ConnectionException e) {
-                                                     try {
-                                                         return retries > 2; // make 3 re-tries
-                                                     } finally {
-                                                         retries++;
-                                                     }
-                                                 }
-                                             }).execute();
+                        @Override
+                        public boolean onException(ConnectionException e) {
+                            try {
+                                return retries > 2; // make 3 re-tries
+                            } finally {
+                                retries++;
+                            }
+                        }
+                    }).execute();
 
             result = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) op).getResult();
         } catch (ConnectionException e) {
@@ -251,15 +246,15 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         int limit = (query.hasLimit()) ? query.getLimit() : Integer.MAX_VALUE;
 
         RowSliceQuery rowSlice = keyspace.prepareQuery(columnFamily)
-                                         .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
-                                         .withRetryPolicy(retryPolicy.duplicate())
-                                         .getKeyRange(start, end, null, null, Integer.MAX_VALUE);
+                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                .withRetryPolicy(retryPolicy.duplicate())
+                .getKeyRange(start, end, null, null, Integer.MAX_VALUE);
 
         // Astyanax is bad at builder pattern :(
         rowSlice.withColumnRange(query.getSliceStart().asByteBuffer(),
-                                 query.getSliceEnd().asByteBuffer(),
-                                 false,
-                                 limit);
+                query.getSliceEnd().asByteBuffer(),
+                false,
+                limit);
 
         try {
             return new RowIterator(((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult(), query);
@@ -305,11 +300,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
 
             return new RecordIterator<Entry>() {
                 private final Iterator<Entry> columns = excludeLastColumn(currentRow,
-                                                                          sliceQuery.getSliceEnd().asByteBuffer(),
-                                                                          sliceQuery.hasLimit()
-                                                                                  ? sliceQuery.getLimit()
-                                                                                  : Integer.MAX_VALUE)
-                                                                          .iterator();
+                        sliceQuery.getSliceEnd().asByteBuffer(),
+                        sliceQuery.hasLimit()
+                                ? sliceQuery.getLimit()
+                                : Integer.MAX_VALUE)
+                        .iterator();
 
                 @Override
                 public boolean hasNext() throws StorageException {

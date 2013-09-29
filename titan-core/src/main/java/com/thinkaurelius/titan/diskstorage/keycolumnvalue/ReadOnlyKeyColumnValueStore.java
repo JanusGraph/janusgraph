@@ -31,11 +31,6 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return store.getKeys(txh);
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
         return store.getKeys(keyQuery, txh);
     }

@@ -97,8 +97,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public static Filter getFilter(SliceQuery query) {
-        byte[] colStartBytes = query.getSliceEnd().length()>0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
-        byte[] colEndBytes = query.getSliceEnd().length()>0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
+        byte[] colStartBytes = query.getSliceEnd().length() > 0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
+        byte[] colEndBytes = query.getSliceEnd().length() > 0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
 
         Filter filter = new ColumnRangeFilter(colStartBytes, true, colEndBytes, false);
 
@@ -190,31 +190,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     *
-     * IMPORTANT: Makes the assumption that all keys are 8 byte longs
-     *
-     * @param txh
-     * @return
-     * @throws StorageException
-     */
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        FilterList filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
-        // returns first instance of a row, then skip to next row
-        filters.addFilter(new FirstKeyOnlyFilter());
-        // only return the Key, don't return the value
-        filters.addFilter(new KeyOnlyFilter());
-
-        return executeKeySliceQuery(filters, null);
-    }
-
     @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
         return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
-                                    query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
-                                    new FilterList(FilterList.Operator.MUST_PASS_ALL),
-                                    query);
+                query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
+                new FilterList(FilterList.Operator.MUST_PASS_ALL),
+                query);
     }
 
     @Override
@@ -262,10 +243,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     /**
      * Convert deletions to a Delete command.
      *
-     * @param cfName The name of the ColumnFamily deletions belong to
-     * @param key The row key
+     * @param cfName    The name of the ColumnFamily deletions belong to
+     * @param key       The row key
      * @param deletions The name of the columns to delete (a.k.a deletions)
-     *
      * @return Delete command or null if deletions were null or empty.
      */
     private static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<StaticBuffer> deletions) {
@@ -281,10 +261,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     /**
      * Convert modification entries into Put command.
      *
-     * @param cfName The name of the ColumnFamily modifications belong to
-     * @param key The row key
+     * @param cfName        The name of the ColumnFamily modifications belong to
+     * @param key           The row key
      * @param modifications The entries to insert/update.
-     *
      * @return Put command or null if additions were null or empty.
      */
     private static Put makePutCommand(byte[] cfName, byte[] key, List<Entry> modifications) {

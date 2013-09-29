@@ -17,25 +17,24 @@ import java.util.List;
  * A {@link KeyColumnValueStore} wrapper intended for nontransactional stores
  * that forwards all <b>but</b> these two methods to an encapsulated store
  * instance:
- * 
+ * <p/>
  * <ul>
- *   <li>{@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}</li>
- *   <li>{@link #mutate(StaticBuffer, List, List, StoreTransaction)}</li>
+ * <li>{@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}</li>
+ * <li>{@link #mutate(StaticBuffer, List, List, StoreTransaction)}</li>
  * </ul>
- * 
+ * <p/>
  * This wrapper adds some logic to both of the overridden methods before calling
  * the encapsulated store's version.
- * <p>
+ * <p/>
  * This class, along with its collaborator class
  * {@link ExpectedValueCheckingTransaction}, track all {@code expectedValue}
  * arguments passed to {@code acquireLock} for each {@code StoreTransaction}.
  * When the transaction first {@code mutate(...)}s, the these classes cooperate
  * to check that all previously provided expected values match actual values,
  * throwing an exception and preventing mutation if a mismatch is detected.
- * <p>
+ * <p/>
  * This relies on a {@code Locker} instance supplied during construction for
  * locking.
- * 
  */
 public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
@@ -43,16 +42,16 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
      * Configuration setting key for the local lock mediator prefix
      */
     public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
-    
+
     private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
     /**
      * Titan data store.
      */
     final KeyColumnValueStore dataStore;
-    
+
     final Locker locker;
-    
+
     public ExpectedValueCheckingStore(KeyColumnValueStore dataStore, Locker locker) {
         Preconditions.checkNotNull(dataStore);
         this.dataStore = dataStore;
@@ -86,10 +85,10 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
 
     /**
      * {@inheritDoc}
-     * 
      * <p/>
-     * 
-     * This implementation supports locking when {@code lockStore} is non-null.  
+     * <p/>
+     * <p/>
+     * This implementation supports locking when {@code lockStore} is non-null.
      */
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
@@ -103,14 +102,14 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         }
         dataStore.mutate(key, additions, deletions, getBaseTx(txh));
     }
-    
+
     /**
      * {@inheritDoc}
-     * 
      * <p/>
-     * 
+     * <p/>
+     * <p/>
      * This implementation supports locking when {@code lockStore} is non-null.
-     * <p>
+     * <p/>
      * Consider the following scenario. This method is called twice with
      * identical key, column, and txh arguments, but with different
      * expectedValue arguments in each call. In testing, it seems titan's
@@ -131,11 +130,6 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         } else {
             dataStore.acquireLock(key, column, expectedValue, getBaseTx(txh));
         }
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        return dataStore.getKeys(getBaseTx(txh));
     }
 
     @Override
@@ -163,7 +157,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         dataStore.close();
         // TODO close locker?
     }
-    
+
     void deleteLocks(ExpectedValueCheckingTransaction tx) throws StorageException {
         locker.deleteLocks(tx.getConsistentTransaction());
     }

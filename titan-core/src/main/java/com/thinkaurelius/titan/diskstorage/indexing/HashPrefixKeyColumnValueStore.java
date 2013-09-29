@@ -37,14 +37,14 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     private final StaticBuffer prefixKey(StaticBuffer key) {
         try {
             MessageDigest m = MessageDigest.getInstance(algorithm);
-            for (int i=0;i<key.length();i++) m.update(key.getByte(i));
+            for (int i = 0; i < key.length(); i++) m.update(key.getByte(i));
             byte[] hash = m.digest();
-            byte[] newKey = new byte[numPrefixBytes+key.length()];
+            byte[] newKey = new byte[numPrefixBytes + key.length()];
             for (int i = 0; i < numPrefixBytes; i++) {
-                newKey[i]=hash[i];
+                newKey[i] = hash[i];
             }
-            for (int i=0;i<key.length();i++) {
-                newKey[numPrefixBytes+i]=key.getByte(i);
+            for (int i = 0; i < key.length(); i++) {
+                newKey[numPrefixBytes + i] = key.getByte(i);
             }
             return new StaticArrayBuffer(newKey);
         } catch (NoSuchAlgorithmException e) {
@@ -53,7 +53,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private StaticBuffer truncateKey(StaticBuffer key) {
-        return key.subrange(numPrefixBytes,key.length()-numPrefixBytes);
+        return key.subrange(numPrefixBytes, key.length() - numPrefixBytes);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()),query);
+        KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()), query);
         return store.getSlice(prefixQuery, txh);
     }
 
@@ -86,28 +86,6 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         store.acquireLock(prefixKey(key), column, expectedValue, txh);
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException {
-        final RecordIterator<StaticBuffer> keys = store.getKeys(txh);
-        return new RecordIterator<StaticBuffer>() {
-
-            @Override
-            public boolean hasNext() throws StorageException {
-                return keys.hasNext();
-            }
-
-            @Override
-            public StaticBuffer next() throws StorageException {
-                return truncateKey(keys.next());
-            }
-
-            @Override
-            public void close() throws StorageException {
-                keys.close();
-            }
-        };
     }
 
     @Override
