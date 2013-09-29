@@ -19,10 +19,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
-    private final ConcurrentHashMap<String,InMemoryKeyColumnValueStore> stores;
+    private final ConcurrentHashMap<String, InMemoryKeyColumnValueStore> stores;
 
     private final StoreFeatures features;
-    private final Map<String,String> storeConfig;
+    private final Map<String, String> storeConfig;
 
     public InMemoryStoreManager() {
         this(new BaseConfiguration());
@@ -30,11 +30,12 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     public InMemoryStoreManager(final Configuration configuration) {
 
-        stores = new ConcurrentHashMap<String,InMemoryKeyColumnValueStore>();
-        storeConfig = new ConcurrentHashMap<String,String>();
+        stores = new ConcurrentHashMap<String, InMemoryKeyColumnValueStore>();
+        storeConfig = new ConcurrentHashMap<String, String>();
 
         features = new StoreFeatures();
-        features.supportsScan = true;
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = true;
@@ -77,13 +78,13 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     @Override
     public void setConfigurationProperty(String key, String value) throws StorageException {
-        storeConfig.put(key,value);
+        storeConfig.put(key, value);
     }
 
     @Override
     public KeyColumnValueStore openDatabase(final String name) throws StorageException {
         if (!stores.containsKey(name)) {
-            stores.putIfAbsent(name,new InMemoryKeyColumnValueStore(name));
+            stores.putIfAbsent(name, new InMemoryKeyColumnValueStore(name));
         }
         KeyColumnValueStore store = stores.get(name);
         Preconditions.checkNotNull(store);
@@ -92,11 +93,11 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        for (Map.Entry<String,Map<StaticBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
             KeyColumnValueStore store = stores.get(storeMut.getKey());
             Preconditions.checkNotNull(store);
-            for (Map.Entry<StaticBuffer,KCVMutation> keyMut : storeMut.getValue().entrySet()) {
-                store.mutate(keyMut.getKey(),keyMut.getValue().getAdditions(),keyMut.getValue().getDeletions(),txh);
+            for (Map.Entry<StaticBuffer, KCVMutation> keyMut : storeMut.getValue().entrySet()) {
+                store.mutate(keyMut.getKey(), keyMut.getValue().getAdditions(), keyMut.getValue().getDeletions(), txh);
             }
         }
     }

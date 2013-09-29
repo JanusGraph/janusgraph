@@ -46,9 +46,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     static {
         HBASE_CONFIGURATION = new ImmutableMap.Builder<String, String>()
-                                    .put(GraphDatabaseConfiguration.HOSTNAME_KEY, "hbase.zookeeper.quorum")
-                                    .put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort")
-                                    .build();
+                .put(GraphDatabaseConfiguration.HOSTNAME_KEY, "hbase.zookeeper.quorum")
+                .put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort")
+                .build();
     }
 
     private final String tableName;
@@ -75,7 +75,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         org.apache.commons.configuration.Configuration hbCommons = config.subset(HBASE_CONFIGURATION_NAMESPACE);
 
         @SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
-        Iterator<String> keys = hbCommons.getKeys();
+                Iterator<String> keys = hbCommons.getKeys();
         int keysLoaded = 0;
 
         while (keys.hasNext()) {
@@ -94,7 +94,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         // TODO: allowing publicly mutate fields is bad, should be fixed
         features = new StoreFeatures();
-        features.supportsScan = true;
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = true;
         features.supportsBatchMutation = true;
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = true;
@@ -321,7 +322,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new PermanentStorageException(e);
         }
     }
-    
+
     @Override
     public String getName() {
         return tableName;
@@ -338,15 +339,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     /**
      * Convert Titan internal Mutation representation into HBase native commands.
      *
-     * @param mutations Mutations to convert into HBase commands.
+     * @param mutations    Mutations to convert into HBase commands.
      * @param putTimestamp The timestamp to use for Put commands.
      * @param delTimestamp The timestamp to use for Delete commands.
-     *
      * @return Commands sorted by key converted from Titan internal representation.
      */
     private static Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
-                                                                        final long putTimestamp,
-                                                                        final long delTimestamp) {
+                                                                          final long putTimestamp,
+                                                                          final long delTimestamp) {
         Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<StaticBuffer, Pair<Put, Delete>>();
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {

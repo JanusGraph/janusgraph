@@ -199,10 +199,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final SliceQuery slice) {
-        if (!storeFeatures.supportsScan())
-            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        if (storeFeatures.isKeyOrdered())
-            throw new UnsupportedOperationException("Must use KeyRangeQuery for ordered storage backends");
+        Preconditions.checkArgument(storeFeatures.supportsUnorderedScan(), "The configured storage backend does not support unordered scanning");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override
@@ -218,10 +215,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
-        if (!storeFeatures.supportsScan())
-            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
-        if (!storeFeatures.isKeyOrdered())
-            throw new UnsupportedOperationException("Cannot execute KeyRangeQuery on unordered storage backends");
+        Preconditions.checkArgument(storeFeatures.supportsOrderedScan(), "The configured storage backend does not support ordered scans");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override

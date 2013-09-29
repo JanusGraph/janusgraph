@@ -42,13 +42,12 @@ public class KCVSUtil {
     }
 
     public static RecordIterator<StaticBuffer> getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(features.supportsScan());
         SliceQuery slice = new SliceQuery(ByteBufferUtil.zeroBuffer(sliceLength), ByteBufferUtil.oneBuffer(sliceLength)).setLimit(1);
-        if (features.isKeyOrdered()) {
-            return store.getKeys(new KeyRangeQuery(ByteBufferUtil.zeroBuffer(keyLength), ByteBufferUtil.oneBuffer(keyLength), slice), txh);
-        } else {
+        if (features.supportsUnorderedScan()) {
             return store.getKeys(slice, txh);
-        }
+        } else if (features.supportsOrderedScan()) {
+            return store.getKeys(new KeyRangeQuery(ByteBufferUtil.zeroBuffer(keyLength), ByteBufferUtil.oneBuffer(keyLength), slice), txh);
+        } else throw new UnsupportedOperationException("Scan not supported by this store");
     }
 
     public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int sliceLength, StoreTransaction txh) throws StorageException {

@@ -44,7 +44,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         initialize(cachePercentage);
 
         features = new StoreFeatures();
-        features.supportsScan = true;
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
         features.supportsTransactions = true;
         features.supportsConsistentKeyOperations = false;
@@ -53,7 +54,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features.isDistributed = false;
         features.hasLocalKeyPartition = false;
 
-        storageConfig=new FileStorageConfiguration(directory);
+        storageConfig = new FileStorageConfiguration(directory);
     }
 
     private void initialize(int cachePercent) throws StorageException {
@@ -178,7 +179,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     @Override
     public void setConfigurationProperty(String key, String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key,value);
+        storageConfig.setConfigurationProperty(key, value);
     }
 
     @Override

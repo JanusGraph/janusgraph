@@ -119,7 +119,8 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
     @Override
     public StoreFeatures getFeatures() {
         StoreFeatures f = new StoreFeatures();
-        f.supportsScan = true;
+        f.supportsUnorderedScan = true;
+        f.supportsOrderedScan = true;
         f.supportsBatchMutation = true;
 
         f.supportsTransactions = true;

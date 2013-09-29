@@ -30,7 +30,6 @@ public abstract class KeyColumnValueStoreTest {
     public KeyColumnValueStoreManager manager;
     public StoreTransaction tx;
     public KeyColumnValueStore store;
-    public StoreFeatures features;
 
     @Before
     public void setUp() throws Exception {
@@ -43,8 +42,11 @@ public abstract class KeyColumnValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        features = manager.getFeatures();
         tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
+    }
+
+    public StoreFeatures storeFeatures() {
+        return manager.getFeatures();
     }
 
     public void clopen() throws StorageException {
@@ -245,16 +247,16 @@ public abstract class KeyColumnValueStoreTest {
         if (manager.getFeatures().supportsScan()) {
             String[][] values = generateValues();
             loadValues(values);
-            RecordIterator<StaticBuffer> iterator0 = KCVSUtil.getKeys(store, features, 8, 4, tx);
+            RecordIterator<StaticBuffer> iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
             clopen();
-            RecordIterator<StaticBuffer> iterator1 = KCVSUtil.getKeys(store, features, 8, 4, tx);
-            RecordIterator<StaticBuffer> iterator2 = KCVSUtil.getKeys(store, features, 8, 4, tx);
+            RecordIterator<StaticBuffer> iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            RecordIterator<StaticBuffer> iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             // The idea is to open an iterator without using it
             // to make sure that closing a transaction will clean it up.
             // (important for BerkeleyJE where leaving cursors open causes exceptions)
             @SuppressWarnings("unused")
-            RecordIterator<StaticBuffer> iterator3 = KCVSUtil.getKeys(store, features, 8, 4, tx);
+            RecordIterator<StaticBuffer> iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }
@@ -419,7 +421,7 @@ public abstract class KeyColumnValueStoreTest {
         Assert.assertEquals(entries, result);
 
 		/*
-		 * When limit is less the matching column count, the columns up to the
+         * When limit is less the matching column count, the columns up to the
 		 * limit (ordered bytewise) must be returned.
 		 */
         result =

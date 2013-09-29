@@ -27,7 +27,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         }
 
         public static Partitioner getPartitioner(String className) {
-            if (className.endsWith("RandomPartitioner") || className.endsWith("Murmur3Partitioner")) return Partitioner.RANDOM;
+            if (className.endsWith("RandomPartitioner") || className.endsWith("Murmur3Partitioner"))
+                return Partitioner.RANDOM;
             else if (className.endsWith("ByteOrderedPartitioner")) return Partitioner.BYTEORDER;
             else throw new IllegalArgumentException("Unsupported partitioner: " + className);
         }
@@ -42,10 +43,10 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     /**
      * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
      * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
-     *
+     * <p/>
      * HEADS UP: setting max message size proved itself hazardous to be set on the client, only server needs that
      * kind of protection.
-     *
+     * <p/>
      * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
      */
     public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
@@ -93,7 +94,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     private StoreFeatures features = null;
 
-    protected static final String SYSTEM_PROPERTIES_CF  = "system_properties";
+    protected static final String SYSTEM_PROPERTIES_CF = "system_properties";
     protected static final String SYSTEM_PROPERTIES_KEY = "general";
 
     public AbstractCassandraStoreManager(Configuration storageConfig) {
@@ -128,7 +129,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public StoreFeatures getFeatures() {
         if (features == null) {
             features = new StoreFeatures();
-            features.supportsScan = true;
             features.supportsBatchMutation = true;
             features.supportsTransactions = false;
             features.supportsConsistentKeyOperations = true;
@@ -141,16 +141,21 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             } catch (StorageException e) {
                 throw new TitanException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
             }
-            features.supportsScan = true;
             if (partitioner == Partitioner.RANDOM) {
                 features.isKeyOrdered = false;
                 features.hasLocalKeyPartition = false;
+                features.supportsOrderedScan = false;
+                features.supportsUnorderedScan = true;
             } else if (partitioner == Partitioner.BYTEORDER) {
                 features.isKeyOrdered = true;
                 features.hasLocalKeyPartition = false;
+                features.supportsOrderedScan = true;
+                features.supportsUnorderedScan = false;
             } else if (partitioner == Partitioner.LOCALBYTEORDER) {
                 features.isKeyOrdered = true;
                 features.hasLocalKeyPartition = true;
+                features.supportsOrderedScan = true;
+                features.supportsUnorderedScan = false;
             } else throw new IllegalArgumentException("Unrecognized partitioner: " + partitioner);
         }
         return features;
@@ -162,16 +167,14 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * map returned by
      * {@link org.apache.cassandra.thrift.CfDef#getCompression_options()}, even
      * for implementations of this method that don't use Thrift.
-     * 
-     * @param cf
-     *            the name of the column family for which to return compression
-     *            options
+     *
+     * @param cf the name of the column family for which to return compression
+     *           options
      * @return map of compression option names to compression option values
-     * @throws StorageException
-     *             if reading from Cassandra fails
+     * @throws StorageException if reading from Cassandra fails
      */
     public abstract Map<String, String> getCompressionOptions(String cf) throws StorageException;
-    
+
     public String getName() {
         return getClass().getSimpleName() + keySpaceName;
     }

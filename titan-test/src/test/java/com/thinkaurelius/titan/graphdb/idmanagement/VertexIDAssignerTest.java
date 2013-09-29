@@ -49,7 +49,8 @@ public class VertexIDAssignerTest {
         MockIDAuthority idAuthority = new MockIDAuthority(500, partitionMax);
 
         StoreFeatures features = new StoreFeatures();
-        features.supportsScan = false;
+        features.supportsUnorderedScan = false;
+        features.supportsOrderedScan = false;
         features.supportsBatchMutation = false;
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = false;
@@ -72,7 +73,7 @@ public class VertexIDAssignerTest {
     private static TitanGraph getInMemoryGraph() {
         BaseConfiguration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, InMemoryStorageAdapter.class.getCanonicalName());
-        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY,false);
+        config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY, false);
         return TitanFactory.open(config);
     }
 

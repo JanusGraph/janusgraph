@@ -27,7 +27,6 @@ import com.thinkaurelius.titan.util.system.IOUtils;
 
 /**
  * @todo: confirm that the initial sessions created on store startup are not hanging around forever
- *
  */
 public class PersistitStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
@@ -43,7 +42,8 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         features.isDistributed = false;
 
         //@todo: figure out what these do, Copied from Berkeley for now
-        features.supportsScan = true;
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
         features.supportsConsistentKeyOperations = false;
         features.supportsLocking = true;
@@ -56,13 +56,13 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
 
     public PersistitStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
-        
+
         stores = new HashMap<String, PersistitKeyValueStore>();
 
         // read config and setup
         String datapath = configuration.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
         Integer bufferCount = configuration.getInt(BUFFER_COUNT_KEY, BUFFER_COUNT_DEFAULT);
-        
+
         properties = new Properties();
         properties.put("datapath", datapath);
 
@@ -82,7 +82,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex.toString());
         }
-        
+
         storageConfig = new FileStorageConfiguration(directory);
     }
 
@@ -147,7 +147,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
 
     @Override
     public void clearStorage() throws StorageException {
-        for(String key : stores.keySet()) {
+        for (String key : stores.keySet()) {
             PersistitKeyValueStore store = stores.remove(key);
             store.clear();
         }
@@ -182,9 +182,9 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
 
     @Override
     public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key,value);
+        storageConfig.setConfigurationProperty(key, value);
     }
-    
+
     @Override
     public String getName() {
         return getClass().getSimpleName() + ":" + directory.toString();

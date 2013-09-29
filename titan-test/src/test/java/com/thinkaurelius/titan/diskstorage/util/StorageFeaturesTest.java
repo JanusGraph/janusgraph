@@ -29,7 +29,8 @@ public class StorageFeaturesTest {
         } catch (IllegalArgumentException e) {
         }
         features = new StoreFeatures();
-        features.supportsScan = false;
+        features.supportsOrderedScan = false;
+        features.supportsUnorderedScan = false;
         features.supportsBatchMutation = true;
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = true;

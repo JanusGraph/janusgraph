@@ -7,12 +7,14 @@ import java.lang.reflect.Field;
 /**
  * Specifies the features that a given store supports
  * <p/>
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StoreFeatures {
 
-    public Boolean supportsScan;
+    public Boolean supportsUnorderedScan;
+    public Boolean supportsOrderedScan;
     public Boolean supportsBatchMutation;
 
     public Boolean supportsTransactions;
@@ -47,13 +49,33 @@ public class StoreFeatures {
     }
 
     /**
-     * Whether this storage backend supports global key scans via (
+     * Whether this storage backends supports scanning of any kind
      *
      * @return
      */
     public boolean supportsScan() {
+        return supportsOrderedScan() || supportsUnorderedScan();
+    }
+
+
+    /**
+     * Whether this storage backend supports global key scans via {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}
+     *
+     * @return
+     */
+    public boolean supportsUnorderedScan() {
         verify();
-        return supportsScan;
+        return supportsUnorderedScan;
+    }
+
+    /**
+     * Whether this storage backend supports global key scans via {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}
+     *
+     * @return
+     */
+    public boolean supportsOrderedScan() {
+        verify();
+        return supportsOrderedScan;
     }
 
     /**
@@ -88,6 +110,7 @@ public class StoreFeatures {
 
     /**
      * Whether this storage backend supports batch mutations via {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
+     *
      * @return
      */
     public boolean supportsBatchMutation() {
