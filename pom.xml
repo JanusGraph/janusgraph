@@ -96,7 +96,7 @@
         <!-- Required for PMD plugin. Used for compiler plugin -->
         <targetJdk>1.7</targetJdk>
         <perf.jvm.opts></perf.jvm.opts>
-        <test.jvm.opts>-Xms128m -Xmx128m ${test.extra.jvm.opts} ${jacoco.opts}</test.jvm.opts>
+        <test.jvm.opts>-Xms256m -Xmx1024m ${test.extra.jvm.opts} ${jacoco.opts}</test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts></test.extra.jvm.opts>
     </properties>
