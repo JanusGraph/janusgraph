@@ -14,6 +14,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +28,13 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@BenchmarkOptions(warmupRounds = 0, benchmarkRounds = 3)
+@Category({ PerformanceTests.class })
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
     @Rule

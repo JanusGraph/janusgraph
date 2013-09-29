@@ -10,11 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.thinkaurelius.titan.core.*;
+
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
@@ -23,6 +25,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
@@ -30,7 +33,7 @@ import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@BenchmarkOptions(warmupRounds = 0, benchmarkRounds = 3)
+@Category({ PerformanceTests.class })
 public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestCommon {
 
     @Rule

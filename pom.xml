@@ -189,6 +189,7 @@
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
                         </excludes>
+                        <excludedGroups>com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -928,6 +929,7 @@
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
+                                    <excludedGroups/>
                                 </configuration>
                             </execution>
                             <execution>
