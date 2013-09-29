@@ -85,7 +85,7 @@
                         <executions>
                             <execution>
                                 <id>assemble-standalone-dir</id>
-                                <phase>install</phase>
+                                <phase>package</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>

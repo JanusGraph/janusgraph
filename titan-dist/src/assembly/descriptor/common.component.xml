@@ -10,6 +10,10 @@
                 <include>gremlin.bat</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <directory>../src/assembly/static/ext</directory>
+            <outputDirectory>/ext</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>
