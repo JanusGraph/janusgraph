@@ -82,7 +82,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private static final ConcurrentMap<UniqueLockApplication, Lock> UNINITIALIZED_LOCKS = null;
 
     private final StandardTitanGraph graph;
-    private final TransactionConfig config;
+    private final TransactionConfiguration config;
     private final IDInspector idInspector;
     private final AttributeHandling attributeHandler;
     private final BackendTransaction txHandle;
@@ -148,7 +148,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private boolean isOpen;
 
 
-    public StandardTitanTx(StandardTitanGraph graph, TransactionConfig config, BackendTransaction txHandle) {
+    public StandardTitanTx(StandardTitanGraph graph, TransactionConfiguration config, BackendTransaction txHandle) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph.isOpen());
         Preconditions.checkNotNull(config);
@@ -224,7 +224,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         else return (StandardTitanTx) graph.getCurrentThreadTx();
     }
 
-    public TransactionConfig getConfiguration() {
+    public TransactionConfiguration getConfiguration() {
         return config;
     }
 
@@ -242,50 +242,66 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     @Override
     public boolean containsVertex(final long vertexid) {
-        verifyOpen();
-        if (vertexCache.contains(vertexid)) {
-            if (!vertexCache.get(vertexid, vertexConstructor).isRemoved()) return true;
-            else return false;
-        } else if (vertexid > 0 && graph.containsVertexID(vertexid, txHandle)) return true;
-        else return false;
+        return getVertex(vertexid) != null;
     }
 
     @Override
-    public TitanVertex getVertex(final long id) {
+    public TitanVertex getVertex(final long vertexid) {
         verifyOpen();
-        if (config.hasVerifyVertexExistence() && !containsVertex(id)) return null;
-        return getExistingVertex(id);
+        if (vertexid <= 0 || !(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid))) return null;
+        InternalVertex v = vertexCache.get(vertexid,
+                config.hasVerifyExternalVertexExistence() ? uncertainVertexConstructor : existingVertexConstructor);
+        if (v.isRemoved()) return null;
+        else return v;
     }
 
-    public InternalVertex getExistingVertex(final long id) {
-        //return vertex no matter what, even if deleted
-        InternalVertex vertex = vertexCache.get(id, vertexConstructor);
-        return vertex;
+    public InternalVertex getExistingVertex(final long vertexid) {
+        //return vertex no matter what, even if deleted, and assume the id has the correct format
+        return vertexCache.get(vertexid, config.hasVerifyInternalVertexExistence() ? uncertainVertexConstructor : existingVertexConstructor);
     }
 
-    private final Retriever<Long, InternalVertex> vertexConstructor = new Retriever<Long, InternalVertex>() {
+    private final Retriever<Long, InternalVertex> existingVertexConstructor = new VertexConstructor(false);
+    private final Retriever<Long, InternalVertex> uncertainVertexConstructor = new VertexConstructor(true);
+
+
+    private class VertexConstructor implements Retriever<Long, InternalVertex> {
+
+        private final boolean verifyExistence;
+
+        private VertexConstructor(boolean verifyExistence) {
+            this.verifyExistence = verifyExistence;
+        }
+
         @Override
-        public InternalVertex get(Long id) {
-            Preconditions.checkNotNull(id);
-            Preconditions.checkArgument(id > 0);
+        public InternalVertex get(Long vertexid) {
+            Preconditions.checkNotNull(vertexid);
+            Preconditions.checkArgument(vertexid > 0);
+            Preconditions.checkArgument(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid), "Not a valid vertex id: %s", vertexid);
+
+            byte lifecycle = ElementLifeCycle.Loaded;
+            if (verifyExistence) {
+                if (!graph.containsVertexID(vertexid, txHandle)) lifecycle = ElementLifeCycle.Removed;
+            }
 
             InternalVertex vertex = null;
-            if (idInspector.isTypeID(id)) {
-                Preconditions.checkArgument(id > 0);
-                if (idInspector.isPropertyKeyID(id)) {
-                    vertex = new TitanKeyVertex(StandardTitanTx.this, id, ElementLifeCycle.Loaded);
+            if (idInspector.isTypeID(vertexid)) {
+                if (idInspector.isPropertyKeyID(vertexid)) {
+                    vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
                 } else {
-                    Preconditions.checkArgument(idInspector.isEdgeLabelID(id));
-                    vertex = new TitanLabelVertex(StandardTitanTx.this, id, ElementLifeCycle.Loaded);
+                    Preconditions.checkArgument(idInspector.isEdgeLabelID(vertexid));
+                    vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
                 }
                 //If its a newly created type, add to type cache
-                typeCache.put(((TitanType) vertex).getName(), (TitanType) vertex);
-            } else if (idInspector.isVertexID(id)) {
-                vertex = new CacheVertex(StandardTitanTx.this, id, ElementLifeCycle.Loaded);
+                if (lifecycle == ElementLifeCycle.Loaded)
+                    typeCache.put(((TitanType) vertex).getName(), (TitanType) vertex);
+            } else if (idInspector.isVertexID(vertexid)) {
+                vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;
         }
-    };
+    }
+
+    ;
 
 
     @Override
@@ -293,7 +309,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         verifyWriteAccess();
         StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         if (config.hasAssignIDsImmediately()) graph.assignID(vertex);
-        vertex.addProperty(SystemKey.VertexState, (byte) 0);
+        addProperty(vertex, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
         vertexCache.add(vertex, vertex.getID());
         return vertex;
     }
@@ -524,6 +540,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         }
         graph.assignID(type);
+        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
         addProperty(type, SystemKey.TypeName, name);
         addProperty(type, SystemKey.TypeClass, typeClass);
         for (TypeAttribute attribute : definition.getAttributes()) {

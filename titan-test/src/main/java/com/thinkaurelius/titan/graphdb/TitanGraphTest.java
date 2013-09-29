@@ -46,6 +46,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
+        assertTrue(tx.containsVertex(weight.getID()));
+        assertFalse(tx.containsVertex(nid + 64));
+        assertFalse(tx.containsVertex(weight.getID() + 64));
         assertTrue(tx.containsType("weight"));
         weight = tx.getPropertyKey("weight");
         assertEquals(weight.getDataType(), Double.class);
@@ -480,6 +483,31 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             fail();
         } catch (IllegalStateException e) {
         }
+
+        //Test internal vertex id verification
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        tx.makeType().name("link").unidirected().makeEdgeLabel();
+        TitanVertex v3 = tx.addVertex();
+        v21.addEdge("link", v3);
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertFalse(v3.isRemoved());
+        v3.remove();
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertFalse(v3.isRemoved());
+        newTx();
+
+        TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence().start();
+        v21 = tx3.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertTrue(v3.isRemoved());
+        tx3.commit();
+
+
     }
 
     //Add more removal operations, different transaction contexts

@@ -30,7 +30,9 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -62,6 +64,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     protected final EdgeSerializer edgeSerializer;
     protected final Serializer serializer;
 
+    private final SliceQuery vertexExistenceQuery;
+
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
@@ -77,6 +81,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
         this.edgeSerializer = new EdgeSerializer(this.serializer, this.idManager);
         isOpen = true;
+
+        this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
     }
 
     @Override
@@ -106,15 +112,20 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanTransaction newTransaction() {
-        return newTransaction(new TransactionConfig(config, false));
+        return buildTransaction().start();
+    }
+
+    @Override
+    public StandardTransactionBuilder buildTransaction() {
+        return new StandardTransactionBuilder(getConfiguration(), this);
     }
 
     @Override
     public TitanTransaction newThreadBoundTransaction() {
-        return newTransaction(new TransactionConfig(config, true));
+        return buildTransaction().threadBound().start();
     }
 
-    public StandardTitanTx newTransaction(TransactionConfig configuration) {
+    public StandardTitanTx newTransaction(TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
             return new StandardTitanTx(this, configuration, backend.beginTransaction());
@@ -147,7 +158,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public boolean containsVertexID(long id, BackendTransaction tx) {
         log.trace("Checking vertex existence for {}", id);
-        return tx.edgeStoreContainsKey(IDHandler.getKey(id));
+        return !tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(id), vertexExistenceQuery)).isEmpty();
     }
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
