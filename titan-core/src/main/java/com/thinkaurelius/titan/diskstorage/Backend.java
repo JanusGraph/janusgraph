@@ -390,7 +390,9 @@ public class Backend {
      * @throws StorageException
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration) throws StorageException {
-        StoreTransaction tx = storeManager.beginTransaction(new StoreTxConfig());
+        StoreTxConfig txConfig = new StoreTxConfig();
+        if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
+        StoreTransaction tx = storeManager.beginTransaction(txConfig);
         if (bufferSize > 1) {
             assert storeManager.getFeatures().supportsBatchMutation();
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
@@ -399,8 +401,10 @@ public class Backend {
             if (storeFeatures.supportsTransactions()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
+                txConfig = new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT);
+                if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
                 tx = new ExpectedValueCheckingTransaction(tx,
-                        storeManager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)),
+                        storeManager.beginTransaction(txConfig),
                         readAttempts);
             }
         }

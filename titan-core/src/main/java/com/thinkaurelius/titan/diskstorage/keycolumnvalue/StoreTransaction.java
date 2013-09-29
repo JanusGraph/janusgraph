@@ -23,4 +23,10 @@ public interface StoreTransaction extends TransactionHandle {
      */
     public StoreTxConfig getConfiguration();
 
+    /**
+     * Returns the commit timestamp of this transaction. Throws an exception if the transaction
+     * has not yet been commited.
+     */
+    public long getTimestamp();
+
 }

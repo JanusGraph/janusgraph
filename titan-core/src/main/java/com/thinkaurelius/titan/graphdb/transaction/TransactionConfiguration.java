@@ -98,4 +98,21 @@ public interface TransactionConfiguration {
      */
     public long getIndexCacheWeight();
 
+
+    /**
+     * Whether a timestamp has been configured for this transaction
+     *
+     * @return
+     */
+    public boolean hasTimestamp();
+
+    /**
+     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception
+     *
+     * @return
+     * @see #hasTimestamp()
+     */
+    public long getTimestamp();
+
+
 }

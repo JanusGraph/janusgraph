@@ -47,6 +47,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     @Override
     public synchronized void rollback() throws StorageException {
+        super.rollback();
         if (tx == null) return;
         try {
             closeOpenIterators();
@@ -59,6 +60,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     @Override
     public synchronized void commit() throws StorageException {
+        super.commit();
         if (tx == null) return;
         try {
             closeOpenIterators();

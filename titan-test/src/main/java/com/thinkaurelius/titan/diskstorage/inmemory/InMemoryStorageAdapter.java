@@ -90,6 +90,11 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
+            public long getTimestamp() {
+                return config.getTimestamp();
+            }
+
+            @Override
             public void commit() throws StorageException {
                 //Do nothing
             }

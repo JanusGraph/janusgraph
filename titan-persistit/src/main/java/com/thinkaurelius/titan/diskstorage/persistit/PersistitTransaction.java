@@ -72,6 +72,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public void rollback() throws StorageException {
+        super.rollback();
         synchronized (this) {
             assign();
             Transaction tx = db.getTransaction();
@@ -85,6 +86,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public void commit() throws StorageException {
+        super.commit();
         synchronized (this) {
             assign();
             Transaction tx = db.getTransaction();

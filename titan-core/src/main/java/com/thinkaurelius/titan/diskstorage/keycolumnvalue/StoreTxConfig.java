@@ -10,6 +10,8 @@ public class StoreTxConfig {
 
     private final ConsistencyLevel consistency;
 
+    private Long timestamp = null;
+
     public StoreTxConfig() {
         this(ConsistencyLevel.DEFAULT);
     }
@@ -19,8 +21,22 @@ public class StoreTxConfig {
         this.consistency = consistency;
     }
 
+    public StoreTxConfig setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+        return this;
+    }
+
     public ConsistencyLevel getConsistency() {
         return consistency;
+    }
+
+    public boolean hasTimestamp() {
+        return this.timestamp != null;
+    }
+
+    public long getTimestamp() {
+        Preconditions.checkArgument(timestamp != null, "A timestamp has not been set");
+        return timestamp;
     }
 
 }

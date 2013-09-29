@@ -42,6 +42,15 @@ public interface TransactionBuilder {
     public TransactionBuilder checkInternalVertexExistence();
 
     /**
+     * Sets the timestamp for this transaction. The transaction will be recorded with this timestamp
+     * in those storage backends where the timestamp is recorded.
+     *
+     * @param timestamp
+     * @return
+     */
+    public TransactionBuilder setTimestamp(long timestamp);
+
+    /**
      * Starts and returns the transaction build by this builder
      *
      * @return A new transaction configured according to this builder

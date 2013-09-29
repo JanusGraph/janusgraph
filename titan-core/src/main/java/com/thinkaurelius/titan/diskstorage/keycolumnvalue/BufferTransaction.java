@@ -119,7 +119,7 @@ public class BufferTransaction implements StoreTransaction {
     @Override
     public void commit() throws StorageException {
         flushInternal();
-        tx.flush();
+        tx.commit();
     }
 
     @Override
@@ -128,9 +128,13 @@ public class BufferTransaction implements StoreTransaction {
         tx.rollback();
     }
 
-
     @Override
     public StoreTxConfig getConfiguration() {
         return tx.getConfiguration();
+    }
+
+    @Override
+    public long getTimestamp() {
+        return tx.getTimestamp();
     }
 }

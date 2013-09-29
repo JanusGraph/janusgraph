@@ -37,6 +37,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private long indexCacheWeight;
 
+    private Long timestamp = null;
+
     /**
      * Used to keep state information: Once the transaction is openend, the config
      * has to be closed to ensure its immutability
@@ -100,6 +102,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder checkInternalVertexExistence() {
         verifyOpen();
         this.verifyInternalVertexExistence = true;
+        return this;
+    }
+
+    @Override
+    public StandardTransactionBuilder setTimestamp(long timestamp) {
+        verifyOpen();
+        this.timestamp = timestamp;
         return this;
     }
 
@@ -169,5 +178,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final long getIndexCacheWeight() {
         return indexCacheWeight;
+    }
+
+    @Override
+    public boolean hasTimestamp() {
+        return timestamp != null;
+    }
+
+    @Override
+    public long getTimestamp() {
+        Preconditions.checkState(timestamp != null, "A timestamp has not been configured");
+        return timestamp;
     }
 }

@@ -208,4 +208,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     public StoreTxConfig getConfiguration() {
         return baseTx.getConfiguration();
     }
+
+    @Override
+    public long getTimestamp() {
+        return baseTx.getTimestamp();
+    }
 }
