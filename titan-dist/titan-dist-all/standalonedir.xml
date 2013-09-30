@@ -1,0 +1,13 @@
+<assembly>
+    <id>all-standalone</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>dir</format>
+    </formats>
+
+    <componentDescriptors>
+        <componentDescriptor>../src/assembly/descriptor/common.component.xml</componentDescriptor>
+        <componentDescriptor>allconfigs.component.xml</componentDescriptor>
+    </componentDescriptors>
+</assembly>

@@ -12,12 +12,13 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <distribution.assembly.descriptor>assembly-cassandra.xml</distribution.assembly.descriptor>
+        <distribution.assembly.name>cassandra</distribution.assembly.name>
+        <distribution.assembly.descriptor>cassandra.xml</distribution.assembly.descriptor>
     </properties>
 
     <profiles>
         <profile>
-            <id>titan-release</id>
+            <id>aurelius-release</id>
             <dependencies>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>

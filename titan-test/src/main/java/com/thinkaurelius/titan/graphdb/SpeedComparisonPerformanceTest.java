@@ -3,16 +3,20 @@ package com.thinkaurelius.titan.graphdb;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.core.VertexList;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.commons.configuration.Configuration;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
+@Category({ PerformanceTests.class })
 public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommon {
 
     private static final int numVertices = 2000;

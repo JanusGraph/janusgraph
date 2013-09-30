@@ -76,7 +76,7 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
             Exchange exchange = persistit.getExchange(VOLUME_NAME, name, true);
             exchange.removeTree();
         } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex.toString());
+            throw new PermanentStorageException(ex);
         }
     }
 

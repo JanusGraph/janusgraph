@@ -81,7 +81,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
             db = new Persistit(properties);
             db.initialize();
         } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex.toString());
+            throw new PermanentStorageException(ex);
         }
 
         storageConfig = new FileStorageConfiguration(directory);
@@ -125,7 +125,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
             try {
                 db.close(true);
             } catch (PersistitException ex) {
-                throw new PermanentStorageException(ex.toString());
+                throw new PermanentStorageException(ex);
             }
         }
     }
@@ -159,7 +159,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
             volume = db.getVolume(VOLUME_NAME);
             treeNames = volume.getTreeNames();
         } catch (PersistitException ex) {
-            throw new PermanentStorageException(ex.toString());
+            throw new PermanentStorageException(ex);
 
         }
 
@@ -168,7 +168,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
                 Exchange ex = new Exchange(db, volume, treeName, false);
                 ex.removeTree();
             } catch (PersistitException ex) {
-                throw new PermanentStorageException(ex.toString());
+                throw new PermanentStorageException(ex);
             }
 
         }
