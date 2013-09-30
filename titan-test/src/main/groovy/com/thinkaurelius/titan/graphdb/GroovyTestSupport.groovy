@@ -40,8 +40,8 @@ abstract class GroovyTestSupport {
     
     // Query execution setting defaults
     public static final int DEFAULT_TX_COUNT = 3
-    public static final int DEFAULT_OPS_PER_TX = 100
-    public static final int DEFAULT_ITERATIONS = DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX
+    public static final int DEFAULT_VERTICES_PER_TX = 100
+    public static final int DEFAULT_ITERATIONS = DEFAULT_TX_COUNT * DEFAULT_VERTICES_PER_TX
     
     public static final String RELATION_FILE = "../titan-test/data/v10k.graphml.gz"
     
@@ -100,25 +100,51 @@ abstract class GroovyTestSupport {
      * Helper methods
      */
     
-    protected void sequentialUidTask(closure) {
-        long count  = DEFAULT_TX_COUNT * DEFAULT_OPS_PER_TX;
-        long offset = Math.abs(random.nextLong()) % schema.getMaxUid()
-        def uids    = new SequentialLongIterator(count, schema.getMaxUid(), offset)
-        int op      = 0
-        def tx      = graph.newTransaction()
+    protected void sequentialUidTask(int verticesPerTx = DEFAULT_VERTICES_PER_TX, closure) {
+        chunkedSequentialUidTask(1, verticesPerTx, { tx, vbuf, vloaded ->
+            assert 1 == vloaded
+            assert 1 == vbuf.length
+            def v = vbuf[0]
+            closure.call(tx, v)
+        })
+    }
+    
+    protected void chunkedSequentialUidTask(int chunksize = DEFAULT_VERTICES_PER_TX, int verticesPerTx = DEFAULT_VERTICES_PER_TX, closure) {
+        
+        /*
+         * Need this condition because of how we handle transactions and buffer
+         * Vertex objects.  If this divisibility constraint were violated, then
+         * we would end up passing Vertex instances from one or more committed
+         * transactions as if those instances were not stale.
+         */
+        Preconditions.checkArgument(0 == verticesPerTx % chunksize)
+        
+        long count    = DEFAULT_TX_COUNT * verticesPerTx
+        long offset   = Math.abs(random.nextLong()) % schema.getMaxUid()
+        def uids      = new SequentialLongIterator(count, schema.getMaxUid(), offset)
+        def tx        = graph.newTransaction()
+        TitanVertex[] vbuf = new TitanVertex[chunksize]
+        int vloaded   = 0
+        
         while (uids.hasNext()) {
             long u = uids.next()
             Vertex v = tx.getVertex(Schema.UID_PROP, u)
             assertNotNull(v)
-            closure.call(tx, v)
-            if (DEFAULT_OPS_PER_TX <= ++op) {
-                op = 0
+            vbuf[vloaded++] = v
+            if (vloaded == chunksize) {
+                closure.call(tx, vbuf, vloaded)
+                vloaded = 0
                 tx.commit()
                 tx = graph.newTransaction()
             }
         }
         
-        0 < op ? tx.commit() : tx.rollback()
+        if (0 < vloaded) {
+            closure.call(tx, vbuf, vloaded)
+            tx.commit()
+        } else {
+            tx.rollback()
+        }
     }
     
     protected void supernodeTask(closure) {

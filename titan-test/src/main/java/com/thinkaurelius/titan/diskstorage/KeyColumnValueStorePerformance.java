@@ -3,10 +3,13 @@ package com.thinkaurelius.titan.diskstorage;
 import com.carrotsearch.junitbenchmarks.BenchmarkRule;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.testcategory.PerformanceTests;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +21,7 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
+@Category({ PerformanceTests.class })
 public abstract class KeyColumnValueStorePerformance {
 
     private Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);

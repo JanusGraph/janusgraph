@@ -34,18 +34,10 @@ public class Console {
         final Groovysh groovy = new Groovysh();
         groovy.setResultHook(new NullResultHookClosure(groovy));
 
-        // Gremlin imports
-        for (String imps : com.tinkerpop.gremlin.Imports.getImports()) {
-            groovy.execute("import " + imps);
+        // Gremlin + Titan imports
+        for (String i : ConsoleSetup.getAllImportStatements()) {
+            groovy.execute(i);
         }
-        // Titan imports
-        for (String imps : Imports.getImports()) {
-            groovy.execute("import " + imps);
-        }
-
-        // necessary due to Gremlin Groovy
-        groovy.execute("import com.tinkerpop.gremlin.Tokens.T");
-        groovy.execute("import com.tinkerpop.gremlin.groovy.*");
 
         groovy.setResultHook(new ResultHookClosure(groovy, io, resultPrompt));
         groovy.setHistory(new History());
