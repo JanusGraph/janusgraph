@@ -105,7 +105,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public Partitioner getPartitioner() throws StorageException {
         try {
             Partitioner p = Partitioner.getPartitioner(StorageService.getPartitioner());
-            if (p==Partitioner.BYTEORDER) p=Partitioner.LOCALBYTEORDER;
+            if (p == Partitioner.BYTEORDER) p = Partitioner.LOCALBYTEORDER;
             return p;
         } catch (Exception e) {
             log.warn("Could not read local token range: {}", e);
@@ -195,8 +195,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        long deletionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(false);
-        long additionTimestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
+        final Timestamp timestamp = getTimestamp(txh);
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
@@ -218,14 +217,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                     for (Entry e : mut.getAdditions()) {
                         // TODO are these asByteBuffer() calls too expensive?
                         QueryPath path = new QueryPath(columnFamily, null, e.getColumn().asByteBuffer());
-                        rm.add(path, e.getValue().asByteBuffer(), additionTimestamp);
+                        rm.add(path, e.getValue().asByteBuffer(), timestamp.additionTime);
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
                         QueryPath path = new QueryPath(columnFamily, null, col.asByteBuffer());
-                        rm.delete(path, deletionTimestamp);
+                        rm.delete(path, timestamp.deletionTime);
                     }
                 }
 
@@ -323,7 +322,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         } else if (columnfamilyName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
             cfm.caching(Caching.ROWS_ONLY);
         }
-        
+
         // Enable snappy compression
         try {
             CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
@@ -353,10 +352,10 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ByteBuffer column = UTF8Type.instance.fromString(key);
 
         ByteBuffer value = getInternal(keySpaceName,
-                                       SYSTEM_PROPERTIES_CF,
-                                       propertiesKey,
-                                       column,
-                                       ConsistencyLevel.QUORUM);
+                SYSTEM_PROPERTIES_CF,
+                propertiesKey,
+                column,
+                ConsistencyLevel.QUORUM);
 
         return (value == null) ? null : UTF8Type.instance.getString(value);
     }
@@ -376,15 +375,15 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
     }
-    
+
     @Override
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
-        
+
         CFMetaData cfm = Schema.instance.getCFMetaData(keySpaceName, cf);
-        
+
         if (cfm == null)
             return null;
-        
+
         return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
     }
 }
