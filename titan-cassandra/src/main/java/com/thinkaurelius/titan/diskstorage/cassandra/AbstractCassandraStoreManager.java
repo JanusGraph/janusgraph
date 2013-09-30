@@ -39,6 +39,12 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
 
+    public static final String SSTABLE_COMPRESSOR = "sstable-compressor";
+    public static final String COMPRESSION_CHUNK_LENGTH = "compression-chunk-length";
+
+    protected final String sstableCompressionClass;
+    protected final int compressionChunkSizeKB;
+
     /**
      * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
      * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
@@ -110,6 +116,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
 
         this.thriftFrameSize = storageConfig.getInt(THRIFT_FRAME_SIZE_MB, THRIFT_DEFAULT_FRAME_SIZE) * 1024 * 1024;
+        this.sstableCompressionClass = storageConfig.getString(SSTABLE_COMPRESSOR, "SnappyCompressor");
+        this.compressionChunkSizeKB = new Integer(storageConfig.getString(COMPRESSION_CHUNK_LENGTH, "64"));
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;

@@ -305,14 +305,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator)
-                                .setCompressionOptions(
-                                		new ImmutableMap.Builder<String, String>()
-                                			.put("sstable_compression", "SnappyCompressor")
-                                			.put("chunk_length_kb", "64")
-                                			.build()
-                                );
-                cl.addColumnFamily(cfDef);
+                                .setComparatorType(comparator);
+                ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+                compressionOptions.put("sstable_compression", sstableCompressionClass)
+                                  .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+                cl.addColumnFamily(cfDef.setCompressionOptions(compressionOptions.build()));
             }
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
