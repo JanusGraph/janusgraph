@@ -3,7 +3,10 @@ package com.thinkaurelius.titan.graphdb;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -214,9 +217,11 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
      * values for all of the indexed property types. Concurrently query the
      * properties. Each thread uses a single, distinct transaction for all index
      * retrievals in that thread.
+     * @throws ExecutionException 
+     * @throws InterruptedException 
      */
     @Test
-    public void testStandardIndexVertexPropertyReads() {
+    public void testStandardIndexVertexPropertyReads() throws InterruptedException, ExecutionException {
         final int propCount = THREAD_COUNT * 5;
         final int vertexCount =  1  * 1000;
         // Create props with standard indexes
@@ -230,16 +235,20 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         log.info("Creating vertices");
         // Write vertices with indexed properties
         for (int i = 0; i < vertexCount; i++) {
-            Vertex v = tx.addVertex();
+            TitanVertex v = tx.addVertex();
             for (int p = 0; p < propCount; p++) {
-                v.setProperty("p" + p, i);
+                tx.addProperty(v, "p" + p, i);
             }
         }
         newTx();
         log.info("Querying vertex property indices");
         // Execute runnables
+        Collection<Future<?>> futures = new ArrayList<Future<?>>(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
-            executor.submit(new VertexPropertyQuerier(propCount, vertexCount));
+            futures.add(executor.submit(new VertexPropertyQuerier(propCount, vertexCount)));
+        }
+        for (Future<?> f : futures) {
+            f.get();
         }
     }
 
@@ -391,7 +400,6 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         
         @Override
         public void run() {
-            TitanTransaction tx = graph.newTransaction();
             for (int i = 0; i < vertexCount; i++) {
                 for (int p = 0; p < propCount; p++) {
                     tx.getVertices("p" + p, i);
