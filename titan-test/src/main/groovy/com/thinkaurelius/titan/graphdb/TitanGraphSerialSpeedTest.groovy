@@ -32,15 +32,20 @@ import com.tinkerpop.gremlin.Tokens.T
 import com.thinkaurelius.titan.diskstorage.StorageException
 
 
+/**
+ * This class was formerly known as GroovySerialTest.
+ * Several issues and commitlogs refer to it that way.
+ * 
+ */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds=1, benchmarkRounds=1)
-abstract class GroovySerialTest extends GroovyTestSupport {
+public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
     
-    private static final Logger log = LoggerFactory.getLogger(GroovySerialTest)
+    private static final Logger log = LoggerFactory.getLogger(TitanGraphSerialSpeedTest)
 
     @Rule public TestRule benchmark = JUnitBenchmarkProvider.get()
     
-    GroovySerialTest(Configuration conf) throws StorageException {
+    TitanGraphSerialSpeedTest(Configuration conf) throws StorageException {
         super(conf)
     }
 

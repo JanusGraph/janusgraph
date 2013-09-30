@@ -7,19 +7,19 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import com.thinkaurelius.titan.graphdb.GroovySerialTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphSerialSpeedTest;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.gen.Schema;
 
 @Category({PerformanceTests.class})
-public class InternalCassandraGraphSerialTest extends GroovySerialTest {
+public class InternalCassandraGraphSerialSpeedTest extends TitanGraphSerialSpeedTest {
     
     private static StandardTitanGraph graph; 
     private static Schema schema;
     
-    public InternalCassandraGraphSerialTest() throws StorageException {
-        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphSerialTest.class.getSimpleName()));
+    public InternalCassandraGraphSerialSpeedTest() throws StorageException {
+        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphSerialSpeedTest.class.getSimpleName()));
     }
     
     @BeforeClass
