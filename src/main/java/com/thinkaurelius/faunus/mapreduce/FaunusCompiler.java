@@ -41,6 +41,9 @@ import java.util.Map;
  */
 public class FaunusCompiler extends Configured implements Tool {
 
+    private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
+    private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
+
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
     public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
@@ -171,8 +174,10 @@ public class FaunusCompiler extends Configured implements Tool {
                 if (null != this.combinerClass)
                     job.setCombinerClass(this.combinerClass);
                 // if there is a reduce task, compress the map output to limit network traffic
-                job.getConfiguration().setBoolean("mapred.compress.map.output", true);
-                job.getConfiguration().setClass("mapred.map.output.compression.codec", DefaultCodec.class, CompressionCodec.class);
+                if (null == job.getConfiguration().get(MAPRED_COMPRESS_MAP_OUTPUT, null))
+                    job.getConfiguration().setBoolean(MAPRED_COMPRESS_MAP_OUTPUT, true);
+                if (null == job.getConfiguration().get(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, null))
+                    job.getConfiguration().setClass(MAPRED_MAP_OUTPUT_COMPRESSION_CODEC, DefaultCodec.class, CompressionCodec.class);
             } else {
                 job.setNumReduceTasks(0);
             }
