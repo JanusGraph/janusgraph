@@ -381,7 +381,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private static void createColumnFamily(Cassandra.Client client,
+    private void createColumnFamily(Cassandra.Client client,
                                            String ksName,
                                            String cfName,
                                            String comparator) throws StorageException {
@@ -390,12 +390,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
-        createColumnFamily.setCompression_options(
-        		new ImmutableMap.Builder<String, String>()
-    			.put("sstable_compression", "SnappyCompressor")
-    			.put("chunk_length_kb", "64")
-    			.build()
-    	);
+
+        ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+
+        if (compressionEnabled) {
+            compressionOptions.put("sstable_compression", "SnappyCompressor")
+                              .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+        }
+
+        createColumnFamily.setCompression_options(compressionOptions.build());
 
         // Hard-coded caching settings
         if (cfName.startsWith(Backend.EDGESTORE_NAME)) {
