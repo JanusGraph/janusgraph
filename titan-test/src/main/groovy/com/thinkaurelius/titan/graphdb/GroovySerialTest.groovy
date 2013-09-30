@@ -205,43 +205,18 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     }
     
     @Test
-    void testMultiQuery() {
-       chunkedSequentialUidTask { TitanTransaction tx, TitanVertex[] vbuf, vcount ->
-           if (vcount != vbuf.length) {
-               def newbuf = new TitanVertex[vcount]
-               for (int i = 0; i < vcount; i++)  {
-                   newbuf[i] = vbuf[i]
-                   Preconditions.checkArgument(null != newbuf[i])
-               }
-               vbuf = newbuf
-           }
-           
-           // I tried labels(schema.edgeLabelNames), but it causes a
-           // Preconditions failure because Query.isQueryNormalForm returns false
-           for (int i = 0; i < schema.edgeLabels; i++) {
-               tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges();
-           }
-       }
+    public void testMultiVertexQuery() {
+        chunkedSequentialUidTask(50, 50, this.&multiVertexQueryTask)
+    }
+
+    @Test
+    public void testPathologicalMultiVertexQuery() {
+        chunkedSequentialUidTask(1, 50, this.&multiVertexQueryTask)
     }
     
     @Test
-    void testNaiveMultiQuery() {
-       chunkedSequentialUidTask(1) { TitanTransaction tx, TitanVertex[] vbuf, vcount ->
-           if (vcount != vbuf.length) {
-               def newbuf = new TitanVertex[vcount]
-               for (int i = 0; i < vcount; i++)  {
-                   newbuf[i] = vbuf[i]
-                   Preconditions.checkArgument(null != newbuf[i])
-               }
-               vbuf = newbuf
-           }
-           
-           // I tried labels(schema.edgeLabelNames), but it causes a
-           // Preconditions failure because Query.isQueryNormalForm returns false
-           for (int i = 0; i < schema.edgeLabels; i++) {
-               tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges();
-           }
-       }
+    public void testSingleVertexQuery() {
+        sequentialUidTask(50, this.&singleVertexQueryTask)
     }
     
     
@@ -380,5 +355,39 @@ abstract class GroovySerialTest extends GroovyTestSupport {
     void testNoop() {
         // Do nothing
         log.debug("Noop test executed");
+    }
+    
+    private void multiVertexQueryTask(TitanTransaction tx, TitanVertex[] vbuf, int vcount) {
+        if (vcount != vbuf.length) {
+            def newbuf = new TitanVertex[vcount]
+            for (int i = 0; i < vcount; i++)  {
+                newbuf[i] = vbuf[i]
+                Preconditions.checkArgument(null != newbuf[i])
+            }
+            vbuf = newbuf
+        }
+
+        // I tried labels(schema.edgeLabelNames), but it causes a
+        // Preconditions failure because Query.isQueryNormalForm returns false
+        int n = 0
+        for (int i = 0; i < schema.edgeLabels; i++) {
+            Map<TitanVertex, Iterable<TitanEdge>> m = tx.multiQuery(vbuf).labels(schema.edgeLabelNames[i]).titanEdges()
+            for (Iterable<TitanEdge> iter : m.values()) {
+                for (TitanEdge e : iter) {
+                    n++
+                }
+            }
+        }
+        assertTrue(0 < n)
+    }
+    
+    private void singleVertexQueryTask(TitanTransaction tx, TitanVertex v) {
+        int n = 0
+        for (int i = 0; i < schema.edgeLabels; i++) {
+            for (Iterable<TitanEdge> iter : v.query().labels(schema.edgeLabelNames[i]).titanEdges()) {
+                n++
+            }
+        }
+        assertTrue(0 < n)
     }
 }

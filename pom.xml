@@ -190,7 +190,7 @@
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
                         </excludes>
-                        <excludedGroups>com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
+                        <excludedGroups>com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
                     </configuration>
                 </plugin>
                 <plugin>

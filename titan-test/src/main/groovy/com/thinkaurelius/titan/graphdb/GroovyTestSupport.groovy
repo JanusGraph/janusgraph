@@ -100,11 +100,12 @@ abstract class GroovyTestSupport {
      * Helper methods
      */
     
-    protected void sequentialUidTask(closure) {
-        chunkedSequentialUidTask(1, DEFAULT_VERTICES_PER_TX, { tx, vbuf, vloaded ->
+    protected void sequentialUidTask(int verticesPerTx = DEFAULT_VERTICES_PER_TX, closure) {
+        chunkedSequentialUidTask(1, verticesPerTx, { tx, vbuf, vloaded ->
             assert 1 == vloaded
+            assert 1 == vbuf.length
             def v = vbuf[0]
-            closure(tx, v)
+            closure.call(tx, v)
         })
     }
     
