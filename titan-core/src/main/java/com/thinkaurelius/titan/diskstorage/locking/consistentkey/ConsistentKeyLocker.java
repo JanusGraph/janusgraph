@@ -32,14 +32,14 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * A global {@link Locker} that resolves inter-thread lock contention via
  * {@link AbstractLocker} and resolves inter-process contention by reading and
  * writing lock data using {@link KeyColumnValueStore}.
- * 
+ * <p/>
  * <h2>Protocol and internals</h2>
- * 
+ * <p/>
  * Locking is done in two stages: first between threads inside a shared process,
  * and then between processes in a Titan cluster.
- * 
+ * <p/>
  * <h3>Inter-thread lock contention</h3>
- * 
+ * <p/>
  * Lock contention between transactions within a shared process is arbitrated by
  * the {@code LocalLockMediator} class. This mediator uses standard
  * {@code java.util.concurrent} classes to guarantee that at most one thread
@@ -47,14 +47,14 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * uses a mediator to resolve inter-thread lock contention is common to multiple
  * {@code Locker} implementations and lives in the abstract base class
  * {@link AbstractLocker}.
- * <p>
+ * <p/>
  * However, the mediator has no way to perform inter-process communication. The
  * mediator can't detect or prevent a thread in another process (potentially on
  * different machine) acquiring the same lock. This is addressed in the next
  * section.
- * 
+ * <p/>
  * <h3>Inter-process lock contention</h3>
- * 
+ * <p/>
  * After the mediator signals that the current transaction has obtained a lock
  * at the inter-thread/intra-process level, this implementation does the
  * following series of writes and reads to {@code KeyColumnValueStore} to check
@@ -62,45 +62,45 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * operations go to a dedicated store holding nothing but locking data (a
  * "store" in this context means a Cassandra column family, an HBase table,
  * etc.)
- * 
+ * <p/>
  * <h4>Locking I/O sequence</h4>
- * 
+ * <p/>
  * <ol>
- *   <li>Write a single column to the store with the following data
- *     <dl>
- *       <dt>key</dt>
- *       <dd>{@link KeyColumn#getKey()} followed by {@link KeyColumn#getColumn()}.</dd>
- *       <dt>column</dt>
- *       <dd>the approximate current timestamp in nanoseconds followed by this
- *       process's {@code rid} (an opaque identifier which uniquely identifie
- *       this process either globally or at least within the Titan cluster)</dd>
- *       <dt>value</dt>
- *       <dd>the single byte 0; this is unused but reserved for future use</dd>
- *     </dl>
- *   </li>
- *   
- *   <li>If the write failed or took longer than {@code lockWait} to complete
- *   successfully, then retry the write with an updated timestamp and everything
- *   else the same until we either exceed the configured retry count (in which
- *   case we abort the lock attempt) or successfully complete the write in less
- *   than {@code lockWait}.</li>
- *   
- *   <li>Wait, if necessary, until the time interval {@code lockWait} has passed
- *   between the timestamp on our successful write and the current time.</li>
- *   
- *   <li>Read all columns for the key we wrote in the first step.</li>
- *   
- *   <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
- *   
- *   <li>If our column is either the first column read or is preceeded only by
- *   columns containing our own {@code rid}, then we hold the lock.  Otherwise,
- *   another process holds the lock and we have failed to acquire it.</li>
- *   
- *   <li>To release the lock, we delete from the store the column that we
- *   wrote earlier in this sequence</li>
+ * <li>Write a single column to the store with the following data
+ * <dl>
+ * <dt>key</dt>
+ * <dd>{@link KeyColumn#getKey()} followed by {@link KeyColumn#getColumn()}.</dd>
+ * <dt>column</dt>
+ * <dd>the approximate current timestamp in nanoseconds followed by this
+ * process's {@code rid} (an opaque identifier which uniquely identifie
+ * this process either globally or at least within the Titan cluster)</dd>
+ * <dt>value</dt>
+ * <dd>the single byte 0; this is unused but reserved for future use</dd>
+ * </dl>
+ * </li>
+ * <p/>
+ * <li>If the write failed or took longer than {@code lockWait} to complete
+ * successfully, then retry the write with an updated timestamp and everything
+ * else the same until we either exceed the configured retry count (in which
+ * case we abort the lock attempt) or successfully complete the write in less
+ * than {@code lockWait}.</li>
+ * <p/>
+ * <li>Wait, if necessary, until the time interval {@code lockWait} has passed
+ * between the timestamp on our successful write and the current time.</li>
+ * <p/>
+ * <li>Read all columns for the key we wrote in the first step.</li>
+ * <p/>
+ * <li>Discard any columns with timestamps older than {@code lockExpire}.</li>
+ * <p/>
+ * <li>If our column is either the first column read or is preceeded only by
+ * columns containing our own {@code rid}, then we hold the lock.  Otherwise,
+ * another process holds the lock and we have failed to acquire it.</li>
+ * <p/>
+ * <li>To release the lock, we delete from the store the column that we
+ * wrote earlier in this sequence</li>
  * </ol>
- * 
- * <p>
+ * <p/>
+ * <p/>
  * As mentioned earlier, this class relies on {@link AbstractLocker} to obtain
  * and release an intra-process lock before and after the sequence of steps
  * listed above.  The mediator step is necessary for thread-safety, because
@@ -116,41 +116,43 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     private final KeyColumnValueStore store;
 
     private final long lockWaitNS;
-    
+
     private final int lockRetryCount;
-    
+
     private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
-    
+
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
-    
+
     public static class Builder extends AbstractLocker.Builder<ConsistentKeyLockStatus, Builder> {
         // Required (no default)
         private final KeyColumnValueStore store;
-        
+
         // Optional (has default)
         private long lockWaitNS;
         private int lockRetryCount;
-        
+
         public Builder(KeyColumnValueStore store) {
             this.store = store;
             this.lockWaitNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT, MILLISECONDS);
             this.lockRetryCount = GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT;
         }
-        
+
         public Builder lockWaitNS(long wait, TimeUnit unit) {
-            this.lockWaitNS = NANOSECONDS.convert(wait, unit); return self();
+            this.lockWaitNS = NANOSECONDS.convert(wait, unit);
+            return self();
         }
-        
+
         public Builder lockRetryCount(int count) {
-            this.lockRetryCount = count; return self();
+            this.lockRetryCount = count;
+            return self();
         }
-        
+
         public Builder fromCommonsConfig(Configuration config) {
             rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
 
             final String llmPrefix = config.getString(
-                            ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY);
-            
+                    ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY);
+
             if (null != llmPrefix) {
                 mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix));
             }
@@ -166,10 +168,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             lockExpireNS(config.getLong(
                     GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
                     GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT), TimeUnit.MILLISECONDS);
-            
+
             return this;
         }
-        
+
         public ConsistentKeyLocker build() {
             preBuild();
             return new ConsistentKeyLocker(store, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState);
@@ -179,7 +181,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         protected Builder self() {
             return this;
         }
-        
+
         @Override
         protected LocalLockMediator<StoreTransaction> getDefaultMediator() {
             throw new TitanConfigurationException("Local lock mediator prefix must not be empty or null");
@@ -188,24 +190,24 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     /**
      * Create a new locker.
-     * 
+     *
      * @param conf locker configuration
      */
     private ConsistentKeyLocker(KeyColumnValueStore store, StaticBuffer rid,
-            TimestampProvider times, ConsistentKeyLockerSerializer serializer,
-            LocalLockMediator<StoreTransaction> llm, long lockWaitNS,
-            int lockRetryCount, long lockExpireNS,
-            LockerState<ConsistentKeyLockStatus> lockState) {
+                                TimestampProvider times, ConsistentKeyLockerSerializer serializer,
+                                LocalLockMediator<StoreTransaction> llm, long lockWaitNS,
+                                int lockRetryCount, long lockExpireNS,
+                                LockerState<ConsistentKeyLockStatus> lockState) {
         super(rid, times, serializer, llm, lockState, lockExpireNS, log);
         this.store = store;
         this.lockWaitNS = lockWaitNS;
         this.lockRetryCount = lockRetryCount;
     }
-    
+
     private long getLockWait(TimeUnit tu) {
         return tu.convert(lockWaitNS, TimeUnit.NANOSECONDS);
     }
-    
+
     /**
      * Try to write a lock record remotely up to
      * {@link conf#getLockRetryCount()} times. If the store produces
@@ -215,25 +217,21 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * the retry limit. If the store throws anything else, such as an unchecked
      * exception or a {@link PermanentStorageException}, then we'll try to
      * delete whatever we added and return without further retries.
-     * 
-     * @param lockID
-     *            lock to acquire
-     * @param txh
-     *            transaction
+     *
+     * @param lockID lock to acquire
+     * @param txh    transaction
      * @return the timestamp, in nanoseconds since UNIX Epoch, on the lock
      *         column that we successfully wrote to the store
-     * @throws TemporaryLockingException
-     *             if the lock retry count is exceeded without successfully
-     *             writing the lock in less than the wait limit
-     * @throws Throwable
-     *             if the storage layer throws anything else
+     * @throws TemporaryLockingException if the lock retry count is exceeded without successfully
+     *                                   writing the lock in less than the wait limit
+     * @throws Throwable                 if the storage layer throws anything else
      */
     @Override
     protected ConsistentKeyLockStatus writeSingleLock(KeyColumn lockID, StoreTransaction txh) throws Throwable {
-        
+
         final StaticBuffer lockKey = serializer.toLockKey(lockID.getKey(), lockID.getColumn());
         StaticBuffer oldLockCol = null;
-        
+
         for (int i = 0; i < lockRetryCount; i++) {
             WriteResult wr = tryWriteLockOnce(lockKey, oldLockCol, txh);
             if (wr.isSuccessful() && wr.getDurationNS() <= getLockWait(TimeUnit.NANOSECONDS)) {
@@ -249,27 +247,22 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         // TODO log exception or successful too-slow write here
         throw new TemporaryStorageException("Lock write retry count exceeded");
     }
-    
+
     /**
      * Log a message and/or throw an exception in response to a lock write
      * mutation that failed. "Failed" means that the mutation either succeeded
      * but took longer to complete than
      * {@link ConsistentKeyLockerConfiguration#getLockWait(TimeUnit)}, or that
      * the call to mutate threw something.
-     * 
-     * @param lockID
-     *            coordinates identifying the lock we tried but failed to
-     *            acquire
-     * @param lockKey
-     *            the byte value of the key that we mutated or attempted to
-     *            mutate in the lock store
-     * @param wr
-     *            result of the mutation
-     * @param txh
-     *            transaction attempting the lock
-     * @throws Throwable
-     *             if {@link WriteResult#getThrowable()} is not an instance of
-     *             {@link TemporaryStorageException}
+     *
+     * @param lockID  coordinates identifying the lock we tried but failed to
+     *                acquire
+     * @param lockKey the byte value of the key that we mutated or attempted to
+     *                mutate in the lock store
+     * @param wr      result of the mutation
+     * @param txh     transaction attempting the lock
+     * @throws Throwable if {@link WriteResult#getThrowable()} is not an instance of
+     *                   {@link TemporaryStorageException}
      */
     private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr, StoreTransaction txh) throws Throwable {
         Throwable error = wr.getThrowable();
@@ -292,14 +285,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
         } else {
             log.warn("Lock write succeeded but took too long: duration {} ms exceeded limit {} ms",
-                     wr.getDuration(TimeUnit.MILLISECONDS),
-                     getLockWait(TimeUnit.MILLISECONDS));
+                    wr.getDuration(TimeUnit.MILLISECONDS),
+                    getLockWait(TimeUnit.MILLISECONDS));
         }
     }
-    
+
     private WriteResult tryWriteLockOnce(StaticBuffer key, StaticBuffer del, StoreTransaction txh) {
         Throwable t = null;
-        final long before = times.getApproxNSSinceEpoch(false);
+        final long before = times.getApproxNSSinceEpoch();
         StaticBuffer newLockCol = serializer.toLockCol(before, rid);
         Entry newLockEntry = new StaticBufferEntry(newLockCol, zeroBuf);
         try {
@@ -307,26 +300,26 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         } catch (StorageException e) {
             t = e;
         }
-        final long after = times.getApproxNSSinceEpoch(false);
-        
+        final long after = times.getApproxNSSinceEpoch();
+
         return new WriteResult(before, after, newLockCol, t);
     }
-    
+
     private WriteResult tryDeleteLockOnce(StaticBuffer key, StaticBuffer col, StoreTransaction txh) {
         Throwable t = null;
-        final long before = times.getApproxNSSinceEpoch(false);
+        final long before = times.getApproxNSSinceEpoch();
         try {
             store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), txh);
         } catch (StorageException e) {
             t = e;
         }
-        final long after = times.getApproxNSSinceEpoch(false);
+        final long after = times.getApproxNSSinceEpoch();
         return new WriteResult(before, after, null, t);
     }
-    
+
     @Override
     protected void checkSingleLock(final KeyColumn kc, final ConsistentKeyLockStatus ls, final StoreTransaction tx) throws StorageException, InterruptedException {
-        
+
         if (ls.isChecked())
             return;
 
@@ -337,7 +330,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         // Slice the store
         KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), ByteBufferUtil.zeroBuffer(9), ByteBufferUtil.oneBuffer(9));
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
-        
+
         // Extract timestamp and rid from the column in each returned Entry...
         Iterable<TimestampRid> iter = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
             @Override
@@ -356,13 +349,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 return true;
             }
         });
-        
-       checkSeniority(kc, ls, iter);
-       ls.setChecked();
+
+        checkSeniority(kc, ls, iter);
+        ls.setChecked();
     }
-    
+
     private List<Entry> getSliceWithRetries(KeySliceQuery ksq, StoreTransaction tx) throws StorageException {
-        
+
         for (int i = 0; i < lockRetryCount; i++) {
             // TODO either make this like writeLock so that it handles all Throwable types (and pull that logic out into a shared method) or make writeLock like this in that it only handles Temporary/PermanentSE
             try {
@@ -374,23 +367,23 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 log.warn("Temporary storage failure while checking locks", e);
             }
         }
-        
+
         throw new TemporaryStorageException("Maximum retries (" + lockRetryCount + ") exceeded while checking locks");
     }
 
     private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls, Iterable<TimestampRid> claimTRs) throws StorageException {
-        
+
         int trCount = 0;
-        
+
         for (TimestampRid tr : claimTRs) {
             trCount++;
-            
+
             if (!rid.equals(tr.getRid())) {
-                final String msg =  "Lock on " + target + " already held by " + tr.getRid() + " (we are " + rid +")";
+                final String msg = "Lock on " + target + " already held by " + tr.getRid() + " (we are " + rid + ")";
                 log.debug(msg);
                 throw new TemporaryLockingException(msg);
             }
-           
+
             if (tr.getTimestamp() == ls.getWriteTimestamp(TimeUnit.NANOSECONDS)) {
 //                log.debug("Checked lock {} in store {}", target, store.getName());
                 log.debug("Checked lock {}", target);
@@ -398,8 +391,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
 
             log.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
-                     new Object[] { target, tr.getRid(), tr.getTimestamp(),
-                                    ls.getWriteTimestamp(TimeUnit.NANOSECONDS) });
+                    new Object[]{target, tr.getRid(), tr.getTimestamp(),
+                            ls.getWriteTimestamp(TimeUnit.NANOSECONDS)});
         }
 
         /*
@@ -433,7 +426,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             throw new PermanentStorageException(msg);
         }
     }
-    
+
     @Override
     protected void deleteSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls, StoreTransaction tx) {
         List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), rid));
@@ -448,42 +441,42 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 log.error("Storage exception while deleting lock", e);
                 return; // give up on this lock
             }
-        } 
+        }
     }
-    
+
     private static class WriteResult {
         private final long beforeNS;
         private final long afterNS;
         private final StaticBuffer lockCol;
         private final Throwable throwable;
-        
+
         public WriteResult(long beforeNS, long afterNS, StaticBuffer lockCol, Throwable throwable) {
             this.beforeNS = beforeNS;
             this.afterNS = afterNS;
             this.lockCol = lockCol;
             this.throwable = throwable;
         }
-        
+
         public long getBeforeNS() {
             return beforeNS;
         }
-        
+
         public long getDurationNS() {
             return afterNS - beforeNS;
         }
-        
+
         public long getDuration(TimeUnit tu) {
             return tu.convert(afterNS - beforeNS, TimeUnit.NANOSECONDS);
         }
-        
+
         public boolean isSuccessful() {
             return null == throwable;
         }
-        
+
         public StaticBuffer getLockCol() {
             return lockCol;
         }
-        
+
         public Throwable getThrowable() {
             return throwable;
         }

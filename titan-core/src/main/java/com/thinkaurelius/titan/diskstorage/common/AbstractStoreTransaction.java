@@ -40,7 +40,7 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
 
     private void setTimestamp() {
         if (commitTime == NOT_YET_SET)
-            commitTime = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
+            commitTime = TimeUtility.INSTANCE.getApproxNSSinceEpoch();
     }
 
     @Override

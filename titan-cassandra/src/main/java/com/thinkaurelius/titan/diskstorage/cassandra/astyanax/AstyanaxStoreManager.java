@@ -224,9 +224,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
                 .withRetryPolicy(retryPolicy.duplicate());
 
-        final long deletionTimestamp = txh.getTimestamp() - 1;
-        final long additionTimestamp = txh.getTimestamp();
-        Preconditions.checkArgument(deletionTimestamp < additionTimestamp, "%s vs %s", deletionTimestamp, additionTimestamp);
+        final Timestamp timestamp = getTimestamp(txh);
 
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
@@ -244,7 +242,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey().asByteBuffer());
-                    dels.setTimestamp(deletionTimestamp);
+                    dels.setTimestamp(timestamp.deletionTime);
 
                     for (StaticBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b.asByteBuffer());
@@ -252,7 +250,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, ent.getKey().asByteBuffer());
-                    upds.setTimestamp(additionTimestamp);
+                    upds.setTimestamp(timestamp.additionTime);
 
                     for (Entry e : titanMutation.getAdditions())
                         upds.putColumn(e.getColumn().asByteBuffer(), e.getValue().asByteBuffer());

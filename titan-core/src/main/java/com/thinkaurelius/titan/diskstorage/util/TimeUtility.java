@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
  */
 public enum TimeUtility implements TimestampProvider {
     INSTANCE;
-    
+
     private static final Logger log =
             LoggerFactory.getLogger(TimeUtility.class);
 
@@ -20,7 +20,7 @@ public enum TimeUtility implements TimestampProvider {
     {
 
 		/*
-		 * This is a crude attempt to establish a correspondence
+         * This is a crude attempt to establish a correspondence
 		 * between System.currentTimeMillis() and System.nanoTime().
 		 * 
 		 * It's susceptible to errors up to -999 us due to the
@@ -50,7 +50,7 @@ public enum TimeUtility implements TimestampProvider {
      * startup times a million (i.e. CTM in ns)
      */
     private final long t0NanosSinceEpoch;
-    
+
     // TODO this does not belong here
     private static final long MILLION = 1000L * 1000L;
 
@@ -68,29 +68,32 @@ public enum TimeUtility implements TimestampProvider {
      *               returned value be one?
      * @return a timestamp as described above
      */
+//    @Override
+//    public long getApproxNSSinceEpoch(final boolean setLSB) {
+//        final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
+//        final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
+//        return ts;
+//    }
     @Override
-    public long getApproxNSSinceEpoch(final boolean setLSB) {
-        final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
-        final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
-        return ts;
+    public long getApproxNSSinceEpoch() {
+        return ((System.nanoTime() - t0NanoTime + t0NanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL);
     }
-    
+
     /**
      * Sleep until {@link #getApproxNSSinceEpoch(false)} returns a number
      * greater than or equal to the argument. This method loops internally to
      * handle spurious wakeup.
-     * 
-     * @param untilNS
-     *            the timestamp to meet or exceed before returning (unless
-     *            interrupted first)
+     *
+     * @param untilNS the timestamp to meet or exceed before returning (unless
+     *                interrupted first)
      */
     @Override
     public long sleepUntil(final long untilNS) throws InterruptedException {
         long nowNS;
-        
-        for (nowNS = getApproxNSSinceEpoch(false);
+
+        for (nowNS = getApproxNSSinceEpoch();
              nowNS < untilNS;
-             nowNS = getApproxNSSinceEpoch(false)) {
+             nowNS = getApproxNSSinceEpoch()) {
 
             // Convert time delta from nano to millis, rounding up
             final long deltaNS = untilNS - nowNS;
@@ -100,33 +103,33 @@ public enum TimeUtility implements TimestampProvider {
             } else {
                 deltaMS = deltaNS / MILLION;
             }
-            
+
             if (0 >= deltaMS) {
                 if (log.isDebugEnabled()) {
                     log.debug("Skipped sleep: target wakeup time {} ms already past current time {} ms (delta {})",
-                        new Object[] {
-                            TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
-                            TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
-                            deltaMS
-                        }
+                            new Object[]{
+                                    TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                                    TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                                    deltaMS
+                            }
                     );
                 }
                 return nowNS;
             }
-            
+
             if (log.isDebugEnabled()) {
                 log.debug("Sleeping: target wakeup time {} ms, current time {} ms, duration {} ms",
-                    new Object[] {
-                        TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
-                        TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
-                        deltaMS
-                    }
+                        new Object[]{
+                                TimeUnit.MILLISECONDS.convert(untilNS, TimeUnit.NANOSECONDS),
+                                TimeUnit.MILLISECONDS.convert(nowNS, TimeUnit.NANOSECONDS),
+                                deltaMS
+                        }
                 );
             }
-            
+
             Thread.sleep(deltaMS);
         }
-        
+
         return nowNS;
     }
 

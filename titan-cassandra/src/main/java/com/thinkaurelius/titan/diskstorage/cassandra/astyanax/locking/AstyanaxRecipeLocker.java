@@ -25,19 +25,19 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
-    
+
     private final Keyspace lockKeyspace;
-    
+
     private final ColumnFamily<ByteBuffer, String> lockColumnFamily;
-    
+
     private static final Logger log = LoggerFactory.getLogger(AstyanaxRecipeLocker.class);
-    
+
     public static class Builder extends AbstractLocker.Builder<AstyanaxLockStatus, Builder> {
 
         private Keyspace ks;
         private ColumnFamily<ByteBuffer, String> cf;
-        
-        
+
+
         public Builder(Keyspace ks, ColumnFamily<ByteBuffer, String> cf) {
             this.ks = ks;
             this.cf = cf;
@@ -58,29 +58,29 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
             return LocalLockMediators.INSTANCE.get(cf.getName());
         }
     }
-    
+
     private AstyanaxRecipeLocker(StaticBuffer rid, TimestampProvider times,
-            ConsistentKeyLockerSerializer serializer,
-            LocalLockMediator<StoreTransaction> llm,
-            LockerState<AstyanaxLockStatus> lockState, long lockExpireNS,
-            Logger log, Keyspace lockKeyspace,
-            ColumnFamily<ByteBuffer, String> lockColumnFamily) {
+                                 ConsistentKeyLockerSerializer serializer,
+                                 LocalLockMediator<StoreTransaction> llm,
+                                 LockerState<AstyanaxLockStatus> lockState, long lockExpireNS,
+                                 Logger log, Keyspace lockKeyspace,
+                                 ColumnFamily<ByteBuffer, String> lockColumnFamily) {
         super(rid, times, serializer, llm, lockState, lockExpireNS, log);
         this.lockKeyspace = lockKeyspace;
         this.lockColumnFamily = lockColumnFamily;
     }
-    
+
     @Override
     protected AstyanaxLockStatus writeSingleLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
-        
-        long approxTimeNS = times.getApproxNSSinceEpoch(false);
-        
+
+        long approxTimeNS = times.getApproxNSSinceEpoch();
+
         ByteBuffer keyToLock = serializer.toLockKey(lockID.getKey(), lockID.getColumn()).asByteBuffer();
-        
+
         ColumnPrefixDistributedRowLock<ByteBuffer> lock =
                 new ColumnPrefixDistributedRowLock<ByteBuffer>(
                         lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpireNS, TimeUnit.NANOSECONDS).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
-      
+
         try {
             lock.acquire();
             log.debug("Locked {} in store {}", lockID, lockColumnFamily.getName());
@@ -93,7 +93,7 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
             throw new PermanentLockingException(e);
         }
     }
-    
+
     @Override
     protected void checkSingleLock(
             KeyColumn lockID,
@@ -101,7 +101,7 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
             StoreTransaction tx) throws Throwable {
         // Nothing to do
     }
-    
+
     @Override
     protected void deleteSingleLock(KeyColumn lockID, AstyanaxLockStatus stat, StoreTransaction tx) throws PermanentLockingException {
         try {

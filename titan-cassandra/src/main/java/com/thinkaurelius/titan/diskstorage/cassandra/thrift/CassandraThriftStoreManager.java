@@ -145,9 +145,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        final long deletionTimestamp = txh.getTimestamp() - 1;
-        final long additionTimestamp = txh.getTimestamp();
-        Preconditions.checkArgument(deletionTimestamp < additionTimestamp, "%s vs %s", deletionTimestamp, additionTimestamp);
+        final Timestamp timestamp = getTimestamp(txh);
 
         ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
 
@@ -182,7 +180,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         SlicePredicate sp = new SlicePredicate();
                         sp.addToColumn_names(buf.asByteBuffer());
                         d.setPredicate(sp);
-                        d.setTimestamp(deletionTimestamp);
+                        d.setTimestamp(timestamp.deletionTime);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setDeletion(d);
                         thriftMutation.add(m);
@@ -194,7 +192,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
                         Column column = new Column(ent.getColumn().asByteBuffer());
                         column.setValue(ent.getValue().asByteBuffer());
-                        column.setTimestamp(additionTimestamp);
+                        column.setTimestamp(timestamp.additionTime);
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setColumn_or_supercolumn(cosc);

@@ -29,7 +29,7 @@ public class LocalLockMediator<T> {
 
     /**
      * Namespace for which this mediator is responsible
-     * 
+     *
      * @see LocalLockMediatorProvider
      */
     private final String name;
@@ -115,7 +115,7 @@ public class LocalLockMediator<T> {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= TimeUtility.INSTANCE.getApproxNSSinceEpoch(false)) {
+        } else if (inmap.expires <= TimeUtility.INSTANCE.getApproxNSSinceEpoch()) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {
@@ -155,7 +155,7 @@ public class LocalLockMediator<T> {
 
         if (!holder.equals(unlocker)) {
             log.error("Local unlock of {} by {} failed: it is held by {}",
-                    new Object[] { kc, unlocker, holder });
+                    new Object[]{kc, unlocker, holder});
             return false;
         }
 
@@ -164,7 +164,7 @@ public class LocalLockMediator<T> {
         if (removed) {
             if (log.isTraceEnabled()) {
                 log.trace("Local unlock succeeded: {} namespace={} txn={}",
-                        new Object[] { kc, name, requestor });
+                        new Object[]{kc, name, requestor});
             }
         } else {
             log.warn("Local unlock warning: lock record for {} disappeared "
@@ -187,7 +187,7 @@ public class LocalLockMediator<T> {
      * lock's expiration time.
      */
     private static class AuditRecord<T> {
-        
+
         /**
          * The local transaction that holds/held the lock.
          */
@@ -195,7 +195,7 @@ public class LocalLockMediator<T> {
         /**
          * The expiration time of a the lock. Conventionally, this is in
          * nanoseconds from the epoch as returned by
-         * {@link TimeUtility#getApproxNSSinceEpoch(boolean)}.
+         * {@link TimeUtility#getApproxNSSinceEpoch()}.
          */
         private final long expires;
         /**
@@ -207,7 +207,7 @@ public class LocalLockMediator<T> {
             this.holder = holder;
             this.expires = expires;
         }
-        
+
         /**
          * This implementation depends only on the lock holder and not on the
          * lock expiration time.
@@ -219,7 +219,7 @@ public class LocalLockMediator<T> {
 
             return hashCode;
         }
-        
+
         /**
          * This implementation depends only on the lock holder and not on the
          * lock expiration time.

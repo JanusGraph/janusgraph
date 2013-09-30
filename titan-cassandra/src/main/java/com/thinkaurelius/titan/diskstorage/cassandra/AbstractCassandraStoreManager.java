@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
@@ -174,5 +175,21 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public String getName() {
         return getClass().getSimpleName() + keySpaceName;
+    }
+
+    protected Timestamp getTimestamp(StoreTransaction txh) {
+        long time = (txh.getTimestamp() & 0xFFFFFFFFFFFFFFFEL);
+        return new Timestamp(time | 1L, time);
+    }
+
+    public static class Timestamp {
+        public final long additionTime;
+        public final long deletionTime;
+
+        public Timestamp(long additionTime, long deletionTime) {
+            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
+            this.additionTime = additionTime;
+            this.deletionTime = deletionTime;
+        }
     }
 }
