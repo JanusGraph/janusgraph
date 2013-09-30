@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.commons.configuration.Configuration;
 
@@ -178,7 +179,13 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     }
 
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        long time = (txh.getTimestamp() & 0xFFFFFFFFFFFFFFFEL);
+        long time;
+        if (txh.getConfiguration().hasTimestamp()) {
+            time = (txh.getConfiguration().getTimestamp());
+        } else {
+            time = TimeUtility.INSTANCE.getApproxNSSinceEpoch();
+        }
+        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
         return new Timestamp(time | 1L, time);
     }
 
@@ -187,6 +194,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         public final long deletionTime;
 
         public Timestamp(long additionTime, long deletionTime) {
+            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
             Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
             this.additionTime = additionTime;
             this.deletionTime = deletionTime;

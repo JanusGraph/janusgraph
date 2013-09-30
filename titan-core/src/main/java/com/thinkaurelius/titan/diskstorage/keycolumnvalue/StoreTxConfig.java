@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -19,6 +20,11 @@ public class StoreTxConfig {
     public StoreTxConfig(ConsistencyLevel consistency) {
         Preconditions.checkNotNull(consistency);
         this.consistency = consistency;
+    }
+
+    public StoreTxConfig setTimestamp() {
+        this.timestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch();
+        return this;
     }
 
     public StoreTxConfig setTimestamp(long timestamp) {

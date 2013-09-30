@@ -394,7 +394,7 @@ public class Backend {
         if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
         StoreTransaction tx = storeManager.beginTransaction(txConfig);
         if (bufferSize > 1) {
-            assert storeManager.getFeatures().supportsBatchMutation();
+            Preconditions.checkArgument(storeManager.getFeatures().supportsBatchMutation());
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
         }
         if (!storeFeatures.supportsLocking()) {

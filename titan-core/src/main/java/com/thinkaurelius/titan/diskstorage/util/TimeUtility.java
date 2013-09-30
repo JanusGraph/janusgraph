@@ -76,7 +76,7 @@ public enum TimeUtility implements TimestampProvider {
 //    }
     @Override
     public long getApproxNSSinceEpoch() {
-        return ((System.nanoTime() - t0NanoTime + t0NanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL);
+        return (System.nanoTime() - t0NanoTime + t0NanosSinceEpoch);
     }
 
     /**

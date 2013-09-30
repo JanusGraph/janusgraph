@@ -132,9 +132,4 @@ public class BufferTransaction implements StoreTransaction {
     public StoreTxConfig getConfiguration() {
         return tx.getConfiguration();
     }
-
-    @Override
-    public long getTimestamp() {
-        return tx.getTimestamp();
-    }
 }

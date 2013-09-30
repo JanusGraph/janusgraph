@@ -23,10 +23,5 @@ public interface StoreTransaction extends TransactionHandle {
      */
     public StoreTxConfig getConfiguration();
 
-    /**
-     * Returns the timestamp of this transaction. This is either the time the transaction is committed or the
-     * first time this method is called. After that, the time is constant.
-     */
-    public long getTimestamp();
 
 }
