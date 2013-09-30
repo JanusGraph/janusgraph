@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
@@ -15,10 +14,10 @@ import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 public abstract class AbstractStoreTransaction implements StoreTransaction {
 
-    private static final long NO_COMMIT = Long.MIN_VALUE;
+    private static final long NOT_YET_SET = Long.MIN_VALUE;
 
     private final StoreTxConfig config;
-    private long commitTime = NO_COMMIT;
+    private long commitTime = NOT_YET_SET;
 
     public AbstractStoreTransaction(StoreTxConfig config) {
         Preconditions.checkNotNull(config);
@@ -27,21 +26,27 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
 
     @Override
     public void commit() throws StorageException {
-        commitTime = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
+        setTimestamp();
     }
 
     @Override
     public void rollback() throws StorageException {
+        setTimestamp();
     }
 
     @Override
     public void flush() throws StorageException {
     }
 
+    private void setTimestamp() {
+        if (commitTime == NOT_YET_SET)
+            commitTime = TimeUtility.INSTANCE.getApproxNSSinceEpoch(true);
+    }
+
     @Override
     public long getTimestamp() {
         if (config.hasTimestamp()) return config.getTimestamp();
-        Preconditions.checkArgument(commitTime != NO_COMMIT, "Transaction has not yet been commited");
+        setTimestamp();
         return commitTime;
     }
 

@@ -145,8 +145,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        long deletionTimestamp = txh.getTimestamp() - 1;
-        long additionTimestamp = txh.getTimestamp();
+        final long deletionTimestamp = txh.getTimestamp() - 1;
+        final long additionTimestamp = txh.getTimestamp();
+        Preconditions.checkArgument(deletionTimestamp < additionTimestamp, "%s vs %s", deletionTimestamp, additionTimestamp);
 
         ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
 
