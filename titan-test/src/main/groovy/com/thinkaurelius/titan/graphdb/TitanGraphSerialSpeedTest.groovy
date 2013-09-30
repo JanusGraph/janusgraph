@@ -7,6 +7,7 @@ import org.apache.commons.configuration.Configuration
 import org.junit.FixMethodOrder;
 import org.junit.Rule
 import org.junit.Test
+import org.junit.experimental.categories.Category
 import org.junit.rules.TestRule
 import org.junit.rules.TestName
 import org.junit.runners.MethodSorters
@@ -23,6 +24,7 @@ import com.thinkaurelius.titan.core.TitanMultiVertexQuery
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.graphdb.FakeVertex
+import com.thinkaurelius.titan.testcategory.PerformanceTests
 import com.thinkaurelius.titan.testutil.gen.GraphGenerator
 import com.thinkaurelius.titan.testutil.gen.Schema
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
@@ -39,6 +41,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 @BenchmarkOptions(warmupRounds=1, benchmarkRounds=1)
+@Category([ PerformanceTests.class ])
 public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
     
     private static final Logger log = LoggerFactory.getLogger(TitanGraphSerialSpeedTest)
