@@ -64,8 +64,10 @@ public class ElasticSearchIndex implements IndexProvider {
     private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String[] DATA_SUBDIRS = {"data","work","logs"};
-    private static final int MAX_RESULT_SET_SIZE = 100000;
 
+    
+    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
+    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
 
     public static final String CLIENT_ONLY_KEY = "client-only";
     public static final boolean CLIENT_ONLY_DEFAULT = true;
@@ -85,6 +87,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final Node node;
     private final Client client;
     private final String indexName;
+    private final int maxResultsSize;
 
     public ElasticSearchIndex(Configuration config) {
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
@@ -148,6 +151,9 @@ public class ElasticSearchIndex implements IndexProvider {
             node = null;
         }
 
+        maxResultsSize = config.getInt(MAX_RESULT_SET_SIZE_KEY, MAX_RESULT_SET_SIZE_DEFAULT);
+        log.debug("Configured ES query result set max size to {}", maxResultsSize);
+        
         client.admin().cluster().prepareHealth()
                 .setWaitForYellowStatus().execute().actionGet();
 
@@ -376,14 +382,14 @@ public class ElasticSearchIndex implements IndexProvider {
         srb.setFilter(getFilter(query.getCondition()));
         srb.setFrom(0);
         if (query.hasLimit()) srb.setSize(query.getLimit());
-        else srb.setSize(MAX_RESULT_SET_SIZE);
+        else srb.setSize(maxResultsSize);
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
         log.debug("Executed query [{}] in {} ms",query.getCondition(),response.getTookInMillis());
         SearchHits hits = response.getHits();
-        if (!query.hasLimit() && hits.totalHits()>=MAX_RESULT_SET_SIZE)
-            log.warn("Query result set truncated to first [{}] elements for query: {}",MAX_RESULT_SET_SIZE,query);
+        if (!query.hasLimit() && hits.totalHits()>=maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}",maxResultsSize,query);
         List<String> result = new ArrayList<String>(hits.hits().length);
         for (SearchHit hit : hits) {
             result.add(hit.id());
