@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.transaction.TransactionConfig;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import org.apache.commons.configuration.Configuration;
 
 import java.nio.ByteBuffer;
@@ -28,7 +28,10 @@ public class FaunusTitanGraph extends StandardTitanGraph {
 
     public FaunusTitanGraph(final Configuration configuration, boolean autoTx) {
         super(new GraphDatabaseConfiguration(configuration));
-        this.tx = (autoTx) ? newTransaction(new TransactionConfig(this.getConfiguration(), false)) : null;
+
+        //Used to be TranscationConfig(this.getConfiguration, false) indicating that this is not threadBound
+        //which is the defaul for Transaction
+        this.tx = (autoTx) ? newTransaction(new StandardTransactionBuilder(this.getConfiguration(), this)) : null;
     }
 
     protected FaunusVertex readFaunusVertex(final ByteBuffer key, Iterable<Entry> entries) {
