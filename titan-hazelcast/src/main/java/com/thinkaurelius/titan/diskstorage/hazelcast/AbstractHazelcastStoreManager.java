@@ -35,8 +35,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     @Override
     public StoreTransaction beginTransaction(ConsistencyLevel consistencyLevel) throws StorageException {
         if (transactional) {
-            TransactionOptions options = TransactionOptions.getDefault().setTransactionType(TransactionOptions.TransactionType.LOCAL);
-            return new HazelCastTransaction(manager.newTransactionContext(options), consistencyLevel);
+            return new HazelCastTransaction(manager.newTransactionContext(TransactionOptions.getDefault()), consistencyLevel);
         } else {
             return new NoOpStoreTransaction(consistencyLevel);
         }

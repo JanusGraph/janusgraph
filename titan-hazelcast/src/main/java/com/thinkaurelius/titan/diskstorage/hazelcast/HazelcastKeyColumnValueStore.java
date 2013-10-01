@@ -38,7 +38,16 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
     public List<Entry> getSlice(final KeySliceQuery query, StoreTransaction txh) throws StorageException {
         int count = 0;
         List<Entry> results = new ArrayList<Entry>();
-        List<Column> columns = Lists.newArrayList(cache.get(query.getKey().as(StaticArrayBuffer.ARRAY_FACTORY)));
+        List<Column> columns = null;
+
+        byte[] rawKey = query.getKey().as(StaticArrayBuffer.ARRAY_FACTORY);
+
+        try {
+            cache.lock(rawKey);
+            columns = Lists.newArrayList(cache.get(rawKey));
+        } finally {
+            cache.unlock(rawKey);
+        }
 
         if (columns == null || columns.isEmpty())
             return Collections.emptyList();
@@ -99,15 +108,27 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
 
         Set<StaticBuffer> columnsToDelete = new HashSet<StaticBuffer>(deletions);
 
-        for (Column column : cache.get(rawKey)) {
-            StaticBuffer currentColumnName = new StaticArrayBuffer(column.name);
 
-            if (columnsToAdd.contains(currentColumnName) || columnsToDelete.contains(currentColumnName))
+        try {
+            cache.lock(rawKey);
+
+            List<Column> toRemove = new LinkedList<Column>();
+            for (Column column : cache.get(rawKey)) {
+                StaticBuffer currentColumnName = new StaticArrayBuffer(column.name);
+
+                if (columnsToAdd.contains(currentColumnName) || columnsToDelete.contains(currentColumnName))
+                    toRemove.add(column);
+            }
+
+            for (Column column : toRemove) {
                 cache.remove(rawKey, column);
-        }
+            }
 
-        for (Entry addition : additions) {
-            cache.put(rawKey, new Column(addition.getColumn(), addition.getValue()));
+            for (Entry addition : additions) {
+                cache.put(rawKey, new Column(addition.getColumn(), addition.getValue()));
+            }
+        } finally {
+            cache.unlock(rawKey);
         }
     }
 

@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hazelcast</artifactId>
-    <name>Titan-EhCache: Distributed Graph Database</name>
+    <name>Titan-Hazelcast: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <dependencies>
         <dependency>
