@@ -33,8 +33,7 @@ import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
-import org.apache.cassandra.io.compress.CompressionParameters;
-import org.apache.cassandra.io.compress.SnappyCompressor;
+import org.apache.cassandra.io.compress.*;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
@@ -44,6 +43,7 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -324,13 +324,18 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
 
         // Enable snappy compression
+        Class<?> compressorClass;
+        CompressionParameters cp;
         try {
-            CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
-            cfm.compressionParameters(cp);
-            log.debug("Set CompressionParameters {}", cp);
-        } catch (ConfigurationException e) {
+            compressorClass = Class.forName(sstableCompressionClass);
+            Method method = compressorClass.getMethod("create", Map.class);
+        	ICompressor compressor = (ICompressor) method.invoke(null, new HashMap<String, String>());
+            cp = new CompressionParameters(compressor, compressionChunkSizeKB * 1024, ImmutableMap.<String, String>of());
+        } catch (Exception e) {
             throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
         }
+        cfm.compressionParameters(cp);
+        log.debug("Set CompressionParameters {}", cp);
 
         try {
             cfm.addDefaultIndexNames();

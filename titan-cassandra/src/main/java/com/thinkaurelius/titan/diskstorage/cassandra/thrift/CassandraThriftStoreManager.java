@@ -389,11 +389,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
-
+        
         ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 
         if (compressionEnabled) {
-            compressionOptions.put("sstable_compression", "SnappyCompressor")
+            compressionOptions.put("sstable_compression", sstableCompressionClass)
                               .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
         }
 
