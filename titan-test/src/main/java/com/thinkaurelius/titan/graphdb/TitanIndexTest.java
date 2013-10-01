@@ -10,10 +10,12 @@ import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -174,6 +176,27 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
+
+    }
+
+    @Test
+    public void testIndexIteration() {
+        graph.makeType().name("objectType").dataType(String.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        graph.makeType().name("uid").dataType(Long.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        graph.commit();
+        Vertex v = graph.addVertex(null);
+        ElementHelper.setProperties(v, "uid", 167774517, "ipv4Addr", "10.0.9.53", "cid", 2, "objectType", "NetworkSensor", "observationDomain", 0);
+        assertNotNull(v.getProperty("uid"));
+        assertNotNull(v.getProperty("objectType"));
+        graph.commit();
+        assertNotNull(graph.getVertex(v).getProperty("uid"));
+        assertNotNull(graph.getVertex(v).getProperty("objectType"));
+        graph.commit();
+        for (Vertex u : graph.getVertices()) {
+            assertNotNull(u.getProperty("uid"));
+            assertNotNull(u.getProperty("objectType"));
+        }
+        graph.rollback();
 
     }
 
