@@ -323,19 +323,29 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             cfm.caching(Caching.ROWS_ONLY);
         }
 
-        // Enable snappy compression
-        Class<?> compressorClass;
-        CompressionParameters cp;
-        try {
-            compressorClass = Class.forName(compressionClass);
-            Method method = compressorClass.getMethod("create", Map.class);
-        	ICompressor compressor = (ICompressor) method.invoke(null, new HashMap<String, String>());
-            cp = new CompressionParameters(compressor, compressionChunkSizeKB * 1024, ImmutableMap.<String, String>of());
-        } catch (Exception e) {
-            throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
+        // Configure sstable compression
+        final CompressionParameters cp;
+        if (compressionEnabled) {
+            try {
+                cp = new CompressionParameters(compressionClass,
+                        compressionChunkSizeKB * 1024,
+                        Collections.<String, String> emptyMap());
+                // CompressionParameters doesn't override toString(), so be explicit
+                log.debug("Creating CF {}: setting {}={} and {}={} on {}", 
+                        new Object[] {
+                            columnfamilyName,
+                            CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
+                            CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
+                            cp });
+            } catch (ConfigurationException ce) {
+                throw new PermanentStorageException(ce);
+            }
+        } else {
+            cp = new CompressionParameters(null);
+            log.debug("Creating CF {}: setting {} to null to disable compression",
+                    columnfamilyName, CompressionParameters.SSTABLE_COMPRESSION);
         }
         cfm.compressionParameters(cp);
-        log.debug("Set CompressionParameters {}", cp);
 
         try {
             cfm.addDefaultIndexNames();
