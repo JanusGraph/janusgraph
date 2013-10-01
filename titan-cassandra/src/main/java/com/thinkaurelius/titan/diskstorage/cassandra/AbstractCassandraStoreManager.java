@@ -50,6 +50,21 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
 
+    /**
+     * This flag would be checked on first Titan run when Keyspace and CFs required
+     * for operation are created. If this flag is set to "true" Snappy
+     * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
+     */
+    public static final String ENABLE_COMPRESSION_KEY = "cassandra.db.compression.enabled";
+    public static final boolean DEFAULT_COMPRESSION_FLAG = true;
+
+    /**
+     * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
+     * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
+     */
+    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "cassandra.db.compression.chunk_size_kb";
+    public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
+
     public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
 
     /*
@@ -96,6 +111,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected static final String SYSTEM_PROPERTIES_CF = "system_properties";
     protected static final String SYSTEM_PROPERTIES_KEY = "general";
 
+    protected final boolean compressionEnabled;
+    protected final int compressionChunkSizeKB;
+
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
@@ -110,6 +128,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
 
         this.thriftFrameSize = storageConfig.getInt(THRIFT_FRAME_SIZE_MB, THRIFT_DEFAULT_FRAME_SIZE) * 1024 * 1024;
+
+        this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
+        this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;

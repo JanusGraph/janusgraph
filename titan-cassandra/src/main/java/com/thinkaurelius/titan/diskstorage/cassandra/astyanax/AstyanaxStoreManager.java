@@ -30,7 +30,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRe
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
@@ -305,14 +304,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator)
-                                .setCompressionOptions(
-                                        new ImmutableMap.Builder<String, String>()
-                                                .put("sstable_compression", "SnappyCompressor")
-                                                .put("chunk_length_kb", "64")
-                                                .build()
-                                );
-                cl.addColumnFamily(cfDef);
+                                .setComparatorType(comparator);
+
+                ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+
+                if (compressionEnabled) {
+                    compressionOptions.put("sstable_compression", "SnappyCompressor")
+                                      .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+                }
+
+                cl.addColumnFamily(cfDef.setCompressionOptions(compressionOptions.build()));
             }
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
