@@ -19,18 +19,37 @@ public enum Text implements TitanPredicate {
      */
     CONTAINS {
 
+        private static final int MIN_TERM_LENGTH = 2;
+
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition),"Invalid condition provided: %s",condition);
-            if (value==null) return false;
+            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            if (value == null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            return value.toString().contains((String)condition);
+            String term = ((String) condition).trim().toLowerCase();
+            if (term.length() < MIN_TERM_LENGTH) return false;
+            String text = value.toString().toLowerCase();
+            int position = 0;
+            while (position >= 0) {
+                position = text.indexOf(term, position);
+                if (position >= 0) {
+                    int afterPos = position + term.length();
+//                    System.out.println(position + "|"+afterPos);
+                    Preconditions.checkArgument(afterPos <= text.length());
+                    if ((position == 0 || !Character.isLetterOrDigit(text.charAt(position - 1)))
+                            && (afterPos == text.length() || !Character.isLetterOrDigit(text.charAt(afterPos)))) {
+                        return true;
+                    }
+                    position = afterPos;
+                }
+            }
+            return false;
         }
 
         @Override
         public boolean isValidCondition(Object condition) {
-            if (condition==null) return false;
-            else if (condition instanceof String && StringUtils.isNotBlank((String)condition)) return true;
+            if (condition == null) return false;
+            else if (condition instanceof String && StringUtils.isNotBlank((String) condition)) return true;
             else return false;
         }
     },
@@ -39,24 +58,22 @@ public enum Text implements TitanPredicate {
      * Whether the text starts with a given term
      */
     PREFIX {
-
         @Override
         public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof String);
-            if (value==null) return false;
+            if (value == null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            return value.toString().startsWith((String)condition);
+            return value.toString().startsWith((String) condition);
         }
 
         @Override
         public boolean isValidCondition(Object condition) {
-            return condition!=null && condition instanceof String;
+            return condition != null && condition instanceof String;
         }
 
     };
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);
-
 
 
     @Override
