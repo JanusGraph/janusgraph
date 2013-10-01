@@ -55,14 +55,14 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * for operation are created. If this flag is set to "true" Snappy
      * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
      */
-    public static final String ENABLE_COMPRESSION_KEY = "cassandra.db.compression.enabled";
+    public static final String ENABLE_COMPRESSION_KEY = "compression.enabled";
     public static final boolean DEFAULT_COMPRESSION_FLAG = true;
 
     /**
      * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
      * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
      */
-    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "cassandra.db.compression.chunk_size_kb";
+    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "compression.chunk_length_kb";
     public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
     
     /**
@@ -74,7 +74,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * <p>
      * Default: {@literal #DEFAULT_COMPRESSOR}
      */
-    public static final String COMPRESSION_KEY = "cassandra.db.compression.sstable_compression";
+    public static final String COMPRESSION_KEY = "compression.sstable_compression";
     public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
 
 
