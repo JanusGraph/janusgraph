@@ -327,7 +327,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         Class<?> compressorClass;
         CompressionParameters cp;
         try {
-            compressorClass = Class.forName(sstableCompressionClass);
+            compressorClass = Class.forName(compressionClass);
             Method method = compressorClass.getMethod("create", Map.class);
         	ICompressor compressor = (ICompressor) method.invoke(null, new HashMap<String, String>());
             cp = new CompressionParameters(compressor, compressionChunkSizeKB * 1024, ImmutableMap.<String, String>of());

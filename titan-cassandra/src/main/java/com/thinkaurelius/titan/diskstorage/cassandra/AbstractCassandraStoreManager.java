@@ -39,11 +39,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
 
-    public static final String SSTABLE_COMPRESSOR = "sstable-compressor";
-    public static final String COMPRESSION_CHUNK_LENGTH = "compression-chunk-length";
-
-    protected final String sstableCompressionClass;
-
     /**
      * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
      * because otherwise client wouldn't be able to accept read/write frames from server as incorrectly sized.
@@ -69,6 +64,19 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final String COMPRESSION_CHUNKS_SIZE_KEY = "cassandra.db.compression.chunk_size_kb";
     public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
+    
+    /**
+     * Controls the Cassandra sstable_compression for CFs created by Titan.
+     * <p>
+     * If a CF already exists, then Titan will not modify its compressor
+     * configuration. Put another way, this setting only affects a CF that Titan
+     * created because it didn't already exist.
+     * <p>
+     * Default: {@literal #DEFAULT_COMPRESSOR}
+     */
+    public static final String COMPRESSION_KEY = "cassandra.db.compression.sstable_compression";
+    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
+
 
     public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
 
@@ -118,6 +126,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     protected final boolean compressionEnabled;
     protected final int compressionChunkSizeKB;
+    protected final String compressionClass;
 
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
@@ -136,7 +145,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         
         this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
         this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
-        this.sstableCompressionClass = storageConfig.getString(SSTABLE_COMPRESSOR, "SnappyCompressor");
+        this.compressionClass = storageConfig.getString(COMPRESSION_KEY, DEFAULT_COMPRESSION);
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;

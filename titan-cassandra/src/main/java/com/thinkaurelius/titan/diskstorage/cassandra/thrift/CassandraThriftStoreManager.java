@@ -393,7 +393,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 
         if (compressionEnabled) {
-            compressionOptions.put("sstable_compression", sstableCompressionClass)
+            compressionOptions.put("sstable_compression", compressionClass)
                               .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
         }
 
