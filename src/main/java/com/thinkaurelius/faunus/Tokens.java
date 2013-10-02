@@ -1,18 +1,16 @@
 package com.thinkaurelius.faunus;
 
+import org.apache.log4j.Logger;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class Tokens {
 
-    private static final Logger log = LoggerFactory.getLogger(Tokens.class);
+    private static final Logger log = Logger.getLogger(Tokens.class);
 
     public static final String VERSION_RESOURCE = "com/thinkaurelius/faunus/version.txt";
 
@@ -21,17 +19,17 @@ public class Tokens {
     public enum Action {DROP, KEEP}
 
     private static final String NAMESPACE = "faunus.mapreduce";
-    
+
     static {
         try {
             BufferedReader versionReader = new BufferedReader(new InputStreamReader(
-                Tokens.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)));
+                    Tokens.class.getClassLoader().getResourceAsStream(VERSION_RESOURCE)));
 
             VERSION = versionReader.readLine();
-            
-            log.debug("Loaded Faunus version {} from classloader resource {}", VERSION, VERSION_RESOURCE);
+
+            log.debug("Loaded Faunus version " + VERSION + " from classloader resource " + VERSION_RESOURCE);
         } catch (Throwable t) {
-            log.error("The Faunus version file {} could not be found on the classpath", VERSION_RESOURCE, t);
+            log.error("The Faunus version file " + VERSION_RESOURCE + " could not be found on the classpath: " + t);
             throw new RuntimeException(t);
         }
     }
