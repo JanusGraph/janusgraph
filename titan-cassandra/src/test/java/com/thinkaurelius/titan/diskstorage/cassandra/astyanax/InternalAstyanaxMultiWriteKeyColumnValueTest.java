@@ -9,14 +9,12 @@ import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.testcategory.RandomPartitionerTests;
 
-@Category({RandomPartitionerTests.class})
 public class InternalAstyanaxMultiWriteKeyColumnValueTest extends MultiWriteKeyColumnValueStoreTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 
     @Override

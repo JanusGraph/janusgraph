@@ -41,10 +41,6 @@ for jar in $CASSANDRA_HOME/lib/*.jar; do
     CLASSPATH=$CLASSPATH:$jar
 done
 
-basedir=${cassandra.dir}/${cassandra.ip}
-ordered_basedir=${cassandra.ordered.dir}/${cassandra.ip}
-
-mkdir -p $basedir
-mkdir -p $ordered_basedir
+mkdir -p ${cassandra.dir}
 
 #export MAX_HEAP_SIZE=2048m

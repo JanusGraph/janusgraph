@@ -720,7 +720,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
             Map<String, String> tm = conn.getClient().describe_token_map();
 
-            Pattern p = Pattern.compile("Token\\(bytes\\[(.+)\\]\\)");
+            Pattern oldPat = Pattern.compile("Token\\(bytes\\[(.+)\\]\\)");
+            Pattern newbytesPat = Pattern.compile("^([0-9a-fA-F]+)$");
 
             // Build a temporary TreeMap of ordered tokens and their replica IPs
             SortedMap<ByteBuffer, String> sortedMap =
@@ -737,7 +738,14 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 // The raw token string has the form "Token(bytes[8000000000000000])"
                 // Strip off the Token(bytes[]) part
                 String rawToken = ent.getKey();
-                Matcher m = p.matcher(rawToken);
+                Matcher m = oldPat.matcher(rawToken);
+                if (!m.matches()) {
+                    m = newbytesPat.matcher(rawToken);
+                }
+                if (!m.matches()) {
+                    log.error("Couldn't match token {} against pattern {} or {} ", new Object[] { rawToken, oldPat, newbytesPat });
+                    return;
+                }
                 Preconditions.checkArgument(m.matches());
                 String token = m.group(1);
                 String nodeIP = ent.getValue();

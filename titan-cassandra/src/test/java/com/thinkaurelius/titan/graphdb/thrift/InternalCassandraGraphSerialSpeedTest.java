@@ -24,7 +24,7 @@ public class InternalCassandraGraphSerialSpeedTest extends TitanGraphSerialSpeed
     
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
     
     @Override

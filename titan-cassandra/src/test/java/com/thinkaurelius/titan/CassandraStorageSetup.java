@@ -2,42 +2,44 @@ package com.thinkaurelius.titan;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.KEYSPACE_KEY;
 
+import java.io.File;
+
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.elasticsearch.common.base.Joiner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-
-import java.io.File;
 
 public class CassandraStorageSetup {
 
-    public static final String CASSANDRA_TEMP_PATH = System.getProperty("user.dir")
-                                                     + File.separator + "target"
-                                                     + File.separator + "cassandra-temp";
+    public static final String CONFDIR_SYSPROP = "test.cassandra.confdir";
+    public static final String DATADIR_SYSPROP = "test.cassandra.datadir";
+    public static final String YAML_PATH;
+    public static final String DATA_PATH;
 
-    public static final String cassandraYamlPath = StringUtils.join(
-            new String[]{"file://", System.getProperty("user.dir"), "target",
-                    "cassandra-tmp", "conf", "127.0.0.1", "cassandra.yaml"},
-            File.separator);
-    public static final String cassandraOrderedYamlPath = StringUtils.join(
-            new String[]{"file://", System.getProperty("user.dir"), "target",
-                    "cassandra-tmp", "conf", "127.0.0.1", "cassandra-ordered.yaml"},
-            File.separator);
-
-
+    private static final Logger log = LoggerFactory.getLogger(CassandraStorageSetup.class);
+    
+    static {
+        YAML_PATH = "file://" + loadAbsoluteDirectoryPath("conf", CONFDIR_SYSPROP, true) + File.separator + "cassandra.yaml";
+        DATA_PATH = loadAbsoluteDirectoryPath("data", DATADIR_SYSPROP, false);
+    }
+    
     public static Configuration getGenericCassandraStorageConfiguration(String ks) {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
         return config;
+        
     }
     
-    public static Configuration getEmbeddedCassandraStorageConfiguration(String ks, boolean ordered) {
+    public static Configuration getEmbeddedCassandraStorageConfiguration(String ks) {
         Configuration config = getGenericCassandraStorageConfiguration(ks);
         config.addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                ordered ? cassandraOrderedYamlPath : cassandraYamlPath);
+                YAML_PATH);
         return config;
     }
 
@@ -57,7 +59,7 @@ public class CassandraStorageSetup {
         Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraYamlPath);
+                YAML_PATH);
         return config;
     }
 
@@ -65,7 +67,7 @@ public class CassandraStorageSetup {
         Configuration config = getGraphBaseConfiguration(ks, "embeddedcassandra");
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(
                 CassandraEmbeddedStoreManager.CASSANDRA_CONFIG_DIR_KEY,
-                cassandraOrderedYamlPath);
+                YAML_PATH);
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_PARTITION_KEY, true);
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY, false);
 //        config.subset(GraphDatabaseConfiguration.METRICS_NAMESPACE).addProperty(GraphDatabaseConfiguration.METRICS_CONSOLE_INTERVAL, 3000L);
@@ -92,5 +94,24 @@ public class CassandraStorageSetup {
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, backend);
         return config;
+    }
+    
+    private static String loadAbsoluteDirectoryPath(String name, String prop, boolean mustExistAndBeAbsolute) {
+        String s = System.getProperty(prop);
+        
+        if (null == s) {
+            s = Joiner.on(File.separator).join(System.getProperty("user.dir"), "target", "cassandra", name, "localhost-rp");
+            log.info("Set default Cassandra {} directory path {}", name, s);
+        } else {
+            log.info("Loaded Cassandra {} directory path {} from system property {}", new Object[] { name, s, prop });
+        }
+
+        if (mustExistAndBeAbsolute) {
+            File dir = new File(s);
+            Preconditions.checkArgument(dir.isDirectory(), "Path %s must be a directory", s);
+            Preconditions.checkArgument(dir.isAbsolute(),  "Path %s must be absolute", s);
+        }
+        
+        return s;
     }
 }

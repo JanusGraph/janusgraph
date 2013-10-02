@@ -8,4 +8,4 @@ package com.thinkaurelius.titan.testcategory;
  * If you rename or move this class, then you must also update mentions of it in
  * the Titan root pom.xml.
  */
-public class PerformanceTests { }
+public interface PerformanceTests { }

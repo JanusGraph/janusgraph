@@ -16,10 +16,11 @@
         <dependency.plugin.version>2.8</dependency.plugin.version>
         <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
         <test.categories.bop>com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests,com.thinkaurelius.titan.testcategory.StandaloneTests</test.categories.bop>
-	<test.categories.rp>com.thinkaurelius.titan.testcategory.RandomPartitionerTests</test.categories.rp>
-	<test.categories.all>${test.categories.bop},${test.categories.rp}</test.categories.all>
+    	<test.categories.rp>com.thinkaurelius.titan.testcategory.RandomPartitionerTests</test.categories.rp>
+    	<test.categories.all>${test.categories.bop},${test.categories.rp}</test.categories.all>
     </properties>
     <!-- Libraries -->
+    
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -74,7 +75,7 @@
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <version>1.2.2</version>
+            <!-- The version is controlled in <dependencyManagement> -->
             <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
                  java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
 
@@ -193,6 +194,30 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-bop-config</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                                    <filters>
+                                        <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
+                                    </filters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${basedir}/config/cassandra</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <executions>
                             <execution>
@@ -207,11 +232,19 @@
                                         <include>**/InternalCassandraEmbeddedGraphTest.java</include>
                                     </includes>
                                     -->
-                                    <groups>${test.categories.bop}</groups>
+                                    <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
+                                    <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
+                                    <groups/>
+                                    <forkCount>1</forkCount>
+                                    <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
-                                    <threadCount>2</threadCount>
+                                    <!-- <threadCount>4</threadCount> -->
+                                    <!-- <threadCountClasses>4</threadCountClasses> -->
                                     <perCoreThreadCount>true</perCoreThreadCount>
-                                    <runOrder>balanced</runOrder>
+                                    <useUnlimitedThreads>true</useUnlimitedThreads>
+                                    <threadCount>8</threadCount>
+                                    <threadCountClasses>8</threadCountClasses>
+                                    <runOrder>random</runOrder>
                                 </configuration>
                             </execution>
                         </executions>
@@ -228,6 +261,30 @@
             <build>
                 <plugins>
                     <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-rp-config</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                    <filters>
+                                        <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
+                                    </filters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${basedir}/config/cassandra</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <executions>
                             <execution>
@@ -237,11 +294,19 @@
                                 </goals>
                                 <phase>test</phase>
                                 <configuration>
-                                    <groups>${test.categories.rp}</groups>
+                                    <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                                    <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
+                                    <groups/>
+                                    <forkCount>1</forkCount>
+                                    <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
-                                    <threadCount>2</threadCount>
+                                    <!-- <threadCount>4</threadCount> -->
+                                    <!-- <threadCountClasses>4</threadCountClasses> -->
                                     <perCoreThreadCount>true</perCoreThreadCount>
-                                    <runOrder>balanced</runOrder>
+                                    <useUnlimitedThreads>true</useUnlimitedThreads>
+                                    <threadCount>8</threadCount>
+                                    <threadCountClasses>8</threadCountClasses>
+                                    <runOrder>random</runOrder>
                                 </configuration>
                             </execution>
                         </executions>
@@ -302,30 +367,6 @@
 			    <perCoreThreadCount>false</perCoreThreadCount>
 			    <runOrder>random</runOrder>
 			</configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-resources-127.0.0.1</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/cassandra-tmp/conf/127.0.0.1</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/config/cassandra</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                            <filters>
-                                <filter>${basedir}/config/cassandra-filters/127.0.0.1.properties</filter>
-                            </filters>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

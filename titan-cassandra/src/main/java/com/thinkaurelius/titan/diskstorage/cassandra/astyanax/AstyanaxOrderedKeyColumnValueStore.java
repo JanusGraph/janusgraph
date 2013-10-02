@@ -229,7 +229,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentStorageException(e);
         }
 
-        return new RowIterator(result, sliceQuery);
+        return new RowIterator(result.iterator(), sliceQuery);
     }
 
     @Override
@@ -255,12 +255,17 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                 query.getSliceEnd().asByteBuffer(),
                 false,
                 limit);
-
+        
+        // Omit final the query's keyend from the result, if present in result
+        final Rows<ByteBuffer, ByteBuffer> r;
         try {
-            return new RowIterator(((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult(), query);
+             r = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult();
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
+        Iterator<Row<ByteBuffer, ByteBuffer>> i =
+                Iterators.filter(r.iterator(), new KeySkipPredicate(query.getKeyEnd().asByteBuffer()));
+        return new RowIterator(i, query);
     }
 
     @Override
@@ -279,6 +284,20 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             return (row != null) && row.getColumns().size() > 0;
         }
     }
+    
+    private static class KeySkipPredicate implements Predicate<Row<ByteBuffer, ByteBuffer>> {
+        
+        private final ByteBuffer skip;
+        
+        public KeySkipPredicate(ByteBuffer skip) {
+            this.skip = skip;
+        }
+
+        @Override
+        public boolean apply(@Nullable Row<ByteBuffer, ByteBuffer> row) {
+            return (row != null) && !row.getKey().equals(skip);
+        }
+    }
 
     private static class RowIterator implements KeyIterator {
         private final Iterator<Row<ByteBuffer, ByteBuffer>> rows;
@@ -286,8 +305,8 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         private final SliceQuery sliceQuery;
         private boolean isClosed;
 
-        public RowIterator(Rows<ByteBuffer, ByteBuffer> rows, SliceQuery sliceQuery) {
-            this.rows = Iterators.filter(rows.iterator(), new KeyIterationPredicate());
+        public RowIterator(Iterator<Row<ByteBuffer, ByteBuffer>> rowIter, SliceQuery sliceQuery) {
+            this.rows = Iterators.filter(rowIter, new KeyIterationPredicate());
             this.sliceQuery = sliceQuery;
         }
 

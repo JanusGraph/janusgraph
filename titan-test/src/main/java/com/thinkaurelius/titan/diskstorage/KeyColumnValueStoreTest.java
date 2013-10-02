@@ -10,13 +10,17 @@ import java.util.Random;
 import java.util.Set;
 
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
+
 import org.junit.*;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
+import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 
 public abstract class KeyColumnValueStoreTest {
@@ -247,6 +251,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     @Test
+    @Category({ OrderedKeyStoreTests.class })
     public void scanTest() throws StorageException {
         if (manager.getFeatures().supportsScan()) {
             String[][] values = generateValues();
@@ -543,6 +548,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     @Test
+    @Category({ UnorderedKeyStoreTests.class })
     public void testGetKeysWithSliceQuery() throws Exception {
         populateDBWith100Keys();
 
@@ -558,11 +564,10 @@ public abstract class KeyColumnValueStoreTest {
             txn.commit();
         }
     }
-
-    /**
-     * This test is not marked with @Test becuase some of the implementations use random partitioning (passes for BerkeleyDB and HBase)
-     */
-    protected void testGetKeysWithKeyRange() throws Exception {
+    
+    @Test
+    @Category({ OrderedKeyStoreTests.class })
+    public void testGetKeysWithKeyRange() throws Exception {
         populateDBWith100Keys();
 
         StoreTransaction txn = startTx();

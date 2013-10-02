@@ -75,6 +75,7 @@
         <titan.compatible.versions>0.3.2,0.3.1,0.3.0</titan.compatible.versions>
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
+        <cassandra.version>1.2.2</cassandra.version>
         <metrics.version>3.0.0-BETA3</metrics.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.0-BETA3</metrics3.version>
@@ -89,8 +90,6 @@
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <cassandra.dir>${project.build.directory}/cassandra-tmp/workdir</cassandra.dir>
-        <cassandra.ordered.dir>${project.build.directory}/cassandra-ordered-tmp/workdir</cassandra.ordered.dir>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <!-- Required for PMD plugin. Used for compiler plugin -->
@@ -596,6 +595,29 @@
                 <groupId>org.apache.thrift</groupId>
                 <artifactId>libthrift</artifactId>
                 <version>0.7.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cassandra</groupId>
+                <artifactId>cassandra-all</artifactId>
+                <version>${cassandra.version}</version>
+                <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
+                     java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
+    
+                     Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
+                     what customizations were made in the cassandra copy of avro
+                     before trying to drop it for the stock artifact...
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.cassandra.deps</groupId>
+                        <artifactId>avro</artifactId>
+                    </exclusion>
+                </exclusions>
+                -->
+            </dependency>
+            <dependency>
+                <groupId>org.apache.cassandra</groupId>
+                <artifactId>cassandra-thrift</artifactId>
+                <version>${cassandra.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.javassist</groupId>
