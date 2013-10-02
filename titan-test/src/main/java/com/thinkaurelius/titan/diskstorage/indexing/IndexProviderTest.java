@@ -67,12 +67,12 @@ public abstract class IndexProviderTest {
 
     @Test
     public void singleStore() throws Exception {
-        storeTest("store1");
+        storeTest("vertex");
     }
 
     @Test
     public void multipleStores() throws Exception {
-        storeTest("store1", "store2", "store3");
+        storeTest("vertex", "edge");
     }
 
 

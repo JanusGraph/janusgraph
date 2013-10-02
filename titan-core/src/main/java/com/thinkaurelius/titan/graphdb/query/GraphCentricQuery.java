@@ -18,30 +18,30 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
 
     private final Condition<TitanElement> condition;
     private final BackendQueryHolder<IndexQuery> indexQuery;
-    private final ElementType type;
+    private final ElementType resultType;
 
-    public GraphCentricQuery(ElementType type, Condition<TitanElement> condition, BackendQueryHolder<IndexQuery> indexQuery, int limit) {
+    public GraphCentricQuery(ElementType resultType, Condition<TitanElement> condition, BackendQueryHolder<IndexQuery> indexQuery, int limit) {
         super(limit);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
-        Preconditions.checkNotNull(type);
+        Preconditions.checkNotNull(resultType);
         Preconditions.checkNotNull(indexQuery);
         this.condition = condition;
-        this.type=type;
-        this.indexQuery=indexQuery;
+        this.resultType = resultType;
+        this.indexQuery = indexQuery;
     }
 
-    public static final GraphCentricQuery emptyQuery() {
+    public static final GraphCentricQuery emptyQuery(ElementType resultType) {
         Condition<TitanElement> cond = new FixedCondition<TitanElement>(false);
-        return new GraphCentricQuery(ElementType.VERTEX,cond,new BackendQueryHolder<IndexQuery>(new IndexQuery(null,cond),true,null),0);
+        return new GraphCentricQuery(resultType, cond, new BackendQueryHolder<IndexQuery>(new IndexQuery(resultType, cond), true, null), 0);
     }
 
     public Condition<TitanElement> getCondition() {
         return condition;
     }
 
-    public ElementType getType() {
-        return type;
+    public ElementType getResultType() {
+        return resultType;
     }
 
     @Override
@@ -49,27 +49,27 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
         StringBuilder b = new StringBuilder();
         b.append("[").append(condition.toString()).append("]");
         if (hasLimit()) b.append("(").append(getLimit()).append(")");
-        b.append(":").append(type.toString());
+        b.append(":").append(resultType.toString());
         return b.toString();
     }
 
     @Override
     public int hashCode() {
-        return condition.hashCode()*9676463 + type.hashCode()*4711 + getLimit();
+        return condition.hashCode() * 9676463 + resultType.hashCode() * 4711 + getLimit();
     }
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        GraphCentricQuery oth = (GraphCentricQuery)other;
-        return type==oth.type && condition.equals(oth.condition) && getLimit()==oth.getLimit();
+        GraphCentricQuery oth = (GraphCentricQuery) other;
+        return resultType == oth.resultType && condition.equals(oth.condition) && getLimit() == oth.getLimit();
     }
 
     @Override
     public boolean isEmpty() {
-        return getLimit()<=0;
+        return getLimit() <= 0;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
 
     @Override
     public BackendQueryHolder<IndexQuery> getSubQuery(int position) {
-        if (position==0) return indexQuery;
+        if (position == 0) return indexQuery;
         else throw new IndexOutOfBoundsException();
     }
 

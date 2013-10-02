@@ -432,7 +432,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     private final int computeLimit(And<TitanRelation> conditions, int baseLimit) {
         return getVertexConstraint() != null ? HARD_MAX_LIMIT :   //a vertex constraint is so selective, that we likely have to retrieve all edges
-                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions, baseLimit));
+                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit));
     }
 
 
