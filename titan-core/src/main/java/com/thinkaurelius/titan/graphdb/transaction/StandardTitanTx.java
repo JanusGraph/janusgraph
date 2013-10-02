@@ -877,7 +877,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                         public Collection<Object> call(int limit) {
                             final IndexQuery subquery = new IndexQuery(indexQuery.getResultType(), matchingCond).setLimit(limit);
                             try {
-                                return indexCache.get(indexQuery, new Callable<List<Object>>() {
+                                return indexCache.get(subquery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
                                         return indexSerializer.query(bestIndex, subquery, txHandle);
@@ -890,7 +890,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     });
                 }
 
-                List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, query.getLimit());
+                List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
                 iter = Iterators.transform(resultSet.iterator(), new Function<Object, TitanElement>() {
                     @Nullable
                     @Override

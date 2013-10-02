@@ -256,7 +256,9 @@ public class QueryUtil {
                 } else {
                     Set<R> subresultset = ImmutableSet.copyOf(subresult);
                     Iterator riter = results.iterator();
-                    while (riter.hasNext()) if (subresultset.contains(riter.next())) riter.remove();
+                    while (riter.hasNext()) {
+                        if (!subresultset.contains(riter.next())) riter.remove();
+                    }
                 }
             }
             sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.pow(sublimit, 1.5));

@@ -43,7 +43,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
     }
 
     public String getStore() {
-        return resultType.toString();
+        return resultType.toString().toLowerCase();
     }
 
 

@@ -107,6 +107,10 @@ public abstract class IndexProviderTest {
             assertEquals(1, result.size());
             assertEquals("doc3", result.get(0));
 
+            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "Bob"))));
+            assertEquals(1, result.size());
+            assertEquals("doc3", result.get(0));
+
             result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "bob")));
             assertEquals(1, result.size());
             assertEquals("doc3", result.get(0));
@@ -176,7 +180,7 @@ public abstract class IndexProviderTest {
     @Test
     public void largeTest() throws Exception {
         int numDoc = 30000;
-        String store = "store";
+        String store = "vertex";
         initialize(store);
         for (int i = 1; i <= numDoc; i++) {
             add(store, "doc" + i, getRandomDocument(), true);

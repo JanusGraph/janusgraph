@@ -46,6 +46,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).makePropertyKey();
         Vertex v = tx.addVertex();
         v.setProperty("name", "Marko Rodriguez");
+        assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         clopen();
         Iterable<Vertex> vs = tx.query().has("name", Text.CONTAINS, "marko").vertices();
         assertEquals(1, Iterables.size(vs));
@@ -66,18 +67,22 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Geoshape.class).makePropertyKey();
         TitanKey time = tx.makeType().name("time").vertexUnique(Direction.OUT)
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).makePropertyKey();
+        TitanKey category = tx.makeType().name("category").vertexUnique(Direction.OUT)
+                .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).makePropertyKey();
         TitanKey id = tx.makeType().name("uid").vertexUnique(Direction.OUT).graphUnique()
                 .indexed(Vertex.class).dataType(Integer.class).makePropertyKey();
         TitanLabel knows = tx.makeType().name("knows").primaryKey(time).signature(location).makeEdgeLabel();
 
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};
+        int numCategories = 5;
         double distance, offset;
         int numV = 100;
         final int originalNumV = numV;
         for (int i = 0; i < numV; i++) {
             Vertex v = tx.addVertex();
             v.setProperty("uid", i);
+            v.setProperty("category", i % numCategories);
             v.setProperty("text", "Vertex " + words[i % words.length]);
             v.setProperty("time", i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
@@ -86,6 +91,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             Edge e = v.addEdge("knows", tx.getVertex("uid", Math.max(0, i - 1)));
             e.setProperty("text", "Vertex " + words[i % words.length]);
             e.setProperty("time", i);
+            e.setProperty("category", i % numCategories);
             e.setProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
         }
 
@@ -105,6 +111,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
+
+        //Mixed index queries
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
         assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19 * 50.0 / originalNumV);
@@ -133,6 +143,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
+
+        //Mixed index queries
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
         assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19 * 50.0 / originalNumV);

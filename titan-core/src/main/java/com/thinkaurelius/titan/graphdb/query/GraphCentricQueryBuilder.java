@@ -196,7 +196,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
 //            query = new BackendQueryHolder<IndexQuery>(serializer.getQuery(bestIndex,QueryUtil.simplifyQNF(matchingConditions),resultType),remainingConditions.isEmpty(),bestIndex);
 //        }
 
-        BackendQueryHolder<IndexQuery> query = new BackendQueryHolder<IndexQuery>(new IndexQuery(resultType, conditions), andClausesNotCovered > 0, null);
+        /* TODO: smarter optimization:
+        1) use only one PredicateCondition if in-unique
+        2) use in-memory histograms to estimate selectivity of PredicateConditions and filter out low-selectivity ones if they would result in an individual index call (better to filter afterwards in memory)
+        */
+
+        BackendQueryHolder<IndexQuery> query = new BackendQueryHolder<IndexQuery>(new IndexQuery(resultType, conditions), andClausesNotCovered == 0, null);
 
 
         int indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);

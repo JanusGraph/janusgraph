@@ -14,7 +14,7 @@ import java.util.Iterator;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
+public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
 
     private final K key;
     private final TitanPredicate predicate;
@@ -38,16 +38,16 @@ public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
     public boolean evaluate(E element) {
         TitanType type = null;
         if (key instanceof String) {
-            type = ((InternalElement)element).tx().getType((String)key);
-            if (type==null) return satisfiesCondition(null);
+            type = ((InternalElement) element).tx().getType((String) key);
+            if (type == null) return satisfiesCondition(null);
         } else {
-            type = (TitanType)key;
+            type = (TitanType) key;
         }
         Preconditions.checkNotNull(type);
         if (type.isPropertyKey()) {
-            if (type.isUnique(Direction.OUT)) return satisfiesCondition(element.getProperty((TitanKey)type));
+            if (type.isUnique(Direction.OUT)) return satisfiesCondition(element.getProperty((TitanKey) type));
             else {
-                Iterator<TitanProperty> iter = ((VertexCentricQueryBuilder)((TitanVertex)element).query()).type(type).includeHidden().properties().iterator();
+                Iterator<TitanProperty> iter = ((VertexCentricQueryBuilder) ((TitanVertex) element).query()).type(type).includeHidden().properties().iterator();
                 if (iter.hasNext()) {
                     while (iter.hasNext()) {
                         if (satisfiesCondition(iter.next().getValue())) return true;
@@ -80,20 +80,20 @@ public class PredicateCondition<K,E extends TitanElement> extends Literal<E> {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        PredicateCondition oth = (PredicateCondition)other;
+        PredicateCondition oth = (PredicateCondition) other;
         return key.equals(oth.key) && predicate.equals(oth.predicate) && value.equals(oth.value);
     }
 
     @Override
     public String toString() {
-        return key.toString()+ predicate.toString()+String.valueOf(value);
+        return key.toString() + " " + predicate.toString() + " " + String.valueOf(value);
     }
 
-    public static final<K,E extends TitanElement> PredicateCondition<K,E> of(K key, TitanPredicate titanPredicate, Object condition) {
-        return new PredicateCondition<K,E>(key, titanPredicate, condition);
+    public static final <K, E extends TitanElement> PredicateCondition<K, E> of(K key, TitanPredicate titanPredicate, Object condition) {
+        return new PredicateCondition<K, E>(key, titanPredicate, condition);
     }
 
 }
