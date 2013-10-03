@@ -11,8 +11,12 @@ import java.util.Map;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.CompositeConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
@@ -23,6 +27,8 @@ import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 
 public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
     
+    private static final Logger log =
+            LoggerFactory.getLogger(AbstractCassandraKeyColumnValueStoreTest.class);
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
 
@@ -33,6 +39,15 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
     @Test
     @Category({ UnorderedKeyStoreTests.class })
     public void testUnorderedConfiguration() {
+        if (!manager.getFeatures().supportsUnorderedScan()) {
+            log.warn(
+                "Can't test key-unordered features on incompatible store.  "
+                + "This warning could indicate reduced test coverage and "
+                + "a broken JUnit configuration.  Skipping test {}.",
+                name.getMethodName());
+            return;
+        }
+        
         StoreFeatures features = manager.getFeatures();
         assertFalse(features.isKeyOrdered());
         assertFalse(features.hasLocalKeyPartition());
@@ -41,6 +56,15 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
     @Test
     @Category({ OrderedKeyStoreTests.class })
     public void testOrderedConfiguration() {
+        if (!manager.getFeatures().supportsOrderedScan()) {
+            log.warn(
+                "Can't test key-ordered features on incompatible store.  "
+                + "This warning could indicate reduced test coverage and "
+                + "a broken JUnit configuration.  Skipping test {}.",
+                name.getMethodName());
+            return;
+        }
+        
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());
     }
