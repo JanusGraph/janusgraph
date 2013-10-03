@@ -2,18 +2,19 @@ package com.thinkaurelius.titan.diskstorage.persistit;
 
 import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager.VOLUME_NAME;
 
-import com.persistit.*;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import com.persistit.Exchange;
+import com.persistit.Persistit;
+import com.persistit.SessionId;
+import com.persistit.Transaction;
 import com.persistit.exception.PersistitException;
 import com.persistit.exception.RollbackException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
@@ -23,7 +24,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     private Persistit db;
     private SessionId sessionId;
-    private boolean isOpen = false;
 
     private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
 
@@ -49,7 +49,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
         try {
             tx.begin();
-            isOpen = true;
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
         }
@@ -67,7 +66,6 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     private void close() {
         returnSessionId(sessionId);
         sessionId = null;
-        isOpen = false;
     }
 
     @Override

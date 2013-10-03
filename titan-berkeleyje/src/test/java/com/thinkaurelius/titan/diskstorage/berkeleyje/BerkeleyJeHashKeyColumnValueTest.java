@@ -22,4 +22,10 @@ public class BerkeleyJeHashKeyColumnValueTest extends HashKeyColumnValueStoreTes
     public void testGetKeysWithKeyRange() {
         // Requires ordered keys, but we are using hash prefix
     }
+    
+    @Test
+    @Override
+    public void testOrderedGetKeysRespectsKeyLimit() {
+        // Requires ordered keys, but we are using hash prefix
+    }
 }

@@ -25,4 +25,10 @@ public class PersistitHashKeyColumnValueTest extends HashKeyColumnValueStoreTest
     public void testGetKeysWithKeyRange() {
         // Requires ordered keys, but we're using hash prefix
     }
+    
+    @Test
+    @Override
+    public void testOrderedGetKeysRespectsKeyLimit() {
+        // Requires ordered keys, but we are using hash prefix
+    }
 }
