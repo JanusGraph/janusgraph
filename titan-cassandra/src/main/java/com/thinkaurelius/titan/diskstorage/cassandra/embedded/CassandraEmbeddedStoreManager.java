@@ -29,6 +29,7 @@ import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.BytesToken;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
@@ -113,6 +114,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner()
+            throws StorageException {
+        return StorageService.getPartitioner();
+    }
 
     @Override
     public String toString() {

@@ -8,7 +8,9 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -149,7 +151,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;
-
+    
+    public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
+    
     @Override
     public StoreTransaction beginTransaction(final StoreTxConfig config) {
         return new CassandraTransaction(config, readConsistencyLevel, writeConsistencyLevel);

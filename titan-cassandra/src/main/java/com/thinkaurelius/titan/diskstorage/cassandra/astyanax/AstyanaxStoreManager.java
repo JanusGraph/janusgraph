@@ -31,6 +31,10 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -180,6 +184,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             return Partitioner.getPartitioner(cl.describePartitioner());
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
+        Cluster cl = clusterContext.getClient();
+        try {
+            return FBUtilities.newPartitioner(cl.describePartitioner());
+        } catch (ConnectionException e) {
+            throw new TemporaryStorageException(e);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException(e);
         }
     }
 

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.Column;
@@ -31,6 +32,7 @@ import org.apache.cassandra.thrift.KsDef;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SchemaDisagreementException;
 import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
@@ -115,11 +117,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         return Partitioner.getPartitioner(getCassandraPartitioner());
     }
 
-    public IPartitioner<?> getCassandraPartitioner() throws StorageException {
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(SYSTEM_KS);
-            return (IPartitioner<?>) Class.forName(conn.getClient().describe_partitioner()).newInstance();
+            return FBUtilities.newPartitioner(conn.getClient().describe_partitioner());
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
         } finally {
