@@ -335,8 +335,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private Iterator<KeySlice> getKeySlice(Cassandra.Client client, Token startToken, Token endToken, SliceQuery sliceQuery, int pageSize, ByteBuffer excludeFinalKey) throws StorageException {
-        String st = sanitizeBrokenByteToken(startToken.toString());
-        String et = sanitizeBrokenByteToken(endToken.toString());
+        String st = sanitizeBrokenByteToken(startToken);
+        String et = sanitizeBrokenByteToken(endToken);
         
         return getKeySlice(client,
                 new KeyRange().setStart_token(st)
@@ -345,7 +345,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 sliceQuery, excludeFinalKey);
     }
     
-    private String sanitizeBrokenByteToken(String tok) {
+    private String sanitizeBrokenByteToken(Token<?> tok) {
         /*
          * Background: https://issues.apache.org/jira/browse/CASSANDRA-5566
          * 
@@ -357,19 +357,22 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
          * Cassandra version unless we can break all the way to the latest
          * Cassandra version, and 1.2.5 is not the latest anyway.
          */
+        String st = tok.toString();
+        if (!(tok instanceof BytesToken)) 
+            return st;
         
         // Do a cheap 1-character startsWith before unleashing the regex
-        if (tok.startsWith("T")) {
-            Matcher m = BROKEN_BYTE_TOKEN_PATTERN.matcher(tok);
+        if (st.startsWith("T")) {
+            Matcher m = BROKEN_BYTE_TOKEN_PATTERN.matcher(st);
             if (!m.matches()) {
-                logger.warn("Unknown token string format: \"{}\"", tok);
+                logger.warn("Unknown token string format: \"{}\"", st);
             } else {
-                String old = tok;
-                tok = m.group(1);
-                logger.warn("Rewrote token string: \"{}\" -> \"{}\"", old, tok);
+                String old = st;
+                st = m.group(1);
+                logger.warn("Rewrote token string: \"{}\" -> \"{}\"", old, st);
             }
         }
-        return tok;
+        return st;
     }
 
     private Iterator<KeySlice> getKeySlice(Cassandra.Client client,
