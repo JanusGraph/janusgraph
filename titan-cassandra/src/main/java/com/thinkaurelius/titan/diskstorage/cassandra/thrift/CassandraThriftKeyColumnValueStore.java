@@ -74,17 +74,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger logger =
             LoggerFactory.getLogger(CassandraThriftKeyColumnValueStore.class);
-    
-//    private static final ByteBuffer EIGHT_BYTE_WIDE_MAX_VALUE;
-    
+
     private static final Pattern BROKEN_BYTE_TOKEN_PATTERN = Pattern.compile("^Token\\(bytes\\[(.+)\\]\\)$");
-    
-//    static {
-//        EIGHT_BYTE_WIDE_MAX_VALUE = ByteBuffer.allocate(8);
-//        while (EIGHT_BYTE_WIDE_MAX_VALUE.hasRemaining())
-//            EIGHT_BYTE_WIDE_MAX_VALUE.put((byte)-1);
-//        EIGHT_BYTE_WIDE_MAX_VALUE.flip();
-//    }
 
     // Cassandra access
     private final CassandraThriftStoreManager storeManager;
