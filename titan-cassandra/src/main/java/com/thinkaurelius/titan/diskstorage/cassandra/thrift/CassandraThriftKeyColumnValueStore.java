@@ -387,7 +387,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             } else {
                 String old = st;
                 st = m.group(1);
-                logger.warn("Rewrote token string: \"{}\" -> \"{}\"", old, st);
+                logger.debug("Rewrote token string: \"{}\" -> \"{}\"", old, st);
             }
         }
         return st;
