@@ -57,7 +57,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.Hex;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -479,7 +478,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     @Override
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
         CTConnection conn = null;
-
+        Map<String, String> result = null;
+        
         try {
             conn = pool.borrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
@@ -488,12 +488,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
             for (CfDef cfDef : ksDef.getCf_defs()) {
                 if (null != cfDef && cfDef.getName().equals(cf)) {
-                    return cfDef.getCompression_options();
+                    result = cfDef.getCompression_options();
+                    break;
                 }
             }
-
-            return ksDef.getStrategy_options();
-
+            
+            return result;
         } catch (InvalidRequestException e) {
             log.debug("Keyspace {} does not exist", keySpaceName);
             return null;
@@ -747,6 +747,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 }
                 if (!m.matches()) {
                     log.error("Couldn't match token {} against pattern {} or {} ", new Object[] { rawToken, oldPat, newbytesPat });
+                    pool.returnObjectUnsafe(SYSTEM_KS, conn);
+                    conn = null;
                     return;
                 }
                 Preconditions.checkArgument(m.matches());
@@ -784,7 +786,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             log.error("Unknown Exception while getting Cassandra token map", e);
             // Don't propagate exception
         } finally {
-            pool.returnObjectUnsafe(SYSTEM_KS, conn);
+            if (null != conn)
+                pool.returnObjectUnsafe(SYSTEM_KS, conn);
         }
     }
 
