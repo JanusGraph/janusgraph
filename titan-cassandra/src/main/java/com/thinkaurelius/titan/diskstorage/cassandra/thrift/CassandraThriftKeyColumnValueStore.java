@@ -277,11 +277,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             SliceQuery columnSlice = new SliceQuery(
                     keyRangeQuery.getSliceStart(), keyRangeQuery.getSliceEnd());
             
-//            return new KeyRangeIterator<Token<?>>(
-//                    pool.borrowObject(keyspace),
-//                    keyRangeQuery.getKeyStart().asByteBuffer(),
-//                    keyRangeQuery.getKeyEnd().asByteBuffer(),
-            // columnSlice, storeManager.getPageSize());
             return new KeyRangeIterator<Token<?>>(
                     pool.borrowObject(keyspace),
                     partitioner, columnSlice, storeManager.getPageSize(),
