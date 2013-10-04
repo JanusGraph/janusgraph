@@ -9,14 +9,12 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.testcategory.RandomPartitionerTests;
 import com.tinkerpop.blueprints.Graph;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-@Category({RandomPartitionerTests.class})
 public class InternalCassandraBlueprintsTest extends TitanBlueprintsTest {
 
     private static boolean isStartedUp = false;
@@ -24,7 +22,7 @@ public class InternalCassandraBlueprintsTest extends TitanBlueprintsTest {
     @Override
     public synchronized void startUp() {
         if (!isStartedUp) {
-            CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
+            CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
             isStartedUp = true;
         }
     }

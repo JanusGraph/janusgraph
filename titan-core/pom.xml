@@ -34,16 +34,6 @@
             <artifactId>frames</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
-            <artifactId>rexster-core</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
-            <artifactId>rexster-server</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
         <!-- Utility -->
         <dependency>
             <groupId>com.codahale.metrics</groupId>

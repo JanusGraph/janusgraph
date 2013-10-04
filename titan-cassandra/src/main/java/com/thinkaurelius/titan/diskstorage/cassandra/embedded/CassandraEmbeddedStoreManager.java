@@ -1,20 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
@@ -29,12 +25,12 @@ import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.BytesToken;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
 import org.apache.cassandra.io.compress.CompressionParameters;
-import org.apache.cassandra.io.compress.SnappyCompressor;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
@@ -44,12 +40,20 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 
@@ -113,6 +117,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner()
+            throws StorageException {
+        return StorageService.getPartitioner();
+    }
 
     @Override
     public String toString() {
@@ -142,7 +152,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     StaticBuffer[] getLocalKeyPartition() throws StorageException {
         // getLocalPrimaryRange() returns a raw type
-        @SuppressWarnings("rawtypes")
+        @SuppressWarnings({ "rawtypes", "deprecation" })
         Range<Token> range = StorageService.instance.getLocalPrimaryRange();
         Token<?> leftKeyExclusive = range.left;
         Token<?> rightKeyInclusive = range.right;
@@ -323,14 +333,29 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             cfm.caching(Caching.ROWS_ONLY);
         }
 
-        // Enable snappy compression
-        try {
-            CompressionParameters cp = new CompressionParameters(new SnappyCompressor(), 64 * 1024, ImmutableMap.<String, String>of());
-            cfm.compressionParameters(cp);
-            log.debug("Set CompressionParameters {}", cp);
-        } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to create compression parameters for " + keyspaceName + ":" + columnfamilyName, e);
+        // Configure sstable compression
+        final CompressionParameters cp;
+        if (compressionEnabled) {
+            try {
+                cp = new CompressionParameters(compressionClass,
+                        compressionChunkSizeKB * 1024,
+                        Collections.<String, String> emptyMap());
+                // CompressionParameters doesn't override toString(), so be explicit
+                log.debug("Creating CF {}: setting {}={} and {}={} on {}", 
+                        new Object[] {
+                            columnfamilyName,
+                            CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
+                            CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
+                            cp });
+            } catch (ConfigurationException ce) {
+                throw new PermanentStorageException(ce);
+            }
+        } else {
+            cp = new CompressionParameters(null);
+            log.debug("Creating CF {}: setting {} to null to disable compression",
+                    columnfamilyName, CompressionParameters.SSTABLE_COMPRESSION);
         }
+        cfm.compressionParameters(cp);
 
         try {
             cfm.addDefaultIndexNames();

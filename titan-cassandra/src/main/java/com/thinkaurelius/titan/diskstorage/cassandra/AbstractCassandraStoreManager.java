@@ -8,7 +8,9 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
 import org.apache.commons.configuration.Configuration;
 
 /**
@@ -49,6 +51,34 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
      */
     public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
+
+    /**
+     * This flag would be checked on first Titan run when Keyspace and CFs required
+     * for operation are created. If this flag is set to "true" Snappy
+     * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
+     */
+    public static final String ENABLE_COMPRESSION_KEY = "compression.enabled";
+    public static final boolean DEFAULT_COMPRESSION_FLAG = true;
+
+    /**
+     * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
+     * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
+     */
+    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "compression.chunk_length_kb";
+    public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
+    
+    /**
+     * Controls the Cassandra sstable_compression for CFs created by Titan.
+     * <p>
+     * If a CF already exists, then Titan will not modify its compressor
+     * configuration. Put another way, this setting only affects a CF that Titan
+     * created because it didn't already exist.
+     * <p>
+     * Default: {@literal #DEFAULT_COMPRESSOR}
+     */
+    public static final String COMPRESSION_KEY = "compression.sstable_compression";
+    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
+
 
     public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
 
@@ -96,6 +126,10 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected static final String SYSTEM_PROPERTIES_CF = "system_properties";
     protected static final String SYSTEM_PROPERTIES_KEY = "general";
 
+    protected final boolean compressionEnabled;
+    protected final int compressionChunkSizeKB;
+    protected final String compressionClass;
+
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
@@ -110,10 +144,16 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
                 WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
 
         this.thriftFrameSize = storageConfig.getInt(THRIFT_FRAME_SIZE_MB, THRIFT_DEFAULT_FRAME_SIZE) * 1024 * 1024;
+        
+        this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
+        this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
+        this.compressionClass = storageConfig.getString(COMPRESSION_KEY, DEFAULT_COMPRESSION);
     }
 
     public abstract Partitioner getPartitioner() throws StorageException;
-
+    
+    public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
+    
     @Override
     public StoreTransaction beginTransaction(final StoreTxConfig config) {
         return new CassandraTransaction(config, readConsistencyLevel, writeConsistencyLevel);

@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.Column;
@@ -31,6 +32,7 @@ import org.apache.cassandra.thrift.KsDef;
 import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SchemaDisagreementException;
 import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
@@ -55,7 +57,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.Hex;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -115,11 +116,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         return Partitioner.getPartitioner(getCassandraPartitioner());
     }
 
-    public IPartitioner<?> getCassandraPartitioner() throws StorageException {
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(SYSTEM_KS);
-            return (IPartitioner<?>) Class.forName(conn.getClient().describe_partitioner()).newInstance();
+            return FBUtilities.newPartitioner(conn.getClient().describe_partitioner());
         } catch (Exception e) {
             throw new TemporaryStorageException(e);
         } finally {
@@ -380,7 +382,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private static void createColumnFamily(Cassandra.Client client,
+    private void createColumnFamily(Cassandra.Client client,
                                            String ksName,
                                            String cfName,
                                            String comparator) throws StorageException {
@@ -389,12 +391,15 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
-        createColumnFamily.setCompression_options(
-                new ImmutableMap.Builder<String, String>()
-                        .put("sstable_compression", "SnappyCompressor")
-                        .put("chunk_length_kb", "64")
-                        .build()
-        );
+        
+        ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+
+        if (compressionEnabled) {
+            compressionOptions.put("sstable_compression", compressionClass)
+                              .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+        }
+
+        createColumnFamily.setCompression_options(compressionOptions.build());
 
         // Hard-coded caching settings
         if (cfName.startsWith(Backend.EDGESTORE_NAME)) {
@@ -473,7 +478,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     @Override
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
         CTConnection conn = null;
-
+        Map<String, String> result = null;
+        
         try {
             conn = pool.borrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
@@ -482,12 +488,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
             for (CfDef cfDef : ksDef.getCf_defs()) {
                 if (null != cfDef && cfDef.getName().equals(cf)) {
-                    return cfDef.getCompression_options();
+                    result = cfDef.getCompression_options();
+                    break;
                 }
             }
-
-            return ksDef.getStrategy_options();
-
+            
+            return result;
         } catch (InvalidRequestException e) {
             log.debug("Keyspace {} does not exist", keySpaceName);
             return null;
@@ -717,7 +723,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
             Map<String, String> tm = conn.getClient().describe_token_map();
 
-            Pattern p = Pattern.compile("Token\\(bytes\\[(.+)\\]\\)");
+            Pattern oldPat = Pattern.compile("Token\\(bytes\\[(.+)\\]\\)");
+            Pattern newbytesPat = Pattern.compile("^([0-9a-fA-F]+)$");
 
             // Build a temporary TreeMap of ordered tokens and their replica IPs
             SortedMap<ByteBuffer, String> sortedMap =
@@ -734,7 +741,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 // The raw token string has the form "Token(bytes[8000000000000000])"
                 // Strip off the Token(bytes[]) part
                 String rawToken = ent.getKey();
-                Matcher m = p.matcher(rawToken);
+                Matcher m = oldPat.matcher(rawToken);
+                if (!m.matches()) {
+                    m = newbytesPat.matcher(rawToken);
+                }
+                if (!m.matches()) {
+                    log.error("Couldn't match token {} against pattern {} or {} ", new Object[] { rawToken, oldPat, newbytesPat });
+                    pool.returnObjectUnsafe(SYSTEM_KS, conn);
+                    conn = null;
+                    return;
+                }
                 Preconditions.checkArgument(m.matches());
                 String token = m.group(1);
                 String nodeIP = ent.getValue();
@@ -770,7 +786,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             log.error("Unknown Exception while getting Cassandra token map", e);
             // Don't propagate exception
         } finally {
-            pool.returnObjectUnsafe(SYSTEM_KS, conn);
+            if (null != conn)
+                pool.returnObjectUnsafe(SYSTEM_KS, conn);
         }
     }
 

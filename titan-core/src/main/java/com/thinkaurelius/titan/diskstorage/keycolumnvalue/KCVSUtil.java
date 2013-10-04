@@ -41,6 +41,25 @@ public class KCVSUtil {
         else return result.get(0).getValue();
     }
 
+    /**
+     * If the store supports unordered scans, then call {#link
+     * {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}. The
+     * {@code SliceQuery} bounds are a binary all-zeros with an all-ones buffer.
+     * The limit is 1.
+     * <p>
+     * If the store supports ordered scans, then call {#link
+     * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}. The
+     * key and columns slice bounds are the same as those described above. The
+     * column limit is 1.
+     * 
+     * @param store the store to query
+     * @param features the store's features
+     * @param keyLength length of the zero/one buffers that form the key limits
+     * @param sliceLength length of the zero/one buffers that form the col limits
+     * @param txh transaction to use with getKeys
+     * @return keys returned by the store.getKeys call
+     * @throws StorageException unexpected failure
+     */
     public static RecordIterator<StaticBuffer> getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
         SliceQuery slice = new SliceQuery(ByteBufferUtil.zeroBuffer(sliceLength), ByteBufferUtil.oneBuffer(sliceLength)).setLimit(1);
         if (features.supportsUnorderedScan()) {

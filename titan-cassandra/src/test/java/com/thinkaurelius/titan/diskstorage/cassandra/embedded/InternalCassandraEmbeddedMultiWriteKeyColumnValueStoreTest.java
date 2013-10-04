@@ -7,14 +7,12 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.MultiWriteKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests;
 
-@Category({ByteOrderedPartitionerTests.class})
 public class InternalCassandraEmbeddedMultiWriteKeyColumnValueStoreTest extends MultiWriteKeyColumnValueStoreTest {
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName(), true);
+        Configuration config = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName());
         return new CassandraEmbeddedStoreManager(config);
     }
 }

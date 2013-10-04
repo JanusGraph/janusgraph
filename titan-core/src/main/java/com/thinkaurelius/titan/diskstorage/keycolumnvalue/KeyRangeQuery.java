@@ -4,9 +4,11 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
- * Extends a {@link SliceQuery} by a key range which identifies the range of keys (start inclusive, end exclusive)
- * to which the slice query is applied.
- *
+ * Extends a {@link SliceQuery} to express a range for columns and a
+ * range for keys. Selects each key on the interval
+ * {@code [keyStart inclusive, keyEnd exclusive)} for which there exists at
+ * least one column between {@code [sliceStart inclusive, sliceEnd exclusive)}.
+ * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

@@ -17,6 +17,6 @@ public class InternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTe
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 }

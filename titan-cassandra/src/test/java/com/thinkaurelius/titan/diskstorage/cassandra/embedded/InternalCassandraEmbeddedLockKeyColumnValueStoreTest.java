@@ -7,14 +7,12 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests;
 
-@Category({ByteOrderedPartitionerTests.class})
 public class InternalCassandraEmbeddedLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName(), true);
+        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName());
         return new CassandraEmbeddedStoreManager(sc);
     }
 }

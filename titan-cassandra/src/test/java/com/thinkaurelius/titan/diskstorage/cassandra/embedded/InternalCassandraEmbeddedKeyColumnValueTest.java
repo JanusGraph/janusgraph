@@ -13,36 +13,30 @@ import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraKeyColumnV
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests;
+import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 
-@Category({ByteOrderedPartitionerTests.class})
 public class InternalCassandraEmbeddedKeyColumnValueTest extends AbstractCassandraKeyColumnValueStoreTest {
     
     @BeforeClass
     public static void startCassandra() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraOrderedYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+    }
+
+    @Override
+    public Configuration getBaseStorageConfiguration() {
+        return CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName());
     }
     
     @Override
-    public AbstractCassandraStoreManager openStorageManager() throws StorageException {
-        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName(), true);
-        return new CassandraEmbeddedStoreManager(sc);
+    public AbstractCassandraStoreManager openStorageManager(Configuration c) throws StorageException {
+        return new CassandraEmbeddedStoreManager(c);
     }
 
     @Test
+    @Category({ OrderedKeyStoreTests.class })
     public void testConfiguration() {
         StoreFeatures features = manager.getFeatures();
         assertTrue(features.isKeyOrdered());
         assertTrue(features.hasLocalKeyPartition());
-    }
-
-    @Override
-    public void scanTest() {
-        // nothing to do here as current test uses ordered partitioner
-    }
-
-    @Test
-    public void testGetKeysWithKeyRange() throws Exception {
-        super.testGetKeysWithKeyRange();
     }
 }

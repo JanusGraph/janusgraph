@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.persistit;
 import org.apache.commons.configuration.Configuration;
 
 import com.thinkaurelius.titan.PersistitStorageSetup;
-import com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager;
 import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 

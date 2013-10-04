@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
+import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -8,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrappe
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.thrift.transport.TTransportException;
@@ -220,7 +222,7 @@ public class CassandraProcessStarter {
         }
         
         try {
-            FileUtils.deleteDirectory(new File(CassandraStorageSetup.CASSANDRA_TEMP_PATH + File.separator + "workdir"));
+            FileUtils.deleteDirectory(new File(CassandraStorageSetup.DATA_PATH));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -4,11 +4,9 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.graphdb.TitanEventualGraphTest;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
-import com.thinkaurelius.titan.testcategory.RandomPartitionerTests;
 import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
-@Category({RandomPartitionerTests.class})
 public class InternalCassandraEventualGraphTest extends TitanEventualGraphTest {
 
     public InternalCassandraEventualGraphTest() {
@@ -17,6 +15,6 @@ public class InternalCassandraEventualGraphTest extends TitanEventualGraphTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.cassandraYamlPath);
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 }

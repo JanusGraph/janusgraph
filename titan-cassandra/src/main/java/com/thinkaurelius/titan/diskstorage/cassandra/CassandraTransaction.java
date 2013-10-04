@@ -96,7 +96,8 @@ public class CassandraTransaction extends AbstractStoreTransaction {
     }
 
     public static CassandraTransaction getTx(StoreTransaction txh) {
-        Preconditions.checkArgument(txh != null && (txh instanceof CassandraTransaction));
+        Preconditions.checkArgument(txh != null);
+        Preconditions.checkArgument(txh instanceof CassandraTransaction, "Unexpected transaction type %s", txh.getClass().getName());
         return (CassandraTransaction) txh;
     }
 

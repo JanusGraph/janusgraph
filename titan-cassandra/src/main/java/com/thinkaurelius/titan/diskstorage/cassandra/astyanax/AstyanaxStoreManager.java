@@ -30,8 +30,11 @@ import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRe
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
+import org.apache.cassandra.dht.IPartitioner;
+import org.apache.cassandra.dht.Token;
+import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -185,6 +188,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
+        Cluster cl = clusterContext.getClient();
+        try {
+            return FBUtilities.newPartitioner(cl.describePartitioner());
+        } catch (ConnectionException e) {
+            throw new TemporaryStorageException(e);
+        } catch (ConfigurationException e) {
+            throw new PermanentStorageException(e);
+        }
+    }
+
+    @Override
     public String toString() {
         return "astyanax" + super.toString();
     }
@@ -305,14 +321,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         cl.makeColumnFamilyDefinition()
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
-                                .setComparatorType(comparator)
-                                .setCompressionOptions(
-                                        new ImmutableMap.Builder<String, String>()
-                                                .put("sstable_compression", "SnappyCompressor")
-                                                .put("chunk_length_kb", "64")
-                                                .build()
-                                );
-                cl.addColumnFamily(cfDef);
+                                .setComparatorType(comparator);
+                
+                ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
+
+                if (compressionEnabled) {
+                    compressionOptions.put("sstable_compression", compressionClass)
+                                      .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+                }
+                
+                cl.addColumnFamily(cfDef.setCompressionOptions(compressionOptions.build()));
             }
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
