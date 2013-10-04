@@ -194,9 +194,9 @@ public abstract class IndexProviderTest {
         int oldresultSize = result.size();
         System.out.println(result.size() + " vs " + (numDoc / 1000 * 2.4622623015));
         System.out.println("Query time on " + numDoc + " docs (ms): " + (System.currentTimeMillis() - time));
-        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00)))).setLimit(numDoc / 1000));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000));
         assertEquals(numDoc / 1000, result.size());
-        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00)))).setLimit(numDoc / 1000 * 100));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("weight", Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of("weight", Cmp.LESS_THAN, 0.6), PredicateCondition.of("location", Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000 * 100));
         assertEquals(oldresultSize, result.size());
     }
 

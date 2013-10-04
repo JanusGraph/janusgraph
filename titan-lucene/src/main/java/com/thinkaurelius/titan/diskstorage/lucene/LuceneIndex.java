@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -16,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import org.apache.commons.configuration.Configuration;
@@ -61,49 +63,51 @@ public class LuceneIndex implements IndexProvider {
 
     private final Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
 
-    private final Map<String,IndexWriter> writers = new HashMap<String, IndexWriter>(4);
+    private final Map<String, IndexWriter> writers = new HashMap<String, IndexWriter>(4);
     private final ReentrantLock writerLock = new ReentrantLock();
 
-    private Map<String,SpatialStrategy> spatial=new ConcurrentHashMap<String, SpatialStrategy>(12);
+    private Map<String, SpatialStrategy> spatial = new ConcurrentHashMap<String, SpatialStrategy>(12);
     private SpatialContext ctx = SpatialContext.GEO;
 
     private final String basePath;
 
     public LuceneIndex(Configuration config) {
-        String dir = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,"");
-        Preconditions.checkArgument(StringUtils.isNotBlank(dir),"Need to configure directory for lucene");
+        String dir = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, "");
+        Preconditions.checkArgument(StringUtils.isNotBlank(dir), "Need to configure directory for lucene");
         File directory = new File(dir);
         if (!directory.exists()) directory.mkdirs();
-        if (!directory.exists() || !directory.isDirectory() || !directory.canWrite()) throw new IllegalArgumentException("Cannot access or write to directory: " + dir);
+        if (!directory.exists() || !directory.isDirectory() || !directory.canWrite())
+            throw new IllegalArgumentException("Cannot access or write to directory: " + dir);
         basePath = directory.getAbsolutePath();
-        log.debug("Configured Lucene to use base directory [{}]",basePath);
+        log.debug("Configured Lucene to use base directory [{}]", basePath);
     }
 
     private Directory getStoreDirectory(String store) throws StorageException {
-        Preconditions.checkArgument(StringUtils.isAlphanumeric(store),"Invalid store name: %s",store);
-        String dir = basePath+File.separator+store;
+        Preconditions.checkArgument(StringUtils.isAlphanumeric(store), "Invalid store name: %s", store);
+        String dir = basePath + File.separator + store;
         try {
             File path = new File(dir);
             if (!path.exists()) path.mkdirs();
-            if (!path.exists() || !path.isDirectory() || !path.canWrite()) throw new PermanentStorageException("Cannot access or write to directory: " + dir);
-            log.debug("Opening store directory [{}]",path);
+            if (!path.exists() || !path.isDirectory() || !path.canWrite())
+                throw new PermanentStorageException("Cannot access or write to directory: " + dir);
+            log.debug("Opening store directory [{}]", path);
             return FSDirectory.open(path);
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not open directory: " + dir,e);
+            throw new PermanentStorageException("Could not open directory: " + dir, e);
         }
     }
 
     private IndexWriter getWriter(String store) throws StorageException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
-        if (writer==null) {
+        if (writer == null) {
             IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_41, analyzer);
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             try {
                 writer = new IndexWriter(getStoreDirectory(store), iwc);
-                writers.put(store,writer);
+                writers.put(store, writer);
             } catch (IOException e) {
-                throw new PermanentStorageException("Could not create writer",e);
+                throw new PermanentStorageException("Could not create writer", e);
             }
         }
         return writer;
@@ -111,13 +115,13 @@ public class LuceneIndex implements IndexProvider {
 
     private SpatialStrategy getSpatialStrategy(String key) {
         SpatialStrategy strategy = spatial.get(key);
-        if (strategy==null) {
+        if (strategy == null) {
             synchronized (spatial) {
                 if (!spatial.containsKey(key)) {
 //                    SpatialPrefixTree grid = new GeohashPrefixTree(ctx, GEO_MAX_LEVELS);
 //                    strategy = new RecursivePrefixTreeStrategy(grid, key);
-                    strategy = new PointVectorStrategy(ctx,key);
-                    spatial.put(key,strategy);
+                    strategy = new PointVectorStrategy(ctx, key);
+                    spatial.put(key, strategy);
                 } else return spatial.get(key);
             }
         }
@@ -131,10 +135,10 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
-        Transaction ltx = (Transaction)tx;
+        Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
-            for (Map.Entry<String,Map<String, IndexMutation>> stores : mutations.entrySet()) {
+            for (Map.Entry<String, Map<String, IndexMutation>> stores : mutations.entrySet()) {
                 String storename = stores.getKey();
                 IndexWriter writer = getWriter(storename);
                 IndexReader reader = DirectoryReader.open(writer, true);
@@ -142,7 +146,7 @@ public class LuceneIndex implements IndexProvider {
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
-                    Term docTerm = new Term(DOCID,docid);
+                    Term docTerm = new Term(DOCID, docid);
 
                     if (mutation.isDeleted()) {
                         log.trace("Deleted entire document [{}]", docid);
@@ -150,9 +154,9 @@ public class LuceneIndex implements IndexProvider {
                         continue;
                     }
 
-                    Document doc=null;
+                    Document doc = null;
                     TopDocs hits = searcher.search(new TermQuery(docTerm), 10);
-                    Map<String,Shape> geofields = Maps.newHashMap();
+                    Map<String, Shape> geofields = Maps.newHashMap();
 
                     if (hits.scoreDocs.length == 0) {
                         log.trace("Creating new document for [{}]", docid);
@@ -168,13 +172,13 @@ public class LuceneIndex implements IndexProvider {
                         doc = searcher.doc(docId);
                         for (IndexableField field : doc.getFields()) {
                             if (field.stringValue().startsWith(GEOID)) {
-                                geofields.put(field.name(),ctx.readShape(field.stringValue().substring(GEOID.length())));
+                                geofields.put(field.name(), ctx.readShape(field.stringValue().substring(GEOID.length())));
                             }
                         }
                     }
                     Preconditions.checkNotNull(doc);
                     for (String key : mutation.getDeletions()) {
-                        if (doc.getField(key)!=null) {
+                        if (doc.getField(key) != null) {
                             log.trace("Removing field [{}] on document [{}]", key, docid);
                             doc.removeFields(key);
                             geofields.remove(key);
@@ -182,47 +186,69 @@ public class LuceneIndex implements IndexProvider {
                     }
                     for (IndexEntry add : mutation.getAdditions()) {
                         log.trace("Adding field [{}] on document [{}]", add.key, docid);
-                        if (doc.getField(add.key)!=null) doc.removeFields(add.key);
+                        if (doc.getField(add.key) != null) doc.removeFields(add.key);
                         if (add.value instanceof Number) {
                             Field field = null;
-                            if (add.value instanceof Integer || add.value instanceof Long) {
-                                field = new LongField(add.key, ((Number)add.value).longValue(), Field.Store.YES);
+                            if (AttributeUtil.isWholeNumber((Number) add.value)) {
+                                field = new LongField(add.key, ((Number) add.value).longValue(), Field.Store.YES);
                             } else { //double or float
-                                field = new DoubleField(add.key, ((Number)add.value).doubleValue(), Field.Store.YES);
+                                field = new DoubleField(add.key, ((Number) add.value).doubleValue(), Field.Store.YES);
                             }
                             doc.add(field);
-                        } else if (add.value instanceof String) {
-                            String str = (String)add.value;
+                        } else if (AttributeUtil.isString(add.value)) {
+                            String str = (String) add.value;
                             Field field = new TextField(add.key, str, Field.Store.YES);
                             doc.add(field);
 //                            if (str.length()<MAX_STRING_FIELD_LEN)
 //                                field = new StringField(add.key+STR_SUFFIX, str, Field.Store.NO);
 //                            doc.add(field);
                         } else if (add.value instanceof Geoshape) {
-                            Shape shape = ((Geoshape)add.value).convert2Spatial4j();
-                            geofields.put(add.key,shape);
-                            doc.add(new StoredField(add.key,GEOID+ctx.toString(shape)));
+                            Shape shape = ((Geoshape) add.value).convert2Spatial4j();
+                            geofields.put(add.key, shape);
+                            doc.add(new StoredField(add.key, GEOID + ctx.toString(shape)));
 
                         } else throw new IllegalArgumentException("Unsupported type: " + add.value);
                     }
-                    for (Map.Entry<String,Shape> geo : geofields.entrySet()) {
-                        log.trace("Updating geo-indexes for key {}",geo.getKey());
+                    for (Map.Entry<String, Shape> geo : geofields.entrySet()) {
+                        log.trace("Updating geo-indexes for key {}", geo.getKey());
                         for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue())) {
                             doc.add(f);
                         }
                     }
 
                     //write the old document to the index with the modifications
-                    writer.updateDocument(new Term(DOCID,docid), doc);
+                    writer.updateDocument(new Term(DOCID, docid), doc);
                 }
                 writer.commit();
             }
             ltx.postCommit();
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not update Lucene index",e);
+            throw new TemporaryStorageException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
         }
+    }
+
+    private static final Sort getSortOrder(IndexQuery query) {
+        Sort sort = new Sort();
+        List<IndexQuery.OrderEntry> orders = query.getOrder();
+        if (!orders.isEmpty()) {
+            SortField[] fields = new SortField[orders.size()];
+            for (int i = 0; i < orders.size(); i++) {
+                IndexQuery.OrderEntry order = orders.get(i);
+                SortField.Type sortType = null;
+                Class datatype = order.getDatatype();
+                if (AttributeUtil.isString(datatype)) sortType = SortField.Type.STRING;
+                else if (AttributeUtil.isWholeNumber(datatype)) sortType = SortField.Type.LONG;
+                else if (AttributeUtil.isDecimal(datatype)) sortType = SortField.Type.DOUBLE;
+                else
+                    Preconditions.checkArgument(false, "Unsupported order specified on field [%s] with datatype [%s]", order.getKey(), datatype);
+
+                fields[i] = new SortField(order.getKey(), sortType, order.getOrder() == Order.DESC);
+            }
+            sort.setSort(fields);
+        }
+        return sort;
     }
 
     @Override
@@ -231,70 +257,71 @@ public class LuceneIndex implements IndexProvider {
         Filter q = convertQuery(query.getCondition());
 
         try {
-            IndexSearcher searcher = ((Transaction)tx).getSearcher(query.getStore());
-            if (searcher==null) return ImmutableList.of(); //Index does not yet exist
+            IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
+            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, query.hasLimit()?query.getLimit():Integer.MAX_VALUE-1);
-            log.debug("Executed query [{}] in {} ms",q,System.currentTimeMillis()-time);
+            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
+            log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
             List<String> result = new ArrayList<String>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
             }
             return result;
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not execute Lucene query",e);
+            throw new TemporaryStorageException("Could not execute Lucene query", e);
         }
     }
 
     private static final Filter numericFilter(String key, Cmp relation, Number value) {
         switch (relation) {
             case EQUAL:
-                return (value instanceof Long || value instanceof Integer)?
-                        NumericRangeFilter.newLongRange(key,value.longValue(),value.longValue(),true,true):
-                        NumericRangeFilter.newDoubleRange(key,value.doubleValue(),value.doubleValue(),true,true);
+                return (value instanceof Long || value instanceof Integer) ?
+                        NumericRangeFilter.newLongRange(key, value.longValue(), value.longValue(), true, true) :
+                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), value.doubleValue(), true, true);
             case NOT_EQUAL:
                 BooleanFilter q = new BooleanFilter();
                 if (value instanceof Long || value instanceof Integer) {
-                    q.add(NumericRangeFilter.newLongRange(key,Long.MIN_VALUE,value.longValue(),true,false), BooleanClause.Occur.SHOULD);
-                    q.add(NumericRangeFilter.newLongRange(key,value.longValue(),Long.MAX_VALUE,false,true), BooleanClause.Occur.SHOULD);
+                    q.add(NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false), BooleanClause.Occur.SHOULD);
+                    q.add(NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
                 } else {
                     q.add(NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false), BooleanClause.Occur.SHOULD);
                     q.add(NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true), BooleanClause.Occur.SHOULD);
                 }
                 return q;
             case LESS_THAN:
-                return (value instanceof Long || value instanceof Integer)?
-                        NumericRangeFilter.newLongRange(key,Long.MIN_VALUE,value.longValue(),true,false):
-                        NumericRangeFilter.newDoubleRange(key,Double.MIN_VALUE,value.doubleValue(),true,false);
+                return (value instanceof Long || value instanceof Integer) ?
+                        NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, false) :
+                        NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, false);
             case LESS_THAN_EQUAL:
-                return (value instanceof Long || value instanceof Integer)?
-                        NumericRangeFilter.newLongRange(key,Long.MIN_VALUE,value.longValue(),true,true):
-                        NumericRangeFilter.newDoubleRange(key,Double.MIN_VALUE,value.doubleValue(),true,true);
+                return (value instanceof Long || value instanceof Integer) ?
+                        NumericRangeFilter.newLongRange(key, Long.MIN_VALUE, value.longValue(), true, true) :
+                        NumericRangeFilter.newDoubleRange(key, Double.MIN_VALUE, value.doubleValue(), true, true);
             case GREATER_THAN:
-                return (value instanceof Long || value instanceof Integer)?
-                        NumericRangeFilter.newLongRange(key,value.longValue(),Long.MAX_VALUE,false,true):
-                        NumericRangeFilter.newDoubleRange(key,value.doubleValue(),Double.MAX_VALUE,false,true);
+                return (value instanceof Long || value instanceof Integer) ?
+                        NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, false, true) :
+                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, false, true);
             case GREATER_THAN_EQUAL:
-                return (value instanceof Long || value instanceof Integer)?
-                        NumericRangeFilter.newLongRange(key,value.longValue(),Long.MAX_VALUE,true,true):
-                        NumericRangeFilter.newDoubleRange(key,value.doubleValue(),Double.MAX_VALUE,true,true);
-            default: throw new IllegalArgumentException("Unexpected relation: " + relation);
+                return (value instanceof Long || value instanceof Integer) ?
+                        NumericRangeFilter.newLongRange(key, value.longValue(), Long.MAX_VALUE, true, true) :
+                        NumericRangeFilter.newDoubleRange(key, value.doubleValue(), Double.MAX_VALUE, true, true);
+            default:
+                throw new IllegalArgumentException("Unexpected relation: " + relation);
         }
     }
 
     private final Filter convertQuery(Condition<?> condition) {
         if (condition instanceof PredicateCondition) {
-            PredicateCondition<String,?> atom = (PredicateCondition) condition;
+            PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
             String key = atom.getKey();
             TitanPredicate titanPredicate = atom.getPredicate();
             if (value instanceof Number) {
-                Preconditions.checkArgument(titanPredicate instanceof Cmp,"Relation not supported on numeric types: " + titanPredicate);
+                Preconditions.checkArgument(titanPredicate instanceof Cmp, "Relation not supported on numeric types: " + titanPredicate);
                 Preconditions.checkArgument(value instanceof Number);
-                return numericFilter(key,(Cmp) titanPredicate,(Number)value);
+                return numericFilter(key, (Cmp) titanPredicate, (Number) value);
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {
-                    return new TermsFilter(new Term(key,((String)value).toLowerCase()));
+                    return new TermsFilter(new Term(key, ((String) value).toLowerCase()));
 //                } else if (relation == Txt.PREFIX) {
 //                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.EQUAL) {
@@ -303,16 +330,17 @@ public class LuceneIndex implements IndexProvider {
 //                    BooleanFilter q = new BooleanFilter();
 //                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
 //                    return q;
-                } else throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+                } else
+                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
-                Preconditions.checkArgument(titanPredicate ==Geo.WITHIN,"Relation is not supported for geo value: " + titanPredicate);
-                Shape shape = ((Geoshape)value).convert2Spatial4j();
-                SpatialArgs args = new SpatialArgs(SpatialOperation.IsWithin,shape);
+                Preconditions.checkArgument(titanPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + titanPredicate);
+                Shape shape = ((Geoshape) value).convert2Spatial4j();
+                SpatialArgs args = new SpatialArgs(SpatialOperation.IsWithin, shape);
                 return getSpatialStrategy(key).makeFilter(args);
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
             BooleanFilter q = new BooleanFilter();
-            q.add(convertQuery(((Not)condition).getChild()), BooleanClause.Occur.MUST_NOT);
+            q.add(convertQuery(((Not) condition).getChild()), BooleanClause.Occur.MUST_NOT);
             return q;
         } else if (condition instanceof And) {
             BooleanFilter q = new BooleanFilter();
@@ -348,7 +376,8 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(Class<?> dataType) {
-        if (Number.class.isAssignableFrom(dataType) || dataType== Geoshape.class || dataType==String.class) return true;
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == String.class)
+            return true;
         else return false;
     }
 
@@ -357,7 +386,7 @@ public class LuceneIndex implements IndexProvider {
         try {
             for (IndexWriter w : writers.values()) w.close();
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not close writers",e);
+            throw new PermanentStorageException("Could not close writers", e);
         }
     }
 
@@ -366,7 +395,7 @@ public class LuceneIndex implements IndexProvider {
         try {
             FileUtils.deleteDirectory(new File(basePath));
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not delete lucene directory: " + basePath,e);
+            throw new PermanentStorageException("Could not delete lucene directory: " + basePath, e);
         }
     }
 
@@ -375,12 +404,12 @@ public class LuceneIndex implements IndexProvider {
         private final Set<String> updatedStores = Sets.newHashSet();
 
 
-        private final Map<String,IndexSearcher> searchers = new HashMap<String,IndexSearcher>(4);
+        private final Map<String, IndexSearcher> searchers = new HashMap<String, IndexSearcher>(4);
 
 
         private synchronized IndexSearcher getSearcher(String store) throws StorageException {
             IndexSearcher searcher = searchers.get(store);
-            if (searcher==null) {
+            if (searcher == null) {
                 IndexReader reader = null;
                 try {
                     reader = DirectoryReader.open(getStoreDirectory(store));
@@ -388,9 +417,9 @@ public class LuceneIndex implements IndexProvider {
                 } catch (IndexNotFoundException e) {
                     searcher = null;
                 } catch (IOException e) {
-                    throw new PermanentStorageException("Could not open index reader on store: " + store,e);
+                    throw new PermanentStorageException("Could not open index reader on store: " + store, e);
                 }
-                searchers.put(store,searcher);
+                searchers.put(store, searcher);
             }
             return searcher;
         }
@@ -419,10 +448,10 @@ public class LuceneIndex implements IndexProvider {
         private void close() throws StorageException {
             try {
                 for (IndexSearcher searcher : searchers.values()) {
-                    if (searcher!=null) searcher.getIndexReader().close();
+                    if (searcher != null) searcher.getIndexReader().close();
                 }
-            }  catch (IOException e) {
-                throw new PermanentStorageException("Could not close searcher",e);
+            } catch (IOException e) {
+                throw new PermanentStorageException("Could not close searcher", e);
             }
         }
     }

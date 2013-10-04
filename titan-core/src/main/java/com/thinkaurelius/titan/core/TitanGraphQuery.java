@@ -94,8 +94,8 @@ public interface TitanGraphQuery extends GraphQuery {
      * @param order
      * @return
      */
-//    public TitanGraphQuery orderBy(String key, Order order);
-//
-//    public TitanGraphQuery orderBy(TitanKey key, Order order);
+    public TitanGraphQuery orderBy(String key, Order order);
+
+    public TitanGraphQuery orderBy(TitanKey key, Order order);
 
 }

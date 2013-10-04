@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -21,6 +20,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
@@ -162,9 +162,10 @@ public class IndexSerializer {
 
     public List<Object> query(final String indexName, final IndexQuery query, final BackendTransaction tx) {
         Preconditions.checkArgument(indexes.containsKey(indexName), "Index unknown or unconfigured: %s", indexName);
-        if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
+        if (isStandardIndex(indexName)) {
+            Preconditions.checkArgument(query.getOrder().isEmpty(), "Standard index does not support ordering");
             List<Object> results = null;
-            final ElementType resultType = query.getResultType();
+            final ElementType resultType = getElementType(query.getStore());
             final Condition<?> condition = query.getCondition();
 
             if (condition instanceof And) {
@@ -195,18 +196,7 @@ public class IndexSerializer {
             }
             return results;
         } else {
-            IndexQuery newQuery = new IndexQuery(query.getResultType(),
-                    ConditionUtil.literalTransformation(query.getCondition(), new Function<Condition<TitanElement>, Condition<TitanElement>>() {
-                        @Nullable
-                        @Override
-                        public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
-                            Preconditions.checkArgument(condition instanceof PredicateCondition);
-                            PredicateCondition pc = (PredicateCondition) condition;
-                            TitanKey key = (TitanKey) pc.getKey();
-                            return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getValue());
-                        }
-                    }));
-            List<String> r = tx.indexQuery(indexName, newQuery);
+            List<String> r = tx.indexQuery(indexName, query);
             List<Object> result = new ArrayList<Object>(r.size());
             for (String id : r) result.add(string2ElementId(id));
             return result;
@@ -242,9 +232,41 @@ public class IndexSerializer {
         return results;
     }
 
+    public IndexQuery getQuery(String index, final ElementType resultType, final Condition condition, final OrderList orders) {
+        if (isStandardIndex(index)) {
+            Preconditions.checkArgument(orders.isEmpty());
+            return new IndexQuery(getStoreName(resultType), condition, IndexQuery.NO_ORDER);
+        } else {
+            Condition newCondition = ConditionUtil.literalTransformation(condition,
+                    new Function<Condition<TitanElement>, Condition<TitanElement>>() {
+                        @Nullable
+                        @Override
+                        public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
+                            Preconditions.checkArgument(condition instanceof PredicateCondition);
+                            PredicateCondition pc = (PredicateCondition) condition;
+                            TitanKey key = (TitanKey) pc.getKey();
+                            return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getValue());
+                        }
+                    });
+            ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
+            if (!orders.isEmpty()) {
+                ImmutableList.Builder<IndexQuery.OrderEntry> lb = ImmutableList.builder();
+                for (int i = 0; i < orders.size(); i++) {
+                    lb.add(new IndexQuery.OrderEntry(key2String(orders.getKey(i)), orders.getOrder(i), orders.getKey(i).getDataType()));
+                }
+                newOrders = lb.build();
+            }
+            return new IndexQuery(getStoreName(resultType), newCondition, newOrders);
+        }
+    }
+
     /* ################################################
                 Utility Functions
     ################################################### */
+
+    private static final boolean isStandardIndex(String index) {
+        return index.equals(Titan.Token.STANDARD_INDEX);
+    }
 
     private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
         long[] longs = rid.getLongRepresentation();
@@ -287,9 +309,17 @@ public class IndexSerializer {
     }
 
     private static final String getStoreName(TitanElement element) {
-        if (element instanceof TitanVertex) return ElementType.VERTEX.getName();
-        else if (element instanceof TitanEdge) return ElementType.EDGE.getName();
+        if (element instanceof TitanVertex) return getStoreName(ElementType.VERTEX);
+        else if (element instanceof TitanEdge) return getStoreName(ElementType.EDGE);
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
+    }
+
+    private static final String getStoreName(ElementType type) {
+        return type.getName();
+    }
+
+    private static final ElementType getElementType(String store) {
+        return ElementType.getByName(store);
     }
 
     private final StaticBuffer getIndexKey(Object att) {

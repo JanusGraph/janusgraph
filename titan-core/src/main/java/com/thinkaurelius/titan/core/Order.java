@@ -15,4 +15,15 @@ public enum Order {
      */
     DESC;
 
+    public int modulateNaturalOrder(int compare) {
+        switch (this) {
+            case ASC:
+                return compare;
+            case DESC:
+                return -compare;
+            default:
+                throw new AssertionError("Unrecognized order: " + this);
+        }
+    }
+
 }

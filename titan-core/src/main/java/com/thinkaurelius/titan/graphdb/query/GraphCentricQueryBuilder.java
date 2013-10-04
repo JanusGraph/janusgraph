@@ -1,30 +1,30 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanGraphQuery;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanType;
+import com.google.common.collect.*;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.Callable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,6 +37,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     private final StandardTitanTx tx;
     private final IndexSerializer serializer;
     private List<PredicateCondition<String, TitanElement>> constraints;
+    private OrderList orders = new OrderList();
     private int limit = Query.NO_LIMIT;
 
     public GraphCentricQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
@@ -113,6 +114,21 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         return this;
     }
 
+    @Override
+    public GraphCentricQueryBuilder orderBy(String key, Order order) {
+        return orderBy(tx.getPropertyKey(key), order);
+    }
+
+    @Override
+    public GraphCentricQueryBuilder orderBy(TitanKey key, Order order) {
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
+                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
+        Preconditions.checkArgument(key.isUnique(Direction.OUT), "Ordering is undefined on multi-valued key [%s]", key.getName());
+        Preconditions.checkArgument(!orders.containsKey(key.getName()));
+        orders.add(key, order);
+        return this;
+    }
+
     /* ---------------------------------------------------------------
      * Query Execution
 	 * ---------------------------------------------------------------
@@ -124,7 +140,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         if (QueryUtil.isEmpty(query.getCondition()))
             return IterablesUtil.limitedIterable(tx.getVertices(), query.getLimit());
         else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, IndexQuery>(query, tx.elementProcessor), Vertex.class);
+            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
     }
 
     @Override
@@ -133,7 +149,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         if (QueryUtil.isEmpty(query.getCondition()))
             return IterablesUtil.limitedIterable(tx.getEdges(), query.getLimit());
         else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, IndexQuery>(query, tx.elementProcessor), Edge.class);
+            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
     }
 
     /* ---------------------------------------------------------------
@@ -153,70 +169,76 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         And<TitanElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
         if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
 
+        orders.makeImmutable();
+        if (orders.isEmpty()) orders = OrderList.NO_ORDER;
+
         //Count how many conditions are not covered by an index
         int andClausesNotCovered = 0;
-        for (Condition<TitanElement> child : conditions.getChildren()) {
-            if (QueryUtil.andClauseIndexCover(resultType, child, serializer).isEmpty()) andClausesNotCovered++;
+        Map<Condition, Set<String>> andConditionCoverage = Maps.newHashMap();
+        for (Condition child : conditions.getChildren()) {
+            Set<String> indexes = QueryUtil.andClauseIndexCover(resultType, child, serializer);
+            if (!indexes.isEmpty()) {
+                andConditionCoverage.put(child, indexes);
+            } else {
+                andClausesNotCovered++;
+            }
         }
 
+        BackendQueryHolder<JointIndexQuery> query;
+        if (!andConditionCoverage.isEmpty()) {
+            JointIndexQuery jointQuery = new JointIndexQuery();
+            boolean isSorted = true;
 
-//        //Find most suitable index by checking all top level (i.e. AND level) predicate conditions and
-//        //checking which indexes cover those (we ignore NOT and nested OR since they are much less constraining).
-//        //For each index, count the matches. Equality constraints count more since they have much higher selectivity than all others.
-//        final ObjectAccumulator<String> counts = new ObjectAccumulator<String>(5);
-//        for (Condition<TitanElement> child : conditions.getChildren()) {
-//            if (child instanceof PredicateCondition) {
-//                PredicateCondition<TitanType,TitanElement> atom = (PredicateCondition)child;
-//                if (atom.getValue()!=null) {
-//                    Preconditions.checkArgument(atom.getKey().isPropertyKey());
-//                    TitanKey key = (TitanKey)atom.getKey();
-//                    TitanPredicate predicate = atom.getPredicate();
-//                    for (String index : key.getIndexes(resultType.getElementType())) {
-//                        if (serializer.getIndexInformation(index).supports(key.getDataType(),atom.getPredicate()))
-//                            counts.incBy(index,(predicate==Cmp.EQUAL)?5:1);
-//                    }
-//                }
-//            }
-//        }
-//
-//        final String bestIndex = counts.getMaxObject();
-//        log.debug("Best index for query: {}",bestIndex);
-//        BackendQueryHolder<IndexQuery> query = null;
-//        if (bestIndex==null) {
-//            //No suitable index could be found => requires iterating over all elements
-//            query = new BackendQueryHolder<IndexQuery>(serializer.getQuery(null,null,resultType),false,null);
-//        } else {
-//            //Filter the conditions so that matchingConditions contains all those that can be handled by bestIndex
-//            //and reaminingConditions contains the remaining ones. In filtering, make sure OR-clauses are considered as one
-//            final And<TitanElement> matchingConditions = new And<TitanElement>(conditions.size()), remainingConditions = new And<TitanElement>(conditions.size()-1);
-//            for (Condition<TitanElement> child : conditions.getChildren()) {
-//                if (isIndexCondition(bestIndex,resultType,child)) matchingConditions.add(child);
-//                else remainingConditions.add(child);
-//            }
-//            query = new BackendQueryHolder<IndexQuery>(serializer.getQuery(bestIndex,QueryUtil.simplifyQNF(matchingConditions),resultType),remainingConditions.isEmpty(),bestIndex);
-//        }
+            while (!andConditionCoverage.isEmpty()) {
+                final ObjectAccumulator<String> counts = new ObjectAccumulator<String>(5);
+                for (Set<String> indexes : andConditionCoverage.values()) {
+                    for (String index : indexes) counts.incBy(index, 1.0);
+                }
+                final String bestIndex = counts.getMaxObject();
+                Preconditions.checkNotNull(bestIndex);
+                boolean supportsOrder = indexCoversOrder(bestIndex, orders, resultType);
 
-        /* TODO: smarter optimization:
-        1) use only one PredicateCondition if in-unique
-        2) use in-memory histograms to estimate selectivity of PredicateConditions and filter out low-selectivity ones if they would result in an individual index call (better to filter afterwards in memory)
-        */
+                final And<TitanElement> matchingCond = new And<TitanElement>((int) counts.getCount(bestIndex));
+                Iterator<Map.Entry<Condition, Set<String>>> conditer = andConditionCoverage.entrySet().iterator();
+                while (conditer.hasNext()) {
+                    Map.Entry<Condition, Set<String>> entry = conditer.next();
+                    if (entry.getValue().contains(bestIndex)) {
+                        matchingCond.add(entry.getKey());
+                        conditer.remove();
+                    }
+                }
+                final IndexQuery subquery = serializer.getQuery(bestIndex, resultType, matchingCond, supportsOrder ? orders : OrderList.NO_ORDER);
+                jointQuery.add(bestIndex, subquery);
+                isSorted = isSorted && supportsOrder;
+            }
 
-        BackendQueryHolder<IndexQuery> query = new BackendQueryHolder<IndexQuery>(new IndexQuery(resultType, conditions), andClausesNotCovered == 0, null);
+            /* TODO: smarter optimization:
+            1) use only one PredicateCondition if in-unique
+            2) use in-memory histograms to estimate selectivity of PredicateConditions and filter out low-selectivity ones if they would result in an individual index call (better to filter afterwards in memory)
+            */
 
+            int indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
+            indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, andClausesNotCovered, indexLimit));
+            jointQuery.setLimit(indexLimit);
+            query = new BackendQueryHolder<JointIndexQuery>(jointQuery, andClausesNotCovered == 0, isSorted, null);
+        } else {
+            query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, false, null);
+        }
 
-        int indexLimit = limit == Query.NO_LIMIT ? DEFAULT_NO_LIMIT : Math.min(MAX_BASE_LIMIT, limit);
-        indexLimit = Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, andClausesNotCovered, indexLimit));
-        query.getBackendQuery().setLimit(indexLimit);
-
-        return new GraphCentricQuery(resultType, conditions, query, limit);
+        return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
-    private static class ConditionCounter implements Predicate<Condition> {
-
-        @Override
-        public boolean apply(@Nullable Condition condition) {
-            return false;  //To change body of implemented methods use File | Settings | File Templates.
+    private static final boolean indexCoversOrder(String index, OrderList orders, ElementType resultType) {
+        if (orders.isEmpty()) return true;
+        else if (index.equals(Titan.Token.STANDARD_INDEX)) return false;
+        for (int i = 0; i < orders.size(); i++) {
+            boolean found = false;
+            for (String keyindex : orders.getKey(i).getIndexes(resultType.getElementType())) {
+                if (keyindex.equals(index)) found = true;
+            }
+            if (!found) return false;
         }
+        return true;
     }
 
 

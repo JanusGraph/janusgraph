@@ -21,10 +21,7 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
@@ -739,7 +736,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     };
 
 
-    public final QueryExecutor<GraphCentricQuery, TitanElement, IndexQuery> elementProcessor = new QueryExecutor<GraphCentricQuery, TitanElement, IndexQuery>() {
+    public final QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery> elementProcessor = new QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>() {
 
         private final PredicateCondition<TitanKey, TitanElement> getEqualityCondition(Condition<TitanElement> condition) {
             if (condition instanceof PredicateCondition) {
@@ -840,47 +837,22 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
 
         @Override
-        public Iterator<TitanElement> execute(final GraphCentricQuery query, final IndexQuery indexQuery, final Object exeInfo) {
+        public Iterator<TitanElement> execute(final GraphCentricQuery query, final JointIndexQuery indexQuery, final Object exeInfo) {
             Iterator<TitanElement> iter = null;
-            final Condition<TitanElement> queryCond = indexQuery.getCondition();
-            final ElementType resultType = indexQuery.getResultType();
-
-            Map<Condition, Set<String>> andConditionCoverage = Maps.newHashMap();
-            for (Condition child : queryCond.getChildren()) {
-                Set<String> indexes = QueryUtil.andClauseIndexCover(resultType, child, indexSerializer);
-                if (!indexes.isEmpty()) {
-                    andConditionCoverage.put(child, indexes);
-                }
-            }
-
-            if (!andConditionCoverage.isEmpty()) {
+            if (!indexQuery.isEmpty()) {
                 List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<QueryUtil.IndexCall<Object>>();
-                while (!andConditionCoverage.isEmpty()) {
-                    final ObjectAccumulator<String> counts = new ObjectAccumulator<String>(5);
-                    for (Set<String> indexes : andConditionCoverage.values()) {
-                        for (String index : indexes) counts.incBy(index, 1.0);
-                    }
-                    final String bestIndex = counts.getMaxObject();
-                    Preconditions.checkNotNull(bestIndex);
-
-                    final And<TitanElement> matchingCond = new And<TitanElement>((int) counts.getCount(bestIndex));
-                    Iterator<Map.Entry<Condition, Set<String>>> conditer = andConditionCoverage.entrySet().iterator();
-                    while (conditer.hasNext()) {
-                        Map.Entry<Condition, Set<String>> entry = conditer.next();
-                        if (entry.getValue().contains(bestIndex)) {
-                            matchingCond.add(entry.getKey());
-                            conditer.remove();
-                        }
-                    }
+                for (int i = 0; i < indexQuery.size(); i++) {
+                    final String index = indexQuery.getIndex(i);
+                    final IndexQuery subquery = indexQuery.getQuery(i);
                     retrievals.add(new QueryUtil.IndexCall<Object>() {
                         @Override
                         public Collection<Object> call(int limit) {
-                            final IndexQuery subquery = new IndexQuery(indexQuery.getResultType(), matchingCond).setLimit(limit);
+                            IndexQuery adjustedQuery = subquery.updateLimit(limit);
                             try {
                                 return indexCache.get(subquery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
-                                        return indexSerializer.query(bestIndex, subquery, txHandle);
+                                        return indexSerializer.query(index, subquery, txHandle);
                                     }
                                 });
                             } catch (Exception e) {
@@ -890,14 +862,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     });
                 }
 
+
                 List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
                 iter = Iterators.transform(resultSet.iterator(), new Function<Object, TitanElement>() {
                     @Nullable
                     @Override
                     public TitanElement apply(@Nullable Object id) {
                         Preconditions.checkNotNull(id);
-                        if (resultType == ElementType.VERTEX) return getExistingVertex((Long) id);
-                        else if (resultType == ElementType.EDGE)
+                        if (query.getResultType() == ElementType.VERTEX) return getExistingVertex((Long) id);
+                        else if (query.getResultType() == ElementType.EDGE)
                             return (TitanElement) getEdge((RelationIdentifier) id);
                         else throw new IllegalArgumentException("Unexpected id type: " + id);
                     }
