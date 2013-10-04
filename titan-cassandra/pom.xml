@@ -234,7 +234,7 @@
                                     <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
                                     <perCoreThreadCount>true</perCoreThreadCount>
-                                    <threadCount>4</threadCount>
+                                    <threadCount>2</threadCount>
                                     <runOrder>random</runOrder>
                                 </configuration>
                             </execution>
@@ -292,7 +292,7 @@
                                     <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
                                     <perCoreThreadCount>true</perCoreThreadCount>
-                                    <threadCount>4</threadCount>
+                                    <threadCount>2</threadCount>
                                     <runOrder>random</runOrder>
                                 </configuration>
                             </execution>
