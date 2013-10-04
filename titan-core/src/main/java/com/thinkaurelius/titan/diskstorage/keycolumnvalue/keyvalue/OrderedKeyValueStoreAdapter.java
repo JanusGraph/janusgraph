@@ -338,7 +338,16 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
             while (!foundNextKey && iterator.hasNext()) {
                 StaticBuffer keycolumn = iterator.next();
 
+                // Check key bounds (if set)
                 if (startKey != null && endKey != null && (keycolumn.compareTo(startKey) < 0 || keycolumn.compareTo(endKey) >= 0))
+                    continue;
+                
+                // Check column bounds (always set)
+                assert null != sliceQuery;
+                assert null != sliceQuery.getSliceStart();
+                assert null != sliceQuery.getSliceEnd();
+                StaticBuffer col = getColumn(keycolumn);
+                if (col.compareTo(sliceQuery.getSliceStart()) < 0 || col.compareTo(sliceQuery.getSliceEnd()) >= 0)
                     continue;
 
                 if (nextKey == null || !equalKey(keycolumn, nextKey)) {
