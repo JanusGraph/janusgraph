@@ -114,6 +114,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         private final StoreTransaction transaction;
 
         private Map.Entry<StaticBuffer, ColumnValueStore> currentRow;
+        private Map.Entry<StaticBuffer, ColumnValueStore> nextRow;
         private boolean isClosed;
 
         public RowIterator(Iterator<Map.Entry<StaticBuffer, ColumnValueStore>> rows,
@@ -163,13 +164,29 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public boolean hasNext() throws StorageException {
             ensureOpen();
-            return rows.hasNext();
+            
+            if (null != nextRow)
+                return true;
+            
+            while (rows.hasNext()) {
+                nextRow = rows.next();
+                List<Entry> ents = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
+                if (null != ents && 0 < ents.size())
+                    break;
+            }
+            
+            return null != nextRow;
         }
 
         @Override
         public StaticBuffer next() throws StorageException {
             ensureOpen();
-            currentRow = rows.next();
+            
+            Preconditions.checkNotNull(nextRow);
+            
+            currentRow = nextRow;
+            nextRow = null;;
+            
             return currentRow.getKey();
         }
 
