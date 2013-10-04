@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -90,6 +92,14 @@ public abstract class IndexProviderTest {
             add(store, "doc3", doc3, false);
 
         }
+
+        ImmutableList<IndexQuery.OrderEntry> orderTimeAsc = ImmutableList.of(new IndexQuery.OrderEntry("time", Order.ASC, Integer.class));
+        ImmutableList<IndexQuery.OrderEntry> orderWeightAsc = ImmutableList.of(new IndexQuery.OrderEntry("weight", Order.ASC, Double.class));
+        ImmutableList<IndexQuery.OrderEntry> orderTimeDesc = ImmutableList.of(new IndexQuery.OrderEntry("time", Order.DESC, Integer.class));
+        ImmutableList<IndexQuery.OrderEntry> orderWeightDesc = ImmutableList.of(new IndexQuery.OrderEntry("weight", Order.DESC, Double.class));
+        ImmutableList<IndexQuery.OrderEntry> jointOrder = ImmutableList.of(new IndexQuery.OrderEntry("weight", Order.DESC, Double.class), new IndexQuery.OrderEntry("time", Order.DESC, Integer.class));
+
+
         clopen();
 
         for (String store : stores) {
@@ -98,6 +108,19 @@ public abstract class IndexProviderTest {
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "wOrLD")))));
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "worl"))).size());
+
+            //Ordering
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), orderTimeDesc));
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), orderWeightDesc));
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), orderTimeAsc));
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), orderWeightAsc));
+            assertEquals(ImmutableList.of("doc1", "doc2"), result);
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), jointOrder));
+            assertEquals(ImmutableList.of("doc2", "doc1"), result);
+
 
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "world"), PredicateCondition.of("text", Text.CONTAINS, "hello"))));
             assertEquals(1, result.size());

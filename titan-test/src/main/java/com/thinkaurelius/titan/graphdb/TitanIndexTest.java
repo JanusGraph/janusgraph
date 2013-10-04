@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.attribute.Cmp;
@@ -9,6 +12,7 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
@@ -16,6 +20,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -96,8 +101,32 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         }
 
         for (int i = 0; i < words.length; i++) {
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+            int expectedSize = numV / words.length;
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+
+            //Test ordering
+            for (String orderKey : new String[]{"time", "category"}) {
+                for (Order order : Order.values()) {
+                    for (Iterable<? extends Element> iter : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
+                    )) {
+                        Element previous = null;
+                        int count = 0;
+                        for (Element element : iter) {
+                            if (previous != null) {
+                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
+                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
+                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
+                            }
+                            previous = element;
+                            count++;
+                        }
+                        assertEquals(expectedSize, count);
+                    }
+                }
+            }
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
@@ -128,8 +157,32 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         //Copied from above
         for (int i = 0; i < words.length; i++) {
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+            int expectedSize = numV / words.length;
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+
+            //Test ordering
+            for (String orderKey : new String[]{"time", "category"}) {
+                for (Order order : Order.values()) {
+                    for (Iterable<? extends Element> iter : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
+                    )) {
+                        Element previous = null;
+                        int count = 0;
+                        for (Element element : iter) {
+                            if (previous != null) {
+                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
+                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
+                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
+                            }
+                            previous = element;
+                            count++;
+                        }
+                        assertEquals(expectedSize, count);
+                    }
+                }
+            }
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {

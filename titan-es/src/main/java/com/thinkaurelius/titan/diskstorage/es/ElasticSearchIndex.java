@@ -47,6 +47,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -392,7 +393,9 @@ public class ElasticSearchIndex implements IndexProvider {
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
-                srb.addSort(orders.get(i).getKey(), orders.get(i).getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC);
+                srb.addSort(new FieldSortBuilder(orders.get(i).getKey())
+                        .order(orders.get(i).getOrder() == Order.ASC ? SortOrder.ASC : SortOrder.DESC)
+                        .ignoreUnmapped(true));
             }
         }
         srb.setFrom(0);
