@@ -75,7 +75,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         StaticBuffer b1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
 
-        Assert.assertNull(KCVUtil.get(store1, b1, b1, tx));
+        Assert.assertNull(KCVSUtil.get(store1, b1, b1, tx));
 
         List<Entry> additions = Arrays.<Entry>asList(new StaticBufferEntry(b1, b1));
 
@@ -92,7 +92,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         store1.mutate(b1, additions, deletions, tx);
         tx.flush();
 
-        StaticBuffer result = KCVUtil.get(store1, b1, b1, tx);
+        StaticBuffer result = KCVSUtil.get(store1, b1, b1, tx);
 
         Assert.assertEquals(b1, result);
 
@@ -100,13 +100,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         tx.flush();
 
         for (int i = 0; i < 100; i++) {
-            StaticBuffer n = KCVUtil.get(store1, b1, b1, tx);
+            StaticBuffer n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
             store1.mutate(b1, NO_ADDITIONS, deletions, tx);
             tx.flush();
-            n = KCVUtil.get(store1, b1, b1, tx);
+            n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
         }
 
@@ -115,13 +115,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             tx.flush();
             store1.mutate(b1, additions, NO_DELETIONS, tx);
             tx.flush();
-            Assert.assertEquals(b1, KCVUtil.get(store1, b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
 
         for (int i = 0; i < 100; i++) {
             store1.mutate(b1, additions, deletions, tx);
             tx.flush();
-            Assert.assertEquals(b1, KCVUtil.get(store1, b1, b1, tx));
+            Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
     }
     
@@ -203,7 +203,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
             for (StaticBuffer col : state.get(key).keySet()) {
                 StaticBuffer val = state.get(key).get(col);
 
-                Assert.assertEquals(val, KCVUtil.get(store, key, col, tx));
+                Assert.assertEquals(val, KCVSUtil.get(store, key, col, tx));
 
                 checked++;
             }
@@ -235,7 +235,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     continue;
                 }
 
-                Assert.assertNull(KCVUtil.get(store, key, col, tx));
+                Assert.assertNull(KCVSUtil.get(store, key, col, tx));
 
                 checked++;
             }

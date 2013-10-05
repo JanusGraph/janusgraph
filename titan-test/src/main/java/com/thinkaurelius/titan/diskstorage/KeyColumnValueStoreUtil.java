@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVUtil;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 public class KeyColumnValueStoreUtil {
@@ -19,7 +19,7 @@ public class KeyColumnValueStoreUtil {
     public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
-        StaticBuffer valBytes = KCVUtil.get(store, k, c, txn);
+        StaticBuffer valBytes = KCVSUtil.get(store, k, c, txn);
         if (null == valBytes)
             return null;
         return byteBufferToString(valBytes);

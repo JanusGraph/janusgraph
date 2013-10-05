@@ -75,10 +75,10 @@ public class TransactionalIDManager extends AbstractIDManager {
     }
 
     private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        if (!KCVUtil.containsKeyColumn(idStore, partitionKey, DEFAULT_COLUMN, txh)) {
+        if (!KCVSUtil.containsKeyColumn(idStore, partitionKey, DEFAULT_COLUMN, txh)) {
             return BASE_ID;
         } else {
-            long current = KCVUtil.get(idStore, partitionKey, DEFAULT_COLUMN, txh).getLong(0);
+            long current = KCVSUtil.get(idStore, partitionKey, DEFAULT_COLUMN, txh).getLong(0);
             return current;
         }
     }

@@ -130,7 +130,7 @@ public abstract class KeyColumnValueStoreTest {
     public void checkValueExistence(String[][] values, Set<KeyColumn> removed) throws StorageException {
         for (int i = 0; i < numKeys; i++) {
             for (int j = 0; j < numColumns; j++) {
-                boolean result = KCVUtil.containsKeyColumn(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
+                boolean result = KCVSUtil.containsKeyColumn(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
                 if (removed.contains(new KeyColumn(i, j))) {
                     Assert.assertFalse(result);
                 } else {
@@ -147,7 +147,7 @@ public abstract class KeyColumnValueStoreTest {
     public void checkValues(String[][] values, Set<KeyColumn> removed) throws StorageException {
         for (int i = 0; i < numKeys; i++) {
             for (int j = 0; j < numColumns; j++) {
-                StaticBuffer result = KCVUtil.get(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
+                StaticBuffer result = KCVSUtil.get(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
                 if (removed.contains(new KeyColumn(i, j))) {
                     Assert.assertNull(result);
                 } else {
@@ -490,7 +490,7 @@ public abstract class KeyColumnValueStoreTest {
     public void containsKeyColumnReturnsFalseOnNonexistentInput() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
-        Assert.assertFalse(KCVUtil.containsKeyColumn(store, key1, c, tx));
+        Assert.assertFalse(KCVSUtil.containsKeyColumn(store, key1, c, tx));
     }
 
     @Test
@@ -501,7 +501,7 @@ public abstract class KeyColumnValueStoreTest {
         tx = manager.beginTransaction(ConsistencyLevel.DEFAULT);
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
-        Assert.assertTrue(KCVUtil.containsKeyColumn(store, key1, c, tx));
+        Assert.assertTrue(KCVSUtil.containsKeyColumn(store, key1, c, tx));
     }
 
     @Test
