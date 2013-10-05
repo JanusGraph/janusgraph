@@ -399,8 +399,10 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {
                     return FilterBuilders.termFilter(key, ((String) value).toLowerCase());
-//                } else if (relation == Txt.PREFIX) {
-//                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
+                } else if (titanPredicate == Text.PREFIX) {
+                    return FilterBuilders.prefixFilter(key, ((String) value).toLowerCase());
+                } else if (titanPredicate == Text.REGEX) {
+                    return FilterBuilders.regexpFilter(key, (String) value);
 //                } else if (relation == Cmp.EQUAL) {
 //                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.NOT_EQUAL) {
@@ -408,7 +410,7 @@ public class ElasticSearchIndex implements IndexProvider {
 //                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
 //                    return q;
                 } else
-                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+                    throw new IllegalArgumentException("Predicate is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(titanPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + titanPredicate);
                 Geoshape shape = (Geoshape) value;
@@ -479,7 +481,7 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
         } else if (dataType == String.class) {
-            return titanPredicate == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX || titanPredicate == Text.REGEX;
         } else return false;
     }
 

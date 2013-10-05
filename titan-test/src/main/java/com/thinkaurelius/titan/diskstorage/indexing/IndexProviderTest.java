@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -121,6 +122,21 @@ public abstract class IndexProviderTest {
             result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.CONTAINS, "world"), jointOrder));
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
 
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.PREFIX, "w")));
+            assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.PREFIX, "wOr")));
+            assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
+
+            if (index.supports(String.class, Text.REGEX)) {
+                result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.REGEX, "he[l]+(.*)")));
+                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
+                result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.REGEX, "[h]+e[l]+(.*)")));
+                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
+                result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.REGEX, "he[l]+")));
+                assertTrue(result.isEmpty());
+                result = tx.query(new IndexQuery(store, PredicateCondition.of("text", Text.REGEX, "e[l]+(.*)")));
+                assertTrue(result.isEmpty());
+            }
 
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("text", Text.CONTAINS, "world"), PredicateCondition.of("text", Text.CONTAINS, "hello"))));
             assertEquals(1, result.size());

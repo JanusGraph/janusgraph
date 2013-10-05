@@ -6,6 +6,9 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Comparison relations for text objects.
  *
@@ -28,20 +31,8 @@ public enum Text implements TitanPredicate {
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
             String term = ((String) condition).trim().toLowerCase();
             if (term.length() < MIN_TERM_LENGTH) return false;
-            String text = value.toString().toLowerCase();
-            int position = 0;
-            while (position >= 0) {
-                position = text.indexOf(term, position);
-                if (position >= 0) {
-                    int afterPos = position + term.length();
-//                    System.out.println(position + "|"+afterPos);
-                    Preconditions.checkArgument(afterPos <= text.length());
-                    if ((position == 0 || !Character.isLetterOrDigit(text.charAt(position - 1)))
-                            && (afterPos == text.length() || !Character.isLetterOrDigit(text.charAt(afterPos)))) {
-                        return true;
-                    }
-                    position = afterPos;
-                }
+            for (String token : tokenize(value.toString().toLowerCase())) {
+                if (token.equals(term)) return true;
             }
             return false;
         }
@@ -60,10 +51,14 @@ public enum Text implements TitanPredicate {
     PREFIX {
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(condition instanceof String);
+            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
             if (value == null) return false;
             if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            return value.toString().startsWith((String) condition);
+            String prefix = ((String) condition).trim().toLowerCase();
+            for (String token : tokenize(value.toString().toLowerCase())) {
+                if (token.startsWith(prefix)) return true;
+            }
+            return false;
         }
 
         @Override
@@ -71,10 +66,43 @@ public enum Text implements TitanPredicate {
             return condition != null && condition instanceof String;
         }
 
+    },
+
+    REGEX {
+        @Override
+        public boolean evaluate(Object value, Object condition) {
+            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            if (value == null) return false;
+            if (!(value instanceof String)) log.debug("Value not a string: " + value);
+            String regex = (String) condition;
+            //TODO: compile regex for efficiency
+            for (String token : tokenize(value.toString().toLowerCase())) {
+                if (token.matches(regex)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+        }
+
     };
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);
 
+    public static List<String> tokenize(String str) {
+        ArrayList<String> tokens = new ArrayList<String>();
+        int previous = 0;
+        for (int p = 0; p < str.length(); p++) {
+            if (!Character.isLetterOrDigit(str.charAt(p))) {
+                if (p > previous) tokens.add(str.substring(previous, p));
+                previous = p + 1;
+            }
+        }
+        if (previous < str.length()) tokens.add(str.substring(previous, str.length()));
+        return tokens;
+    }
 
     @Override
     public boolean isValidValueType(Class<?> clazz) {

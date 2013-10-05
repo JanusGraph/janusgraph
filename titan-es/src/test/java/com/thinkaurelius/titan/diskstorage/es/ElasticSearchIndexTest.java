@@ -47,13 +47,14 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertFalse(index.supports(Object.class));
         assertFalse(index.supports(Exception.class));
 
+        assertTrue(index.supports(String.class, Text.PREFIX));
         assertTrue(index.supports(String.class, Text.CONTAINS));
+        assertTrue(index.supports(String.class, Text.REGEX));
         assertTrue(index.supports(Double.class, Cmp.EQUAL));
         assertTrue(index.supports(Double.class, Cmp.GREATER_THAN_EQUAL));
         assertTrue(index.supports(Double.class, Cmp.LESS_THAN));
         assertTrue(index.supports(Geoshape.class, Geo.WITHIN));
 
-        assertFalse(index.supports(String.class, Text.PREFIX));
         assertFalse(index.supports(Double.class, Geo.INTERSECT));
         assertFalse(index.supports(Long.class, Text.CONTAINS));
         assertFalse(index.supports(Geoshape.class, Geo.DISJOINT));
