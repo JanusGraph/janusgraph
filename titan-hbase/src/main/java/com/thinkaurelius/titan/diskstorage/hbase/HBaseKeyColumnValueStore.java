@@ -11,12 +11,14 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.util.system.IOUtils;
+
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -326,13 +328,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 private final Iterator<Map.Entry<byte[], byte[]>> kv = currentRow.getFamilyMap(columnFamilyBytes).entrySet().iterator();
 
                 @Override
-                public boolean hasNext() throws StorageException {
+                public boolean hasNext() {
                     ensureOpen();
                     return kv.hasNext();
                 }
 
                 @Override
-                public Entry next() throws StorageException {
+                public Entry next() {
                     ensureOpen();
 
                     Map.Entry<byte[], byte[]> column = kv.next();
@@ -340,20 +342,25 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 }
 
                 @Override
-                public void close() throws StorageException {
+                public void close() {
                     isClosed = true;
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
                 }
             };
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             ensureOpen();
             return rows.hasNext();
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             ensureOpen();
 
             currentRow = rows.next();
@@ -361,8 +368,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() {
             isClosed = true;
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
 
         private void ensureOpen() {

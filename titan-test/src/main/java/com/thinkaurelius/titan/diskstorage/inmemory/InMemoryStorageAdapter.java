@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+
 import org.apache.commons.configuration.Configuration;
 
 import java.util.List;
@@ -152,17 +153,23 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             return false;
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             throw new NoSuchElementException();
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() {
+            // Do nothing
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Can't remove element from empty iterator");
         }
     }
 

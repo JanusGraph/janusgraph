@@ -33,15 +33,11 @@ public class VertexIterable implements Iterable<InternalVertex> {
 
             private InternalVertex nextVertex() {
                 InternalVertex v = null;
-                try {
-                    while (v == null && iterator.hasNext()) {
-                        long nextId = iterator.next().longValue();
-                        v = tx.getExistingVertex(nextId);
-                        //Filter out deleted vertices and types
-                        if (v.isRemoved() || (v instanceof  TitanType)) v = null;
-                    }
-                } catch (StorageException e) {
-                    throw new TitanException("Read exception on open iterator", e);
+                while (v == null && iterator.hasNext()) {
+                    long nextId = iterator.next().longValue();
+                    v = tx.getExistingVertex(nextId);
+                    //Filter out deleted vertices and types
+                    if (v.isRemoved() || (v instanceof  TitanType)) v = null;
                 }
                 return v;
             }

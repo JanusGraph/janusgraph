@@ -193,12 +193,9 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
-            try {
-                if (cursor != null) cursor.close();
-            } catch (Exception e) {
-                throw new PermanentStorageException(e);
-            }
+        public void close() {
+            if (cursor != null)
+                cursor.close();
         }
 
         private void getNextKey() throws StorageException {
@@ -222,11 +219,20 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             if (nextKey == null) throw new NoSuchElementException();
             StaticBuffer returnKey = nextKey;
-            getNextKey();
+            try {
+                getNextKey();
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
             return returnKey;
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
 
     }

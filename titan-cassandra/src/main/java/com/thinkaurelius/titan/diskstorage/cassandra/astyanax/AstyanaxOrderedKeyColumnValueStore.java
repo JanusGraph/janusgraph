@@ -326,32 +326,37 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                         .iterator();
 
                 @Override
-                public boolean hasNext() throws StorageException {
+                public boolean hasNext() {
                     ensureOpen();
                     return columns.hasNext();
                 }
 
                 @Override
-                public Entry next() throws StorageException {
+                public Entry next() {
                     ensureOpen();
                     return columns.next();
                 }
 
                 @Override
-                public void close() throws StorageException {
+                public void close() {
                     isClosed = true;
+                }
+                
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
                 }
             };
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             ensureOpen();
             return rows.hasNext();
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             ensureOpen();
 
             currentRow = rows.next();
@@ -359,8 +364,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() {
             isClosed = true;
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
 
         private void ensureOpen() {

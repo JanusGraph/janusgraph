@@ -35,9 +35,11 @@ import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -169,18 +171,23 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return new RecordIterator<Long>() {
 
             @Override
-            public boolean hasNext() throws StorageException {
+            public boolean hasNext() {
                 return keyiter.hasNext();
             }
 
             @Override
-            public Long next() throws StorageException {
+            public Long next() {
                 return IDHandler.getKeyID(keyiter.next());
             }
 
             @Override
-            public void close() throws StorageException {
+            public void close() throws IOException {
                 keyiter.close();
+            }
+
+            @Override
+            public void remove() {
+                throw new UnsupportedOperationException("Removal not supported");
             }
         };
     }

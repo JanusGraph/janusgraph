@@ -467,18 +467,22 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             ensureOpen();
             
             if (!ksIter.hasNext() && !seenEnd) {
-                ksIter = rebuffer().iterator();
+                try {
+                    ksIter = rebuffer().iterator();
+                } catch (StorageException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             return ksIter.hasNext();
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             ensureOpen();
 
             if (!hasNext())
@@ -492,8 +496,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() {
             closeIterator();
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -505,20 +514,25 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                         columnSlice.getSliceEnd().asByteBuffer()).iterator();
 
                 @Override
-                public boolean hasNext() throws StorageException {
+                public boolean hasNext() {
                     ensureOpen();
                     return columns.hasNext();
                 }
 
                 @Override
-                public Entry next() throws StorageException {
+                public Entry next() {
                     ensureOpen();
                     return columns.next();
                 }
 
                 @Override
-                public void close() throws StorageException {
+                public void close() {
                     closeIterator();
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
                 }
             };
         }

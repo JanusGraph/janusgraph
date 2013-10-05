@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -126,18 +127,23 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             return rows.hasNext();
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             return truncateKey(rows.next());
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() throws IOException {
             rows.close();
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 }

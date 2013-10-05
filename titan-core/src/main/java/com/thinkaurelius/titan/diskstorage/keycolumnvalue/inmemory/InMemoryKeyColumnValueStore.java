@@ -143,26 +143,31 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
                 private final Iterator<Entry> items = currentRow.getValue().getSlice(keySlice, transaction).iterator();
 
                 @Override
-                public boolean hasNext() throws StorageException {
+                public boolean hasNext() {
                     ensureOpen();
                     return items.hasNext();
                 }
 
                 @Override
-                public Entry next() throws StorageException {
+                public Entry next() {
                     ensureOpen();
                     return items.next();
                 }
 
                 @Override
-                public void close() throws StorageException {
+                public void close() {
                     isClosed = true;
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException("Column removal not supported");
                 }
             };
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             ensureOpen();
             
             if (null != nextRow)
@@ -179,7 +184,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             ensureOpen();
             
             Preconditions.checkNotNull(nextRow);
@@ -191,13 +196,18 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() {
             isClosed = true;
         }
 
         private void ensureOpen() {
             if (isClosed)
                 throw new IllegalStateException("Iterator has been closed.");
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Key removal not supported");
         }
     }
 }

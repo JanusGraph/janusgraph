@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.List;
+
 import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager.VOLUME_NAME;
 
 /**
@@ -123,10 +123,14 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             if (nextKey == null) throw new NoSuchElementException();
             StaticBuffer returnKey = (StaticBuffer) nextKey;
-            getNextKey();
+            try {
+                getNextKey();
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
             return returnKey;
         }
 
@@ -143,6 +147,11 @@ public class PersistitKeyValueStore implements OrderedKeyValueStore {
             if (!isClosed) {
                 close();
             }
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
         }
     }
 

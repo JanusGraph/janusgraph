@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import java.io.IOException;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
@@ -82,13 +84,13 @@ public class MetricInstrumentedIterator implements KeyIterator {
     }
 
     @Override
-    public boolean hasNext() throws StorageException {
+    public boolean hasNext() {
         hasNextInvocationCounter.inc();
         Timer.Context tc = hasNextTimer.time();
 
         try {
             return iterator.hasNext();
-        } catch (StorageException e) {
+        } catch (RuntimeException e) {
             hasNextFailureCounter.inc();
             throw e;
         } finally {
@@ -97,13 +99,13 @@ public class MetricInstrumentedIterator implements KeyIterator {
     }
 
     @Override
-    public StaticBuffer next() throws StorageException {
+    public StaticBuffer next() {
         nextInvocationCounter.inc();
         Timer.Context tc = nextTimer.time();
 
         try {
             return iterator.next();
-        } catch (StorageException e) {
+        } catch (RuntimeException e) {
             nextFailureCounter.inc();
             throw e;
         } finally {
@@ -112,13 +114,13 @@ public class MetricInstrumentedIterator implements KeyIterator {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws IOException {
         closeInvocationCounter.inc();
         Timer.Context tc = closeTimer.time();
 
         try {
             iterator.close();
-        } catch (StorageException e) {
+        } catch (RuntimeException e) {
             closeFailureCounter.inc();
             throw e;
         } finally {
@@ -130,5 +132,10 @@ public class MetricInstrumentedIterator implements KeyIterator {
     public RecordIterator<Entry> getEntries() {
         // TODO: add metrics to entries if ever needed
         return iterator.getEntries();
+    }
+
+    @Override
+    public void remove() {
+        throw new UnsupportedOperationException();
     }
 }

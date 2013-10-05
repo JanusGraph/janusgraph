@@ -395,7 +395,80 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
+            try {
+                return hasNextInternal();
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public StaticBuffer next() {
+            ensureOpen();
+
+            if (!hasNext())
+                throw new NoSuchElementException();
+
+            currentRow = keys.next();
+            ByteBuffer currentKey = currentRow.key.key.duplicate();
+
+            try {
+                return new StaticByteBuffer(currentKey);
+            } finally {
+                lastSeenKey = currentKey;
+            }
+        }
+
+        @Override
+        public void close() {
+            isClosed = true;
+        }
+        
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public RecordIterator<Entry> getEntries() {
+            ensureOpen();
+
+            if (sliceQuery == null)
+                throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
+
+            try {
+                return new RecordIterator<Entry>() {
+                    final Iterator<Entry> columns = cfToEntries(currentRow.cf, sliceQuery.getSliceEnd()).iterator();
+
+                    @Override
+                    public boolean hasNext() {
+                        ensureOpen();
+                        return columns.hasNext();
+                    }
+
+                    @Override
+                    public Entry next() {
+                        ensureOpen();
+                        return columns.next();
+                    }
+
+                    @Override
+                    public void close() {
+                        isClosed = true;
+                    }
+                    
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException();
+                    }
+                };
+            } catch (StorageException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        
+        private final boolean hasNextInternal() throws StorageException {
             ensureOpen();
 
             if (keys == null)
@@ -418,61 +491,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             }
 
             return hasNext;
-        }
-
-        @Override
-        public StaticBuffer next() throws StorageException {
-            ensureOpen();
-
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            currentRow = keys.next();
-            ByteBuffer currentKey = currentRow.key.key.duplicate();
-
-            try {
-                return new StaticByteBuffer(currentKey);
-            } finally {
-                lastSeenKey = currentKey;
-            }
-        }
-
-        @Override
-        public void close() throws StorageException {
-            isClosed = true;
-        }
-
-        @Override
-        public RecordIterator<Entry> getEntries() {
-            ensureOpen();
-
-            if (sliceQuery == null)
-                throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
-
-            try {
-                return new RecordIterator<Entry>() {
-                    final Iterator<Entry> columns = cfToEntries(currentRow.cf, sliceQuery.getSliceEnd()).iterator();
-
-                    @Override
-                    public boolean hasNext() throws StorageException {
-                        ensureOpen();
-                        return columns.hasNext();
-                    }
-
-                    @Override
-                    public Entry next() throws StorageException {
-                        ensureOpen();
-                        return columns.next();
-                    }
-
-                    @Override
-                    public void close() throws StorageException {
-                        isClosed = true;
-                    }
-                };
-            } catch (StorageException e) {
-                throw new IllegalStateException(e);
-            }
         }
 
         private void ensureOpen() {

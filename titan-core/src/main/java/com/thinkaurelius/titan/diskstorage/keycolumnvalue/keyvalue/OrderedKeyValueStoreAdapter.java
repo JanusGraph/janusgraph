@@ -7,10 +7,13 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -361,17 +364,21 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         }
 
         @Override
-        public boolean hasNext() throws StorageException {
+        public boolean hasNext() {
             return nextKey != null;
         }
 
         @Override
-        public StaticBuffer next() throws StorageException {
+        public StaticBuffer next() {
             if (nextKey == null)
                 throw new NoSuchElementException();
 
             currentKey = nextKey;
-            getNextKey();
+            try {
+                getNextKey();
+            } catch (StorageException e) {
+                throw new RuntimeException(e);
+            }
 
             return currentKey;
         }
@@ -389,18 +396,23 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
                     final Iterator<Entry> entries = getSlice(new KeySliceQuery(currentKey, sliceQuery), txn).iterator();
 
                     @Override
-                    public boolean hasNext() throws StorageException {
+                    public boolean hasNext() {
                         return entries.hasNext();
                     }
 
                     @Override
-                    public Entry next() throws StorageException {
+                    public Entry next() {
                         return entries.next();
                     }
 
                     @Override
-                    public void close() throws StorageException {
+                    public void close() throws IOException {
                         iterator.close();
+                    }
+
+                    @Override
+                    public void remove() {
+                        throw new UnsupportedOperationException("Column removal not supported");
                     }
                 };
             } catch (StorageException e) {
@@ -409,8 +421,13 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() throws IOException {
             iterator.close();
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Key removal not supported");
         }
     }
 
