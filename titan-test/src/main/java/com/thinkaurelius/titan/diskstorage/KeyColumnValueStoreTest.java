@@ -134,7 +134,7 @@ public abstract class KeyColumnValueStoreTest {
      * Load a bunch of key-column-values in a way that vaguely resembles a lower
      * triangular matrix.
      * <p>
-     * Iterate over key values {@code k} in the half-open integer interval
+     * Iterate over key values {@code k} in the half-open long interval
      * {@code [offset, offset + dimension -1)}. For each {@code k}, iterate over
      * the column values {@code c} in the half-open integer interval
      * {@code [offset, k]}.
@@ -163,7 +163,8 @@ public abstract class KeyColumnValueStoreTest {
             
             rowAdditions.clear();
             
-            ByteBuffer key = ByteBuffer.allocate(4);
+            ByteBuffer key = ByteBuffer.allocate(8);
+            key.putInt(0);
             key.putInt(k + offset);
             key.flip();
             StaticBuffer staticKey = new StaticByteBuffer(key);
@@ -501,8 +502,8 @@ public abstract class KeyColumnValueStoreTest {
                         
                         // Compute expectation
                         expected.clear();
-                        for (int i = Math.max(start, offset); i < upper; i++) {
-                            expected.add(ByteBufferUtil.getIntBuffer(i));
+                        for (long l = Math.max(start, offset); l < upper; l++) {
+                            expected.add(ByteBufferUtil.getLongBuffer(l));
                         }
                         
                         // Compute actual
@@ -532,14 +533,14 @@ public abstract class KeyColumnValueStoreTest {
                         SliceQuery sq = new SliceQuery(startCol, endCol);
                         
                         // Set key bounds
-                        StaticBuffer keyStart = ByteBufferUtil.getIntBuffer(start);
-                        StaticBuffer keyEnd = ByteBufferUtil.getIntBuffer(end);
+                        StaticBuffer keyStart = ByteBufferUtil.getLongBuffer(start);
+                        StaticBuffer keyEnd = ByteBufferUtil.getLongBuffer(end);
                         KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
                         
                         // Compute expectation
                         expected.clear();
-                        for (int i = Math.max(start, offset); i < Math.min(upper, end); i++) {
-                            expected.add(ByteBufferUtil.getIntBuffer(i));
+                        for (long l = Math.max(start, offset); l < Math.min(upper, end); l++) {
+                            expected.add(ByteBufferUtil.getLongBuffer(l));
                         }
                         
                         // Compute actual
