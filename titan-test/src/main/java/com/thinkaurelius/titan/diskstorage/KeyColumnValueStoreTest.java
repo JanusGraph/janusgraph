@@ -2,9 +2,14 @@ package com.thinkaurelius.titan.diskstorage;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -12,6 +17,7 @@ import java.util.Set;
 
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -20,6 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -90,20 +98,85 @@ public abstract class KeyColumnValueStoreTest {
     }
     
     public void loadValues(String[][] values) throws StorageException {
-        loadValues(values, -1);
+        loadValues(values, -1, -1);
     }
     
-    public void loadValues(String[][] values, int skipEveryNthRow) throws StorageException {
+    public void loadValues(String[][] values, int shiftEveryNthRow,
+            int shiftSliceLength) throws StorageException {
         for (int i = 0; i < values.length; i++) {
-            if (0 < skipEveryNthRow && 0 == i/*+1*/ % skipEveryNthRow) {
-                continue;
-            }
-            
+
             List<Entry> entries = new ArrayList<Entry>();
             for (int j = 0; j < values[i].length; j++) {
-                entries.add(new StaticBufferEntry(KeyValueStoreUtil.getBuffer(j), KeyValueStoreUtil.getBuffer(values[i][j])));
+                StaticBuffer col;
+                if (0 < shiftEveryNthRow && 0 == i/* +1 */% shiftEveryNthRow) {
+                    ByteBuffer bb = ByteBuffer.allocate(shiftSliceLength + 9);
+                    for (int s = 0; s < shiftSliceLength; s++) {
+                        bb.put((byte) -1);
+                    }
+                    bb.put(KeyValueStoreUtil.getBuffer(j + 1).asByteBuffer());
+                    bb.flip();
+                    col = new StaticByteBuffer(bb);
+
+                    // col = KeyValueStoreUtil.getBuffer(j + values[i].length +
+                    // 100);
+                } else {
+                    col = KeyValueStoreUtil.getBuffer(j);
+                }
+                entries.add(new StaticBufferEntry(col, KeyValueStoreUtil
+                        .getBuffer(values[i][j])));
             }
-            store.mutate(KeyValueStoreUtil.getBuffer(i), entries, KeyColumnValueStore.NO_DELETIONS, tx);
+            store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
+                    KeyColumnValueStore.NO_DELETIONS, tx);
+        }
+    }
+    
+    /**
+     * Load a bunch of key-column-values in a way that vaguely resembles a lower
+     * triangular matrix.
+     * <p>
+     * Iterate over key values {@code k} in the half-open integer interval
+     * {@code [offset, offset + dimension -1)}. For each {@code k}, iterate over
+     * the column values {@code c} in the half-open integer interval
+     * {@code [offset, k]}.
+     * <p>
+     * For each key-column coordinate specified by a {@code (k, c} pair in the
+     * iteration, write a value one byte long with all bits set (unsigned -1 or
+     * signed 255).
+     * 
+     * @param dimension
+     *            size of loaded data (must be positive)
+     * @param offset
+     *            offset (must be positive)
+     * @throws StorageException
+     *             unexpected failure
+     */
+    public void loadLowerTriangularValues(int dimension, int offset) throws StorageException {
+
+        Preconditions.checkArgument(0 < dimension);
+        ByteBuffer val = ByteBuffer.allocate(1);
+        val.put((byte)-1);
+        StaticBuffer staticVal = new StaticByteBuffer(val);
+        
+        List<Entry> rowAdditions = new ArrayList<Entry>(dimension);
+        
+        for (int k = 0; k < dimension; k++) {
+            
+            rowAdditions.clear();
+            
+            ByteBuffer key = ByteBuffer.allocate(4);
+            key.putInt(k + offset);
+            key.flip();
+            StaticBuffer staticKey = new StaticByteBuffer(key);
+            
+            for (int c = 0; c <= k; c++) {
+                ByteBuffer col = ByteBuffer.allocate(4);
+                col.putInt(c + offset);
+                col.flip();
+                StaticBuffer staticCol = new StaticByteBuffer(col);
+                rowAdditions.add(new StaticBufferEntry(staticCol, staticVal));
+            }
+            
+            store.mutate(staticKey, rowAdditions, Collections.<StaticBuffer>emptyList(), tx);
         }
     }
 
@@ -325,56 +398,168 @@ public abstract class KeyColumnValueStoreTest {
         Preconditions.checkArgument(4 <= numColumns);
 
         final long minKey = KeyValueStoreUtil.idOffset + 1;
-        final long maxKey = KeyValueStoreUtil.idOffset + 2;
-        final long keyCount = maxKey - minKey;
-        final long minCol = 1L;
-        final long maxCol = 2L;
+        final long maxKey = KeyValueStoreUtil.idOffset + numKeys - 2;
+        final long expectedKeyCount = maxKey - minKey;
 
         String[][] values = generateValues();
         loadValues(values);
+        final SliceQuery columnSlice = new SliceQuery(ByteBufferUtil.zeroBuffer(8), ByteBufferUtil.oneBuffer(8)).setLimit(1);
         
         KeyIterator keys;
-        final SliceQuery columnSlice = new SliceQuery(ByteBufferUtil.zeroBuffer(8), ByteBufferUtil.oneBuffer(8));
-        columnSlice.setLimit(1);
+        
         keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
-        assertEquals(keyCount, KeyValueStoreUtil.count(keys));
-            
-//            clopen();
-////            if (manager.getFeatures().supportsUnorderedScan()) {
-////                keys = store.getKeys(columnSlice, tx);
-////            } else
-//                if (manager.getFeatures().supportsOrderedScan()) {
-//                keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
-//            } else {
-//                throw new UnsupportedOperationException("Scan not supported by this store");
-//            }
-//            assertEquals(keyCount, KeyValueStoreUtil.count(keys));
-//        }
+        assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
+        
+        clopen();
+        
+        keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
+        assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
     }
-    
+
     /**
-     * Verify that both {@code getKeys} methods both (1) return keys containing
-     * columns matching the slice bounds and (2) omit keys that contain columns,
-     * but none matching the slice bounds.
+     * Check that {@code getKeys} methods respect column slice bounds. Uses
+     * nearly the same data as {@link #testOrderedGetKeysRespectsKeyLimit()},
+     * except that all columns on every 10th row exceed the {@code getKeys}
+     * slice limit.
+     * <p>
+     * For each row in this test, either all columns match the slice bounds or
+     * all columns fall outside the slice bounds. For this reason, it could be
+     * described as a "coarse-grained" or "simple" test of {@code getKeys}'s
+     * column bounds checking.
      * 
      * @throws StorageException
      */
     @Test
-    public void testGetKeysSkipsRowsWithoutMatchingColumns()
+    public void testGetKeysColumnSlicesSimple()
             throws StorageException {
         if (manager.getFeatures().supportsScan()) {
             
-            int skipEveryNthRows = 10;
+            final int shiftEveryNthRows = 10;
+            final int expectedKeyCount = numKeys / shiftEveryNthRows * (shiftEveryNthRows - 1);
             
-            Preconditions.checkArgument(0 == numKeys % skipEveryNthRows);
-            Preconditions.checkArgument(10 < numKeys / skipEveryNthRows);
+            Preconditions.checkArgument(0 == numKeys % shiftEveryNthRows);
+            Preconditions.checkArgument(10 < numKeys / shiftEveryNthRows);
             
             String[][] values = generateValues();
-            loadValues(values, skipEveryNthRows);
+            loadValues(values, shiftEveryNthRows, 4);
             
-            RecordIterator<StaticBuffer> iterator0 = KCVSUtil.getKeys(store,
-                    storeFeatures(), 8, 4, tx);
-            Assert.assertEquals(numKeys / skipEveryNthRows * (skipEveryNthRows - 1), KeyValueStoreUtil.count(iterator0));
+            RecordIterator<StaticBuffer> i;
+            i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            Assert.assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
+            
+            clopen();
+            
+            i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            Assert.assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
+        }
+    }
+    
+    
+    /**
+     * Test {@code getKeys} with columns slice values chosen to trigger
+     * potential fencepost bugs.
+     * <p>
+     * Description of data generated for and queried by this test:
+     * <p>
+     * Generate a sequence of keys as unsigned integers, starting at zero. Each
+     * row has as many columns as the key value. The columns are generated in
+     * the same way as the keys. This results in a sort of "lower triangular"
+     * data space, with no values above the diagonal.
+     * 
+     * @throws StorageException shouldn't happen
+     * @throws IOException shouldn't happen
+     */
+    @Test
+    public void testGetKeysColumnSlicesOnLowerTriangular() throws StorageException, IOException {
+        if (manager.getFeatures().supportsScan()) {
+            final int offset = 10;
+            final int size = 10;
+            final int midpoint = size / 2 + offset;
+            final int upper = offset + size;
+            final int step = 1;
+            Preconditions.checkArgument(0 == size % 2);
+            Preconditions.checkArgument(0 == offset % 2);
+            Preconditions.checkArgument(4 <= size);
+            Preconditions.checkArgument(1 <= offset);
+            
+            loadLowerTriangularValues(size, offset);
+            
+            boolean executed = false;
+            
+            if (manager.getFeatures().supportsUnorderedScan()) {
+                
+                Collection<StaticBuffer> expected = new HashSet<StaticBuffer>(size);
+                
+                for (int start = midpoint; start >= offset - step; start -= step) {
+                    for (int end = midpoint + 1; end <= upper + step; end += step) {
+                        Preconditions.checkArgument(start < end);
+                        
+                        // Set column bounds
+                        StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
+                        StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
+                        SliceQuery sq = new SliceQuery(startCol, endCol);
+                        
+                        // Compute expectation
+                        expected.clear();
+                        for (int i = Math.max(start, offset); i < upper; i++) {
+                            expected.add(ByteBufferUtil.getIntBuffer(i));
+                        }
+                        
+                        // Compute actual
+                        KeyIterator i = store.getKeys(sq, tx);
+                        Collection<StaticBuffer> actual = Sets.newHashSet(i);
+                        
+                        // Check
+                        log.error("Checking bounds [{}, {}) (expect {} keys)", 
+                                new Object[] { startCol, endCol, expected.size() });
+                        Assert.assertEquals(expected, actual);
+                        i.close();
+                        executed = true;
+                    }
+                }
+                
+            } else if (manager.getFeatures().supportsOrderedScan()) {
+                
+                Collection<StaticBuffer> expected = new ArrayList<StaticBuffer>(size);
+                
+                for (int start = midpoint; start >= offset - step; start -= step) {
+                    for (int end = midpoint + 1; end <= upper + step; end += step) {
+                        Preconditions.checkArgument(start < end);
+                        
+                        // Set column bounds
+                        StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
+                        StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
+                        SliceQuery sq = new SliceQuery(startCol, endCol);
+                        
+                        // Set key bounds
+                        StaticBuffer keyStart = ByteBufferUtil.getIntBuffer(start);
+                        StaticBuffer keyEnd = ByteBufferUtil.getIntBuffer(end);
+                        KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
+                        
+                        // Compute expectation
+                        expected.clear();
+                        for (int i = Math.max(start, offset); i < Math.min(upper, end); i++) {
+                            expected.add(ByteBufferUtil.getIntBuffer(i));
+                        }
+                        
+                        // Compute actual
+                        KeyIterator i = store.getKeys(krq, tx);
+                        Collection<StaticBuffer> actual = Lists.newArrayList(i);
+
+                        log.error("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
+                                new Object[] { keyStart, keyEnd, startCol, endCol, expected.size() });
+                        Assert.assertEquals(expected, actual);
+                        i.close();
+                        executed = true;
+                    }
+                }
+                
+            } else {
+                throw new UnsupportedOperationException(
+                        "Illegal store configuration: supportsScan()=true but supportsOrderedScan()=supportsUnorderedScan()=false");
+            }
+            
+            Preconditions.checkArgument(executed);
         }
     }
 
