@@ -108,19 +108,19 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     }
 
     @Override
-    public GraphCentricQueryBuilder limit(final int limit) {
+    public TitanGraphQuery limit(final int limit) {
         Preconditions.checkArgument(limit >= 0, "Non-negative limit expected: %s", limit);
         this.limit = limit;
         return this;
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(String key, Order order) {
+    public TitanGraphQuery orderBy(String key, Order order) {
         return orderBy(tx.getPropertyKey(key), order);
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(TitanKey key, Order order) {
+    public TitanGraphQuery orderBy(TitanKey key, Order order) {
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.isUnique(Direction.OUT), "Ordering is undefined on multi-valued key [%s]", key.getName());

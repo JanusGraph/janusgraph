@@ -28,18 +28,21 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     public static final Configuration getLocalESTestConfig() {
         Configuration config = new BaseConfiguration();
-        config.setProperty(LOCAL_MODE_KEY,true);
-        config.setProperty(CLIENT_ONLY_KEY,false);
-        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,StorageSetup.getHomeDir("es"));
+        config.setProperty(LOCAL_MODE_KEY, true);
+        config.setProperty(CLIENT_ONLY_KEY, false);
+        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("es"));
         return config;
     }
 
     @Test
     public void testSupport() {
         assertTrue(index.supports(String.class));
+        assertTrue(index.supports(Float.class));
         assertTrue(index.supports(Double.class));
-        assertTrue(index.supports(Long.class));
+        assertTrue(index.supports(Byte.class));
+        assertTrue(index.supports(Short.class));
         assertTrue(index.supports(Integer.class));
+        assertTrue(index.supports(Long.class));
         assertTrue(index.supports(Geoshape.class));
         assertFalse(index.supports(Object.class));
         assertFalse(index.supports(Exception.class));
