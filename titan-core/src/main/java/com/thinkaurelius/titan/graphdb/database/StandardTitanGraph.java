@@ -192,11 +192,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         };
     }
 
-
-    public List<Object> elementQuery(String indexName, IndexQuery query, BackendTransaction tx) {
-        return indexSerializer.query(indexName, query, tx);
-    }
-
     public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid > 0);
         return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid), query));

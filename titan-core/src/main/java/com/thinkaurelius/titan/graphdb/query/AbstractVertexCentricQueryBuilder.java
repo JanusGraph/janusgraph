@@ -235,7 +235,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         if (types.isEmpty()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                     ((dir == Direction.BOTH || returnType == RelationType.PROPERTY && dir == Direction.OUT)
-                            && !conditions.hasChildren() && includeHidden), Boolean.valueOf(dir != Direction.BOTH));
+                            && !conditions.hasChildren() && includeHidden), true, Boolean.valueOf(dir != Direction.BOTH));
             query.getBackendQuery().setLimit(computeLimit(conditions,
                     ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
                             //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
@@ -405,7 +405,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                 && vertexConstraint == vertexCon && sortConstraints == primaryKeyConstraints;
                         SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, Boolean.FALSE));
                     }
                 }
             }
@@ -432,7 +432,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     private final int computeLimit(And<TitanRelation> conditions, int baseLimit) {
         return getVertexConstraint() != null ? HARD_MAX_LIMIT :   //a vertex constraint is so selective, that we likely have to retrieve all edges
-                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions, baseLimit));
+                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit));
     }
 
 

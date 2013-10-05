@@ -373,7 +373,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
-    public void testMultivaluedVertexPropertyRemoval() {
+    public void testMultivaluedVertexProperty() {
 
         /*
          * Constant test data
@@ -381,52 +381,67 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
          * The values list below must have at least two elements. The string
          * literals were chosen arbitrarily and have no special significance.
          */
-        final String pname = "foo";
+        final String foo = "foo", bar = "bar";
         final List<String> values =
                 ImmutableList.of("four", "score", "and", "seven");
         assertTrue("Values list must have multiple elements for this test to make sense",
                 2 <= values.size());
 
         // Create property with name pname and a vertex
-        TitanKey key = makeNonUniqueStringPropertyKey(pname);
+        makeNonUniqueStringPropertyKey(foo);
+        makeNonUniqueStringPropertyKey(bar);
+        newTx();
         TitanVertex v = tx.addVertex();
 
         // Insert prop values
         for (String s : values) {
-            v.addProperty(key, s);
+            v.addProperty(foo, s);
+            v.addProperty(bar, s);
         }
 
         //Verify correct number of properties
-        assertEquals(values.size(), Iterables.size(v.getProperties(key)));
+        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
+
+        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
+
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
 
         // Check that removeProperty(TitanKey) returns a valid value
-        String lastValueRemoved = v.removeProperty(key);
+        String lastValueRemoved = v.removeProperty(foo);
         assertNotNull(lastValueRemoved);
         assertTrue(values.contains(lastValueRemoved));
         // Check that the properties were actually deleted from v
-        assertFalse(v.getProperties(key).iterator().hasNext());
+        assertFalse(v.getProperties(foo).iterator().hasNext());
 
         // Reopen database
         clopen();
 
+        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
+        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
+
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
+
         // Retrieve and check our test vertex
         v = tx.getVertex(v.getID());
-        key = tx.getPropertyKey(pname);
-        Iterable<TitanProperty> iter = v.getProperties(key);
+        Iterable<TitanProperty> iter = v.getProperties(foo);
         assertFalse("Failed to durably remove multivalued property",
                 iter.iterator().hasNext());
 
+        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
         // Reinsert prop values
         for (String s : values) {
-            v.addProperty(pname, s);
+            v.addProperty(foo, s);
         }
-        assertEquals(values.size(), Iterables.size(v.getProperties(key)));
+        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
 
         // Test removeProperty(String) method on the vertex
-        lastValueRemoved = v.removeProperty(pname);
+        lastValueRemoved = v.removeProperty(foo);
         assertNotNull(lastValueRemoved);
         assertTrue(values.contains(lastValueRemoved));
-        assertFalse(v.getProperties(pname).iterator().hasNext());
+        assertFalse(v.getProperties(foo).iterator().hasNext());
     }
 
     @Test

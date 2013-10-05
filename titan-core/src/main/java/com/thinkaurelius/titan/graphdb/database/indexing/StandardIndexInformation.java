@@ -13,15 +13,17 @@ public class StandardIndexInformation implements IndexInformation {
 
     public static final StandardIndexInformation INSTANCE = new StandardIndexInformation();
 
-    private StandardIndexInformation() {}
+    private StandardIndexInformation() {
+    }
 
     @Override
     public boolean supports(Class<?> dataType, TitanPredicate titanPredicate) {
-        return titanPredicate ==Cmp.EQUAL || titanPredicate == Contain.IN;
+        return titanPredicate == Cmp.EQUAL || titanPredicate == Contain.IN;
     }
 
     @Override
     public boolean supports(Class<?> dataType) {
         return true;
     }
+
 }

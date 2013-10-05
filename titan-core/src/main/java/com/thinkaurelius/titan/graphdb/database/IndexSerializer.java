@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -21,6 +20,8 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
@@ -159,54 +160,37 @@ public class IndexSerializer {
                 Querying
     ################################################### */
 
-    public List<Object> query(String indexName, IndexQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(query.hasStore());
+    public List<Object> query(final String indexName, final IndexQuery query, final BackendTransaction tx) {
         Preconditions.checkArgument(indexes.containsKey(indexName), "Index unknown or unconfigured: %s", indexName);
-        if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
+        if (isStandardIndex(indexName)) {
+            Preconditions.checkArgument(query.getOrder().isEmpty(), "Standard index does not support ordering");
             List<Object> results = null;
-            ElementType resultType = ElementType.getByName(query.getStore());
-            Condition<?> condition = query.getCondition();
+            final ElementType resultType = getElementType(query.getStore());
+            final Condition<?> condition = query.getCondition();
 
-            //Condition is in QNF, so process either a single PredicateCondition or an AND of ORs
-            if (condition instanceof PredicateCondition) {
-                PredicateCondition pc = (PredicateCondition) condition;
-                results = processSingleCondition(resultType, pc, query.getLimit(), tx);
-            } else if (condition instanceof And) {
-
-                /*
-                 * Iterate over the clauses in the and collection
-                 * query.getCondition().getChildren(), taking the intersection
-                 * of current results with cumulative results on each iteration.
-                 */
-                int limit = query.getLimit() * condition.numChildren(); //TODO: smarter initial estimate
-                boolean exhaustedResults;
-                do {
-                    exhaustedResults = true;
-                    Set<Object> cumulativeResults = null;
-                    for (Condition<?> child : condition.getChildren()) {
-                        List<Object> r = null;
-                        if (child instanceof Or) { //Concatenate results until we have enough for limit
-                            r = new ArrayList<Object>(limit);
-                            for (Condition nested : child.getChildren()) {
-                                Preconditions.checkArgument(nested instanceof PredicateCondition, "Invalid query (not in QNF): %s", condition);
-                                r.addAll(processSingleCondition(resultType, (PredicateCondition) nested, limit, tx));
-                                if (r.size() >= limit) break;
-                            }
-                        } else if (child instanceof PredicateCondition) {
-                            r = processSingleCondition(resultType, (PredicateCondition) child, limit, tx);
-                        } else throw new IllegalArgumentException("Invalid query provided (not in QNF):" + child);
-
-                        if (r.size() >= limit) exhaustedResults = false;
-                        if (cumulativeResults == null) {
-                            cumulativeResults = Sets.newHashSet(r);
-                        } else {
-                            cumulativeResults.retainAll(r);
+            if (condition instanceof And) {
+                List<QueryUtil.IndexCall<Object>> retrievals = new ArrayList<QueryUtil.IndexCall<Object>>(condition.numChildren());
+                for (final Condition<?> subcond : ((And<?>) condition).getChildren()) {
+                    retrievals.add(new QueryUtil.IndexCall<Object>() {
+                        @Override
+                        public Collection<Object> call(int limit) {
+                            List<Object> r = null;
+                            if (subcond instanceof Or) { //Concatenate results until we have enough for limit
+                                r = new ArrayList<Object>(limit);
+                                for (Condition nested : subcond.getChildren()) {
+                                    Preconditions.checkArgument(nested instanceof PredicateCondition, "Invalid query (not in QNF): %s", condition);
+                                    r.addAll(processSingleCondition(resultType, (PredicateCondition) nested, limit, tx));
+                                    if (r.size() >= limit) break;
+                                }
+                            } else if (subcond instanceof PredicateCondition) {
+                                r = processSingleCondition(resultType, (PredicateCondition) subcond, limit, tx);
+                            } else
+                                throw new IllegalArgumentException("Invalid query provided (original not in QNF):" + subcond);
+                            return r;
                         }
-                    }
-                    results = ImmutableList.builder().addAll(cumulativeResults).build();
-                    limit = (int) Math.min(Integer.MAX_VALUE - 1, Math.pow(limit, 1.5));
-                } while (results.size() < query.getLimit() && !exhaustedResults);
-
+                    });
+                }
+                results = QueryUtil.processIntersectingRetrievals(retrievals, query.getLimit());
             } else {
                 Preconditions.checkArgument(false, "Invalid query (not in QNF): %s", condition);
             }
@@ -248,35 +232,41 @@ public class IndexSerializer {
         return results;
     }
 
-    public IndexQuery getQuery(final String indexName, Condition<TitanElement> condition, final ElementType resultType) {
-        Preconditions.checkNotNull(resultType);
-        if (indexName == null) { //Special case which requires iterating over all elements which is handled in the transaction
-            return new IndexQuery(null, new FixedCondition<TitanElement>(true));
+    public IndexQuery getQuery(String index, final ElementType resultType, final Condition condition, final OrderList orders) {
+        if (isStandardIndex(index)) {
+            Preconditions.checkArgument(orders.isEmpty());
+            return new IndexQuery(getStoreName(resultType), condition, IndexQuery.NO_ORDER);
         } else {
-            Preconditions.checkNotNull(condition);
-            if (indexName.equals(Titan.Token.STANDARD_INDEX)) {
-                return new IndexQuery(resultType.getName(), condition);
-            } else {
-                return new IndexQuery(resultType.getName(), ConditionUtil.literalTransformation(condition, new Function<Condition<TitanElement>, Condition<TitanElement>>() {
-                    @Nullable
-                    @Override
-                    public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
-                        Preconditions.checkArgument(condition instanceof PredicateCondition);
-                        PredicateCondition pc = (PredicateCondition) condition;
-                        TitanKey key = (TitanKey) pc.getKey();
-                        Preconditions.checkArgument(key.hasIndex(indexName, resultType.getElementType()));
-                        Preconditions.checkArgument(indexes.get(indexName).supports(key.getDataType(), pc.getPredicate()));
-                        return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getValue());
-                    }
-                }));
+            Condition newCondition = ConditionUtil.literalTransformation(condition,
+                    new Function<Condition<TitanElement>, Condition<TitanElement>>() {
+                        @Nullable
+                        @Override
+                        public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
+                            Preconditions.checkArgument(condition instanceof PredicateCondition);
+                            PredicateCondition pc = (PredicateCondition) condition;
+                            TitanKey key = (TitanKey) pc.getKey();
+                            return new PredicateCondition<String, TitanElement>(key2String(key), pc.getPredicate(), pc.getValue());
+                        }
+                    });
+            ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
+            if (!orders.isEmpty()) {
+                ImmutableList.Builder<IndexQuery.OrderEntry> lb = ImmutableList.builder();
+                for (int i = 0; i < orders.size(); i++) {
+                    lb.add(new IndexQuery.OrderEntry(key2String(orders.getKey(i)), orders.getOrder(i), orders.getKey(i).getDataType()));
+                }
+                newOrders = lb.build();
             }
+            return new IndexQuery(getStoreName(resultType), newCondition, newOrders);
         }
     }
-
 
     /* ################################################
                 Utility Functions
     ################################################### */
+
+    private static final boolean isStandardIndex(String index) {
+        return index.equals(Titan.Token.STANDARD_INDEX);
+    }
 
     private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
         long[] longs = rid.getLongRepresentation();
@@ -319,9 +309,17 @@ public class IndexSerializer {
     }
 
     private static final String getStoreName(TitanElement element) {
-        if (element instanceof TitanVertex) return ElementType.VERTEX.getName();
-        else if (element instanceof TitanEdge) return ElementType.EDGE.getName();
+        if (element instanceof TitanVertex) return getStoreName(ElementType.VERTEX);
+        else if (element instanceof TitanEdge) return getStoreName(ElementType.EDGE);
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
+    }
+
+    private static final String getStoreName(ElementType type) {
+        return type.getName();
+    }
+
+    private static final ElementType getElementType(String store) {
+        return ElementType.getByName(store);
     }
 
     private final StaticBuffer getIndexKey(Object att) {

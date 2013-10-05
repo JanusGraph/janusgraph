@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.attribute.Cmp;
@@ -9,11 +12,15 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -44,6 +51,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).makePropertyKey();
         Vertex v = tx.addVertex();
         v.setProperty("name", "Marko Rodriguez");
+        assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         clopen();
         Iterable<Vertex> vs = tx.query().has("name", Text.CONTAINS, "marko").vertices();
         assertEquals(1, Iterables.size(vs));
@@ -64,18 +72,22 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Geoshape.class).makePropertyKey();
         TitanKey time = tx.makeType().name("time").vertexUnique(Direction.OUT)
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).makePropertyKey();
+        TitanKey category = tx.makeType().name("category").vertexUnique(Direction.OUT)
+                .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).makePropertyKey();
         TitanKey id = tx.makeType().name("uid").vertexUnique(Direction.OUT).graphUnique()
                 .indexed(Vertex.class).dataType(Integer.class).makePropertyKey();
         TitanLabel knows = tx.makeType().name("knows").primaryKey(time).signature(location).makeEdgeLabel();
 
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};
+        int numCategories = 5;
         double distance, offset;
         int numV = 100;
         final int originalNumV = numV;
         for (int i = 0; i < numV; i++) {
             Vertex v = tx.addVertex();
             v.setProperty("uid", i);
+            v.setProperty("category", i % numCategories);
             v.setProperty("text", "Vertex " + words[i % words.length]);
             v.setProperty("time", i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
@@ -84,12 +96,37 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             Edge e = v.addEdge("knows", tx.getVertex("uid", Math.max(0, i - 1)));
             e.setProperty("text", "Vertex " + words[i % words.length]);
             e.setProperty("time", i);
+            e.setProperty("category", i % numCategories);
             e.setProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
         }
 
         for (int i = 0; i < words.length; i++) {
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+            int expectedSize = numV / words.length;
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+
+            //Test ordering
+            for (String orderKey : new String[]{"time", "category"}) {
+                for (Order order : Order.values()) {
+                    for (Iterable<? extends Element> iter : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
+                    )) {
+                        Element previous = null;
+                        int count = 0;
+                        for (Element element : iter) {
+                            if (previous != null) {
+                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
+                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
+                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
+                            }
+                            previous = element;
+                            count++;
+                        }
+                        assertEquals(expectedSize, count);
+                    }
+                }
+            }
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
@@ -103,6 +140,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
+
+        //Mixed index queries
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
         assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19 * 50.0 / originalNumV);
@@ -116,8 +157,32 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         //Copied from above
         for (int i = 0; i < words.length; i++) {
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
-            assertEquals(numV / words.length, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+            int expectedSize = numV / words.length;
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
+            assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).edges()));
+
+            //Test ordering
+            for (String orderKey : new String[]{"time", "category"}) {
+                for (Order order : Order.values()) {
+                    for (Iterable<? extends Element> iter : ImmutableList.of(
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
+                            tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
+                    )) {
+                        Element previous = null;
+                        int count = 0;
+                        for (Element element : iter) {
+                            if (previous != null) {
+                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
+                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
+                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
+                            }
+                            previous = element;
+                            count++;
+                        }
+                        assertEquals(expectedSize, count);
+                    }
+                }
+            }
         }
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
@@ -131,6 +196,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).vertices()));
             assertEquals(i + 1, Iterables.size(tx.query().has("location", Geo.WITHIN, Geoshape.circle(0.0, 0.0, distance)).edges()));
         }
+
+        //Mixed index queries
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).vertices()));
+        assertEquals(4, Iterables.size(tx.query().has("category", 1).interval("time", 10, 28).edges()));
 
         assertEquals(5, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, 10).has("time", Cmp.LESS_THAN, 30).has("text", Text.CONTAINS, words[0]).vertices()));
         offset = (19 * 50.0 / originalNumV);
@@ -174,6 +243,27 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
+
+    }
+
+    @Test
+    public void testIndexIteration() {
+        graph.makeType().name("objectType").dataType(String.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        graph.makeType().name("uid").dataType(Long.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        graph.commit();
+        Vertex v = graph.addVertex(null);
+        ElementHelper.setProperties(v, "uid", 167774517, "ipv4Addr", "10.0.9.53", "cid", 2, "objectType", "NetworkSensor", "observationDomain", 0);
+        assertNotNull(v.getProperty("uid"));
+        assertNotNull(v.getProperty("objectType"));
+        graph.commit();
+        assertNotNull(graph.getVertex(v).getProperty("uid"));
+        assertNotNull(graph.getVertex(v).getProperty("objectType"));
+        graph.commit();
+        for (Vertex u : graph.getVertices()) {
+            assertNotNull(u.getProperty("uid"));
+            assertNotNull(u.getProperty("objectType"));
+        }
+        graph.rollback();
 
     }
 
