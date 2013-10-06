@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -166,10 +169,8 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
-        return new CacheKeyIterator(
-                store.getKeys(new KVUtil.RangeKeySelector(query.getKeyStart(), query.getKeyEnd())
-                        , txh)
-                , query);
+        return new CacheKeyIterator(store.getKeys(new KVUtil.RangeKeySelector(
+                query.getKeyStart(), query.getKeyEnd()), txh), query);
     }
 
     @Override
@@ -185,13 +186,38 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
     private class CacheKeyIterator implements KeyIterator {
 
         private final SliceQuery slice;
-        private final RecordIterator<KeyValueEntry> iter;
+        private final RecordIterator<KeyValueEntry> underlyingIter;
+        private final Iterator<KeyValueEntry> iter;
 
         private KeyValueEntry entry;
 
-        private CacheKeyIterator(RecordIterator<KeyValueEntry> iter, SliceQuery slice) {
+        private CacheKeyIterator(RecordIterator<KeyValueEntry> iter, final SliceQuery slice) {
             this.slice = slice;
-            this.iter = iter;
+            this.underlyingIter = iter;
+            this.iter = Iterators.filter(iter, new Predicate<KeyValueEntry>() {
+
+                // Some of this logic probably shares enough commonality with
+                // CacheEntryIterator and mutate() to warrant a refactoring that
+                // makes all three share common pieces of KVE-handling code
+                @Override
+                public boolean apply(KeyValueEntry input) {
+                    StaticBuffer value = input.getValue();
+                    int index = 0;
+                    while (index < value.length()) {
+                        int collen = fromUnsignedShort(value.getShort(index));
+                        index += COLUMN_LEN_BYTES;
+                        int vallen = value.getInt(index);
+                        index += VALUE_LEN_BYTES;
+                        StaticBuffer col = value.subrange(index, collen);
+                        if (col.compareTo(slice.getSliceStart()) >= 0 && col.compareTo(slice.getSliceEnd()) < 0) {
+                            return true;
+                        }
+                        index += collen + vallen;
+                    }
+                    return false;
+                }
+                
+            });
         }
 
         @Override
@@ -213,7 +239,7 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
 
         @Override
         public void close() throws IOException {
-            iter.close();
+            underlyingIter.close();
         }
 
         @Override
