@@ -37,6 +37,7 @@ public class KCVSUtil {
         if (result.size() > 1)
             log.warn("GET query returned more than 1 result: store {} | key {} | column {}", new Object[]{store.getName(),
                     key, column});
+
         if (result.isEmpty()) return null;
         else return result.get(0).getValue();
     }
@@ -85,6 +86,15 @@ public class KCVSUtil {
      */
     public static boolean containsKeyColumn(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
         return get(store, key, column, txh) != null;
+    }
+
+    public static boolean matches(SliceQuery query, StaticBuffer column) {
+        return query.getSliceStart().compareTo(column)<=0 && query.getSliceEnd().compareTo(column)>0;
+    }
+
+    public static boolean matches(KeyRangeQuery query, StaticBuffer key, StaticBuffer column) {
+        return matches(query,column) && query.getKeyStart().compareTo(key)<=0 && query.getKeyEnd().compareTo(key)>0;
+
     }
 
 

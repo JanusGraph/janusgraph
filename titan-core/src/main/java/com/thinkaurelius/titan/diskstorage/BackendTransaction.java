@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,8 +28,13 @@ public class BackendTransaction implements TransactionHandle {
     private static final Logger log =
             LoggerFactory.getLogger(BackendTransaction.class);
 
+    //Assumes 64 bit key length as specified in IDManager
+    public static final StaticBuffer EDGESTORE_MIN_KEY = ByteBufferUtil.zeroBuffer(8);
+    public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
+
     private final StoreTransaction storeTx;
     private final StoreFeatures storeFeatures;
+
     private final KeyColumnValueStore edgeStore;
     private final KeyColumnValueStore vertexIndexStore;
     private final KeyColumnValueStore edgeIndexStore;
@@ -39,12 +44,13 @@ public class BackendTransaction implements TransactionHandle {
 
     private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(StoreTransaction storeTx, StoreFeatures storeFeatures, KeyColumnValueStore edgeStore,
+    public BackendTransaction(StoreTransaction storeTx, StoreFeatures features,
+                              KeyColumnValueStore edgeStore,
                               KeyColumnValueStore vertexIndexStore, KeyColumnValueStore edgeIndexStore,
                               int maxReadRetryAttempts, int retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx) {
         this.storeTx = storeTx;
-        this.storeFeatures = storeFeatures;
+        this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.vertexIndexStore = vertexIndexStore;
         this.edgeIndexStore = edgeIndexStore;
@@ -197,14 +203,17 @@ public class BackendTransaction implements TransactionHandle {
             }
         });
     }
-
-    public KeyIterator edgeStoreKeys(final SliceQuery slice) {
-        Preconditions.checkArgument(storeFeatures.supportsUnorderedScan(), "The configured storage backend does not support unordered scanning");
+    
+    public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
+        if (!storeFeatures.supportsScan())
+            throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override
             public KeyIterator call() throws Exception {
-                return edgeStore.getKeys(slice, storeTx);
+                return (storeFeatures.isKeyOrdered())
+                        ? edgeStore.getKeys(new KeyRangeQuery(EDGESTORE_MIN_KEY, EDGESTORE_MAX_KEY, sliceQuery), storeTx)
+                        : edgeStore.getKeys(sliceQuery, storeTx);
             }
 
             @Override

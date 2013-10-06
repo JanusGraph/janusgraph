@@ -17,6 +17,11 @@ public class PersistitHashKeyColumnValueTest extends HashKeyColumnValueStoreTest
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
         PersistitStoreManager sm = new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
+
+        // The same as BerkeleyJE in hash prefixed mode, Persistit doesn't support ordered key iteration
+        sm.features.supportsOrderedScan = false;
+        sm.features.supportsUnorderedScan = false;
+
         return new OrderedKeyValueStoreManagerAdapter(sm);
     }
     

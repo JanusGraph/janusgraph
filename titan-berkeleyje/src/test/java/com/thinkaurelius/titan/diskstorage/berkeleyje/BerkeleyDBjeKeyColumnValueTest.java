@@ -13,8 +13,7 @@ public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration());
-        OrderedKeyValueStoreManagerAdapter smadapter = new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
-        return smadapter;
+        return new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
     }
 
     @Test

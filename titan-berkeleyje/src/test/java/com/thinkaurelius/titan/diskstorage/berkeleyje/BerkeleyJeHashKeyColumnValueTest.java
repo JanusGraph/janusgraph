@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.berkeleyje;
+    package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
 import com.thinkaurelius.titan.diskstorage.HashKeyColumnValueStoreTest;
@@ -14,6 +14,11 @@ public class BerkeleyJeHashKeyColumnValueTest extends HashKeyColumnValueStoreTes
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         Configuration config = BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration();
         BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(config);
+
+        // prefixed store doesn't support scan, because prefix is hash of a key which makes it un-ordered
+        sm.features.supportsUnorderedScan = false;
+        sm.features.supportsOrderedScan = false;
+
         return new OrderedKeyValueStoreManagerAdapter(sm);
     }
     

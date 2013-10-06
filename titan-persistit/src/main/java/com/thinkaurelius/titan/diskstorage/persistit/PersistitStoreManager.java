@@ -30,27 +30,15 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
 
     private final Map<String, PersistitKeyValueStore> stores;
     private final FileStorageConfiguration storageConfig;
-    private static final StoreFeatures features = new StoreFeatures();
+
     final static String VOLUME_NAME = "titan";
     final static String BUFFER_COUNT_KEY = "buffercount";
     final static Integer BUFFER_COUNT_DEFAULT = 5000;
 
-    static {
-        features.supportsTransactions = true;
-        features.isDistributed = false;
+    private final Persistit db;
+    private final Properties properties;
+    protected final StoreFeatures features = getDefaultFeatures();
 
-        //@todo: figure out what these do, Copied from Berkeley for now
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = true;
-        features.supportsBatchMutation = false;
-        features.supportsConsistentKeyOperations = false;
-        features.supportsLocking = true;
-        features.isKeyOrdered = true;
-        features.hasLocalKeyPartition = false;
-    }
-
-    private Persistit db;
-    private Properties properties;
 
     public PersistitStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
@@ -186,5 +174,23 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
     @Override
     public String getName() {
         return getClass().getSimpleName() + ":" + directory.toString();
+    }
+
+    private StoreFeatures getDefaultFeatures() {
+        StoreFeatures features = new StoreFeatures();
+
+        features.supportsTransactions = true;
+        features.isDistributed = false;
+
+        //@todo: figure out what these do, Copied from Berkeley for now
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = false;
+        features.supportsBatchMutation = false;
+        features.supportsConsistentKeyOperations = false;
+        features.supportsLocking = true;
+        features.isKeyOrdered = true;
+        features.hasLocalKeyPartition = false;
+
+        return features;
     }
 }

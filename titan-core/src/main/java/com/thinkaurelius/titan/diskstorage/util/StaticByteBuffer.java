@@ -20,12 +20,12 @@ public class StaticByteBuffer implements StaticBuffer {
      * {@code ByteBuffer}. The {@code ByteBuffer} is not copied. If
      * {@code buffer} is externally modified, then those modifications will also
      * appear in calls to the constructed {@code StaticByteBuffer}.
-     * 
+     *
      * @param buffer
      */
     public StaticByteBuffer(final ByteBuffer buffer) {
         Preconditions.checkNotNull(buffer);
-        this.b=buffer;
+        this.b = buffer;
     }
 
     public StaticByteBuffer(final byte[] bytes) {
@@ -38,12 +38,12 @@ public class StaticByteBuffer implements StaticBuffer {
 
 
     protected final int pos(int position) {
-        return b.position()+position;
+        return b.position() + position;
     }
 
     @Override
     public int length() {
-        return b.limit()-b.position();
+        return b.limit() - b.position();
     }
 
     @Override
@@ -83,13 +83,12 @@ public class StaticByteBuffer implements StaticBuffer {
 
     @Override
     public StaticBuffer subrange(int position, int length) {
-
-        Preconditions.checkArgument(position>=0);
-        Preconditions.checkArgument(length>=0);
-        Preconditions.checkArgument(b.position()+position+length<=b.limit());
+        Preconditions.checkArgument(position >= 0);
+        Preconditions.checkArgument(length >= 0);
+        Preconditions.checkArgument(b.position() + position + length <= b.limit(), "%s + %s + %s <= %s", b.position(), position, length, b.limit());
         ByteBuffer newb = b.duplicate();
-        newb.position(b.position()+position);
-        newb.limit(b.position()+position+length);
+        newb.position(b.position() + position);
+        newb.limit(b.position() + position + length);
         return new StaticByteBuffer(newb);
     }
 
@@ -104,16 +103,16 @@ public class StaticByteBuffer implements StaticBuffer {
     }
 
     @Override
-    public<T> T as(Factory<T> factory) {
+    public <T> T as(Factory<T> factory) {
         if (b.hasArray()) {
-            return factory.get(b.array(),b.position()+b.arrayOffset(),b.limit()+b.arrayOffset());
+            return factory.get(b.array(), b.position() + b.arrayOffset(), b.limit() + b.arrayOffset());
         } else {
             int len = length();
             byte[] result = new byte[len];
-            for (int i=0;i<len;i++) {
-                result[i]=getByte(i);
+            for (int i = 0; i < len; i++) {
+                result[i] = getByte(i);
             }
-            return factory.get(result,0,result.length);
+            return factory.get(result, 0, result.length);
         }
     }
 
@@ -123,10 +122,10 @@ public class StaticByteBuffer implements StaticBuffer {
 
     @Override
     public boolean equals(Object o) {
-        if (this==o) return true;
-        else if (o==null) return false;
+        if (this == o) return true;
+        else if (o == null) return false;
         else if (!(o instanceof StaticBuffer)) return false;
-        return ByteBufferUtil.equals(this,(StaticBuffer)o);
+        return ByteBufferUtil.equals(this, (StaticBuffer) o);
     }
 
     @Override
@@ -136,11 +135,11 @@ public class StaticByteBuffer implements StaticBuffer {
 
     @Override
     public String toString() {
-        return ByteBufferUtil.toString(this,"-");
+        return ByteBufferUtil.toString(this, "-");
     }
 
     @Override
     public int compareTo(StaticBuffer other) {
-        return ByteBufferUtil.compare(this,other);
+        return ByteBufferUtil.compare(this, other);
     }
 }

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
 
@@ -12,6 +13,16 @@ import java.util.List;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
 public interface OrderedKeyValueStore extends KeyValueStore {
+
+    /**
+     * Inserts the given key-value pair into the store. If the key already exists, its value is overwritten by the given one.
+     *
+     * @param key
+     * @param value
+     * @param txh
+     * @throws com.thinkaurelius.titan.diskstorage.StorageException
+     */
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns a list of all Key-value pairs ({@link KeyValueEntry} where the key lies between keyStart (inclusive) and keyEnd (exclusive)
@@ -27,9 +38,7 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
-
-    //TODO: Add for Fulgora and support for new KeyColumnValueStore methods
-    //public RecordIterator<KeyValueEntry> getEntries(StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException;
+    //public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
+    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
 
 }

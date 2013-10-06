@@ -4,10 +4,14 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 /**
- * Extends a {@link SliceQuery} to express a range for columns and a
- * range for keys. Selects each key on the interval
+ * Extends a {@link SliceQuery} to express a range for columns and a range for
+ * keys. Selects each key on the interval
  * {@code [keyStart inclusive, keyEnd exclusive)} for which there exists at
  * least one column between {@code [sliceStart inclusive, sliceEnd exclusive)}.
+ * <p>
+ * The limit of a KeyRangeQuery applies to the maximum number of columns
+ * returned per key which fall into the specified slice range and NOT to the
+ * maximum number of keys returned.
  * 
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -79,5 +83,15 @@ public class KeyRangeQuery extends SliceQuery {
 
     public boolean subsumes(KeyRangeQuery oth) {
         return super.subsumes(oth) && keyStart.compareTo(oth.keyStart)<=0 && keyEnd.compareTo(oth.keyEnd)>=0;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("KeyRangeQuery(start: %s, end: %s, columns:[start: %s, end: %s], limit=%d)",
+                             keyStart,
+                             keyEnd,
+                             getSliceStart(),
+                             getSliceEnd(),
+                             getLimit());
     }
 }

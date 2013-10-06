@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
 
@@ -124,14 +123,19 @@ public interface KeyColumnValueStore {
      * <p/>
      * Implementations which don't support locking should throw
      * {@link UnsupportedOperationException}.
-     *
-     * @param key           the key on which to lock
-     * @param column        the column on which to lock
-     * @param expectedValue the expected value for the specified key-column pair on which
-     *                      to lock (null means the pair must have no value)
-     * @param txh           the transaction to use
-     * @throws LockingException the lock could not be acquired due to contention with other
-     *                          transactions or a locking-specific storage problem
+     * 
+     * @param key
+     *            the key on which to lock
+     * @param column
+     *            the column on which to lock
+     * @param expectedValue
+     *            the expected value for the specified key-column pair on which
+     *            to lock (null means the pair must have no value)
+     * @param txh
+     *            the transaction to use
+     * @throws LockingException
+     *             the lock could not be acquired due to contention with other
+     *             transactions or a locking-specific storage problem
      */
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
 

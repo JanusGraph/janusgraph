@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -105,47 +106,58 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     }
 
     @Override
-    public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
-                                        KeySelector selector, StoreTransaction txh) throws StorageException {
+    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
+                                                  KeySelector selector, StoreTransaction txh) throws StorageException {
         log.trace("Get slice query");
         Transaction tx = getTransaction(txh);
         Cursor cursor = null;
-        List<KeyValueEntry> result;
+        final List<KeyValueEntry> result = new ArrayList<KeyValueEntry>();
         try {
-            //log.debug("Sta: {}",ByteBufferUtil.toBitString(keyStart, " "));
-            //log.debug("Head: {}",ByteBufferUtil.toBitString(keyEnd, " "));
-
             DatabaseEntry foundKey = keyStart.as(ENTRY_FACTORY);
             DatabaseEntry foundData = new DatabaseEntry();
 
             cursor = db.openCursor(tx, null);
             OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, LockMode.DEFAULT);
-            result = new ArrayList<KeyValueEntry>();
             //Iterate until given condition is satisfied or end of records
             while (status == OperationStatus.SUCCESS) {
-
                 StaticBuffer key = getBuffer(foundKey);
-                //log.debug("Fou: {}",ByteBufferUtil.toBitString(nextKey, " "));
-                //keyEnd.rewind();
-                if (ByteBufferUtil.compare(key, keyEnd)>=0) break;
-                //nextKey.rewind();
 
-                boolean skip = false;
-
-                if (!skip) {
-                    skip = !selector.include(key);
-
-                    if (!skip) {
-                        result.add(new KeyValueEntry(key, getBuffer(foundData)));
-                    }
-                }
-                if (selector.reachedLimit()) {
+                if (key.compareTo(keyEnd) >= 0)
                     break;
+
+                if (selector.include(key)) {
+                    result.add(new KeyValueEntry(key, getBuffer(foundData)));
                 }
+
+                if (selector.reachedLimit())
+                    break;
+
                 status = cursor.getNext(foundKey, foundData, LockMode.DEFAULT);
             }
             log.trace("Retrieved: {}", result.size());
-            return result;
+
+            return new RecordIterator<KeyValueEntry>() {
+                private final Iterator<KeyValueEntry> entries = result.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return entries.hasNext();
+                }
+
+                @Override
+                public KeyValueEntry next() {
+                    return entries.next();
+                }
+
+                @Override
+                public void close() {
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         } finally {
@@ -157,93 +169,6 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         }
     }
 
-    private static class KeysIterator implements RecordIterator<StaticBuffer> {
-
-        final StoreTransaction txh;
-        Cursor cursor;
-        final DatabaseEntry foundValue;
-        final DatabaseEntry foundKey;
-
-        StaticBuffer nextKey;
-
-        public KeysIterator(StoreTransaction txh, Database db) throws StorageException {
-            this.txh = txh;
-            foundKey = new DatabaseEntry();
-            foundValue = new DatabaseEntry();
-            foundValue.setPartial(0, 0, true);
-            cursor = null;
-
-            //Register with transaction handle
-
-
-            try {
-                cursor = db.openCursor(getTransaction(txh), null);
-                ((BerkeleyJETx) txh).registerCursor(cursor);
-                OperationStatus status = cursor.getFirst(foundKey, foundValue, LockMode.DEFAULT);
-                if (status == OperationStatus.SUCCESS) {
-                    nextKey = getBuffer(foundKey);
-                } else {
-                    nextKey = null;
-                    close();
-                }
-            } catch (Exception e) {
-                close();
-                throw new PermanentStorageException(e);
-            }
-        }
-
-        @Override
-        public void close() {
-            if (cursor != null)
-                cursor.close();
-        }
-
-        private void getNextKey() throws StorageException {
-            try {
-                OperationStatus status = cursor.getNext(foundKey, foundValue, LockMode.DEFAULT);
-                if (status == OperationStatus.SUCCESS) {
-                    nextKey = getBuffer(foundKey);
-                } else {
-                    nextKey = null;
-                    close();
-                }
-            } catch (Exception e) {
-                close();
-                throw new PermanentStorageException(e);
-            }
-        }
-
-        @Override
-        public boolean hasNext() {
-            return nextKey != null;
-        }
-
-        @Override
-        public StaticBuffer next() {
-            if (nextKey == null) throw new NoSuchElementException();
-            StaticBuffer returnKey = nextKey;
-            try {
-                getNextKey();
-            } catch (StorageException e) {
-                throw new RuntimeException(e);
-            }
-            return returnKey;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-    }
-
-    @Override
-    public RecordIterator<StaticBuffer> getKeys(final StoreTransaction txh) throws StorageException {
-        log.trace("Get keys iterator");
-        KeysIterator iterator = new KeysIterator(txh, db);
-        return iterator;
-    }
-
     @Override
     public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException {
         Transaction tx = getTransaction(txh);
@@ -252,8 +177,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     public void insert(StaticBuffer key, StaticBuffer value, Transaction tx, boolean allowOverwrite) throws StorageException {
         try {
-            //log.debug("Key: {}",ByteBufferUtil.toBitString(entry.getKey(), " "));
-            OperationStatus status = null;
+            OperationStatus status;
             if (allowOverwrite)
                 status = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY));
             else
@@ -286,19 +210,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         }
     }
 
-
-//    private final static DatabaseEntry getDataEntry(ByteBuffer key) {
-//        DatabaseEntry dbkey = new DatabaseEntry(key.array(), key.arrayOffset(), key.arrayOffset() + key.remaining());
-//        return dbkey;
-//    }
-//
-//    private final static ByteBuffer getByteBuffer(DatabaseEntry entry) {
-//        ByteBuffer buffer = ByteBuffer.wrap(entry.getData(), entry.getOffset(), entry.getSize());
-//        buffer.rewind();
-//        return buffer;
-//    }
-
-    private final static StaticBuffer getBuffer(DatabaseEntry entry) {
+    private static StaticBuffer getBuffer(DatabaseEntry entry) {
         return new StaticArrayBuffer(entry.getData(),entry.getOffset(),entry.getOffset()+entry.getSize());
     }
 

@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.locking.transactional;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
 import java.util.List;
 

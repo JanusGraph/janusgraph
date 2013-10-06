@@ -25,7 +25,5 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
         String storageDir = storageConfig.getString(STORAGE_DIRECTORY_KEY);
         Preconditions.checkArgument(storageDir != null, "Need to specify storage directory");
         directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
-
-
     }
 }

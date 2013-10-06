@@ -205,7 +205,7 @@ public class ByteBufferUtil {
         } else return 0;
     }
 
-    public static final int compare(StaticBuffer b1, StaticBuffer b2) {
+    public static int compare(StaticBuffer b1, StaticBuffer b2) {
         if (b1 == b2) {
             return 0;
         }

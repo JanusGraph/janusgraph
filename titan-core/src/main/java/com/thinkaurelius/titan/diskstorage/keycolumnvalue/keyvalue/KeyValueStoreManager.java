@@ -26,16 +26,5 @@ public interface KeyValueStoreManager extends StoreManager {
     public KeyValueStore openDatabase(String name) throws StorageException;
 
 
-    /**
-     * Executes multiple mutations at once. Each store (identified by a string name) in the mutations map is associated
-     * with a {@link KVMutation} that contains all the mutations for that particular store.
-     *
-     * This is an optional operation. Check {@link #getFeatures()} if it is supported by a particular implementation.
-     *
-     * @param mutations
-     * @param txh
-     * @throws StorageException
-     */
-    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException;
 
 }

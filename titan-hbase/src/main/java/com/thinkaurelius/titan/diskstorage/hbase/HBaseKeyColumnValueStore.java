@@ -336,7 +336,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 @Override
                 public Entry next() {
                     ensureOpen();
-
                     Map.Entry<byte[], byte[]> column = kv.next();
                     return StaticBufferEntry.of(new StaticArrayBuffer(column.getKey()), new StaticArrayBuffer(column.getValue()));
                 }

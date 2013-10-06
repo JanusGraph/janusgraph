@@ -628,35 +628,30 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void getNonExistentKeyReturnsNull() throws Exception {
-        StoreTransaction txn = startTx();
-        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
-        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
-        txn.commit();
+        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
+        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
     }
 
     @Test
     public void insertingGettingAndDeletingSimpleDataWorks() throws Exception {
-        StoreTransaction txn = startTx();
-        KeyColumnValueStoreUtil.insert(store, txn, 0, "col0", "val0");
-        KeyColumnValueStoreUtil.insert(store, txn, 0, "col1", "val1");
-        txn.commit();
+        KeyColumnValueStoreUtil.insert(store, tx, 0, "col0", "val0");
+        KeyColumnValueStoreUtil.insert(store, tx, 0, "col1", "val1");
+        tx.commit();
 
-        txn = startTx();
-        Assert.assertEquals("val0", KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
-        Assert.assertEquals("val1", KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
-        KeyColumnValueStoreUtil.delete(store, txn, 0, "col0");
-        KeyColumnValueStoreUtil.delete(store, txn, 0, "col1");
-        txn.commit();
+        tx = startTx();
+        Assert.assertEquals("val0", KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
+        Assert.assertEquals("val1", KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
+        KeyColumnValueStoreUtil.delete(store, tx, 0, "col0");
+        KeyColumnValueStoreUtil.delete(store, tx, 0, "col1");
+        tx.commit();
 
-        txn = startTx();
-        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col0"));
-        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, txn, 0, "col1"));
-        txn.commit();
+        tx = startTx();
+        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col0"));
+        Assert.assertEquals(null, KeyColumnValueStoreUtil.get(store, tx, 0, "col1"));
     }
 
     @Test
     public void getSliceRespectsColumnLimit() throws Exception {
-        StoreTransaction txn = startTx();
         StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
 
         final int cols = 1024;
@@ -666,10 +661,10 @@ public abstract class KeyColumnValueStoreTest {
             StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
             entries.add(new StaticBufferEntry(col, col));
         }
-        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, txn);
-        txn.commit();
+        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, tx);
+        tx.commit();
 
-        txn = startTx();
+        tx = startTx();
         /*
          * When limit is greater than or equal to the matching column count ,
          * all matching columns must be returned.
@@ -677,7 +672,7 @@ public abstract class KeyColumnValueStoreTest {
         StaticBuffer columnStart = KeyColumnValueStoreUtil.longToByteBuffer(0);
         StaticBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(cols);
         List<Entry> result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols), txn);
+                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols), tx);
         Assert.assertEquals(cols, result.size());
 
         for (int i = 0; i < result.size(); i++) {
@@ -689,7 +684,7 @@ public abstract class KeyColumnValueStoreTest {
         }
 
         Assert.assertEquals(entries, result);
-        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols + 10), txn);
+        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols + 10), tx);
         Assert.assertEquals(cols, result.size());
         Assert.assertEquals(entries, result);
 
@@ -697,15 +692,14 @@ public abstract class KeyColumnValueStoreTest {
          * When limit is less the matching column count, the columns up to the
          * limit (ordered bytewise) must be returned.
          */
-        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols - 1), txn);
+        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(cols - 1), tx);
         Assert.assertEquals(cols - 1, result.size());
         entries.remove(entries.size() - 1);
         Assert.assertEquals(entries, result);
-        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(1), txn);
+        result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(1), tx);
         Assert.assertEquals(1, result.size());
         List<Entry> firstEntrySingleton = Arrays.asList(entries.get(0));
         Assert.assertEquals(firstEntrySingleton, result);
-        txn.commit();
     }
 
     @Test
@@ -718,92 +712,79 @@ public abstract class KeyColumnValueStoreTest {
         StaticBuffer columnAfterEnd = KeyColumnValueStoreUtil.longToByteBuffer(779);
 
         // First insert four test Entries
-        StoreTransaction txn = startTx();
         List<Entry> entries = Arrays.asList(
                 (Entry) new StaticBufferEntry(columnBeforeStart, columnBeforeStart),
                 new StaticBufferEntry(columnStart, columnStart),
                 new StaticBufferEntry(columnEnd, columnEnd),
                 new StaticBufferEntry(columnAfterEnd, columnAfterEnd));
-        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, txn);
-        txn.commit();
+        store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, tx);
+        tx.commit();
 
         // getSlice() with only start inclusive
-        txn = startTx();
-        List<Entry> result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd), txn);
+        tx = startTx();
+        List<Entry> result = store.getSlice(new KeySliceQuery(key, columnStart, columnEnd), tx);
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(777, KeyColumnValueStoreUtil.bufferToLong(result.get(0).getColumn()));
-        txn.commit();
 
     }
 
     @Test
     public void containsKeyReturnsTrueOnExtantKey() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        StoreTransaction txn = startTx();
-        Assert.assertFalse(store.containsKey(key1, txn));
-        KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
-        txn.commit();
+        Assert.assertFalse(store.containsKey(key1, tx));
+        KeyColumnValueStoreUtil.insert(store, tx, 1, "c", "v");
+        tx.commit();
 
-        txn = startTx();
-        Assert.assertTrue(store.containsKey(key1, txn));
-        txn.commit();
+        tx = startTx();
+        Assert.assertTrue(store.containsKey(key1, tx));
     }
 
     @Test
     public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
-        StoreTransaction txn = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        Assert.assertFalse(store.containsKey(key1, txn));
-        txn.commit();
+        Assert.assertFalse(store.containsKey(key1, tx));
     }
 
     @Test
     public void containsKeyColumnReturnsFalseOnNonexistentInput()
             throws Exception {
-        StoreTransaction txn = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
-        Assert.assertFalse(KCVSUtil.containsKeyColumn(store, key1, c, txn));
-        txn.commit();
+        Assert.assertFalse(KCVSUtil.containsKeyColumn(store, key1, c, tx));
     }
 
     @Test
     public void containsKeyColumnReturnsTrueOnExtantInput() throws Exception {
-        StoreTransaction txn = startTx();
-        KeyColumnValueStoreUtil.insert(store, txn, 1, "c", "v");
-        txn.commit();
-
-        txn = startTx();
+        KeyColumnValueStoreUtil.insert(store, tx, 1, "c", "v");
+        tx.commit();
+        tx = startTx();
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
         StaticBuffer c = KeyColumnValueStoreUtil.stringToByteBuffer("c");
-        Assert.assertTrue(KCVSUtil.containsKeyColumn(store, key1, c, txn));
-        txn.commit();
+        Assert.assertTrue(KCVSUtil.containsKeyColumn(store, key1, c, tx));
     }
 
     @Test
     public void testGetSlices() throws Exception {
         populateDBWith100Keys();
 
-        StoreTransaction txn = startTx();
-        try {
-            List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
+        tx.commit();
+        tx = startTx();
+        
+        List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
 
-            for (int i = 1; i <= 100; i++) {
-                keys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));
-            }
+        for (int i = 1; i <= 100; i++) {
+            keys.add(KeyColumnValueStoreUtil.longToByteBuffer(i));
+        }
 
-            StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
-            StaticBuffer end = KeyColumnValueStoreUtil.stringToByteBuffer("d");
+        StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
+        StaticBuffer end = KeyColumnValueStoreUtil.stringToByteBuffer("d");
 
-            List<List<Entry>> results = store.getSlice(keys, new SliceQuery(start, end), txn);
+        List<List<Entry>> results = store.getSlice(keys, new SliceQuery(start, end), tx);
 
-            Assert.assertEquals(100, results.size());
+        Assert.assertEquals(100, results.size());
 
-            for (List<Entry> entries : results) {
-                Assert.assertEquals(3, entries.size());
-            }
-        } finally {
-            txn.commit();
+        for (List<Entry> entries : results) {
+            Assert.assertEquals(3, entries.size());
         }
     }
 
@@ -820,17 +801,14 @@ public abstract class KeyColumnValueStoreTest {
         
         populateDBWith100Keys();
 
-        StoreTransaction txn = startTx();
+        tx.commit();
+        tx = startTx();
 
         KeyIterator keyIterator = store.getKeys(
                 new SliceQuery(new ReadArrayBuffer("b".getBytes()),
-                        new ReadArrayBuffer("c".getBytes())), txn);
+                        new ReadArrayBuffer("c".getBytes())), tx);
 
-        try {
-            examineGetKeysResults(keyIterator, 0, 100, 1);
-        } finally {
-            txn.commit();
-        }
+        examineGetKeysResults(keyIterator, 0, 100, 1);
     }
 
     @Test
@@ -846,34 +824,29 @@ public abstract class KeyColumnValueStoreTest {
         
         populateDBWith100Keys();
 
-        StoreTransaction txn = startTx();
+        tx.commit();
+        tx = startTx();
 
         KeyIterator keyIterator = store.getKeys(new KeyRangeQuery(
                 KeyColumnValueStoreUtil.longToByteBuffer(10), // key start
                 KeyColumnValueStoreUtil.longToByteBuffer(40), // key end
                 new ReadArrayBuffer("b".getBytes()), // column start
-                new ReadArrayBuffer("c".getBytes())), txn);
+                new ReadArrayBuffer("c".getBytes())), tx);
 
-        try {
-            examineGetKeysResults(keyIterator, 10, 40, 1);
-        } finally {
-            txn.commit();
-        }
+        examineGetKeysResults(keyIterator, 10, 40, 1);
     }
 
     protected void populateDBWith100Keys() throws Exception {
         Random random = new Random();
 
-        StoreTransaction txn = startTx();
         for (int i = 1; i <= 100; i++) {
-            KeyColumnValueStoreUtil.insert(store, txn, i, "a",
+            KeyColumnValueStoreUtil.insert(store, tx, i, "a",
                     "v" + random.nextLong());
-            KeyColumnValueStoreUtil.insert(store, txn, i, "b",
+            KeyColumnValueStoreUtil.insert(store, tx, i, "b",
                     "v" + random.nextLong());
-            KeyColumnValueStoreUtil.insert(store, txn, i, "c",
+            KeyColumnValueStoreUtil.insert(store, tx, i, "c",
                     "v" + random.nextLong());
         }
-        txn.commit();
     }
 
     protected void examineGetKeysResults(KeyIterator keyIterator,

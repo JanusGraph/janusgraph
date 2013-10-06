@@ -14,16 +14,6 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 public interface KeyValueStore {
 
     /**
-     * Inserts the given key-value pair into the store. If the key already exists, its value is overwritten by the given one.
-     *
-     * @param key
-     * @param value
-     * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
-     */
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException;
-
-    /**
      * Deletes the given key from the store.
      *
      * @param key
@@ -52,13 +42,6 @@ public interface KeyValueStore {
      */
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
 
-    /**
-     * Returns an iterator over all keys in this store. The keys may be
-     * ordered but not necessarily.
-     *
-     * @return An iterator over all keys in this store.
-     */
-    public RecordIterator<StaticBuffer> getKeys(StoreTransaction txh) throws StorageException;
 
     /**
      * Acquires a lock for the given key and expected value (null, if not value is expected).

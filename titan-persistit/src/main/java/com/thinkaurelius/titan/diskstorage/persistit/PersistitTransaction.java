@@ -5,6 +5,10 @@ import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManage
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 import com.persistit.Exchange;
 import com.persistit.Persistit;
 import com.persistit.SessionId;
@@ -24,6 +28,8 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     private Persistit db;
     private SessionId sessionId;
+    
+    private static final Logger log = LoggerFactory.getLogger(PersistitTransaction.class);
 
     private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
 
@@ -42,8 +48,11 @@ public class PersistitTransaction extends AbstractStoreTransaction {
     public PersistitTransaction(Persistit p, StoreTxConfig config) throws StorageException {
         super(config);
         db = p;
-        sessionId = getSessionId();
+        synchronized (this) {
+            sessionId = getSessionId();
+        }
         assign();
+        Preconditions.checkNotNull(sessionId);
         Transaction tx = db.getTransaction();
         assert sessionId == tx.getSessionId();
 
@@ -59,6 +68,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
      */
     public void assign() {
         synchronized (this) {
+            Preconditions.checkNotNull(sessionId);
             db.setSessionId(sessionId);
         }
     }
@@ -84,8 +94,12 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     @Override
     public void commit() throws StorageException {
-        super.commit();
         synchronized (this) {
+            if (null == sessionId) { // Already closed
+                log.warn("Can't commit {}: already closed, trace to redundant commit follows", this, new IllegalStateException("redundant commit"));
+                return;
+            }
+            super.commit();
             assign();
             Transaction tx = db.getTransaction();
             int retries = 3;
