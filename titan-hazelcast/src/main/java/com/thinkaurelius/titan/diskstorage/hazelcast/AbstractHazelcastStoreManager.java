@@ -64,7 +64,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     private StoreFeatures getDefaultFeatures() {
         StoreFeatures features = new StoreFeatures();
 
-        features.supportsOrderedScan = false; // TODO ?
+        features.supportsOrderedScan = false;
         features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
 

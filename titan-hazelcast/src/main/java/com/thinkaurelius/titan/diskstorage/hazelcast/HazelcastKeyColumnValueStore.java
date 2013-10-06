@@ -6,10 +6,12 @@ import java.util.*;
 
 import javax.annotation.Nullable;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.SignedBytes;
+import com.google.common.primitives.UnsignedBytes;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.nio.ObjectDataInput;
@@ -20,6 +22,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
@@ -53,7 +56,7 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
             return Collections.emptyList();
 
         Collections.sort(columns, new Comparator<Column>() {
-            private final Comparator<byte[]> byteComparator = SignedBytes.lexicographicalComparator();
+            private final Comparator<byte[]> byteComparator = UnsignedBytes.lexicographicalComparator();
 
             @Override
             public int compare(Column a, Column b) {
@@ -143,7 +146,19 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
             @Override
             public boolean apply(@Nullable byte[] rawKey) {
                 StaticBuffer key = new StaticArrayBuffer(rawKey);
-                return key.compareTo(query.getKeyStart()) >= 0 && key.compareTo(query.getKeyEnd()) < 0;
+                boolean acceptKey = key.compareTo(query.getKeyStart()) >= 0 && key.compareTo(query.getKeyEnd()) < 0;
+                if (!acceptKey)
+                    return false;
+                
+                Iterator<Column> columns = cache.get(rawKey).iterator();
+                Optional<Column> hit = Iterators.tryFind(columns, new Predicate<Column>() {
+                    @Override
+                    public boolean apply(Column input) {
+                        StaticBuffer c = new StaticArrayBuffer(input.name);
+                        return c.compareTo(query.getSliceStart()) >= 0 && c.compareTo(query.getSliceEnd()) < 0;
+                    }
+                });
+                return hit.isPresent();
             }
         });
 
@@ -151,8 +166,23 @@ public class HazelcastKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return new HazelcatKeyIterator(cache.keySet().iterator(), query);
+    public KeyIterator getKeys(final SliceQuery query, StoreTransaction txh) throws StorageException {
+        final Iterator<byte[]> entries = Iterators.filter(cache.keySet().iterator(), new Predicate<byte[]>() {
+            @Override
+            public boolean apply(@Nullable byte[] rawKey) {
+                Iterator<Column> columns = cache.get(rawKey).iterator();
+                Optional<Column> hit = Iterators.tryFind(columns, new Predicate<Column>() {
+                    @Override
+                    public boolean apply(Column input) {
+                        StaticBuffer c = new StaticArrayBuffer(input.name);
+                        return c.compareTo(query.getSliceStart()) >= 0 && c.compareTo(query.getSliceEnd()) < 0;
+                    }
+                });
+                return hit.isPresent();
+            }
+        });
+        
+        return new HazelcatKeyIterator(entries, query);
     }
 
     @Override
