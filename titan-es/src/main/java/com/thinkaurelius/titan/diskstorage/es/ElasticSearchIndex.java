@@ -69,8 +69,9 @@ public class ElasticSearchIndex implements IndexProvider {
     private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
 
     private static final String[] DATA_SUBDIRS = {"data", "work", "logs"};
-    private static final int MAX_RESULT_SET_SIZE = 100000;
 
+    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
+    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
 
     public static final String CLIENT_ONLY_KEY = "client-only";
     public static final boolean CLIENT_ONLY_DEFAULT = true;
@@ -90,6 +91,7 @@ public class ElasticSearchIndex implements IndexProvider {
     private final Node node;
     private final Client client;
     private final String indexName;
+    private final int maxResultsSize;
 
     public ElasticSearchIndex(Configuration config) {
         indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
@@ -153,6 +155,9 @@ public class ElasticSearchIndex implements IndexProvider {
             node = null;
         }
 
+        maxResultsSize = config.getInt(MAX_RESULT_SET_SIZE_KEY, MAX_RESULT_SET_SIZE_DEFAULT);
+        log.debug("Configured ES query result set max size to {}", maxResultsSize);
+
         client.admin().cluster().prepareHealth()
                 .setWaitForYellowStatus().execute().actionGet();
 
@@ -179,31 +184,81 @@ public class ElasticSearchIndex implements IndexProvider {
 
     @Override
     public void register(String store, String key, Class<?> dataType, TransactionHandle tx) throws StorageException {
-        if (dataType == Geoshape.class) { //Only need to update for geoshape
-            log.debug("Registering geo_point type for {}", key);
-            XContentBuilder mapping = null;
-            try {
-                mapping =
-                        XContentFactory.jsonBuilder()
-                                .startObject()
-                                .startObject(store)
-                                .startObject("properties")
-                                .startObject(key)
-                                .field("type", "geo_point")
-                                .endObject()
-                                .endObject()
-                                .endObject()
-                                .endObject();
-            } catch (IOException e) {
-                throw new PermanentStorageException("Could not render json for put mapping request", e);
+        XContentBuilder mapping = null;
+
+        try {
+            mapping = XContentFactory.jsonBuilder().
+                    startObject().
+                    startObject(store).
+                    startObject("properties").
+                    startObject(key);
+
+            if (AttributeUtil.isString(dataType)) {
+                log.debug("Registering string type for {}", key);
+                mapping.field("type", "string");
+            } else if (dataType == Float.class || dataType == FullFloat.class) {
+                log.debug("Registering float type for {}", key);
+                mapping.field("type", "float");
+            } else if (dataType == Double.class || dataType == FullDouble.class) {
+                log.debug("Registering double type for {}", key);
+                mapping.field("type", "double");
+            } else if (dataType == Byte.class) {
+                log.debug("Registering byte type for {}", key);
+                mapping.field("type", "byte");
+            } else if (dataType == Short.class) {
+                log.debug("Registering short type for {}", key);
+                mapping.field("type", "short");
+            } else if (dataType == Integer.class) {
+                log.debug("Registering integer type for {}", key);
+                mapping.field("type", "integer");
+            } else if (dataType == Long.class) {
+                log.debug("Registering long type for {}", key);
+                mapping.field("type", "long");
+            } else if (dataType == Boolean.class) {
+                log.debug("Registering boolean type for {}", key);
+                mapping.field("type", "boolean");
+            } else if (dataType == Geoshape.class) {
+                log.debug("Registering geo_point type for {}", key);
+                mapping.field("type", "geo_point");
             }
-            try {
-                PutMappingResponse response = client.admin().indices().preparePutMapping(indexName).
-                        setIgnoreConflicts(false).setType(store).setSource(mapping).execute().actionGet();
-            } catch (Exception e) {
-                throw convert(e);
-            }
+
+            mapping.endObject().endObject().endObject().endObject();
+
+        } catch (IOException e) {
+            throw new PermanentStorageException("Could not render json for put mapping request", e);
         }
+
+        try {
+            PutMappingResponse response = client.admin().indices().preparePutMapping(indexName).
+                    setIgnoreConflicts(false).setType(store).setSource(mapping).execute().actionGet();
+        } catch (Exception e) {
+            throw convert(e);
+        }
+//        if (dataType == Geoshape.class) { //Only need to update for geoshape
+//            log.debug("Registering geo_point type for {}", key);
+//            XContentBuilder mapping = null;
+//            try {
+//                mapping =
+//                        XContentFactory.jsonBuilder()
+//                                .startObject()
+//                                .startObject(store)
+//                                .startObject("properties")
+//                                .startObject(key)
+//                                .field("type", "geo_point")
+//                                .endObject()
+//                                .endObject()
+//                                .endObject()
+//                                .endObject();
+//            } catch (IOException e) {
+//                throw new PermanentStorageException("Could not render json for put mapping request", e);
+//            }
+//            try {
+//                PutMappingResponse response = client.admin().indices().preparePutMapping(indexName).
+//                        setIgnoreConflicts(false).setType(store).setSource(mapping).execute().actionGet();
+//            } catch (Exception e) {
+//                throw convert(e);
+//            }
+//        }
     }
 
     public XContentBuilder getContent(List<IndexEntry> additions) throws StorageException {
@@ -344,8 +399,10 @@ public class ElasticSearchIndex implements IndexProvider {
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {
                     return FilterBuilders.termFilter(key, ((String) value).toLowerCase());
-//                } else if (relation == Txt.PREFIX) {
-//                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
+                } else if (titanPredicate == Text.PREFIX) {
+                    return FilterBuilders.prefixFilter(key, ((String) value).toLowerCase());
+                } else if (titanPredicate == Text.REGEX) {
+                    return FilterBuilders.regexpFilter(key, (String) value);
 //                } else if (relation == Cmp.EQUAL) {
 //                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.NOT_EQUAL) {
@@ -353,7 +410,7 @@ public class ElasticSearchIndex implements IndexProvider {
 //                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
 //                    return q;
                 } else
-                    throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
+                    throw new IllegalArgumentException("Predicate is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
                 Preconditions.checkArgument(titanPredicate == Geo.WITHIN, "Relation is not supported for geo value: " + titanPredicate);
                 Geoshape shape = (Geoshape) value;
@@ -400,14 +457,15 @@ public class ElasticSearchIndex implements IndexProvider {
         }
         srb.setFrom(0);
         if (query.hasLimit()) srb.setSize(query.getLimit());
-        else srb.setSize(MAX_RESULT_SET_SIZE);
+        else srb.setSize(maxResultsSize);
+        srb.setNoFields();
         //srb.setExplain(true);
 
         SearchResponse response = srb.execute().actionGet();
         log.debug("Executed query [{}] in {} ms", query.getCondition(), response.getTookInMillis());
         SearchHits hits = response.getHits();
-        if (!query.hasLimit() && hits.totalHits() >= MAX_RESULT_SET_SIZE)
-            log.warn("Query result set truncated to first [{}] elements for query: {}", MAX_RESULT_SET_SIZE, query);
+        if (!query.hasLimit() && hits.totalHits() >= maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
         List<String> result = new ArrayList<String>(hits.hits().length);
         for (SearchHit hit : hits) {
             result.add(hit.id());
@@ -423,13 +481,13 @@ public class ElasticSearchIndex implements IndexProvider {
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
         } else if (dataType == String.class) {
-            return titanPredicate == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX || titanPredicate == Text.REGEX;
         } else return false;
     }
 
     @Override
     public boolean supports(Class<?> dataType) {
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == String.class)
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || AttributeUtil.isString(dataType))
             return true;
         else return false;
     }

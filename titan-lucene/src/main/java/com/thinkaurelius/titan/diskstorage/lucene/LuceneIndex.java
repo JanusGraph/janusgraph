@@ -322,8 +322,10 @@ public class LuceneIndex implements IndexProvider {
             } else if (value instanceof String) {
                 if (titanPredicate == Text.CONTAINS) {
                     return new TermsFilter(new Term(key, ((String) value).toLowerCase()));
-//                } else if (relation == Txt.PREFIX) {
-//                    return new PrefixFilter(new Term(key+STR_SUFFIX,(String)value));
+                } else if (titanPredicate == Text.PREFIX) {
+                    return new PrefixFilter(new Term(key, ((String) value).toLowerCase()));
+//                } else if (titanPredicate == Text.REGEX) {
+//                    return new RegexpQuery(new Term(key,(String)value));
 //                } else if (relation == Cmp.EQUAL) {
 //                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
 //                } else if (relation == Cmp.NOT_EQUAL) {
@@ -370,7 +372,7 @@ public class LuceneIndex implements IndexProvider {
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
         } else if (dataType == String.class) {
-            return titanPredicate == Text.CONTAINS; // || relation == Txt.PREFIX || relation == Cmp.EQUAL || relation == Cmp.NOT_EQUAL;
+            return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX; // || titanPredicate == Text.REGEX;
         } else return false;
     }
 

@@ -28,29 +28,33 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
 
     public static final Configuration getLocalESTestConfig() {
         Configuration config = new BaseConfiguration();
-        config.setProperty(LOCAL_MODE_KEY,true);
-        config.setProperty(CLIENT_ONLY_KEY,false);
-        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY,StorageSetup.getHomeDir("es"));
+        config.setProperty(LOCAL_MODE_KEY, true);
+        config.setProperty(CLIENT_ONLY_KEY, false);
+        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("es"));
         return config;
     }
 
     @Test
     public void testSupport() {
         assertTrue(index.supports(String.class));
+        assertTrue(index.supports(Float.class));
         assertTrue(index.supports(Double.class));
-        assertTrue(index.supports(Long.class));
+        assertTrue(index.supports(Byte.class));
+        assertTrue(index.supports(Short.class));
         assertTrue(index.supports(Integer.class));
+        assertTrue(index.supports(Long.class));
         assertTrue(index.supports(Geoshape.class));
         assertFalse(index.supports(Object.class));
         assertFalse(index.supports(Exception.class));
 
+        assertTrue(index.supports(String.class, Text.PREFIX));
         assertTrue(index.supports(String.class, Text.CONTAINS));
+        assertTrue(index.supports(String.class, Text.REGEX));
         assertTrue(index.supports(Double.class, Cmp.EQUAL));
         assertTrue(index.supports(Double.class, Cmp.GREATER_THAN_EQUAL));
         assertTrue(index.supports(Double.class, Cmp.LESS_THAN));
         assertTrue(index.supports(Geoshape.class, Geo.WITHIN));
 
-        assertFalse(index.supports(String.class, Text.PREFIX));
         assertFalse(index.supports(Double.class, Geo.INTERSECT));
         assertFalse(index.supports(Long.class, Text.CONTAINS));
         assertFalse(index.supports(Geoshape.class, Geo.DISJOINT));

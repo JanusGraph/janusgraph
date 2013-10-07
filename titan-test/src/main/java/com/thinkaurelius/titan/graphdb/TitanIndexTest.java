@@ -74,6 +74,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).makePropertyKey();
         TitanKey category = tx.makeType().name("category").vertexUnique(Direction.OUT)
                 .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).makePropertyKey();
+        TitanKey group = tx.makeType().name("group").vertexUnique(Direction.OUT)
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Byte.class).makePropertyKey();
         TitanKey id = tx.makeType().name("uid").vertexUnique(Direction.OUT).graphUnique()
                 .indexed(Vertex.class).dataType(Integer.class).makePropertyKey();
         TitanLabel knows = tx.makeType().name("knows").primaryKey(time).signature(location).makeEdgeLabel();
@@ -81,6 +83,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};
         int numCategories = 5;
+        int numGroups = 10;
         double distance, offset;
         int numV = 100;
         final int originalNumV = numV;
@@ -88,6 +91,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             Vertex v = tx.addVertex();
             v.setProperty("uid", i);
             v.setProperty("category", i % numCategories);
+            v.setProperty("group", i % numGroups);
             v.setProperty("text", "Vertex " + words[i % words.length]);
             v.setProperty("time", i);
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
@@ -97,6 +101,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             e.setProperty("text", "Vertex " + words[i % words.length]);
             e.setProperty("time", i);
             e.setProperty("category", i % numCategories);
+            e.setProperty("group", i % numGroups);
             e.setProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
         }
 
@@ -128,6 +133,9 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 }
             }
         }
+
+        assertEquals(3, Iterables.size(tx.query().has("group", 3).orderBy("time", Order.ASC).limit(3).vertices()));
+        assertEquals(3, Iterables.size(tx.query().has("group", 3).orderBy("time", Order.DESC).limit(3).edges()));
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
             assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices()));
@@ -184,6 +192,9 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 }
             }
         }
+
+        assertEquals(3, Iterables.size(tx.query().has("group", 3).orderBy("time", Order.ASC).limit(3).vertices()));
+        assertEquals(3, Iterables.size(tx.query().has("group", 3).orderBy("time", Order.DESC).limit(3).edges()));
 
         for (int i = 0; i < numV / 2; i += numV / 10) {
             assertEquals(i, Iterables.size(tx.query().has("time", Cmp.GREATER_THAN_EQUAL, i).has("time", Cmp.LESS_THAN, i + i).vertices()));
