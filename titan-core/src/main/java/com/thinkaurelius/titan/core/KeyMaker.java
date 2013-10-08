@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.Element;
 
 /**
+ * Used to define new {@link TitanKey}s
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface KeyMaker extends TypeMaker {
 
     /**

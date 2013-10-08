@@ -7,15 +7,11 @@ import com.tinkerpop.blueprints.Element;
  * TypeMaker is a factory for {@link TitanType}s. TitanTypes can be configured to provide data verification,
  * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link TitanRelation}s
  * of that type.
- * <br />
- * All user defined types are configured using a TypeMaker instance returned by {@link com.thinkaurelius.titan.core.TitanTransaction#makeType()}.
- * Hence, types are defined within the context of a transaction like every other object in a TitanGraph. The TypeMaker
- * is used to create both: property keys and edge labels using either {@link #makePropertyKey()} or {@link #makeEdgeLabel()},
- * respectively. Some of the methods in TypeMaker are only applicable to one or the other.
- * <br />
- * Most configuration options provided by the methods of this class are optional and default values are assumed as
- * documented for the particular methods. However, one must call {@link #name(String)} to define the unqiue name of the type.
- * When defining property keys, one must also configure the data type using {@link #dataType(Class)}.
+ * </p>
+ * All user defined types are configured using a TypeMaker instance returned by {@link com.thinkaurelius.titan.core.TitanTransaction#makeKey(String)}}
+ * or {@link TitanTransaction#makeLabel(String)} where the string parameter is the name of the type to be created.
+ * Hence, types are defined within the context of a transaction like every other object in a TitanGraph. The configuration
+ * options available when defining a type depend on whether its a key or a label. See {@link KeyMaker} and {@link LabelMaker} for more details.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see TitanType

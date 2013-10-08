@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.core;
 
 /**
+ * Used to define new {@link TitanLabel}s
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface LabelMaker extends TypeMaker {
 
     /**
