@@ -120,10 +120,12 @@
 
     <profiles>
         <profile>
-            <id>standard</id>
+            <id>jre7</id>
             
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!targetjre</name>
+                </property>
             </activation>
             
             <dependencies>

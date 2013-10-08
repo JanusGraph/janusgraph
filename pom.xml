@@ -78,13 +78,10 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
-        <!-- Required for PMD plugin. Used for compiler plugin -->
-        
         <perf.jvm.opts></perf.jvm.opts>
         <default.test.jvm.opts>-Xms256m -Xmx768m ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts></test.extra.jvm.opts>
-        <targetjdk>7</targetjdk>
         <titan.classifier></titan.classifier>
     </properties>
     <build>
@@ -695,10 +692,12 @@
         </profile>
 
         <profile>
-            <id>standard</id>
+            <id>jre7</id>
 
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!targetjre</name>
+                </property>
             </activation>
 
             <properties>
