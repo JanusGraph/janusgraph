@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.*;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
@@ -24,20 +25,13 @@ import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@Category({ PerformanceTests.class })
+@Category({PerformanceTests.class})
 public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
     @Rule
@@ -109,15 +103,15 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         final int numTypes = 20;
         final int numThreads = 100;
         for (int i = 0; i < numTypes / 2; i++) {
-            TypeMaker tm = tx.makeType().name("test" + i).dataType(String.class);
-            if (i % 4 == 0) tm.vertexUnique(Direction.OUT).graphUnique().indexed(Vertex.class);
-            else tm.vertexUnique(Direction.OUT);
-            tm.makePropertyKey();
+            KeyMaker tm = tx.makeKey("test" + i).dataType(String.class).single();
+            if (i % 4 == 0) tm.unique().indexed(Vertex.class);
+
+            tm.make();
         }
         for (int i = numTypes / 2; i < numTypes; i++) {
-            TypeMaker tm = tx.makeType().name("test" + i);
+            LabelMaker tm = tx.makeLabel("test" + i);
             if (i % 4 == 1) tm.unidirected();
-            tm.makeEdgeLabel();
+            tm.make();
         }
         clopen();
         Thread[] threads = new Thread[numThreads];
@@ -186,7 +180,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         Runnable relMaker =
                 new FixedRelationshipMaker(tx, id,
                         makeSimpleEdgeLabel("dummyRelationship"));
-        
+
         newTx();
 
         Future<?> propFuture = executor.submit(propMaker);
@@ -205,31 +199,31 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         propFuture.cancel(true);
         relFuture.cancel(true);
     }
-    
+
     /**
      * Load-then-read test of standard-indexed vertex properties. This test
      * contains no edges.
-     * 
+     * <p/>
      * The load stage is serial. The read stage is concurrent.
-     * 
+     * <p/>
      * Create a set of vertex property types with standard indices
      * (threadPoolSize * 5 by default) serially. Serially write 1k vertices with
      * values for all of the indexed property types. Concurrently query the
      * properties. Each thread uses a single, distinct transaction for all index
      * retrievals in that thread.
-     * @throws ExecutionException 
-     * @throws InterruptedException 
+     *
+     * @throws ExecutionException
+     * @throws InterruptedException
      */
     @Test
     public void testStandardIndexVertexPropertyReads() throws InterruptedException, ExecutionException {
         final int propCount = THREAD_COUNT * 5;
-        final int vertexCount =  1  * 1000;
+        final int vertexCount = 1 * 1000;
         // Create props with standard indexes
-        TypeMaker tm = tx.makeType();
         log.info("Creating types");
         for (int i = 0; i < propCount; i++) {
-            tm.name("p" + i).dataType(Integer.class)
-                .indexed(Vertex.class).vertexUnique(Direction.BOTH).makePropertyKey();
+            tx.makeKey("p" + i).dataType(Integer.class)
+                    .indexed(Vertex.class).single().unique().make();
         }
         newTx();
         log.info("Creating vertices");
@@ -384,12 +378,12 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             stopLatch.countDown();
         }
     }
-    
+
     /**
      * See {@line #testStandardIndex()}
      */
     private class VertexPropertyQuerier implements Runnable {
-        
+
         private final int propCount;
         private final int vertexCount;
 
@@ -397,7 +391,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             this.propCount = propCount;
             this.vertexCount = vertexCount;
         }
-        
+
         @Override
         public void run() {
             for (int i = 0; i < vertexCount; i++) {

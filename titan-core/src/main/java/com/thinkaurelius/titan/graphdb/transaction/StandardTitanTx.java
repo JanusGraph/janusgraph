@@ -35,7 +35,8 @@ import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.LRUVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
-import com.thinkaurelius.titan.graphdb.types.StandardTypeMaker;
+import com.thinkaurelius.titan.graphdb.types.StandardKeyMaker;
+import com.thinkaurelius.titan.graphdb.types.StandardLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
@@ -598,7 +599,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public TitanKey getPropertyKey(String name) {
         TitanType et = getType(name);
         if (et == null) {
-            return config.getAutoEdgeTypeMaker().makeKey(name, makeType());
+            return config.getAutoEdgeTypeMaker().makeKey(makeKey(name));
         } else if (et.isPropertyKey()) {
             return (TitanKey) et;
         } else
@@ -610,7 +611,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     public TitanLabel getEdgeLabel(String name) {
         TitanType et = getType(name);
         if (et == null) {
-            return config.getAutoEdgeTypeMaker().makeLabel(name, makeType());
+            return config.getAutoEdgeTypeMaker().makeLabel(makeLabel(name));
         } else if (et.isEdgeLabel()) {
             return (TitanLabel) et;
         } else
@@ -618,8 +619,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     }
 
     @Override
-    public TypeMaker makeType() {
-        return new StandardTypeMaker(this, graph.getIndexSerializer());
+    public KeyMaker makeKey(String name) {
+        StandardKeyMaker maker = new StandardKeyMaker(this, indexSerializer);
+        maker.name(name);
+        return maker;
+    }
+
+    @Override
+    public LabelMaker makeLabel(String name) {
+        StandardLabelMaker maker = new StandardLabelMaker(this, indexSerializer);
+        maker.name(name);
+        return maker;
     }
 
     /*

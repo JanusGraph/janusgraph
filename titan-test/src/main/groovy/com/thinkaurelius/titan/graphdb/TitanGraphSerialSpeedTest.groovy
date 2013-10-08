@@ -37,17 +37,18 @@ import com.thinkaurelius.titan.diskstorage.StorageException
 /**
  * This class was formerly known as GroovySerialTest.
  * Several issues and commitlogs refer to it that way.
- * 
+ *
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@BenchmarkOptions(warmupRounds=1, benchmarkRounds=1)
-@Category([ PerformanceTests.class ])
+@BenchmarkOptions(warmupRounds = 1, benchmarkRounds = 1)
+@Category([PerformanceTests.class])
 public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
-    
+
     private static final Logger log = LoggerFactory.getLogger(TitanGraphSerialSpeedTest)
 
-    @Rule public TestRule benchmark = JUnitBenchmarkProvider.get()
-    
+    @Rule
+    public TestRule benchmark = JUnitBenchmarkProvider.get()
+
     TitanGraphSerialSpeedTest(Configuration conf) throws StorageException {
         super(conf)
     }
@@ -110,74 +111,74 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
 
     @Test
     void testVertexUidLookup() throws Exception {
-        sequentialUidTask { tx, vertex ->  assertNotNull(vertex) }
+        sequentialUidTask { tx, vertex -> assertNotNull(vertex) }
     }
-    
+
     /**
      * Query for edges using a vertex-centric index on a fixed supernode.
-     * 
+     *
      */
     @Test
     void testVertexCentricIndexQuery() {
-        
+
         final long maxUid = 1000L; // exclusive
         final long minUid = 1L;    // inclusive
-        
+
         Preconditions.checkArgument(maxUid - minUid <= VERTEX_COUNT)
-        
+
         supernodeTask { v, indexLabel, indexPK ->
-            
+
             def c = v.outE(indexLabel)
-                 .has(indexPK, T.gte, 25)
-                 .has(indexPK, T.lt,  75)
-                 .count()
+                    .has(indexPK, T.gte, 25)
+                    .has(indexPK, T.lt, 75)
+                    .count()
             assertEquals(50, c)
-       
+
             c = v.outE(indexLabel)
-                .has(indexPK, T.gte, 125)
-                .has(indexPK, T.lt,  225)
-                .count()
+                    .has(indexPK, T.gte, 125)
+                    .has(indexPK, T.lt, 225)
+                    .count()
             assertEquals(100, c)
-            
+
             c = v.outE(indexLabel)
-                 .has(indexPK, T.gte, 500)
-                 .has(indexPK, T.lt,  1000)
-                 .count()
+                    .has(indexPK, T.gte, 500)
+                    .has(indexPK, T.lt, 1000)
+                    .count()
             assertEquals(500, c)
-                 
+
             c = v.outE(indexLabel)
-                 .has(indexPK, T.gt, 0)
-                 .has(indexPK, T.lt, 2)
-                 .count()
+                    .has(indexPK, T.gt, 0)
+                    .has(indexPK, T.lt, 2)
+                    .count()
             assertEquals(1, c)
         }
     }
-    
+
     @Test
     void testLabeledEdgeTraversal() {
         int i = 0
         supernodeTask { v, indexLabel, indexPK ->
             int start = 100 * i++
-            int end   = start + 99
+            int end = start + 99
             def c = v.outE(indexLabel)[start..end].inV().outE(indexLabel).inV().outE(indexLabel).count()
             assertTrue(0 < c)
         }
     }
-    
+
     @Test
     void testEdgeTraversalUsingVertexCentricIndex() {
         supernodeTask { v, label, pkey ->
             def c = v.outE(label)
-                     .has(pkey, T.gte, 0).has(pkey, T.lte, 100)
-                     .inV()
-                     .outE(label)
-                     .inV()
-                     .outE(label)
-                     .count()
+                    .has(pkey, T.gte, 0).has(pkey, T.lte, 100)
+                    .inV()
+                    .outE(label)
+                    .inV()
+                    .outE(label)
+                    .count()
             assertTrue(0 < c)
         }
     }
-    
+
     @Test
     void testLimitedGlobalEdgePropertyQuery() {
         standardIndexEdgeTask { tx, indexedPropName, indexedPropVal ->
@@ -186,7 +187,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
             assertTrue(n <= 1)
         }
     }
-    
+
     @Test
     void testLimitedGlobalVertexPropertyQuery() {
         standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
@@ -195,7 +196,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
             assertTrue(n <= 1)
         }
     }
-    
+
     @Test
     void testGlobalVertexPropertyQuery() {
         standardIndexVertexTask { tx, indexedPropName, indexedPropVal ->
@@ -203,7 +204,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
             assertTrue(0 < n)
         }
     }
-    
+
     @Test
     void testGlobalEdgePropertyQuery() {
         standardIndexEdgeTask { tx, indexedPropName, indexedPropVal ->
@@ -211,7 +212,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
             assertTrue(0 < n)
         }
     }
-    
+
     @Test
     public void testMultiVertexQuery() {
         chunkedSequentialUidTask(50, 50, this.&multiVertexQueryTask)
@@ -221,18 +222,17 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
     public void testPathologicalMultiVertexQuery() {
         chunkedSequentialUidTask(1, 50, this.&multiVertexQueryTask)
     }
-    
+
     @Test
     public void testSingleVertexQuery() {
         sequentialUidTask(50, this.&singleVertexQueryTask)
     }
-    
-    
+
     /**
      * Retrieve vertices by uid, then retrieve their associated properties. All
      * access is done through a FramedGraph interface. This is inspired by part
      * of the ONLAB benchmark, but written separately ("from scratch").
-     * 
+     *
      */
     @Test
     void testFramedUidAndPropertyLookup() {
@@ -240,7 +240,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         int totalNonNullProps = 0;
         for (int t = 0; t < DEFAULT_TX_COUNT; t++) {
             for (int u = 0; u < 100; u++) {
-                Long uid = (long)t * 100 + u;
+                Long uid = (long) t * 100 + u;
                 Iterable<FakeVertex> iter = fg.getVertices(Schema.UID_PROP, uid, FakeVertex.class);
                 boolean visited = false;
                 for (FakeVertex fv : iter) {
@@ -266,21 +266,20 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         // generation (for a graph of non-trivial size) is insignificant.
         assertTrue(0 < totalNonNullProps);
     }
-    
-   
-     /*
-     * I'm prefixing test methods that modify the graph with "testZ". In
-     * conjunction with JUnit's @FixMethodOrder annotation, this makes
-     * graph-mutating test methods run after the rest of the test methods.
-     *
-     * I'm doing this because my box takes about 4 minutes to load a 10k vertex
-     * and 50k edge GraphML file via Blueprints and I'm trying to avoid waiting
-     * while hacking. However, 4 minutes wouldn't be prohibitive in an
-     * unattended batch job, so it would be prudent to move the graph-mutating
-     * test methods into another class that reloads the graph between each
-     * method.
-     */
-    
+
+    /*
+    * I'm prefixing test methods that modify the graph with "testZ". In
+    * conjunction with JUnit's @FixMethodOrder annotation, this makes
+    * graph-mutating test methods run after the rest of the test methods.
+    *
+    * I'm doing this because my box takes about 4 minutes to load a 10k vertex
+    * and 50k edge GraphML file via Blueprints and I'm trying to avoid waiting
+    * while hacking. However, 4 minutes wouldn't be prohibitive in an
+    * unattended batch job, so it would be prudent to move the graph-mutating
+    * test methods into another class that reloads the graph between each
+    * method.
+    */
+
     @Test
     void testZVertexPropertyModification() {
         int propsModified = 0
@@ -301,7 +300,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         }
         assertTrue(0 < propsModified)
     }
-    
+
     @Test
     void testZEdgeAddition() {
         int edgesAdded = 0
@@ -321,7 +320,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         assertTrue(0 < edgesAdded + skipped)
         assertTrue(edgesAdded > skipped)
     }
-    
+
     /**
      * Retrieve a vertex by randomly chosen uid, then remove the vertex. After
      * removing all vertices, add new vertices with the same uids as those
@@ -354,7 +353,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
 //        }
 //        tx.commit()
 //    }
-    
+
     /**
      * JUnitBenchmarks appears to include {@code Before} method execution in round-avg times.
      * This method has no body and exists only to measure that overhead.
@@ -364,11 +363,11 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         // Do nothing
         log.debug("Noop test executed");
     }
-    
+
     private void multiVertexQueryTask(TitanTransaction tx, TitanVertex[] vbuf, int vcount) {
         if (vcount != vbuf.length) {
             def newbuf = new TitanVertex[vcount]
-            for (int i = 0; i < vcount; i++)  {
+            for (int i = 0; i < vcount; i++) {
                 newbuf[i] = vbuf[i]
                 Preconditions.checkArgument(null != newbuf[i])
             }
@@ -388,11 +387,11 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         }
         assertTrue(0 < n)
     }
-    
+
     private void singleVertexQueryTask(TitanTransaction tx, TitanVertex v) {
         int n = 0
         for (int i = 0; i < schema.edgeLabels; i++) {
-            for (Iterable<TitanEdge> iter : v.query().labels(schema.edgeLabelNames[i]).titanEdges()) {
+            for (TitanEdge iter : v.query().labels(schema.edgeLabelNames[i]).titanEdges()) {
                 n++
             }
         }

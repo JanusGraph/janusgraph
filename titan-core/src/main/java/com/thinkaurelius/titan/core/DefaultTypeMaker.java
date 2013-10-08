@@ -17,24 +17,22 @@ package com.thinkaurelius.titan.core;
 public interface DefaultTypeMaker {
 
     /**
-     * Creates a new label type with the given name and default settings against the provided TypeMaker.
+     * Creates a new label type with default settings against the provided {@link LabelMaker}.
      *
-     * @param name    Name of the label
-     * @param factory TypeMaker through which the edge label is created
+     * @param factory LabelMaker through which the edge label is created
      * @return A new edge label for the given name
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public TitanLabel makeLabel(String name, TypeMaker factory);
+    public TitanLabel makeLabel(LabelMaker factory);
 
     /**
-     * Creates a new property key with the given name and default settings against the provided TypeMaker.
+     * Creates a new property key with default settings against the provided {@link KeyMaker}.
      *
-     * @param name    Name of the property key
      * @param factory TypeMaker through which the property key is created
      * @return A new property key for the given name
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public TitanKey makeKey(String name, TypeMaker factory);
+    public TitanKey makeKey(KeyMaker factory);
 
     /**
      * Whether to ignore undefined types occurring in a query.

@@ -171,8 +171,13 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public TypeMaker makeType() {
-        return getAutoStartTx().makeType();
+    public KeyMaker makeKey(String name) {
+        return getAutoStartTx().makeKey(name);
+    }
+
+    @Override
+    public LabelMaker makeLabel(String name) {
+        return getAutoStartTx().makeLabel(name);
     }
 
     @Override

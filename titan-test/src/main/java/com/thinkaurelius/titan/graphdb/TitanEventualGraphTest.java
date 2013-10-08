@@ -30,8 +30,8 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void concurrentIndexTest() {
-        TitanKey id = tx.makeType().name("uid").vertexUnique(Direction.OUT).graphUnique().indexed(Vertex.class).dataType(String.class).makePropertyKey();
-        TitanKey value = tx.makeType().name("value").vertexUnique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Object.class).indexed(Vertex.class).makePropertyKey();
+        TitanKey id = tx.makeKey("uid").single().unique().indexed(Vertex.class).dataType(String.class).make();
+        TitanKey value = tx.makeKey("value").single(TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Object.class).indexed(Vertex.class).make();
 
         TitanVertex v = tx.addVertex();
         v.setProperty(id, "v");

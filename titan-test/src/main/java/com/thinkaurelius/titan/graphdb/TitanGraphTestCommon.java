@@ -75,64 +75,56 @@ public abstract class TitanGraphTestCommon {
     }
 
     public TitanLabel makeSimpleEdgeLabel(String name) {
-        TypeMaker etmaker = tx.makeType();
-        etmaker.name(name);
-        return etmaker.makeEdgeLabel();
+        return tx.makeLabel(name).make();
     }
 
     public TitanLabel makeKeyedEdgeLabel(String name, TitanKey primary, TitanKey signature) {
-        TypeMaker etmaker = tx.makeType();
-        TitanLabel relType = etmaker.name(name).
-                primaryKey(primary).signature(signature).directed().makeEdgeLabel();
+        TitanLabel relType = tx.makeLabel(name).
+                primaryKey(primary).signature(signature).directed().make();
         return relType;
     }
 
     public TitanKey makeUniqueStringPropertyKey(String name) {
-        return tx.makeType().name(name).vertexUnique(Direction.OUT).
-                graphUnique().indexed(Vertex.class).dataType(String.class).makePropertyKey();
+        return tx.makeKey(name).single().unique().indexed(Vertex.class).dataType(String.class).make();
     }
 
     public TitanKey makeStringUIDPropertyKey(String name) {
-        return tx.makeType().name(name).
-                vertexUnique(Direction.OUT).
-                graphUnique().indexed(Vertex.class).
+        return tx.makeKey(name).
+                single().unique().indexed(Vertex.class).
                 dataType(String.class).
-                makePropertyKey();
+                make();
     }
 
     public TitanKey makeStringPropertyKey(String name) {
-        return tx.makeType().name(name).vertexUnique(Direction.OUT).
+        return tx.makeKey(name).single().
                 indexed(Vertex.class).
                 dataType(String.class).
-                makePropertyKey();
+                make();
     }
 
     public TitanKey makeUnindexedStringPropertyKey(String name) {
-        return tx.makeType().name(name).vertexUnique(Direction.OUT).
+        return tx.makeKey(name).single().
                 dataType(String.class).
-                makePropertyKey();
+                make();
     }
 
     public TitanKey makeIntegerUIDPropertyKey(String name) {
-        return tx.makeType().name(name).
-                vertexUnique(Direction.OUT).
-                graphUnique().indexed(Vertex.class).
+        return tx.makeKey(name).single().unique().indexed(Vertex.class).
                 dataType(Integer.class).
-                makePropertyKey();
+                make();
     }
 
     public TitanKey makeWeightPropertyKey(String name) {
-        return tx.makeType().name(name).
-                vertexUnique(Direction.OUT).
+        return tx.makeKey(name).single().
                 dataType(Double.class).
-                makePropertyKey();
+                make();
     }
 
     public TitanKey makeNonUniqueStringPropertyKey(String name) {
-        return tx.makeType().name(name).multiValued().
+        return tx.makeKey(name).list().
                 indexed(Vertex.class).
                 dataType(String.class).
-                makePropertyKey();
+                make();
     }
 
 }

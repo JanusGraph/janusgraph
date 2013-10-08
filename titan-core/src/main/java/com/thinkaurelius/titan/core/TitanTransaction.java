@@ -191,15 +191,31 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
 
     /**
-     * Returns a new {@link TypeMaker} instance to create types.
+     * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
+     * By defining types explicitly (rather than implicitly through usage) one can control various
+     * aspects of the key and associated consistency constraints.
      * <p/>
-     * The type constructed with this maker will be created in the context of this transaction.
+     * The key constructed with this maker will be created in the context of this transaction.
      *
-     * @return a type maker linked to this transaction.
-     * @see TypeMaker
-     * @see TitanType
+     * @return a {@link KeyMaker} linked to this transaction.
+     * @see KeyMaker
+     * @see TitanKey
      */
-    public TypeMaker makeType();
+    public KeyMaker makeKey(String name);
+
+    /**
+     * Returns a {@link LabelMaker} instance to define a new {@link TitanLabel} with the given name.
+     * By defining types explicitly (rather than implicitly through usage) one can control various
+     * aspects of the label and associated consistency constraints.
+     * <p/>
+     * The label constructed with this maker will be created in the context of this transaction.
+     *
+     * @return a {@link LabelMaker} linked to this transaction.
+     * @see LabelMaker
+     * @see TitanLabel
+     */
+    public LabelMaker makeLabel(String name);
+
 
     /**
      * Commits and closes the transaction.

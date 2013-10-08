@@ -49,20 +49,20 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final TitanGraph graph) {
 
-        graph.makeType().name("name").dataType(String.class).indexed(Vertex.class).graphUnique().makePropertyKey();
-        graph.makeType().name("age").dataType(Integer.class).indexed(INDEX_NAME, Vertex.class).makePropertyKey();
-        graph.makeType().name("type").dataType(String.class).makePropertyKey();
+        graph.makeKey("name").dataType(String.class).indexed(Vertex.class).unique().make();
+        graph.makeKey("age").dataType(Integer.class).indexed(INDEX_NAME, Vertex.class).make();
+        graph.makeKey("type").dataType(String.class).make();
 
-        final TitanKey time = graph.makeType().name("time").dataType(Integer.class).makePropertyKey();
-        final TitanKey reason = graph.makeType().name("reason").dataType(String.class).indexed(INDEX_NAME, Edge.class).makePropertyKey();
-        graph.makeType().name("place").dataType(Geoshape.class).indexed(INDEX_NAME, Edge.class).makePropertyKey();
+        final TitanKey time = graph.makeKey("time").dataType(Integer.class).make();
+        final TitanKey reason = graph.makeKey("reason").dataType(String.class).indexed(INDEX_NAME, Edge.class).make();
+        graph.makeKey("place").dataType(Geoshape.class).indexed(INDEX_NAME, Edge.class).make();
 
-        graph.makeType().name("father").vertexUnique(Direction.OUT).makeEdgeLabel();
-        graph.makeType().name("mother").vertexUnique(Direction.OUT).makeEdgeLabel();
-        graph.makeType().name("battled").primaryKey(time).makeEdgeLabel();
-        graph.makeType().name("lives").signature(reason).makeEdgeLabel();
-        graph.makeType().name("pet").makeEdgeLabel();
-        graph.makeType().name("brother").makeEdgeLabel();
+        graph.makeLabel("father").manyToOne().make();
+        graph.makeLabel("mother").manyToOne().make();
+        graph.makeLabel("battled").primaryKey(time).make();
+        graph.makeLabel("lives").signature(reason).make();
+        graph.makeLabel("pet").make();
+        graph.makeLabel("brother").make();
 
         graph.commit();
 

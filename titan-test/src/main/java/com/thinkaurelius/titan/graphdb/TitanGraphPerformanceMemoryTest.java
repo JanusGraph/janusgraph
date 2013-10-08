@@ -30,7 +30,7 @@ import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-@Category({ MemoryTests.class })
+@Category({MemoryTests.class})
 public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestCommon {
 
     @Rule
@@ -71,12 +71,12 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
 
     @Test
     public void testTransactionalMemory() throws Exception {
-        graph.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).vertexUnique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK)
-                .graphUnique(TypeMaker.UniquenessConsistency.NO_LOCK).makePropertyKey();
-        graph.makeType().name("name").dataType(String.class).vertexUnique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK)
-                .makePropertyKey();
-        TitanKey time = graph.makeType().name("time").dataType(Integer.class).vertexUnique(Direction.OUT, TypeMaker.UniquenessConsistency.NO_LOCK).makePropertyKey();
-        graph.makeType().name("friend").signature(time).directed().makeEdgeLabel();
+        graph.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
+                .unique(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+        graph.makeKey("name").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
+                .make();
+        TitanKey time = graph.makeKey("time").dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+        graph.makeLabel("friend").signature(time).directed().make();
         graph.commit();
 
         final Random random = new Random();
@@ -183,7 +183,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
         int trials = 2;
         int numV = 2000;
         int offset = 10000;
-        tx.makeType().name("uid").dataType(Long.class).indexed(Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        tx.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single().make();
         newTx();
 
         long start = System.currentTimeMillis();

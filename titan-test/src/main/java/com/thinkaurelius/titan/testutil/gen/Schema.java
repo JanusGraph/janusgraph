@@ -17,7 +17,7 @@ public class Schema {
     public static final String EDGE_KEY_PREFIX = "ep_";
     public static final String LABEL_PREFIX = "el_";
     public static final String UID_PROP = "uid";
-    
+
     public static long SUPERNODE_UID = 0L;
     private static final int SUPERNODE_INDEX = 0;
 
@@ -51,9 +51,8 @@ public class Schema {
         /**
          * Set the maximum value of vertex properties. This is an exclusive
          * limit. The minimum is always 0.
-         * 
-         * @param m
-         *            maximum vertex property value, exclusive
+         *
+         * @param m maximum vertex property value, exclusive
          * @return self
          */
         public Builder setMaxVertexPropVal(int m) {
@@ -64,9 +63,8 @@ public class Schema {
         /**
          * Set the maximum value of edge properties. This is an exclusive limit.
          * The minimum is always 0.
-         * 
-         * @param m
-         *            maximum edge property value, exclusive
+         *
+         * @param m maximum edge property value, exclusive
          * @return self
          */
         public Builder setMaxEdgePropVal(int m) {
@@ -77,9 +75,8 @@ public class Schema {
         /**
          * Set the total number of distinct property keys to use for vertex
          * properties.
-         * 
-         * @param vertexPropKeys
-         *            number of property keys
+         *
+         * @param vertexPropKeys number of property keys
          * @return self
          */
         public Builder setVertexPropKeys(int vertexPropKeys) {
@@ -90,9 +87,8 @@ public class Schema {
         /**
          * Set the total number of distinct property keys to use for edge
          * properties.
-         * 
-         * @param edgePropKeys
-         *            number of property keys
+         *
+         * @param edgePropKeys number of property keys
          * @return self
          */
         public Builder setEdgePropKeys(int edgePropKeys) {
@@ -102,9 +98,8 @@ public class Schema {
 
         /**
          * Set the total number of edge labels to create.
-         * 
-         * @param edgeLabels
-         *            number of edge labels
+         *
+         * @param edgeLabels number of edge labels
          * @return self
          */
         public Builder setEdgeLabels(int edgeLabels) {
@@ -114,9 +109,8 @@ public class Schema {
 
         /**
          * Set the number of vertices to create.
-         * 
-         * @param vertexCount
-         *            global vertex total
+         *
+         * @param vertexCount global vertex total
          * @return self
          */
         public Builder setVertexCount(int vertexCount) {
@@ -127,9 +121,8 @@ public class Schema {
 
         /**
          * Set the number of edges to create for each edge label.
-         * 
-         * @param edgeCount
-         *            global edge total for each label
+         *
+         * @param edgeCount global edge total for each label
          * @return self
          */
         public Builder setEdgeCount(int edgeCount) {
@@ -146,30 +139,30 @@ public class Schema {
         /**
          * Construct a {@link GraphGenerator} with this {@code Builder}'s
          * settings.
-         * 
+         *
          * @return a new GraphGenerator
          */
         public Schema build() {
             return new Schema(maxEdgePropVal, maxVertexPropVal, vertexCount, edgeCount, vertexPropKeys, edgePropKeys, edgeLabels);
         }
     }
-    
+
     public final String getVertexPropertyName(int i) {
         return vertexPropNames[i];
     }
-    
+
     public final String getEdgePropertyName(int i) {
         return edgePropNames[i];
     }
-    
+
     public final String getEdgeLabelName(int i) {
         return edgeLabelNames[i];
     }
-    
+
     public final String getPrimaryKeyForLabel(String l) {
         return l.replace("el_", "ep_");
     }
-    
+
     public final int getVertexPropKeys() {
         return vertexPropKeys;
     }
@@ -185,33 +178,33 @@ public class Schema {
     public final int getMaxVertexPropVal() {
         return maxVertexPropVal;
     }
-    
+
     public final int getEdgeLabels() {
         return edgeLabels;
     }
-    
+
     public final long getSupernodeUid() {
         return SUPERNODE_UID;
     }
-    
+
     public final String getSupernodeOutLabel() {
         return getEdgeLabelName(SUPERNODE_INDEX);
     }
-    
+
     public final long getMaxUid() {
         return vertexCount;
     }
-    
+
     public final int getVertexCount() {
         return vertexCount;
     }
-    
+
     public final int getEdgeCount() {
         return edgeCount;
     }
 
     private Schema(int maxEdgePropVal, int maxVertexPropVal, int vertexCount,
-            int edgeCount, int vertexPropKeys, int edgePropKeys, int edgeLabels) {
+                   int edgeCount, int vertexPropKeys, int edgePropKeys, int edgeLabels) {
         this.maxEdgePropVal = maxEdgePropVal;
         this.maxVertexPropVal = maxVertexPropVal;
         this.vertexCount = vertexCount;
@@ -220,7 +213,7 @@ public class Schema {
         this.edgePropKeys = edgePropKeys;
         this.edgeLabels = edgeLabels;
 
-        this.vertexPropNames = generateNames(VERTEX_KEY_PREFIX,this.vertexPropKeys);
+        this.vertexPropNames = generateNames(VERTEX_KEY_PREFIX, this.vertexPropKeys);
         this.edgePropNames = generateNames(EDGE_KEY_PREFIX, this.edgePropKeys);
         this.edgeLabelNames = generateNames(LABEL_PREFIX, this.edgeLabels);
 
@@ -231,27 +224,26 @@ public class Schema {
             labelPkeys.put(edgeLabelNames[i], edgePropNames[i]);
         }
     }
-    
 
-    
+
     public void makeTypes(TitanGraph g) {
         Preconditions.checkArgument(edgeLabels <= edgePropKeys);
-        
+
         TitanTransaction tx = g.newTransaction();
         for (int i = 0; i < vertexPropKeys; i++) {
-            tx.makeType().name(getVertexPropertyName(i)).dataType(Integer.class).indexed(Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+            tx.makeKey(getVertexPropertyName(i)).dataType(Integer.class).indexed(Vertex.class).single().make();
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            tx.makeType().name(getEdgePropertyName(i)).dataType(Integer.class).indexed(Edge.class).vertexUnique(Direction.OUT).makePropertyKey();
+            tx.makeKey(getEdgePropertyName(i)).dataType(Integer.class).indexed(Edge.class).single().make();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
             String pkName = getPrimaryKeyForLabel(labelName);
             TitanKey pk = tx.getPropertyKey(pkName);
-            tx.makeType().name(getEdgeLabelName(i)).primaryKey(pk).makeEdgeLabel();
+            tx.makeLabel(getEdgeLabelName(i)).primaryKey(pk).make();
         }
 
-        tx.makeType().name(UID_PROP).dataType(Long.class).indexed(Vertex.class).vertexUnique(Direction.BOTH).makePropertyKey();
+        tx.makeKey(UID_PROP).dataType(Long.class).indexed(Vertex.class).single().unique().make();
         tx.commit();
     }
 

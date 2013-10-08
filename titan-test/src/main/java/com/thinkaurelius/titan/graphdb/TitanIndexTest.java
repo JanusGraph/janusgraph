@@ -47,8 +47,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testSimpleUpdate() {
-        TitanKey text = tx.makeType().name("name").vertexUnique(Direction.OUT)
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).makePropertyKey();
+        TitanKey text = tx.makeKey("name").single()
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).make();
         Vertex v = tx.addVertex();
         v.setProperty("name", "Marko Rodriguez");
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
@@ -66,19 +66,19 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexing() {
-        TitanKey text = tx.makeType().name("text").vertexUnique(Direction.OUT)
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).makePropertyKey();
-        TitanKey location = tx.makeType().name("location").vertexUnique(Direction.OUT)
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Geoshape.class).makePropertyKey();
-        TitanKey time = tx.makeType().name("time").vertexUnique(Direction.OUT)
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).makePropertyKey();
-        TitanKey category = tx.makeType().name("category").vertexUnique(Direction.OUT)
-                .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).makePropertyKey();
-        TitanKey group = tx.makeType().name("group").vertexUnique(Direction.OUT)
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Byte.class).makePropertyKey();
-        TitanKey id = tx.makeType().name("uid").vertexUnique(Direction.OUT).graphUnique()
-                .indexed(Vertex.class).dataType(Integer.class).makePropertyKey();
-        TitanLabel knows = tx.makeType().name("knows").primaryKey(time).signature(location).makeEdgeLabel();
+        TitanKey text = tx.makeKey("text").single()
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).make();
+        TitanKey location = tx.makeKey("location").single()
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Geoshape.class).make();
+        TitanKey time = tx.makeKey("time").single()
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).make();
+        TitanKey category = tx.makeKey("category").single()
+                .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).make();
+        TitanKey group = tx.makeKey("group").single()
+                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Byte.class).make();
+        TitanKey id = tx.makeKey("uid").single().unique()
+                .indexed(Vertex.class).dataType(Integer.class).make();
+        TitanLabel knows = tx.makeLabel("knows").primaryKey(time).signature(location).make();
 
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};
@@ -259,8 +259,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexIteration() {
-        graph.makeType().name("objectType").dataType(String.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
-        graph.makeType().name("uid").dataType(Long.class).indexed(INDEX, Vertex.class).vertexUnique(Direction.OUT).makePropertyKey();
+        graph.makeKey("objectType").dataType(String.class).indexed(INDEX, Vertex.class).single().make();
+        graph.makeKey("uid").dataType(Long.class).indexed(INDEX, Vertex.class).single().make();
         graph.commit();
         Vertex v = graph.addVertex(null);
         ElementHelper.setProperties(v, "uid", 167774517, "ipv4Addr", "10.0.9.53", "cid", 2, "objectType", "NetworkSensor", "observationDomain", 0);

@@ -24,28 +24,23 @@ import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
-public class StandardTypeMaker implements TypeMaker {
+abstract class StandardTypeMaker implements TypeMaker {
 
     private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");//, "key");
 
-    private static final char[] RESERVED_CHARS = {'{', '}'};
+    private static final char[] RESERVED_CHARS = {'{', '}', '"'};
 
-    private final StandardTitanTx tx;
-    private final IndexSerializer indexSerializer;
+    protected final StandardTitanTx tx;
+    protected final IndexSerializer indexSerializer;
 
     private String name;
-    private Boolean[] isUnique; //null values indicate no-choice => use defaults
+    private boolean[] isUnique;
     private boolean[] hasUniqueLock;
     private boolean[] isStatic;
     private boolean isHidden;
     private boolean isModifiable;
     private List<TitanType> primaryKey;
     private List<TitanType> signature;
-
-    private boolean isUnidirectional;
-
-    private Class<?> dataType;
-    private Set<IndexType> indexes;
 
     public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
         Preconditions.checkNotNull(tx);
@@ -55,18 +50,13 @@ public class StandardTypeMaker implements TypeMaker {
 
         //Default assignments
         name = null;
-        isUnique = new Boolean[2]; //null
+        isUnique = new boolean[2]; //false
         hasUniqueLock = new boolean[2]; //false
         isStatic = new boolean[2]; //false
         isHidden = false;
         isModifiable = true;
         primaryKey = new ArrayList<TitanType>(4);
         signature = new ArrayList<TitanType>(4);
-
-        isUnidirectional = false;
-
-        indexes = new HashSet<IndexType>(4);
-        dataType = null;
     }
 
     private void checkGeneralArguments() {
@@ -114,22 +104,9 @@ public class StandardTypeMaker implements TypeMaker {
         return signature;
     }
 
-    private IndexType[] checkIndexes(Set<IndexType> indexes) {
-        IndexType[] result = new IndexType[indexes.size()];
-        int i = 0;
-        for (IndexType it : indexes) {
-            Preconditions.checkArgument(isUnique[EdgeDirection.position(OUT)] || (it.isStandardIndex() && it.getElementType() == Vertex.class),
-                    "Only standard index is allowed on non-unique property keys");
-            Preconditions.checkArgument(indexSerializer.getIndexInformation(it.getIndexName()).supports(dataType), "" +
-                    "Index [" + it.getIndexName() + "] does not support data type: " + dataType);
-            result[i] = it;
-            i++;
-        }
-        return result;
-    }
+    protected final TypeAttribute.Map makeDefinition() {
+        checkGeneralArguments();
 
-
-    private final TypeAttribute.Map makeDefinition() {
         TypeAttribute.Map def = new TypeAttribute.Map();
         def.setValue(UNIQUENESS, new boolean[]{isUnique[0], isUnique[1]});
         def.setValue(UNIQUENESS_LOCK, hasUniqueLock);
@@ -141,143 +118,38 @@ public class StandardTypeMaker implements TypeMaker {
         return def;
     }
 
-    @Override
-    public TitanKey makePropertyKey() {
-        //Make default assignments
-        isUnidirectional = false;
-        if (isUnique[EdgeDirection.position(OUT)] == null) isUnique[EdgeDirection.position(OUT)] = true;
-        if (isUnique[EdgeDirection.position(IN)] == null) isUnique[EdgeDirection.position(IN)] = false;
-
-        checkGeneralArguments();
-        Preconditions.checkArgument(dataType != null, "Need to specify a datatype");
-        Preconditions.checkArgument(!dataType.isPrimitive(), "Primitive types are not supported. Use the corresponding object type, e.g. Integer.class instead of int.class [%s]", dataType);
-        Preconditions.checkArgument(!dataType.isInterface(), "Datatype must be a class and not an interface: %s", dataType);
-        Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()), "Datatype cannot be an abstract class: %s", dataType);
-        Preconditions.checkArgument(!isUnique[EdgeDirection.position(IN)] ||
-                indexes.contains(IndexType.of(Vertex.class)), "A graph-unique key requires the existence of a standard vertex index");
-
-        TypeAttribute.Map definition = makeDefinition();
-        definition.setValue(DATATYPE, dataType).setValue(INDEXES, checkIndexes(indexes));
-        return tx.makePropertyKey(name, definition);
-    }
-
-
-    @Override
-    public TitanLabel makeEdgeLabel() {
-        //Make default assignments
-        if (isUnique[EdgeDirection.position(OUT)] == null) isUnique[EdgeDirection.position(OUT)] = false;
-        if (isUnique[EdgeDirection.position(IN)] == null) isUnique[EdgeDirection.position(IN)] = false;
-
-        checkGeneralArguments();
-        Preconditions.checkArgument(indexes.isEmpty(), "Cannot declare labels to be indexed");
-        Preconditions.checkArgument(dataType == null, "Cannot declare a data type for a label");
-
-        Preconditions.checkArgument(!isUnidirectional ||
-                (!isUnique[EdgeDirection.position(IN)] && !hasUniqueLock[EdgeDirection.position(IN)] && !isStatic[EdgeDirection.position(IN)]),
-                "Unidirectional labels cannot be unique or static");
-
-        TypeAttribute.Map definition = makeDefinition();
-        definition.setValue(UNIDIRECTIONAL, isUnidirectional);
-        return tx.makeEdgeLabel(name, definition);
-    }
-
-    @Override
-    public StandardTypeMaker signature(TitanType... types) {
+    protected StandardTypeMaker signature(TitanType... types) {
         signature.addAll(Arrays.asList(types));
         return this;
     }
 
-    @Override
-    public StandardTypeMaker primaryKey(TitanType... types) {
+    protected StandardTypeMaker primaryKey(TitanType... types) {
         primaryKey.addAll(Arrays.asList(types));
         return this;
     }
 
-
-    @Override
-    public StandardTypeMaker dataType(Class<?> clazz) {
-        Preconditions.checkArgument(clazz != null, "Need to specify a data type");
-        dataType = clazz;
-        return this;
-    }
-
-
-    @Override
-    public StandardTypeMaker directed() {
-        isUnidirectional = false;
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker unidirected() {
-        isUnidirectional = true;
-        return this;
-    }
-
-    @Override
     public StandardTypeMaker name(String name) {
         this.name = name;
         return this;
     }
 
-    private StandardTypeMaker unique(Direction direction, UniquenessConsistency consistency) {
+    protected String getName() {
+        return this.name;
+    }
+
+    protected boolean isUnique(Direction direction) {
+        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
+        return isUnique[EdgeDirection.position(direction)];
+    }
+
+    protected StandardTypeMaker unique(Direction direction, UniquenessConsistency consistency) {
         if (direction == Direction.BOTH) {
             unique(Direction.IN, consistency);
             unique(Direction.OUT, consistency);
         } else {
-            isUnique[EdgeDirection.position(direction)] = true;
+            isUnique[EdgeDirection.position(direction)] = consistency == null ? false : true;
             hasUniqueLock[EdgeDirection.position(direction)] =
                     (consistency == UniquenessConsistency.LOCK ? true : false);
-        }
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker vertexUnique(Direction direction, UniquenessConsistency consistency) {
-        return unique(direction, consistency);
-    }
-
-    @Override
-    public StandardTypeMaker vertexUnique(Direction direction) {
-        vertexUnique(direction, UniquenessConsistency.LOCK);
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker multiValued() {
-        isUnique[EdgeDirection.position(OUT)] = false;
-        hasUniqueLock[EdgeDirection.position(OUT)] = false;
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker graphUnique() {
-        return unique(Direction.IN, UniquenessConsistency.LOCK);
-    }
-
-    @Override
-    public StandardTypeMaker graphUnique(UniquenessConsistency consistency) {
-        return unique(Direction.IN, consistency);
-    }
-
-    @Override
-    public StandardTypeMaker indexed(Class<? extends Element> clazz) {
-        if (clazz == Element.class) {
-            this.indexes.add(IndexType.of(Vertex.class));
-            this.indexes.add(IndexType.of(Edge.class));
-        } else {
-            this.indexes.add(IndexType.of(clazz));
-        }
-        return this;
-    }
-
-    @Override
-    public StandardTypeMaker indexed(String indexName, Class<? extends Element> clazz) {
-        if (clazz == Element.class) {
-            this.indexes.add(IndexType.of(indexName, Vertex.class));
-            this.indexes.add(IndexType.of(indexName, Edge.class));
-        } else {
-            this.indexes.add(IndexType.of(indexName, clazz));
         }
         return this;
     }
@@ -286,7 +158,6 @@ public class StandardTypeMaker implements TypeMaker {
         this.isHidden = true;
         return this;
     }
-
 
     public StandardTypeMaker unModifiable() {
         this.isModifiable = false;
@@ -302,5 +173,11 @@ public class StandardTypeMaker implements TypeMaker {
         }
         return this;
     }
+
+    protected boolean isStatic(Direction direction) {
+        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
+        return isStatic[EdgeDirection.position(direction)];
+    }
+
 
 }
