@@ -1054,7 +1054,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
+                                    <groups>com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
                                     <excludedGroups/>
                                     <excludes>
                                         <exclude>**/External*</exclude>
