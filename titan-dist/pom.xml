@@ -11,50 +11,12 @@
     <name>Titan-Dist: Parent for Tar and Zip Archives</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
-    <!--
-      I resorted to a submodule build after several misadventures.
-      First, there's this:
-
-      https://jira.codehaus.org/browse/MASSEMBLY-614
-
-      I tried a single module build with multiple descriptors using
-      <includes> filtering, but that led to odd dependency inclusion
-      logic.  I might have made a mistake elsewhere, but it seemed
-      like the assembly plugin was halting dependency traversal at
-      titan artifacts.  My cassandra assembly would end up with all of
-      titan-cassandra's dependencies except titan-core, titan-es, etc
-      and their dependencies.
-
-      I now tiptoe around that case with a combination of include and
-      exclude filtering in each of the submodule descriptors.  There's
-      a lot of duplicated descriptor and pom.xml text, and this could
-      probably be folded back into a single submodule, but I'm loath
-      to touch it again at the moment and potentially spend time
-      trying to debug it again.
-    -->
-    <modules>
-        <module>titan-dist-all</module>
-        <module>titan-dist-berkeleyje</module>
-        <module>titan-dist-cassandra</module>
-        <module>titan-dist-hbase</module>
-        <module>titan-dist-persistit</module>
-        <module>titan-dist-quickstart</module>
-    </modules>
-
     <properties>
         <!-- Submodules set this property.  Its value should be the
              path to an XML assembly descriptor file. -->
         <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <!-- Used during release:perform to upload to S3 -->
@@ -334,6 +296,80 @@
                     </plugins>
                 </pluginManagement>
             </build>
+        </profile>
+        
+        <profile>
+            <id>jre6</id>
+            
+            <activation>
+                <property>
+                    <name>targetjre</name>
+                    <value>6</value>
+                </property>
+            </activation>
+            
+            <modules>
+                <module>titan-dist-all</module>
+                <module>titan-dist-berkeleyje</module>
+                <module>titan-dist-cassandra</module>
+                <module>titan-dist-hbase</module>
+                <module>titan-dist-quickstart</module>
+            </modules>
+
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-core</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>jre6</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+                
+        <profile>
+            <id>standard</id>
+        
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <!--
+              I resorted to a submodule build after several misadventures.
+              First, there's this:
+        
+              https://jira.codehaus.org/browse/MASSEMBLY-614
+        
+              I tried a single module build with multiple descriptors using
+              <includes> filtering, but that led to odd dependency inclusion
+              logic.  I might have made a mistake elsewhere, but it seemed
+              like the assembly plugin was halting dependency traversal at
+              titan artifacts.  My cassandra assembly would end up with all of
+              titan-cassandra's dependencies except titan-core, titan-es, etc
+              and their dependencies.
+        
+              I now tiptoe around that case with a combination of include and
+              exclude filtering in each of the submodule descriptors.  There's
+              a lot of duplicated descriptor and pom.xml text, and this could
+              probably be folded back into a single submodule, but I'm loath
+              to touch it again at the moment and potentially spend time
+              trying to debug it again.
+            -->
+            <modules>
+                <module>titan-dist-all</module>
+                <module>titan-dist-berkeleyje</module>
+                <module>titan-dist-cassandra</module>
+                <module>titan-dist-hbase</module>
+                <module>titan-dist-persistit</module>
+                <module>titan-dist-quickstart</module>
+            </modules>
+
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>titan-core</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
         </profile>
         
         <profile>

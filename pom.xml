@@ -15,21 +15,6 @@
     <name>Titan: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
-    <modules>
-        <module>titan-core</module>
-        <module>titan-test</module>
-        <module>titan-berkeleyje</module>
-        <module>titan-cassandra</module>
-        <module>titan-persistit</module>
-        <module>titan-hbase</module>
-        <module>titan-es</module>
-        <module>titan-lucene</module>
-        <module>titan-hazelcast</module>
-        <module>titan-all</module>
-        <module>titan-site</module>
-        <module>titan-dist</module>
-    </modules>
-
     <description>
         Titan is a distributed graph database optimized for processing massive-scale graphs represented over a machine
         cluster.
@@ -94,11 +79,13 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <!-- Required for PMD plugin. Used for compiler plugin -->
-        <targetJdk>1.7</targetJdk>
+        
         <perf.jvm.opts></perf.jvm.opts>
         <default.test.jvm.opts>-Xms256m -Xmx768m ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts></test.extra.jvm.opts>
+        <targetjdk>7</targetjdk>
+        <titan.classifier></titan.classifier>
     </properties>
     <build>
         <directory>${basedir}/target</directory>
@@ -175,8 +162,9 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>2.5.1</version>
                     <configuration>
-                        <source>1.6</source>
-                        <target>1.7</target>
+                        <source>${compiler.source}</source>
+                        <target>${compiler.target}</target>
+                        <compilerArgument>${compiler.args}</compilerArgument>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -383,6 +371,11 @@
                 <groupId>commons-logging</groupId>
                 <artifactId>commons-logging</artifactId>
                 <version>1.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math</artifactId>
+                <version>2.2</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>
@@ -659,7 +652,78 @@
     </dependencies>
 
     <profiles>
+         <profile>
+            <id>jre6</id>
+
+            <activation>
+                <property>
+                    <name>targetjre</name>
+                    <value>6</value>
+                </property>
+            </activation>
+
+            <properties>
+                <compiler.source>1.6</compiler.source>
+                <compiler.target>1.6</compiler.target>
+                <compiler.args>-Xbootclasspath:/opt/jdk1.6.0_45/jre/lib/rt.jar</compiler.args>
+                <titan.classifier>jre6</titan.classifier>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <configuration>
+                            <classifier>jre6</classifier>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            
+            <modules>
+                <module>titan-core</module>
+                <module>titan-test</module>
+                <module>titan-berkeleyje</module>
+                <module>titan-cassandra</module>
+                <module>titan-hbase</module>
+                <module>titan-es</module>
+                <module>titan-lucene</module>
+                <module>titan-hazelcast</module>
+                <module>titan-all</module>
+                <module>titan-dist</module>
+            </modules>
+        </profile>
+
         <profile>
+            <id>standard</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+
+            <properties>
+                <compiler.source>1.6</compiler.source>
+                <compiler.target>1.7</compiler.target>
+            </properties>
+
+            <modules>
+                <module>titan-core</module>
+                <module>titan-test</module>
+                <module>titan-berkeleyje</module>
+                <module>titan-cassandra</module>
+                <module>titan-persistit</module>
+                <module>titan-hbase</module>
+                <module>titan-es</module>
+                <module>titan-lucene</module>
+                <module>titan-hazelcast</module>
+                <module>titan-all</module>
+                <module>titan-site</module>
+                <module>titan-dist</module>
+            </modules>
+        </profile>
+
+        <profile>
+
             <id>sonatype-oss-release</id>
             <build>
                 <plugins>
