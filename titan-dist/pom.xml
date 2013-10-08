@@ -18,6 +18,35 @@
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
     </properties>
     
+    <!--
+      I resorted to a submodule build after several misadventures.
+      First, there's this:
+
+      https://jira.codehaus.org/browse/MASSEMBLY-614
+
+      I tried a single module build with multiple descriptors using
+      <includes> filtering, but that led to odd dependency inclusion
+      logic.  I might have made a mistake elsewhere, but it seemed
+      like the assembly plugin was halting dependency traversal at
+      titan artifacts.  My cassandra assembly would end up with all of
+      titan-cassandra's dependencies except titan-core, titan-es, etc
+      and their dependencies.
+
+      I now tiptoe around that case with a combination of include and
+      exclude filtering in each of the submodule descriptors.  There's
+      a lot of duplicated descriptor and pom.xml text, and this could
+      probably be folded back into a single submodule, but I'm loath
+      to touch it again at the moment and potentially spend time
+      trying to debug it again.
+    -->
+    <modules>
+        <module>titan-dist-all</module>
+        <module>titan-dist-berkeleyje</module>
+        <module>titan-dist-cassandra</module>
+        <module>titan-dist-hbase</module>
+        <module>titan-dist-hazelcast</module>
+        <module>titan-dist-quickstart</module>
+    </modules>
 
     <dependencies>
         <dependency>
@@ -309,25 +338,6 @@
         </profile>
         
         <profile>
-            <id>jre6</id>
-            
-            <activation>
-                <property>
-                    <name>targetjre</name>
-                    <value>6</value>
-                </property>
-            </activation>
-            
-            <modules>
-                <module>titan-dist-all</module>
-                <module>titan-dist-berkeleyje</module>
-                <module>titan-dist-cassandra</module>
-                <module>titan-dist-hbase</module>
-                <module>titan-dist-quickstart</module>
-            </modules>
-        </profile>
-                
-        <profile>
             <id>jre7</id>
         
             <activation>
@@ -336,34 +346,8 @@
                 </property>
             </activation>
 
-            <!--
-              I resorted to a submodule build after several misadventures.
-              First, there's this:
-        
-              https://jira.codehaus.org/browse/MASSEMBLY-614
-        
-              I tried a single module build with multiple descriptors using
-              <includes> filtering, but that led to odd dependency inclusion
-              logic.  I might have made a mistake elsewhere, but it seemed
-              like the assembly plugin was halting dependency traversal at
-              titan artifacts.  My cassandra assembly would end up with all of
-              titan-cassandra's dependencies except titan-core, titan-es, etc
-              and their dependencies.
-        
-              I now tiptoe around that case with a combination of include and
-              exclude filtering in each of the submodule descriptors.  There's
-              a lot of duplicated descriptor and pom.xml text, and this could
-              probably be folded back into a single submodule, but I'm loath
-              to touch it again at the moment and potentially spend time
-              trying to debug it again.
-            -->
             <modules>
-                <module>titan-dist-all</module>
-                <module>titan-dist-berkeleyje</module>
-                <module>titan-dist-cassandra</module>
-                <module>titan-dist-hbase</module>
                 <module>titan-dist-persistit</module>
-                <module>titan-dist-quickstart</module>
             </modules>
         </profile>
         

@@ -1,15 +1,19 @@
 #!/bin/bash
 
+# Change to the parent directory of bin/
+# Titan configs with relative paths to storage directories rely on this step
+cd "`dirname $0`"/..
+
 case `uname` in
   CYGWIN*)
-    CP=`dirname $0`/../conf
-    CP=$CP;$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
-    CP=$CP;$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ';')
+    CP=conf
+    CP=$CP;$( echo lib/*.jar . | sed 's/ /;/g')
+    CP=$CP;$(find -L ext/ -name "*.jar" | tr '\n' ';')
     ;;
   *)
-    CP=`dirname $0`/../conf
-    CP=$CP:$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
-    CP=$CP:$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ':')
+    CP=conf
+    CP=$CP:$( echo lib/*.jar . | sed 's/ /:/g')
+    CP=$CP:$(find -L ext/ -name "*.jar" | tr '\n' ':')
 esac
 #echo $CP
 
