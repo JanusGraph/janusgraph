@@ -88,12 +88,13 @@ public class SchemaInferencerMapReduce {
                             if (null == graph.getType(property2)) {
                                 // TODO: Automated type inference
                                 // typeMaker.makeKey(property2, graph.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
-                                typeMaker.makeKey(property2, graph.makeType());
+                                typeMaker.makeKey(graph.makeKey(property2));
                                 context.getCounter(Counters.PROPERTY_KEYS_CREATED).increment(1l);
                             }
                         } else {
                             if (null == graph.getType(property2)) {
-                                typeMaker.makeLabel(property2, graph.makeType());
+                                //typeMaker.makeLabel(property2, graph.makeType());
+                                typeMaker.makeLabel(graph.makeLabel(property2));
                                 context.getCounter(Counters.EDGE_LABELS_CREATED).increment(1l);
                             }
                         }
