@@ -22,10 +22,10 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         TitanBlueprintsGraph graph = (TitanBlueprintsGraph) graphTest.generateGraph();
         //Need to define types before hand to avoid deadlock in transactions
 
-        graph.makeType().name("friend").makeEdgeLabel();
-        graph.makeType().name("test").dataType(Long.class).makePropertyKey();
-        graph.makeType().name("blah").dataType(Float.class).makePropertyKey();
-        graph.makeType().name("bloop").dataType(Integer.class).makePropertyKey();
+        graph.makeLabel("friend").make();
+        graph.makeKey("test").dataType(Long.class).make();
+        graph.makeKey("blah").dataType(Float.class).make();
+        graph.makeKey("bloop").dataType(Integer.class).make();
 
 
         graph.commit();

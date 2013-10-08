@@ -49,11 +49,28 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     public void shutdown() throws TitanException;
 
     /**
-     * Returns a {@link TypeMaker} to create a new Titan type.
+     * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
+     * By defining types explicitly (rather than implicitly through usage) one can control various
+     * aspects of the key and associated consistency constraints.
+     * <p/>
      *
-     * @return
+     * @return a {@link KeyMaker} instance
+     * @see KeyMaker
+     * @see TitanKey
      */
-    public TypeMaker makeType();
+    public KeyMaker makeKey(String name);
+
+    /**
+     * Returns a {@link LabelMaker} instance to define a new {@link TitanLabel} with the given name.
+     * By defining types explicitly (rather than implicitly through usage) one can control various
+     * aspects of the label and associated consistency constraints.
+     * <p/>
+     *
+     * @return a {@link LabelMaker} instance
+     * @see LabelMaker
+     * @see TitanLabel
+     */
+    public LabelMaker makeLabel(String name);
 
     /**
      * Returns an iterable over all defined types that have the given clazz (either {@link TitanLabel} which returns all labels,

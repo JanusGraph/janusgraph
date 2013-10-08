@@ -187,12 +187,12 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
             if (!indexesCovered)
                 throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
         } else {
-            TypeMaker tm = makeType().name(key).dataType(Object.class);
+            KeyMaker tm = makeKey(key).dataType(Object.class);
             for (Parameter p : indexParameters) {
                 Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
                 tm.indexed((String) p.getKey(), elementClass);
             }
-            tm.makePropertyKey();
+            tm.make();
         }
     }
 
