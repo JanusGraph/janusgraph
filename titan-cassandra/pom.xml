@@ -24,6 +24,26 @@
     
     <dependencies>
         <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-test</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-core</artifactId>
         </dependency>
@@ -284,68 +304,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        
-        <profile>
-            <id>jre6</id>
-            
-            <activation>
-                <property>
-                    <name>targetjre</name>
-                    <value>6</value>
-                </property>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>jre6</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-test</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                    <classifier>jre6</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-es</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                    <classifier>jre6</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-        
-        <profile>
-            <id>standard</id>
-            
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-test</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-es</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
     

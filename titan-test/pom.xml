@@ -27,7 +27,12 @@
     </repositories>
 
     <dependencies>
-
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+        </dependency>
         <!-- TinkerPop -->
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
@@ -171,42 +176,4 @@
             </plugin>
         </plugins>
     </build>
-    
-    <profiles>
-        <profile>
-            <id>jre6</id>
-            
-            <activation>
-                <property>
-                    <name>targetjre</name>
-                    <value>6</value>
-                </property>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>jre6</classifier>
-                </dependency>
-            </dependencies>
-        </profile>
-        
-        <profile>
-            <id>standard</id>
-            
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>

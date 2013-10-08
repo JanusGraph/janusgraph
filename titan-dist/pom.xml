@@ -17,6 +17,16 @@
         <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
     </properties>
+    
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+        </dependency>
+    </dependencies>
 
     <build>
         <!-- Used during release:perform to upload to S3 -->
@@ -315,15 +325,6 @@
                 <module>titan-dist-hbase</module>
                 <module>titan-dist-quickstart</module>
             </modules>
-
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>jre6</classifier>
-                </dependency>
-            </dependencies>
         </profile>
                 
         <profile>
@@ -362,14 +363,6 @@
                 <module>titan-dist-persistit</module>
                 <module>titan-dist-quickstart</module>
             </modules>
-
-            <dependencies>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>titan-core</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
         </profile>
         
         <profile>
