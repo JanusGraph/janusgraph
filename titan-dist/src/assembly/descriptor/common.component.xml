@@ -18,6 +18,10 @@
 
     <files>
         <file>
+            <source>../src/assembly/static/conf/log4j.properties</source>
+            <outputDirectory>/conf</outputDirectory>
+        </file>
+        <file>
             <source>../src/assembly/static/README.txt</source>
             <outputDirectory>/</outputDirectory>
         </file>
