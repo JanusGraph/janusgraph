@@ -24,32 +24,20 @@ public class ScriptExecutor {
 
     protected static void evaluate(final Reader reader, final List<String> arguments) {
         final GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
+
         final Bindings bindings = engine.createBindings();
+        bindings.put("args", arguments.toArray());
+        // TODO: Deprecate this
         if (arguments.size() > 0) {
             for (int i = 0; i < arguments.size(); i++) {
                 bindings.put("a" + (i + 1), arguments.get(i));
             }
         }
-
         try {
-            engine.eval(generateStringReader(reader), bindings);
+            engine.eval(reader, bindings);
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }
 
     }
-
-    private static StringReader generateStringReader(final Reader reader) throws Exception {
-        StringBuilder sb = new StringBuilder();
-        for (String imp : Imports.getImports()) {
-            sb.append("import ").append(imp).append("\n");
-        }
-        final BufferedReader bf = new BufferedReader(reader);
-        String line;
-        while ((line = bf.readLine()) != null) {
-            sb.append(line).append("\n");
-        }
-        return new StringReader(sb.toString());
-    }
-
 }
