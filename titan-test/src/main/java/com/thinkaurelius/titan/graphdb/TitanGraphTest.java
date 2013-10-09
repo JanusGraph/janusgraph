@@ -43,7 +43,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanKey weight = makeWeightPropertyKey("weight");
         TitanVertex n1 = tx.addVertex();
         n1.addProperty(weight, 10.5);
-        ((TitanKey) tx.getType("")).isUnique(Direction.OUT);
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
