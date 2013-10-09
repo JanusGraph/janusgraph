@@ -188,6 +188,18 @@
 
         <profile>
             <id>performance-test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-rp-config</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <profile>
@@ -202,22 +214,6 @@
                         <executions>
                             <execution>
                                 <id>filter-cassandra-bop-config</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
-                                    <filters>
-                                        <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
-                                    </filters>
-                                    <resources>
-                                        <resource>
-                                            <directory>${basedir}/config/cassandra</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -259,23 +255,7 @@
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>filter-cassandra-rp-config</id>
-                                <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
-                                    <filters>
-                                        <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
-                                    </filters>
-                                    <resources>
-                                        <resource>
-                                            <directory>${basedir}/config/cassandra</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
+                                <id>filter-cassandra-bop-config</id>
                             </execution>
                         </executions>
                     </plugin>
@@ -320,6 +300,54 @@
                 <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>filter-cassandra-bop-config</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                                <filters>
+                                    <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
+                                </filters>
+                                <resources>
+                                    <resource>
+                                        <directory>${basedir}/config/cassandra</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>filter-cassandra-rp-config</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                <filters>
+                                    <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
+                                </filters>
+                                <resources>
+                                    <resource>
+                                        <directory>${basedir}/config/cassandra</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
