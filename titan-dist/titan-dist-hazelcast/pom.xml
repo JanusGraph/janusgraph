@@ -13,7 +13,7 @@
 
     <properties>
         <distribution.assembly.name>hazelcast</distribution.assembly.name>
-        <distribution.assembly.descriptor>${project.parent.basedir}/src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
+        <distribution.assembly.descriptor>hazelcast.xml</distribution.assembly.descriptor>
     </properties>
 
     <profiles>
