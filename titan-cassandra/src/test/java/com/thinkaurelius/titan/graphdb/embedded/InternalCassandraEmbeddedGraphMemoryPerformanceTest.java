@@ -10,11 +10,10 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-@Category({PerformanceTests.class})
-public class InternalCassandraEmbeddedGraphPerformanceTest extends TitanGraphPerformanceMemoryTest {
+public class InternalCassandraEmbeddedGraphMemoryPerformanceTest extends TitanGraphPerformanceMemoryTest {
 
-    public InternalCassandraEmbeddedGraphPerformanceTest() {
-        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(InternalCassandraEmbeddedGraphPerformanceTest.class.getSimpleName()));
+    public InternalCassandraEmbeddedGraphMemoryPerformanceTest() {
+        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(InternalCassandraEmbeddedGraphMemoryPerformanceTest.class.getSimpleName()));
     }
 
 }
