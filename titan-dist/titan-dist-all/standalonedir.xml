@@ -8,6 +8,7 @@
 
     <componentDescriptors>
         <componentDescriptor>../src/assembly/descriptor/common.component.xml</componentDescriptor>
-        <componentDescriptor>allconfigs.component.xml</componentDescriptor>
+        <componentDescriptor>../src/assembly/descriptor/cassandra.component.xml</componentDescriptor>
+        <componentDescriptor>alltitanconfigs.component.xml</componentDescriptor>
     </componentDescriptors>
 </assembly>

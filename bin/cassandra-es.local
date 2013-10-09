@@ -1,6 +1,0 @@
-storage.backend=cassandrathrift
-storage.hostname=127.0.0.1
-
-storage.index.search.backend=elasticsearch
-storage.index.search.hostname=127.0.0.1
-storage.index.search.client-only=true
