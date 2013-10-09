@@ -81,6 +81,8 @@ public class ElasticSearchIndex implements IndexProvider {
     public static final String INDEX_NAME_DEFAULT = "titan";
     public static final String LOCAL_MODE_KEY = "local-mode";
     public static final boolean LOCAL_MODE_DEFAULT = false;
+    public static final String CLIENT_SNIFF_KEY = "sniff";
+    public static final boolean CLIENT_SNIFF_DEFAULT = true;
 
     //    public static final String HOST_NAMES_KEY = "hosts";
     public static final int HOST_PORT_DEFAULT = 9300;
@@ -139,7 +141,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
                 settings.put("cluster.name", clustername);
             } else {
-                settings.put("client.transport.ignore_cluster_name", true);
+                settings.put("client.transport.ignore_cluster_name", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
             }
             settings.put("client.transport.sniff", true);
             TransportClient tc = new TransportClient(settings.build());
