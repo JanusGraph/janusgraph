@@ -141,9 +141,10 @@ public class ElasticSearchIndex implements IndexProvider {
                 Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
                 settings.put("cluster.name", clustername);
             } else {
-                settings.put("client.transport.ignore_cluster_name", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
+                settings.put("client.transport.ignore_cluster_name", true);
             }
-            settings.put("client.transport.sniff", true);
+            log.debug("Transport sniffing enabled: {}", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
+            settings.put("client.transport.sniff", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
             TransportClient tc = new TransportClient(settings.build());
             for (String host : config.getStringArray(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
                 String[] hostparts = host.split(":");
