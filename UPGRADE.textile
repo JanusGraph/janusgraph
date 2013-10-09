@@ -2,6 +2,25 @@ Please follow these instructions when upgrading from an older Titan release.
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.0 (May 14, 2013)
+
+When upgrading code from previous versions of Titan, please note, that the TypeMaker API has changed significantly.
+Use 'makeKey' and 'makeLabel' to define keys and labels respectively instead of 'makeType'. Those methods expect the name
+of the type as the argument. Furthermore, primaryKey() has been renamed to sortKey() and uniqueness has been renamed:
+
+* For Titan keys:
+** unique() replaces unique(Direction.IN)
+** single() replaces unique(Direction.OUT)
+** use list() to allow multiple properties for the key
+* For Titan labels:
+** oneToMany() replaces unique(Direction.IN)
+** manyToOne() replaces unique(Direction.OUT)
+** oneToOne() replaces unique(Direction.IN).unique(Direction.OUT)
+
+Titan 0.4.0 is incompatible with previous releases. No upgrade process available from previous versions of Titan yet.
+Please check the mailing list for updates on the upgrade process.
+
+
 h3. Version 0.3.1 (May 14, 2013)
 
 *From 0.3.0*

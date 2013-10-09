@@ -21,8 +21,10 @@ It also includes software from other open source projects including, but not lim
  * Google Guava [http://code.google.com/p/guava-libraries/]
  * Cern Colt [http://acs.lbl.gov/software/colt/]
  * HPPC [http://labs.carrotsearch.com/hppc.html]
+ * Junit Benchmark [http://labs.carrotsearch.com/junit-benchmarks.html]
  * Kryo [http://code.google.com/p/kryo/]
  * SLF4J [http://www.slf4j.org/]
+ * Metrics [http://metrics.codahale.com/]
  * Apache log4j [http://logging.apache.org/log4j/]
  * Apache HBase [http://hbase.apache.org/]
  * Apache Hadoop [http://hadoop.apache.org/]
@@ -32,6 +34,8 @@ It also includes software from other open source projects including, but not lim
  * Astyanax [https://github.com/Netflix/astyanax]
  * JUnit [http://www.junit.org/]
  * Mockito [http://code.google.com/p/mockito/]
+ * Persistit [https://github.com/pdbeaman/persistit]
+ * Hazelcast [https://github.com/hazelcast/hazelcast]
  * Oracle's BerkeleyDB [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
 
 

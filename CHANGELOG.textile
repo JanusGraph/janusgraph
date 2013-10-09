@@ -5,6 +5,59 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.0 (October 15, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.0</version>
+</dependency>
+```
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.7
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Initial Fulgora (alpha) release: Added CacheStore interface and adapter as well as a specific implementation based on the Hazelcast distributed data grid
+* Configurable LRU transaction cache for all data loaded into a transaction which allows rolling transactions without memory exceptions
+* MultiQuery which allows combining multiple queries into one request to speed up deep traversals by orders of magnitude against remote backends
+* Completely refactored query optimization and execution framework which makes query answering faster
+* GraphQuery optimizer combines multiple indexing backends to determine the result set most efficiently
+* Support for ordering in GraphQuery
+* Metrics integration for monitoring
+* Support for regular expressions in GraphQuery
+* Refactoring and improvement of the locking protocol
+* Renaming of type definition methods to reduce the confusion surrounding this topic (see UPGRADE for more detail)
+* Re-implemented scanning operations in storage backends to make getVertices() and getEdges() more efficient and functionally correct
+* Added performance test suite and automatic benchmark execution framework
+* Refactored attribute handling and made it explicit
+* Transactions are configurable by the user
+
+*Bugfixes:*
+
+* Cassandra compression
+* Resolution of elements across transaction boundaries
+* Tokenization of strings for full text search
+* Explicit mapping of elasticsearch elements
+* Changed index format to ensure uniqueness
+* Correct limit behavior for queries
+* Fixed incorrect query caching behavior
+* Correct string serialization
+* Correct handling of hybrid GraphQuery
+* Better handling of data degradation issues
+
+
+Check the issue tracker for a full list of fixed issues.
+
+
 h3. Version 0.3.1 (May 14, 2013)
 
 ```xml
