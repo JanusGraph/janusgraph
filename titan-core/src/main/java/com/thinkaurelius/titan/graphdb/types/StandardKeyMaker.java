@@ -44,7 +44,7 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
         int i = 0;
         for (IndexType it : indexes) {
             Preconditions.checkArgument(isUnique(OUT) || (it.isStandardIndex() && it.getElementType() == Vertex.class),
-                    "Only standard index is allowed on non-unique property keys");
+                    "Only standard index is allowed on list property keys");
             Preconditions.checkArgument(indexSerializer.getIndexInformation(it.getIndexName()).supports(dataType), "" +
                     "Index [" + it.getIndexName() + "] does not support data type: " + dataType);
             result[i] = it;
@@ -137,7 +137,7 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
     }
 
     @Override
-    public StandardKeyMaker primaryKey(TitanType... types) {
+    public StandardKeyMaker sortKey(TitanType... types) {
         throw new UnsupportedOperationException();
     }
 
@@ -148,7 +148,7 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
         Preconditions.checkArgument(!dataType.isInterface(), "Datatype must be a class and not an interface: %s", dataType);
         Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()), "Datatype cannot be an abstract class: %s", dataType);
         Preconditions.checkArgument(!isUnique(IN) ||
-                indexes.contains(IndexType.of(Vertex.class)), "A graph-unique key requires the existence of a standard vertex index");
+                indexes.contains(IndexType.of(Vertex.class)), "A unique key must be indexed for vertices. Add 'indexed(Vertex.class)' to this key definition.");
 
         TypeAttribute.Map definition = makeDefinition();
         definition.setValue(DATATYPE, dataType).setValue(INDEXES, checkIndexes(indexes));

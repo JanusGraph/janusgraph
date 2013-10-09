@@ -16,28 +16,27 @@ public enum TypeAttributeType {
     STATIC(boolean[].class),
     HIDDEN(Boolean.class),
     MODIFIABLE(Boolean.class),
-    PRIMARY_KEY(long[].class),
+    SORT_KEY(long[].class),
     SIGNATURE(long[].class),
     INDEXES(IndexType[].class),
     DATATYPE(Class.class),
-    UNIDIRECTIONAL(Boolean.class)
-    ;
+    UNIDIRECTIONAL(Boolean.class);
 
-    static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS,UNIQUENESS_LOCK,STATIC,
-            HIDDEN,MODIFIABLE,PRIMARY_KEY,SIGNATURE,INDEXES,DATATYPE);
+    static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK, STATIC,
+            HIDDEN, MODIFIABLE, SORT_KEY, SIGNATURE, INDEXES, DATATYPE);
 
-    static final Set<TypeAttributeType> EDGE_LABEL_TYPES = ImmutableSet.of(UNIQUENESS,UNIQUENESS_LOCK,STATIC,
-            HIDDEN,MODIFIABLE,PRIMARY_KEY,SIGNATURE,UNIDIRECTIONAL);
+    static final Set<TypeAttributeType> EDGE_LABEL_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK, STATIC,
+            HIDDEN, MODIFIABLE, SORT_KEY, SIGNATURE, UNIDIRECTIONAL);
 
     private final Class attributeClass;
 
     private TypeAttributeType(Class<?> attributeClass) {
         Preconditions.checkNotNull(attributeClass);
-        this.attributeClass=attributeClass;
+        this.attributeClass = attributeClass;
     }
 
     public boolean verifyAttribute(Object attribute) {
-        return attribute!=null && attributeClass.equals(attribute.getClass());
+        return attribute != null && attributeClass.equals(attribute.getClass());
     }
 
     public Object defaultValue(TypeAttribute.Map map) {

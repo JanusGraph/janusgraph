@@ -103,27 +103,27 @@ public interface LabelMaker extends TypeMaker {
 
 
     /**
-     * Configures the composite primary key for this label.
+     * Configures the composite sort key for this label.
      * <p/>
-     * Specifying the primary key of a type allows relations of this type to be efficiently retrieved in the order of
-     * the primary key.
+     * Specifying the sort key of a type allows relations of this type to be efficiently retrieved in the order of
+     * the sort key.
      * <br />
-     * For instance, if the edge label <i>friend</i> has the primary key (<i>since</i>), which is a property key
+     * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
      * time interval using {@link TitanVertexQuery#interval(TitanKey, Comparable, Comparable)}.
      * <br />
-     * In other words, relations are stored on disk in the order of the configured primary key. The primary key is empty
+     * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
      * <br />
-     * If multiple types are specified as primary key, then those are considered as a <i>composite</i> primary key, i.e. taken jointly
+     * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link TitanType}s used in the primary key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link TitanType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
-     * @param types TitanTypes composing the primary key. The order is relevant.
+     * @param types TitanTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
      */
-    public LabelMaker primaryKey(TitanType... types);
+    public LabelMaker sortKey(TitanType... types);
 
     /**
      * Configures the signature of this label.
@@ -135,14 +135,14 @@ public interface LabelMaker extends TypeMaker {
      * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
      * (<i>createdOn</i>) as the signature for type <i>friend</i> allows friend edges to be stored more efficiently.
      * <br />
-     * {@link TitanType}s used in the primary key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link TitanType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
      * <br />
-     * The signature should not contain any types already included in the primary key. The primary key provides the same
+     * The signature should not contain any types already included in the sort key. The sort key provides the same
      * storage and retrieval efficiency.
      * <br />
      * The signature is empty by default.
      *
-     * @param types TitanTypes composing the primary key. The order is irrelevant.
+     * @param types TitanTypes composing the signature key. The order is irrelevant.
      * @return this LabelMaker
      */
     public LabelMaker signature(TitanType... types);

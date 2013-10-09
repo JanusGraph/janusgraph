@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -59,7 +58,7 @@ public class GraphOfTheGodsFactory {
 
         graph.makeLabel("father").manyToOne().make();
         graph.makeLabel("mother").manyToOne().make();
-        graph.makeLabel("battled").primaryKey(time).make();
+        graph.makeLabel("battled").sortKey(time).make();
         graph.makeLabel("lives").signature(reason).make();
         graph.makeLabel("pet").make();
         graph.makeLabel("brother").make();

@@ -264,16 +264,16 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                             throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.getName());
                         returnType = RelationType.EDGE;
                     }
-                    //Construct primary key constraints (if any, and if not direction==Both)
-                    EdgeSerializer.TypedInterval[] primaryKeyConstraints = new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
+                    //Construct sort key constraints (if any, and if not direction==Both)
+                    EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[type.getSortKey().length];
                     And<TitanRelation> remainingConditions = conditions;
-                    boolean vertexConstraintApplies = type.getPrimaryKey().length == 0 || conditions.hasChildren();
-                    if (type.getPrimaryKey().length > 0 && conditions.hasChildren()) {
+                    boolean vertexConstraintApplies = type.getSortKey().length == 0 || conditions.hasChildren();
+                    if (type.getSortKey().length > 0 && conditions.hasChildren()) {
                         remainingConditions = conditions.clone();
-                        long[] primaryKeys = type.getPrimaryKey();
+                        long[] sortKeys = type.getSortKey();
 
-                        for (int i = 0; i < primaryKeys.length; i++) {
-                            InternalType pktype = (InternalType) tx.getExistingType(primaryKeys[i]);
+                        for (int i = 0; i < sortKeys.length; i++) {
+                            InternalType pktype = (InternalType) tx.getExistingType(sortKeys[i]);
                             Interval interval = null;
                             //First check for equality constraints, since those are the most constraining
                             for (Iterator<Condition<TitanRelation>> iter = remainingConditions.iterator(); iter.hasNext(); ) {
@@ -284,7 +284,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                 }
                             }
 
-                            //If there are no equality constraints, check if the primary key's datatype allows comparison
+                            //If there are no equality constraints, check if the sort key's datatype allows comparison
                             //and if so, find a bounding interval from the remaining constraints
                             if (interval == null && pktype.isPropertyKey()
                                     && Comparable.class.isAssignableFrom(((TitanKey) pktype).getDataType())) {
@@ -332,13 +332,13 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                             }
                                         }
                                     } else if (cond instanceof Or) {
-                                        //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this primary key
+                                        //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this sort key
                                         Condition probe = ((Or) cond).get(0);
                                         if (probe instanceof PredicateCondition && ((PredicateCondition) probe).getKey().equals(pktype) &&
                                                 ((PredicateCondition) probe).getPredicate() == Cmp.EQUAL) {
                                             //We make the assumption that this or-condition is a group of equality constraints for the same type (i.e. an unrolled Contain.IN)
                                             //This assumption is enforced by precondition statements below
-                                            //TODO: Consider splitting query on primary key with a limited number (<=3) of possible values in or-clause
+                                            //TODO: Consider splitting query on sort key with a limited number (<=3) of possible values in or-clause
 
                                             //Now, we find the smallest and largest value in this group of equality constraints to bound the interval
                                             Comparable smallest = null, largest = null;
@@ -378,7 +378,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                 if (pint.getStart() != null || pint.getEnd() != null) interval = pint;
                             }
 
-                            primaryKeyConstraints[i] = new EdgeSerializer.TypedInterval(pktype, interval);
+                            sortKeyConstraints[i] = new EdgeSerializer.TypedInterval(pktype, interval);
                             if (interval == null || !interval.isPoint()) {
                                 vertexConstraintApplies = false;
                                 break;
@@ -389,20 +389,20 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                     Direction[] dirs = {dir};
                     EdgeSerializer.VertexConstraint vertexConstraint = getVertexConstraint();
                     if (dir == Direction.BOTH &&
-                            (hasPrimaryKeyConstraints(primaryKeyConstraints) || (vertexConstraintApplies && vertexConstraint != null))) {
-                        //Split on direction in the presence of effective primary key constraints
+                            (hasSortKeyConstraints(sortKeyConstraints) || (vertexConstraintApplies && vertexConstraint != null))) {
+                        //Split on direction in the presence of effective sort key constraints
                         dirs = new Direction[]{Direction.OUT, Direction.IN};
                     }
                     for (Direction dir : dirs) {
                         EdgeSerializer.VertexConstraint vertexCon = vertexConstraint;
                         if (vertexCon == null || !vertexConstraintApplies || type.isUnique(dir)) vertexCon = null;
-                        EdgeSerializer.TypedInterval[] sortConstraints = primaryKeyConstraints;
-                        if (hasPrimaryKeyConstraints(primaryKeyConstraints) && type.isUnique(dir)) {
-                            sortConstraints = new EdgeSerializer.TypedInterval[type.getPrimaryKey().length];
+                        EdgeSerializer.TypedInterval[] sortConstraints = sortKeyConstraints;
+                        if (hasSortKeyConstraints(sortKeyConstraints) && type.isUnique(dir)) {
+                            sortConstraints = new EdgeSerializer.TypedInterval[type.getSortKey().length];
                         }
 
                         boolean isFitted = !remainingConditions.hasChildren()
-                                && vertexConstraint == vertexCon && sortConstraints == primaryKeyConstraints;
+                                && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
                         SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
                         queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, Boolean.FALSE));
@@ -416,7 +416,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
     }
 
-    private static final boolean hasPrimaryKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
+    private static final boolean hasSortKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
         return cons.length > 0 && cons[0] != null;
     }
 

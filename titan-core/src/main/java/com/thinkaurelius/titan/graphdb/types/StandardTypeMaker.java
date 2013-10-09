@@ -12,16 +12,11 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.lang.StringUtils;
 
-import java.lang.reflect.Modifier;
 import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
-import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
 abstract class StandardTypeMaker implements TypeMaker {
@@ -39,7 +34,7 @@ abstract class StandardTypeMaker implements TypeMaker {
     private boolean[] isStatic;
     private boolean isHidden;
     private boolean isModifiable;
-    private List<TitanType> primaryKey;
+    private List<TitanType> sortKey;
     private List<TitanType> signature;
 
     public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
@@ -55,7 +50,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         isStatic = new boolean[2]; //false
         isHidden = false;
         isModifiable = true;
-        primaryKey = new ArrayList<TitanType>(4);
+        sortKey = new ArrayList<TitanType>(4);
         signature = new ArrayList<TitanType>(4);
     }
 
@@ -71,34 +66,34 @@ abstract class StandardTypeMaker implements TypeMaker {
         for (int i = 0; i < 2; i++)
             Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
                     "Must be unique in order to have a lock");
-        checkPrimaryKey(primaryKey);
+        checkSortKey(sortKey);
         checkSignature(signature);
-        Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(primaryKey), Sets.newHashSet(signature)).isEmpty(),
-                "Signature and primary key must be disjoined");
-        if ((isUnique[0] && isUnique[1]) && !primaryKey.isEmpty())
-            throw new IllegalArgumentException("Cannot define a primary key on a both-unique type");
+        Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(sortKey), Sets.newHashSet(signature)).isEmpty(),
+                "Signature and sort key must be disjoined");
+        if ((isUnique[0] && isUnique[1]) && !sortKey.isEmpty())
+            throw new IllegalArgumentException("Cannot define a sort key on a both-unique type");
     }
 
-    private static long[] checkPrimaryKey(List<TitanType> sig) {
+    private static long[] checkSortKey(List<TitanType> sig) {
         for (TitanType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
                     || Comparable.class.isAssignableFrom(((TitanKey) t).getDataType()),
-                    "Key must have comparable data type to be used as primary key: " + t);
+                    "Key must have comparable data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
     }
 
     private static long[] checkSignature(List<TitanType> sig) {
-        Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(), "Signature and primary key cannot contain duplicate types");
+        Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(), "Signature and sort key cannot contain duplicate types");
         long[] signature = new long[sig.size()];
         for (int i = 0; i < sig.size(); i++) {
             TitanType et = sig.get(i);
             Preconditions.checkNotNull(et);
-            Preconditions.checkArgument(et.isUnique(OUT), "Type must be out-unique: %s", et.getName());
+            Preconditions.checkArgument(et.isUnique(OUT), "Type must be single valued: %s", et.getName());
             Preconditions.checkArgument(!et.isEdgeLabel() || ((TitanLabel) et).isUnidirected(),
                     "Label must be unidirectional: %s", et.getName());
             Preconditions.checkArgument(!et.isPropertyKey() || !((TitanKey) et).getDataType().equals(Object.class),
-                    "Signature keys must have a proper declared datatype: %s", et.getName());
+                    "Signature and sort keys must have a proper declared datatype: %s", et.getName());
             signature[i] = et.getID();
         }
         return signature;
@@ -113,7 +108,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         def.setValue(STATIC, isStatic);
         def.setValue(HIDDEN, isHidden);
         def.setValue(MODIFIABLE, isModifiable);
-        def.setValue(PRIMARY_KEY, checkPrimaryKey(primaryKey));
+        def.setValue(SORT_KEY, checkSortKey(sortKey));
         def.setValue(SIGNATURE, checkSignature(signature));
         return def;
     }
@@ -123,8 +118,8 @@ abstract class StandardTypeMaker implements TypeMaker {
         return this;
     }
 
-    protected StandardTypeMaker primaryKey(TitanType... types) {
-        primaryKey.addAll(Arrays.asList(types));
+    protected StandardTypeMaker sortKey(TitanType... types) {
+        sortKey.addAll(Arrays.asList(types));
         return this;
     }
 

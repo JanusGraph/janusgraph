@@ -3,14 +3,12 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -78,7 +76,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                 .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Byte.class).make();
         TitanKey id = tx.makeKey("uid").single().unique()
                 .indexed(Vertex.class).dataType(Integer.class).make();
-        TitanLabel knows = tx.makeLabel("knows").primaryKey(time).signature(location).make();
+        TitanLabel knows = tx.makeLabel("knows").sortKey(time).signature(location).make();
 
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};

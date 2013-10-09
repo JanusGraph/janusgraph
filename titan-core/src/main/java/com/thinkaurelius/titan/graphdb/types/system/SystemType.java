@@ -20,23 +20,26 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
 
     SystemType(String name, long id, RelationType type, boolean[] isUnique, boolean[] isStatic, boolean isModifiable) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
-        Preconditions.checkArgument(isUnique!=null && isUnique.length==2);
-        Preconditions.checkArgument(isStatic!=null && isStatic.length==2);
+        Preconditions.checkArgument(isUnique != null && isUnique.length == 2);
+        Preconditions.checkArgument(isStatic != null && isStatic.length == 2);
         this.name = SystemTypeManager.systemETprefix + name;
-        this.id = getSystemTypeId(id,type);
+        this.id = getSystemTypeId(id, type);
         this.isUnique = isUnique;
         this.isStatic = isStatic;
         this.isModifiable = isModifiable;
     }
 
     static final long getSystemTypeId(long id, RelationType type) {
-        Preconditions.checkArgument(id>0);
-        Preconditions.checkArgument(id<=SystemTypeManager.SYSTEM_TYPE_OFFSET,"System id [%s] is too large",id);
+        Preconditions.checkArgument(id > 0);
+        Preconditions.checkArgument(id <= SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());
         switch (type) {
-            case EDGE: return IDManager.getEdgeLabelID(id);
-            case PROPERTY: return IDManager.getPropertyKeyID(id);
-            default: throw new AssertionError("Illegal condition: " + type);
+            case EDGE:
+                return IDManager.getEdgeLabelID(id);
+            case PROPERTY:
+                return IDManager.getPropertyKeyID(id);
+            default:
+                throw new AssertionError("Illegal condition: " + type);
         }
     }
 
@@ -78,7 +81,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     }
 
     @Override
-    public long[] getPrimaryKey() {
+    public long[] getSortKey() {
         return new long[0];
     }
 

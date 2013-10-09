@@ -4,7 +4,6 @@ package com.thinkaurelius.titan.graphdb;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.junit.After;
@@ -78,9 +77,9 @@ public abstract class TitanGraphTestCommon {
         return tx.makeLabel(name).make();
     }
 
-    public TitanLabel makeKeyedEdgeLabel(String name, TitanKey primary, TitanKey signature) {
+    public TitanLabel makeKeyedEdgeLabel(String name, TitanKey sort, TitanKey signature) {
         TitanLabel relType = tx.makeLabel(name).
-                primaryKey(primary).signature(signature).directed().make();
+                sortKey(sort).signature(signature).directed().make();
         return relType;
     }
 

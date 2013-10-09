@@ -25,9 +25,9 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     public String getName() {
         if (name == null) {
             name = Iterables.getOnlyElement(query().
-                            includeHidden().
-                            type(SystemKey.TypeName).
-                            properties(), null).getValue(String.class);
+                    includeHidden().
+                    type(SystemKey.TypeName).
+                    properties(), null).getValue(String.class);
         }
         Preconditions.checkNotNull(name);
         return name;
@@ -40,7 +40,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
                     type(SystemKey.TypeDefinition).properties()) {
                 def.add(p.getValue(TypeAttribute.class));
             }
-            definition=def;
+            definition = def;
         }
         Preconditions.checkNotNull(definition);
         return definition;
@@ -49,37 +49,37 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
 
     @Override
     public boolean isUnique(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.UNIQUENESS,boolean[].class)[EdgeDirection.position(direction)];
+        return getDefinition().getValue(TypeAttributeType.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public boolean uniqueLock(Direction direction) {
-        return isUnique(direction) && getDefinition().getValue(TypeAttributeType.UNIQUENESS_LOCK,boolean[].class)[EdgeDirection.position(direction)];
+        return isUnique(direction) && getDefinition().getValue(TypeAttributeType.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public boolean isStatic(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.STATIC,boolean[].class)[EdgeDirection.position(direction)];
+        return getDefinition().getValue(TypeAttributeType.STATIC, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
-    public long[] getPrimaryKey() {
-        return getDefinition().getValue(TypeAttributeType.PRIMARY_KEY,long[].class);
+    public long[] getSortKey() {
+        return getDefinition().getValue(TypeAttributeType.SORT_KEY, long[].class);
     }
 
     @Override
     public long[] getSignature() {
-        return getDefinition().getValue(TypeAttributeType.SIGNATURE,long[].class);
+        return getDefinition().getValue(TypeAttributeType.SIGNATURE, long[].class);
     }
 
     @Override
     public boolean isModifiable() {
-        return getDefinition().getValue(TypeAttributeType.MODIFIABLE,boolean.class);
+        return getDefinition().getValue(TypeAttributeType.MODIFIABLE, boolean.class);
     }
 
     @Override
     public boolean isHidden() {
-        return getDefinition().getValue(TypeAttributeType.HIDDEN,boolean.class);
+        return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
     }
 
 }

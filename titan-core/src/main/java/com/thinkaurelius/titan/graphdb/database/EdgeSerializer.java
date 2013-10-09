@@ -43,7 +43,7 @@ public class EdgeSerializer {
     private static final Logger log = LoggerFactory.getLogger(EdgeSerializer.class);
 
 
-    private static final int DEFAULT_PRIMARY_CAPACITY = 60;
+    private static final int DEFAULT_COLUMN_CAPACITY = 60;
     private static final int DEFAULT_VALUE_CAPACITY = 128;
 
     private static final long DIRECTION_ID = -101;
@@ -175,7 +175,7 @@ public class EdgeSerializer {
         TitanType titanType = tx.getExistingType(typeId);
 
         InternalType def = (InternalType) titanType;
-        long[] keysig = def.getPrimaryKey();
+        long[] keysig = def.getSortKey();
         if (!parseHeaderOnly && !titanType.isUnique(dir)) {
             readInlineTypes(keysig, builder, column, tx);
         }
@@ -214,7 +214,7 @@ public class EdgeSerializer {
         }
 
         if (!parseHeaderOnly) {
-            //value signature & primary key if unique
+            //value signature & sort key if unique
             if (titanType.isUnique(dir)) {
                 readInlineTypes(keysig, builder, value, tx);
             }
@@ -288,13 +288,13 @@ public class EdgeSerializer {
         Direction dir = EdgeDirection.fromPosition(position);
         int dirID = getDirID(dir, relation.isProperty() ? RelationType.PROPERTY : RelationType.EDGE);
 
-        DataOutput colOut = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
+        DataOutput colOut = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
         IDHandler.writeEdgeType(colOut, typeid, dirID);
 
         InternalType definition = (InternalType) type;
-        long[] primaryKey = definition.getPrimaryKey();
+        long[] sortKey = definition.getSortKey();
         if (!type.isUnique(dir)) {
-            writeInlineTypes(primaryKey, relation, colOut, tx);
+            writeInlineTypes(sortKey, relation, colOut, tx);
         }
 
 
@@ -332,18 +332,18 @@ public class EdgeSerializer {
             }
         }
 
-        //Write signature & primary key if unique
+        //Write signature & sort key if unique
         if (type.isUnique(dir)) {
-            writeInlineTypes(primaryKey, relation, writer, tx);
+            writeInlineTypes(sortKey, relation, writer, tx);
         }
         long[] signature = definition.getSignature();
         writeInlineTypes(signature, relation, writer, tx);
 
 
         //Write remaining properties
-        LongSet writtenTypes = new LongOpenHashSet(primaryKey.length + signature.length);
-        if (primaryKey.length > 0 || signature.length > 0) {
-            for (long id : primaryKey) writtenTypes.add(id);
+        LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
+        if (sortKey.length > 0 || signature.length > 0) {
+            for (long id : sortKey) writtenTypes.add(id);
             for (long id : signature) writtenTypes.add(id);
         }
         for (TitanType t : relation.getPropertyKeysDirect()) {
@@ -409,7 +409,7 @@ public class EdgeSerializer {
         return new SliceQuery(bound[0], bound[1]);
     }
 
-    public SliceQuery getQuery(InternalType type, Direction dir, TypedInterval[] primaryKey, VertexConstraint vertexCon) {
+    public SliceQuery getQuery(InternalType type, Direction dir, TypedInterval[] sortKey, VertexConstraint vertexCon) {
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(dir);
 
@@ -426,23 +426,23 @@ public class EdgeSerializer {
             isStatic = type.isStatic(dir);
             int dirID = getDirID(dir, rt);
 
-            DataOutput colStart = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
-            DataOutput colEnd = serializer.getDataOutput(DEFAULT_PRIMARY_CAPACITY, true);
+            DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
+            DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
             IDHandler.writeEdgeType(colStart, type.getID(), dirID);
             IDHandler.writeEdgeType(colEnd, type.getID(), dirID);
 
-            long[] primaryKeyIDs = type.getPrimaryKey();
-            Preconditions.checkArgument(primaryKey.length == primaryKeyIDs.length);
+            long[] sortKeyIDs = type.getSortKey();
+            Preconditions.checkArgument(sortKey.length == sortKeyIDs.length);
             int i;
             boolean wroteInterval = false;
-            for (i = 0; i < primaryKeyIDs.length && primaryKey[i] != null; i++) {
-                TitanType t = primaryKey[i].type;
-                Interval interval = primaryKey[i].interval;
+            for (i = 0; i < sortKeyIDs.length && sortKey[i] != null; i++) {
+                TitanType t = sortKey[i].type;
+                Interval interval = sortKey[i].interval;
                 if (interval == null || interval.isEmpty()) {
                     break;
                 }
-                Preconditions.checkArgument(t.getID() == primaryKeyIDs[i]);
-                Preconditions.checkArgument(!type.isUnique(dir), "Cannot apply primary key to the unique direction");
+                Preconditions.checkArgument(t.getID() == sortKeyIDs[i]);
+                Preconditions.checkArgument(!type.isUnique(dir), "Cannot apply sort key to the unique direction");
                 if (interval.isPoint()) {
                     writeInline(colStart, t, interval.getStart(), false);
                     writeInline(colEnd, t, interval.getEnd(), false);
@@ -460,11 +460,11 @@ public class EdgeSerializer {
                     break;
                 }
             }
-            boolean wroteEntirePrimaryKey = (i >= primaryKeyIDs.length);
+            boolean wroteEntireSortKey = (i >= sortKeyIDs.length);
 
 
             if (vertexCon != null) {
-                Preconditions.checkArgument(wroteEntirePrimaryKey && !type.isUnique(dir));
+                Preconditions.checkArgument(wroteEntireSortKey && !type.isUnique(dir));
                 Preconditions.checkArgument(type.isEdgeLabel());
                 long vertexIdDiff = vertexCon.getVertexIdDiff();
                 VariableLong.writeBackward(colStart, vertexIdDiff);

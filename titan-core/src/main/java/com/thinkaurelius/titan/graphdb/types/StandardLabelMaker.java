@@ -3,11 +3,8 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
-
-import java.util.Arrays;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.UNIDIRECTIONAL;
 import static com.tinkerpop.blueprints.Direction.IN;
@@ -84,8 +81,8 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
     }
 
     @Override
-    public StandardLabelMaker primaryKey(TitanType... types) {
-        super.primaryKey(types);
+    public StandardLabelMaker sortKey(TitanType... types) {
+        super.sortKey(types);
         return this;
     }
 

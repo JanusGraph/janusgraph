@@ -27,22 +27,30 @@ public class RelationComparator implements Comparator<InternalRelation> {
     public int compare(final InternalRelation r1, final InternalRelation r2) {
         if (r1.equals(r2)) return 0;
         //1) Direction
-        Direction dir1=null, dir2=null;
-        for (int i=0;i<r1.getLen();i++) if (r1.getVertex(i).equals(vertex)) { dir1 = EdgeDirection.fromPosition(i); break; }
-        for (int i=0;i<r2.getLen();i++) if (r2.getVertex(i).equals(vertex)) { dir2 = EdgeDirection.fromPosition(i); break; }
-        Preconditions.checkArgument(dir1!=null && dir2!=null,"Either relation is not incident on vertex [%s]",vertex);
-        int dirCompare = EdgeDirection.position(dir1)-EdgeDirection.position(dir2);
-        if (dirCompare!=0) return dirCompare;
+        Direction dir1 = null, dir2 = null;
+        for (int i = 0; i < r1.getLen(); i++)
+            if (r1.getVertex(i).equals(vertex)) {
+                dir1 = EdgeDirection.fromPosition(i);
+                break;
+            }
+        for (int i = 0; i < r2.getLen(); i++)
+            if (r2.getVertex(i).equals(vertex)) {
+                dir2 = EdgeDirection.fromPosition(i);
+                break;
+            }
+        Preconditions.checkArgument(dir1 != null && dir2 != null, "Either relation is not incident on vertex [%s]", vertex);
+        int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
+        if (dirCompare != 0) return dirCompare;
 
         //2) Type
-        InternalType t1 = (InternalType)r1.getType(), t2 = (InternalType)r2.getType();
+        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
         int typecompare = t1.compareTo(t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);
         if (t1.isUnique(dir1)) return 0;
 
-        // 3) Compare primary key values
-        for (long typeid : t1.getPrimaryKey()) {
+        // 3) Compare sort key values
+        for (long typeid : t1.getSortKey()) {
             int keycompare = compareOnKey(r1, r2, typeid);
             if (keycompare != 0) return keycompare;
         }
@@ -77,7 +85,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
             else if (v2 != null) return 1;
             else return 0;
         } else {
-            Preconditions.checkArgument(v1 instanceof Comparable && v2 instanceof Comparable,"Encountered invalid values");
+            Preconditions.checkArgument(v1 instanceof Comparable && v2 instanceof Comparable, "Encountered invalid values");
             return ((Comparable) v1).compareTo(v2);
         }
     }

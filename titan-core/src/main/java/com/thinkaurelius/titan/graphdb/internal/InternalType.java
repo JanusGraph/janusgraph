@@ -18,7 +18,7 @@ public interface InternalType extends TitanType, InternalVertex {
 
     public long[] getSignature();
 
-    public long[] getPrimaryKey();
+    public long[] getSortKey();
 
 
 }

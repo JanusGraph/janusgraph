@@ -7,7 +7,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -159,7 +158,7 @@ public class Schema {
         return edgeLabelNames[i];
     }
 
-    public final String getPrimaryKeyForLabel(String l) {
+    public final String getSortKeyForLabel(String l) {
         return l.replace("el_", "ep_");
     }
 
@@ -238,9 +237,9 @@ public class Schema {
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
-            String pkName = getPrimaryKeyForLabel(labelName);
+            String pkName = getSortKeyForLabel(labelName);
             TitanKey pk = tx.getPropertyKey(pkName);
-            tx.makeLabel(getEdgeLabelName(i)).primaryKey(pk).make();
+            tx.makeLabel(getEdgeLabelName(i)).sortKey(pk).make();
         }
 
         tx.makeKey(UID_PROP).dataType(Long.class).indexed(Vertex.class).single().unique().make();

@@ -43,6 +43,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanKey weight = makeWeightPropertyKey("weight");
         TitanVertex n1 = tx.addVertex();
         n1.addProperty(weight, 10.5);
+        ((TitanKey) tx.getType("")).isUnique(Direction.OUT);
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
@@ -89,7 +90,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel connect = tx.makeLabel("connect").signature(id, weight).manyToOne(TypeMaker.UniquenessConsistency.NO_LOCK).make();
 
-        TitanLabel parent = tx.makeLabel("parent").manyToOne().primaryKey(weight).make();
+        TitanLabel parent = tx.makeLabel("parent").manyToOne().sortKey(weight).make();
         assertTrue(parent.isUnique(OUT));
         TitanLabel child = tx.makeLabel("child").oneToMany().make();
         assertTrue(child.isUnique(IN));
@@ -168,18 +169,18 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         tx.makeLabel("test").make();
         try {
             tx.makeLabel("link2").unidirected().
-                    primaryKey(id, weight).signature(id).make();
+                    sortKey(id, weight).signature(id).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
 //        try {
 //            tx.makeLabel("link2").unidirected().
-//                    primaryKey(id, weight).make();
+//                    sortKey(id, weight).make();
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
         tx.makeLabel("link2").unidirected().
-                primaryKey(id, weight).make();
+                sortKey(id, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();
@@ -689,7 +690,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     @Test
     public void testUnidirectional() {
         TitanLabel link = tx.makeLabel("link").unidirected().manyToOne().make();
-        TitanLabel connect = tx.makeLabel("connect").primaryKey(link).make();
+        TitanLabel connect = tx.makeLabel("connect").sortKey(link).make();
 
         TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
         TitanEdge e = v1.addEdge(link, v2);
@@ -779,7 +780,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     @Test
     public void testThreadBoundTx() {
         TitanKey t = graph.makeKey("type").dataType(Integer.class).single().indexed(Edge.class).make();
-        graph.makeLabel("friend").primaryKey(t).make();
+        graph.makeLabel("friend").sortKey(t).make();
         graph.commit();
 
         Vertex v1 = graph.addVertex(null);
@@ -989,9 +990,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanLabel author = tx.makeLabel("author").manyToOne().unidirected().make();
 
-        TitanLabel connect = tx.makeLabel("connect").primaryKey(time).make();
-        TitanLabel friend = tx.makeLabel("friend").primaryKey(weight, time).signature(author).make();
-        TitanLabel knows = tx.makeLabel("knows").primaryKey(author, weight).make();
+        TitanLabel connect = tx.makeLabel("connect").sortKey(time).make();
+        TitanLabel friend = tx.makeLabel("friend").sortKey(weight, time).signature(author).make();
+        TitanLabel knows = tx.makeLabel("knows").sortKey(author, weight).make();
         TitanLabel follows = tx.makeLabel("follows").make();
 
         int noVertices = 100;
