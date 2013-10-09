@@ -11,36 +11,7 @@
 
     <componentDescriptors>
         <componentDescriptor>../src/assembly/descriptor/common.component.xml</componentDescriptor>
+        <componentDescriptor>../src/assembly/descriptor/cassandra.component.xml</componentDescriptor>
     </componentDescriptors>
 
-    <fileSets>
-        <fileSet>
-            <directory>../../config</directory>
-            <outputDirectory>/conf</outputDirectory>
-            <includes>
-                <include>titan-*${distribution.assembly.name}*</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>../src/assembly/static/bin</directory>
-            <outputDirectory>/bin</outputDirectory>
-            <includes>
-                <include>*cassandra*</include>
-            </includes>
-        </fileSet>
-        <fileSet>
-            <directory>../src/assembly/static/conf</directory>
-            <outputDirectory>/conf</outputDirectory>
-            <includes>
-                <include>*cassandra*</include>
-            </includes>
-        </fileSet>
-    </fileSets>
-
-    <files>
-        <file>
-            <source>../src/assembly/static/log/cassandra.log</source>
-            <outputDirectory>/log</outputDirectory>
-        </file>
-    </files>
 </assembly>

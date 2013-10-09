@@ -25,7 +25,7 @@
             <outputDirectory>/conf</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>../../config</directory>
+            <directory>../../conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>titan-*${distribution.assembly.name}*</include>
