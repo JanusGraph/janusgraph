@@ -1,3 +1,0 @@
-storage.backend=hbase
-storage.hostname=127.0.0.1
-storage.port=2181

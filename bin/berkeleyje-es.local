@@ -1,7 +1,0 @@
-storage.backend=berkeleyje
-storage.directory=./titan/
-
-storage.index.search.backend=elasticsearch
-storage.index.search.directory=./titan/es
-storage.index.search.client-only=false
-storage.index.search.local-mode=true
