@@ -3,13 +3,6 @@
 
     <fileSets>
         <fileSet>
-            <directory>../../config</directory>
-            <outputDirectory>/conf</outputDirectory>
-            <includes>
-                <include>titan-*cassandra*</include>
-            </includes>
-        </fileSet>
-        <fileSet>
             <directory>../src/assembly/static/bin</directory>
             <outputDirectory>/bin</outputDirectory>
             <includes>

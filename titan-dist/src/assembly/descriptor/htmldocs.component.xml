@@ -1,0 +1,21 @@
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+
+    <dependencySets>
+        <!-- HTML copy of Wikidoc and Javadoc -->
+        <dependencySet>
+            <unpack>true</unpack>
+            <outputDirectory>/doc</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <!-- titan-site requires Gollum and its attendant Ruby libraries. This 
+                is a burdensome tooling requirement for a mostly-Java project. Hence, th titan-site 
+                artifact is only built when the aurelius-release profile is activated.  It's 
+                deactivated by default.  This means titan-site won't exist by default, and thus
+                why <useStrictFiltering> is disabled. -->
+            <useStrictFiltering>false</useStrictFiltering>
+            <includes>
+                <include>${project.groupId}:titan-site:zip:htdocs:${project.version}</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+</component>

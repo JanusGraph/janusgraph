@@ -15,7 +15,8 @@
 # limitations under the License.
 
 if [ "x$CASSANDRA_HOME" = "x" ]; then
-    CASSANDRA_HOME=`dirname $0`/..
+    cd `dirname $0`/..
+    CASSANDRA_HOME=`pwd`
 fi
 
 # The directory where Cassandra's configs live (required)

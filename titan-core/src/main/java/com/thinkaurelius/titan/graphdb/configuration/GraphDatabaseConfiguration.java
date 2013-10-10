@@ -1,16 +1,21 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -19,8 +24,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.MBeanServerFactory;
+
 import java.io.File;
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
@@ -412,23 +419,92 @@ public class GraphDatabaseConfiguration {
         preLoadConfiguration();
     }
 
+    /**
+     * Load a properties file containing a Titan graph configuration or create a
+     * stub configuration for a directory.
+     * <p>
+     * If the argument is a file:
+     * 
+     * <ol>
+     * <li>Load its contents into a {@link PropertiesConfiguration}</li>
+     * <li>For each key starting with {@link #STORAGE_NAMESPACE} and ending in
+     * {@link #STORAGE_DIRECTORY_KEY}, check whether the associated value is a
+     * non-null, non-absolute path. If so, then prepend the absolute path of the
+     * parent directory of {@code dirorFile}. This has the effect of making
+     * non-absolute backend paths relative to the config file's directory rather
+     * than the JVM's working directory.
+     * <li>Return the {@code PropertiesConfiguration}</li>
+     * </ol>
+     * 
+     * <p>
+     * Otherwise (if the argument is not a file):
+     * <ol>
+     * <li>Create a new {@link BaseConfiguration}</li>
+     * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
+     * the absolute path of the argument</li>
+     * <li>Return the {@code BaseConfiguration}</li>
+     * 
+     * @param dirOrFile
+     *            A properties file to load or directory in which to read and
+     *            write data
+     * @return A configuration derived from {@code dirOrFile}
+     */
+    @SuppressWarnings("unchecked")
     public static final Configuration getConfiguration(File dirOrFile) {
         Preconditions.checkNotNull(dirOrFile, "Need to specify a configuration file or storage directory");
 
         Configuration configuration;
-
+        
         try {
-            if (dirOrFile.isFile())
-                return new PropertiesConfiguration(dirOrFile);
-
-            configuration = new BaseConfiguration();
-            configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
+            if (dirOrFile.isFile()) {
+                configuration = new PropertiesConfiguration(dirOrFile);
+                
+                final File configFileParent = dirOrFile.getParentFile();
+                
+                Preconditions.checkNotNull(configFileParent);
+                Preconditions.checkArgument(configFileParent.isDirectory());
+                    
+                final Pattern p = Pattern.compile(
+                        Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
+                        Pattern.quote(STORAGE_DIRECTORY_KEY));
+                
+                final Iterator<String> sdKeys = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
+                    @Override
+                    public boolean apply(String key) {
+                        if (null == key)
+                            return false;
+                        return p.matcher(key).matches();
+                    }
+                });
+                
+                while (sdKeys.hasNext()) {
+                    String k = sdKeys.next();
+                    Preconditions.checkNotNull(k);
+                    String s = configuration.getString(k);
+                    
+                    if (null == s) {
+                        log.warn("Configuration key {} has null value", k);
+                        continue;
+                    }
+                    
+                    File storedir = new File(s);
+                    if (!storedir.isAbsolute()) {
+                        configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
+                        log.debug("Overwrote relative path for key {}: was {}, now {}", k, s, configuration.getProperty(k));
+                    } else {
+                        log.debug("Loaded absolute path for key {}: {}", k, s);
+                    }
+                }
+            } else {
+                configuration = new BaseConfiguration();
+                configuration.setProperty(keyInNamespace(STORAGE_NAMESPACE, STORAGE_DIRECTORY_KEY), dirOrFile.getAbsolutePath());
+            }
         } catch (ConfigurationException e) {
             throw new IllegalArgumentException("Could not load configuration at: " + dirOrFile, e);
         }
 
         return configuration;
-    }
+    }   
 
     public static final String toString(Configuration config) {
         StringBuilder s = new StringBuilder();

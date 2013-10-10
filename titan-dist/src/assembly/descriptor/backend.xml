@@ -9,6 +9,8 @@
 
     <componentDescriptors>
         <componentDescriptor>common.component.xml</componentDescriptor>
+        <componentDescriptor>readmes.component.xml</componentDescriptor>
+        <componentDescriptor>htmldocs.component.xml</componentDescriptor>
     </componentDescriptors>
     
     <fileSets>
