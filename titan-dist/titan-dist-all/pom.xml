@@ -136,16 +136,6 @@
         <profile>
             <id>aurelius-release</id>
 
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-site</artifactId>
-                    <classifier>htdocs</classifier>
-                    <version>${project.version}</version>
-                    <type>zip</type>
-                </dependency>
-            </dependencies>
-
             <build>
                 <plugins>
                     <plugin>
