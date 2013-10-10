@@ -21,30 +21,9 @@
             <source>../src/assembly/static/conf/log4j.properties</source>
             <outputDirectory>/conf</outputDirectory>
         </file>
-        <file>
-            <source>../src/assembly/static/README.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../../CHANGELOG.textile</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../../LICENSE.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../../NOTICE.txt</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../../UPGRADE.textile</source>
-            <outputDirectory>/</outputDirectory>
-        </file>
     </files>
 
     <dependencySets>
-        <!-- Entire jar dependency graph -->
         <dependencySet>
             <outputDirectory>/lib</outputDirectory>
             <unpack>false</unpack>
@@ -53,22 +32,6 @@
             <excludes>
                 <exclude>${project.groupId}:titan-site:zip:htdocs:${project.version}</exclude>
             </excludes>
-        </dependencySet>
-
-        <!-- HTML copy of Wikidoc and Javadoc -->
-        <dependencySet>
-            <unpack>true</unpack>
-            <outputDirectory>/doc</outputDirectory>
-            <useProjectArtifact>false</useProjectArtifact>
-            <!-- titan-site requires Gollum and its attendant Ruby libraries. This 
-                is a burdensome tooling requirement for a mostly-Java project. Hence, th titan-site 
-                artifact is only built when the aurelius-release profile is activated.  It's 
-                deactivated by default.  This means titan-site won't exist by default, and thus
-                why <useStrictFiltering> is disabled. -->
-            <useStrictFiltering>false</useStrictFiltering>
-            <includes>
-                <include>${project.groupId}:titan-site:zip:htdocs:${project.version}</include>
-            </includes>
         </dependencySet>
     </dependencySets>
 </component>
