@@ -689,6 +689,7 @@
                 <module>titan-es</module>
                 <module>titan-lucene</module>
                 <module>titan-hazelcast</module>
+                <module>titan-rexster</module>
                 <module>titan-all</module>
                 <module>titan-dist</module>
             </modules>
@@ -718,6 +719,7 @@
                 <module>titan-es</module>
                 <module>titan-lucene</module>
                 <module>titan-hazelcast</module>
+                <module>titan-rexster</module>
                 <module>titan-all</module>
                 <module>titan-site</module>
                 <module>titan-dist</module>
