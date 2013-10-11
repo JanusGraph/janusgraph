@@ -58,6 +58,9 @@
     </dependencies>
 
     <build>
+
+        <testSourceDirectory>../src/test/java</testSourceDirectory>
+
         <!-- Used during release:perform to upload to S3 -->
         <extensions>
             <extension>
@@ -190,10 +193,6 @@
                 <executions>
                     <execution>
                         <id>default-compile</id>
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>default-testCompile</id>
                         <phase>none</phase>
                     </execution>
                 </executions>
@@ -329,6 +328,41 @@
                                         <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
                                         <url>s3://s3.thinkaurelius.com/downloads/titan/</url>
                                     </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        
+                        <plugin>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>compile-package-tests</id>
+                                    <phase>test-compile</phase>
+                                    <goals>
+                                        <goal>testCompile</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        
+                        <plugin>
+                            <artifactId>maven-failsafe-plugin</artifactId>
+                            <configuration>
+                                <forkCount>0</forkCount>
+                                <reuseForks>true</reuseForks>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>integration-test</id>
+                                    <goals>
+                                        <goal>integration-test</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>verify</id>
+                                    <goals>
+                                        <goal>verify</goal>
+                                    </goals>
                                 </execution>
                             </executions>
                         </plugin>

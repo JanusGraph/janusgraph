@@ -5,15 +5,38 @@ import static org.junit.Assert.assertEquals;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.util.Properties;
 
 import org.junit.Test;
 
-public class BerkeleyIT {
+import com.thinkaurelius.titan.core.TitanFactory;
+
+public class SingleVertexIT {
+    
+    private static final String ZIPFILE_PATH;
+    private static final String EXPECT_DIR;
+    private static final String BUILD_DIR;
+    
+    static {
+        Properties props;
+
+        try {
+            props = new Properties();
+            props.load(TitanFactory.class.getClassLoader().getResourceAsStream("target.properties"));
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+        
+        ZIPFILE_PATH = props.getProperty("zipfile.path");
+        EXPECT_DIR   = props.getProperty("expect.dir");
+        BUILD_DIR    = props.getProperty("build.dir");
+    }
     
     @Test
     public void testSimpleGremlinSession() throws IOException, InterruptedException {
-        unzip("target", "titan-berkeleydb-0.4.0-SNAPSHOT.zip");
-        expect("target" + File.separator + "titan-berkeleydb-0.4.0-SNAPSHOT", "../../bdb-single-vertex.expect");
+        unzip(BUILD_DIR, ZIPFILE_PATH);
+        String unzippedDir = ZIPFILE_PATH.substring(0, ZIPFILE_PATH.length() - 4);
+        expect(unzippedDir, EXPECT_DIR + File.separator + "single-vertex.expect");
     }
     
     private static void expect(String dir, String expectScript) throws IOException, InterruptedException {

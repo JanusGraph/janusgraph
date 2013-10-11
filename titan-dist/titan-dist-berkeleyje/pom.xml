@@ -15,11 +15,16 @@
     <properties>
         <distribution.assembly.name>berkeleydb</distribution.assembly.name>
         <distribution.assembly.descriptor>${project.parent.basedir}/src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
+        <expect.graph.config>conf/titan-berkeleydb.properties</expect.graph.config>
+        <expect.graph.id>titangraph.berkeleyje:.*conf/\.\./db/berkeley</expect.graph.id>
+        <test.zipfile.path>${project.build.directory}/titan-berkeleydb-${project.version}.zip</test.zipfile.path>
+        <test.expect.dir>${project.build.directory}/expect</test.expect.dir>
     </properties>
 
     <profiles>
         <profile>
             <id>aurelius-release</id>
+
             <dependencies>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
@@ -53,44 +58,66 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>wagon-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>deploy-distribution-archives-to-s3</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
                         <artifactId>maven-compiler-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>integration-test-compile</id>
-                                <phase>test-compile</phase>
+                                <id>compile-package-tests</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
                                 <goals>
-                                    <goal>testCompile</goal>
+                                    <goal>copy-resources</goal>
                                 </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>../src/test/expect</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.directory}/expect</outputDirectory>
+                                </configuration>
+                            </execution>
+                            
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>../src/test/resources</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <forkCount>0</forkCount>
-                            <reuseForks>true</reuseForks>
-                        </configuration>
                         <executions>
                             <execution>
                                 <id>integration-test</id>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                </goals>
                             </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <executions>
                             <execution>
-                                <id>verify</id>
-                                <goals>
-                                    <goal>verify</goal>
-                                </goals>
+                                <id>deploy-distribution-archives-to-s3</id>
                             </execution>
                         </executions>
                     </plugin>
