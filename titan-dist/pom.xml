@@ -16,6 +16,7 @@
              path to an XML assembly descriptor file. -->
         <distribution.assembly.descriptor>UNSET</distribution.assembly.descriptor>
         <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
+        <test.expect.dir>${project.build.directory}/expect</test.expect.dir>
     </properties>
     
     <!--
@@ -54,6 +55,11 @@
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
             <classifier>${titan.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -341,6 +347,45 @@
                                     <goals>
                                         <goal>testCompile</goal>
                                     </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    
+                        <plugin>
+                            <artifactId>maven-resources-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>filter-expect-scripts</id>
+                                    <phase>process-test-resources</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <resources>
+                                            <resource>
+                                                <directory>../src/test/expect</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                        <outputDirectory>${project.build.directory}/expect</outputDirectory>
+                                    </configuration>
+                                </execution>
+                                
+                                <execution>
+                                    <id>filter-test-resources</id>
+                                    <phase>process-test-resources</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <resources>
+                                            <resource>
+                                                <directory>../src/test/resources</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                        <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                    </configuration>
                                 </execution>
                             </executions>
                         </plugin>

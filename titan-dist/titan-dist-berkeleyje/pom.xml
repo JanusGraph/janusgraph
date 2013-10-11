@@ -18,7 +18,6 @@
         <expect.graph.config>conf/titan-berkeleydb.properties</expect.graph.config>
         <expect.graph.id>titangraph.berkeleyje:.*conf/\.\./db/berkeley</expect.graph.id>
         <test.zipfile.path>${project.build.directory}/titan-berkeleydb-${project.version}.zip</test.zipfile.path>
-        <test.expect.dir>${project.build.directory}/expect</test.expect.dir>
     </properties>
 
     <profiles>
@@ -31,11 +30,6 @@
                     <artifactId>titan-berkeleyje</artifactId>
                     <version>${project.version}</version>
                     <classifier>${titan.classifier}</classifier>
-                </dependency>
-                <dependency>
-                    <groupId>junit</groupId>
-                    <artifactId>junit</artifactId>
-                    <scope>test</scope>
                 </dependency>
             </dependencies>
 
@@ -65,42 +59,16 @@
                             </execution>
                         </executions>
                     </plugin>
-                    
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>filter-expect-scripts</id>
                                 <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <resources>
-                                        <resource>
-                                            <directory>../src/test/expect</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                    <outputDirectory>${project.build.directory}/expect</outputDirectory>
-                                </configuration>
                             </execution>
-                            
                             <execution>
                                 <id>filter-test-resources</id>
                                 <phase>process-test-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <resources>
-                                        <resource>
-                                            <directory>../src/test/resources</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
-                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

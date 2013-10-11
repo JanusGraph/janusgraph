@@ -14,6 +14,9 @@
     <properties>
         <distribution.assembly.name>persistit</distribution.assembly.name>
         <distribution.assembly.descriptor>${project.parent.basedir}/src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
+        <expect.graph.config>conf/titan-persistit.properties</expect.graph.config>
+        <expect.graph.id>titangraph.persistit:.*conf/\.\./db/persistit</expect.graph.id>
+        <test.zipfile.path>${project.build.directory}/titan-persistit-${project.version}.zip</test.zipfile.path>
     </properties>
 
     <profiles>
@@ -27,8 +30,7 @@
                 </dependency>
             </dependencies> 
 
-            <build>
-                <plugins>
+            <build><plugins>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <executions>
@@ -42,6 +44,35 @@
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-package-tests</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
                             </execution>
                         </executions>
                     </plugin>
