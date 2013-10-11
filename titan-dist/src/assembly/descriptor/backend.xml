@@ -15,7 +15,7 @@
     
     <fileSets>
         <fileSet>
-            <directory>../../config</directory>
+            <directory>../src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>titan-*${distribution.assembly.name}*</include>
