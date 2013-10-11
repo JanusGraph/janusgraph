@@ -87,7 +87,7 @@
     </metrics>
     <graphs>
         <graph>
-            <graph-name>titan</graph-name>
+            <graph-name>graph</graph-name>
             <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
             <!-- <graph-location>/tmp/titan</graph-location> -->
             <graph-read-only>false</graph-read-only>
