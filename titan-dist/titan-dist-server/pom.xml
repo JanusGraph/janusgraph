@@ -7,12 +7,12 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
-    <artifactId>titan-dist-quickstart</artifactId>
-    <name>Titan-Dist-Quickstart: Archives with Rexster</name>
+    <artifactId>titan-dist-server</artifactId>
+    <name>Titan-Dist-Server: Archives with Rexster</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <distribution.assembly.descriptor>quickstart.xml</distribution.assembly.descriptor>
+        <distribution.assembly.descriptor>server.xml</distribution.assembly.descriptor>
     </properties>
 
     <dependencies>
