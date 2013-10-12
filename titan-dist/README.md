@@ -6,7 +6,10 @@ Building zip/tar.bz2 archives
 -----------------------------
 
 Run `mvn clean install -Paurelius-release -Dgpg.skip=true`.  Archives
-files will be written to `titan-dist-*/target/`.
+files will be written to `titan-dist-*/target/`. Note that if not
+generating wiki docs with gollum it is necessary to comment out
+titan-site in the top-level pom.xml and the dependency in
+titan-dist.pom.xml
 
 Building deb/rpm packages
 -------------------------

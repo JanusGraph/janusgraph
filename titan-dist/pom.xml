@@ -45,7 +45,7 @@
         <module>titan-dist-cassandra</module>
         <module>titan-dist-hbase</module>
         <module>titan-dist-hazelcast</module>
-        <module>titan-dist-quickstart</module>
+        <module>titan-dist-server</module>
     </modules>
 
     <dependencies>
