@@ -108,12 +108,36 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      */
     public boolean containsVertex(long vertexid);
 
+    /**
+     * @return
+     * @see com.thinkaurelius.titan.core.TitanGraph#query()
+     */
     public TitanGraphQuery query();
 
+    /**
+     * @return
+     * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
+     */
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
 
+    /**
+     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
+     * This method assumes that the provided key is unique and will throw an execption otherwise.
+     *
+     * @param key
+     * @param attribute
+     * @return The vertex which has the provided key and value or NULL if it does not exit
+     */
     public TitanVertex getVertex(TitanKey key, Object attribute);
 
+    /**
+     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
+     * This method assumes that the provided key is unique and will throw an execption otherwise.
+     *
+     * @param key
+     * @param attribute
+     * @return The vertex which has the provided key and value or NULL if it does not exit
+     */
     public TitanVertex getVertex(String key, Object attribute);
 
     /**
