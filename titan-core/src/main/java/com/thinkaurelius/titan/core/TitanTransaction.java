@@ -149,7 +149,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param key       key
      * @param attribute attribute value
      * @return All vertices which have a property of the given key with the specified value.
-     * @see TypeMaker#indexed(Class)
+     * @see KeyMaker#indexed(Class)
      */
     public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute);
 
@@ -162,7 +162,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param key       key
      * @param attribute attribute value
      * @return All edges which have a property of the given key with the specified value.
-     * @see TypeMaker#indexed(Class)
+     * @see KeyMaker#indexed(Class)
      */
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute);
 
