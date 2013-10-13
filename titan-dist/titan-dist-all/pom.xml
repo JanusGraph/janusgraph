@@ -55,6 +55,12 @@
             <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hazelcast</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+        </dependency>
+        <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
