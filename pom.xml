@@ -85,6 +85,26 @@
         <test.extra.jvm.opts></test.extra.jvm.opts>
         <titan.classifier></titan.classifier>
     </properties>
+    <modules>
+        <module>titan-core</module>
+        <module>titan-test</module>
+        <module>titan-berkeleyje</module>
+        <module>titan-cassandra</module>
+        <module>titan-hbase</module>
+        <module>titan-es</module>
+        <module>titan-lucene</module>
+        <module>titan-hazelcast</module>
+        <module>titan-rexster</module>
+        <module>titan-all</module>
+        <module>titan-site</module>
+        <module>titan-dist/titan-dist-all</module>
+        <module>titan-dist/titan-dist-berkeleyje</module>
+        <module>titan-dist/titan-dist-cassandra</module>
+        <module>titan-dist/titan-dist-hazelcast</module>
+        <module>titan-dist/titan-dist-hbase</module>
+        <module>titan-dist/titan-dist-persistit</module>
+        <module>titan-dist/titan-dist-server</module>
+    </modules>
     <build>
         <directory>${basedir}/target</directory>
         <plugins>
@@ -683,20 +703,6 @@
                     </plugin>
                 </plugins>
             </build>
-
-            <modules>
-                <module>titan-core</module>
-                <module>titan-test</module>
-                <module>titan-berkeleyje</module>
-                <module>titan-cassandra</module>
-                <module>titan-hbase</module>
-                <module>titan-es</module>
-                <module>titan-lucene</module>
-                <module>titan-hazelcast</module>
-                <module>titan-rexster</module>
-                <module>titan-all</module>
-                <module>titan-dist</module>
-            </modules>
         </profile>
 
         <profile>
@@ -714,19 +720,7 @@
             </properties>
 
             <modules>
-                <module>titan-core</module>
-                <module>titan-test</module>
-                <module>titan-berkeleyje</module>
-                <module>titan-cassandra</module>
                 <module>titan-persistit</module>
-                <module>titan-hbase</module>
-                <module>titan-es</module>
-                <module>titan-lucene</module>
-                <module>titan-hazelcast</module>
-                <module>titan-rexster</module>
-                <module>titan-all</module>
-                <module>titan-site</module>
-                <module>titan-dist</module>
             </modules>
         </profile>
 

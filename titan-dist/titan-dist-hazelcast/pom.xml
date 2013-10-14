@@ -2,9 +2,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
-        <artifactId>titan-dist</artifactId>
+        <artifactId>titan-dist-base</artifactId>
         <version>0.4.0-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
+        <relativePath>../distbase.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <artifactId>titan-dist-hazelcast</artifactId>
@@ -14,6 +14,9 @@
     <properties>
         <distribution.assembly.name>hazelcast</distribution.assembly.name>
         <distribution.assembly.descriptor>hazelcast.xml</distribution.assembly.descriptor>
+        <expect.graph.config>conf/titan-hazelcast.properties</expect.graph.config>
+        <expect.graph.id>titangraph.hazelcastkcvs:</expect.graph.id>
+        <test.zipfile.path>${project.build.directory}/titan-hazelcast-${project.version}.zip</test.zipfile.path>
     </properties>
 
     <profiles>
@@ -27,36 +30,6 @@
                     <classifier>${titan.classifier}</classifier>
                 </dependency>
             </dependencies> 
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>assemble-distribution-archive</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>wagon-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>deploy-distribution-archives-to-s3</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
     </profiles>
 </project>
