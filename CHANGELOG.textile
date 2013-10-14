@@ -40,6 +40,8 @@ h3. Version 0.4.0 (October 15, 2013)
 * Added performance test suite and automatic benchmark execution framework
 * Refactored attribute handling and made it explicit
 * Transactions are configurable by the user
+* Titan interprets relative paths in configuration files relative to the directory containing said configuration file (instead of the directory from which e.g. Gremlin was invoked)
+* Attribute Handling has been refactored and extended to allow custom converters and data type checkers
 
 *Bugfixes:*
 
