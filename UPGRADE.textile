@@ -33,6 +33,10 @@ h4. Custom Attribute Serializer
 The interface has been extended by method to a) verify that the provided value is valid and b) automatically convert the value if possible.
 These methods are required which means that any implementation of AttributeSerializer must be updated.
 
+h4. Type Groups
+
+Type Groups have been removed. Use sortKey instead to group under one label or key.
+
 h3. Version 0.3.1 (May 14, 2013)
 
 *From 0.3.0*

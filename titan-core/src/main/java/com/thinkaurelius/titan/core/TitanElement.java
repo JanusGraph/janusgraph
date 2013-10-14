@@ -1,4 +1,3 @@
-
 package com.thinkaurelius.titan.core;
 
 
@@ -76,7 +75,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined out-unique (see {@link TypeMaker#unique(com.tinkerpop.blueprints.Direction)}).
+     * The key must be defined single valued (see {@link com.thinkaurelius.titan.core.KeyMaker#single()}).
      *
      * @param key   the string identifying the key
      * @param value the object value
@@ -85,7 +84,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined out-unique (see {@link TypeMaker#unique(com.tinkerpop.blueprints.Direction)}).
+     * The key must be defined single valued (see {@link com.thinkaurelius.titan.core.KeyMaker#single()}).
      *
      * @param key   the key
      * @param value the object value
@@ -94,8 +93,8 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
-     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
-     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
+     * If the key is single-valued, then there can be at most one value and this value is returned (or null).
+     * If the key is list-valued, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
      *
      * @param key key
@@ -105,8 +104,8 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
-     * If the key is out-unique, then there can be at most one value and this value is returned (or null).
-     * If the key is not out-unique, then a list of all associated values is returned, or an empty list of non exist.
+     * If the key is single-valued, then there can be at most one value and this value is returned (or null).
+     * If the key is list-valued, then a list of all associated values is returned, or an empty list of non exist.
      * <p/>
      *
      * @param key string identifying a key
@@ -125,7 +124,7 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
 
     /**
      * Removes the value associated with the given key for this vertex (if exists).
-     * If the key is not out-unique then more than all values associated with this key are removed and only
+     * If the key is list-valued then all values associated with this key are removed and only
      * the last removed value returned.
      *
      * @param type the key
