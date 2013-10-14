@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.hazelcast;
 
+import java.util.concurrent.TimeUnit;
+
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.transaction.TransactionContext;
@@ -10,8 +12,9 @@ import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
+import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +25,14 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     protected final HazelcastInstance manager;
     protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
+    protected final long lockExpireMS;
 
     public AbstractHazelcastStoreManager(Configuration config) throws StorageException {
         super(config);
         manager = Hazelcast.newHazelcastInstance();
         storageConfig = new FileStorageConfiguration(directory);
+        lockExpireMS = config.getLong(GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
+                                      GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
 
         if (transactional)
             logger.warn("Hazelcast does not support multiple transactions per thread");
@@ -35,7 +41,9 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     @Override
     public StoreTransaction beginTransaction(StoreTxConfig txConfig) throws StorageException {
         if (transactional) {
-            return new HazelCastTransaction(manager.newTransactionContext(TransactionOptions.getDefault()), txConfig);
+            TransactionOptions txo = new TransactionOptions();
+            txo.setTimeout(lockExpireMS, TimeUnit.MILLISECONDS);
+            return new HazelCastTransaction(manager.newTransactionContext(txo), txConfig);
         } else {
             return new NoOpStoreTransaction(txConfig);
         }
