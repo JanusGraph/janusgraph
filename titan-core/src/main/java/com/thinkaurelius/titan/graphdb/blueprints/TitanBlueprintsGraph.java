@@ -185,6 +185,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
         return getAutoStartTx().query();
     }
 
+    @Override
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }

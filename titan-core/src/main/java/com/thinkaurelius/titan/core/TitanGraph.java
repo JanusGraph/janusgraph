@@ -89,6 +89,16 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      */
     public TitanGraphQuery query();
 
+    /**
+     * Returns a {@link TitanMultiVertexQuery} to query for vertices or edges on multiple vertices simultaneously.
+     * This is similar to {@link com.thinkaurelius.titan.core.TitanVertex#query()} but for multiple vertices at once. Hence, this query method is often
+     * significantly faster when executing identical {@link TitanVertexQuery} on multiple vertices.
+     *
+     * @param vertices
+     * @return
+     */
+    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+
 
     /**
      * Returns the {@link TitanType} uniquely identified by the given name, or NULL if such does not exist.
