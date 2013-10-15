@@ -22,6 +22,8 @@ h3. Version 0.4.0 (October 15, 2013)
 * BerkeleyJE 5.0.73
 * Elasticsearch 0.90.5
 * Lucene 4.4.0
+* Persistit 3.3.0
+* Hazelcast 3.0.2
 * Java 1.7+ (partially compatible with Java 1.6)
 
 *Features:*
@@ -32,6 +34,7 @@ h3. Version 0.4.0 (October 15, 2013)
 * Completely refactored query optimization and execution framework which makes query answering faster
 * GraphQuery optimizer combines multiple indexing backends to determine the result set most efficiently
 * Support for ordering in GraphQuery
+* Persistit storage adapter for local graph storage
 * Metrics integration for monitoring
 * Support for regular expressions in GraphQuery
 * Refactoring and improvement of the locking protocol
