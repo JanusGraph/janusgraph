@@ -6,6 +6,6 @@ public class HazelcastAssemblyIT extends AssemblyITSupport {
     
     @Test
     public void testHazelcastSimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/titan-hazelcast.properties", "hazelcastcache");
+        testSimpleGremlinSession("conf/titan-hazelcastcache.properties", "hazelcastcache");
     }
 }
