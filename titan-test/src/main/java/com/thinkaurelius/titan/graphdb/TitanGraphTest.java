@@ -727,6 +727,44 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testJointIndexRetrieval() {
+        graph.makeKey("name").dataType(String.class).indexed(Vertex.class).make();
+        graph.makeKey("color").dataType(String.class).indexed(Vertex.class).make();
+        Vertex v = graph.addVertex(null);
+        v.setProperty("name", "ilya");
+        v.setProperty("color", "blue");
+        graph.commit();
+
+        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").vertices()));
+        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").has("color", "blue").vertices()));
+    }
+
+    @Test
+    public void testLargeJointIndexRetrieval() {
+        graph.makeKey("sid").dataType(Integer.class).indexed(Vertex.class).make();
+        graph.makeKey("color").dataType(String.class).indexed(Vertex.class).make();
+        graph.commit();
+
+        int sids = 17;
+        String[] colors = {"blue", "red", "yellow", "brown", "green", "orange", "purple"};
+        int multiplier = 200;
+        int numV = sids * colors.length * multiplier;
+        for (int i = 0; i < numV; i++) {
+            Vertex v = graph.addVertex(null);
+            v.setProperty("color", colors[i % colors.length]);
+            v.setProperty("sid", i % sids);
+        }
+        graph.commit();
+        clopen();
+
+        assertEquals(numV / sids, Iterables.size(graph.query().has("sid", 8).vertices()));
+        assertEquals(numV / colors.length, Iterables.size(graph.query().has("color", colors[2]).vertices()));
+
+        assertEquals(multiplier, Iterables.size(graph.query().has("sid", 11).has("color", colors[3]).vertices()));
+    }
+
+
+    @Test
     public void testIndexRetrieval() {
         TitanKey id = tx.makeKey("uid").
                 single().
