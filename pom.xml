@@ -97,13 +97,7 @@
         <module>titan-rexster</module>
         <module>titan-all</module>
         <module>titan-site</module>
-        <module>titan-dist/titan-dist-all</module>
-        <module>titan-dist/titan-dist-berkeleyje</module>
-        <module>titan-dist/titan-dist-cassandra</module>
-        <module>titan-dist/titan-dist-hazelcast</module>
-        <module>titan-dist/titan-dist-hbase</module>
-        <module>titan-dist/titan-dist-persistit</module>
-        <module>titan-dist/titan-dist-server</module>
+        <module>titan-dist</module>
     </modules>
     <build>
         <directory>${basedir}/target</directory>
