@@ -30,7 +30,7 @@ import com.tinkerpop.furnace.generators.VertexAnnotator;
  * <ul>
  * <li>Creating types</li>
  * <li>Inserting vertices and labeled, directed edges (power-law distribution)</li>
- * <li>Setting integer-valued, standard-indexed, vertex-unique properties on edges and vertices</li>
+ * <li>Setting integer-valued, standard-indexed, single-valued properties on edges and vertices</li>
  * </ul>
  * <p/>
  * This uses a {@link java.util.Random} with a hard-coded seed. However, it also
