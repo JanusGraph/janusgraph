@@ -5,8 +5,9 @@ REXSTER_CONFIG=conf/rexster-cassandra.xml
 
 start() {
     echo "Starting Cassandra..." >&2
-    "$BIN"/cassandra || exit 1
+    CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra || exit 1
     echo "Starting Titan + Rexster..." >&2
+    sleep 5
     "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
     echo "Processes forked.  Setup may take some time." >&2
     echo "Run $BIN/rexster-console.sh to connect."      >&2
