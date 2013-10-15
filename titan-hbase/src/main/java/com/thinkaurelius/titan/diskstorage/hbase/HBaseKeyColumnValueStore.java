@@ -23,10 +23,6 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Experimental HBase store.
- * <p/>
- * This is not ready for production.  It's pretty slow.
- * <p/>
  * Here are some areas that might need work:
  * <p/>
  * - batching? (consider HTable#batch, HTable#setAutoFlush(false)
@@ -370,7 +366,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         public void close() {
             isClosed = true;
         }
-        
+
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
