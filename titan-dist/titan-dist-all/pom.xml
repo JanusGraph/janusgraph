@@ -1,10 +1,11 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
-        <artifactId>titan-dist-base</artifactId>
+        <artifactId>titan-dist-parent</artifactId>
         <version>0.4.0-SNAPSHOT</version>
-        <relativePath>../distbase.xml</relativePath>
+        <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <artifactId>titan-dist-all</artifactId>
@@ -18,7 +19,7 @@
         <expect.graph.id>titangraph.persistit:.*conf/\.\./db/persistit</expect.graph.id>
         <test.zipfile.path>${project.build.directory}/titan-all-${project.version}.zip</test.zipfile.path>
     </properties>
-    
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -68,7 +69,7 @@
             <version>${jna.version}</version>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -89,7 +90,7 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration> 
+                        <configuration>
                             <attach>false</attach>
                             <outputDirectory>${run.dir}</outputDirectory>
                             <finalName>/</finalName>
@@ -111,7 +112,7 @@
                         <goals>
                             <goal>clean</goal>
                         </goals>
-                        <configuration> 
+                        <configuration>
                             <excludeDefaultDirectories>true</excludeDefaultDirectories>
                             <filesets>
                                 <fileset>
@@ -133,7 +134,7 @@
                                     <directory>${run.dir}/log/</directory>
                                 </fileset>
                             </filesets>
-                        </configuration> 
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -143,13 +144,13 @@
     <profiles>
         <profile>
             <id>jre7</id>
-            
+
             <activation>
                 <property>
                     <name>!targetjre</name>
                 </property>
             </activation>
-            
+
             <dependencies>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
@@ -158,6 +159,88 @@
                     <classifier>${titan.classifier}</classifier>
                 </dependency>
             </dependencies>
+        </profile>
+
+        <profile>
+            <id>aurelius-release</id>
+
+            <dependencies>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-dist-berkeleyje</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-dist-cassandra</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-cassandra</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-dist-hazelcast</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-dist-persistit</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <dependenciesToScan>
+                                <dependency>com.thinkaurelius.titan:titan-dist-berkeleyje</dependency>
+                                <dependency>com.thinkaurelius.titan:titan-dist-cassandra</dependency>
+                                <dependency>com.thinkaurelius.titan:titan-dist-hazelcast</dependency>
+                                <dependency>com.thinkaurelius.titan:titan-dist-persistit</dependency>
+                            </dependenciesToScan>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-rp-config</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                    <filters>
+                                        <filter>${project.basedir}/../..//titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                    </filters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/../../titan-cassandra/config/cassandra</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

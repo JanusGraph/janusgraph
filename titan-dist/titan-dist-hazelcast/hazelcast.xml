@@ -17,10 +17,10 @@
 
     <fileSets>
         <fileSet>
-            <directory>../../conf</directory>
+            <directory>../src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
-                <include>titan-*${distribution.assembly.name}*</include>
+                <include>titan-*hazelcast*</include>
             </includes>
         </fileSet>
     </fileSets>

@@ -15,7 +15,7 @@
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>../../conf</directory>
+            <directory>../src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>titan*</include>

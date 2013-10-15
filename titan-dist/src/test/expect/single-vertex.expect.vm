@@ -7,10 +7,8 @@ expect_after {
     }
 }
 expect gremlin>
-#send "g = TitanFactory.open(\"conf/titan-berkeleydb.properties\")\r"
-#expect -re "==>titangraph.berkeleyje:.*conf/\.\./db/berkeley"
-send "g = TitanFactory.open(\"${expect.graph.config}\")\r"
-expect -re "${expect.graph.id}"
+send "g = TitanFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
 expect gremlin>
 send "v = g.addVertex()\r"
 expect "==>v\\\[4\\\]"
