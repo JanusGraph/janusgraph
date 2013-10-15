@@ -44,6 +44,15 @@ public class RegisteredAttributeClass<T> implements Comparable<RegisteredAttribu
         else if (!getClass().isInstance(oth)) return false;
         return type.equals(((RegisteredAttributeClass<?>) oth).type) || position == ((RegisteredAttributeClass) oth).position;
     }
+    
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + position;
+        if (null != type)
+            result = 31 * result + type.hashCode();
+        return result;
+    }
 
     @Override
     public String toString() {
