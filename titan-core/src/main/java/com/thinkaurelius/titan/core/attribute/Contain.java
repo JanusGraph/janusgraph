@@ -13,18 +13,16 @@ import java.util.Collection;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public enum
-        Contain implements TitanPredicate {
+public enum Contain implements TitanPredicate {
 
     /**
      * Whether an element is in a collection
      */
     IN {
-
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition),"Invalid condition provided: %s",condition);
-            Collection col = (Collection)condition;
+            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            Collection col = (Collection) condition;
             return col.contains(value);
         }
 
@@ -38,11 +36,10 @@ public enum
      * Whether an element is not in a collection
      */
     NOT_IN {
-
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition),"Invalid condition provided: %s",condition);
-            Collection col = (Collection)condition;
+            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            Collection col = (Collection) condition;
             return !col.contains(value);
         }
 
@@ -62,7 +59,7 @@ public enum
 
     @Override
     public boolean isValidCondition(Object condition) {
-        return condition!=null && (condition instanceof Collection) && !((Collection) condition).isEmpty();
+        return condition != null && (condition instanceof Collection) && !((Collection) condition).isEmpty();
     }
 
     @Override

@@ -3,9 +3,11 @@ package com.thinkaurelius.titan.core;
 import com.google.common.base.Preconditions;
 
 /**
+ * Constructor returned by {@link com.thinkaurelius.titan.core.TitanGraph#buildTransaction()} to build a new transaction.
+ * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface TransactionBuilder {
 
     /**
