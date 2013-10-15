@@ -19,6 +19,9 @@ import com.tinkerpop.blueprints.Element;
  */
 public interface TypeMaker {
 
+    /**
+     * Consistency imposed against the underlying storage backend as configured in {@link TypeMaker}.
+     */
     public enum UniquenessConsistency {
 
         /**

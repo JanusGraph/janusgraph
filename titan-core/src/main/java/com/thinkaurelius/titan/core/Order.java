@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.core;
 
 /**
+ * Constants to specify the ordering of a result set in queries.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

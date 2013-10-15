@@ -857,12 +857,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     retrievals.add(new QueryUtil.IndexCall<Object>() {
                         @Override
                         public Collection<Object> call(int limit) {
-                            IndexQuery adjustedQuery = subquery.updateLimit(limit);
+                            final IndexQuery adjustedQuery = subquery.updateLimit(limit);
                             try {
-                                return indexCache.get(subquery, new Callable<List<Object>>() {
+                                return indexCache.get(adjustedQuery, new Callable<List<Object>>() {
                                     @Override
                                     public List<Object> call() throws Exception {
-                                        return indexSerializer.query(index, subquery, txHandle);
+                                        return indexSerializer.query(index, adjustedQuery, txHandle);
                                     }
                                 });
                             } catch (Exception e) {

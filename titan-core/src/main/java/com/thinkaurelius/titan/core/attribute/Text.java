@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Comparison relations for text objects.
+ * Comparison relations for text objects. These comparisons are based on a tokenized representation
+ * of the text, i.e. the text is considered as a set of word tokens.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -46,7 +47,7 @@ public enum Text implements TitanPredicate {
     },
 
     /**
-     * Whether the text starts with a given term
+     * Whether the text contains a token that starts with a given term
      */
     PREFIX {
         @Override
@@ -68,6 +69,9 @@ public enum Text implements TitanPredicate {
 
     },
 
+    /**
+     * Whether the text contains a token that matches a regular expression
+     */
     REGEX {
         @Override
         public boolean evaluate(Object value, Object condition) {

@@ -173,7 +173,8 @@ public class IndexSerializer {
                 for (final Condition<?> subcond : ((And<?>) condition).getChildren()) {
                     retrievals.add(new QueryUtil.IndexCall<Object>() {
                         @Override
-                        public Collection<Object> call(int limit) {
+                        public Collection<Object> call(final int limit) {
+                            Preconditions.checkArgument(limit >= 0);
                             List<Object> r = null;
                             if (subcond instanceof Or) { //Concatenate results until we have enough for limit
                                 r = new ArrayList<Object>(limit);
@@ -203,10 +204,11 @@ public class IndexSerializer {
         }
     }
 
-    private List<Object> processSingleCondition(ElementType resultType, PredicateCondition pc, int limit, BackendTransaction tx) {
+    private List<Object> processSingleCondition(ElementType resultType, PredicateCondition pc, final int limit, BackendTransaction tx) {
         Preconditions.checkArgument(resultType == ElementType.EDGE || resultType == ElementType.VERTEX);
         Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL, "Only equality index retrievals are supported on standard index");
         Preconditions.checkNotNull(pc.getValue());
+        Preconditions.checkArgument(limit >= 0);
         TitanKey key = (TitanKey) pc.getKey();
         Preconditions.checkArgument(key.hasIndex(Titan.Token.STANDARD_INDEX, resultType.getElementType()),
                 "Cannot retrieve for given property key - it does not have an index [%s]", key.getName());

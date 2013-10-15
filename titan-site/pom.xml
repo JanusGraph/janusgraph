@@ -135,11 +135,6 @@
                     <artifactId>titan-core</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>titan-test</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
             </dependencies>
             <build>
                 <plugins>
@@ -147,16 +142,17 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>javadoc-aggregate-jar</id>
+                                <id>site-javadoc</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>javadoc</goal>
                                 </goals>
                                 <configuration>
+                                    <windowtitle>Titan ${project.version} API</windowtitle>
+                                    <doctitle>Titan Graph Database ${project.version} API</doctitle>
                                     <includeDependencySources>true</includeDependencySources>
                                     <dependencySourceIncludes>
                                         <dependencySourceInclude>${project.groupId}:titan-core</dependencySourceInclude>
-                                        <dependencySourceInclude>${project.groupId}:titan-test</dependencySourceInclude>
                                     </dependencySourceIncludes>
                                 </configuration>
                             </execution>

@@ -42,7 +42,7 @@ public class QueryUtil {
             int maxMultiplier = Integer.MAX_VALUE / limit;
             limit = limit * Math.min(maxMultiplier, (int) Math.pow(2, uncoveredAndConditions)); //(limit*3)/2+1;
         }
-        if (tx.hasModifications()) limit += 5;
+        if (tx.hasModifications()) limit += Math.min(Integer.MAX_VALUE - limit, 5);
         return limit;
     }
 
@@ -231,13 +231,18 @@ public class QueryUtil {
 
 
     public static <R> List<R> processIntersectingRetrievals(List<IndexCall<R>> retrievals, final int limit) {
+        Preconditions.checkArgument(!retrievals.isEmpty());
+        Preconditions.checkArgument(limit >= 0, "Invalid limit: %s", limit);
         List<R> results = null;
         /*
          * Iterate over the clauses in the and collection
          * query.getCondition().getChildren(), taking the intersection
          * of current results with cumulative results on each iteration.
          */
-        int sublimit = limit * Math.min(16, (int) Math.pow(2, retrievals.size() - 1)); //TODO: smarter limit estimation
+        //TODO: smarter limit estimation
+        int multiplier = Math.min(16, (int) Math.pow(2, retrievals.size() - 1));
+        int sublimit = Integer.MAX_VALUE;
+        if (Integer.MAX_VALUE / multiplier >= limit) sublimit = limit * multiplier;
         boolean exhaustedResults;
         do {
             exhaustedResults = true;
@@ -247,7 +252,7 @@ public class QueryUtil {
                 try {
                     subresult = call.call(sublimit);
                 } catch (Exception e) {
-                    throw new TitanException("Could not process individual retrieval call", e.getCause());
+                    throw new TitanException("Could not process individual retrieval call ", e);
                 }
 
                 if (subresult.size() >= sublimit) exhaustedResults = false;
