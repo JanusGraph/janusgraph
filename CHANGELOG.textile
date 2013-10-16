@@ -5,7 +5,7 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
-h3. Version 0.4.0 (October 15, 2013)
+h3. Version 0.4.0 (October 16, 2013)
 
 ```xml
 <dependency>
