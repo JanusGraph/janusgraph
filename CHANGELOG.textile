@@ -5,17 +5,17 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
-h3. Version 0.4.0 (NOT OFFICIALLY RELEASED YET)
+h3. Version 0.4.0 (Oct 16, 2013)
 
 ```xml
 <dependency>
   <groupId>com.thinkaurelius.faunus</groupId>
   <artifactId>faunus</artifactId>
-  <version>0.4.0-SNAPSHOT</version>
+  <version>0.4.0</version>
 </dependency>
 ```
 
-* No longer support for Java 1.6 (Java 1.7+ supported)
+* Removed support for Java 1.6 (Java 1.7+ supported)
 * Bumped to support Hadoop 1.2.1
 * Bumped to support Titan 0.4.0
 * Bumped to support TinkerPop 2.4.0
