@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -8,7 +7,7 @@
     </parent>
     <groupId>com.thinkaurelius.titan</groupId>
     <artifactId>titan</artifactId>
-    <version>0.4.0-SNAPSHOT</version>
+    <version>0.4.0</version>
     <packaging>pom</packaging>
     <prerequisites>
         <maven>2.2.1</maven>
@@ -56,7 +55,8 @@
         <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
-    </scm>
+      <tag>0.4.0</tag>
+  </scm>
     <properties>
         <titan.version>0.4.0-SNAPSHOT</titan.version>
         <titan.compatible.versions>0.4.0</titan.compatible.versions>
@@ -79,11 +79,11 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
-        <perf.jvm.opts></perf.jvm.opts>
+        <perf.jvm.opts />
         <default.test.jvm.opts>-Xms256m -Xmx768m ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
-        <test.extra.jvm.opts></test.extra.jvm.opts>
-        <titan.classifier></titan.classifier>
+        <test.extra.jvm.opts />
+        <titan.classifier />
     </properties>
     <modules>
         <module>titan-core</module>
@@ -113,7 +113,7 @@
                         </goals>
                         <configuration>
                             <rules>
-                                <DependencyConvergence/>
+                                <DependencyConvergence />
                             </rules>
                         </configuration>
                     </execution>
@@ -915,7 +915,7 @@
                                     <goal>unpack-dependencies</goal>
                                 </goals>
                                 <configuration>
-                                    <classifier/>
+                                    <classifier />
                                     <!-- empty classifier requests the artifact containing classes -->
                                     <outputDirectory>${project.build.directory}/jacoco-classes</outputDirectory>
                                     <includeGroupIds>${project.groupId}</includeGroupIds>
@@ -958,22 +958,21 @@
                                 </goals>
                                 <configuration>
                                     <target>
-                                        <taskdef name="report" classname="org.jacoco.ant.ReportTask"
-                                                 classpathref="maven.plugin.classpath"/>
+                                        <taskdef name="report" classname="org.jacoco.ant.ReportTask" classpathref="maven.plugin.classpath" />
                                         <report>
                                             <executiondata>
-                                                <file file="../target/jacoco-combined.exec"/>
+                                                <file file="../target/jacoco-combined.exec" />
                                             </executiondata>
                                             <structure name="Integration test coverage">
                                                 <classfiles>
-                                                    <fileset dir="${project.build.directory}/jacoco-classes"/>
+                                                    <fileset dir="${project.build.directory}/jacoco-classes" />
                                                     u
                                                 </classfiles>
                                                 <sourcefiles encoding="UTF-8">
-                                                    <fileset dir="${project.build.directory}/jacoco-sources"/>
+                                                    <fileset dir="${project.build.directory}/jacoco-sources" />
                                                 </sourcefiles>
                                             </structure>
-                                            <html destdir="${project.build.directory}/jacoco-report"/>
+                                            <html destdir="${project.build.directory}/jacoco-report" />
                                         </report>
                                     </target>
                                 </configuration>
@@ -1011,12 +1010,12 @@
                                     <argLine>${mem.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel/>
+                                    <parallel />
                                     <threadCount>0</threadCount>
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.MemoryTests</groups>
-                                    <excludedGroups/>
+                                    <excludedGroups />
                                 </configuration>
                             </execution>
                             <execution>
@@ -1049,14 +1048,14 @@
                                     <argLine>${default.test.jvm.opts} ${perf.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel/>
+                                    <parallel />
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>
                                         com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests
                                     </groups>
-                                    <excludedGroups/>
+                                    <excludedGroups />
                                     <excludes>
                                         <exclude>**/External*</exclude>
                                     </excludes>
