@@ -158,11 +158,10 @@
                     -->
                     <releaseProfiles>aurelius-release</releaseProfiles>
 
-                    <!--
-                      I am a criminal.
+                    <!-- Keep all submodules at same version as parent -->
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
 
-                      (applies to both release:prepare and :perform)
-                    -->
+                    <!-- applies to both release:prepare and :perform -->
                     <arguments>-DskipTests=true -P!release-plugin-hack</arguments>
                 </configuration>
             </plugin>
