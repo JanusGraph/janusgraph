@@ -150,8 +150,9 @@ titan-site/target/site-scripts/gh-pages-update.sh release.properties
 cd titan-site/target/pages
 git diff --cached index.html
 git status
-# Commit gh-pages updates
+# Commit gh-pages updates and return to the repo root
 git commit
+cd -
 ```
 
 ### Release to Maven Central and Push to Github
