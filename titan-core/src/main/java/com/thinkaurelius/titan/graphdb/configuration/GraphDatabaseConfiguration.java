@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
+import org.apache.commons.beanutils.ConversionException;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -23,9 +24,12 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
+
 import javax.management.MBeanServerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -541,6 +545,8 @@ public class GraphDatabaseConfiguration {
             configureMetricsCsvReporter(metricsConf);
             configureMetricsJmxReporter(metricsConf);
             configureMetricsSlf4jReporter(metricsConf);
+            configureMetricsGangliaReporter(metricsConf);
+            configureMetricsGraphiteReporter(metricsConf);
         }
     }
 
@@ -576,6 +582,61 @@ public class GraphDatabaseConfiguration {
         if (null != ms) {
             MetricManager.INSTANCE.addSlf4jReporter(ms, loggerName);
         }
+    }
+    
+    public static final String GANGLIA_NAMESPACE = "ganglia";
+    public static final String GANGLIA_HOST_OR_GROUP = "host";
+    public static final String GANGLIA_PORT = "port";
+    public static final String GANGLIA_ADDRESSING_MODE = "addressing-mode";
+    public static final String GANGLIA_TTL = "ttl";
+    public static final String GANGLIA_USE_PROTOCOL_31 = "protocol-31";
+    public static final String GANGLIA_UUID = "uuid";
+    public static final String GANGLIA_INTERVAL = "interval";
+    
+    private void configureMetricsGangliaReporter(Configuration conf) {
+        Configuration ganglia = conf.subset(GANGLIA_NAMESPACE);
+        if (null == ganglia)
+            return;
+        
+        final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP);
+        final Integer port = ganglia.getInt(GANGLIA_PORT);
+        final Long ms = ganglia.getLong(GANGLIA_INTERVAL);
+        
+        if (null == host || null == port || null == ms) {
+            return;
+        }
+        
+        UDPAddressingMode addrMode = UDPAddressingMode.UNICAST;
+        final String addrModeStr = ganglia.getString(GANGLIA_ADDRESSING_MODE);
+        if (null != addrModeStr) {
+            if (addrModeStr.toLowerCase().equals("multicast")) {
+                addrMode = UDPAddressingMode.MULTICAST;
+            } else if (!addrModeStr.toLowerCase().equals("unicast")) {
+                throw new RuntimeException("Invalid Ganglia reporter addressing mode " + addrModeStr);
+            }
+        }
+        
+        final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31, true);
+        
+        final int ttl = ganglia.getInt(GANGLIA_TTL, 1);
+        
+        final UUID uuid;
+        final String uuidStr = ganglia.getString(GANGLIA_UUID);
+        if (null != uuidStr) {
+            uuid = UUID.fromString(uuidStr);
+        } else {
+            uuid = null;
+        }
+        
+        try {
+            MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, ms);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    private void configureMetricsGraphiteReporter(Configuration conf) {
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public boolean isReadOnly() {
