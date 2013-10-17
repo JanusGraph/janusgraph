@@ -87,10 +87,14 @@ public class MemoryMapper<A, B, C, D> extends Mapper<A, B, C, D> {
             this.currentConfiguration.clear();
             for (final Map.Entry<String, String> entry : this.globalConfiguration) {
                 final String key = entry.getKey();
+                if (!key.matches(".*-[0-9]+")) {
+                    this.currentConfiguration.set(key, entry.getValue());
+                }
+            }
+            for (final Map.Entry<String, String> entry : this.globalConfiguration) {
+                final String key = entry.getKey();
                 if (key.endsWith(DASH + step)) {
                     this.currentConfiguration.set(key.replace(DASH + step, EMPTY), entry.getValue());
-                } else if (!key.matches(".*-[0-9]+")) {
-                    this.currentConfiguration.set(key, entry.getValue());
                 }
             }
         }
