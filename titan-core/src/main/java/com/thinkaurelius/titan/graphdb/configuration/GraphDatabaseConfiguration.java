@@ -1,22 +1,22 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
-import org.apache.commons.beanutils.ConversionException;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.regex.Pattern;
+
+import javax.management.MBeanServerFactory;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -24,14 +24,18 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
-
-import javax.management.MBeanServerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Pattern;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.AttributeHandler;
+import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
+import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
  * Provides functionality to configure a {@link com.thinkaurelius.titan.core.TitanGraph} INSTANCE.
