@@ -663,12 +663,6 @@ public class GraphDatabaseConfiguration {
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
         txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
-        metricsPrefix = storageConfig.getString(METRICS_PREFIX_KEY, METRICS_DEFAULT_PREFIX);
-        if (!storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
-            metricsPrefix = null;
-        } else {
-            Preconditions.checkNotNull(metricsPrefix);
-        }
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
 
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -679,10 +673,20 @@ public class GraphDatabaseConfiguration {
 
     private void configureMetrics() {
         Preconditions.checkNotNull(configuration);
+        
 
         Configuration metricsConf = configuration.subset(METRICS_NAMESPACE);
 
         if (null != metricsConf && !metricsConf.isEmpty()) {
+            
+            metricsPrefix = metricsConf.getString(METRICS_PREFIX_KEY, METRICS_DEFAULT_PREFIX);
+            
+            if (!metricsConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
+                metricsPrefix = null;
+            } else {
+                Preconditions.checkNotNull(metricsPrefix);
+            }
+            
             configureMetricsConsoleReporter(metricsConf);
             configureMetricsCsvReporter(metricsConf);
             configureMetricsJmxReporter(metricsConf);
