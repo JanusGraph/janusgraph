@@ -207,21 +207,9 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     private void recordSliceMetrics(String p, List<Entry> row) {
-        
         final MetricManager mgr = MetricManager.INSTANCE;
-        final StringBuilder sb = new StringBuilder(p + metricsStoreName.length() + M_GET_SLICE.length() + 20);
-        
-        sb.append(p);
-        sb.append(metricsStoreName);
-        sb.append(M_GET_SLICE);
-        
-        final int mark = sb.length();
-        sb.append(M_ENTRIES_COUNT);
-        mgr.getCounter(sb.toString()).inc(row.size());
-        
-        sb.setLength(mark);
-        sb.append(M_ENTRIES_HISTO);
-        mgr.getHistogram(sb.toString()).update(row.size());
+        mgr.getCounter(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_COUNT).inc(row.size());
+        mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
     }
 
     static <T> T runWithMetrics(String prefix, String storeName, String name, StorageCallable<T> impl) throws StorageException {
