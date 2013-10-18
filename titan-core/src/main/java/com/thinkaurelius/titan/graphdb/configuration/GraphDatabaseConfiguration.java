@@ -790,8 +790,8 @@ public class GraphDatabaseConfiguration {
         if (null == graphite)
             return;
         
-        final String host = graphite.getString(GRAPHITE_HOST);
-        final Long ms = graphite.getLong(GRAPHITE_INTERVAL);
+        final String host = graphite.getString(GRAPHITE_HOST, null);
+        final Long ms = graphite.getLong(GRAPHITE_INTERVAL, null);
         
         if (null == host || null == ms) {
             return;
