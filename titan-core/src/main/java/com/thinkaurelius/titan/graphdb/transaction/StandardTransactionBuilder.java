@@ -38,6 +38,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private long indexCacheWeight;
 
     private Long timestamp = null;
+    
+    private String metricsPrefix;
 
     /**
      * Used to keep state information: Once the transaction is openend, the config
@@ -54,9 +56,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         this.graph = graph;
-
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.metricsPrefix = graphConfig.getMetricsPrefix();
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();
@@ -109,6 +111,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder setTimestamp(long timestamp) {
         verifyOpen();
         this.timestamp = timestamp;
+        return this;
+    }
+    
+    @Override
+    public StandardTransactionBuilder setMetricsPrefix(String p) {
+        verifyOpen();
+        this.metricsPrefix = p;
         return this;
     }
 
@@ -183,6 +192,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public boolean hasTimestamp() {
         return timestamp != null;
+    }
+    
+    @Override
+    public String getMetricsPrefix() {
+        return metricsPrefix;
     }
 
     @Override

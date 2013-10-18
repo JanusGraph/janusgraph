@@ -21,6 +21,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tools.ant.types.Assertions.EnabledAssertion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,7 +323,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     /**
-     * Prefix for Metrics reporter configuration keys.
+     * Configuration key prefix for Metrics.
      */
     public static final String METRICS_NAMESPACE = "metrics";
 
@@ -332,6 +333,11 @@ public class GraphDatabaseConfiguration {
      */
     public static final String BASIC_METRICS = "enable-basic-metrics";
     public static final boolean BASIC_METRICS_DEFAULT = true;
+    
+    
+    public static final String METRICS_PREFIX_KEY = "prefix";
+    
+    public static final String METRICS_DEFAULT_PREFIX = "com.thinkaurelius.titan";
 
     /**
      * Whether to share a single set of Metrics objects across all stores. If
@@ -346,6 +352,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
     public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
+    
 
     /**
      * Metrics console reporter interval in milliseconds. Leaving this
@@ -528,6 +535,7 @@ public class GraphDatabaseConfiguration {
     private boolean batchLoading;
     private long txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
+    private String metricsPrefix;
 
     public GraphDatabaseConfiguration(String dirOrFile) {
         this(new File(dirOrFile));
@@ -639,6 +647,14 @@ public class GraphDatabaseConfiguration {
         }
         return s.toString();
     }
+    
+    public static final String getDefaultMetricsPrefix() {
+        if (BASIC_METRICS_DEFAULT) {
+            return METRICS_DEFAULT_PREFIX;
+        } else {
+            return null;
+        }
+    }
 
     private void preLoadConfiguration() {
         Configuration storageConfig = configuration.subset(STORAGE_NAMESPACE);
@@ -647,6 +663,12 @@ public class GraphDatabaseConfiguration {
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
         txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
+        metricsPrefix = storageConfig.getString(METRICS_PREFIX_KEY, METRICS_DEFAULT_PREFIX);
+        if (!storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
+            metricsPrefix = null;
+        } else {
+            Preconditions.checkNotNull(metricsPrefix);
+        }
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
 
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -673,7 +695,10 @@ public class GraphDatabaseConfiguration {
     private void configureMetricsConsoleReporter(Configuration conf) {
         Long ms = conf.getLong(METRICS_CONSOLE_INTERVAL, METRICS_CONSOLE_INTERVAL_DEFAULT);
         if (null != ms) {
+            System.err.println("Console metrics on");
             MetricManager.INSTANCE.addConsoleReporter(ms);
+        } else {
+            System.err.println("Console metrics off");
         }
     }
 
@@ -792,6 +817,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean isBatchLoading() {
         return batchLoading;
+    }
+    
+    public String getMetricsPrefix() {
+        return metricsPrefix;
     }
 
     public DefaultTypeMaker getDefaultTypeMaker() {

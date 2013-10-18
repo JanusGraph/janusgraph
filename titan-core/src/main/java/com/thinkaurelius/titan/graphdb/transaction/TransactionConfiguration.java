@@ -114,5 +114,24 @@ public interface TransactionConfiguration {
      */
     public long getTimestamp();
 
-
+    /**
+     * Whether to enable Metrics for this transaction, and if so, what string
+     * should start the transaction's metric names.
+     * <p>
+     * If null, Metrics collection is totally disabled for this transaction.
+     * <p>
+     * If empty, Metrics collection is enabled, but there will be no prefix.
+     * Where the default setting would generate metrics names in the form
+     * "prefix.x.y.z", this transaction will instead use metric names in the
+     * form "x.y.z".
+     * <p>
+     * If nonempty, Metrics collection is enabled and the prefix will be used
+     * for all of this transaction's measurements.
+     * <p>
+     * The default value is
+     * {@link GraphDatabaseConfiguration#METRICS_DEFAULT_PREFIX}.
+     * 
+     * @return metrics name prefix string or null
+     */
+    public String getMetricsPrefix();
 }

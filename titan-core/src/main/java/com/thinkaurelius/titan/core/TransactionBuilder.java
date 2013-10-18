@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * Constructor returned by {@link com.thinkaurelius.titan.core.TitanGraph#buildTransaction()} to build a new transaction.
@@ -51,6 +52,18 @@ public interface TransactionBuilder {
      * @return
      */
     public TransactionBuilder setTimestamp(long timestamp);
+    
+    
+    /**
+     * Sets the name prefix used for Metrics recorded by this transaction. If
+     * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
+     * this string will be prepended to all Titan metric names.
+     * 
+     * @param prefix
+     *            Metric name prefix
+     * @return
+     */
+    public TransactionBuilder setMetricsPrefix(String prefix);
 
     /**
      * Starts and returns the transaction build by this builder
