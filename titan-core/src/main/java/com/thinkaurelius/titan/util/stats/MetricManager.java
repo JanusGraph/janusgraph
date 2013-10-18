@@ -327,7 +327,6 @@ public enum MetricManager {
         
         Preconditions.checkNotNull(host);
         
-
         Graphite graphite = new Graphite(new InetSocketAddress(host, port));
 
         GraphiteReporter.Builder b = GraphiteReporter
@@ -340,6 +339,8 @@ public enum MetricManager {
 
         graphiteReporter = b.build(graphite);
         graphiteReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+        log.info("Configured Graphite reporter host={} interval={}ms port={} prefix={}",
+                new Object[] { host, reportIntervalInMS, port, prefix });
     }
     
     /**

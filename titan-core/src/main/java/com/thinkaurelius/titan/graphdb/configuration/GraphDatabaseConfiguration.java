@@ -427,7 +427,7 @@ public class GraphDatabaseConfiguration {
     /**
      * The port to which Ganglia data are sent.
      * <p>
-     * Default = {@value #GANGLIA_PORT_DEFAULT}.
+     * Default = {@value #GANGLIA_PORT_DEFAULT}
      */
     public static final String GANGLIA_PORT = "port";
     public static final int GANGLIA_PORT_DEFAULT = 8649;
@@ -482,7 +482,44 @@ public class GraphDatabaseConfiguration {
      */
     public static final String GANGLIA_SPOOF = "spoof";
     public static final String GANGLIA_SPOOF_DEFAULT = null;
+    
+    /**
+     * The configuration namespace within {@link #METRICS_NAMESPACE} for
+     * Graphite.
+     */
+    public static final String GRAPHITE_NAMESPACE = "graphite";
 
+    /**
+     * The hostname to receive Graphite plaintext protocol metric data. Setting
+     * this config key has no effect unless {@link #GRAPHITE_INTERVAL} is also
+     * set.
+     */
+    public static final String GRAPHITE_HOST = "hostname";
+    
+    /**
+     * The number of milliseconds to wait between sending Metrics data to the
+     * host specified {@link #GRAPHITE_HOST}. This has no effect unless
+     * {@link #GRAPHITE_HOST} is also set.
+     */
+    public static final String GRAPHITE_INTERVAL = "interval";
+    
+    /**
+     * The port to which Graphite data are sent.
+     * <p>
+     * Default = {@value #GRAPHITE_PORT_DEFAULT}
+     */
+    public static final String GRAPHITE_PORT = "port";
+    public static final int GRAPHITE_PORT_DEFAULT = 2003;
+    
+    /**
+     * A Graphite-specific prefix for reported metrics. If non-null, Metrics
+     * prepends this and a "." to all metric names before reporting them to
+     * Graphite.
+     * <p>
+     * Default = {@value #GRAPHITE_PREFIX_DEFAULT}
+     */
+    public static final String GRAPHITE_PREFIX = "prefix";
+    public static final String GRAPHITE_PREFIX_DEFAULT = null;
 
     private final Configuration configuration;
 
@@ -674,8 +711,8 @@ public class GraphDatabaseConfiguration {
         if (null == ganglia)
             return;
         
-        final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP);
-        final Long ms = ganglia.getLong(GANGLIA_INTERVAL);
+        final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP, null);
+        final Long ms = ganglia.getLong(GANGLIA_INTERVAL, null);
         
         if (null == host || null == ms) {
             return;
@@ -723,7 +760,22 @@ public class GraphDatabaseConfiguration {
     }
     
     private void configureMetricsGraphiteReporter(Configuration conf) {
-//        throw new UnsupportedOperationException("Not yet implemented");
+        Configuration graphite = conf.subset(GRAPHITE_NAMESPACE);
+        
+        if (null == graphite)
+            return;
+        
+        final String host = graphite.getString(GRAPHITE_HOST);
+        final Long ms = graphite.getLong(GRAPHITE_INTERVAL);
+        
+        if (null == host || null == ms) {
+            return;
+        }
+
+        final Integer port = graphite.getInt(GRAPHITE_PORT, GRAPHITE_PORT_DEFAULT);
+        final String prefix = graphite.getString(GRAPHITE_PREFIX, GRAPHITE_PREFIX_DEFAULT);
+        
+        MetricManager.INSTANCE.addGraphiteReporter(host, port, prefix, ms);
     }
 
     public boolean isReadOnly() {
