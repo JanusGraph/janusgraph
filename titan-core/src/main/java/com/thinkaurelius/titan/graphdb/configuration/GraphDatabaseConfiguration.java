@@ -415,7 +415,7 @@ public class GraphDatabaseConfiguration {
      * Ganglia data. Setting this config key has no effect unless
      * {@link #GANGLIA_INTERVAL} is also set.
      */
-    public static final String GANGLIA_HOST_OR_GROUP = "host";
+    public static final String GANGLIA_HOST_OR_GROUP = "hostname";
     
     /**
      * The number of milliseconds to wait between sending Metrics data to the
