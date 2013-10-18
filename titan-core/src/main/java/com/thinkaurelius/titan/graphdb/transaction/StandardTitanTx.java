@@ -191,7 +191,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         this.isOpen = true;
         if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin");
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin").inc();
         }
     }
 
@@ -957,7 +957,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         } finally {
             close();
             if (null != config.getMetricsPrefix()) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit");
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
             }
         }
     }
@@ -972,7 +972,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         } finally {
             close();
             if (null != config.getMetricsPrefix()) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback");
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
             }
         }
     }
