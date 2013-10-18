@@ -165,7 +165,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (null != p) {
-                        return MetricInstrumentedIterator.of(ki, p + "." + M_ITERATOR);
+                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
                     } else {
                         return ki;
                     }
@@ -182,7 +182,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (null != p) {
-                        return MetricInstrumentedIterator.of(ki, p + "." + M_ITERATOR);
+                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
                     } else {
                         return ki;
                     }
