@@ -22,6 +22,7 @@ import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Slf4jReporter;
+import com.codahale.metrics.Timer;
 import com.codahale.metrics.ganglia.GangliaReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
@@ -237,12 +238,11 @@ public enum MetricManager {
      * Create a {@link GangliaReporter} attached to the Titan Metrics registry.
      * <p>
      * {@code groupOrHost} and {@code addressingMode} must be non-null. The
-     * remaining non-primitive arguments may be null. Here are the defaults
-     * applied for null arguments:
-     * <ul>
-     * <li>{@code protocol311}: protocol version 3.1</li>
-     * <li>{@code hostUUID}: no UUID is encoded in outgoing datagrams</li>
-     * </ul>
+     * remaining non-primitive arguments may be null. If {@code protocol31} is
+     * null, then true is assumed. Null values of {@code hostUUID} or
+     * {@code spoof} are passed into the {@link GMetric} constructor, which
+     * causes Ganglia to use its internal logic for generating a default UUID
+     * and default reporting hostname (respectively).
      * 
      * @param groupOrHost
      *            the multicast group or unicast hostname to which Ganglia
@@ -257,6 +257,9 @@ public enum MetricManager {
      *            true to use Ganglia protocol version 3.1, false to use 3.0
      * @param hostUUID
      *            uuid for the host
+     * @param spoof
+     *            override this machine's IP/hostname as it appears on the
+     *            Ganglia server
      * @param reportIntervalInMS
      *            milliseconds to wait before sending data to the ganglia
      *            unicast host or multicast group
@@ -266,7 +269,7 @@ public enum MetricManager {
      */
     public synchronized void addGangliaReporter(String groupOrHost, int port,
             UDPAddressingMode addressingMode, int ttl, Boolean protocol31,
-            UUID hostUUID, long reportIntervalInMS) throws IOException {
+            UUID hostUUID, String spoof, long reportIntervalInMS) throws IOException {
         
         Preconditions.checkNotNull(groupOrHost);
         Preconditions.checkNotNull(addressingMode);
@@ -280,12 +283,15 @@ public enum MetricManager {
             protocol31 = true;
         
         GMetric ganglia = new GMetric(groupOrHost, port, addressingMode, ttl,
-                protocol31, hostUUID);
+                protocol31, hostUUID, spoof);
         
         GangliaReporter.Builder b = GangliaReporter.forRegistry(getRegistry());
         
         gangliaReporter = b.build(ganglia);
         gangliaReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+
+        log.info("Configured Ganglia Metrics reporter host={} interval={}ms port={} addrmode={} ttl={} proto31={} uuid={} spoof={}", 
+                new Object[] { groupOrHost, reportIntervalInMS, port, addressingMode, ttl, protocol31, hostUUID, spoof });
     }
 
     /**

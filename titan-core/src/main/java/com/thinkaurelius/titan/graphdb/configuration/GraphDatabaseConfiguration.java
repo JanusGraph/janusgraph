@@ -399,6 +399,85 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_SLF4J_LOGGER = "slf4j.logger";
     public static final String METRICS_SLF4J_LOGGER_DEFAULT = null;
+    
+    /**
+     * The configuration namespace within {@link #METRICS_NAMESPACE} for
+     * Ganglia.
+     */
+    public static final String GANGLIA_NAMESPACE = "ganglia";
+    
+    /**
+     * The unicast host or multicast group name to which Metrics will send
+     * Ganglia data. Setting this config key has no effect unless
+     * {@link #GANGLIA_INTERVAL} is also set.
+     */
+    public static final String GANGLIA_HOST_OR_GROUP = "host";
+    
+    /**
+     * The number of milliseconds to wait between sending Metrics data to the
+     * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
+     * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
+     */
+    public static final String GANGLIA_INTERVAL = "interval";
+    
+    /**
+     * The port to which Ganglia data are sent.
+     * <p>
+     * Default = {@value #GANGLIA_PORT_DEFAULT}.
+     */
+    public static final String GANGLIA_PORT = "port";
+    public static final int GANGLIA_PORT_DEFAULT = 8649;
+    
+    /**
+     * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
+     * multicast address. If present, it must be either the string "multicast"
+     * or the string "unicast".
+     * <p>
+     * Default = {@value #GANGLIA_ADDRESSING_MODE_DEFAULT}
+     */
+    public static final String GANGLIA_ADDRESSING_MODE = "addressing-mode";
+    public static final String GANGLIA_ADDRESSING_MODE_DEFAULT = "unicast";
+    
+    /**
+     * The multicast TTL to set on outgoing Ganglia datagrams. This has no
+     * effect when {@link #GANGLIA_ADDRESSING_MODE} is "multicast".
+     * <p>
+     * Default = {@value #GANGLIA_TTL_DEFAULT}
+     */
+    public static final String GANGLIA_TTL = "ttl";
+    public static final int GANGLIA_TTL_DEFAULT = 1;
+    
+    /**
+     * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
+     * 3.0 protocol format (false).
+     * <p>
+     * Default = {@value #GANGLIA_USE_PROTOCOL_31_DEFAULT}
+     */
+    public static final String GANGLIA_USE_PROTOCOL_31 = "protocol-31";
+    public static final boolean GANGLIA_USE_PROTOCOL_31_DEFAULT = true;
+    
+    /**
+     * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
+     * set on outgoing data.
+     * <p>
+     * See https://github.com/ganglia/monitor-core/wiki/UUIDSources
+     * <p>
+     * Default = {@value #GANGLIA_UUID_DEFAULT}
+     */
+    public static final String GANGLIA_UUID = "uuid";
+    public static final UUID GANGLIA_UUID_DEFAULT = null;
+    
+    /**
+     * If non-null, it must be a valid Gmetric spoof string formatted as an
+     * IP:hostname pair. If null, Ganglia will automatically determine the IP
+     * and hostname to set on outgoing datagrams.
+     * <p>
+     * See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing
+     * <p>
+     * Default = {@value #GANGLIA_SPOOF_DEFAULT}
+     */
+    public static final String GANGLIA_SPOOF = "spoof";
+    public static final String GANGLIA_SPOOF_DEFAULT = null;
 
 
     private final Configuration configuration;
@@ -584,59 +663,63 @@ public class GraphDatabaseConfiguration {
         }
     }
     
-    public static final String GANGLIA_NAMESPACE = "ganglia";
-    public static final String GANGLIA_HOST_OR_GROUP = "host";
-    public static final String GANGLIA_PORT = "port";
-    public static final String GANGLIA_ADDRESSING_MODE = "addressing-mode";
-    public static final String GANGLIA_TTL = "ttl";
-    public static final String GANGLIA_USE_PROTOCOL_31 = "protocol-31";
-    public static final String GANGLIA_UUID = "uuid";
-    public static final String GANGLIA_INTERVAL = "interval";
-    
     private void configureMetricsGangliaReporter(Configuration conf) {
+        
         Configuration ganglia = conf.subset(GANGLIA_NAMESPACE);
+        
         if (null == ganglia)
             return;
         
         final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP);
-        final Integer port = ganglia.getInt(GANGLIA_PORT);
         final Long ms = ganglia.getLong(GANGLIA_INTERVAL);
         
-        if (null == host || null == port || null == ms) {
+        if (null == host || null == ms) {
             return;
         }
-        
-        UDPAddressingMode addrMode = UDPAddressingMode.UNICAST;
-        final String addrModeStr = ganglia.getString(GANGLIA_ADDRESSING_MODE);
-        if (null != addrModeStr) {
-            if (addrModeStr.toLowerCase().equals("multicast")) {
-                addrMode = UDPAddressingMode.MULTICAST;
-            } else if (!addrModeStr.toLowerCase().equals("unicast")) {
-                throw new RuntimeException("Invalid Ganglia reporter addressing mode " + addrModeStr);
-            }
+
+        final Integer port = ganglia.getInt(GANGLIA_PORT, GANGLIA_PORT_DEFAULT);
+
+        final UDPAddressingMode addrMode;
+        final String addrModeStr = ganglia.getString(GANGLIA_ADDRESSING_MODE, GANGLIA_ADDRESSING_MODE_DEFAULT);
+        if (addrModeStr.toLowerCase().equals("multicast")) {
+            addrMode = UDPAddressingMode.MULTICAST;
+        } else if (addrModeStr.toLowerCase().equals("unicast")) {
+            addrMode = UDPAddressingMode.UNICAST;
+        } else {
+            throw new RuntimeException("Invalid setting " + METRICS_NAMESPACE
+                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_ADDRESSING_MODE
+                    + "=\"" + addrModeStr
+                    + "\": must be \"unicast\" or \"multicast\"");
         }
         
-        final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31, true);
-        
-        final int ttl = ganglia.getInt(GANGLIA_TTL, 1);
+        final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31, GANGLIA_USE_PROTOCOL_31_DEFAULT);
+
+        final int ttl = ganglia.getInt(GANGLIA_TTL, GANGLIA_TTL_DEFAULT);
         
         final UUID uuid;
         final String uuidStr = ganglia.getString(GANGLIA_UUID);
         if (null != uuidStr) {
             uuid = UUID.fromString(uuidStr);
         } else {
-            uuid = null;
+            uuid = GANGLIA_UUID_DEFAULT;
+        }
+        
+        String spoof = ganglia.getString(GANGLIA_SPOOF, GANGLIA_SPOOF_DEFAULT);
+        if (null != spoof && 0 > spoof.indexOf(':')) {
+            throw new RuntimeException("Invalid setting " + METRICS_NAMESPACE
+                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_SPOOF + "=\""
+                    + spoof + "\": must be formatted as \"IP:hostname\"");
         }
         
         try {
-            MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, ms);
+            MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, spoof, ms);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
     
     private void configureMetricsGraphiteReporter(Configuration conf) {
-        throw new UnsupportedOperationException("Not yet implemented");
+//        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     public boolean isReadOnly() {
