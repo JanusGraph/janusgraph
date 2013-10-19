@@ -120,7 +120,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                     for (List<Entry> result : results) {
                         recordSliceMetrics(p, result);
                     }
-    
                     return results;
                 }
             }

@@ -338,6 +338,7 @@ public class GraphDatabaseConfiguration {
     public static final String METRICS_PREFIX_KEY = "prefix";
     
     public static final String METRICS_DEFAULT_PREFIX = "com.thinkaurelius.titan";
+    public static final String METRICS_SYSTEM_PREFIX = METRICS_DEFAULT_PREFIX + "." + "sys";
 
     /**
      * Whether to share a single set of Metrics objects across all stores. If
@@ -648,12 +649,8 @@ public class GraphDatabaseConfiguration {
         return s.toString();
     }
     
-    public static final String getDefaultMetricsPrefix() {
-        if (BASIC_METRICS_DEFAULT) {
-            return METRICS_DEFAULT_PREFIX;
-        } else {
-            return null;
-        }
+    public static final String getSystemMetricsPrefix() {
+        return METRICS_SYSTEM_PREFIX;
     }
 
     private void preLoadConfiguration() {

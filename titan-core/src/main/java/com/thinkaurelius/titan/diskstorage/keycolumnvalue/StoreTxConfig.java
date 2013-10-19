@@ -17,11 +17,13 @@ public class StoreTxConfig {
     private Long timestamp = null;
 
     public StoreTxConfig() {
-        this(ConsistencyLevel.DEFAULT);
+        this(ConsistencyLevel.DEFAULT,
+             GraphDatabaseConfiguration.getSystemMetricsPrefix());
     }
     
     public StoreTxConfig(ConsistencyLevel consistency) {
-        this(consistency, GraphDatabaseConfiguration.METRICS_DEFAULT_PREFIX);
+        this(consistency,
+             GraphDatabaseConfiguration.getSystemMetricsPrefix());
     }
     
     public StoreTxConfig(String metricsPrefix) {
@@ -30,7 +32,6 @@ public class StoreTxConfig {
 
     public StoreTxConfig(ConsistencyLevel consistency, String metricsPrefix) {
         Preconditions.checkNotNull(consistency);
-        Preconditions.checkNotNull(metricsPrefix);
         this.consistency = consistency;
         this.metricsPrefix = metricsPrefix;
     }
