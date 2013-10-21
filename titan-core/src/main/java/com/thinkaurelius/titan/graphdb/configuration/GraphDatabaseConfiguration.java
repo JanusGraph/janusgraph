@@ -35,6 +35,7 @@ import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
@@ -335,23 +336,44 @@ public class GraphDatabaseConfiguration {
     public static final boolean BASIC_METRICS_DEFAULT = true;
     
     
+    /**
+     * The default name prefix for Metrics reported by Titan. All metric names
+     * will begin with this string and a period. This value can be overridden on
+     * a transaction-specific basis through
+     * {@link StandardTransactionBuilder#setMetricsPrefix(String)}.
+     * <p>
+     * Default = {@literal #METRICS_PREFIX_DEFAULT}
+     */
     public static final String METRICS_PREFIX_KEY = "prefix";
+    public static final String METRICS_PREFIX_DEFAULT = "com.thinkaurelius.titan";
     
-    public static final String METRICS_DEFAULT_PREFIX = "com.thinkaurelius.titan";
-    public static final String METRICS_SYSTEM_PREFIX = METRICS_DEFAULT_PREFIX + "." + "sys";
+    /**
+     * This is the prefix used outside of a graph database configuration, or for
+     * operations where a system-internal transaction is necessary as an
+     * implementation detail. It currently can't be modified, though there is no
+     * substantial technical obstacle preventing it from being configured --
+     * some kind of configuration object is in scope everywhere it is used, and
+     * it could theoretically be stored in and read from that object.
+     */
+    public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
 
     /**
-     * Whether to share a single set of Metrics objects across all stores. If
-     * true, then calls to KeyColumnValueStore methods any store instance in the
-     * database will share a common set of Metrics Counters, Timers, Histograms,
-     * etc. The prefix for these common metrics will be
-     * {@link Backend#METRICS_PREFIX} + {@link Backend#MERGED_METRICS}. If
-     * false, then each store has its own set of distinct metrics with a unique
-     * name prefix.
-     * <p/>
+     * Whether to aggregate measurements for the edge store, vertex index, edge
+     * index, and ID store.
+     * <p>
+     * If true, then metrics for each of these backends will use the same metric
+     * name ("stores"). All of their measurements will be combined. This setting
+     * measures the sum of Titan's backend activity without distinguishing
+     * between contributions of its various internal stores.
+     * <p>
+     * If false, then metrics for each of these backends will use a unique
+     * metric name ("idStore", "edgeStore", "vertexIndex", and "edgeIndex").
+     * This setting exposes the activity associated with each backend component,
+     * but it also multiplies the number of measurements involved by four.
+     * <p>
      * This option has no effect when {@link #BASIC_METRICS} is false.
      */
-    public static final String MERGE_BASIC_METRICS = "merge-basic-metrics";
+    public static final String MERGE_BASIC_METRICS_KEY = "merge-basic-metrics";
     public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
     
 
@@ -359,34 +381,34 @@ public class GraphDatabaseConfiguration {
      * Metrics console reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the console reporter.
      */
-    public static final String METRICS_CONSOLE_INTERVAL = "console.interval";
+    public static final String METRICS_CONSOLE_INTERVAL_KEY = "console.interval";
     public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
 
     /**
      * Metrics CSV reporter interval in milliseconds. Leaving this configuration
      * key absent or null disables the CSV reporter.
      */
-    public static final String METRICS_CSV_INTERVAL = "csv.interval";
+    public static final String METRICS_CSV_INTERVAL_KEY = "csv.interval";
     public static final Long METRICS_CSV_INTERVAL_DEFAULT = null;
     /**
      * Metrics CSV output directory. It will be created if it doesn't already
-     * exist. This option must be non-null if {@link #METRICS_CSV_INTERVAL} is
+     * exist. This option must be non-null if {@link #METRICS_CSV_INTERVAL_KEY} is
      * non-null. This option has no effect if {@code #METRICS_CSV_INTERVAL} is
      * null.
      */
-    public static final String METRICS_CSV_DIR = "csv.dir";
+    public static final String METRICS_CSV_DIR_KEY = "csv.dir";
     public static final String METRICS_CSV_DIR_DEFAULT = null;
 
     /**
      * Whether to report Metrics through a JMX MBean.
      */
-    public static final String METRICS_JMX_ENABLED = "jmx.enabled";
+    public static final String METRICS_JMX_ENABLED_KEY = "jmx.enabled";
     public static final boolean METRICS_JMX_ENABLED_DEFAULT = false;
     /**
      * The JMX domain in which to report Metrics. If null, then Metrics applies
      * its default value.
      */
-    public static final String METRICS_JMX_DOMAIN = "jmx.domain";
+    public static final String METRICS_JMX_DOMAIN_KEY = "jmx.domain";
     public static final String METRICS_JMX_DOMAIN_DEFAULT = null;
     /**
      * The JMX agentId through which to report Metrics. Calling
@@ -394,14 +416,14 @@ public class GraphDatabaseConfiguration {
      * return exactly one {@code MBeanServer} at runtime. If null, then Metrics
      * applies its default value.
      */
-    public static final String METRICS_JMX_AGENTID = "jmx.agentid";
+    public static final String METRICS_JMX_AGENTID_KEY = "jmx.agentid";
     public static final String METRICS_JMX_AGENTID_DEFAULT = null;
 
     /**
      * Metrics Slf4j reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the Slf4j reporter.
      */
-    public static final String METRICS_SLF4J_INTERVAL = "slf4j.interval";
+    public static final String METRICS_SLF4J_INTERVAL_KEY = "slf4j.interval";
     public static final Long METRICS_SLF4J_INTERVAL_DEFAULT = null;
     /**
      * The complete name of the Logger through which Metrics will report via
@@ -409,7 +431,7 @@ public class GraphDatabaseConfiguration {
      * {@link LoggerFactory#getLogger(String)} with the configured value as the
      * argument. If null, then Metrics will use its default Slf4j logger.
      */
-    public static final String METRICS_SLF4J_LOGGER = "slf4j.logger";
+    public static final String METRICS_SLF4J_LOGGER_KEY = "slf4j.logger";
     public static final String METRICS_SLF4J_LOGGER_DEFAULT = null;
     
     /**
@@ -421,16 +443,16 @@ public class GraphDatabaseConfiguration {
     /**
      * The unicast host or multicast group name to which Metrics will send
      * Ganglia data. Setting this config key has no effect unless
-     * {@link #GANGLIA_INTERVAL} is also set.
+     * {@link #GANGLIA_INTERVAL_KEY} is also set.
      */
-    public static final String GANGLIA_HOST_OR_GROUP = "hostname";
+    public static final String GANGLIA_HOST_OR_GROUP_KEY = "hostname";
     
     /**
      * The number of milliseconds to wait between sending Metrics data to the
-     * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
-     * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
+     * host or group specified by {@link #GANGLIA_HOST_OR_GROUP_KEY}. This has no
+     * effect unless {@link #GANGLIA_HOST_OR_GROUP_KEY} is also set.
      */
-    public static final String GANGLIA_INTERVAL = "interval";
+    public static final String GANGLIA_INTERVAL_KEY = "interval";
     
     /**
      * The port to which Ganglia data are sent.
@@ -441,22 +463,22 @@ public class GraphDatabaseConfiguration {
     public static final int GANGLIA_PORT_DEFAULT = 8649;
     
     /**
-     * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
+     * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP_KEY} as a unicast or
      * multicast address. If present, it must be either the string "multicast"
      * or the string "unicast".
      * <p>
      * Default = {@value #GANGLIA_ADDRESSING_MODE_DEFAULT}
      */
-    public static final String GANGLIA_ADDRESSING_MODE = "addressing-mode";
+    public static final String GANGLIA_ADDRESSING_MODE_KEY = "addressing-mode";
     public static final String GANGLIA_ADDRESSING_MODE_DEFAULT = "unicast";
     
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
-     * effect when {@link #GANGLIA_ADDRESSING_MODE} is "multicast".
+     * effect when {@link #GANGLIA_ADDRESSING_MODE_KEY} is set to "multicast".
      * <p>
      * Default = {@value #GANGLIA_TTL_DEFAULT}
      */
-    public static final String GANGLIA_TTL = "ttl";
+    public static final String GANGLIA_TTL_KEY = "ttl";
     public static final int GANGLIA_TTL_DEFAULT = 1;
     
     /**
@@ -465,7 +487,7 @@ public class GraphDatabaseConfiguration {
      * <p>
      * Default = {@value #GANGLIA_USE_PROTOCOL_31_DEFAULT}
      */
-    public static final String GANGLIA_USE_PROTOCOL_31 = "protocol-31";
+    public static final String GANGLIA_USE_PROTOCOL_31_KEY = "protocol-31";
     public static final boolean GANGLIA_USE_PROTOCOL_31_DEFAULT = true;
     
     /**
@@ -476,7 +498,7 @@ public class GraphDatabaseConfiguration {
      * <p>
      * Default = {@value #GANGLIA_UUID_DEFAULT}
      */
-    public static final String GANGLIA_UUID = "uuid";
+    public static final String GANGLIA_UUID_KEY = "uuid";
     public static final UUID GANGLIA_UUID_DEFAULT = null;
     
     /**
@@ -488,7 +510,7 @@ public class GraphDatabaseConfiguration {
      * <p>
      * Default = {@value #GANGLIA_SPOOF_DEFAULT}
      */
-    public static final String GANGLIA_SPOOF = "spoof";
+    public static final String GANGLIA_SPOOF_KEY = "spoof";
     public static final String GANGLIA_SPOOF_DEFAULT = null;
     
     /**
@@ -499,24 +521,24 @@ public class GraphDatabaseConfiguration {
 
     /**
      * The hostname to receive Graphite plaintext protocol metric data. Setting
-     * this config key has no effect unless {@link #GRAPHITE_INTERVAL} is also
+     * this config key has no effect unless {@link #GRAPHITE_INTERVAL_KEY} is also
      * set.
      */
-    public static final String GRAPHITE_HOST = "hostname";
+    public static final String GRAPHITE_HOST_KEY = "hostname";
     
     /**
      * The number of milliseconds to wait between sending Metrics data to the
-     * host specified {@link #GRAPHITE_HOST}. This has no effect unless
-     * {@link #GRAPHITE_HOST} is also set.
+     * host specified {@link #GRAPHITE_HOST_KEY}. This has no effect unless
+     * {@link #GRAPHITE_HOST_KEY} is also set.
      */
-    public static final String GRAPHITE_INTERVAL = "interval";
+    public static final String GRAPHITE_INTERVAL_KEY = "interval";
     
     /**
      * The port to which Graphite data are sent.
      * <p>
      * Default = {@value #GRAPHITE_PORT_DEFAULT}
      */
-    public static final String GRAPHITE_PORT = "port";
+    public static final String GRAPHITE_PORT_KEY = "port";
     public static final int GRAPHITE_PORT_DEFAULT = 2003;
     
     /**
@@ -526,7 +548,7 @@ public class GraphDatabaseConfiguration {
      * <p>
      * Default = {@value #GRAPHITE_PREFIX_DEFAULT}
      */
-    public static final String GRAPHITE_PREFIX = "prefix";
+    public static final String GRAPHITE_PREFIX_KEY = "prefix";
     public static final String GRAPHITE_PREFIX_DEFAULT = null;
 
     private final Configuration configuration;
@@ -650,7 +672,7 @@ public class GraphDatabaseConfiguration {
     }
     
     public static final String getSystemMetricsPrefix() {
-        return METRICS_SYSTEM_PREFIX;
+        return METRICS_SYSTEM_PREFIX_DEFAULT;
     }
 
     private void preLoadConfiguration() {
@@ -676,7 +698,7 @@ public class GraphDatabaseConfiguration {
 
         if (null != metricsConf && !metricsConf.isEmpty()) {
             
-            metricsPrefix = metricsConf.getString(METRICS_PREFIX_KEY, METRICS_DEFAULT_PREFIX);
+            metricsPrefix = metricsConf.getString(METRICS_PREFIX_KEY, METRICS_PREFIX_DEFAULT);
             
             if (!metricsConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
                 metricsPrefix = null;
@@ -694,7 +716,7 @@ public class GraphDatabaseConfiguration {
     }
 
     private void configureMetricsConsoleReporter(Configuration conf) {
-        Long ms = conf.getLong(METRICS_CONSOLE_INTERVAL, METRICS_CONSOLE_INTERVAL_DEFAULT);
+        Long ms = conf.getLong(METRICS_CONSOLE_INTERVAL_KEY, METRICS_CONSOLE_INTERVAL_DEFAULT);
         if (null != ms) {
             System.err.println("Console metrics on");
             MetricManager.INSTANCE.addConsoleReporter(ms);
@@ -704,17 +726,17 @@ public class GraphDatabaseConfiguration {
     }
 
     private void configureMetricsCsvReporter(Configuration conf) {
-        Long ms = conf.getLong(METRICS_CSV_INTERVAL, METRICS_CONSOLE_INTERVAL_DEFAULT);
-        String out = conf.getString(METRICS_CSV_DIR, METRICS_CSV_DIR_DEFAULT);
+        Long ms = conf.getLong(METRICS_CSV_INTERVAL_KEY, METRICS_CONSOLE_INTERVAL_DEFAULT);
+        String out = conf.getString(METRICS_CSV_DIR_KEY, METRICS_CSV_DIR_DEFAULT);
         if (null != ms && null != out) {
             MetricManager.INSTANCE.addCsvReporter(ms, out);
         }
     }
 
     private void configureMetricsJmxReporter(Configuration conf) {
-        boolean enabled = conf.getBoolean(METRICS_JMX_ENABLED, METRICS_JMX_ENABLED_DEFAULT);
-        String domain = conf.getString(METRICS_JMX_DOMAIN, METRICS_JMX_DOMAIN_DEFAULT);
-        String agentId = conf.getString(METRICS_JMX_AGENTID, METRICS_JMX_AGENTID_DEFAULT);
+        boolean enabled = conf.getBoolean(METRICS_JMX_ENABLED_KEY, METRICS_JMX_ENABLED_DEFAULT);
+        String domain = conf.getString(METRICS_JMX_DOMAIN_KEY, METRICS_JMX_DOMAIN_DEFAULT);
+        String agentId = conf.getString(METRICS_JMX_AGENTID_KEY, METRICS_JMX_AGENTID_DEFAULT);
 
         if (enabled) {
             MetricManager.INSTANCE.addJmxReporter(domain, agentId);
@@ -722,9 +744,9 @@ public class GraphDatabaseConfiguration {
     }
 
     private void configureMetricsSlf4jReporter(Configuration conf) {
-        Long ms = conf.getLong(METRICS_SLF4J_INTERVAL, METRICS_SLF4J_INTERVAL_DEFAULT);
+        Long ms = conf.getLong(METRICS_SLF4J_INTERVAL_KEY, METRICS_SLF4J_INTERVAL_DEFAULT);
         // null loggerName is allowed -- that means Metrics will use its internal default
-        String loggerName = conf.getString(METRICS_SLF4J_LOGGER, METRICS_SLF4J_LOGGER_DEFAULT);
+        String loggerName = conf.getString(METRICS_SLF4J_LOGGER_KEY, METRICS_SLF4J_LOGGER_DEFAULT);
         if (null != ms) {
             MetricManager.INSTANCE.addSlf4jReporter(ms, loggerName);
         }
@@ -737,8 +759,8 @@ public class GraphDatabaseConfiguration {
         if (null == ganglia)
             return;
         
-        final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP, null);
-        final Long ms = ganglia.getLong(GANGLIA_INTERVAL, null);
+        final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP_KEY, null);
+        final Long ms = ganglia.getLong(GANGLIA_INTERVAL_KEY, null);
         
         if (null == host || null == ms) {
             return;
@@ -747,34 +769,34 @@ public class GraphDatabaseConfiguration {
         final Integer port = ganglia.getInt(GANGLIA_PORT, GANGLIA_PORT_DEFAULT);
 
         final UDPAddressingMode addrMode;
-        final String addrModeStr = ganglia.getString(GANGLIA_ADDRESSING_MODE, GANGLIA_ADDRESSING_MODE_DEFAULT);
+        final String addrModeStr = ganglia.getString(GANGLIA_ADDRESSING_MODE_KEY, GANGLIA_ADDRESSING_MODE_DEFAULT);
         if (addrModeStr.toLowerCase().equals("multicast")) {
             addrMode = UDPAddressingMode.MULTICAST;
         } else if (addrModeStr.toLowerCase().equals("unicast")) {
             addrMode = UDPAddressingMode.UNICAST;
         } else {
             throw new RuntimeException("Invalid setting " + METRICS_NAMESPACE
-                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_ADDRESSING_MODE
+                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_ADDRESSING_MODE_KEY
                     + "=\"" + addrModeStr
                     + "\": must be \"unicast\" or \"multicast\"");
         }
         
-        final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31, GANGLIA_USE_PROTOCOL_31_DEFAULT);
+        final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31_KEY, GANGLIA_USE_PROTOCOL_31_DEFAULT);
 
-        final int ttl = ganglia.getInt(GANGLIA_TTL, GANGLIA_TTL_DEFAULT);
+        final int ttl = ganglia.getInt(GANGLIA_TTL_KEY, GANGLIA_TTL_DEFAULT);
         
         final UUID uuid;
-        final String uuidStr = ganglia.getString(GANGLIA_UUID);
+        final String uuidStr = ganglia.getString(GANGLIA_UUID_KEY);
         if (null != uuidStr) {
             uuid = UUID.fromString(uuidStr);
         } else {
             uuid = GANGLIA_UUID_DEFAULT;
         }
         
-        String spoof = ganglia.getString(GANGLIA_SPOOF, GANGLIA_SPOOF_DEFAULT);
+        String spoof = ganglia.getString(GANGLIA_SPOOF_KEY, GANGLIA_SPOOF_DEFAULT);
         if (null != spoof && 0 > spoof.indexOf(':')) {
             throw new RuntimeException("Invalid setting " + METRICS_NAMESPACE
-                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_SPOOF + "=\""
+                    + "." + GANGLIA_NAMESPACE + "." + GANGLIA_SPOOF_KEY + "=\""
                     + spoof + "\": must be formatted as \"IP:hostname\"");
         }
         
@@ -791,15 +813,15 @@ public class GraphDatabaseConfiguration {
         if (null == graphite)
             return;
         
-        final String host = graphite.getString(GRAPHITE_HOST, null);
-        final Long ms = graphite.getLong(GRAPHITE_INTERVAL, null);
+        final String host = graphite.getString(GRAPHITE_HOST_KEY, null);
+        final Long ms = graphite.getLong(GRAPHITE_INTERVAL_KEY, null);
         
         if (null == host || null == ms) {
             return;
         }
 
-        final Integer port = graphite.getInt(GRAPHITE_PORT, GRAPHITE_PORT_DEFAULT);
-        final String prefix = graphite.getString(GRAPHITE_PREFIX, GRAPHITE_PREFIX_DEFAULT);
+        final Integer port = graphite.getInt(GRAPHITE_PORT_KEY, GRAPHITE_PORT_DEFAULT);
+        final String prefix = graphite.getString(GRAPHITE_PREFIX_KEY, GRAPHITE_PREFIX_DEFAULT);
         
         MetricManager.INSTANCE.addGraphiteReporter(host, port, prefix, ms);
     }

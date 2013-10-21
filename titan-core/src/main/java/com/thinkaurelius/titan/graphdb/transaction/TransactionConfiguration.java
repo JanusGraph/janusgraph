@@ -129,7 +129,7 @@ public interface TransactionConfiguration {
      * for all of this transaction's measurements.
      * <p>
      * The default value is
-     * {@link GraphDatabaseConfiguration#METRICS_DEFAULT_PREFIX}.
+     * {@link GraphDatabaseConfiguration#METRICS_PREFIX_DEFAULT}.
      * 
      * @return metrics name prefix string or null
      */

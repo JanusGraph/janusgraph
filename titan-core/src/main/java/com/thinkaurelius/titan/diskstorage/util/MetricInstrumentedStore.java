@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.METRICS_DEFAULT_PREFIX;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX_DEFAULT;
 
 import java.io.IOException;
 import java.util.List;
