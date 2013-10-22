@@ -30,7 +30,7 @@ public class SerializerInitialization {
         serializer.registerClass(int[].class, KRYO_OFFSET + 9);
         serializer.registerClass(double[].class, KRYO_OFFSET + 10);
         serializer.registerClass(long[].class, KRYO_OFFSET + 11);
-        serializer.registerClass(byte[].class, KRYO_OFFSET + 12);
+        serializer.registerClass(byte[].class, new ByteArrayHandler(), KRYO_OFFSET + 12);
         serializer.registerClass(boolean[].class, KRYO_OFFSET + 13);
         serializer.registerClass(IndexType.class, KRYO_OFFSET + 14);
         serializer.registerClass(TitanTypeClass.class, KRYO_OFFSET + 15);
