@@ -333,7 +333,7 @@ public class GraphDatabaseConfiguration {
      * methods using the {@code com.codahale.metrics} package.
      */
     public static final String BASIC_METRICS = "enable-basic-metrics";
-    public static final boolean BASIC_METRICS_DEFAULT = true;
+    public static final boolean BASIC_METRICS_DEFAULT = false;
     
     
     /**
