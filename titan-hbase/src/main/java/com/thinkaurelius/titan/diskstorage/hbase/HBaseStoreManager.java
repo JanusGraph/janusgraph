@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -11,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -30,6 +32,7 @@ import static com.thinkaurelius.titan.diskstorage.Backend.EDGESTORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.EDGEINDEX_STORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.VERTEXINDEX_STORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
 
 /**
  * Storage Manager for HBase
@@ -70,10 +73,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final boolean shortCfNames;
     private static final Map<String, String> shortCfNameMap =
             ImmutableMap.<String, String>builder()
-                .put(VERTEXINDEX_STORE_NAME, "v")
-                .put(ID_STORE_NAME,          "i")
-                .put(EDGESTORE_NAME,         "s")
-                .put(EDGEINDEX_STORE_NAME,   "e")
+                .put(VERTEXINDEX_STORE_NAME,                     "v")
+                .put(ID_STORE_NAME,                              "i")
+                .put(EDGESTORE_NAME,                             "s")
+                .put(EDGEINDEX_STORE_NAME,                       "e")
+                .put(VERTEXINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "w")
+                .put(ID_STORE_NAME + LOCK_STORE_SUFFIX,          "j")
+                .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX,         "t")
+                .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX,   "f")
                 .build();
 
     public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
