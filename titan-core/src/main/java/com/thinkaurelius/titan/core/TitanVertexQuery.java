@@ -31,6 +31,9 @@ public interface TitanVertexQuery extends BaseVertexQuery, VertexQuery {
     public TitanVertexQuery labels(String... labels);
 
     @Override
+    public TitanVertexQuery keys(String... keys);
+
+    @Override
     public TitanVertexQuery types(TitanType... type);
 
     @Override
