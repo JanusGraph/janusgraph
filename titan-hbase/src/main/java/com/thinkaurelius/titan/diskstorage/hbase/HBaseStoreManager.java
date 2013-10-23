@@ -82,6 +82,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX,         "t")
                 .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX,   "f")
                 .build();
+    
+    static {
+        // Verify that shortCfNameMap is injective
+        Preconditions.checkArgument(null != shortCfNameMap);
+        Collection<String> shorts = shortCfNameMap.values();
+        Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
+    }
 
     public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
