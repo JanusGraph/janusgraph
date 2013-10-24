@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-test</artifactId>
@@ -39,6 +38,19 @@
             <artifactId>blueprints-test</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+        <!--
+        Can't release Titan with a Furnace dependency until
+        Furnace releases a non-SNAPSHOT version.
+
+        Titan only uses Furnace's generators subpackages.
+
+        To allow for a Titan release with an alpha version of
+        Furnace generators, I copied the source files from
+        the package into titan-test/src/main/java.  I changed
+        the package to com.tinkerpop.furnace.alpha.generators.
+
+        We should get rid of that when Furnace releases.
+
         <dependency>
             <groupId>com.tinkerpop.furnace</groupId>
             <artifactId>furnace</artifactId>
@@ -62,6 +74,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        -->
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>

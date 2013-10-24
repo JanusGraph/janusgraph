@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.core;
 
 /**
  * When a graph is configured to automatically create edge labels and property keys when they are first used,
- * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeLabel(String, TypeMaker)}
- * or {@link #makeKey(String, TypeMaker)} methods respectively.
+ * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeLabel(LabelMaker)}
+ * or {@link #makeKey(KeyMaker)} methods respectively.
  * <br />
  * By providing a custom DefaultTypeMaker implementation, one can specify how these types should be defined by default.
  * A DefaultTypeMaker implementation is specified in the graph configuration using the full path which means the

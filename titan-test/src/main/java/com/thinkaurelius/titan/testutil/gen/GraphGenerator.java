@@ -17,10 +17,10 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLReader;
 import com.tinkerpop.blueprints.util.io.graphml.GraphMLWriter;
-import com.tinkerpop.furnace.generators.DistributionGenerator;
-import com.tinkerpop.furnace.generators.EdgeAnnotator;
-import com.tinkerpop.furnace.generators.PowerLawDistribution;
-import com.tinkerpop.furnace.generators.VertexAnnotator;
+import com.tinkerpop.furnace.alpha.generators.DistributionGenerator;
+import com.tinkerpop.furnace.alpha.generators.EdgeAnnotator;
+import com.tinkerpop.furnace.alpha.generators.PowerLawDistribution;
+import com.tinkerpop.furnace.alpha.generators.VertexAnnotator;
 
 /**
  * Generates Titan graphs. Requires an open, empty Titan graph.

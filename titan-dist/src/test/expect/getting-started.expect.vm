@@ -1,0 +1,116 @@
+#!/usr/bin/env expect
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+send "100-10\r"
+expect "==>90"
+expect gremlin>
+send "g = TitanFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+${graphPostamble}
+expect gremlin>
+send "GraphOfTheGodsFactory.load(g)\r"
+expect ==>null
+expect gremlin>
+send "saturn = g.V('name','saturn').next()\r"
+expect "==>v\\\[4\\\]"
+expect gremlin>
+send "saturn.map()\r"
+expect gremlin>
+if { -1 == [string first "==>age=10000"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>name=saturn" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>type=titan"  $expect_out(buffer)] } { exit 1 }
+send "saturn.in('father').in('father').name\r"
+expect ==>hercules
+expect gremlin>
+# This next query relies on ES, so wait at a few seconds for it to reindex
+sleep 2
+send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()\r"
+expect gremlin>
+if { -1 == [string first "24-battled-\>40" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "24-battled-\>36" $expect_out(buffer)] } { exit 1 }
+send "g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect { it.bothV.name.next(2) }\r"
+expect gremlin>
+if { -1 == [string first "==>\[hercules, hydra\]"  $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[hercules, nemean\]" $expect_out(buffer)] } { exit 1 }
+send "hercules = saturn.as('x').in('father').loop('x'){it.loops < 3}.next()\r"
+expect "==>v\\\[24\\\]"
+expect gremlin>
+send "hercules.out('father','mother')\r"
+expect gremlin>
+if { -1 == [string first "==>v\[16\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>v\[28\]" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('father','mother').name\r"
+expect gremlin>
+if { -1 == [string first "==>alcmene" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>jupiter" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('father','mother').type\r"
+expect gremlin>
+if { -1 == [string first "==>god"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>human" $expect_out(buffer)] } { exit 1 }
+send "hercules.type\r"
+expect ==>demigod
+expect gremlin>
+send "hercules.out('battled')\r"
+expect gremlin>
+if { -1 == [string first "==>v\[36\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>v\[40\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>v\[44\]" $expect_out(buffer)] } { exit 1 }
+send "hercules.out('battled').map\r"
+expect gremlin>
+if { -1 == [string first "==>\{name=nemean, type=monster\}"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=hydra, type=monster\}"    $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\{name=cerberus, type=monster\}" $expect_out(buffer)] } { exit 1 }
+send "hercules.outE('battled').has('time',T.gt,1).inV.name\r"
+expect gremlin>
+if { -1 == [string first "==>hydra"   $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>cerberus" $expect_out(buffer)] } { exit 1 }
+# Not picky about the toString() on this next one, just want it to complete without error
+send "hercules.outE('battled').has('time',T.gt,1).inV.name.toString()\r"
+expect gremlin>
+send "pluto = g.V('name','pluto').next()\r"
+expect "==>v\\\[32\\\]"
+expect gremlin>
+send "pluto.out('lives').in('lives').name\r"
+expect gremlin>
+if { -1 == [string first "==>pluto"    $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>cerberus" $expect_out(buffer)] } { exit 1 }
+send "pluto.out('lives').in('lives').except(\[pluto\]).name\r"
+expect ==>cerberus
+expect gremlin>
+send "pluto.as('x').out('lives').in('lives').except('x').name\r"
+expect ==>cerberus
+expect gremlin>
+send "pluto.out('brother').out('lives').name\r"
+expect gremlin>
+if { -1 == [string first "==>sky" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>sea" $expect_out(buffer)] } { exit 1 }
+send "pluto.out('brother').as('god').out('lives').as('place').select\r"
+expect gremlin>
+if { -1 == [string first "==>\[god:v\[16\], place:v\[8\]\]"  $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[god:v\[20\], place:v\[12\]\]" $expect_out(buffer)] } { exit 1 }
+send "pluto.out('brother').as('god').out('lives').as('place').select\{it.name\}\r"
+expect gremlin>
+if { -1 == [string first "==>\[god:jupiter, place:sky\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[god:neptune, place:sea\]" $expect_out(buffer)] } { exit 1 }
+send "pluto.outE('lives').reason\r"
+expect "==>no fear of death"
+expect gremlin>
+send "g.query().has('reason',CONTAINS,'loves').edges()\r"
+expect gremlin>
+if { -1 == [string first "16-lives-\>8"  $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "20-lives-\>12" $expect_out(buffer)] } { exit 1 }
+send "g.query().has('reason',CONTAINS,'loves').edges().collect\{ \[it.outV.name.next(),it.reason,it.inV.name.next()\] \}\r"
+expect gremlin>
+if { -1 == [string first "==>\[jupiter, loves fresh breezes, sky\]" $expect_out(buffer)] } { exit 1 }
+if { -1 == [string first "==>\[neptune, loves waves, sea\]"         $expect_out(buffer)] } { exit 1 }
+
+send "g.shutdown()\r"
+expect ==>null
+expect gremlin>
+exit 0

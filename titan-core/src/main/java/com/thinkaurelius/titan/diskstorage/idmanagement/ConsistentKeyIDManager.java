@@ -83,7 +83,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
             StoreTransaction txh = null;
             try {
-                txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, metricsPrefix));
                 // Read the latest counter values from the idStore
                 StaticBuffer partitionKey = getPartitionKey(partition);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt

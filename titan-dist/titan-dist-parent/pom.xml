@@ -1,0 +1,320 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.thinkaurelius.titan</groupId>
+        <artifactId>titan</artifactId>
+        <version>0.4.1-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+    <packaging>pom</packaging>
+    <artifactId>titan-dist-parent</artifactId>
+    <version>0.4.1-SNAPSHOT</version>
+    <name>Titan-Dist-Parent</name>
+    <url>http://thinkaurelius.github.com/titan/</url>
+
+    <properties>
+        <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
+    </properties>
+    
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-dist</artifactId>
+            <version>${project.version}</version>
+            <classifier>tests</classifier>
+	    <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>${titan.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>1.7</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+
+        <!-- Used during release:perform to upload to S3 -->
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>${kuali.s3.wagon.version}</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <!--
+              Unbind unused goals from their default phases.
+            -->
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-compile</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-install-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-install</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Done disabling unnecessary default plugin goals -->
+        </plugins>
+        
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>properties-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>load-titan-gremlin-imports</id>
+                            <phase>prepare-package</phase>
+                            <goals>
+                                <goal>read-project-properties</goal>
+                            </goals>
+                            <configuration>
+                                <files>
+                                    <file>../target/imports.properties</file>
+                                </files>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>   
+    </build>
+    
+    <profiles>
+        <profile>
+            <id>aurelius-release</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-site</artifactId>
+                    <classifier>htdocs</classifier>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                </dependency>
+            </dependencies> 
+            <build>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-assembly-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>assemble-distribution-archive</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>single</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                            <configuration>
+                                <!-- 
+                                  We set attached=true so that the gpg plugin will
+                                  sign all of our assembly artifacts.  We handle
+                                  deployment of the artifacts manually because
+                                  maven-deploy-plugin can't upload files to a flat
+                                  S3 directory; it insists on creating a
+                                  long/packagename/and/artifactid/and/version/
+                                  path at the destination before uploading, and we
+                                  don't want that for our files S3.  codehaus's
+                                  wagon:upload plugin comes to our rescue.
+                                -->
+                                <attach>true</attach>
+                                <!--
+                                  archive filenames are of the form
+                                  ${finalName}-${<id /> from assembly descriptor}.${archive format extension}
+                                -->
+                                <finalName>titan</finalName>
+                                <tarLongFileMode>gnu</tarLongFileMode>
+                                <descriptors>
+                                    <!-- This property is intended to be set in submodules -->
+                                    <descriptor>${distribution.assembly.descriptor}</descriptor>
+                                </descriptors>
+                            </configuration>
+                        </plugin>
+    		        
+                        <plugin>
+                            <artifactId>maven-gpg-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>sign-artifacts</id>
+                                </execution>
+                            </executions>
+                        </plugin>
+    		        
+                        <plugin>
+                            <groupId>org.codehaus.mojo</groupId>
+                            <artifactId>wagon-maven-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>deploy-distribution-archives-to-s3</id>
+                                    <phase>deploy</phase>
+                                    <goals>
+                                        <goal>upload</goal>
+                                    </goals>
+                                    <configuration>
+                                        <fromDir>${project.build.directory}</fromDir>
+                                        <includes>*.tar.bz2.asc,*.zip.asc,*.zip,*.tar.bz2</includes>
+                                        <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                        <url>s3://s3.thinkaurelius.com/downloads/titan/</url>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+			
+			<plugin>
+                            <artifactId>maven-jar-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>pack-test-jar</id>
+                                    <phase>package</phase>
+                                    <goals>
+                                        <goal>test-jar</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>compile-package-tests</id>
+                                    <phase>test-compile</phase>
+                                    <goals>
+                                        <goal>testCompile</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    
+                        <plugin>
+                            <artifactId>maven-resources-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>filter-expect-scripts</id>
+                                    <phase>process-test-resources</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <resources>
+                                            <resource>
+                                                <directory>../src/test/expect</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>filter-test-resources</id>
+                                    <phase>process-test-resources</phase>
+                                    <goals>
+                                        <goal>copy-resources</goal>
+                                    </goals>
+                                    <configuration>
+                                        <resources>
+                                            <resource>
+                                                <directory>../src/test/resources</directory>
+                                                <filtering>true</filtering>
+                                            </resource>
+                                        </resources>
+                                        <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        
+                        <plugin>
+                            <artifactId>maven-failsafe-plugin</artifactId>
+                            <configuration>
+                                <forkCount>1</forkCount>
+                                <reuseForks>false</reuseForks>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>integration-test</id>
+                                    <goals>
+                                        <goal>integration-test</goal>
+                                    </goals>
+                                </execution>
+                                <execution>
+                                    <id>verify</id>
+                                    <goals>
+                                        <goal>verify</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
+ 

@@ -11,7 +11,7 @@ import com.tinkerpop.blueprints.Vertex;
  * that match all conditions.
  * <p/>
  * Finding matching elements using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link TypeMaker#indexed(Class)} and {@link TypeMaker#indexed(String, Class)}.
+ * been defined for the keys. See {@link KeyMaker#indexed(Class)} and {@link KeyMaker#indexed(String, Class)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  * @since 0.3.0
@@ -90,12 +90,20 @@ public interface TitanGraphQuery extends GraphQuery {
      * Orders the element results of this query according
      * to their property for the given key in the given order (increasing/decreasing).
      *
-     * @param key
-     * @param order
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
      * @return
      */
     public TitanGraphQuery orderBy(String key, Order order);
 
+    /**
+     * Orders the element results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
     public TitanGraphQuery orderBy(TitanKey key, Order order);
 
 }

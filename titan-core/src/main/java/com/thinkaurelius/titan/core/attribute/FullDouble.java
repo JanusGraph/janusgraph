@@ -5,7 +5,7 @@ package com.thinkaurelius.titan.core.attribute;
  * <p/>
  * By default, Titan will convert double values into a decimal format so that it can be stored in byte-order
  * and be used for vertex-centric indices. However, that restricts the value spectrum of doubles when registered
- * using {@link com.thinkaurelius.titan.core.TypeMaker#dataType(Class)} with Double.class as argument.
+ * using {@link com.thinkaurelius.titan.core.KeyMaker#dataType(Class)} with Double.class as argument.
  * <p/>
  * When order preservation is not important, use FullDouble as the data type.
  *

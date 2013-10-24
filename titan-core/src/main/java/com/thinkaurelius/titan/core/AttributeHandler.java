@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.core;
 
 /**
+ * Allows custom handling of attributes inside Titan when it comes to a) data validation and b) conversion
+ * of different data types to the target type.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 

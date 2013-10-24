@@ -5,7 +5,7 @@ package com.thinkaurelius.titan.core.attribute;
  * <p/>
  * By default, Titan will convert float values into a decimal format so that it can be stored in byte-order
  * and be used for vertex-centric indices. However, that restricts the value spectrum of floats when registered
- * using {@link com.thinkaurelius.titan.core.TypeMaker#dataType(Class)} with Float.class as argument.
+ * using {@link com.thinkaurelius.titan.core.KeyMaker#dataType(Class)} with Float.class as argument.
  * <p/>
  * When order preservation is not important, use FullFloat as the data type.
  *

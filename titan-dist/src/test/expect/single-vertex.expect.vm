@@ -1,0 +1,28 @@
+#!/usr/bin/env expect
+spawn bin/gremlin.sh
+expect_after {
+    timeout {
+        # Default timeout handler
+        exit 1
+    }
+}
+expect gremlin>
+send "g = TitanFactory.open(\"${graphConfig}\")\r"
+expect -re "${graphToString}"
+expect gremlin>
+send "v = g.addVertex()\r"
+expect "==>v\\\[4\\\]"
+expect gremlin>
+send "v\['test'\] = 42\r"
+expect "==>42"
+expect gremlin>
+send "g.commit()\r"
+expect ==>null
+expect gremlin>
+send "g.v(4).test\r"
+expect ==>42
+expect gremlin>
+send "g.shutdown()\r"
+expect ==>null
+expect gremlin>
+exit 0

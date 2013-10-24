@@ -11,14 +11,16 @@ import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 
 public enum Geo implements TitanPredicate {
 
+    /**
+     * Whether the intersection between two geographic regions is non-empty
+     */
     INTERSECT {
-
         @Override
         public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
-            if (value==null) return false;
+            if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
-            return ((Geoshape)value).intersect((Geoshape)condition);
+            return ((Geoshape) value).intersect((Geoshape) condition);
         }
 
         @Override
@@ -37,15 +39,16 @@ public enum Geo implements TitanPredicate {
         }
     },
 
+    /**
+     * Whether the intersection between two geographic regions is empty
+     */
     DISJOINT {
-
-
         @Override
         public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
-            if (value==null) return false;
+            if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
-            return ((Geoshape)value).disjoint((Geoshape)condition);
+            return ((Geoshape) value).disjoint((Geoshape) condition);
         }
 
         @Override
@@ -64,14 +67,16 @@ public enum Geo implements TitanPredicate {
         }
     },
 
+    /**
+     * Whether one geographic region is completely contains within another
+     */
     WITHIN {
-
         @Override
         public boolean evaluate(Object value, Object condition) {
             Preconditions.checkArgument(condition instanceof Geoshape);
-            if (value==null) return false;
+            if (value == null) return false;
             Preconditions.checkArgument(value instanceof Geoshape);
-            return ((Geoshape)value).within((Geoshape)condition);
+            return ((Geoshape) value).within((Geoshape) condition);
         }
 
         @Override
@@ -93,7 +98,7 @@ public enum Geo implements TitanPredicate {
 
     @Override
     public boolean isValidCondition(Object condition) {
-        return condition!=null && condition instanceof Geoshape;
+        return condition != null && condition instanceof Geoshape;
     }
 
     @Override

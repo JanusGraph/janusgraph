@@ -29,6 +29,8 @@ public abstract class AbstractIDManager implements IDAuthority {
     protected final int idApplicationRetryCount;
 
     protected final byte[] rid;
+    
+    protected final String metricsPrefix;
 
     private IDBlockSizer blockSizer;
     private volatile boolean isActive;
@@ -47,6 +49,8 @@ public abstract class AbstractIDManager implements IDAuthority {
                 config.getInt(
                         GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,
                         GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
+
+        this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
     }
 
     @Override

@@ -14,15 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ "x$CASSANDRA_HOME" = "x" ]; then
-    cd `dirname $0`/..
-    CASSANDRA_HOME=`pwd`
-fi
+cd `dirname $0`/..
+CASSANDRA_HOME=`pwd`
 
 # The directory where Cassandra's configs live (required)
-if [ "x$CASSANDRA_CONF" = "x" ]; then
-    CASSANDRA_CONF=$CASSANDRA_HOME/conf
-fi
+CASSANDRA_CONF=$CASSANDRA_HOME/conf
 
 # This can be the path to a jar file, or a directory containing the 
 # compiled classes. NOTE: This isn't needed by the startup script,

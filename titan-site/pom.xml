@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-site</artifactId>
@@ -135,11 +135,6 @@
                     <artifactId>titan-core</artifactId>
                     <version>${project.version}</version>
                 </dependency>
-                <dependency>
-                    <groupId>${project.groupId}</groupId>
-                    <artifactId>titan-test</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
             </dependencies>
             <build>
                 <plugins>
@@ -147,16 +142,17 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>javadoc-aggregate-jar</id>
+                                <id>site-javadoc</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>javadoc</goal>
                                 </goals>
                                 <configuration>
+                                    <windowtitle>Titan ${project.version} API</windowtitle>
+                                    <doctitle>Titan Graph Database ${project.version} API</doctitle>
                                     <includeDependencySources>true</includeDependencySources>
                                     <dependencySourceIncludes>
                                         <dependencySourceInclude>${project.groupId}:titan-core</dependencySourceInclude>
-                                        <dependencySourceInclude>${project.groupId}:titan-test</dependencySourceInclude>
                                     </dependencySourceIncludes>
                                 </configuration>
                             </execution>
@@ -346,108 +342,6 @@
                                 <configuration>
                                     <executable>${project.build.directory}/site-scripts/gollum-site-wrapper.sh</executable>
                                     <workingDirectory>${project.parent.basedir}</workingDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!--
-          WARNING
-
-          If your GitHub credentials are configured in
-          ~/.m2/settings.xml, then activating this profile and
-          executing the maven deploy phase will commit files to the
-          GitHub repository's gh-pages branch.  These commits use the
-          GitHub API and will not appear in the local repo until
-          pulled.
-        -->
-        <profile>
-            <id>deploy-gh-pages</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.github.github</groupId>
-                        <artifactId>site-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>deploy-javadoc-version-dir</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>site</goal>
-                                </goals>
-                                <configuration>
-                                    <message>Publishing javadoc for ${project.version}</message>
-                                    <outputDirectory>../target/site/apidocs/</outputDirectory>
-                                    <path>javadoc/${project.version}/</path>
-                                    <merge>true</merge>
-                                    <branch>refs/heads/gh-pages</branch>
-                                </configuration>
-                            </execution>
-    
-                            <!--
-                            <execution>
-                                <id>deploy-javadoc-current-dir</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>site</goal>
-                                </goals>
-                                <configuration>
-                                    <message>Replacing current javadoc with ${project.version}</message>
-                                    <outputDirectory>../target/site/apidocs/</outputDirectory>
-                                    <path>javadoc/current/</path>
-                                    <merge>false</merge>
-                                    <branch>refs/heads/gh-pages</branch>
-                                </configuration>
-                            </execution>
-                            -->
-    
-                            <execution>
-                                <id>deploy-wikidoc-version-dir</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>site</goal>
-                                </goals>
-                                <configuration>
-                                    <message>Publishing wikidoc for ${project.version}</message>
-                                    <outputDirectory>../doc/html/</outputDirectory> 
-                                    <path>wikidoc/${project.version}</path>
-                                    <merge>true</merge>
-                                    <branch>refs/heads/gh-pages</branch>
-                                </configuration>
-                            </execution>
-    
-                            <!--                        
-                            <execution>
-                                <id>deploy-wikidoc-current-dir</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>site</goal>
-                                </goals>
-                                <configuration>
-                                    <message>Replacing current wikidoc with ${project.version}</message>
-                                    <outputDirectory>../doc/html/</outputDirectory> 
-                                    <path>wikidoc/current/</path>
-                                    <merge>false</merge>
-                                    <branch>refs/heads/gh-pages</branch>
-                                </configuration>
-                            </execution>
-                            -->
-    
-                            <execution>
-                                <id>deploy-gh-pages-extras</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>site</goal>
-                                </goals>
-                                <configuration>
-                                    <message>Updating web extras from ${project.version}</message>
-                                    <outputDirectory>${project.build.directory}/site-resources</outputDirectory>
-                                    <!-- omitting the path configuration element writes files to the root -->
-                                    <merge>true</merge>
-                                    <branch>refs/heads/gh-pages</branch>
                                 </configuration>
                             </execution>
                         </executions>
