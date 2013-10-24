@@ -1,18 +1,26 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX_DEFAULT;
+
+import java.io.IOException;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.concurrent.Callable;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
  * This class instruments an arbitrary KeyColumnValueStore backend with Metrics.
@@ -47,300 +55,233 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
     private final KeyColumnValueStore backend;
 
-    // containsKey
-    private final Timer containsKeyTimer;
-    private final Counter containsKeyInvocationCounter;
-    private final Counter containsKeyFailureCounter;
-    // getSlice
-    private final Timer getSliceTimer;
-    private final Counter getSliceColumnCounter;
-    private final Histogram getSliceColumnHisto;
-    private final Counter getSliceInvocationCounter;
-    private final Counter getSliceFailureCounter;
-    // mutate
-    private final Timer mutateTimer;
-    private final Counter mutateInvocationCounter;
-    private final Counter mutateFailureCounter;
-    // acquireLock
-    private final Timer acquireLockTimer;
-    private final Counter acquireLockInvocationCounter;
-    private final Counter acquireLockFailureCounter;
-    // getKeys
-    private final Timer getKeysTimer;
-    private final Counter getKeysInvocationCounter;
-    private final Counter getKeysFailureCounter;
-    private final String getKeysIteratorMetricPrefix;
-    // getLocalKeyPartition
-    private final Timer getLocalKeyPartitionTimer;
-    private final Counter getLocalKeyPartitionInvocationCounter;
-    private final Counter getLocalKeyPartitionFailureCounter;
-    // getName
-    private final Timer getNameTimer;
-    private final Counter getNameInvocationCounter;
-    private final Counter getNameFailureCounter;
-    // close
-    private final Timer closeTimer;
-    private final Counter closeInvocationCounter;
-    private final Counter closeFailureCounter;
-
     private static final Logger log =
             LoggerFactory.getLogger(MetricInstrumentedStore.class);
+    
+    private static final String M_CONTAINS_KEY = "containsKey";
+    private static final String M_GET_SLICE = "getSlice";
+    private static final String M_MUTATE = "mutate";
+    private static final String M_ACQUIRE_LOCK = "acquireLock";
+    private static final String M_GET_KEYS = "getKeys";
+    private static final String M_GET_PART = "getLocalKeyPartition";
+    private static final String M_CLOSE = "close";
+    
+    private static final String M_CALLS = "calls";
+    private static final String M_TIME = "time";
+    private static final String M_EXCEPTIONS = "exceptions";
+    private static final String M_ENTRIES_COUNT = "entries-returned";
+    private static final String M_ENTRIES_HISTO = "entries-histogram";
+    
+    private static final String M_ITERATOR = "iterator";
+    
+    private final String metricsStoreName;
 
-    public MetricInstrumentedStore(KeyColumnValueStore backend, String p) {
+    public MetricInstrumentedStore(KeyColumnValueStore backend, String metricsStoreName) {
         this.backend = backend;
-
-        MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-
-        containsKeyTimer =
-                metrics.timer(MetricRegistry.name(p, "containsKey", "time"));
-        containsKeyInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "containsKey", "calls"));
-        containsKeyFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "containsKey", "exceptions"));
-
-        getSliceTimer =
-                metrics.timer(MetricRegistry.name(p, "getSlice", "time"));
-        getSliceInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "getSlice", "calls"));
-        getSliceFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "getSlice", "exceptions"));
-        getSliceColumnCounter =
-                metrics.counter(MetricRegistry.name(p, "getSlice", "entries-returned"));
-        getSliceColumnHisto =
-                metrics.histogram(MetricRegistry.name(p, "getSlice", "entries-histogram"));
-
-        mutateTimer =
-                metrics.timer(MetricRegistry.name(p, "mutate", "time"));
-        mutateInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "mutate", "calls"));
-        mutateFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "mutate", "exceptions"));
-
-        acquireLockTimer =
-                metrics.timer(MetricRegistry.name(p, "acquireLock", "time"));
-        acquireLockInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "acquireLock", "calls"));
-        acquireLockFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "acquireLock", "exceptions"));
-
-        getKeysTimer =
-                metrics.timer(MetricRegistry.name(p, "getKeys", "time"));
-        getKeysInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "getKeys", "calls"));
-        getKeysFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "getKeys", "exceptions"));
-        getKeysIteratorMetricPrefix = p + "." + "getKeys.iterator";
-
-        getLocalKeyPartitionTimer =
-                metrics.timer(MetricRegistry.name(p, "getLocalKeyPartition", "time"));
-        getLocalKeyPartitionInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "calls"));
-        getLocalKeyPartitionFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "getLocalKeyPartition", "exceptions"));
-
-        getNameTimer =
-                metrics.timer(MetricRegistry.name(p, "getName", "time"));
-        getNameInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "getName", "calls"));
-        getNameFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "getName", "exceptions"));
-
-        closeTimer =
-                metrics.timer(MetricRegistry.name(p, "close", "time"));
-        closeInvocationCounter =
-                metrics.counter(MetricRegistry.name(p, "close", "calls"));
-        closeFailureCounter =
-                metrics.counter(MetricRegistry.name(p, "close", "exceptions"));
-
-        log.debug("Wrapped Metrics around store {} (metric prefix {})", backend, p);
+        this.metricsStoreName = metricsStoreName;
+        log.debug("Wrapped Metrics named \"{}\" around store {}", metricsStoreName, backend);
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        containsKeyInvocationCounter.inc();
-        Timer.Context tc = containsKeyTimer.time();
-
-        try {
-            return backend.containsKey(key, txh);
-        } catch (StorageException e) {
-            containsKeyFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+    public boolean containsKey(final StaticBuffer key, final StoreTransaction txh) throws StorageException {
+        return runWithMetrics(txh.getConfiguration().getMetricsPrefix(), metricsStoreName, M_CONTAINS_KEY,
+            new StorageCallable<Boolean>() {
+                public Boolean call() throws StorageException {
+                    return Boolean.valueOf(backend.containsKey(key, txh));
+                }
+            }
+        );
     }
 
     @Override
     public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
-        return getSliceWithMetrics(new GetSliceCommand<List<Entry>>() {
-            @Override
-            public List<Entry> call() throws StorageException {
-                List<Entry> result = backend.getSlice(query, txh);
-                recordSliceMetrics(result);
-                return result;
+        final String p = txh.getConfiguration().getMetricsPrefix();
+        return runWithMetrics(p, metricsStoreName, M_GET_SLICE,
+            new StorageCallable<List<Entry>>() {
+                public List<Entry> call() throws StorageException {
+                    List<Entry> result = backend.getSlice(query, txh);
+                    recordSliceMetrics(p, result);
+                    return result;
+                }
             }
-        });
+        );
     }
 
     @Override
     public List<List<Entry>> getSlice(final List<StaticBuffer> keys,
                                       final SliceQuery query,
                                       final StoreTransaction txh) throws StorageException {
-        return getSliceWithMetrics(new GetSliceCommand<List<List<Entry>>>() {
-            @Override
-            public List<List<Entry>> call() throws StorageException {
-                List<List<Entry>> results = backend.getSlice(keys, query, txh);
-
-                for (List<Entry> result : results) {
-                    recordSliceMetrics(result);
+        final String p = txh.getConfiguration().getMetricsPrefix();
+        return runWithMetrics(p, metricsStoreName, M_GET_SLICE,
+            new StorageCallable<List<List<Entry>>>() {
+                public List<List<Entry>> call() throws StorageException {
+                    List<List<Entry>> results = backend.getSlice(keys, query, txh);
+    
+                    for (List<Entry> result : results) {
+                        recordSliceMetrics(p, result);
+                    }
+                    return results;
                 }
-
-                return results;
             }
-        });
-    }
-
-    private <V> V getSliceWithMetrics(GetSliceCommand<V> getSliceCommand) throws StorageException {
-        getSliceInvocationCounter.inc();
-        Timer.Context tc = getSliceTimer.time();
-
-        try {
-            return getSliceCommand.call();
-        } catch (StorageException e) {
-            getSliceFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
-    }
-
-    private void recordSliceMetrics(List<Entry> row) {
-        getSliceColumnCounter.inc(row.size());
-        getSliceColumnHisto.update(row.size());
+        );
     }
 
     @Override
-    public void mutate(StaticBuffer key,
-                       List<Entry> additions,
-                       List<StaticBuffer> deletions,
-                       StoreTransaction txh) throws StorageException {
-        mutateInvocationCounter.inc();
-        Timer.Context tc = mutateTimer.time();
-
-        try {
-            backend.mutate(key, additions, deletions, txh);
-        } catch (StorageException e) {
-            mutateFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+    public void mutate(final StaticBuffer key,
+                       final List<Entry> additions,
+                       final List<StaticBuffer> deletions,
+                       final StoreTransaction txh) throws StorageException {
+        runWithMetrics(txh.getConfiguration().getMetricsPrefix(), metricsStoreName, M_MUTATE,
+            new StorageCallable<Void>() {
+                public Void call() throws StorageException {
+                    backend.mutate(key, additions, deletions, txh);
+                    return null;
+                }
+            }
+        );
     }
 
     @Override
-    public void acquireLock(StaticBuffer key,
-                            StaticBuffer column,
-                            StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
-        acquireLockInvocationCounter.inc();
-        Timer.Context tc = acquireLockTimer.time();
-
-        try {
-            backend.acquireLock(key, column, expectedValue, txh);
-        } catch (StorageException e) {
-            acquireLockFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+    public void acquireLock(final StaticBuffer key,
+                            final StaticBuffer column,
+                            final StaticBuffer expectedValue,
+                            final StoreTransaction txh) throws StorageException {
+        runWithMetrics(txh.getConfiguration().getMetricsPrefix(), metricsStoreName, M_ACQUIRE_LOCK,
+            new StorageCallable<Void>() {
+                public Void call() throws StorageException {
+                    backend.acquireLock(key, column, expectedValue, txh);
+                    return null;
+                }
+            }
+        );
     }
 
     @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
-        return getKeysWithMetrics(new KeyIteratorCommand() {
-            @Override
-            public KeyIterator call() throws StorageException {
-                return backend.getKeys(query, txh);
+        final String p = txh.getConfiguration().getMetricsPrefix();
+        return runWithMetrics(p, metricsStoreName, M_GET_KEYS,
+            new StorageCallable<KeyIterator>() {
+                public KeyIterator call() throws StorageException {
+                    KeyIterator ki = backend.getKeys(query, txh);
+                    if (null != p) {
+                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
+                    } else {
+                        return ki;
+                    }
+                }
             }
-        });
+        );
     }
 
     @Override
     public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws StorageException {
-        return getKeysWithMetrics(new KeyIteratorCommand() {
-            @Override
-            public KeyIterator call() throws StorageException {
-                return backend.getKeys(query, txh);
+        final String p = txh.getConfiguration().getMetricsPrefix();
+        return runWithMetrics(p, metricsStoreName, M_GET_KEYS,
+            new StorageCallable<KeyIterator>() {
+                public KeyIterator call() throws StorageException {
+                    KeyIterator ki = backend.getKeys(query, txh);
+                    if (null != p) {
+                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
+                    } else {
+                        return ki;
+                    }
+                }
             }
-        });
-    }
-
-    private KeyIterator getKeysWithMetrics(KeyIteratorCommand command) throws StorageException {
-        getKeysInvocationCounter.inc();
-        final Timer.Context tc = getKeysTimer.time();
-
-        try {
-            return MetricInstrumentedIterator.of(command.call(), getKeysIteratorMetricPrefix);
-        } catch (StorageException e) {
-            getKeysFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        );
     }
 
     @Override
     public StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        getLocalKeyPartitionInvocationCounter.inc();
-        Timer.Context tc = getLocalKeyPartitionTimer.time();
-
-        try {
-            return backend.getLocalKeyPartition();
-        } catch (StorageException e) {
-            getLocalKeyPartitionFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        return backend.getLocalKeyPartition();
     }
 
     @Override
     public String getName() {
-        getNameInvocationCounter.inc();
-        Timer.Context tc = getNameTimer.time();
-
-        try {
-            return backend.getName();
-        } catch (RuntimeException e) {
-            getNameFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        return backend.getName();
     }
 
     @Override
     public void close() throws StorageException {
-        closeInvocationCounter.inc();
-        Timer.Context tc = closeTimer.time();
+        backend.close();
+    }
+
+    private void recordSliceMetrics(String p, List<Entry> row) {
+        final MetricManager mgr = MetricManager.INSTANCE;
+        mgr.getCounter(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_COUNT).inc(row.size());
+        mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
+    }
+
+    static <T> T runWithMetrics(String prefix, String storeName, String name, StorageCallable<T> impl) throws StorageException {
+        
+        if (null == prefix) {
+            return impl.call();
+        }
+        
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(impl);
+        
+        final MetricManager mgr = MetricManager.INSTANCE;
+        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
+        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
 
         try {
-            backend.close();
+            return impl.call();
         } catch (StorageException e) {
-            closeFailureCounter.inc();
+            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
             throw e;
+        } catch (RuntimeException e) {
+            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
+            throw e;            
         } finally {
             tc.stop();
         }
     }
+    
+    static <T> T runWithMetrics(String prefix, String storeName, String name, IOCallable<T> impl) throws IOException {
+        
+        if (null == prefix) {
+            return impl.call();
+        }
+        
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(impl);
+        
+        final MetricManager mgr = MetricManager.INSTANCE;
+        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
+        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
 
-    private static interface KeyIteratorCommand extends Callable<KeyIterator> {
-        @Override
-        public KeyIterator call() throws StorageException;
+        try {
+            return impl.call();
+        } catch (IOException e) {
+            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
+            throw e;         
+        } finally {
+            tc.stop();
+        }
     }
+    
+    static <T> T runWithMetrics(String prefix, String storeName, String name, UncheckedCallable<T> impl) {
+        
+        if (null == prefix) {
+            return impl.call();
+        }
+        
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(impl);
+        
+        final MetricManager mgr = MetricManager.INSTANCE;
 
-    private static interface GetSliceCommand<V> extends Callable<V> {
-        @Override
-        public V call() throws StorageException;
+        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
+        
+        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
+
+        try {
+            return impl.call();
+        } catch (RuntimeException e) {
+            mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
+            throw e;
+        } finally {
+            tc.stop();
+        }
     }
 }

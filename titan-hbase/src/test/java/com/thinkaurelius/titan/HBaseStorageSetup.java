@@ -1,32 +1,38 @@
 package com.thinkaurelius.titan;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
 public class HBaseStorageSetup {
+    
     private static Process HBASE = null;
     // amount of seconds to wait before assuming that HBase shutdown
     private static final int SHUTDOWN_TIMEOUT_SEC = 20;
 
     // hbase config for testing
-    private static final String HBASE_CONFIG_DIR = "./src/test/config";
+    private static final String HBASE_CONFIG_DIR = "./conf";
 
     // default pid file location
     private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
+    
+    private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
 
     static {
         try {
-            System.out.println("Deleteing old test directories (if any).");
+            log.info("Deleting old test directories (if any).");
 
             // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
-            File hbaseRoot = new File("./src/test/titan-hbase-test-data");
-            File zookeeperDataDir = new File("./src/test/titan-zookeeper-test");
+            File hbaseRoot = new File("./target/hbase-root");
+            File zookeeperDataDir = new File("./target/zk-data");
 
             if (hbaseRoot.exists())
                 FileUtils.deleteDirectory(hbaseRoot);
@@ -34,12 +40,12 @@ public class HBaseStorageSetup {
             if (zookeeperDataDir.exists())
                 FileUtils.deleteDirectory(zookeeperDataDir);
         } catch (IOException e) {
-            System.err.println("Failed to delete old HBase test directories: '" + e.getMessage() + "', ignoring.");
+            log.error("Failed to delete old HBase test directories: '" + e.getMessage() + "', ignoring.");
         }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
-                System.out.println("All done. Shutting done HBase.");
+                log.info("All done. Shutting done HBase.");
 
                 try {
                     HBaseStorageSetup.shutdownHBase();
@@ -109,7 +115,7 @@ public class HBaseStorageSetup {
             // fall back to scripting
             Runtime.getRuntime().exec(String.format("./bin/hbase-daemon.sh --config %s stop master", HBASE_CONFIG_DIR));
 
-            System.out.println("Waiting 20 seconds for HBase to shutdown...");
+            log.info("Waiting 20 seconds for HBase to shutdown...");
 
             Thread.sleep(SHUTDOWN_TIMEOUT_SEC * 1000); // wait no longer than timeout seconds
         } catch (Exception e) {

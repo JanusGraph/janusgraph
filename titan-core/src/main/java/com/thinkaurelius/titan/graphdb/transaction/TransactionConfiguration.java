@@ -114,5 +114,10 @@ public interface TransactionConfiguration {
      */
     public long getTimestamp();
 
-
+    /**
+     * Returns the (possibly null) metrics prefix for this transaction.
+     * 
+     * @return metrics name prefix string or null
+     */
+    public String getMetricsPrefix();
 }

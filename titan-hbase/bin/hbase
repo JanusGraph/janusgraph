@@ -137,7 +137,24 @@ add_maven_deps_to_classpath() {
   f="${HBASE_HOME}/target/cached_classpath.txt"
   if [ ! -f "${f}" ]
   then
-    ${MVN} -f "${HBASE_HOME}/pom.xml" dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
+    # -------------------
+    # Titan build support
+    # -------------------
+    # Check for Maven command line options file.
+    # If titan-hbase has already been built, then this file will contain options
+    # to target the version of Hadoop used during compilation.  This is
+    # necessary when the user compiles titan-hbase with a non-default Hadoop
+    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
+    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
+    MVN_OPTS=
+    optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
+    unset IFS
+    if [ -f "${optf}" ]
+    then
+      MVN_OPTS=`cat "${optf}"`
+    fi
+    ${MVN} -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
+    IFS=
   fi
   CLASSPATH=${CLASSPATH}:`cat "${f}"`
 }
@@ -186,9 +203,9 @@ for f in $HBASE_HOME/lib/*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
 done
 
-# Add user-specified CLASSPATH last
+# Add user-specified CLASSPATH first
 if [ "$HBASE_CLASSPATH" != "" ]; then
-  CLASSPATH=${CLASSPATH}:${HBASE_CLASSPATH}
+  CLASSPATH=${HBASE_CLASSPATH}:${CLASSPATH}
 fi
 
 # default log directory & file
@@ -247,6 +264,21 @@ fi
  
 # restore ordinary behaviour
 unset IFS
+
+#Set the right GC options based on the what we are running
+declare -a server_cmds=("master" "regionserver" "thrift" "thrift2" "rest" "avro" "zookeeper")
+for cmd in ${server_cmds[@]}; do
+	if [[ $cmd == $COMMAND ]]; then
+		server=true
+		break
+	fi
+done
+
+if [[ $server ]]; then
+	HBASE_OPTS="$HBASE_OPTS $SERVER_GC_OPTS"
+else
+	HBASE_OPTS="$HBASE_OPTS $CLIENT_GC_OPTS"
+fi
 
 # figure out which class to run
 if [ "$COMMAND" = "shell" ] ; then

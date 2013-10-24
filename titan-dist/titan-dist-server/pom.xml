@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist-parent</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
         <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -14,8 +14,8 @@
     <properties>
         <distribution.assembly.name>server</distribution.assembly.name>
         <distribution.assembly.descriptor>server.xml</distribution.assembly.descriptor>
-        <expect.graph.config></expect.graph.config>
-        <expect.graph.id></expect.graph.id>
+        <expect.graph.config />
+        <expect.graph.id />
         <test.zipfile.path>${project.build.directory}/titan-server-${project.version}.zip</test.zipfile.path>
     </properties>
 

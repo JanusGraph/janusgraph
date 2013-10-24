@@ -50,15 +50,18 @@ import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.graphdb.vertices.StandardVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
+import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -187,6 +190,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         deletedRelations = EMPTY_DELETED_RELATIONS;
 
         this.isOpen = true;
+        if (null != config.getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin").inc();
+        }
     }
 
     /*
@@ -957,6 +963,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
             close();
+            if (null != config.getMetricsPrefix()) {
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
+            }
         }
     }
 
@@ -969,6 +978,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
             close();
+            if (null != config.getMetricsPrefix()) {
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
+            }
         }
     }
 

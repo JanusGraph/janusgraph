@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-cassandra</artifactId>
@@ -229,7 +229,7 @@
                                 <configuration>
                                     <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
                                     <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
-                                    <groups/>
+                                    <groups />
                                     <forkCount>1</forkCount>
                                     <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
@@ -271,7 +271,7 @@
                                 <configuration>
                                     <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
                                     <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
-                                    <groups/>
+                                    <groups />
                                     <forkCount>1</forkCount>
                                     <reuseForks>true</reuseForks>
                                     <parallel>classes</parallel>
@@ -399,7 +399,7 @@
                                 <exclude>**/*</exclude>
                             </exclude>
 			    <!-- <groups>${test.categories.all}</groups> -->
-			    <parallel></parallel>
+			    <parallel />
 			    <reuseForks>false</reuseForks>
 			    <threadCount>1</threadCount>
 			    <perCoreThreadCount>false</perCoreThreadCount>

@@ -1,0 +1,20 @@
+diff --git a/titan-hbase/bin/hirb.rb b/titan-hbase/bin/hirb.rb
+index 32a51b3..c792515 100755
+--- a/titan-hbase/bin/hirb.rb
++++ b/titan-hbase/bin/hirb.rb
+@@ -37,12 +37,9 @@ include Java
+ # Some goodies for hirb. Should these be left up to the user's discretion?
+ require 'irb/completion'
+ 
+-# Add the $HBASE_HOME/lib/ruby OR $HBASE_HOME/src/main/ruby/lib directory
+-# to the ruby load path so I can load up my HBase ruby modules
+-if File.exists?(File.join(File.dirname(__FILE__), "..", "lib", "ruby", "hbase.rb"))
+-  $LOAD_PATH.unshift File.join(File.dirname(__FILE__), "..", "lib", "ruby")
+-else
+-  $LOAD_PATH.unshift File.join(File.dirname(__FILE__), "..", "src", "main", "ruby")
++# Add HBase to the ruby load path
++if File.exists?(File.join(File.dirname(__FILE__), "ruby", "hbase.rb"))
++  $LOAD_PATH.unshift File.join(File.dirname(__FILE__), "ruby")
+ end
+ 
+ #

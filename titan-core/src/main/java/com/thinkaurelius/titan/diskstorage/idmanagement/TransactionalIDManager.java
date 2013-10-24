@@ -46,7 +46,7 @@ public class TransactionalIDManager extends AbstractIDManager {
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
             StoreTransaction txh = null;
             try {
-                txh = manager.beginTransaction(new StoreTxConfig());
+                txh = manager.beginTransaction(new StoreTxConfig(metricsPrefix));
                 long current = getCurrentID(partitionKey, txh);
                 Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
                 long next = current + blockSize;

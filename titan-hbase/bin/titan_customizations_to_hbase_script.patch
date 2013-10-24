@@ -1,0 +1,28 @@
+--- hbase.orig	2013-10-23 18:14:51.867728302 -0400
++++ hbase	2013-10-23 20:11:57.564530457 -0400
+@@ -137,7 +137,24 @@
+   f="${HBASE_HOME}/target/cached_classpath.txt"
+   if [ ! -f "${f}" ]
+   then
+-    ${MVN} -f "${HBASE_HOME}/pom.xml" dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
++    # -------------------
++    # Titan build support
++    # -------------------
++    # Check for Maven command line options file.
++    # If titan-hbase has already been built, then this file will contain options
++    # to target the version of Hadoop used during compilation.  This is
++    # necessary when the user compiles titan-hbase with a non-default Hadoop
++    # version (e.g. 2.2.0).  If we omitted this check, then we'd try to start
++    # HBase with the default Hadoop version (currentl 1.0.4), and it would break.
++    MVN_OPTS=
++    optf="${HBASE_HOME}/target/test-classes/mvn_opts.txt"
++    unset IFS
++    if [ -f "${optf}" ]
++    then
++      MVN_OPTS=`cat "${optf}"`
++    fi
++    ${MVN} -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
++    IFS=
+   fi
+   CLASSPATH=${CLASSPATH}:`cat "${f}"`
+ }
