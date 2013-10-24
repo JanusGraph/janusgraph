@@ -11,5 +11,7 @@ com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testVert
 com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testZEdgeAddition 59.524
 com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testZVertexPropertyModification 12.225
 com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testPathologicalMultiVertexQuery 10.000
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testSingleVertexMultiProperty 1.000
+com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testSingleVertexProperty 1.000
 com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testSingleVertexQuery 10.000
 com.thinkaurelius.titan.graphdb.thrift.InternalCassandraGraphSerialTest.testMultiVertexQuery 10.000

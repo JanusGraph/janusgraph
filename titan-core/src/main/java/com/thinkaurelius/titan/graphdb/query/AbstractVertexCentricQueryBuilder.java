@@ -181,6 +181,10 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 	 * ---------------------------------------------------------------
 	 */
 
+    protected final boolean hasTypes() {
+        return !types.isEmpty();
+    }
+
     protected static final Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
         return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
             @Nullable
