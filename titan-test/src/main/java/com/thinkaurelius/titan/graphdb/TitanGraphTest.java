@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -1126,7 +1127,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         Map<TitanVertex, Iterable<TitanProperty>> results2;
         results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(qvs).labels("connect").titanEdges();
+        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
         results = tx.multiQuery(qvs).labels("knows").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
@@ -1196,7 +1197,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         qvs = qvs2;
         results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(qvs).labels("connect").titanEdges();
+        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
         results = tx.multiQuery(qvs).labels("knows").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));

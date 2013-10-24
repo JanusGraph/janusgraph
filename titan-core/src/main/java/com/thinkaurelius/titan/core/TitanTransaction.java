@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
+import java.util.Collection;
+
 /**
  * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a TitanTransaction.
@@ -119,6 +121,12 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
      */
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+
+    /**
+     * @return
+     * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(Collection)
+     */
+    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
 
     /**
      * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
