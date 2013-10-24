@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -187,6 +188,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     @Override
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
+        return getAutoStartTx().multiQuery(vertices);
+    }
+
+    @Override
+    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }
 

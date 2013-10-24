@@ -577,9 +577,9 @@ public class GraphDatabaseConfiguration {
     /**
      * Load a properties file containing a Titan graph configuration or create a
      * stub configuration for a directory.
-     * <p>
+     * <p/>
      * If the argument is a file:
-     * 
+     * <p/>
      * <ol>
      * <li>Load its contents into a {@link PropertiesConfiguration}</li>
      * <li>For each key starting with {@link #STORAGE_NAMESPACE} and ending in
@@ -590,18 +590,17 @@ public class GraphDatabaseConfiguration {
      * than the JVM's working directory.
      * <li>Return the {@code PropertiesConfiguration}</li>
      * </ol>
-     * 
-     * <p>
+     * <p/>
+     * <p/>
      * Otherwise (if the argument is not a file):
      * <ol>
      * <li>Create a new {@link BaseConfiguration}</li>
      * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
      * the absolute path of the argument</li>
      * <li>Return the {@code BaseConfiguration}</li>
-     * 
-     * @param dirOrFile
-     *            A properties file to load or directory in which to read and
-     *            write data
+     *
+     * @param dirOrFile A properties file to load or directory in which to read and
+     *                  write data
      * @return A configuration derived from {@code dirOrFile}
      */
     @SuppressWarnings("unchecked")
@@ -609,20 +608,20 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkNotNull(dirOrFile, "Need to specify a configuration file or storage directory");
 
         Configuration configuration;
-        
+
         try {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);
-                
+
                 final File configFileParent = dirOrFile.getParentFile();
-                
+
                 Preconditions.checkNotNull(configFileParent);
                 Preconditions.checkArgument(configFileParent.isDirectory());
-                    
+
                 final Pattern p = Pattern.compile(
                         Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
-                        Pattern.quote(STORAGE_DIRECTORY_KEY));
-                
+                                Pattern.quote(STORAGE_DIRECTORY_KEY));
+
                 final Iterator<String> sdKeys = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                     @Override
                     public boolean apply(String key) {
@@ -631,17 +630,17 @@ public class GraphDatabaseConfiguration {
                         return p.matcher(key).matches();
                     }
                 });
-                
+
                 while (sdKeys.hasNext()) {
                     String k = sdKeys.next();
                     Preconditions.checkNotNull(k);
                     String s = configuration.getString(k);
-                    
+
                     if (null == s) {
                         log.warn("Configuration key {} has null value", k);
                         continue;
                     }
-                    
+
                     File storedir = new File(s);
                     if (!storedir.isAbsolute()) {
                         configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
@@ -659,7 +658,7 @@ public class GraphDatabaseConfiguration {
         }
 
         return configuration;
-    }   
+    }
 
     public static final String toString(Configuration config) {
         StringBuilder s = new StringBuilder();
@@ -883,7 +882,7 @@ public class GraphDatabaseConfiguration {
                 try {
                     clazz = Class.forName(classname);
                 } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException("Could not find attribute class" + classname);
+                    throw new IllegalArgumentException("Could not find attribute class" + classname, e);
                 }
                 Preconditions.checkNotNull(clazz);
 

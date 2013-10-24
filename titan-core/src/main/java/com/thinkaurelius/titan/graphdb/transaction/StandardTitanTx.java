@@ -653,6 +653,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         return builder;
     }
 
+    @Override
+    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
+        MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this, edgeSerializer);
+        builder.addAllVertices(vertices);
+        return builder;
+    }
+
     public void executeMultiQuery(final Collection<InternalVertex> vertices, final SliceQuery sq) {
         LongArrayList vids = new LongArrayList(vertices.size());
         for (InternalVertex v : vertices) {
