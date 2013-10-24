@@ -9,6 +9,12 @@
     <artifactId>titan-hbase</artifactId>
     <name>Titan-HBase: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <properties>
+        <hbase.version>0.94.12</hbase.version>
+        <hadoop.version>1.0.4</hadoop.version>
+        <hadoop.artifact>hadoop-core</hadoop.artifact>
+        <titan.hbase.mvn.opts />
+    </properties>
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -34,7 +40,7 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
             <!-- Update the hadoop-core artifact version when you update this -->
-            <version>0.94.7</version>
+            <version>${hbase.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>avro</artifactId>
@@ -48,13 +54,34 @@
                     <artifactId>asm</artifactId>
                     <groupId>asm</groupId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-minicluster</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-annotations</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
+            <artifactId>jruby-complete</artifactId>
+            <groupId>org.jruby</groupId>
+            <version>1.6.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-core</artifactId>
-            <!-- Update the hbase artifact version when you update this -->
-            <version>1.0.4</version>
+            <artifactId>${hadoop.artifact}</artifactId>
+            <version>${hadoop.version}</version>
         </dependency>
         <!-- Logging.
 
@@ -87,31 +114,75 @@
         </dependency>
     </dependencies>
     <build>
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
+        <testResources>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
                 <filtering>true</filtering>
-            </resource>
-        </resources>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>test-compile</phase>
+                        <id>filter-hbase-site-xml</id>
+                        <phase>process-test-resources</phase>
                         <goals>
-                            <goal>copy-dependencies</goal>
+                            <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <excludeGroupIds>com.thinkaurelius.titan</excludeGroupIds>
-                            <outputDirectory>target/test-lib</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
+                            <outputDirectory>${project.basedir}/conf</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/src/test/conf/</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>hadoop2</id>
+            
+            <activation>
+                <!-- 
+                We use the same activation criterion as HBase so that
+                there's one less command-line option to remember.
+                -->
+                <property>
+                    <name>hadoop.profile</name>
+                    <value>2.0</value>
+                </property>
+            </activation>
+            
+            <properties>
+                <hadoop.version>2.2.0</hadoop.version>
+                <hadoop.artifact>hadoop-common</hadoop.artifact>
+                <titan.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=2.0</titan.hbase.mvn.opts>
+            </properties>
+            
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-annotations</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-hdfs</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>

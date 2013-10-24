@@ -1,7 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -11,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
+
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -26,6 +30,12 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static com.thinkaurelius.titan.diskstorage.Backend.EDGESTORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.EDGEINDEX_STORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.VERTEXINDEX_STORE_NAME;
+import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
+
 /**
  * Storage Manager for HBase
  *
@@ -37,6 +47,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final String TABLE_NAME_KEY = "tablename";
     public static final String TABLE_NAME_DEFAULT = "titan";
+    
+    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
+    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
 
     public static final int PORT_DEFAULT = 9160;
 
@@ -58,6 +71,27 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final HTablePool connectionPool;
 
     private final StoreFeatures features;
+
+    private final boolean shortCfNames;
+    private static final BiMap<String, String> shortCfNameMap =
+            ImmutableBiMap.<String, String>builder()
+                .put(VERTEXINDEX_STORE_NAME,                     "v")
+                .put(ID_STORE_NAME,                              "i")
+                .put(EDGESTORE_NAME,                             "s")
+                .put(EDGEINDEX_STORE_NAME,                       "e")
+                .put(VERTEXINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "w")
+                .put(ID_STORE_NAME + LOCK_STORE_SUFFIX,          "j")
+                .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX,         "t")
+                .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX,   "f")
+                .build();
+    
+    static {
+        // Verify that shortCfNameMap is injective
+        // Should be guaranteed by Guava BiMap, but it doesn't hurt to check
+        Preconditions.checkArgument(null != shortCfNameMap);
+        Collection<String> shorts = shortCfNameMap.values();
+        Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
+    }
 
     public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
@@ -89,7 +123,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
 
         connectionPool = new HTablePool(hconf, connectionPoolSize);
-
+        
+        this.shortCfNames = config.getBoolean(SHORT_CF_NAMES_KEY, SHORT_CF_NAMES_DEFAULT);
+        
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
 
         // TODO: allowing publicly mutate fields is bad, should be fixed
@@ -163,6 +199,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         HBaseKeyColumnValueStore store = openStores.get(dbName);
 
         if (store == null) {
+            
+            if (shortCfNames) {
+                dbName = shortenCfName(dbName);
+            }
+            
             HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(connectionPool, tableName, dbName);
 
             store = openStores.putIfAbsent(dbName, newStore); // nothing bad happens if we loose to other thread
@@ -174,6 +215,24 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         return store;
+    }
+    
+    private String shortenCfName(String longName) throws PermanentStorageException {
+        final String s;
+        if (shortCfNameMap.containsKey(longName)) {
+            s = shortCfNameMap.get(longName);
+            Preconditions.checkNotNull(s);
+            logger.debug("Substituted default CF name \"{}\" with short form \"{}\" to reduce HBase KeyValue size", longName, s);
+        } else {
+            if (shortCfNameMap.containsValue(longName)) {
+                String fmt = "Must use CF long-form name \"%s\" instead of the short-form name \"%s\" when configured with %s=true"; 
+                String msg = String.format(fmt, shortCfNameMap.inverse().get(longName), longName, SHORT_CF_NAMES_KEY);
+                throw new PermanentStorageException(msg);
+            }
+            s = longName;
+            logger.debug("Kept default CF name \"{}\" because it has no associated short form", s);
+        }
+        return s;
     }
 
     private HTableDescriptor ensureTableExists(String tableName) throws StorageException {

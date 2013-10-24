@@ -69,8 +69,9 @@ fi
 hostname=$1
 filename="/tmp/$hostname"
 # Run the region mover script.
-echo "Disabling balancer!"
-echo 'balance_switch false' | "$bin"/hbase --config ${HBASE_CONF_DIR} shell
+echo "Disabling balancer! (if required)"
+HBASE_BALANCER_STATE=`echo 'balance_switch false' | "$bin"/hbase --config ${HBASE_CONF_DIR} shell | tail -3 | head -1`
+echo "Previous balancer state was $HBASE_BALANCER_STATE"
 echo "Unloading $hostname region(s)"
 HBASE_NOEXEC=true "$bin"/hbase --config ${HBASE_CONF_DIR} org.jruby.Main "$bin"/region_mover.rb --file=$filename $debug unload $hostname
 echo "Unloaded $hostname region(s)"
@@ -98,6 +99,11 @@ if [ "$restart" != "" ]; then
     HBASE_NOEXEC=true "$bin"/hbase --config ${HBASE_CONF_DIR} org.jruby.Main "$bin"/region_mover.rb --file=$filename $debug load $hostname
     echo "Reloaded $hostname region(s)"
   fi
+fi
+
+if [ $HBASE_BALANCER_STATE != "false" ]; then
+  echo "Restoring balancer state to" $HBASE_BALANCER_STATE
+  echo "balance_switch $HBASE_BALANCER_STATE" | "$bin"/hbase --config ${HBASE_CONF_DIR} shell &> /dev/null
 fi
 
 # Cleanup tmp files.

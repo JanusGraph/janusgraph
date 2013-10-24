@@ -2,15 +2,10 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import java.io.IOException;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
-import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
  * This class is used by {@code MetricInstrumentedStore} to measure wallclock
@@ -21,32 +16,28 @@ import com.thinkaurelius.titan.util.stats.MetricManager;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class MetricInstrumentedIterator implements KeyIterator {
+    
     private final KeyIterator iterator;
+    private final String p;
     
-    private final Timer nextTimer;
-    private final Counter nextInvocationCounter;
-    private final Counter nextFailureCounter;
-    
-    private final Timer hasNextTimer;
-    private final Counter hasNextInvocationCounter;
-    private final Counter hasNextFailureCounter;
+    private static final String M_HAS_NEXT = "hasNext";
+    private static final String M_NEXT = "next";
+    private static final String M_CLOSE = "close";
 
-    private final Timer closeTimer;
-    private final Counter closeInvocationCounter;
-    private final Counter closeFailureCounter;
-    
     /**
      * If the iterator argument is non-null, then return a new
      * {@code MetricInstrumentedIterator} wrapping it. Metrics for method calls
-     * on the wrapped instance will be prefixed with the string {@code p} which
-     * must be non-null. If the iterator argument is null, then return null.
+     * on the wrapped instance will be prefixed with the string {@code prefix}
+     * which must be non-null. If the iterator argument is null, then return
+     * null.
      * 
      * @param keyIterator
-     *            The iterator to wrap with Metrics measurements
+     *            the iterator to wrap with Metrics measurements
      * @param prefix
-     *            The Metrics name prefix string
-     *
-     * @return A wrapper around {@code i} or null if {@code i} is null
+     *            the Metrics name prefix string
+     * 
+     * @return a wrapper around {@code keyIterator} or null if
+     *         {@code keyIterator} is null
      */
     public static MetricInstrumentedIterator of(KeyIterator keyIterator, String prefix) {
         if (keyIterator == null) {
@@ -59,73 +50,41 @@ public class MetricInstrumentedIterator implements KeyIterator {
     
     private MetricInstrumentedIterator(KeyIterator i, String p) {
         this.iterator = i;
-        
-        MetricRegistry metrics = MetricManager.INSTANCE.getRegistry();
-        nextTimer =
-                metrics.timer(MetricRegistry.name(p, "next", "time"));
-        nextInvocationCounter =
-              metrics.counter(MetricRegistry.name(p, "next", "calls"));
-        nextFailureCounter =
-              metrics.counter(MetricRegistry.name(p, "next", "exceptions"));
-        
-        hasNextTimer =
-                metrics.timer(MetricRegistry.name(p, "hasNext", "time"));
-        hasNextInvocationCounter =
-              metrics.counter(MetricRegistry.name(p, "hasNext", "calls"));
-        hasNextFailureCounter =
-              metrics.counter(MetricRegistry.name(p, "hasNext", "exceptions"));
-        
-        closeTimer =
-                metrics.timer(MetricRegistry.name(p, "close", "time"));
-        closeInvocationCounter =
-              metrics.counter(MetricRegistry.name(p, "close", "calls"));
-        closeFailureCounter =
-              metrics.counter(MetricRegistry.name(p, "close", "exceptions"));
+        this.p = p;
     }
 
     @Override
     public boolean hasNext() {
-        hasNextInvocationCounter.inc();
-        Timer.Context tc = hasNextTimer.time();
-
-        try {
-            return iterator.hasNext();
-        } catch (RuntimeException e) {
-            hasNextFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_HAS_NEXT,
+            new UncheckedCallable<Boolean>() {
+                public Boolean call() {
+                    return Boolean.valueOf(iterator.hasNext());
+                }
+            }
+        );
     }
 
     @Override
     public StaticBuffer next() {
-        nextInvocationCounter.inc();
-        Timer.Context tc = nextTimer.time();
-
-        try {
-            return iterator.next();
-        } catch (RuntimeException e) {
-            nextFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        return MetricInstrumentedStore.runWithMetrics(p, null, M_NEXT,
+            new UncheckedCallable<StaticBuffer>() {
+                public StaticBuffer call() {
+                    return iterator.next();
+                }
+            }
+        );
     }
-
+    
     @Override
     public void close() throws IOException {
-        closeInvocationCounter.inc();
-        Timer.Context tc = closeTimer.time();
-
-        try {
-            iterator.close();
-        } catch (RuntimeException e) {
-            closeFailureCounter.inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+        MetricInstrumentedStore.runWithMetrics(p, null, M_CLOSE,
+            new IOCallable<Void>() {
+                public Void call() throws IOException {
+                    iterator.close();
+                    return null;
+                }
+            }
+        );
     }
 
     @Override

@@ -1,15 +1,19 @@
 
-titan-dist-all
-==============
+titan-dist
+==========
 
 Building zip/tar.bz2 archives
 -----------------------------
 
 Run `mvn clean install -Paurelius-release -Dgpg.skip=true`.  Archives
-files will be written to `titan-dist-*/target/`. Note that if not
-generating wiki docs with gollum it is necessary to comment out
-titan-site in the top-level pom.xml and the dependency in
-titan-dist.pom.xml
+files will be written to `titan-dist-*/target/`.  The archives expect
+that titan-site has already been installed locally with the same 
+command (but executed in ../titan-site).  titan-site requires the
+gollum-site utility to export a copy of the wikidocs which is later
+included by the distribution archives.  If you don't have gollum-site
+installed, then consult the workaround here:
+
+https://github.com/thinkaurelius/titan/wiki/Building-Titan#building-distributions-without-gollum
 
 Building deb/rpm packages
 -------------------------

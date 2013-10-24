@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * Constructor returned by {@link com.thinkaurelius.titan.core.TitanGraph#buildTransaction()} to build a new transaction.
@@ -51,6 +52,40 @@ public interface TransactionBuilder {
      * @return
      */
     public TransactionBuilder setTimestamp(long timestamp);
+    
+    
+    /**
+     * Whether to enable Metrics for this transaction, and if so, what string
+     * should start the transaction's metric names.
+     * <p>
+     * If null, Metrics collection is totally disabled for this transaction.
+     * <p>
+     * If empty, Metrics collection is enabled, but there will be no prefix.
+     * Where the default setting would generate metrics names in the form
+     * "prefix.x.y.z", this transaction will instead use metric names in the
+     * form "x.y.z".
+     * <p>
+     * If nonempty, Metrics collection is enabled and the prefix will be used
+     * for all of this transaction's measurements.
+     * <p>
+     * Note: setting this to a non-null value only partially overrides
+     * {@link GraphDatabaseConfiguration#BASIC_METRICS} = false in the graph
+     * database configuration. When Metrics are disabled at the graph level and
+     * enabled at the transaction level, storage backend timings and counters
+     * will remain disabled.
+     * <p>
+     * The default value is
+     * {@link GraphDatabaseConfiguration#METRICS_PREFIX_DEFAULT}.
+     * 
+     * Sets the name prefix used for Metrics recorded by this transaction. If
+     * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
+     * this string will be prepended to all Titan metric names.
+     * 
+     * @param prefix
+     *            Metric name prefix for this transaction
+     * @return
+     */
+    public TransactionBuilder setMetricsPrefix(String prefix);
 
     /**
      * Starts and returns the transaction build by this builder

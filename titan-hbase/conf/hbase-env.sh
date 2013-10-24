@@ -25,7 +25,7 @@
 # export JAVA_HOME=/usr/java/jdk1.6.0/
 
 # Extra Java CLASSPATH elements.  Optional.
-export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib/*
+#export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib
 
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export HBASE_HEAPSIZE=1000
