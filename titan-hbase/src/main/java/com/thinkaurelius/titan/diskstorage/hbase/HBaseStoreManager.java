@@ -49,7 +49,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final String TABLE_NAME_DEFAULT = "titan";
     
     public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
-    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
+    public static final boolean SHORT_CF_NAMES_DEFAULT = true;
 
     public static final int PORT_DEFAULT = 9160;
 
