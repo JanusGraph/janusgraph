@@ -43,14 +43,18 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     private final String tableName;
     private final HTablePool pool;
 
+    // When using shortened CF names, columnFamily is the shortname and storeName is the longname
+    // When not using shortened CF names, they are the same
     private final String columnFamily;
+    private final String storeName;
     // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
 
-    HBaseKeyColumnValueStore(HTablePool pool, String tableName, String columnFamily) {
+    HBaseKeyColumnValueStore(HTablePool pool, String tableName, String columnFamily, String storeName) {
         this.tableName = tableName;
         this.pool = pool;
         this.columnFamily = columnFamily;
+        this.storeName = storeName;
         this.columnFamilyBytes = columnFamily.getBytes();
     }
 
@@ -235,7 +239,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public String getName() {
-        return columnFamily;
+        return storeName;
     }
 
     /**
