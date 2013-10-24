@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -310,17 +311,31 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
     }
 
-    ;
-
-
-    @Override
-    public TitanVertex addVertex() {
+    private TitanVertex addVertexInternal(Long vertexId) {
         verifyWriteAccess();
+        Preconditions.checkArgument(vertexId == null || graph.getConfiguration().allowVertexIdSetting());
+        Preconditions.checkArgument(vertexId == null || IDManager.isVertexID(vertexId), "Not a valid vertex id: %s", vertexId);
+        Preconditions.checkArgument(vertexId == null || (config.hasVerifyExternalVertexExistence() && containsVertex(vertexId)), "Vertex with given id already exists: %s", vertexId);
         StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
-        if (config.hasAssignIDsImmediately()) graph.assignID(vertex);
+        if (vertexId != null) {
+            vertex.setID(vertexId);
+        } else if (config.hasAssignIDsImmediately()) {
+            graph.assignID(vertex);
+        }
         addProperty(vertex, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
         vertexCache.add(vertex, vertex.getID());
         return vertex;
+
+    }
+
+    @Override
+    public TitanVertex addVertex(long id) {
+        return addVertexInternal(Long.valueOf(id));
+    }
+
+    @Override
+    public TitanVertex addVertex() {
+        return addVertexInternal(null);
     }
 
 

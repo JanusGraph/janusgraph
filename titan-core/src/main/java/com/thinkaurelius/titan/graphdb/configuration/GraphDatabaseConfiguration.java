@@ -91,6 +91,10 @@ public class GraphDatabaseConfiguration {
     public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
 
+    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
+    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
+
+
     // ################ STORAGE #######################
     // ################################################
 
@@ -568,6 +572,7 @@ public class GraphDatabaseConfiguration {
     private long txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
+    private boolean allowVertexIdSetting;
     private String metricsPrefix;
 
     private StoreFeatures storeFeatures = null;
@@ -700,6 +705,8 @@ public class GraphDatabaseConfiguration {
         if (configuration.containsKey(PROPERTY_PREFETCHING_KEY))
             propertyPrefetching = configuration.getBoolean(PROPERTY_PREFETCHING_KEY);
         else propertyPrefetching = null;
+        allowVertexIdSetting = configuration.getBoolean(ALLOW_SETTING_VERTEX_ID_KEY, ALLOW_SETTING_VERTEX_ID_DEFAULT);
+
 
         configureMetrics();
     }
@@ -862,6 +869,10 @@ public class GraphDatabaseConfiguration {
 
     public DefaultTypeMaker getDefaultTypeMaker() {
         return defaultTypeMaker;
+    }
+
+    public boolean allowVertexIdSetting() {
+        return allowVertexIdSetting;
     }
 
     public boolean getPropertyPrefetching() {

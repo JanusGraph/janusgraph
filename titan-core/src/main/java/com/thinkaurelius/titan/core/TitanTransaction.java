@@ -36,6 +36,20 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanVertex addVertex();
 
     /**
+     * Creates a new vertex in the graph with the given vertex id.
+     * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
+     * id already exists.
+     * <p/>
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * <p/>
+     * Use {@link com.thinkaurelius.titan.core.util.TitanID#toVertexID(long)} to construct a valid Titan vertex id from a user id.
+     *
+     * @param id vertex id of the vertex to be created
+     * @return New vertex
+     */
+    public TitanVertex addVertex(long id);
+
+    /**
      * Creates a new edge connecting the specified vertices.
      * <p/>
      * Creates and returns a new {@link TitanEdge} with given label connecting the vertices in the order
