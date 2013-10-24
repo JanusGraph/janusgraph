@@ -195,21 +195,20 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(String dbName) throws StorageException {
-        HBaseKeyColumnValueStore store = openStores.get(dbName);
+    public KeyColumnValueStore openDatabase(final String longName) throws StorageException {
+        
+        HBaseKeyColumnValueStore store = openStores.get(longName);
 
         if (store == null) {
             
-            if (shortCfNames) {
-                dbName = shortenCfName(dbName);
-            }
+            final String cfName = shortCfNames ? shortenCfName(longName) : longName;
             
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(connectionPool, tableName, dbName);
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(connectionPool, tableName, cfName, longName);
 
-            store = openStores.putIfAbsent(dbName, newStore); // nothing bad happens if we loose to other thread
+            store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
             if (store == null) { // ensure that CF exists only first time somebody tries to open it
-                ensureColumnFamilyExists(tableName, dbName);
+                ensureColumnFamilyExists(tableName, cfName);
                 store = newStore;
             }
         }
@@ -402,14 +401,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      * @param putTimestamp The timestamp to use for Put commands.
      * @param delTimestamp The timestamp to use for Delete commands.
      * @return Commands sorted by key converted from Titan internal representation.
+     * @throws PermanentStorageException 
      */
-    private static Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
-                                                                          final long putTimestamp,
-                                                                          final long delTimestamp) {
+    private Map<StaticBuffer, Pair<Put, Delete>> convertToCommands(Map<String, Map<StaticBuffer, KCVMutation>> mutations,
+                                                                   final long putTimestamp,
+                                                                   final long delTimestamp) throws PermanentStorageException {
         Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = new HashMap<StaticBuffer, Pair<Put, Delete>>();
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
-            byte[] cfName = entry.getKey().getBytes();
+            
+            String cfString = getCfNameForStoreName(entry.getKey());
+            byte[] cfName = cfString.getBytes();
 
             for (Map.Entry<StaticBuffer, KCVMutation> m : entry.getValue().entrySet()) {
                 StaticBuffer key = m.getKey();
@@ -446,6 +448,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         return commandsPerKey;
+    }
+    
+    private String getCfNameForStoreName(String storeName) throws PermanentStorageException {
+        return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 
     private static void waitUntil(long until) {
