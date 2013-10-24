@@ -1,13 +1,22 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StandardIDPool;
 import com.thinkaurelius.titan.util.datastructures.IntHashSet;
 import com.thinkaurelius.titan.util.datastructures.IntSet;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -51,6 +60,47 @@ public class IDPoolTest {
                 return new StandardIDPool(idauth, partitionID, Integer.MAX_VALUE, 2000, 0.2);
             }
         }, 10, 20, 100000);
+    }
+
+   @Test
+    public void testStandardIDPoolConcurrencyOnSamePartition() throws InterruptedException {
+        InMemoryKeyColumnValueStore store = new InMemoryKeyColumnValueStore("teststore");
+        InMemoryStoreManager manager = new InMemoryStoreManager();
+        testIDPoolWith((partitionID) -> {
+            ConsistentKeyIDManager idauth;
+            try{
+             idauth = new ConsistentKeyIDManager(store,manager,new BaseConfiguration());
+            }catch(StorageException se){
+                throw new RuntimeException(se);
+            }
+            idauth.setIDBlockSizer((IDBlockSizer) (partition) ->{ return 10;});
+            return new StandardIDPool(idauth, 0, Integer.MAX_VALUE, 2000, 0.2);
+        }, 10, 100);
+    }
+
+    private void testIDPoolWith(IDPoolFactory poolFactory, final int numThreads, final int attemptsPerThread) throws InterruptedException {
+        Thread[] threads = new Thread[numThreads];
+        HashMap<Long, AtomicInteger> ids = new HashMap<Long, AtomicInteger>();
+        AtomicInteger testFailed = new AtomicInteger();
+        for(int i=0; i<numThreads; i++){
+            threads[i] = new Thread((Runnable) () ->{
+                Thread.yield();
+                StandardIDPool idPool = poolFactory.get(0);
+                for( int attempt=0; attempt<attemptsPerThread; attempt++){
+                    long id = idPool.nextID();
+                    //System.out.println("" + id + " " + attempt + " " + Thread.currentThread().getId() + " " + ids.get(id));
+                    if(ids.get(id) != null)
+                        testFailed.incrementAndGet();
+                    assertTrue(ids.get(id) == null);
+                    ids.put(id, new AtomicInteger());
+                }
+            });
+            threads[i].start();
+        }
+        for(int i=0; i<numThreads; i++){
+            threads[i].join();
+        }
+        assertFalse("Consistency Check failed " + testFailed.get() + " times",testFailed.get() > 0);
     }
 
     private void testIDPoolWith(IDPoolFactory poolFactory, final int numPartitions,
