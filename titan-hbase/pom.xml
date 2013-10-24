@@ -73,6 +73,12 @@
             </exclusions>
         </dependency>
         <dependency>
+            <artifactId>jruby-complete</artifactId>
+            <groupId>org.jruby</groupId>
+            <version>1.6.5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>${hadoop.artifact}</artifactId>
             <version>${hadoop.version}</version>
