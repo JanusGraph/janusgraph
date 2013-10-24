@@ -42,7 +42,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * <p/>
      * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
      * <p/>
-     * Use {@link com.thinkaurelius.titan.core.util.TitanID#toVertexID(long)} to construct a valid Titan vertex id from a user id.
+     * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
      * @param id vertex id of the vertex to be created
      * @return New vertex
