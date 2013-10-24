@@ -25,7 +25,7 @@
 # export JAVA_HOME=/usr/java/jdk1.6.0/
 
 # Extra Java CLASSPATH elements.  Optional.
-export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib/*
+#export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib
 
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export HBASE_HEAPSIZE=1000
@@ -37,7 +37,7 @@ export HBASE_CLASSPATH=$HBASE_CLASSPATH:./target/test-lib/*
 export HBASE_OPTS="$HBASE_OPTS -XX:+UseConcMarkSweepGC"
 
 # Uncomment below to enable java garbage collection logging in the .out file.
-# export HBASE_OPTS="$HBASE_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps $HBASE_GC_OPTS" 
+export HBASE_OPTS="$HBASE_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps $HBASE_GC_OPTS" 
 
 # Uncomment below (along with above GC logging) to put GC information in its own logfile (will set HBASE_GC_OPTS)
 # export HBASE_USE_GC_LOGFILE=true

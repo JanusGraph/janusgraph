@@ -15,7 +15,7 @@ public class HBaseStorageSetup {
     private static final int SHUTDOWN_TIMEOUT_SEC = 20;
 
     // hbase config for testing
-    private static final String HBASE_CONFIG_DIR = "./src/test/config";
+    private static final String HBASE_CONFIG_DIR = "./conf";
 
     // default pid file location
     private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
@@ -25,8 +25,8 @@ public class HBaseStorageSetup {
             System.out.println("Deleteing old test directories (if any).");
 
             // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
-            File hbaseRoot = new File("./src/test/titan-hbase-test-data");
-            File zookeeperDataDir = new File("./src/test/titan-zookeeper-test");
+            File hbaseRoot = new File("./target/hbase-root");
+            File zookeeperDataDir = new File("./target/zk-data");
 
             if (hbaseRoot.exists())
                 FileUtils.deleteDirectory(hbaseRoot);

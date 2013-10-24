@@ -89,12 +89,6 @@ wait_until_done ()
     return 0
 }
 
-export HBASE_HEAPSIZE=4096
-export HBASE_OPTS="$HBASE_OPTS -XX:+UseConcMarkSweepGC"
-export HBASE_OPTS="$HBASE_OPTS -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps $HBASE_GC_OPTS"
-export HBASE_USE_GC_LOGFILE=true
-export HBASE_MANAGES_ZK=true
-
 # get log directory
 if [ "$HBASE_LOG_DIR" = "" ]; then
   export HBASE_LOG_DIR="$HBASE_HOME/logs"
@@ -129,8 +123,11 @@ loggc=$HBASE_LOG_DIR/$HBASE_LOG_PREFIX.gc
 loglog="${HBASE_LOG_DIR}/${HBASE_LOGFILE}"
 pid=$HBASE_PID_DIR/hbase-$HBASE_IDENT_STRING-$command.pid
 
-if [ "$HBASE_USE_GC_LOGFILE" = "true" ]; then
-  export HBASE_GC_OPTS=" -Xloggc:${loggc}"
+if [ -n "$SERVER_GC_OPTS" ]; then
+  export SERVER_GC_OPTS=${SERVER_GC_OPTS/"-Xloggc:<FILE-PATH>"/"-Xloggc:${loggc}"}
+fi
+if [ -n "$CLIENT_GC_OPTS" ]; then
+  export CLIENT_GC_OPTS=${CLIENT_GC_OPTS/"-Xloggc:<FILE-PATH>"/"-Xloggc:${loggc}"}
 fi
 
 # Set default scheduling priority
