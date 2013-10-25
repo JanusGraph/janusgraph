@@ -245,12 +245,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
-        try {
-            v = tx.addVertex(4 * 101);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
         id = tx.getPropertyKey("uid");
         v1 = tx.getVertex(id, "v1");
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());

@@ -63,19 +63,18 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
      * @return New vertex
      */
     @Override
-    public Vertex addVertex(Object id) {
-        if (id == null) return addVertex();
-        else if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
+    public TitanVertex addVertex(Object id) {
+        if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
             return addVertex(((Number) id).longValue());
         } else {
-            log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.");
-            return addVertex();
+            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
+            return addVertex(null);
         }
 
     }
 
     @Override
-    public Vertex getVertex(final Object id) {
+    public TitanVertex getVertex(final Object id) {
         if (null == id)
             throw ExceptionFactory.vertexIdCanNotBeNull();
         if (id instanceof Vertex) //allows vertices to be "re-attached" to the current transaction
@@ -109,7 +108,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
 
     @Override
-    public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
+    public TitanEdge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
         //Preconditions.checkArgument(id==null,"Titan does not support edge id assignment");
         Preconditions.checkArgument(outVertex instanceof TitanVertex);
         Preconditions.checkArgument(inVertex instanceof TitanVertex);
@@ -126,7 +125,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
 
     @Override
-    public Edge getEdge(Object id) {
+    public TitanEdge getEdge(Object id) {
         if (id == null) throw ExceptionFactory.edgeIdCanNotBeNull();
         RelationIdentifier rid = null;
 

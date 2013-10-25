@@ -47,7 +47,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param id vertex id of the vertex to be created
      * @return New vertex
      */
-    public TitanVertex addVertex(long id);
+    public TitanVertex addVertex(Long id);
 
     /**
      * Creates a new edge connecting the specified vertices.

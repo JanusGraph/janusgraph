@@ -311,9 +311,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         }
     }
 
-    private TitanVertex addVertexInternal(Long vertexId) {
+    @Override
+    public TitanVertex addVertex(Long vertexId) {
         verifyWriteAccess();
-        Preconditions.checkArgument(vertexId == null || graph.getConfiguration().allowVertexIdSetting(), "Graph is not configured to allow setting vertex ids");
+        if (vertexId != null && !graph.getConfiguration().allowVertexIdSetting()) {
+            log.warn("Provided vertex id [{}] is ignored because vertex id setting is not enabled", vertexId);
+            vertexId = null;
+        }
         Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
         Preconditions.checkArgument(vertexId == null || IDManager.isVertexID(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
@@ -330,13 +334,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     }
 
     @Override
-    public TitanVertex addVertex(long id) {
-        return addVertexInternal(Long.valueOf(id));
-    }
-
-    @Override
     public TitanVertex addVertex() {
-        return addVertexInternal(null);
+        return addVertex(null);
     }
 
 
