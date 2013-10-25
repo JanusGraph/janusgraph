@@ -91,6 +91,14 @@ public class GraphDatabaseConfiguration {
     public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
 
+    /**
+     * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
+     * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
+     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(long)}.
+     * <p/>
+     * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
+     * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
+     */
     public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
     public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 

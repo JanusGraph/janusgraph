@@ -313,9 +313,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     private TitanVertex addVertexInternal(Long vertexId) {
         verifyWriteAccess();
-        Preconditions.checkArgument(vertexId == null || graph.getConfiguration().allowVertexIdSetting());
+        Preconditions.checkArgument(vertexId == null || graph.getConfiguration().allowVertexIdSetting(), "Graph is not configured to allow setting vertex ids");
+        Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
         Preconditions.checkArgument(vertexId == null || IDManager.isVertexID(vertexId), "Not a valid vertex id: %s", vertexId);
-        Preconditions.checkArgument(vertexId == null || (config.hasVerifyExternalVertexExistence() && containsVertex(vertexId)), "Vertex with given id already exists: %s", vertexId);
+        Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
         StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setID(vertexId);
