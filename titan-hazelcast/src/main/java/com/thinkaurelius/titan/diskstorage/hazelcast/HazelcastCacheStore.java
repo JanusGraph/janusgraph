@@ -33,22 +33,16 @@ public class HazelcastCacheStore implements CacheStore {
     @Override
     public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException {
         byte[] rawKey = key.as(StaticArrayBuffer.ARRAY_FACTORY);
+        byte[] rawNewValue = newValue.as(StaticArrayBuffer.ARRAY_FACTORY);
 
-        try {
-            byte[] rawNewValue = newValue.as(StaticArrayBuffer.ARRAY_FACTORY);
+        // Hazelcast doesn't replace a value when old value was null
+        // so we have to look and use putIfAbsent(new) if oldValue == null, otherwise use replace(old, new)
 
-            // Hazelcast doesn't replace a value when old value was null
-            // so we have to look and use putIfAbsent(new) if oldValue == null, otherwise use replace(old, new)
-            cache.lock(rawKey);
-
-            if (oldValue == null) {
-                if (cache.putIfAbsent(rawKey, rawNewValue) != null)
-                    throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
-            } else if (!cache.replace(rawKey, oldValue.as(StaticArrayBuffer.ARRAY_FACTORY), rawNewValue)) {
+        if (oldValue == null) {
+            if (cache.putIfAbsent(rawKey, rawNewValue) != null)
                 throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
-            }
-        } finally {
-            cache.unlock(rawKey);
+        } else if (!cache.replace(rawKey, oldValue.as(StaticArrayBuffer.ARRAY_FACTORY), rawNewValue)) {
+            throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
         }
     }
 
@@ -60,7 +54,7 @@ public class HazelcastCacheStore implements CacheStore {
     @Override
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException {
         byte[] value = cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY));
-        return value == null ? null : new StaticByteBuffer(value);
+        return value == null ? null : new StaticArrayBuffer(value);
     }
 
     @Override

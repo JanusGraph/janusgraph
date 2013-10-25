@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 
 import java.nio.ByteBuffer;
@@ -26,6 +25,9 @@ public class StaticBufferEntry implements Entry {
         this.value = value;
     }
 
+    public static Entry of(StaticBuffer column) {
+        return new StaticBufferEntry(column, NO_VALUE);
+    }
     public static Entry of(StaticBuffer column, StaticBuffer value) {
         return new StaticBufferEntry(column,value);
     }
@@ -92,7 +94,7 @@ public class StaticBufferEntry implements Entry {
 
     @Override
     public int compareTo(Entry entry) {
-        return ByteBufferUtil.compare(getColumn(),entry.getColumn());
+        return column.compareTo(entry.getColumn());
     }
 
     /**

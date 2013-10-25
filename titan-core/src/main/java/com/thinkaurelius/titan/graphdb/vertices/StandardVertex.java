@@ -13,6 +13,8 @@ import com.thinkaurelius.titan.graphdb.transaction.addedrelations.ConcurrentAdde
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -65,9 +67,8 @@ public class StandardVertex extends AbstractVertex {
     }
 
     @Override
-    public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
-        if (isNew()) return ImmutableList.of();
-        else return lookup.get(query);
+    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
+        return (isNew()) ? Collections.EMPTY_LIST : lookup.get(query);
     }
 
     @Override

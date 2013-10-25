@@ -31,7 +31,7 @@ public enum TypeAttributeType {
     private final Class attributeClass;
 
     private TypeAttributeType(Class<?> attributeClass) {
-        Preconditions.checkNotNull(attributeClass);
+        assert attributeClass != null;
         this.attributeClass = attributeClass;
     }
 

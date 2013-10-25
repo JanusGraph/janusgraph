@@ -38,7 +38,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
                 dir2 = EdgeDirection.fromPosition(i);
                 break;
             }
-        Preconditions.checkArgument(dir1 != null && dir2 != null, "Either relation is not incident on vertex [%s]", vertex);
+        assert dir1 != null && dir2 != null; // ("Either relation is not incident on vertex [%s]", vertex);
         int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
         if (dirCompare != 0) return dirCompare;
 

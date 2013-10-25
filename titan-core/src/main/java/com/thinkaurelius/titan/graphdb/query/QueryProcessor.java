@@ -41,8 +41,10 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
     @Override
     public Iterator<R> iterator() {
-        if (query.isEmpty()) return Iterators.emptyIterator();
-        else return new OuterIterator();
+        if (query.isEmpty())
+            return Iterators.emptyIterator();
+
+        return new OuterIterator();
     }
 
     private final class OuterIterator implements Iterator<R> {
@@ -57,9 +59,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         OuterIterator() {
             this.iter = getUnwrappedIterator();
-            if (query.hasLimit()) limit = query.getLimit();
-            else limit = Query.NO_LIMIT;
+            limit = (query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT;
             count = 0;
+
             this.current = null;
             this.next = nextInternal();
         }
@@ -79,7 +81,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public R next() {
-            if (!hasNext()) throw new NoSuchElementException();
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             current = next;
             count++;
             next = nextInternal();
@@ -88,8 +92,10 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public void remove() {
-            if (current instanceof Removable) ((Removable) current).remove();
-            else throw new UnsupportedOperationException();
+            if (current != null)
+                current.remove();
+            else
+                throw new UnsupportedOperationException();
         }
 
     }
@@ -228,21 +234,25 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public boolean hasNext() {
-            if (count < currentLimit) return iter.hasNext();
-            else {
-                //Update query and iterate through
-                currentLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.round(currentLimit * 2.0));
-                backendQuery = backendQuery.updateLimit(currentLimit);
-                iter = executor.execute(query, backendQuery, executionInfo);
-                for (int i = 0; i < count; i++) iter.next();
-                Preconditions.checkArgument(count < currentLimit);
-                return hasNext();
-            }
+            if (count < currentLimit)
+                return iter.hasNext();
+
+            //Update query and iterate through
+            currentLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.round(currentLimit * 2.0));
+            backendQuery = backendQuery.updateLimit(currentLimit);
+            iter = executor.execute(query, backendQuery, executionInfo);
+
+            for (int i = 0; i < count; i++)
+                iter.next();
+            Preconditions.checkArgument(count < currentLimit);
+            return hasNext();
         }
 
         @Override
         public R next() {
-            if (!hasNext()) throw new NoSuchElementException();
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             count++;
             return iter.next();
         }

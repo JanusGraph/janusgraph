@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
 import org.junit.Test;
 
@@ -28,12 +29,12 @@ public class ImmutableLongObjectMapTest {
         ImmutableLongObjectMap map = b.build();
 
         Map<Long,Object> copy1 = new HashMap<Long,Object>();
-        for (int i=0;i<map.size();i++) {
-            copy1.put(map.getKey(i), map.getValue(i));
+        for (LongObjectCursor<Object> entry: map) {
+            copy1.put(entry.key, entry.value);
         }
         Map<Long,Object> copy2 = new HashMap<Long,Object>();
-        for (ImmutableLongObjectMap.Entry entry : map) {
-            copy2.put(entry.getKey(),entry.getValue());
+        for (LongObjectCursor<Object> entry: map) {
+            copy2.put(entry.key, entry.value);
         }
         assertEquals(len,map.size());
         assertEquals(len, copy1.size());
@@ -70,8 +71,7 @@ public class ImmutableLongObjectMapTest {
                     assertEquals("TestValue " + i,map.get(i*1000));
                 }
                 assertEquals(len,map.size());
-                for (int i=0;i<map.size();i++) {
-                    map.getKey(i); map.getValue(i);
+                for (LongObjectCursor<Object> entry : map) {
                 }
             }
         }

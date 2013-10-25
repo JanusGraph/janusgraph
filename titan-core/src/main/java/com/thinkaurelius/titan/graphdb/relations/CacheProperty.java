@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -19,7 +20,6 @@ import java.util.List;
  */
 
 public class CacheProperty extends AbstractProperty {
-
     public CacheProperty(long id, TitanKey key, InternalVertex start, Object value, Entry data) {
         super(id, key, start, value);
         this.data = data;
@@ -32,26 +32,28 @@ public class CacheProperty extends AbstractProperty {
     @Override
     public InternalRelation it() {
         InternalRelation it = null;
-        if (getVertex(0).hasAddedRelations() && getVertex(0).hasRemovedRelations()) {
+        InternalVertex startVertex = getVertex(0);
+
+        if (startVertex.hasAddedRelations() && startVertex.hasRemovedRelations()) {
             //Test whether this relation has been replaced
             final long id = super.getID();
-            it = Iterables.getOnlyElement(getVertex(0).getAddedRelations(new Predicate<InternalRelation>() {
+            it = Iterables.getOnlyElement(startVertex.getAddedRelations(new Predicate<InternalRelation>() {
                 @Override
                 public boolean apply(@Nullable InternalRelation internalRelation) {
                     return (internalRelation instanceof StandardProperty) && ((StandardProperty) internalRelation).getPreviousID() == id;
                 }
             }), null);
         }
-        if (it != null) return it;
-        else return super.it();
+
+        return (it != null) ? it : super.it();
     }
 
-    private final void copyProperties(InternalRelation to) {
-        ImmutableLongObjectMap map = getMap();
-        for (int i = 0; i < map.size(); i++) {
-            if (map.getKey(i) < 0) continue;
-            TitanType type = tx().getExistingType(map.getKey(i));
-            to.setPropertyDirect(type, map.getValue(i));
+    private void copyProperties(InternalRelation to) {
+        for (LongObjectCursor<Object> entry : getMap()) {
+            if (entry.key < 0)
+                continue;
+
+            to.setPropertyDirect(tx().getExistingType(entry.key), entry.value);
         }
     }
 
@@ -69,8 +71,7 @@ public class CacheProperty extends AbstractProperty {
     @Override
     public long getID() {
         InternalRelation it = it();
-        if (it == this) return super.getID();
-        else return it.getID();
+        return (it == this) ? super.getID() : it.getID();
     }
 
     private ImmutableLongObjectMap getMap() {
@@ -90,10 +91,13 @@ public class CacheProperty extends AbstractProperty {
     public Iterable<TitanType> getPropertyKeysDirect() {
         ImmutableLongObjectMap map = getMap();
         List<TitanType> types = new ArrayList<TitanType>(map.size());
-        for (int i = 0; i < map.size(); i++) {
-            if (map.getKey(i) < 0) continue;
-            if (map.getValue(i) != null)
-                types.add(tx().getExistingType(map.getKey(i)));
+
+        for (LongObjectCursor<Object> entry : map) {
+            if (entry.key < 0)
+                continue;
+
+            if (entry.value != null)
+                types.add(tx().getExistingType(entry.key));
         }
         return types;
     }

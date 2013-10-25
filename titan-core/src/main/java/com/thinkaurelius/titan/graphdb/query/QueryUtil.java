@@ -6,7 +6,6 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -17,7 +16,6 @@ import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 public class QueryUtil {
 
@@ -123,7 +121,7 @@ public class QueryUtil {
         return condition;
     }
 
-    public static final boolean isEmpty(Condition<?> condition) {
+    public static boolean isEmpty(Condition<?> condition) {
         return condition.getType() != Condition.Type.LITERAL && condition.numChildren() == 0;
     }
 
@@ -137,19 +135,23 @@ public class QueryUtil {
      * @return
      * @see #isQueryNormalForm(com.thinkaurelius.titan.graphdb.query.condition.Condition)
      */
-    public static final <E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String, E>> constraints) {
+    public static <E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<E>(constraints.size() + 4);
-        for (int i = 0; i < constraints.size(); i++) {
-            PredicateCondition<String, E> atom = constraints.get(i);
+        for (PredicateCondition<String, E> atom : constraints) {
             TitanType type = getType(tx, atom.getKey());
+
             if (type == null) {
                 if (atom.getPredicate() == Cmp.EQUAL && atom.getValue() == null)
-                    continue; //Ignore condition, its trivially satisifed
-                else return null;
+                    continue; //Ignore condition, its trivially satisfied
+
+                return null;
             }
+
             Object value = atom.getValue();
             TitanPredicate predicate = atom.getPredicate();
-            Preconditions.checkArgument(predicate.isValidCondition(value), "Invalid condition: %s", value);
+
+            assert predicate.isValidCondition(value);
+
             if (type.isPropertyKey()) {
                 Preconditions.checkArgument(predicate.isValidValueType(((TitanKey) type).getDataType()), "Data type of key is not compatible with condition");
             } else { //its a label
@@ -161,13 +163,16 @@ public class QueryUtil {
                 //Rewrite contains conditions
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
-                    for (Object invalue : values) addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
+                    for (Object invalue : values)
+                        addConstraint(type, Cmp.NOT_EQUAL, invalue, conditions, tx);
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
-                    if (values.size() == 1) addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
-                    else {
+                    if (values.size() == 1) {
+                        addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
+                    } else {
                         Or<E> nested = new Or<E>(values.size());
-                        for (Object invalue : values) addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
+                        for (Object invalue : values)
+                            addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
                         conditions.add(nested);
                     }
                 }
@@ -178,10 +183,11 @@ public class QueryUtil {
         return conditions;
     }
 
-    private static final <E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate,
-                                                                     Object value, MultiCondition<E> conditions, StandardTitanTx tx) {
+    private static <E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate,
+                                                               Object value, MultiCondition<E> conditions, StandardTitanTx tx) {
         if (type.isPropertyKey()) {
-            if (value != null) value = tx.verifyAttribute((TitanKey) type, value);
+            if (value != null)
+                value = tx.verifyAttribute((TitanKey) type, value);
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof TitanVertex);
         }

@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -169,25 +172,23 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         } else return null;
     }
 
-
-    protected VertexCentricQuery constructQuery(RelationType returnType) {
+    public VertexCentricQuery constructQuery(RelationType returnType) {
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
         Condition<TitanRelation> condition = vq.getCondition();
         if (!vq.isEmpty()) {
             //Add other-vertex and direction related conditions
-            And<TitanRelation> newcond = (condition instanceof And)?(And)condition : new And<TitanRelation>(condition);
+            And<TitanRelation> newcond = (condition instanceof And) ? (And) condition : new And<TitanRelation>(condition);
             newcond.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
-            if (adjacentVertex!=null) newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
+            if (adjacentVertex != null)
+                newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
             condition=newcond;
         }
+
         return new VertexCentricQuery(vertex,condition,vq.getDirection(),vq.getQueries(),vq.getLimit());
     }
 
     public Iterable<TitanRelation> relations(RelationType returnType) {
-        VertexCentricQuery query = constructQuery(returnType);
-        QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery> processor =
-                new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(query,tx.edgeProcessor);
-        return processor;
+        return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(constructQuery(returnType), tx.edgeProcessor);
     }
 
 
@@ -211,8 +212,6 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     public Iterable<Edge> edges() {
         return (Iterable)titanEdges();
     }
-
-
 
     @Override
     public long count() {

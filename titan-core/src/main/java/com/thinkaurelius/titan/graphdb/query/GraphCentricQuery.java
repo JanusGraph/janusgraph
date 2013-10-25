@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;

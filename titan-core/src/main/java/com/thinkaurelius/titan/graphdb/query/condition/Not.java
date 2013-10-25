@@ -67,7 +67,7 @@ public class Not<E extends TitanElement> implements Condition<E> {
         return "!("+ condition.toString()+")";
     }
 
-    public static final<E extends TitanElement> Not<E> of(Condition<E> element) {
+    public static <E extends TitanElement> Not<E> of(Condition<E> element) {
         return new Not<E>(element);
     }
 

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
@@ -29,7 +28,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
                     type(SystemKey.TypeName).
                     properties(), null).getValue(String.class);
         }
-        Preconditions.checkNotNull(name);
+        assert name != null;
         return name;
     }
 
@@ -42,7 +41,6 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
             }
             definition = def;
         }
-        Preconditions.checkNotNull(definition);
         return definition;
     }
 
