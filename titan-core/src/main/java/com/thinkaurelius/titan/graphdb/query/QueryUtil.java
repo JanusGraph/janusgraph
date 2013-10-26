@@ -19,7 +19,7 @@ import java.util.*;
 
 public class QueryUtil {
 
-    public static final TitanProperty queryHiddenUniqueProperty(InternalVertex vertex, TitanKey key) {
+    public static TitanProperty queryHiddenUniqueProperty(InternalVertex vertex, TitanKey key) {
         assert ((InternalType) key).isHidden() : "Expected hidden property key";
         assert key.isUnique(Direction.OUT) : "Expected functional property  type";
         return Iterables.getOnlyElement(
@@ -29,22 +29,26 @@ public class QueryUtil {
                         properties(), null);
     }
 
-    public static final Iterable<TitanRelation> queryAll(InternalVertex vertex) {
+    public static Iterable<TitanRelation> queryAll(InternalVertex vertex) {
         return vertex.query().includeHidden().relations();
     }
 
-    public static final int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {
-        Preconditions.checkArgument(limit > 0 && limit <= 1000000000, "Invalid limit: %s", limit); //To make sure limit computation does not overflow
-        Preconditions.checkArgument(uncoveredAndConditions >= 0);
+    public static int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {
+        assert limit > 0 && limit <= 1000000000; //To make sure limit computation does not overflow
+        assert uncoveredAndConditions >= 0;
+
         if (uncoveredAndConditions > 0) {
             int maxMultiplier = Integer.MAX_VALUE / limit;
             limit = limit * Math.min(maxMultiplier, (int) Math.pow(2, uncoveredAndConditions)); //(limit*3)/2+1;
         }
-        if (tx.hasModifications()) limit += Math.min(Integer.MAX_VALUE - limit, 5);
+
+        if (tx.hasModifications())
+            limit += Math.min(Integer.MAX_VALUE - limit, 5);
+
         return limit;
     }
 
-    private static final InternalType getType(StandardTitanTx tx, String typeName) {
+    private static InternalType getType(StandardTitanTx tx, String typeName) {
         TitanType t = tx.getType(typeName);
         if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
@@ -58,7 +62,7 @@ public class QueryUtil {
      * @param condition
      * @return
      */
-    public static final boolean isQueryNormalForm(Condition<?> condition) {
+    public static boolean isQueryNormalForm(Condition<?> condition) {
         if (isQNFLiteralOrNot(condition)) return true;
         else if (condition instanceof And) {
             for (Condition<?> child : ((And<?>) condition).getChildren()) {

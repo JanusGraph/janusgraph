@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
+import java.util.Collections;
+
 import com.thinkaurelius.titan.core.TitanElement;
 
 /**
@@ -27,7 +27,7 @@ abstract class Literal<E extends TitanElement> implements Condition<E> {
 
     @Override
     public Iterable<Condition<E>> getChildren() {
-        return ImmutableList.of();
+        return Collections.EMPTY_LIST;
     }
 
 }

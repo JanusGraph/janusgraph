@@ -55,11 +55,8 @@ public class Not<E extends TitanElement> implements Condition<E> {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
-        Not oth = (Not)other;
-        return condition.equals(oth.condition);
+        return this == other || !(other == null || !getClass().isInstance(other)) && condition.equals(((Not) other).condition);
+
     }
 
     @Override

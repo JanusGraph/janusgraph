@@ -26,7 +26,6 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
     MultiCondition(final Condition<E>... conditions) {
         super(conditions.length);
 
-        assert conditions.length >= 0;
         for (Condition<E> condition : conditions) {
             assert condition != null;
             super.add(condition);
@@ -80,22 +79,30 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other)
+            return true;
+
+        if (other == null || !getClass().isInstance(other))
+            return false;
+
         MultiCondition oth = (MultiCondition)other;
-        if (getType()!=oth.getType()) return false;
-        if (size()!=oth.size()) return false;
-        for (int i=0;i<size();i++) {
+        if (getType() != oth.getType() || size() != oth.size())
+            return false;
+
+        for (int i = 0; i < size(); i++) {
             boolean foundEqual = false;
-            for (int j=0;j<oth.size();j++) {
-                if (get(i).equals(oth.get((i+j)% oth.size()))) {
-                    foundEqual=true;
+
+            for (int j = 0; j < oth.size(); j++) {
+                if (get(i).equals(oth.get((i + j) % oth.size()))) {
+                    foundEqual = true;
                     break;
                 }
             }
-            if (!foundEqual) return false;
+
+            if (!foundEqual)
+                return false;
         }
+
         return true;
     }
 
