@@ -97,6 +97,7 @@
         <module>titan-all</module>
         <module>titan-site</module>
         <module>titan-dist</module>
+        <module>titan-infinispan</module>
     </modules>
     <build>
         <directory>${basedir}/target</directory>
