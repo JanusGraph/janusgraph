@@ -9,6 +9,7 @@ import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,9 +27,9 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     // ########## TRANSACTION HANDLING ###########################
 
-    private ThreadLocal<TitanTransaction> txs = new ThreadLocal<TitanTransaction>() {
+    private ThreadLocal<TitanBlueprintsTransaction> txs = new ThreadLocal<TitanBlueprintsTransaction>() {
 
-        protected TitanTransaction initialValue() {
+        protected TitanBlueprintsTransaction initialValue() {
             return null;
         }
 
@@ -44,8 +45,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
      * transactions started through
      * {@code ThreadedTransactionalGraph#newTransaction()}.
      */
-    private final Map<TitanTransaction, Boolean> openTx =
-            new ConcurrentHashMap<TitanTransaction, Boolean>();
+    private final Map<TitanBlueprintsTransaction, Boolean> openTx =
+            new ConcurrentHashMap<TitanBlueprintsTransaction, Boolean>();
 
     @Override
     public void commit() {
@@ -92,11 +93,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 
     public abstract TitanTransaction newThreadBoundTransaction();
 
-    private TitanTransaction getAutoStartTx() {
+    private TitanBlueprintsTransaction getAutoStartTx() {
         if (txs == null) ExceptionFactory.graphShutdown();
-        TitanTransaction tx = txs.get();
+        TitanBlueprintsTransaction tx = txs.get();
         if (tx == null) {
-            tx = newThreadBoundTransaction();
+            tx = (TitanBlueprintsTransaction) newThreadBoundTransaction();
             txs.set(tx);
             openTx.put(tx, Boolean.TRUE);
             log.debug("Created new thread-bound transaction {}", tx);
@@ -151,12 +152,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     // ########## TRANSACTIONAL FORWARDING ###########################
 
     @Override
-    public Vertex addVertex(Object id) {
+    public TitanVertex addVertex(Object id) {
         return getAutoStartTx().addVertex(id);
     }
 
     @Override
-    public Vertex getVertex(Object id) {
+    public TitanVertex getVertex(Object id) {
         return getAutoStartTx().getVertex(id);
     }
 
@@ -191,6 +192,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices) {
+        return getAutoStartTx().multiQuery(vertices);
+    }
+
+    @Override
     public TitanType getType(String name) {
         return getAutoStartTx().getType(name);
     }
@@ -201,12 +207,12 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
+    public TitanEdge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
         return getAutoStartTx().addEdge(id, outVertex, inVertex, label);
     }
 
     @Override
-    public Edge getEdge(Object id) {
+    public TitanEdge getEdge(Object id) {
         return getAutoStartTx().getEdge(id);
     }
 

@@ -30,7 +30,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(CachedKeyColumnValueStore.class);
 
-    private static final long DEFAULT_CACHE_SIZE = 100000;
+    private static final long DEFAULT_CACHE_SIZE = 1000;
 
     private final KeyColumnValueStore store;
     private final Cache<KeySliceQuery, List<Entry>> cache;

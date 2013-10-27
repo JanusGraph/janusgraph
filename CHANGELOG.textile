@@ -5,6 +5,39 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.1 (?)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.1-SNAPSHOT</version>
+</dependency>
+```
+
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.7
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Hazelcast 3.0.2
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Property pre-fetching to speed up multiple property lookups per vertex. Configurable through "fast-property"
+* Shortened HBase column-family names to reduce the HBase storage footprint. This feature is disabled by default for backwards-compatibility. Enable it via @storage.short-cf-names@
+* Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through graph.buildTransaction()
+* Metrics Ganglia and Graphite support
+
+*Bugfixes:*
+
+* Fixed multiQuery() for specific has() conditions. Added support for multiQuery(Collection).
+
 h3. Version 0.4.0 (October 16, 2013)
 
 ```xml

@@ -228,6 +228,28 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
         sequentialUidTask(50, this.&singleVertexQueryTask)
     }
 
+    @Test
+    public void testSingleVertexMultiProperty() {
+        sequentialUidTask(50, { tx, v ->
+            int c = 0
+            for (int i = 0; i < schema.getVertexPropKeys(); i++) {
+                if (v.getProperty(schema.getVertexPropertyName(i)) != null) {
+                    c++
+                }
+            }
+            def k = v.getPropertyKeys().size() - 1;
+            assertTrue(k + "vs" + c, k <= c)
+            assertTrue(0 <= c)
+        })
+    }
+
+    @Test
+    public void testSingleVertexProperty() {
+        sequentialUidTask(50, { tx, v ->
+            assertNotNull(v.getProperty(Schema.UID_PROP));
+        })
+    }
+
     /**
      * Retrieve vertices by uid, then retrieve their associated properties. All
      * access is done through a FramedGraph interface. This is inspired by part

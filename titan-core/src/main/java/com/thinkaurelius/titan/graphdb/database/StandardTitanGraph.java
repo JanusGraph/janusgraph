@@ -66,13 +66,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public final SliceQuery vertexExistenceQuery;
 
-
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
         this.backend = configuration.getBackend();
         this.maxWriteRetryAttempts = config.getWriteAttempts();
         this.retryStorageWaitTime = config.getStorageWaittime();
-
 
         this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();

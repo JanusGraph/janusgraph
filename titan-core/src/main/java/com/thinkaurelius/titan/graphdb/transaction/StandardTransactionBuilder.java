@@ -29,6 +29,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean acquireLocks = true;
 
+    private boolean propertyPrefetching = true;
+
     private boolean singleThreaded = false;
 
     private boolean threadBound = false;
@@ -38,6 +40,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private long indexCacheWeight;
 
     private Long timestamp = null;
+
+    private String metricsPrefix;
 
     /**
      * Used to keep state information: Once the transaction is openend, the config
@@ -54,9 +58,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         this.graph = graph;
-
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.propertyPrefetching = graphConfig.getPropertyPrefetching();
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();
@@ -113,6 +118,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public StandardTransactionBuilder setMetricsPrefix(String p) {
+        verifyOpen();
+        this.metricsPrefix = p;
+        return this;
+    }
+
+    @Override
     public TitanTransaction start() {
         verifyOpen();
         isOpen = false;
@@ -160,6 +172,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         return verifyUniqueness;
     }
 
+    public boolean hasPropertyPrefetching() {
+        return propertyPrefetching;
+    }
+
     @Override
     public final boolean isSingleThreaded() {
         return singleThreaded;
@@ -183,6 +199,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public boolean hasTimestamp() {
         return timestamp != null;
+    }
+
+    @Override
+    public String getMetricsPrefix() {
+        return metricsPrefix;
     }
 
     @Override

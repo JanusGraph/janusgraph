@@ -48,6 +48,9 @@ public interface TitanMultiVertexQuery extends BaseVertexQuery {
     public TitanMultiVertexQuery types(TitanType... type);
 
     @Override
+    public TitanMultiVertexQuery keys(String... keys);
+
+    @Override
     public TitanMultiVertexQuery direction(Direction d);
 
     @Override

@@ -25,7 +25,6 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
 
     MultiCondition(final Condition<E>... conditions) {
         super(conditions.length);
-
         for (Condition<E> condition : conditions) {
             assert condition != null;
             super.add(condition);
@@ -73,7 +72,7 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
     @Override
     public int hashCode() {
         int sum = 0;
-        for (Condition kp : this) sum+=kp.hashCode();
+        for (Condition kp : this) sum += kp.hashCode();
         return new HashCodeBuilder().append(getType()).append(sum).toHashCode();
     }
 
@@ -91,7 +90,6 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
 
         for (int i = 0; i < size(); i++) {
             boolean foundEqual = false;
-
             for (int j = 0; j < oth.size(); j++) {
                 if (get(i).equals(oth.get((i + j) % oth.size()))) {
                     foundEqual = true;
@@ -114,8 +112,8 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
     public String toString(String token) {
         StringBuilder b = new StringBuilder();
         b.append("(");
-        for (int i=0;i<size();i++) {
-            if (i>0) b.append(token);
+        for (int i = 0; i < size(); i++) {
+            if (i > 0) b.append(" ").append(token).append(" ");
             b.append(get(i));
         }
         b.append(")");

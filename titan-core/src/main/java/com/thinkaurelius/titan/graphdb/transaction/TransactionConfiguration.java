@@ -68,6 +68,15 @@ public interface TransactionConfiguration {
     public boolean hasVerifyUniqueness();
 
     /**
+     * Whether this transaction loads all properties on a vertex when a single property is requested. This can be highly beneficial
+     * when additional properties are requested on the same vertex at a later time. For vertices with very many properties
+     * this might increase latencies of property fetching.
+     *
+     * @return True, if this transaction pre-fetches all properties
+     */
+    public boolean hasPropertyPrefetching();
+
+    /**
      * Whether this transaction is only accessed by a single thread.
      * If so, then certain data structures may be optimized for single threaded access since locking can be avoided.
      *
@@ -114,5 +123,10 @@ public interface TransactionConfiguration {
      */
     public long getTimestamp();
 
-
+    /**
+     * Returns the (possibly null) metrics prefix for this transaction.
+     *
+     * @return metrics name prefix string or null
+     */
+    public String getMetricsPrefix();
 }

@@ -107,7 +107,7 @@ else
     if [ "$zmaster" == "null" ]; then zmaster="master"; fi
     zmaster=$zparent/$zmaster
     echo -n "Waiting for Master ZNode ${zmaster} to expire"
-    while ! bin/hbase zkcli stat $zmaster 2>&1 | grep "Node does not exist"; do
+    while ! "$bin"/hbase zkcli stat $zmaster 2>&1 | grep "Node does not exist"; do
       echo -n "."
       sleep 1
     done
@@ -149,7 +149,10 @@ else
 
   if [ $RR_GRACEFUL -eq 1 ]; then
     # gracefully restart all online regionservers
-    online_regionservers=`$bin/hbase zkcli ls $zparent/rs 2>&1 | tail -1 | sed "s/\[//" | sed "s/\]//"`
+    zkrs=`$bin/hbase org.apache.hadoop.hbase.util.HBaseConfTool zookeeper.znode.rs`
+    if [ "$zkrs" == "null" ]; then zkrs="rs"; fi
+    zkrs="$zparent/$zkrs"
+    online_regionservers=`$bin/hbase zkcli ls $zkrs 2>&1 | tail -1 | sed "s/\[//" | sed "s/\]//"`
     for rs in $online_regionservers
     do
         rs_parts=(${rs//,/ })

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.blueprints;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
@@ -49,13 +50,31 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         throw new UnsupportedOperationException("Not supported threaded transaction graph. Call on parent graph");
     }
 
+    /**
+     * Creates a new vertex in the graph with the given vertex id.
+     * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
+     * id already exists. Only accepts long ids - all others are ignored.
+     * <p/>
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * <p/>
+     * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     *
+     * @param id vertex id of the vertex to be created
+     * @return New vertex
+     */
     @Override
-    public Vertex addVertex(Object id) {
-        return addVertex();
+    public TitanVertex addVertex(Object id) {
+        if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
+            return addVertex(((Number) id).longValue());
+        } else {
+            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
+            return addVertex(null);
+        }
+
     }
 
     @Override
-    public Vertex getVertex(final Object id) {
+    public TitanVertex getVertex(final Object id) {
         if (null == id)
             throw ExceptionFactory.vertexIdCanNotBeNull();
         if (id instanceof Vertex) //allows vertices to be "re-attached" to the current transaction
@@ -89,7 +108,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
 
     @Override
-    public Edge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
+    public TitanEdge addEdge(Object id, Vertex outVertex, Vertex inVertex, String label) {
         //Preconditions.checkArgument(id==null,"Titan does not support edge id assignment");
         Preconditions.checkArgument(outVertex instanceof TitanVertex);
         Preconditions.checkArgument(inVertex instanceof TitanVertex);
@@ -106,7 +125,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
 
     @Override
-    public Edge getEdge(Object id) {
+    public TitanEdge getEdge(Object id) {
         if (id == null) throw ExceptionFactory.edgeIdCanNotBeNull();
         RelationIdentifier rid = null;
 

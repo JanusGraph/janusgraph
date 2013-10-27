@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
+import java.util.Collection;
+
 /**
  * TitanTransaction defines a transactional context for a {@link TitanGraph}. Since TitanGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a TitanTransaction.
@@ -32,6 +34,20 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return New vertex in the graph created in the context of this transaction.
      */
     public TitanVertex addVertex();
+
+    /**
+     * Creates a new vertex in the graph with the given vertex id.
+     * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
+     * id already exists.
+     * <p/>
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * <p/>
+     * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
+     *
+     * @param id vertex id of the vertex to be created
+     * @return New vertex
+     */
+    public TitanVertex addVertex(Long id);
 
     /**
      * Creates a new edge connecting the specified vertices.
@@ -119,6 +135,12 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
      */
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+
+    /**
+     * @return
+     * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(Collection)
+     */
+    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
 
     /**
      * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
