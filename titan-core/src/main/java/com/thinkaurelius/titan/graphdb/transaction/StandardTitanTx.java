@@ -409,7 +409,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     }
                 }
             }
-            deletedRelations.put(Long.valueOf(relation.getID()), relation);
+            deletedRelations.put(relation.getID(), relation);
         }
     }
 

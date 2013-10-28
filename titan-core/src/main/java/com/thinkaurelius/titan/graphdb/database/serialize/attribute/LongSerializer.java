@@ -10,12 +10,12 @@ public class LongSerializer implements AttributeSerializer<Long> {
 
     @Override
     public Long read(ScanBuffer buffer) {
-        return Long.valueOf(buffer.getLong() + Long.MIN_VALUE);
+        return buffer.getLong() + Long.MIN_VALUE;
     }
 
     @Override
     public void writeObjectData(WriteBuffer out, Long object) {
-        out.putLong(object.longValue() - Long.MIN_VALUE);
+        out.putLong(object - Long.MIN_VALUE);
     }
 
     /*
@@ -33,8 +33,7 @@ public class LongSerializer implements AttributeSerializer<Long> {
         if (value instanceof Number) {
             double d = ((Number)value).doubleValue();
             if (Double.isNaN(d) || Math.round(d)!=d) throw new IllegalArgumentException("Not a valid long: " + value);
-            long l = ((Number)value).longValue();
-            return Long.valueOf(l);
+            return ((Number)value).longValue();
         } else if (value instanceof String) {
             return Long.parseLong((String)value);
         } else return null;
