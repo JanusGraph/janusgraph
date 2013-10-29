@@ -8,6 +8,10 @@ import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 
 /**
  * Queries for a slice of data identified by a start point (inclusive) and end point (exclusive).
@@ -104,6 +108,19 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             return sliceStart.compareTo(oth.sliceStart) <= 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
         else //this the result might be cutoff due to limit, the start must be the same
             return sliceStart.compareTo(oth.sliceStart) == 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
+    }
+
+    public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
+        assert otherQuery.subsumes(this);
+        List<Entry> result = new ArrayList<Entry>();
+        int pos = Collections.binarySearch(result, StaticBufferEntry.of(sliceStart));
+        if (pos < 0) pos = -pos - 1;
+        for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
+            Entry e = otherResult.get(pos);
+            if (e.getColumn().compareTo(sliceEnd) < 0) result.add(e);
+            else break;
+        }
+        return result;
     }
 
     public static StaticBuffer pointRange(StaticBuffer point) {

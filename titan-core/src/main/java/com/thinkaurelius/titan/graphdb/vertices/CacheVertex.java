@@ -39,20 +39,11 @@ public class CacheVertex extends StandardVertex {
             return queryCache.get(query, new Callable<List<Entry>>() {
                 @Override
                 public List<Entry> call() throws Exception {
-                    List<Entry> superset = getSuperResultSet(query);
+                    Map.Entry<SliceQuery, List<Entry>> superset = getSuperResultSet(query);
                     if (superset == null) {
                         return lookup.get(query);
                     } else {
-                        List<Entry> result = new ArrayList<Entry>();
-                        int pos = Collections.binarySearch(result, StaticBufferEntry.of(query.getSliceStart()));
-                        if (pos < 0) pos = -pos - 1;
-                        StaticBuffer end = query.getSliceEnd();
-                        for (; pos < superset.size(); pos++) {
-                            Entry e = superset.get(pos);
-                            if (e.getColumn().compareTo(end) < 0) result.add(e);
-                            else break;
-                        }
-                        return result;
+                        return query.getSubset(superset.getKey(), superset.getValue());
                     }
                 }
             });
@@ -66,10 +57,10 @@ public class CacheVertex extends StandardVertex {
         return queryCache.getIfPresent(query) != null || getSuperResultSet(query) != null;
     }
 
-    private List<Entry> getSuperResultSet(final SliceQuery query) {
+    private Map.Entry<SliceQuery, List<Entry>> getSuperResultSet(final SliceQuery query) {
         if (queryCache.size() > 0) {
             for (Map.Entry<SliceQuery, List<Entry>> entry : queryCache.asMap().entrySet()) {
-                if (entry.getKey().subsumes(query)) return entry.getValue();
+                if (entry.getKey().subsumes(query)) return entry;
             }
         }
         return null;
