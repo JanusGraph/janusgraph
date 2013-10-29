@@ -2,60 +2,61 @@ package com.thinkaurelius.titan.graphdb.transaction.vertexcache;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.util.ConcurrentLRUCache;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 public class LRUVertexCache implements VertexCache {
     private final NonBlockingHashMapLong<InternalVertex> volatileVertices;
-    private final Cache<Long, InternalVertex> cache;
+    private final ConcurrentLRUCache<InternalVertex> cache;
 
-    public LRUVertexCache(long capacity, int concurrencyLevel) {
+    public LRUVertexCache(int capacity) {
         volatileVertices = new NonBlockingHashMapLong<InternalVertex>();
-        cache = CacheBuilder.newBuilder()
-                            .maximumSize(capacity)
-                            .concurrencyLevel(concurrencyLevel)
-                            .removalListener(new RemovalListener<Long, InternalVertex>() {
-                                @Override
-                                public void onRemoval(RemovalNotification<Long, InternalVertex> notification) {
-                                    if (notification.getKey() == null || notification.getValue() == null)
-                                        return;
+        cache = new ConcurrentLRUCache<InternalVertex>(capacity * 2, // upper is double capacity
+                capacity + capacity / 3, // lower is capacity + 1/3
+                capacity, // acceptable watermark is capacity
+                100, true, false, // 100 items initial size + use only one thread for items cleanup
+                new ConcurrentLRUCache.EvictionListener<InternalVertex>() {
+                    @Override
+                    public void evictedEntry(Long vertexId, InternalVertex vertex) {
+                        if (vertexId == null || vertex == null)
+                            return;
 
-                                    InternalVertex v = notification.getValue();
-                                    if (v.hasAddedRelations()) {
-                                        volatileVertices.putIfAbsent(notification.getKey(), v);
-                                    }
-                                }
-                            })
-                            .build();
+                        if (vertex.hasAddedRelations()) {
+                            volatileVertices.putIfAbsent(vertexId, vertex);
+                        }
+                    }
+                });
+
+        cache.setAlive(false); // don't need counters just yet
     }
 
     @Override
     public boolean contains(long id) {
         Long vertexId = id;
-        return cache.getIfPresent(vertexId) != null || volatileVertices.containsKey(vertexId);
+        return cache.containsKey(vertexId) || volatileVertices.containsKey(vertexId);
     }
 
     @Override
     public InternalVertex get(long id, final Retriever<Long, InternalVertex> retriever) {
         final Long vertexId = id;
 
-        try {
-            return cache.get(vertexId, new Callable<InternalVertex>() {
-                @Override
-                public InternalVertex call() throws Exception {
-                    InternalVertex newVertex = volatileVertices.get(vertexId);
-                    return (newVertex == null) ? retriever.get(vertexId) : newVertex;
-                }
-            });
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+        InternalVertex vertex = cache.get(vertexId);
+
+        if (vertex == null) {
+            vertex = volatileVertices.get(vertexId);
+
+            if (vertex == null) {
+                vertex = retriever.get(vertexId);
+            }
+
+            cache.put(vertexId, vertex);
         }
+
+        return vertex;
     }
 
     @Override
@@ -85,6 +86,6 @@ public class LRUVertexCache implements VertexCache {
     @Override
     public synchronized void close() {
         volatileVertices.clear();
-        cache.invalidateAll();
+        cache.destroy();
     }
 }
