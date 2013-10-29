@@ -48,10 +48,7 @@ public class CacheProperty extends AbstractProperty {
     }
 
     private void copyProperties(InternalRelation to) {
-        for (LongObjectCursor<Object> entry : getMap()) {
-            if (entry.key < 0)
-                continue;
-
+        for (LongObjectCursor<Object> entry : getPropertyMap()) {
             to.setPropertyDirect(tx().getExistingType(entry.key), entry.value);
         }
     }
@@ -73,30 +70,26 @@ public class CacheProperty extends AbstractProperty {
         return (it == this) ? super.getID() : it.getID();
     }
 
-    private RelationCache getMap() {
+    private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
-        if (map == null) {
-            map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(0), data, tx());
+        if (map == null || !map.hasProperties()) {
+            map = tx().getGraph().getEdgeSerializer().readRelation(getVertex(0), data, tx());
         }
         return map;
     }
 
     @Override
     public <O> O getPropertyDirect(TitanType type) {
-        return getMap().get(type.getID());
+        return getPropertyMap().get(type.getID());
     }
 
     @Override
     public Iterable<TitanType> getPropertyKeysDirect() {
-        RelationCache map = getMap();
-        List<TitanType> types = new ArrayList<TitanType>(map.size());
+        RelationCache map = getPropertyMap();
+        List<TitanType> types = new ArrayList<TitanType>(map.numProperties());
 
         for (LongObjectCursor<Object> entry : map) {
-            if (entry.key < 0)
-                continue;
-
-            if (entry.value != null)
-                types.add(tx().getExistingType(entry.key));
+            types.add(tx().getExistingType(entry.key));
         }
         return types;
     }

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.*;
 
@@ -13,46 +14,51 @@ import java.util.*;
  */
 public class RelationCache implements Iterable<LongObjectCursor<Object>> {
 
-    private final LongObjectOpenHashMap<Object> container;
+    private static final LongObjectOpenHashMap<Object> EMPTY = new LongObjectOpenHashMap<Object>(0);
 
-    protected RelationCache(final LongObjectOpenHashMap<Object> container) {
-        this.container = container;
+    public final Direction direction;
+    public final long typeId;
+    public final long relationId;
+    private final Object other;
+    private final LongObjectOpenHashMap<Object> properties;
+
+    public RelationCache(final Direction direction, final long typeId, final long relationId,
+                         final Object other, final LongObjectOpenHashMap<Object> properties) {
+        this.direction = direction;
+        this.typeId = typeId;
+        this.relationId = relationId;
+        this.other = other;
+        this.properties = (properties == null || properties.size() > 0) ? properties : EMPTY;
     }
 
     @SuppressWarnings("unchecked")
     public <O> O get(long key) {
-        return (O) container.get(key);
+        return (O) properties.get(key);
     }
 
-    public int size() {
-        return container.size();
+    public boolean hasProperties() {
+        return properties != null;
+    }
+
+    public int numProperties() {
+        return properties.size();
+    }
+
+    public Object getValue() {
+        return other;
+    }
+
+    public Long getOtherVertexId() {
+        return (Long) other;
+    }
+
+    public Iterator<LongObjectCursor<Object>> propertyIterator() {
+        return properties.iterator();
     }
 
     @Override
     public Iterator<LongObjectCursor<Object>> iterator() {
-        return container.iterator();
+        return propertyIterator();
     }
 
-    public static class Builder {
-        private static final int INITIAL_CAPACITY = 4;
-
-        private final LongObjectOpenHashMap<Object> container;
-
-        public Builder() {
-            container = new LongObjectOpenHashMap<Object>(INITIAL_CAPACITY);
-        }
-
-        public void put(long key, Object value) {
-            if (!container.putIfAbsent(key, value))
-                throw new IllegalArgumentException("duplicate key found: " + key);
-        }
-
-        public int size() {
-            return container.size();
-        }
-
-        public RelationCache build() {
-            return new RelationCache(container);
-        }
-    }
 }

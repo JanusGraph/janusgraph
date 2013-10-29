@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
@@ -23,11 +24,10 @@ public class RelationCacheTest {
     @Test
     public void testMap() {
         int len = 100;
-        RelationCache.Builder b = new RelationCache.Builder();
+        LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
         for (int i = 1; i <= len; i++) {
-            b.put(i * 1000, "TestValue " + i);
+            map.put(i * 1000, "TestValue " + i);
         }
-        RelationCache map = b.build();
 
         Map<Long, Object> copy1 = new HashMap<Long, Object>();
         for (LongObjectCursor<Object> entry : map) {
@@ -50,8 +50,7 @@ public class RelationCacheTest {
 
     @Test
     public void testEmpty() {
-        RelationCache.Builder b = new RelationCache.Builder();
-        RelationCache map = b.build();
+        LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
         assertEquals(0, map.size());
         assertEquals(0, Iterables.size(map));
     }
@@ -62,11 +61,10 @@ public class RelationCacheTest {
         int iterations = 100000;
         for (int k = 0; k < iterations; k++) {
             int len = random.nextInt(10);
-            RelationCache.Builder b = new RelationCache.Builder();
+            LongObjectOpenHashMap<Object> map = new LongObjectOpenHashMap<Object>();
             for (int i = 1; i <= len; i++) {
-                b.put(i * 1000, "TestValue " + i);
+                map.put(i * 1000, "TestValue " + i);
             }
-            RelationCache map = b.build();
             for (int t = 0; t < trials; t++) {
                 for (int i = 1; i <= len; i++) {
                     assertEquals("TestValue " + i, map.get(i * 1000));
