@@ -123,6 +123,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         f.supportsUnorderedScan = true;
         f.supportsOrderedScan = true;
         f.supportsBatchMutation = true;
+        f.supportsMultiQuery = true;
 
         f.supportsTransactions = true;
         f.supportsConsistentKeyOperations = false;
@@ -166,7 +167,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         public void close() {
             // Do nothing
         }
-        
+
         @Override
         public void remove() {
             throw new UnsupportedOperationException("Can't remove element from empty iterator");

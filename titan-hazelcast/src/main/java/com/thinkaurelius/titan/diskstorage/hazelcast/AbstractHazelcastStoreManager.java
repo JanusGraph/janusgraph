@@ -32,7 +32,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         manager = Hazelcast.newHazelcastInstance();
         storageConfig = new FileStorageConfiguration(directory);
         lockExpireMS = config.getLong(GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
-                                      GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
+                GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
 
         if (transactional)
             logger.warn("Hazelcast does not support multiple transactions per thread");
@@ -75,6 +75,7 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         features.supportsOrderedScan = false;
         features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
+        features.supportsMultiQuery = false;
 
         features.supportsTransactions = true;
         features.supportsConsistentKeyOperations = false;

@@ -90,11 +90,10 @@ public class GraphDatabaseConfiguration {
      */
     public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
-
     /**
      * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
      * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
-     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(long)}.
+     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(Long)}.
      * <p/>
      * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
      * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
@@ -168,6 +167,16 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
     public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
+
+
+    /**
+     * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
+     * across the entire Titan graph database instance. Parallelization is only applicable to certain storage operations and
+     * can be beneficial when the operation is I/O bound.
+     */
+    public static final String PARALLEL_BACKEND_OPS_KEY = "parallel-backend-ops";
+    public static final boolean PARALLEL_BACKEND_OPS_DEFAULT = true;
+
     /**
      * A unique identifier for the machine running the @TitanGraph@ instance.
      * It must be ensured that no other machine accessing the storage backend can have the same identifier.

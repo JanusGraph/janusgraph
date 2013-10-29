@@ -24,6 +24,26 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 public abstract class DistributedStoreManager extends AbstractStoreManager {
 
+    public enum Deployment {
+
+        /**
+         * Connects to storage backend over the network
+         */
+        REMOTE,
+
+        /**
+         * Connects to storage backend over localhost
+         */
+        LOCAL,
+
+        /**
+         * Embedded with storage backend
+         */
+        EMBEDDED;
+
+    }
+
+
     private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
     private static final Random random = new Random();
 
@@ -42,12 +62,12 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         } else {
             this.hostnames = new String[]{HOSTNAME_DEFAULT};
         }
-        Preconditions.checkArgument(hostnames.length>0,"No hostname configured");
+        Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
         this.rid = getRid(storageConfig);
         this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
         this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
-        this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY,PAGE_SIZE_DEFAULT);
+        this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
     }
 
     /**

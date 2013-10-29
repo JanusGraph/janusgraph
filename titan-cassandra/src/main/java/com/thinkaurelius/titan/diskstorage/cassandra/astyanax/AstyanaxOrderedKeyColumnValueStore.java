@@ -239,7 +239,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         // range of keys (e.g. time slice) with random partitioner could produce disjoint set of tokens
         // returning ambiguous results to the user.
         Partitioner partitioner = storeManager.getPartitioner();
-        if (partitioner != Partitioner.BYTEORDER && partitioner != Partitioner.LOCALBYTEORDER)
+        if (partitioner != Partitioner.BYTEORDER)
             throw new PermanentStorageException("getKeys(KeyRangeQuery could only be used with byte-ordering partitioner.");
 
         ByteBuffer start = query.getKeyStart().asByteBuffer(), end = query.getKeyEnd().asByteBuffer();
@@ -255,11 +255,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                 query.getSliceEnd().asByteBuffer(),
                 false,
                 limit);
-        
+
         // Omit final the query's keyend from the result, if present in result
         final Rows<ByteBuffer, ByteBuffer> r;
         try {
-             r = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult();
+            r = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult();
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
@@ -284,11 +284,11 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             return (row != null) && row.getColumns().size() > 0;
         }
     }
-    
+
     private static class KeySkipPredicate implements Predicate<Row<ByteBuffer, ByteBuffer>> {
-        
+
         private final ByteBuffer skip;
-        
+
         public KeySkipPredicate(ByteBuffer skip) {
             this.skip = skip;
         }
@@ -341,7 +341,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
                 public void close() {
                     isClosed = true;
                 }
-                
+
                 @Override
                 public void remove() {
                     throw new UnsupportedOperationException();
@@ -367,7 +367,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         public void close() {
             isClosed = true;
         }
-        
+
         @Override
         public void remove() {
             throw new UnsupportedOperationException();

@@ -52,13 +52,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
-
-        for (StaticBuffer key : keys) {
-            results.add(getSlice(new KeySliceQuery(key, query), txh));
-        }
-
-        return results;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -169,29 +163,30 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public boolean hasNext() {
             ensureOpen();
-            
+
             if (null != nextRow)
                 return true;
-            
+
             while (rows.hasNext()) {
                 nextRow = rows.next();
                 List<Entry> ents = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
                 if (null != ents && 0 < ents.size())
                     break;
             }
-            
+
             return null != nextRow;
         }
 
         @Override
         public StaticBuffer next() {
             ensureOpen();
-            
+
             Preconditions.checkNotNull(nextRow);
-            
+
             currentRow = nextRow;
-            nextRow = null;;
-            
+            nextRow = null;
+            ;
+
             return currentRow.getKey();
         }
 

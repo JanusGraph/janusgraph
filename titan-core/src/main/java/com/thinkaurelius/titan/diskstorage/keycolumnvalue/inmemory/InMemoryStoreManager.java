@@ -41,7 +41,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
         features.isDistributed = false;
-
+        features.supportsMultiQuery = false;
         features.isKeyOrdered = true;
         features.hasLocalKeyPartition = false;
     }

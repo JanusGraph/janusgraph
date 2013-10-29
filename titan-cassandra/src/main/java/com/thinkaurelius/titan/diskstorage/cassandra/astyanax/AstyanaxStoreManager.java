@@ -178,13 +178,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public Partitioner getPartitioner() throws StorageException {
-        Cluster cl = clusterContext.getClient();
-        try {
-            return Partitioner.getPartitioner(cl.describePartitioner());
-        } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
-        }
+    public Deployment getDeployment() {
+        return Deployment.REMOTE;
     }
 
     @Override
@@ -322,14 +317,14 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                                 .setName(name)
                                 .setKeyspace(keySpaceName)
                                 .setComparatorType(comparator);
-                
+
                 ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 
                 if (compressionEnabled) {
                     compressionOptions.put("sstable_compression", compressionClass)
-                                      .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+                            .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
                 }
-                
+
                 cl.addColumnFamily(cfDef.setCompressionOptions(compressionOptions.build()));
             }
         } catch (ConnectionException e) {

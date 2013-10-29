@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
-
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * Specifies the features that a given store supports
@@ -16,6 +15,7 @@ public class StoreFeatures {
     public Boolean supportsUnorderedScan;
     public Boolean supportsOrderedScan;
     public Boolean supportsBatchMutation;
+    public Boolean supportsMultiQuery;
 
     public Boolean supportsTransactions;
     public Boolean supportsConsistentKeyOperations;
@@ -25,24 +25,41 @@ public class StoreFeatures {
     public Boolean isDistributed;
     public Boolean hasLocalKeyPartition;
 
-    private void verify() {
+    private boolean verify() {
         for (Field f : getClass().getDeclaredFields()) {
             try {
-                Preconditions.checkArgument(f.get(this) != null, "Setting has not been specified: " + f.getName());
+                if (f.get(this) == null) return false;
             } catch (IllegalAccessException e) {
                 throw new IllegalArgumentException("Could not inspect setting: " + f.getName(), e);
             }
         }
+        return true;
     }
 
     @Override
     public StoreFeatures clone() {
         StoreFeatures newfeatures = new StoreFeatures();
         for (Field f : getClass().getDeclaredFields()) {
-            try {
-                f.set(newfeatures, f.get(this));
-            } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException("Could not copy setting: " + f.getName(), e);
+            if (!Modifier.isStatic(f.getModifiers())) {
+                try {
+                    f.set(newfeatures, f.get(this));
+                } catch (IllegalAccessException e) {
+                    throw new IllegalArgumentException("Could not copy setting: " + f.getName(), e);
+                }
+            }
+        }
+        return newfeatures;
+    }
+
+    public static StoreFeatures defaultFeature(boolean value) {
+        StoreFeatures newfeatures = new StoreFeatures();
+        for (Field f : StoreFeatures.class.getDeclaredFields()) {
+            if (!Modifier.isStatic(f.getModifiers())) {
+                try {
+                    f.set(newfeatures, value);
+                } catch (IllegalAccessException e) {
+                    throw new IllegalArgumentException("Could not read setting: " + f.getName(), e);
+                }
             }
         }
         return newfeatures;
@@ -64,7 +81,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsUnorderedScan() {
-        verify();
+        assert verify();
         return supportsUnorderedScan;
     }
 
@@ -74,8 +91,19 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsOrderedScan() {
-        verify();
+        assert verify();
         return supportsOrderedScan;
+    }
+
+    /**
+     * Whether this storage backend supports query operations on multiple keys,
+     * i.e {@link KeyColumnValueStore#getSlice(java.util.List, SliceQuery, StoreTransaction)}
+     *
+     * @return
+     */
+    public boolean supportsMultiQuery() {
+        assert verify();
+        return supportsMultiQuery;
     }
 
     /**
@@ -84,7 +112,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsTransactions() {
-        verify();
+        assert verify();
         return supportsTransactions;
     }
 
@@ -94,7 +122,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsConsistentKeyOperations() {
-        verify();
+        assert verify();
         return supportsConsistentKeyOperations;
     }
 
@@ -104,7 +132,7 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsLocking() {
-        verify();
+        assert verify();
         return supportsLocking;
     }
 
@@ -114,22 +142,22 @@ public class StoreFeatures {
      * @return
      */
     public boolean supportsBatchMutation() {
-        verify();
+        assert verify();
         return supportsBatchMutation;
     }
 
     public boolean isKeyOrdered() {
-        verify();
+        assert verify();
         return isKeyOrdered;
     }
 
     public boolean isDistributed() {
-        verify();
+        assert verify();
         return isDistributed;
     }
 
     public boolean hasLocalKeyPartition() {
-        verify();
+        assert verify();
         return hasLocalKeyPartition;
     }
 }
