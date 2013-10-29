@@ -118,6 +118,25 @@ public class ConcurrentLRUCache<V> {
 
         CacheEntry<Long, V> e = new CacheEntry<Long, V>(key, val, stats.accessCounter.incrementAndGet());
         CacheEntry<Long, V> oldCacheEntry = map.putIfAbsent(key, e);
+
+        if (oldCacheEntry == null) // only do maintenance if we have put a new item to the map
+            doCacheMaintenanceOnPut(oldCacheEntry);
+
+        return oldCacheEntry == null ? null : oldCacheEntry.value;
+    }
+
+    public V put(Long key, V val) {
+        if (val == null)
+            return null;
+
+        CacheEntry<Long, V> e = new CacheEntry<Long, V>(key, val, stats.accessCounter.incrementAndGet());
+        CacheEntry<Long, V> oldCacheEntry = map.put(key, e);
+
+        doCacheMaintenanceOnPut(oldCacheEntry);
+        return oldCacheEntry == null ? null : oldCacheEntry.value;
+    }
+
+    private void doCacheMaintenanceOnPut(CacheEntry<Long, V> oldCacheEntry) {
         int currentSize;
         if (oldCacheEntry == null) {
             currentSize = stats.size.incrementAndGet();
@@ -154,7 +173,6 @@ public class ConcurrentLRUCache<V> {
                 markAndSweep();
             }
         }
-        return oldCacheEntry == null ? null : oldCacheEntry.value;
     }
 
     /**
