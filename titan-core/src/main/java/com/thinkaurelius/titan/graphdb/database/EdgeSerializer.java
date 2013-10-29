@@ -22,7 +22,7 @@ import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
 
@@ -79,12 +79,12 @@ public class EdgeSerializer {
         throw new AssertionError();
     }
 
-    public ImmutableLongObjectMap readProperties(InternalVertex vertex, Entry data, StandardTitanTx tx) {
+    public RelationCache readProperties(InternalVertex vertex, Entry data, StandardTitanTx tx) {
         return getProperties(vertex.getID(), data, false, tx);
     }
 
-    public ImmutableLongObjectMap getProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
-        ImmutableLongObjectMap map = data.getCache();
+    public RelationCache getProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+        RelationCache map = data.getCache();
         if (map == null) {
             map = parseProperties(vertexid, data, parseHeaderOnly, tx);
 
@@ -110,9 +110,9 @@ public class EdgeSerializer {
         }
     }
 
-    private ImmutableLongObjectMap parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+    private RelationCache parseProperties(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
         Preconditions.checkArgument(vertexid > 0);
-        ImmutableLongObjectMap.Builder builder = new ImmutableLongObjectMap.Builder();
+        RelationCache.Builder builder = new RelationCache.Builder();
 
         ReadBuffer column = data.getReadColumn();
         ReadBuffer value = data.getReadValue();
@@ -209,7 +209,7 @@ public class EdgeSerializer {
         return builder.build();
     }
 
-    private void readInlineTypes(long[] typeids, ImmutableLongObjectMap.Builder builder, ReadBuffer in, StandardTitanTx tx) {
+    private void readInlineTypes(long[] typeids, RelationCache.Builder builder, ReadBuffer in, StandardTitanTx tx) {
         for (long typeid : typeids) {
             TitanType keyType = tx.getExistingType(typeid);
             builder.put(typeid, readInline(in, keyType));
@@ -532,8 +532,8 @@ public class EdgeSerializer {
                     TitanKey key = ((TitanKey) type);
 
                     this.value = hasGenericDataType(key)
-                                    ? serializer.readClassAndObject(value)
-                                    : serializer.readObjectNotNull(value, key.getDataType());
+                            ? serializer.readClassAndObject(value)
+                            : serializer.readObjectNotNull(value, key.getDataType());
 
                     Preconditions.checkNotNull(this.value);
                     this.otherVertex = null;

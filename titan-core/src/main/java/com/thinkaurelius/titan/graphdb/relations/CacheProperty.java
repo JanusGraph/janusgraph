@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -74,8 +73,8 @@ public class CacheProperty extends AbstractProperty {
         return (it == this) ? super.getID() : it.getID();
     }
 
-    private ImmutableLongObjectMap getMap() {
-        ImmutableLongObjectMap map = data.getCache();
+    private RelationCache getMap() {
+        RelationCache map = data.getCache();
         if (map == null) {
             map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(0), data, tx());
         }
@@ -89,7 +88,7 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public Iterable<TitanType> getPropertyKeysDirect() {
-        ImmutableLongObjectMap map = getMap();
+        RelationCache map = getMap();
         List<TitanType> types = new ArrayList<TitanType>(map.size());
 
         for (LongObjectCursor<Object> entry : map) {

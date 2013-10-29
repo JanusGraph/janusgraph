@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.util.datastructures;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ImmutableLongObjectMapTest {
+public class RelationCacheTest {
 
     private static final Random random = new Random();
 
@@ -22,25 +23,25 @@ public class ImmutableLongObjectMapTest {
     @Test
     public void testMap() {
         int len = 100;
-        ImmutableLongObjectMap.Builder b = new ImmutableLongObjectMap.Builder();
-        for (int i=1;i<=len;i++) {
-            b.put(i*1000,"TestValue " + i);
+        RelationCache.Builder b = new RelationCache.Builder();
+        for (int i = 1; i <= len; i++) {
+            b.put(i * 1000, "TestValue " + i);
         }
-        ImmutableLongObjectMap map = b.build();
+        RelationCache map = b.build();
 
-        Map<Long,Object> copy1 = new HashMap<Long,Object>();
-        for (LongObjectCursor<Object> entry: map) {
+        Map<Long, Object> copy1 = new HashMap<Long, Object>();
+        for (LongObjectCursor<Object> entry : map) {
             copy1.put(entry.key, entry.value);
         }
-        Map<Long,Object> copy2 = new HashMap<Long,Object>();
-        for (LongObjectCursor<Object> entry: map) {
+        Map<Long, Object> copy2 = new HashMap<Long, Object>();
+        for (LongObjectCursor<Object> entry : map) {
             copy2.put(entry.key, entry.value);
         }
-        assertEquals(len,map.size());
+        assertEquals(len, map.size());
         assertEquals(len, copy1.size());
         assertEquals(len, copy2.size());
-        for (int i=1;i<=len;i++) {
-            assertEquals("TestValue " + i,map.get(i*1000));
+        for (int i = 1; i <= len; i++) {
+            assertEquals("TestValue " + i, map.get(i * 1000));
             assertEquals("TestValue " + i, copy1.get(i * 1000l));
             assertEquals("TestValue " + i, copy2.get(i * 1000l));
         }
@@ -49,8 +50,8 @@ public class ImmutableLongObjectMapTest {
 
     @Test
     public void testEmpty() {
-        ImmutableLongObjectMap.Builder b = new ImmutableLongObjectMap.Builder();
-        ImmutableLongObjectMap map = b.build();
+        RelationCache.Builder b = new RelationCache.Builder();
+        RelationCache map = b.build();
         assertEquals(0, map.size());
         assertEquals(0, Iterables.size(map));
     }
@@ -59,18 +60,18 @@ public class ImmutableLongObjectMapTest {
     public void testPerformance() {
         int trials = 10;
         int iterations = 100000;
-        for (int k=0;k<iterations;k++) {
+        for (int k = 0; k < iterations; k++) {
             int len = random.nextInt(10);
-            ImmutableLongObjectMap.Builder b = new ImmutableLongObjectMap.Builder();
-            for (int i=1;i<=len;i++) {
-                b.put(i*1000,"TestValue " + i);
+            RelationCache.Builder b = new RelationCache.Builder();
+            for (int i = 1; i <= len; i++) {
+                b.put(i * 1000, "TestValue " + i);
             }
-            ImmutableLongObjectMap map = b.build();
-            for (int t = 0; t<trials;t++) {
-                for (int i=1;i<=len;i++) {
-                    assertEquals("TestValue " + i,map.get(i*1000));
+            RelationCache map = b.build();
+            for (int t = 0; t < trials; t++) {
+                for (int i = 1; i <= len; i++) {
+                    assertEquals("TestValue " + i, map.get(i * 1000));
                 }
-                assertEquals(len,map.size());
+                assertEquals(len, map.size());
                 for (LongObjectCursor<Object> entry : map) {
                 }
             }

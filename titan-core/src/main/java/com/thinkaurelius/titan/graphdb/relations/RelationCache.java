@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.datastructures;
+package com.thinkaurelius.titan.graphdb.relations;
 
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
@@ -11,11 +11,11 @@ import java.util.*;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ImmutableLongObjectMap implements Iterable<LongObjectCursor<Object>> {
+public class RelationCache implements Iterable<LongObjectCursor<Object>> {
 
     private final LongObjectOpenHashMap<Object> container;
 
-    protected ImmutableLongObjectMap(final LongObjectOpenHashMap<Object> container) {
+    protected RelationCache(final LongObjectOpenHashMap<Object> container) {
         this.container = container;
     }
 
@@ -51,8 +51,8 @@ public class ImmutableLongObjectMap implements Iterable<LongObjectCursor<Object>
             return container.size();
         }
 
-        public ImmutableLongObjectMap build() {
-            return new ImmutableLongObjectMap(container);
+        public RelationCache build() {
+            return new RelationCache(container);
         }
     }
 }
