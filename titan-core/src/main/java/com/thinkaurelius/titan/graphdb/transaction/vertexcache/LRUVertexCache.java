@@ -47,15 +47,15 @@ public class LRUVertexCache implements VertexCache {
         InternalVertex vertex = cache.get(vertexId);
 
         if (vertex == null) {
-            vertex = volatileVertices.get(vertexId);
+            InternalVertex newVertex = volatileVertices.get(vertexId);
 
-            if (vertex == null) {
-                InternalVertex newVertex = retriever.get(vertexId);
-
-                vertex = cache.putIfAbsent(vertexId, vertex);
-                if (vertex == null)
-                    vertex = newVertex;
+            if (newVertex == null) {
+                newVertex = retriever.get(vertexId);
             }
+
+            vertex = cache.putIfAbsent(vertexId, newVertex);
+            if (vertex == null)
+                vertex = newVertex;
         }
 
         return vertex;
