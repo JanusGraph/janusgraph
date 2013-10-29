@@ -53,7 +53,8 @@ public class LRUVertexCache implements VertexCache {
                 vertex = retriever.get(vertexId);
             }
 
-            cache.put(vertexId, vertex);
+            InternalVertex existingVertex = cache.putIfAbsent(vertexId, vertex);
+            if (existingVertex != null) vertex = existingVertex;
         }
 
         return vertex;
@@ -66,7 +67,7 @@ public class LRUVertexCache implements VertexCache {
 
         Long vertexId = id;
 
-        cache.put(vertexId, vertex);
+        cache.putIfAbsent(vertexId, vertex);
 
         if (vertex.isNew() || vertex.hasAddedRelations())
             volatileVertices.put(vertexId, vertex);
