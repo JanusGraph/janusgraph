@@ -42,8 +42,10 @@ import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
  * <p/>
  * ADDED COMMENT:
  * This class has been copied from the Apache Solr project (see license above).
- * The original "put" method has been changed to "putIfAbsent" by making the following changes to this method from its original:
- * 1) Changing map.put(key, e); to map.putIfAbsent(key, e);
+ * New method has been added "putIfAbsent" which has the same behaviour as normal CHM.putIfAbsent
+ * but cache maintenance operations are only done in context of a winner thread, in other words,
+ * whoever puts absent item to the map would run cache maintenance ops, everybody else would be just
+ * newly added item returned.
  *
  * @since solr 1.4
  */
