@@ -1022,7 +1022,10 @@
         <profile>
             <id>memory-test</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>test.mem</name>
+                    <value>true</value>
+                </property>
             </activation>
             <build>
                 <plugins>
@@ -1060,7 +1063,10 @@
         <profile>
             <id>performance-test</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>test.perf</name>
+                    <value>true</value>
+                </property>
             </activation>
             <build>
                 <plugins>
@@ -1081,9 +1087,7 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>
-                                        com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests
-                                    </groups>
+                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
                                     <excludes>
                                         <exclude>**/External*</exclude>
