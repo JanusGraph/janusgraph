@@ -31,7 +31,7 @@ public class LRUVertexCache implements VertexCache {
                     }
                 });
 
-        cache.setAlive(false); // don't need counters just yet
+        cache.setAlive(true); //need counters to its actually LRU
     }
 
     @Override
