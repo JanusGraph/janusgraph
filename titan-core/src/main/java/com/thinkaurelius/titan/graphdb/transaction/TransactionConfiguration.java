@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -98,7 +97,7 @@ public interface TransactionConfiguration {
      *
      * @return
      */
-    public long getVertexCacheSize();
+    public int getVertexCacheSize();
 
     /**
      * The maximum weight for the index cache store used in this particular transaction

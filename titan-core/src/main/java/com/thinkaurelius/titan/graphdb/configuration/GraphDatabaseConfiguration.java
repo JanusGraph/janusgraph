@@ -80,7 +80,7 @@ public class GraphDatabaseConfiguration {
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
      */
     public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-    public static final long TX_CACHE_SIZE_DEFAULT = 20000;
+    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
 
     /**
      * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
@@ -577,7 +577,7 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
-    private long txCacheSize;
+    private int txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
@@ -704,7 +704,7 @@ public class GraphDatabaseConfiguration {
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         flushIDs = configuration.subset(IDS_NAMESPACE).getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
-        txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
+        txCacheSize = configuration.getInt(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -863,7 +863,7 @@ public class GraphDatabaseConfiguration {
         return flushIDs;
     }
 
-    public long getTxCacheSize() {
+    public int getTxCacheSize() {
         return txCacheSize;
     }
 

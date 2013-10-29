@@ -70,10 +70,12 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public TitanVertex getOtherVertex(TitanVertex vertex) {
-        if (start.equals(vertex))
+        long otherId = vertex.getID();
+
+        if (start.getID() == otherId)
             return end;
 
-        if (end.equals(vertex))
+        if (end.getID() == otherId)
             return start;
 
         throw new IllegalArgumentException("Edge is not incident on vertex");
