@@ -36,9 +36,10 @@ import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 
 public abstract class KeyColumnValueStoreTest {
-    
-    @Rule public TestName name = new TestName();
-    
+
+    @Rule
+    public TestName name = new TestName();
+
     private Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
 
     int numKeys = 500;
@@ -96,19 +97,19 @@ public abstract class KeyColumnValueStoreTest {
     public String[][] generateValues() {
         return KeyValueStoreUtil.generateData(numKeys, numColumns);
     }
-    
+
     public void loadValues(String[][] values) throws StorageException {
         loadValues(values, -1, -1);
     }
-    
+
     public void loadValues(String[][] values, int shiftEveryNthRow,
-            int shiftSliceLength) throws StorageException {
+                           int shiftSliceLength) throws StorageException {
         for (int i = 0; i < values.length; i++) {
 
             List<Entry> entries = new ArrayList<Entry>();
             for (int j = 0; j < values[i].length; j++) {
                 StaticBuffer col;
-                if (0 < shiftEveryNthRow && 0 == i/* +1 */% shiftEveryNthRow) {
+                if (0 < shiftEveryNthRow && 0 == i/* +1 */ % shiftEveryNthRow) {
                     ByteBuffer bb = ByteBuffer.allocate(shiftSliceLength + 9);
                     for (int s = 0; s < shiftSliceLength; s++) {
                         bb.put((byte) -1);
@@ -129,46 +130,43 @@ public abstract class KeyColumnValueStoreTest {
                     KeyColumnValueStore.NO_DELETIONS, tx);
         }
     }
-    
+
     /**
      * Load a bunch of key-column-values in a way that vaguely resembles a lower
      * triangular matrix.
-     * <p>
+     * <p/>
      * Iterate over key values {@code k} in the half-open long interval
      * {@code [offset, offset + dimension -1)}. For each {@code k}, iterate over
      * the column values {@code c} in the half-open integer interval
      * {@code [offset, k]}.
-     * <p>
+     * <p/>
      * For each key-column coordinate specified by a {@code (k, c} pair in the
-     * iteration, write a value one byte long with all bits set (unsigned -1 or
-     * signed 255).
-     * 
-     * @param dimension
-     *            size of loaded data (must be positive)
-     * @param offset
-     *            offset (must be positive)
-     * @throws StorageException
-     *             unexpected failure
+     *iteration, write a value one byte long with all bits set (unsigned -1 or
+     *signed 255).
+     *
+     * @param dimension size of loaded data (must be positive)
+     * @param offset    offset (must be positive)
+     * @throws StorageException unexpected failure
      */
     public void loadLowerTriangularValues(int dimension, int offset) throws StorageException {
 
         Preconditions.checkArgument(0 < dimension);
         ByteBuffer val = ByteBuffer.allocate(1);
-        val.put((byte)-1);
+        val.put((byte) -1);
         StaticBuffer staticVal = new StaticByteBuffer(val);
-        
+
         List<Entry> rowAdditions = new ArrayList<Entry>(dimension);
-        
+
         for (int k = 0; k < dimension; k++) {
-            
+
             rowAdditions.clear();
-            
+
             ByteBuffer key = ByteBuffer.allocate(8);
             key.putInt(0);
             key.putInt(k + offset);
             key.flip();
             StaticBuffer staticKey = new StaticByteBuffer(key);
-            
+
             for (int c = 0; c <= k; c++) {
                 ByteBuffer col = ByteBuffer.allocate(4);
                 col.putInt(c + offset);
@@ -176,7 +174,7 @@ public abstract class KeyColumnValueStoreTest {
                 StaticBuffer staticCol = new StaticByteBuffer(col);
                 rowAdditions.add(new StaticBufferEntry(staticCol, staticVal));
             }
-            
+
             store.mutate(staticKey, rowAdditions, Collections.<StaticBuffer>emptyList(), tx);
         }
     }
@@ -344,16 +342,15 @@ public abstract class KeyColumnValueStoreTest {
      * {@code idOffset} is {@link KeyValueStoreUtil#idOffset}. Note that
      * identical columns appear on every key. The loaded values are randomly
      * generated strings converted to bytes.
-     * 
+     * <p/>
      * Calls the store's supported {@code getKeys} method depending on whether
      * it supports ordered or unordered scan. This logic is delegated to
      * {@link KCVSUtil#getKeys(KeyColumnValueStore, StoreFeatures, int, int, StoreTransaction)}
      * . That method uses all-zero and all-one buffers for the key and column
      * limits and retrieves every key.
-     * 
+     * <p/>
      * This method does nothing and returns immediately if the store supports no
      * scans.
-     * 
      */
     @Test
     public void scanTest() throws StorageException {
@@ -381,11 +378,11 @@ public abstract class KeyColumnValueStoreTest {
      * treats the lower key bound as inclusive and the upper key bound as
      * exclusive. Verify that keys less than the start and greater than or equal
      * to the end containing matching columns are not returned.
-     * 
+     *
      * @throws StorageException
      */
     @Test
-    @Category({ OrderedKeyStoreTests.class })
+    @Category({OrderedKeyStoreTests.class})
     public void testOrderedGetKeysRespectsKeyLimit() throws StorageException {
         if (!manager.getFeatures().supportsOrderedScan()) {
             log.warn("Can't test key-ordered features on incompatible store.  "
@@ -394,7 +391,7 @@ public abstract class KeyColumnValueStoreTest {
                     name.getMethodName());
             return;
         }
-        
+
         Preconditions.checkArgument(4 <= numKeys);
         Preconditions.checkArgument(4 <= numColumns);
 
@@ -405,14 +402,14 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         loadValues(values);
         final SliceQuery columnSlice = new SliceQuery(ByteBufferUtil.zeroBuffer(8), ByteBufferUtil.oneBuffer(8)).setLimit(1);
-        
+
         KeyIterator keys;
-        
+
         keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
         assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
-        
+
         clopen();
-        
+
         keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
         assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
     }
@@ -422,53 +419,53 @@ public abstract class KeyColumnValueStoreTest {
      * nearly the same data as {@link #testOrderedGetKeysRespectsKeyLimit()},
      * except that all columns on every 10th row exceed the {@code getKeys}
      * slice limit.
-     * <p>
+     * <p/>
      * For each row in this test, either all columns match the slice bounds or
      * all columns fall outside the slice bounds. For this reason, it could be
      * described as a "coarse-grained" or "simple" test of {@code getKeys}'s
      * column bounds checking.
-     * 
+     *
      * @throws StorageException
      */
     @Test
     public void testGetKeysColumnSlicesSimple()
             throws StorageException {
         if (manager.getFeatures().supportsScan()) {
-            
+
             final int shiftEveryNthRows = 10;
             final int expectedKeyCount = numKeys / shiftEveryNthRows * (shiftEveryNthRows - 1);
-            
+
             Preconditions.checkArgument(0 == numKeys % shiftEveryNthRows);
             Preconditions.checkArgument(10 < numKeys / shiftEveryNthRows);
-            
+
             String[][] values = generateValues();
             loadValues(values, shiftEveryNthRows, 4);
-            
+
             RecordIterator<StaticBuffer> i;
             i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             Assert.assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
-            
+
             clopen();
-            
+
             i = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             Assert.assertEquals(expectedKeyCount, KeyValueStoreUtil.count(i));
         }
     }
-    
-    
+
+
     /**
      * Test {@code getKeys} with columns slice values chosen to trigger
      * potential fencepost bugs.
-     * <p>
+     * <p/>
      * Description of data generated for and queried by this test:
-     * <p>
+     * <p/>
      * Generate a sequence of keys as unsigned integers, starting at zero. Each
      * row has as many columns as the key value. The columns are generated in
      * the same way as the keys. This results in a sort of "lower triangular"
      * data space, with no values above the diagonal.
-     * 
+     *
      * @throws StorageException shouldn't happen
-     * @throws IOException shouldn't happen
+     * @throws IOException      shouldn't happen
      */
     @Test
     public void testGetKeysColumnSlicesOnLowerTriangular() throws StorageException, IOException {
@@ -482,90 +479,90 @@ public abstract class KeyColumnValueStoreTest {
             Preconditions.checkArgument(0 == offset % 2);
             Preconditions.checkArgument(4 <= size);
             Preconditions.checkArgument(1 <= offset);
-            
+
             loadLowerTriangularValues(size, offset);
-            
+
             boolean executed = false;
-            
+
             if (manager.getFeatures().supportsUnorderedScan()) {
-                
+
                 Collection<StaticBuffer> expected = new HashSet<StaticBuffer>(size);
-                
+
                 for (int start = midpoint; start >= offset - step; start -= step) {
                     for (int end = midpoint + 1; end <= upper + step; end += step) {
                         Preconditions.checkArgument(start < end);
-                        
+
                         // Set column bounds
                         StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
                         StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
                         SliceQuery sq = new SliceQuery(startCol, endCol);
-                        
+
                         // Compute expectation
                         expected.clear();
                         for (long l = Math.max(start, offset); l < upper; l++) {
                             expected.add(ByteBufferUtil.getLongBuffer(l));
                         }
-                        
+
                         // Compute actual
                         KeyIterator i = store.getKeys(sq, tx);
                         Collection<StaticBuffer> actual = Sets.newHashSet(i);
-                        
+
                         // Check
-                        log.error("Checking bounds [{}, {}) (expect {} keys)", 
-                                new Object[] { startCol, endCol, expected.size() });
+                        log.error("Checking bounds [{}, {}) (expect {} keys)",
+                                new Object[]{startCol, endCol, expected.size()});
                         Assert.assertEquals(expected, actual);
                         i.close();
                         executed = true;
                     }
                 }
-                
+
             } else if (manager.getFeatures().supportsOrderedScan()) {
-                
+
                 Collection<StaticBuffer> expected = new ArrayList<StaticBuffer>(size);
-                
+
                 for (int start = midpoint; start >= offset - step; start -= step) {
                     for (int end = midpoint + 1; end <= upper + step; end += step) {
                         Preconditions.checkArgument(start < end);
-                        
+
                         // Set column bounds
                         StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
                         StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
                         SliceQuery sq = new SliceQuery(startCol, endCol);
-                        
+
                         // Set key bounds
                         StaticBuffer keyStart = ByteBufferUtil.getLongBuffer(start);
                         StaticBuffer keyEnd = ByteBufferUtil.getLongBuffer(end);
                         KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
-                        
+
                         // Compute expectation
                         expected.clear();
                         for (long l = Math.max(start, offset); l < Math.min(upper, end); l++) {
                             expected.add(ByteBufferUtil.getLongBuffer(l));
                         }
-                        
+
                         // Compute actual
                         KeyIterator i = store.getKeys(krq, tx);
                         Collection<StaticBuffer> actual = Lists.newArrayList(i);
 
                         log.error("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
-                                new Object[] { keyStart, keyEnd, startCol, endCol, expected.size() });
+                                new Object[]{keyStart, keyEnd, startCol, endCol, expected.size()});
                         Assert.assertEquals(expected, actual);
                         i.close();
                         executed = true;
                     }
                 }
-                
+
             } else {
                 throw new UnsupportedOperationException(
                         "Illegal store configuration: supportsScan()=true but supportsOrderedScan()=supportsUnorderedScan()=false");
             }
-            
+
             Preconditions.checkArgument(executed);
         }
     }
 
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key,
-            int start, int end, int limit) throws StorageException {
+                           int start, int end, int limit) throws StorageException {
         List<Entry> entries;
         if (limit <= 0)
             entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)), tx);
@@ -765,11 +762,13 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void testGetSlices() throws Exception {
+        if (!manager.getFeatures().supportsMultiQuery()) return;
+
         populateDBWith100Keys();
 
         tx.commit();
         tx = startTx();
-        
+
         List<StaticBuffer> keys = new ArrayList<StaticBuffer>(100);
 
         for (int i = 1; i <= 100; i++) {
@@ -789,7 +788,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ UnorderedKeyStoreTests.class })
+    @Category({UnorderedKeyStoreTests.class})
     public void testGetKeysWithSliceQuery() throws Exception {
         if (!manager.getFeatures().supportsUnorderedScan()) {
             log.warn("Can't test key-unordered features on incompatible store.  "
@@ -798,7 +797,7 @@ public abstract class KeyColumnValueStoreTest {
                     name.getMethodName());
             return;
         }
-        
+
         populateDBWith100Keys();
 
         tx.commit();
@@ -812,7 +811,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     @Test
-    @Category({ OrderedKeyStoreTests.class })
+    @Category({OrderedKeyStoreTests.class})
     public void testGetKeysWithKeyRange() throws Exception {
         if (!manager.getFeatures().supportsOrderedScan()) {
             log.warn("Can't test ordered scans on incompatible store.  "
@@ -821,7 +820,7 @@ public abstract class KeyColumnValueStoreTest {
                     + "Skipping test {}.", name.getMethodName());
             return;
         }
-        
+
         populateDBWith100Keys();
 
         tx.commit();
@@ -850,7 +849,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     protected void examineGetKeysResults(KeyIterator keyIterator,
-            long startKey, long endKey, int expectedColumns)
+                                         long startKey, long endKey, int expectedColumns)
             throws StorageException {
         Assert.assertNotNull(keyIterator);
 
