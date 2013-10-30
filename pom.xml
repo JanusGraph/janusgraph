@@ -184,6 +184,7 @@
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
+                        <failIfNoTests>false</failIfNoTests>
                         <excludes>
                             <exclude>**/External*.java</exclude>
                             <exclude>**/*PerformanceTest.java</exclude>
