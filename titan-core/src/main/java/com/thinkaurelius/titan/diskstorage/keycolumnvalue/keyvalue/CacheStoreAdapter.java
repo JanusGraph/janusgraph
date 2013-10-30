@@ -85,7 +85,8 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
         BackendOperation.execute(new Callable<Object>() {
             @Override
             public Object call() throws Exception {
-                StaticBuffer oldValue = decompress(store.get(key, txh));
+                StaticBuffer oldValueCompress = store.get(key, txh);
+                StaticBuffer oldValue = decompress(oldValueCompress);
                 int oldLen = oldValue == null ? 0 : oldValue.length();
                 int newLen = oldLen + addLength;
                 Preconditions.checkArgument(newLen < MAX_BYTE_LEN, "New allocation [%s] exceeded max value length [%s] ", newLen, MAX_BYTE_LEN);
@@ -129,7 +130,7 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
                     store.delete(key, txh);
                 } else {
                     StaticBuffer newValue = compress(new StaticByteBuffer(out));
-                    store.replace(key, newValue, oldValue, txh);
+                    store.replace(key, newValue, oldValueCompress, txh);
                 }
                 return null;
             }
@@ -216,7 +217,7 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
                     }
                     return false;
                 }
-                
+
             });
         }
 
