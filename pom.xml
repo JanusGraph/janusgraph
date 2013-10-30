@@ -79,8 +79,8 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
-        <default.test.jvm.opts>-Xms256m -Xmx768m ${test.extra.jvm.opts}</default.test.jvm.opts>
-        <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx768m -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
         <titan.classifier />
     </properties>
@@ -1114,7 +1114,7 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
+                            <argLine>-Xms256m -Xmx1024m -ea</argLine>
                             <includes>
                                 <include>**/*Test.java</include>
                             </includes>
