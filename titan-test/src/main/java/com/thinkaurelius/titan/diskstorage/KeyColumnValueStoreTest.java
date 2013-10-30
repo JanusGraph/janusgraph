@@ -42,8 +42,8 @@ public abstract class KeyColumnValueStoreTest {
 
     private Logger log = LoggerFactory.getLogger(KeyColumnValueStoreTest.class);
 
-    int numKeys = 2;
-    int numColumns = 1;
+    int numKeys = 500;
+    int numColumns = 50;
 
     protected String storeName = "testStore1";
 
@@ -331,7 +331,7 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
-        Set<Integer> deleted = deleteKeys(2);
+        Set<Integer> deleted = deleteKeys(11);
         clopen();
         checkKeys(deleted);
     }
