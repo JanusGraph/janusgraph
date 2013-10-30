@@ -26,21 +26,23 @@ public class HazelcastCacheAdapterKCVSTest extends KeyColumnValueStoreTest {
 
     @Override
     public void setUp() throws StorageException {
-        tx = manager.beginTransaction(new StoreTxConfig());
+        open();
     }
 
     @Override
     public void tearDown() throws Exception {
-        if (tx != null)
-            tx.commit();
+        close();
         manager.clearStorage();
     }
 
     @Override
-    public void clopen() {
+    public void close() throws StorageException {
+        if (tx != null)
+            tx.commit();
     }
 
     @Override
-    public void close() {
+    public void open() throws StorageException {
+        tx = manager.beginTransaction(new StoreTxConfig());
     }
 }
