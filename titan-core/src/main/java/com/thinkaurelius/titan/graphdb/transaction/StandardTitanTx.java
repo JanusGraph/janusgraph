@@ -56,6 +56,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.commons.lang.StringUtils;
+import org.cliffc.high_scale_lib.NonBlockingHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,14 +176,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         } else {
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 4;
-            typeCache = new ConcurrentHashMap<String, Long>();
+            typeCache = new NonBlockingHashMap<String, Long>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
 
         externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
         internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
 
-        vertexCache = new LRUVertexCache(config.getVertexCacheSize(), concurrencyLevel);
+        vertexCache = new LRUVertexCache(config.getVertexCacheSize());
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<IndexQuery, List<Object>>() {
             @Override
             public int weigh(IndexQuery q, List<Object> r) {
@@ -409,7 +410,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     }
                 }
             }
-            deletedRelations.put(Long.valueOf(relation.getID()), relation);
+            deletedRelations.put(relation.getID(), relation);
         }
     }
 
@@ -1018,6 +1019,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     private void close() {
         //TODO: release non crucial data structures to preserve memory?
         isOpen = false;
+        vertexCache.close();
     }
 
     @Override

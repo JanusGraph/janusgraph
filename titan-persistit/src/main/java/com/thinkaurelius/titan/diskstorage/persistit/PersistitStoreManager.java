@@ -190,6 +190,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         features.supportsLocking = true;
         features.isKeyOrdered = true;
         features.hasLocalKeyPartition = false;
+        features.supportsMultiQuery = false;
 
         return features;
     }

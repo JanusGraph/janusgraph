@@ -5,8 +5,10 @@ import java.util.concurrent.Callable;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 
@@ -23,9 +25,9 @@ public class CacheVertex extends StandardVertex {
         super(tx, id, lifecycle);
         // TODO: add MemoryMeter agent to Titan to use memory measurement instead of size
         queryCache = CacheBuilder.newBuilder()
-                                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
-                                 .maximumSize(32)
-                                 .build();
+                .concurrencyLevel(1)
+                .maximumSize(32)
+                .build();
     }
 
     @Override
@@ -37,7 +39,12 @@ public class CacheVertex extends StandardVertex {
             return queryCache.get(query, new Callable<List<Entry>>() {
                 @Override
                 public List<Entry> call() throws Exception {
-                    return lookup.get(query);
+                    Map.Entry<SliceQuery, List<Entry>> superset = getSuperResultSet(query);
+                    if (superset == null) {
+                        return lookup.get(query);
+                    } else {
+                        return query.getSubset(superset.getKey(), superset.getValue());
+                    }
                 }
             });
         } catch (Exception e) {
@@ -47,6 +54,16 @@ public class CacheVertex extends StandardVertex {
 
     @Override
     public boolean hasLoadedRelations(final SliceQuery query) {
-        return queryCache.getIfPresent(query) != null;
+        return queryCache.getIfPresent(query) != null || getSuperResultSet(query) != null;
     }
+
+    private Map.Entry<SliceQuery, List<Entry>> getSuperResultSet(final SliceQuery query) {
+        if (queryCache.size() > 0) {
+            for (Map.Entry<SliceQuery, List<Entry>> entry : queryCache.asMap().entrySet()) {
+                if (entry.getKey().subsumes(query)) return entry;
+            }
+        }
+        return null;
+    }
+
 }

@@ -264,21 +264,9 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return cfToEntries(cf, query.getSliceEnd());
     }
 
-    /**
-     * It's completely fair to do multiple
-     * {@link #getSlice(com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery,
-     * com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)} calls
-     * as Cassandra does the same thing in StorageProxy.
-     */
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
-
-        for (StaticBuffer key : keys) {
-            results.add(getSlice(new KeySliceQuery(key, query), txh));
-        }
-
-        return results;
+        throw new UnsupportedOperationException();
     }
 
     @Override

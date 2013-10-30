@@ -106,22 +106,20 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public Partitioner getPartitioner() throws StorageException {
-        try {
-            Partitioner p = Partitioner.getPartitioner(StorageService.getPartitioner());
-            if (p == Partitioner.BYTEORDER) p = Partitioner.LOCALBYTEORDER;
-            return p;
-        } catch (Exception e) {
-            log.warn("Could not read local token range: {}", e);
-            throw new PermanentStorageException("Could not read partitioner information on cluster", e);
-        }
+    public Deployment getDeployment() {
+        return Deployment.EMBEDDED;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public IPartitioner<? extends Token<?>> getCassandraPartitioner()
             throws StorageException {
-        return StorageService.getPartitioner();
+        try {
+            return StorageService.getPartitioner();
+        } catch (Exception e) {
+            log.warn("Could not read local token range: {}", e);
+            throw new PermanentStorageException("Could not read partitioner information on cluster", e);
+        }
     }
 
     @Override
@@ -152,7 +150,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     StaticBuffer[] getLocalKeyPartition() throws StorageException {
         // getLocalPrimaryRange() returns a raw type
-        @SuppressWarnings({ "rawtypes", "deprecation" })
+        @SuppressWarnings({"rawtypes", "deprecation"})
         Range<Token> range = StorageService.instance.getLocalPrimaryRange();
         Token<?> leftKeyExclusive = range.left;
         Token<?> rightKeyInclusive = range.right;
@@ -339,14 +337,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             try {
                 cp = new CompressionParameters(compressionClass,
                         compressionChunkSizeKB * 1024,
-                        Collections.<String, String> emptyMap());
+                        Collections.<String, String>emptyMap());
                 // CompressionParameters doesn't override toString(), so be explicit
-                log.debug("Creating CF {}: setting {}={} and {}={} on {}", 
-                        new Object[] {
-                            columnfamilyName,
-                            CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
-                            CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
-                            cp });
+                log.debug("Creating CF {}: setting {}={} and {}={} on {}",
+                        new Object[]{
+                                columnfamilyName,
+                                CompressionParameters.SSTABLE_COMPRESSION, compressionClass,
+                                CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
+                                cp});
             } catch (ConfigurationException ce) {
                 throw new PermanentStorageException(ce);
             }

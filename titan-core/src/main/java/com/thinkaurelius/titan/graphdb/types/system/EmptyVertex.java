@@ -215,8 +215,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public Object getId() {
-        if (hasId()) return Long.valueOf(getID());
-        else return null;
+        return hasId() ? getID() : null;
     }
 
     @Override

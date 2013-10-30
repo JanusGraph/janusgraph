@@ -111,11 +111,13 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
+
     @Override
-    public Partitioner getPartitioner() throws StorageException {
-        return Partitioner.getPartitioner(getCassandraPartitioner());
+    public Deployment getDeployment() {
+        return Deployment.REMOTE;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
         CTConnection conn = null;
@@ -390,20 +392,20 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     private void createColumnFamily(Cassandra.Client client,
-                                           String ksName,
-                                           String cfName,
-                                           String comparator) throws StorageException {
+                                    String ksName,
+                                    String cfName,
+                                    String comparator) throws StorageException {
 
         CfDef createColumnFamily = new CfDef();
         createColumnFamily.setName(cfName);
         createColumnFamily.setKeyspace(ksName);
         createColumnFamily.setComparator_type(comparator);
-        
+
         ImmutableMap.Builder<String, String> compressionOptions = new ImmutableMap.Builder<String, String>();
 
         if (compressionEnabled) {
             compressionOptions.put("sstable_compression", compressionClass)
-                              .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
+                    .put("chunk_length_kb", Integer.toString(compressionChunkSizeKB));
         }
 
         createColumnFamily.setCompression_options(compressionOptions.build());
@@ -486,7 +488,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
         CTConnection conn = null;
         Map<String, String> result = null;
-        
+
         try {
             conn = pool.borrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
@@ -499,7 +501,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                     break;
                 }
             }
-            
+
             return result;
         } catch (InvalidRequestException e) {
             log.debug("Keyspace {} does not exist", keySpaceName);
@@ -753,7 +755,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                     m = newbytesPat.matcher(rawToken);
                 }
                 if (!m.matches()) {
-                    log.error("Couldn't match token {} against pattern {} or {} ", new Object[] { rawToken, oldPat, newbytesPat });
+                    log.error("Couldn't match token {} against pattern {} or {} ", new Object[]{rawToken, oldPat, newbytesPat});
                     pool.returnObjectUnsafe(SYSTEM_KS, conn);
                     conn = null;
                     return;

@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -49,10 +48,7 @@ public class CacheProperty extends AbstractProperty {
     }
 
     private void copyProperties(InternalRelation to) {
-        for (LongObjectCursor<Object> entry : getMap()) {
-            if (entry.key < 0)
-                continue;
-
+        for (LongObjectCursor<Object> entry : getPropertyMap()) {
             to.setPropertyDirect(tx().getExistingType(entry.key), entry.value);
         }
     }
@@ -74,30 +70,26 @@ public class CacheProperty extends AbstractProperty {
         return (it == this) ? super.getID() : it.getID();
     }
 
-    private ImmutableLongObjectMap getMap() {
-        ImmutableLongObjectMap map = data.getCache();
-        if (map == null) {
-            map = tx().getGraph().getEdgeSerializer().readProperties(getVertex(0), data, tx());
+    private RelationCache getPropertyMap() {
+        RelationCache map = data.getCache();
+        if (map == null || !map.hasProperties()) {
+            map = tx().getGraph().getEdgeSerializer().readRelation(getVertex(0), data, tx());
         }
         return map;
     }
 
     @Override
     public <O> O getPropertyDirect(TitanType type) {
-        return getMap().get(type.getID());
+        return getPropertyMap().get(type.getID());
     }
 
     @Override
     public Iterable<TitanType> getPropertyKeysDirect() {
-        ImmutableLongObjectMap map = getMap();
-        List<TitanType> types = new ArrayList<TitanType>(map.size());
+        RelationCache map = getPropertyMap();
+        List<TitanType> types = new ArrayList<TitanType>(map.numProperties());
 
         for (LongObjectCursor<Object> entry : map) {
-            if (entry.key < 0)
-                continue;
-
-            if (entry.value != null)
-                types.add(tx().getExistingType(entry.key));
+            types.add(tx().getExistingType(entry.key));
         }
         return types;
     }
