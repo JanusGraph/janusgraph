@@ -5,12 +5,14 @@ import java.util.concurrent.TimeUnit;
 
 import com.hazelcast.config.ClasspathXmlConfig;
 import com.hazelcast.config.Config;
+import com.hazelcast.config.FileSystemXmlConfig;
 import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.nio.serialization.ByteArraySerializer;
 import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionOptions;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
@@ -29,6 +31,11 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractHazelcastStoreManager.class);
 
+    public static final String CONFIG_FILE_KEY = "config-file";
+    public static final String CLASSPATH_FILE_KEY = "config-file";
+    public static final String CLASSPATH_FILE_DEFAULT = "hazelcast.xml";
+
+
     protected final HazelcastInstance manager;
     protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
@@ -36,7 +43,16 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
 
     public AbstractHazelcastStoreManager(Configuration config) throws StorageException {
         super(config);
-        Config conf = new ClasspathXmlConfig("hazelcast.xml");
+        Config conf;
+        if (config.containsKey(CONFIG_FILE_KEY)) {
+            try {
+                conf = new FileSystemXmlConfig(config.getString(CONFIG_FILE_KEY));
+            } catch (IOException e) {
+                throw new PermanentStorageException("Could not load configuration file", e);
+            }
+        } else {
+            conf = new ClasspathXmlConfig(config.getString(CLASSPATH_FILE_KEY, CLASSPATH_FILE_DEFAULT));
+        }
         SerializerConfig sc = new SerializerConfig();
         sc.setImplementation(new StaticBufferSerializer()).setTypeClass(StaticBuffer.class);
         conf.getSerializationConfig().addSerializerConfig(sc);
