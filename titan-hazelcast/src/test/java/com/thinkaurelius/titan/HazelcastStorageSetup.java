@@ -7,22 +7,12 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 public class HazelcastStorageSetup extends StorageSetup {
 
-    public static Configuration getHazelcastKCVSGraphConfig(boolean transactional) {
-        BaseConfiguration config = new BaseConfiguration();
-
-        Configuration storage = config.subset(STORAGE_NAMESPACE);
-        storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
-        storage.addProperty(STORAGE_BACKEND_KEY, "hazelcastkcvs");
-        storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
-        return config;
-    }
-
     public static Configuration getHazelcastCacheGraphConfig(boolean transactional) {
         BaseConfiguration config = new BaseConfiguration();
 
         Configuration storage = config.subset(STORAGE_NAMESPACE);
         storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
-        storage.addProperty(STORAGE_BACKEND_KEY, "hazelcastcache");
+        storage.addProperty(STORAGE_BACKEND_KEY, "hazelcast");
         storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
         return config;
     }
