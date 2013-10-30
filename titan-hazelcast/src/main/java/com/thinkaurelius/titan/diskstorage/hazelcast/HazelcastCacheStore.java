@@ -37,7 +37,6 @@ public class HazelcastCacheStore implements CacheStore {
 
         // Hazelcast doesn't replace a value when old value was null
         // so we have to look and use putIfAbsent(new) if oldValue == null, otherwise use replace(old, new)
-
         if (oldValue == null) {
             if (cache.putIfAbsent(rawKey, rawNewValue) != null)
                 throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
@@ -54,7 +53,7 @@ public class HazelcastCacheStore implements CacheStore {
     @Override
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException {
         byte[] value = cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY));
-        return value == null ? null : new StaticArrayBuffer(value);
+        return value == null ? null : new StaticByteBuffer(value);
     }
 
     @Override
