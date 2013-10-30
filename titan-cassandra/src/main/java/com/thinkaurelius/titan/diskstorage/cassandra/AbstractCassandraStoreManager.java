@@ -212,12 +212,12 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
                 case LOCAL:
                     features.supportsMultiQuery = true;
-                    features.hasLocalKeyPartition = true;
+                    features.hasLocalKeyPartition = features.isKeyOrdered;
                     break;
 
                 case EMBEDDED:
                     features.supportsMultiQuery = false;
-                    features.hasLocalKeyPartition = true;
+                    features.hasLocalKeyPartition = features.isKeyOrdered;
                     break;
 
                 default:
