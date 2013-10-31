@@ -49,18 +49,6 @@
                 <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration self.combine="override">
-                    <forkMode>always</forkMode>
-                    <reuseForks>true</reuseForks>
-                    <parallel />
-                    <threadCount>1</threadCount>
-                    <perCoreThreadCount>false</perCoreThreadCount>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
 </project>
 
