@@ -18,20 +18,21 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     public AbstractTypedRelation(final long id, final TitanType type) {
         super(id);
-        Preconditions.checkArgument(type!=null && type instanceof InternalType);
+        assert type != null && type instanceof InternalType;
         this.type = (InternalType) type;
     }
 
     @Override
     public InternalRelation it() {
         InternalVertex v = getVertex(0);
-        if (v==v.it()) return this;
-        else {
-            InternalRelation next = (InternalRelation) RelationIdentifier.get(getVertex(0)
-                                                , type, super.getID()).findRelation(tx());
-            if (next==null) throw new InvalidElementException("Relation has been removed",this);
-            else return next;
-        }
+        if (v == v.it())
+            return this;
+
+        InternalRelation next = (InternalRelation) RelationIdentifier.get(v, type, super.getID()).findRelation(tx());
+        if (next == null)
+            throw new InvalidElementException("Relation has been removed", this);
+
+        return next;
     }
 
     @Override

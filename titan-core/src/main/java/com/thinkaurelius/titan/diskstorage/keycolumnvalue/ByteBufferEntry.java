@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
 
@@ -29,7 +29,7 @@ public class ByteBufferEntry implements Entry {
     }
 
     public static Entry of(ByteBuffer column, ByteBuffer value) {
-        return new ByteBufferEntry(column,value);
+        return new ByteBufferEntry(column, value);
     }
 
     @Override
@@ -83,23 +83,23 @@ public class ByteBufferEntry implements Entry {
         if (obj == null) return false;
         if (!(obj instanceof Entry)) return false;
         if (obj instanceof ByteBufferEntry) {
-            return ByteBufferUtil.equals(column,((ByteBufferEntry)obj).column);
+            return ByteBufferUtil.equals(column, ((ByteBufferEntry) obj).column);
         } else {
-            return getColumn().equals(((Entry)obj).getColumn());
+            return getColumn().equals(((Entry) obj).getColumn());
         }
     }
 
     @Override
     public String toString() {
-        return ByteBufferUtil.toString(column,"-")+"->"+ByteBufferUtil.toString(value,"-");
+        return ByteBufferUtil.toString(column, "-") + "->" + ByteBufferUtil.toString(value, "-");
     }
 
     @Override
     public int compareTo(Entry entry) {
         if (entry instanceof ByteBufferEntry) {
-            return ByteBufferUtil.compare(column,((ByteBufferEntry)entry).column);
+            return ByteBufferUtil.compare(column, ((ByteBufferEntry) entry).column);
         } else {
-            return ByteBufferUtil.compare(getColumn(),entry.getColumn());
+            return ByteBufferUtil.compare(getColumn(), entry.getColumn());
         }
     }
 
@@ -107,17 +107,17 @@ public class ByteBufferEntry implements Entry {
      * ############# IDENTICAL CODE ###############
      */
 
-    private volatile transient ImmutableLongObjectMap cache;
+    private volatile transient RelationCache cache;
 
     @Override
-    public ImmutableLongObjectMap getCache() {
+    public RelationCache getCache() {
         return cache;
     }
 
     @Override
-    public void setCache(ImmutableLongObjectMap cache) {
+    public void setCache(RelationCache cache) {
         Preconditions.checkNotNull(cache);
-        this.cache=cache;
+        this.cache = cache;
     }
 
 }

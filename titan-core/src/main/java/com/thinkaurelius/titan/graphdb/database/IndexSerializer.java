@@ -225,7 +225,7 @@ public class IndexSerializer {
         for (Entry entry : r) {
             ReadBuffer entryValue = entry.getReadValue();
             if (resultType == ElementType.VERTEX) {
-                results.add(Long.valueOf(VariableLong.readPositive(entryValue)));
+                results.add(VariableLong.readPositive(entryValue));
             } else {
                 results.add(bytebuffer2RelationId(entryValue));
             }

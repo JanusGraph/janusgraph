@@ -1,10 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -28,8 +34,8 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     protected int hashcode;
 
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, boolean isStatic) {
-        Preconditions.checkNotNull(sliceStart);
-        Preconditions.checkNotNull(sliceEnd);
+        assert sliceStart != null && sliceEnd != null;
+
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
         this.isStatic = isStatic;
@@ -75,20 +81,22 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public int hashCode() {
-        if (hashcode == 0) {
-            hashcode = sliceStart.hashCode() * 2342357 + sliceEnd.hashCode() + 742342357;
-            if (hashcode == 0) hashcode = 1;
-        }
-        return hashcode;
+        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(isStatic).append(getLimit()).toHashCode();
     }
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other)
+            return true;
+
+        if (other == null && !getClass().isInstance(other))
+            return false;
+
         SliceQuery oth = (SliceQuery) other;
-        return sliceStart.equals(oth.sliceStart) && sliceEnd.equals(oth.sliceEnd);
+        return sliceStart.equals(oth.sliceStart)
+                && sliceEnd.equals(oth.sliceEnd)
+                && getLimit() == oth.getLimit()
+                && isStatic == oth.isStatic;
     }
 
     //TODO: Need to update when introducing DESC
@@ -102,7 +110,20 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             return sliceStart.compareTo(oth.sliceStart) == 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
     }
 
-    public static final StaticBuffer pointRange(StaticBuffer point) {
+    public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
+        assert otherQuery.subsumes(this);
+        List<Entry> result = new ArrayList<Entry>();
+        int pos = Collections.binarySearch(result, StaticBufferEntry.of(sliceStart));
+        if (pos < 0) pos = -pos - 1;
+        for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
+            Entry e = otherResult.get(pos);
+            if (e.getColumn().compareTo(sliceEnd) < 0) result.add(e);
+            else break;
+        }
+        return result;
+    }
+
+    public static StaticBuffer pointRange(StaticBuffer point) {
         return ByteBufferUtil.nextBiggerBuffer(point);
     }
 

@@ -29,7 +29,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
         this.isModifiable = isModifiable;
     }
 
-    static final long getSystemTypeId(long id, RelationType type) {
+    static long getSystemTypeId(long id, RelationType type) {
         Preconditions.checkArgument(id > 0);
         Preconditions.checkArgument(id <= SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());

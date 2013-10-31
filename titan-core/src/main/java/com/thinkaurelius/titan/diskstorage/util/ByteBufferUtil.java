@@ -141,7 +141,7 @@ public class ByteBufferUtil {
      * @param b Second ByteBuffer
      * @return true if the first ByteBuffer is smaller than or equal to the second
      */
-    public static final boolean isSmallerOrEqualThan(ByteBuffer a, ByteBuffer b) {
+    public static boolean isSmallerOrEqualThan(ByteBuffer a, ByteBuffer b) {
         return compare(a,b)<=0;
     }
     
@@ -152,8 +152,8 @@ public class ByteBufferUtil {
      * @param b Second StaticBuffer
      * @return true if the first StaticBuffer is smaller than the second
      */
-    public static final boolean isSmallerThan(StaticBuffer a, StaticBuffer b) {
-        return compare(a, b)<0;
+    public static boolean isSmallerThan(StaticBuffer a, StaticBuffer b) {
+        return compare(a, b) < 0;
     }
 
     /**
@@ -163,7 +163,7 @@ public class ByteBufferUtil {
      * @param b Second StaticBuffer
      * @return true if the first StaticBuffer is smaller than or equal to the second
      */
-    public static final boolean isSmallerOrEqualThan(StaticBuffer a, StaticBuffer b) {
+    public static boolean isSmallerOrEqualThan(StaticBuffer a, StaticBuffer b) {
         return compare(a,b)<=0;
     }
 
@@ -192,34 +192,32 @@ public class ByteBufferUtil {
         return 0; //Must be equal
     }
 
-    public static final int compare(byte c1, byte c2) {
-        if (c1 != c2) {
-            if (c1 >= 0 && c2 >= 0) {
-                if (c1 < c2) return -1;
-                else return 1;
-            } else if (c1 < 0 && c2 < 0) {
-                if (c1 < c2) return -1;
-                else return 1;
-            } else if (c1 >= 0 && c2 < 0) return -1;
-            else return 1;
-        } else return 0;
+    public static int compare(byte c1, byte c2) {
+        int a = c1 & 0xff;
+        int b = c2 & 0xff;
+
+        return a - b;
     }
 
     public static int compare(StaticBuffer b1, StaticBuffer b2) {
         if (b1 == b2) {
             return 0;
         }
-        int p = 0;
-        while (p<b1.length() || p<b2.length()) {
-            if (p>=b1.length()) return -1;
-            else if (p>=b2.length()) return 1;
-            else {
-                int cmp = compare(b1.getByte(p), b2.getByte(p));
-                if (cmp!=0) return cmp;
-            }
-            p++;
+
+        // fast path for byte array comparison
+        if ((b1 instanceof StaticArrayBuffer) && (b2 instanceof StaticArrayBuffer))
+            return ((StaticArrayBuffer) b1).compareTo((StaticArrayBuffer) b2);
+
+        int i, j;
+        for (i = 0, j = 0; i < b1.length() && j < b2.length(); i++, j++)
+        {
+            int cmp = compare(b1.getByte(i), b2.getByte(j));
+            if (cmp != 0)
+                return cmp;
         }
-        return 0; //Must be equal
+
+        // equivalent of b1.remaining() - b2.remaining()
+        return (b1.length() - i + 1) - (b2.length() - j + 1);
     }
 
     /**

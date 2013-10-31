@@ -24,7 +24,7 @@ public class HazelcastCacheStore implements CacheStore {
 
     private static final String UPDATE_EXCEPTION_FORMAT = "Key: %s, has current value different from %s, can't replace with %s.";
 
-    private final IMap<byte[], byte[]> cache;
+    private final IMap<byte[], StaticBuffer> cache;
 
     public HazelcastCacheStore(String name, HazelcastInstance manager) {
         this.cache = manager.getMap(name);
@@ -33,22 +33,15 @@ public class HazelcastCacheStore implements CacheStore {
     @Override
     public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException {
         byte[] rawKey = key.as(StaticArrayBuffer.ARRAY_FACTORY);
+        byte[] rawNewValue = newValue.as(StaticArrayBuffer.ARRAY_FACTORY);
 
-        try {
-            byte[] rawNewValue = newValue.as(StaticArrayBuffer.ARRAY_FACTORY);
-
-            // Hazelcast doesn't replace a value when old value was null
-            // so we have to look and use putIfAbsent(new) if oldValue == null, otherwise use replace(old, new)
-            cache.lock(rawKey);
-
-            if (oldValue == null) {
-                if (cache.putIfAbsent(rawKey, rawNewValue) != null)
-                    throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
-            } else if (!cache.replace(rawKey, oldValue.as(StaticArrayBuffer.ARRAY_FACTORY), rawNewValue)) {
+        // Hazelcast doesn't replace a value when old value was null
+        // so we have to look and use putIfAbsent(new) if oldValue == null, otherwise use replace(old, new)
+        if (oldValue == null) {
+            if (cache.putIfAbsent(rawKey, newValue) != null)
                 throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
-            }
-        } finally {
-            cache.unlock(rawKey);
+        } else if (!cache.replace(rawKey, oldValue, newValue)) {
+            throw new CacheUpdateException(String.format(UPDATE_EXCEPTION_FORMAT, key, oldValue, newValue));
         }
     }
 
@@ -59,8 +52,10 @@ public class HazelcastCacheStore implements CacheStore {
 
     @Override
     public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        byte[] value = cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY));
-        return value == null ? null : new StaticByteBuffer(value);
+        StaticBuffer value = cache.get(key.as(StaticArrayBuffer.ARRAY_FACTORY));
+        if (value == null) return null;
+
+        return new StaticArrayBuffer(value.as(StaticBuffer.ARRAY_FACTORY));
     }
 
     @Override
@@ -86,7 +81,7 @@ public class HazelcastCacheStore implements CacheStore {
             @Override
             public KeyValueEntry next() {
                 byte[] key = keys.next();
-                return new KeyValueEntry(new StaticArrayBuffer(key), new StaticArrayBuffer(cache.get(key)));
+                return new KeyValueEntry(new StaticArrayBuffer(key), cache.get(key));
             }
 
             @Override

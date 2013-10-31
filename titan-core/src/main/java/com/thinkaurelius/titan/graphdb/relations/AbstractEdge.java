@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -19,10 +18,10 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     public AbstractEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end) {
         super(id, label);
-        Preconditions.checkNotNull(start);
-        Preconditions.checkNotNull(end);
-        this.start=start;
-        this.end=end;
+
+        assert start != null && end != null;
+        this.start = start;
+        this.end = end;
     }
 
     @Override
@@ -37,9 +36,16 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public InternalVertex getVertex(int pos) {
-        if (pos==0) return start;
-        else if (pos==1) return end;
-        else throw new IllegalArgumentException("Invalid position: " + pos);
+        switch (pos) {
+            case 0:
+                return start;
+
+            case 1:
+                return end;
+
+            default:
+                throw new IllegalArgumentException("Invalid position: " + pos);
+        }
     }
 
     @Override
@@ -64,9 +70,15 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public TitanVertex getOtherVertex(TitanVertex vertex) {
-        if (start.equals(vertex)) return end;
-        else if (end.equals(vertex)) return start;
-        else throw new IllegalArgumentException("Edge is not incident on vertex");
+        long otherId = vertex.getID();
+
+        if (start.getID() == otherId)
+            return end;
+
+        if (end.getID() == otherId)
+            return start;
+
+        throw new IllegalArgumentException("Edge is not incident on vertex");
     }
 
     @Override

@@ -41,8 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -75,6 +74,8 @@ public class Backend {
     public static final String MERGED_METRICS = "stores";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
+    public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
+
     public static final Map<String, Integer> STATIC_KEY_LENGTHS = new HashMap<String, Integer>() {{
         put(EDGESTORE_NAME, 8);
         put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8);
@@ -99,6 +100,8 @@ public class Backend {
     private final int writeAttempts;
     private final int readAttempts;
     private final int persistAttemptWaittime;
+    private final ExecutorService threadPool;
+
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers =
             new ConcurrentHashMap<String, Locker>();
@@ -128,6 +131,14 @@ public class Backend {
         Preconditions.checkArgument(readAttempts > 0, "Read attempts must be positive");
         persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
         Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
+
+        if (storageConfig.getBoolean(PARALLEL_BACKEND_OPS_KEY, PARALLEL_BACKEND_OPS_DEFAULT)) {
+            int poolsize = Math.min(1, Runtime.getRuntime().availableProcessors()) * THREAD_POOL_SIZE_SCALE_FACTOR;
+            threadPool = Executors.newFixedThreadPool(poolsize);
+            log.info("Initiated backend operations thread pool of size {}", poolsize);
+        } else {
+            threadPool = null;
+        }
 
         // If lock prefix is unspecified, specify it now
         storageConfig.setProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
@@ -417,7 +428,7 @@ public class Backend {
 
         return new BackendTransaction(tx, storeManager.getFeatures(),
                 edgeStore, vertexIndexStore, edgeIndexStore,
-                readAttempts, persistAttemptWaittime, indexTx);
+                readAttempts, persistAttemptWaittime, indexTx, threadPool);
     }
 
     public void close() throws StorageException {
@@ -426,6 +437,7 @@ public class Backend {
         edgeIndexStore.close();
         idAuthority.close();
         storeManager.close();
+        threadPool.shutdown();
         //Indexes
         for (IndexProvider index : indexes.values()) index.close();
     }
@@ -453,7 +465,7 @@ public class Backend {
         put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
-        put("hazelcastkcvs", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastKeyColumnValueStoreManager");
+        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");

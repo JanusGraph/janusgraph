@@ -18,7 +18,7 @@ public class StorageFeaturesTest {
             features = new StoreFeatures();
             features.supportsBatchMutation();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (AssertionError e) {
         }
 
         try {
@@ -26,13 +26,14 @@ public class StorageFeaturesTest {
             features.hasLocalKeyPartition = true;
             features.hasLocalKeyPartition();
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (AssertionError e) {
         }
         features = new StoreFeatures();
         features.supportsOrderedScan = false;
         features.supportsUnorderedScan = false;
         features.supportsBatchMutation = true;
         features.supportsTransactions = false;
+        features.supportsMultiQuery = false;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
         features.isKeyOrdered = false;

@@ -17,9 +17,9 @@ import java.util.List;
 class BaseVertexCentricQuery extends BaseQuery {
 
     //Condition in CNF
-    private final Condition<TitanRelation> condition;
-    private final List<BackendQueryHolder<SliceQuery>> queries;
-    private final Direction direction;
+    protected final Condition<TitanRelation> condition;
+    protected final List<BackendQueryHolder<SliceQuery>> queries;
+    protected final Direction direction;
 
     public BaseVertexCentricQuery(Condition<TitanRelation> condition, Direction direction,
                                   List<BackendQueryHolder<SliceQuery>> queries,
@@ -36,17 +36,14 @@ class BaseVertexCentricQuery extends BaseQuery {
     }
 
     protected BaseVertexCentricQuery(BaseVertexCentricQuery query) {
-        super(query.getLimit());
-        this.condition=query.condition;
-        this.queries=query.queries;
-        this.direction=query.direction;
+        this(query.getCondition(), query.getDirection(), query.getQueries(), query.getLimit());
     }
 
     protected BaseVertexCentricQuery() {
-        this(new FixedCondition<TitanRelation>(false),Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0);
+        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0);
     }
 
-    public static final BaseVertexCentricQuery emptyQuery() {
+    public static BaseVertexCentricQuery emptyQuery() {
         return new BaseVertexCentricQuery();
     }
 

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -16,24 +15,22 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
     private final TitanVertex vertex;
     private final int relationPos;
+    private final Direction direction;
 
     public DirectionCondition(TitanVertex vertex, Direction dir) {
-        Preconditions.checkNotNull(vertex);
-        Preconditions.checkNotNull(dir);
+        assert vertex != null && dir != null;
         this.vertex = vertex;
-        if (dir==Direction.BOTH) relationPos =-1;
-        else this.relationPos = EdgeDirection.position(dir);
+        this.direction = dir;
+        this.relationPos = (dir == Direction.BOTH) ? -1 : EdgeDirection.position(dir);
     }
 
     @Override
     public boolean evaluate(E element) {
-        if (relationPos <0) return true;
-        return ((InternalRelation)element).getVertex(relationPos).equals(vertex);
+        return relationPos < 0 || ((InternalRelation) element).getVertex(relationPos).equals(vertex);
     }
 
     public Direction getDirection() {
-        if (relationPos <0) return Direction.BOTH;
-        else return EdgeDirection.fromPosition(relationPos);
+        return direction;
     }
 
     @Override
@@ -43,11 +40,14 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other)
+            return true;
+
+        if (other == null || !getClass().isInstance(other))
+            return false;
+
         DirectionCondition oth = (DirectionCondition)other;
-        return relationPos==oth.relationPos && vertex.equals(oth.vertex);
+        return relationPos == oth.relationPos && vertex.equals(oth.vertex);
     }
 
     @Override

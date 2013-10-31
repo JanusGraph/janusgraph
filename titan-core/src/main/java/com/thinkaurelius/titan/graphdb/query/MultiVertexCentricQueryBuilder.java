@@ -24,19 +24,14 @@ import java.util.Set;
 
 public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanMultiVertexQuery {
 
-    private static final Logger log = LoggerFactory.getLogger(MultiVertexCentricQueryBuilder.class);
+    @SuppressWarnings("unused")
+    private static final Logger logger = LoggerFactory.getLogger(MultiVertexCentricQueryBuilder.class);
 
     private final Set<InternalVertex> vertices;
 
     public MultiVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
         super(tx, serializer);
         vertices = Sets.newHashSet();
-    }
-
-    public MultiVertexCentricQueryBuilder(final EdgeSerializer serializer, final TitanVertex... vertices) {
-//        Preconditions.checkArgument(vertices.length > 0, "Must add at least one vertex");
-        this(((InternalVertex) vertices[0]).tx(), serializer);
-        for (TitanVertex v : vertices) addVertex(v);
     }
 
     /* ---------------------------------------------------------------
@@ -46,9 +41,9 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public TitanMultiVertexQuery addVertex(TitanVertex vertex) {
-        Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(vertex instanceof InternalVertex);
-        vertices.add((InternalVertex) vertex);
+        assert vertex != null;
+        assert vertex instanceof InternalVertex;
+        vertices.add((InternalVertex)vertex);
         return this;
     }
 
@@ -196,7 +191,8 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
             }
         } else {
             Iterable<? extends TitanRelation> emptyIter = IterablesUtil.emptyIterable();
-            for (TitanVertex v : vertices) result.put(v, emptyIter);
+            for (TitanVertex v : vertices)
+                result.put(v, emptyIter);
         }
         return result;
     }

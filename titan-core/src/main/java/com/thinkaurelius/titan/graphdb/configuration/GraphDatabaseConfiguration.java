@@ -80,7 +80,7 @@ public class GraphDatabaseConfiguration {
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
      */
     public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-    public static final long TX_CACHE_SIZE_DEFAULT = 20000;
+    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
 
     /**
      * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
@@ -90,11 +90,10 @@ public class GraphDatabaseConfiguration {
      */
     public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
-
     /**
      * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
      * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
-     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(long)}.
+     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(Long)}.
      * <p/>
      * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
      * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
@@ -168,6 +167,16 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
     public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
+
+
+    /**
+     * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
+     * across the entire Titan graph database instance. Parallelization is only applicable to certain storage operations and
+     * can be beneficial when the operation is I/O bound.
+     */
+    public static final String PARALLEL_BACKEND_OPS_KEY = "parallel-backend-ops";
+    public static final boolean PARALLEL_BACKEND_OPS_DEFAULT = true;
+
     /**
      * A unique identifier for the machine running the @TitanGraph@ instance.
      * It must be ensured that no other machine accessing the storage backend can have the same identifier.
@@ -577,7 +586,7 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
-    private long txCacheSize;
+    private int txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
@@ -704,7 +713,7 @@ public class GraphDatabaseConfiguration {
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         flushIDs = configuration.subset(IDS_NAMESPACE).getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
-        txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
+        txCacheSize = configuration.getInt(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -863,7 +872,7 @@ public class GraphDatabaseConfiguration {
         return flushIDs;
     }
 
-    public long getTxCacheSize() {
+    public int getTxCacheSize() {
         return txCacheSize;
     }
 

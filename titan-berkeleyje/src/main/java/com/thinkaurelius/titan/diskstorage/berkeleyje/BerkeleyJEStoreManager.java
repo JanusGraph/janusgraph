@@ -54,6 +54,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features.isKeyOrdered = true;
         features.isDistributed = false;
         features.hasLocalKeyPartition = false;
+        features.supportsMultiQuery = false;
 
         storageConfig = new FileStorageConfiguration(directory);
     }

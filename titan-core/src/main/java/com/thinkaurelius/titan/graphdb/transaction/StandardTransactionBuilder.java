@@ -35,7 +35,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean threadBound = false;
 
-    private long vertexCacheSize;
+    private int vertexCacheSize;
 
     private long indexCacheWeight;
 
@@ -95,7 +95,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setCacheSize(long size) {
+    public StandardTransactionBuilder setCacheSize(int size) {
         verifyOpen();
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
@@ -187,7 +187,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final long getVertexCacheSize() {
+    public final int getVertexCacheSize() {
         return vertexCacheSize;
     }
 

@@ -35,7 +35,7 @@ public class ReadByteBuffer extends StaticByteBuffer implements ReadBuffer {
 
     private transient int position=0;
 
-    private final int updatePos(int update) {
+    private int updatePos(int update) {
         int pos = position;
         position+=update;
         return pos;
@@ -53,8 +53,9 @@ public class ReadByteBuffer extends StaticByteBuffer implements ReadBuffer {
 
     @Override
     public void movePosition(int delta) {
-        Preconditions.checkArgument(position+delta>=-1 && position+delta<=length(),"Invalid move, position out of bounce: %s",position+delta);
-        this.position=position+delta;
+        int newPosition = position + delta;
+        assert newPosition >= -1 && newPosition <= length();
+        this.position = newPosition;
     }
 
     @Override
