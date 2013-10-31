@@ -37,8 +37,22 @@ public class InfinispanCacheStore implements CacheStore {
 
     @Override
     public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException {
-        if (oldValue==null) cache.replace(key,newValue);
-        else cache.replace(key,oldValue,newValue);
+        // TODO simplify this if possible without violating the method contract
+        if (null == newValue) {
+            if (!cache.remove(key, oldValue)) {
+                throw new CacheUpdateException("key=" + key + " oldValue=" + oldValue + " newValue=" + newValue);
+            }
+        } else if (null == oldValue) {
+            if (null != cache.putIfAbsent(key, newValue)) {
+                throw new CacheUpdateException("key=" + key + " oldValue=" + oldValue + " newValue=" + newValue);
+            }
+        } else {
+            assert null != newValue;
+            assert null != oldValue;
+            if (!cache.replace(key, oldValue, newValue)) {
+                throw new CacheUpdateException("key=" + key + " oldValue=" + oldValue + " newValue=" + newValue);
+            }
+        }
     }
 
     @Override

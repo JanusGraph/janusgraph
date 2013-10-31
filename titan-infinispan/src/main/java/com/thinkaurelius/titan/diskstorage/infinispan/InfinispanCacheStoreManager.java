@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreMan
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 
 import org.apache.commons.configuration.Configuration;
+import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfiguration;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
@@ -45,7 +46,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
 
     @Override
-    public synchronized CacheStore openDatabase(String name) throws StorageException {
+    public synchronized CacheStore openDatabase(final String name) throws StorageException {
         if (stores.containsKey(name)) {
             return stores.get(name);
         }
@@ -68,15 +69,17 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
     @Override
     public void clearStorage() throws StorageException {
-        for (InfinispanCacheStore store : stores.values()) {
-            store.clearStore();
+        
+        for (String storeName : manager.getCacheNames()) {
+            Cache<Object, Object> store = manager.getCache(storeName);
+            store.clear();
         }
-        close();
+        // close();
     }
 
     @Override
     public String getName() {
-        return getClass().getSimpleName() + ":" + directory.toString();
+        return toString();
     }
 
 
@@ -93,10 +96,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
     @Override
     public void close() throws StorageException {
-        for (InfinispanCacheStore store : stores.values()) {
-            store.close();
-        }
-        manager.stop();
+        manager.stop(); // Stops all of the manager's caches
     }
 
     @Override
@@ -120,6 +120,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         features.supportsOrderedScan = false;
         features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
+        features.supportsMultiQuery = false;
 
         features.supportsTransactions = false;
         features.supportsConsistentKeyOperations = true;
