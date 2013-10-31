@@ -15,9 +15,6 @@ public class ByteBufferUtil {
     public static final int longSize = 8;
     public static final int intSize = 4;
 
-    private static final int HASHCODE_SHIFT = 11;
-    private static final int HASHCODE_OFFSET = 1911;
-
     public static final ByteBuffer getIntByteBuffer(int id) {
         ByteBuffer buffer = ByteBuffer.allocate(intSize);
         buffer.putInt(id);
@@ -221,33 +218,33 @@ public class ByteBufferUtil {
     }
 
     /**
-     * Thread-safe hashcode method for ByteBuffer
+     * Thread-safe hashcode method for ByteBuffer written according to Effective
+     * Java 2e by Josh Bloch.
+     * 
      * @param b ByteBuffer
      * @return hashcode for given ByteBuffer
      */
     public static final int hashcode(ByteBuffer b) {
-        int shift = HASHCODE_SHIFT;
-        int hash = HASHCODE_OFFSET;
-        for (int pos=b.position(); pos<b.limit(); pos++) {
-            hash = hash & (b.get(pos)<<shift);
-            shift= (shift+HASHCODE_SHIFT)%28;
+        int result = 17;
+        for (int i = b.position(); i < b.limit(); i++) {
+            result = 31 * result + (int)b.get(i);
         }
-        return hash;
+        return result;
     }
 
     /**
-     * Thread-safe hashcode method for StaticBuffer
+     * Thread-safe hashcode method for StaticBuffer written according to
+     * Effective Java 2e by Josh Bloch.
+     * 
      * @param b ByteBuffer
      * @return hashcode for given StaticBuffer
      */
     public static final int hashcode(StaticBuffer b) {
-        int shift = HASHCODE_SHIFT;
-        int hash = HASHCODE_OFFSET;
-        for (int pos=0; pos<b.length(); pos++) {
-            hash = hash & (b.getByte(pos)<<shift);
-            shift= (shift+HASHCODE_SHIFT)%28;
+        int result = 17;
+        for (int i = 0; i < b.length(); i++) {
+            result = 31 * result + (int)b.getByte(i);
         }
-        return hash;
+        return result;
     }
 
     /**
