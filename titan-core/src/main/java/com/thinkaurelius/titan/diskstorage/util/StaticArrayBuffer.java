@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 
 /**
  * Implementation of {@link StaticBuffer} against byte array.
- *
+ * <p/>
  * The byte to primitive conversion code was copied from / is inspired by Kryo's Input class:
  * {@linktourl https://code.google.com/p/kryo/source/browse/trunk/src/com/esotericsoftware/kryo/io/Input.java}
  *
@@ -32,7 +32,7 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     public StaticArrayBuffer(byte[] array, int limit) {
-        this(array,0,limit);
+        this(array, 0, limit);
     }
 
     public StaticArrayBuffer(byte[] array) {
@@ -56,15 +56,15 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public int length() {
-        return limit-offset;
+        return limit - offset;
     }
 
     @Override
     public StaticBuffer subrange(int position, int length) {
-        Preconditions.checkArgument(position>=0);
-        Preconditions.checkArgument(length>=0);
-        Preconditions.checkArgument(offset+position+length<=limit);
-        return new StaticArrayBuffer(array,offset+position,offset+position+length);
+        Preconditions.checkArgument(position >= 0);
+        Preconditions.checkArgument(length >= 0);
+        Preconditions.checkArgument(offset + position + length <= limit);
+        return new StaticArrayBuffer(array, offset + position, offset + position + length);
     }
 
     @Override
@@ -74,12 +74,12 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public ByteBuffer asByteBuffer() {
-        return ByteBuffer.wrap(array,offset,limit-offset);
+        return ByteBuffer.wrap(array, offset, limit - offset);
     }
 
     @Override
-    public<T> T as(Factory<T> factory) {
-        return factory.get(array,offset,limit);
+    public <T> T as(Factory<T> factory) {
+        return factory.get(array, offset, limit);
     }
 
     /*
@@ -88,18 +88,18 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public byte getByte(int position) {
-        return getByteDirect(require(position,1));
+        return getByteDirect(require(position, 1));
     }
 
     @Override
     public short getShort(int position) {
-        int base = require(position,2);
-        return (short)(((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        int base = require(position, 2);
+        return (short) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
     }
 
     @Override
     public int getInt(int position) {
-        int base = require(position,4);
+        int base = require(position, 4);
         return (getByteDirect(base) & 0xFF) << 24 //
                 | (getByteDirect(base + 1) & 0xFF) << 16 //
                 | (getByteDirect(base + 2) & 0xFF) << 8 //
@@ -108,12 +108,12 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public long getLong(int position) {
-        int base = require(position,8);
-        return (long)getByteDirect(base++) << 56 //
-                | (long)(getByteDirect(base++) & 0xFF) << 48 //
-                | (long)(getByteDirect(base++) & 0xFF) << 40 //
-                | (long)(getByteDirect(base++) & 0xFF) << 32 //
-                | (long)(getByteDirect(base++) & 0xFF) << 24 //
+        int base = require(position, 8);
+        return (long) getByteDirect(base++) << 56 //
+                | (long) (getByteDirect(base++) & 0xFF) << 48 //
+                | (long) (getByteDirect(base++) & 0xFF) << 40 //
+                | (long) (getByteDirect(base++) & 0xFF) << 32 //
+                | (long) (getByteDirect(base++) & 0xFF) << 24 //
                 | (getByteDirect(base++) & 0xFF) << 16 //
                 | (getByteDirect(base++) & 0xFF) << 8 //
                 | getByteDirect(base++) & 0xFF;
@@ -121,8 +121,8 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public char getChar(int position) {
-        int base = require(position,2);
-        return (char)(((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        int base = require(position, 2);
+        return (char) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
     }
 
     @Override
@@ -141,10 +141,10 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public boolean equals(Object o) {
-        if (this==o) return true;
-        else if (o==null) return false;
+        if (this == o) return true;
+        else if (o == null) return false;
         else if (!(o instanceof StaticBuffer)) return false;
-        return ByteBufferUtil.equals(this,(StaticBuffer)o);
+        return ByteBufferUtil.equals(this, (StaticBuffer) o);
     }
 
     @Override
@@ -154,12 +154,12 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public String toString() {
-        return ByteBufferUtil.toString(this,"-");
+        return ByteBufferUtil.toString(this, "-");
     }
 
     @Override
     public int compareTo(StaticBuffer other) {
-       return (other instanceof StaticArrayBuffer)
+        return (other instanceof StaticArrayBuffer)
                 ? compareTo((StaticArrayBuffer) other)
                 : ByteBufferUtil.compare(this, other);
     }
@@ -168,16 +168,16 @@ public class StaticArrayBuffer implements StaticBuffer {
         return compareTo(array, offset, limit, other.array, other.offset, other.limit);
     }
 
-    private static int compareTo(byte[] buffer1, int offset1, int length1,
-                                 byte[] buffer2, int offset2, int length2) {
+    private static int compareTo(byte[] buffer1, int offset1, int end1,
+                                 byte[] buffer2, int offset2, int end2) {
         // Short circuit equal case
+        int length1 = end1 - offset1;
+        int length2 = end2 - offset2;
         if (buffer1 == buffer2 &&
                 offset1 == offset2 &&
                 length1 == length2) {
             return 0;
         }
-        int end1 = offset1 + length1;
-        int end2 = offset2 + length2;
         for (int i = offset1, j = offset2; i < end1 && j < end2; i++, j++) {
             int a = (buffer1[i] & 0xff);
             int b = (buffer2[j] & 0xff);

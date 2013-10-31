@@ -1,17 +1,26 @@
 package com.thinkaurelius.titan.diskstorage.hazelcast;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import com.hazelcast.config.ClasspathXmlConfig;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.FileSystemXmlConfig;
+import com.hazelcast.config.SerializerConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.nio.serialization.ByteArraySerializer;
 import com.hazelcast.transaction.TransactionContext;
 import com.hazelcast.transaction.TransactionOptions;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.apache.commons.configuration.Configuration;
@@ -22,6 +31,11 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractHazelcastStoreManager.class);
 
+    public static final String CONFIG_FILE_KEY = "config-file";
+    public static final String CLASSPATH_FILE_KEY = "config-file";
+    public static final String CLASSPATH_FILE_DEFAULT = "hazelcast.xml";
+
+
     protected final HazelcastInstance manager;
     protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
@@ -29,7 +43,20 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
 
     public AbstractHazelcastStoreManager(Configuration config) throws StorageException {
         super(config);
-        manager = Hazelcast.newHazelcastInstance();
+        Config conf;
+        if (config.containsKey(CONFIG_FILE_KEY)) {
+            try {
+                conf = new FileSystemXmlConfig(config.getString(CONFIG_FILE_KEY));
+            } catch (IOException e) {
+                throw new PermanentStorageException("Could not load configuration file", e);
+            }
+        } else {
+            conf = new ClasspathXmlConfig(config.getString(CLASSPATH_FILE_KEY, CLASSPATH_FILE_DEFAULT));
+        }
+        SerializerConfig sc = new SerializerConfig();
+        sc.setImplementation(new StaticBufferSerializer()).setTypeClass(StaticBuffer.class);
+        conf.getSerializationConfig().addSerializerConfig(sc);
+        manager = Hazelcast.newHazelcastInstance(conf);
         storageConfig = new FileStorageConfiguration(directory);
         lockExpireMS = config.getLong(GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
                 GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
@@ -106,6 +133,30 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         @Override
         public void rollback() {
             context.rollbackTransaction();
+        }
+    }
+
+
+    private static class StaticBufferSerializer implements ByteArraySerializer<StaticBuffer> {
+
+        @Override
+        public byte[] write(StaticBuffer o) throws IOException {
+            return o.as(StaticBuffer.ARRAY_FACTORY);
+        }
+
+        @Override
+        public StaticBuffer read(byte[] bytes) throws IOException {
+            return new StaticArrayBuffer(bytes);
+        }
+
+        @Override
+        public int getTypeId() {
+            return 1;
+        }
+
+        @Override
+        public void destroy() {
+            //Do nothing
         }
     }
 }
