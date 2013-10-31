@@ -9,14 +9,18 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
+
 import org.apache.commons.configuration.Configuration;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.global.GlobalConfiguration;
+import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.lookup.DummyTransactionManagerLookup;
 
 import javax.transaction.TransactionManager;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,7 +39,8 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
         storageConfig = new FileStorageConfiguration(directory);
-        manager = new DefaultCacheManager();
+        GlobalConfiguration gcfg = new GlobalConfigurationBuilder().globalJmxStatistics().allowDuplicateDomains(true).build();
+        manager = new DefaultCacheManager(gcfg);
     }
 
 
