@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BIN="`dirname $0`"
-REXSTER_CONFIG=conf/rexster-cassandra.xml
+REXSTER_CONFIG=conf/rexster-cassandra-es.xml
 
 start() {
     echo "Starting Cassandra..." >&2
