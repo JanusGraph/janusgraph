@@ -249,6 +249,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         return txHandle;
     }
 
+    public EdgeSerializer getEdgeSerializer() {
+        return edgeSerializer;
+    }
+
     /*
      * ------------------------------------ Vertex Handling ------------------------------------
      */
@@ -759,7 +763,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             });
 
             if (filterDirection) {
-                Preconditions.checkArgument(query.getDirection() != Direction.BOTH);
+                assert query.getDirection() != Direction.BOTH;
                 iter = Iterables.filter(iter, new Predicate<Entry>() {
                     @Override
                     public boolean apply(@Nullable Entry entry) {

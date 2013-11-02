@@ -66,6 +66,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public final SliceQuery vertexExistenceQuery;
 
+    private final RelationQueryCache relationCache;
+
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
         this.backend = configuration.getBackend();
@@ -79,6 +81,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
+        this.relationCache = new RelationQueryCache(this.edgeSerializer);
 
         isOpen = true;
     }
@@ -99,6 +102,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             super.shutdown();
             idAssigner.close();
             backend.close();
+            relationCache.close();
         } catch (StorageException e) {
             throw new TitanException("Could not close storage backend", e);
         } finally {
@@ -150,6 +154,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public AttributeHandling getAttributeHandling() {
         return serializer;
+    }
+
+    public RelationQueryCache getRelationCache() {
+        return relationCache;
     }
 
     public GraphDatabaseConfiguration getConfiguration() {

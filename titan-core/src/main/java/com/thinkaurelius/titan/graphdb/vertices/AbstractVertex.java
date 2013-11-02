@@ -6,9 +6,11 @@ import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.SimpleVertexQueryProcessor;
 import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -102,7 +104,9 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(TitanKey key) {
-        Iterator<TitanProperty> iter = query().type(key).includeHidden().properties().iterator();
+        Iterator<TitanProperty> iter = isLoaded()?
+                new SimpleVertexQueryProcessor(this,key).properties().iterator():
+                query().type(key).includeHidden().properties().iterator();
         if (key.isUnique(Direction.OUT)) {
             if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
@@ -123,33 +127,50 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Iterable<TitanProperty> getProperties() {
+        if (isLoaded())
+            return new SimpleVertexQueryProcessor(this,null).properties();
         return query().properties();
     }
 
     @Override
     public Iterable<TitanProperty> getProperties(TitanKey key) {
+        if (isLoaded())
+            return new SimpleVertexQueryProcessor(this,key).properties();
         return query().type(key).properties();
     }
 
     @Override
     public Iterable<TitanProperty> getProperties(String key) {
-        return query().keys(key).properties();
-    }
+        if (!tx().containsType(key)) return IterablesUtil.emptyIterable();
+        else return getProperties(tx().getPropertyKey(key));    }
 
 
     @Override
     public Iterable<TitanEdge> getEdges() {
+        if (isLoaded())
+            return new SimpleVertexQueryProcessor(this,Direction.BOTH,null).titanEdges();
         return query().titanEdges();
     }
 
 
     @Override
     public Iterable<TitanEdge> getTitanEdges(Direction dir, TitanLabel... labels) {
+        if (isLoaded() && labels.length<=1) {
+            return new SimpleVertexQueryProcessor(this,dir,labels.length==0?null:labels[0]).titanEdges();
+        }
         return query().direction(dir).types(labels).titanEdges();
     }
 
     @Override
     public Iterable<Edge> getEdges(Direction dir, String... labels) {
+        if (isLoaded() && labels.length<=1) {
+            TitanLabel label=null;
+            if (labels.length==1) {
+                if (!tx().containsType(labels[0])) return IterablesUtil.emptyIterable();
+                label = tx().getEdgeLabel(labels[0]);
+            }
+            return new SimpleVertexQueryProcessor(this,dir,label).edges();
+        }
         return query().direction(dir).labels(labels).edges();
     }
 
@@ -159,8 +180,16 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Iterable<Vertex> getVertices(Direction direction, String... labels) {
-        return query().direction(direction).labels(labels).vertices();
+    public Iterable<Vertex> getVertices(Direction dir, String... labels) {
+        if (isLoaded() && labels.length<=1) {
+            TitanLabel label=null;
+            if (labels.length==1) {
+                if (!tx().containsType(labels[0])) return IterablesUtil.emptyIterable();
+                label = tx().getEdgeLabel(labels[0]);
+            }
+            return new SimpleVertexQueryProcessor(this,dir,label).vertices();
+        }
+        return query().direction(dir).labels(labels).vertices();
     }
 
 	
@@ -172,13 +201,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public long getPropertyCount() {
-        return query().propertyCount();
+        return Iterables.size(getProperties());
     }
 
 
     @Override
     public long getEdgeCount() {
-        return query().count();
+        return Iterables.size(getEdges());
     }
 
     @Override
