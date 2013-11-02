@@ -368,10 +368,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         v1 = graph.getVertex(v1);
         v2 = graph.getVertex(v2);
-        graph.removeVertex(v1);
-        graph.removeVertex(v2);
+        assertEquals(1,Iterables.size(v1.getEdges(Direction.BOTH)));
+        assertEquals(1,Iterables.size(v2.getEdges(Direction.BOTH)));
+        v2.remove();
+        assertEquals(0,Iterables.size(v1.getEdges(Direction.BOTH)));
+        try {
+            assertEquals(0,Iterables.size(v2.getEdges(Direction.BOTH)));
+            fail();
+        } catch (IllegalArgumentException ex) {}
+
 
         graph.commit();
+        assertNull(graph.getVertex(v2));
+
     }
 
     @Test
