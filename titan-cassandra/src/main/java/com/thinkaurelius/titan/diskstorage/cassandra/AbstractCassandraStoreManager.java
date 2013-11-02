@@ -182,7 +182,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         if (features == null) {
             features = new StoreFeatures();
             features.supportsBatchMutation = true;
-            features.supportsTransactions = false;
+            features.supportsTxIsolation = false;
             features.supportsConsistentKeyOperations = true;
             features.supportsLocking = false;
             features.isDistributed = true;

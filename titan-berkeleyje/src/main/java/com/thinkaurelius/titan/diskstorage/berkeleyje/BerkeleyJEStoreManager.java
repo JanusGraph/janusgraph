@@ -6,7 +6,6 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
@@ -38,8 +37,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
-        if (!transactional)
-            log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
 
         int cachePercentage = configuration.getInt(CACHE_KEY, CACHE_DEFAULT);
         initialize(cachePercentage);
@@ -48,8 +45,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features.supportsOrderedScan = true;
         features.supportsUnorderedScan = false;
         features.supportsBatchMutation = false;
-        features.supportsTransactions = true;
-        features.supportsConsistentKeyOperations = false;
+        features.supportsTxIsolation = transactional;
+        features.supportsConsistentKeyOperations = true;
         features.supportsLocking = true;
         features.isKeyOrdered = true;
         features.isDistributed = false;

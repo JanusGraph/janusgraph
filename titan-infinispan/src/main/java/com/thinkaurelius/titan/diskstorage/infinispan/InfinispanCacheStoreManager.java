@@ -20,8 +20,6 @@ import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.lookup.DummyTransactionManagerLookup;
 
-import javax.transaction.TransactionManager;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -122,7 +120,8 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         features.supportsBatchMutation = false;
         features.supportsMultiQuery = false;
 
-        features.supportsTransactions = false;
+        //TODO: support transactions for Infinispan
+        features.supportsTxIsolation = false;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
 

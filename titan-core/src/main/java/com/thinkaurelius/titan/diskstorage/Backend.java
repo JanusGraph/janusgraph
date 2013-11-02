@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
@@ -174,7 +173,7 @@ public class Backend {
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store, boolean lockEnabled) throws StorageException {
         if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.supportsTransactions()) {
+            if (storeFeatures.supportsTxIsolation()) {
                 store = new TransactionalLockStore(store);
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 if (lockEnabled) {
@@ -235,9 +234,7 @@ public class Backend {
                 idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName("idStore"));
             }
             idAuthority = null;
-            if (storeFeatures.supportsTransactions()) {
-                idAuthority = new TransactionalIDManager(idStore, storeManager, config);
-            } else if (storeFeatures.supportsConsistentKeyOperations()) {
+            if (storeFeatures.supportsConsistentKeyOperations()) {
                 idAuthority = new ConsistentKeyIDManager(idStore, storeManager, config);
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
@@ -409,7 +406,7 @@ public class Backend {
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
         }
         if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.supportsTransactions()) {
+            if (storeFeatures.supportsTxIsolation()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
                 txConfig = new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, configuration.getMetricsPrefix());

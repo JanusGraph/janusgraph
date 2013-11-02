@@ -37,7 +37,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         features.supportsOrderedScan = true;
         features.supportsUnorderedScan = true;
         features.supportsBatchMutation = false;
-        features.supportsTransactions = false;
+        features.supportsTxIsolation = false;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
         features.isDistributed = false;

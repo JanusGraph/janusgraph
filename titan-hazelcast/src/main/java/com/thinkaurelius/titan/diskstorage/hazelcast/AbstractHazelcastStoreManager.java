@@ -104,8 +104,8 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         features.supportsBatchMutation = false;
         features.supportsMultiQuery = false;
 
-        features.supportsTransactions = true;
-        features.supportsConsistentKeyOperations = false;
+        features.supportsTxIsolation = transactional;
+        features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
 
         features.isDistributed = false;

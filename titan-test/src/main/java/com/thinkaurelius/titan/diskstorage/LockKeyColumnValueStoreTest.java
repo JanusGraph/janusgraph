@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
@@ -112,7 +111,7 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY, 100);
 
             if (!storeFeatures.supportsLocking()) {
-                if (storeFeatures.supportsTransactions()) {
+                if (storeFeatures.supportsTxIsolation()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
 
@@ -125,9 +124,7 @@ public abstract class LockKeyColumnValueStoreTest {
             }
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
-            if (storeFeatures.supportsTransactions())
-                idAuthorities[i] = new TransactionalIDManager(idStore, manager[i], sc);
-            else if (storeFeatures.supportsConsistentKeyOperations())
+            if (storeFeatures.supportsConsistentKeyOperations())
                 idAuthorities[i] = new ConsistentKeyIDManager(idStore, manager[i], sc);
             else throw new IllegalArgumentException("Cannot open id store");
         }

@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -63,8 +63,9 @@ public class VertexIDAssignerTest {
 
     private static TitanGraph getInMemoryGraph() {
         BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, InMemoryStorageAdapter.class.getCanonicalName());
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, InMemoryStoreManager.class.getCanonicalName());
         config.subset(GraphDatabaseConfiguration.IDS_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDS_FLUSH_KEY, false);
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY, 1);
         return TitanFactory.open(config);
     }
 
