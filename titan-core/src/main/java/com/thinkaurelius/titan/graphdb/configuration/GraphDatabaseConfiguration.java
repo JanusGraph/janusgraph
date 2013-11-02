@@ -247,7 +247,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final String PORT_KEY = "port";
     /**
-     * Default timeout whne connecting to a remote database instance
+     * Default timeout when connecting to a remote database instance
      * <p/>
      * Value = {@value}
      */
