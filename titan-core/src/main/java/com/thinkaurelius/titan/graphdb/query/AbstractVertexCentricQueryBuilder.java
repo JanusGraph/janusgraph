@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -26,28 +27,24 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
 
-    protected final EdgeSerializer serializer;
+    private static final String[] NO_TYPES = new String[0];
+    private static final List<PredicateCondition<String, TitanRelation>> NO_CONSTRAINTS = ImmutableList.of();
+
     protected final StandardTitanTx tx;
 
-    protected Direction dir;
-    protected final Set<String> types;
-    protected final List<PredicateCondition<String, TitanRelation>> constraints;
+    //Initial query configuration
+    protected Direction dir = Direction.BOTH;
+    protected String[] types = NO_TYPES;
+    protected List<PredicateCondition<String, TitanRelation>> constraints = NO_CONSTRAINTS;
 
-    private boolean includeHidden;
-    private int limit = Query.NO_LIMIT;
+    protected boolean includeHidden = false;
+    protected int limit = Query.NO_LIMIT;
 
 
     public AbstractVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
         assert serializer != null;
         assert tx != null;
-
         this.tx = tx;
-        this.serializer = serializer;
-        //Initial query configuration
-        dir = Direction.BOTH;
-        types = new HashSet<String>();
-        constraints = new ArrayList<PredicateCondition<String, TitanRelation>>();
-        includeHidden = false;
     }
 
     Direction getDirection() {
@@ -59,17 +56,11 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 	 * ---------------------------------------------------------------
 	 */
 
-    private InternalType getType(String typeName) {
-        TitanType t = tx.getType(typeName);
-        if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
-            throw new IllegalArgumentException("Undefined type used in query: " + typeName);
-        }
-        return (InternalType) t;
-    }
 
     private AbstractVertexCentricQueryBuilder addConstraint(String type, TitanPredicate rel, Object value) {
         assert type != null;
         assert rel != null;
+        if (constraints==NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
         return this;
     }
@@ -138,22 +129,18 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder labels(String... labels) {
-        Collections.addAll(types, labels);
+        types = labels;
         return this;
     }
 
     @Override
     public AbstractVertexCentricQueryBuilder keys(String... keys) {
-        Collections.addAll(types, keys);
+        types = keys;
         return this;
     }
 
     public AbstractVertexCentricQueryBuilder type(TitanType type) {
-        return type(type.getName());
-    }
-
-    public AbstractVertexCentricQueryBuilder type(String type) {
-        types.add(type);
+        types = new String[]{type.getName()};
         return this;
     }
 
@@ -181,8 +168,16 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 	 * ---------------------------------------------------------------
 	 */
 
+    protected InternalType getType(String typeName) {
+        TitanType t = tx.getType(typeName);
+        if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
+            throw new IllegalArgumentException("Undefined type used in query: " + typeName);
+        }
+        return (InternalType) t;
+    }
+
     protected final boolean hasTypes() {
-        return !types.isEmpty();
+        return types.length>0;
     }
 
     protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
@@ -195,7 +190,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         });
     }
 
-    public VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
+    protected VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
         VertexArrayList vertices = new VertexArrayList();
         for (TitanEdge edge : edges) vertices.add(edge.getOtherVertex(other));
         return vertices;
@@ -240,8 +235,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                             : Math.min(limit, MAX_BASE_LIMIT);
 
         //Construct (optimal) SliceQueries
+        EdgeSerializer serializer = tx.getEdgeSerializer();
         List<BackendQueryHolder<SliceQuery>> queries;
-        if (types.isEmpty()) {
+        if (!hasTypes()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                     ((dir == Direction.BOTH || returnType == RelationType.PROPERTY && dir == Direction.OUT)
                             && !conditions.hasChildren() && includeHidden), true, dir != Direction.BOTH);
@@ -258,8 +254,8 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
             conditions.add(returnType);
         } else {
-            Set<TitanType> ts = new HashSet<TitanType>(types.size());
-            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.size() + 4);
+            Set<TitanType> ts = new HashSet<TitanType>(types.length);
+            queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 4);
 
             for (String typeName : types) {
                 InternalType type = getType(typeName);

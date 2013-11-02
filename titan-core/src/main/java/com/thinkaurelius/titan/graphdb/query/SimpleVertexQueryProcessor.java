@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query;
 
+import cern.colt.list.AbstractLongList;
+import cern.colt.list.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
@@ -134,6 +136,20 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
                 return tx.getExistingVertex(edgeSerializer.readRelation(vertex.getID(),entry,true,tx).getOtherVertexId());
             }
         });
+    }
+
+    public VertexList vertexIds() {
+        AbstractLongList list = new LongArrayList();
+        for (Long id : Iterables.transform(this,new Function<Entry, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable Entry entry) {
+                return edgeSerializer.readRelation(vertex.getID(),entry,true,tx).getOtherVertexId();
+            }
+        })) {
+            list.add(id);
+        }
+        return new VertexLongList(tx,list);
     }
 
     private Iterator<Entry> getBasicIterator() {

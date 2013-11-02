@@ -138,11 +138,6 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         return this;
     }
 
-    public VertexCentricQueryBuilder type(String type) {
-        super.type(type);
-        return this;
-    }
-
     @Override
     public VertexCentricQueryBuilder direction(Direction d) {
         super.direction(d);
@@ -190,19 +185,40 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         return new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());
     }
 
-    public Iterable<TitanRelation> relations(RelationType returnType) {
+    private Iterable<TitanRelation> relations(RelationType returnType) {
         return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(constructQuery(returnType), tx.edgeProcessor);
+    }
+
+    protected SimpleVertexQueryProcessor getSimpleQuery(RelationType relationType, InternalVertex vertex) {
+        if (!vertex.isLoaded() || types.length>1 || !constraints.isEmpty()
+                || includeHidden || limit!=Query.NO_LIMIT || adjacentVertex!=null) {
+            return null; //Simple query does not apply
+        }
+        TitanType type = null;
+        if (types.length>0) {
+            type = getType(types[0]);
+            if (type==null) return null;
+        }
+        switch (relationType) {
+            case PROPERTY: return new SimpleVertexQueryProcessor(vertex,(TitanKey)type);
+            case EDGE: return new SimpleVertexQueryProcessor(vertex,dir,(TitanLabel)type);
+            default: throw new IllegalArgumentException("Invalid relation type: " + relationType);
+        }
     }
 
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        if (qp!=null) return qp.titanEdges();
         return (Iterable) relations(RelationType.EDGE);
     }
 
 
     @Override
     public Iterable<TitanProperty> properties() {
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.PROPERTY,vertex);
+        if (qp!=null) return qp.properties();
         return (Iterable) relations(RelationType.PROPERTY);
     }
 
@@ -228,11 +244,15 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 
     @Override
     public Iterable<Vertex> vertices() {
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        if (qp!=null) return qp.vertices();
         return (Iterable) edges2Vertices(titanEdges(), vertex);
     }
 
     @Override
     public VertexList vertexIds() {
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        if (qp!=null) return qp.vertexIds();
         return edges2VertexIds(titanEdges(), vertex);
     }
 
