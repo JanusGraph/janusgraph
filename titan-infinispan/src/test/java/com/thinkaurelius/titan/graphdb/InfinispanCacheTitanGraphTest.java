@@ -30,7 +30,8 @@ public class InfinispanCacheTitanGraphTest extends TitanGraphTest {
         if (tx != null && tx.isOpen())
             tx.commit();
 
-        graph.clear();
+        graph.shutdown();
+        graph = null;
     }
 
     @Override
