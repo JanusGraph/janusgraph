@@ -176,7 +176,8 @@ public class EdgeSerializer {
         InternalType def = (InternalType) titanType;
         long[] keysig = def.getSortKey();
         if (!parseHeaderOnly && !titanType.isUnique(dir)) {
-            readInlineTypes(keysig, properties, column, tx);
+            ReadBuffer sortKeyReader = def.getSortOrder()==Order.DESC?column.invert():column;
+            readInlineTypes(keysig, properties, sortKeyReader, tx);
         }
 
         long relationIdDiff, vertexIdDiff = 0;
@@ -307,10 +308,11 @@ public class EdgeSerializer {
 
         InternalType definition = (InternalType) type;
         long[] sortKey = definition.getSortKey();
+        int startPosition = colOut.getPosition();
         if (!type.isUnique(dir)) {
             writeInlineTypes(sortKey, relation, colOut, tx);
         }
-
+        int endPosition = colOut.getPosition();
 
         DataOutput writer = colOut;
         long vertexIdDiff = 0;
@@ -366,7 +368,10 @@ public class EdgeSerializer {
             }
         }
 
-        return new StaticBufferEntry(colOut.getStaticBuffer(), writer.getStaticBuffer());
+        StaticBuffer column = ((InternalType)type).getSortOrder()==Order.DESC?
+                                    colOut.getStaticBufferFlipBytes(startPosition,endPosition):
+                                    colOut.getStaticBuffer();
+        return new StaticBufferEntry(column, writer.getStaticBuffer());
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {
@@ -423,6 +428,8 @@ public class EdgeSerializer {
 
             long[] sortKeyIDs = type.getSortKey();
             Preconditions.checkArgument(sortKey.length == sortKeyIDs.length);
+            assert colStart.getPosition() == colEnd.getPosition();
+            int startPosition = colStart.getPosition();
             int i;
             boolean wroteInterval = false;
             for (i = 0; i < sortKeyIDs.length && sortKey[i] != null; i++) {
@@ -442,29 +449,59 @@ public class EdgeSerializer {
                     if (interval.getEnd() != null)
                         writeInline(colEnd, t, interval.getEnd(), false);
 
-                    sliceStart = colStart.getStaticBuffer();
-                    if (!interval.startInclusive()) sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
-                    sliceEnd = colEnd.getStaticBuffer();
-                    if (interval.endInclusive()) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+                    switch (type.getSortOrder()) {
+                        case ASC:
+                            sliceStart = colStart.getStaticBuffer();
+                            sliceEnd = colEnd.getStaticBuffer();
+                            if (!interval.startInclusive()) sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
+                            if (interval.endInclusive()) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+                            break;
+
+                        case DESC:
+                            sliceEnd = colStart.getStaticBufferFlipBytes(startPosition,colStart.getPosition());
+                            sliceStart = colEnd.getStaticBufferFlipBytes(startPosition,colEnd.getPosition());
+                            if (interval.startInclusive()) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+                            if (!interval.endInclusive()) sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
+                            break;
+
+                        default: throw new AssertionError(type.getSortOrder().toString());
+                    }
+
+                    assert sliceStart.compareTo(sliceEnd)<=0;
                     wroteInterval = true;
                     break;
                 }
             }
             boolean wroteEntireSortKey = (i >= sortKeyIDs.length);
+            assert !wroteEntireSortKey || !wroteInterval;
+            assert !wroteInterval || vertexCon == null;
 
-
-            if (vertexCon != null) {
-                Preconditions.checkArgument(wroteEntireSortKey && !type.isUnique(dir));
-                Preconditions.checkArgument(type.isEdgeLabel());
-                long vertexIdDiff = vertexCon.getVertexIdDiff();
-                VariableLong.writeBackward(colStart, vertexIdDiff);
-                VariableLong.writeBackward(colEnd, vertexIdDiff);
-
-                //VariableLong.writeBackward(colStart,relationIdDiff);
-            }
             if (!wroteInterval) {
-                sliceStart = colStart.getStaticBuffer();
-                sliceEnd = ByteBufferUtil.nextBiggerBuffer(colEnd.getStaticBuffer());
+                assert (colStart.getPosition() == colEnd.getPosition());
+                int endPosition = colStart.getPosition();
+
+                if (vertexCon != null) {
+                    assert !wroteInterval;
+                    Preconditions.checkArgument(wroteEntireSortKey && !type.isUnique(dir));
+                    Preconditions.checkArgument(type.isEdgeLabel());
+                    long vertexIdDiff = vertexCon.getVertexIdDiff();
+                    VariableLong.writeBackward(colStart, vertexIdDiff);
+
+                    //VariableLong.writeBackward(colStart,relationIdDiff);
+                }
+
+                switch (type.getSortOrder()) {
+                    case ASC:
+                        sliceStart = colStart.getStaticBuffer();
+                        break;
+
+                    case DESC:
+                        sliceStart = colStart.getStaticBufferFlipBytes(startPosition,endPosition);
+                        break;
+
+                    default: throw new AssertionError(type.getSortOrder().toString());
+                }
+                sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceStart);
             }
         }
         return new SliceQuery(sliceStart, sliceEnd, isStatic);
