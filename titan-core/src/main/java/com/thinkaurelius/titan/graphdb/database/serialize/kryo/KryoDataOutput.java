@@ -5,7 +5,10 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+
+import java.nio.ByteBuffer;
 
 public class KryoDataOutput implements DataOutput {
 
@@ -87,8 +90,23 @@ public class KryoDataOutput implements DataOutput {
     }
 
     @Override
+    public int getPosition() {
+        return output.position();
+    }
+
+    @Override
     public StaticBuffer getStaticBuffer() {
-        return new StaticArrayBuffer(output.getBuffer(),0,output.position());
+        return getStaticBufferFlipBytes(0,0);
+    }
+
+    @Override
+    public StaticBuffer getStaticBufferFlipBytes(int from, int to) {
+        byte[] value = output.getBuffer();
+        int limit = output.position();
+        Preconditions.checkArgument(from>=0 && from<=to);
+        Preconditions.checkArgument(to<=limit);
+        for (int i=from;i<to;i++) value[i] = (byte)~value[i];
+        return new StaticArrayBuffer(value,0,limit);
     }
 
 }

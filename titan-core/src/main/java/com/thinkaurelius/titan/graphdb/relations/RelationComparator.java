@@ -51,7 +51,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
         // 3) Compare sort key values
         for (long typeid : t1.getSortKey()) {
-            int keycompare = compareOnKey(r1, r2, typeid);
+            int keycompare = compareOnKey(r1, r2, typeid, t1.getSortOrder());
             if (keycompare != 0) return keycompare;
         }
         // 4) Compare property objects or other vertices
@@ -79,6 +79,10 @@ public class RelationComparator implements Comparator<InternalRelation> {
         return r1.compareTo(r2);
     }
 
+    public static int compareValues(Object v1, Object v2, Order order) {
+        return compareValues(v1,v2)*(order==Order.DESC?-1:1);
+    }
+
     public static int compareValues(Object v1, Object v2) {
         if (v1 == null || v2 == null) {
             if (v1 != null) return -1;
@@ -90,7 +94,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
     }
 
-    public int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid) {
+    public int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
         TitanType type = vertex.tx().getExistingType(typeid);
         Object v1, v2;
         if (type.isPropertyKey()) {
@@ -102,6 +106,6 @@ public class RelationComparator implements Comparator<InternalRelation> {
             v1 = r1.getProperty(label);
             v2 = r2.getProperty(label);
         }
-        return compareValues(v1, v2);
+        return compareValues(v1, v2,order);
     }
 }

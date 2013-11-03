@@ -87,6 +87,12 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
     }
 
     @Override
+    public StandardLabelMaker sortOrder(Order order) {
+        super.sortOrder(order);
+        return this;
+    }
+
+    @Override
     public StandardLabelMaker hidden() {
         super.hidden();
         return this;

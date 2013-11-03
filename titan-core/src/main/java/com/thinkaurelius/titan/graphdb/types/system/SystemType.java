@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -83,6 +84,11 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     @Override
     public long[] getSortKey() {
         return new long[0];
+    }
+
+    @Override
+    public Order getSortOrder() {
+        return Order.ASC;
     }
 
     @Override

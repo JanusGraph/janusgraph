@@ -113,6 +113,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         Preconditions.checkArgument(label.isUnidirected(),"Label must be unidirected");
         Preconditions.checkArgument(label.isUnique(Direction.OUT),"Label must have unique end point");
+        Preconditions.checkArgument(vertex!=null,"Vertex cannot be null");
         it().setPropertyDirect(label,vertex);
     }
 
