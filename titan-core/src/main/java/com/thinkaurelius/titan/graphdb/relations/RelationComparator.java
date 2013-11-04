@@ -26,7 +26,18 @@ public class RelationComparator implements Comparator<InternalRelation> {
     @Override
     public int compare(final InternalRelation r1, final InternalRelation r2) {
         if (r1.equals(r2)) return 0;
-        //1) Direction
+
+        //0) RelationType
+        int reltypecompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
+        if (reltypecompare != 0) return reltypecompare;
+
+        //1) TitanType
+        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
+        int typecompare = t1.compareTo(t2);
+        if (typecompare != 0) return typecompare;
+        assert t1.equals(t2);
+
+        //2) Direction
         Direction dir1 = null, dir2 = null;
         for (int i = 0; i < r1.getLen(); i++)
             if (r1.getVertex(i).equals(vertex)) {
@@ -42,11 +53,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
         if (dirCompare != 0) return dirCompare;
 
-        //2) Type
-        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
-        int typecompare = t1.compareTo(t2);
-        if (typecompare != 0) return typecompare;
-        assert t1.equals(t2);
+        // Breakout: If type&direction are the same and the type is unique in the direction it follows that the relations are the same
         if (t1.isUnique(dir1)) return 0;
 
         // 3) Compare sort key values

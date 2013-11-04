@@ -243,8 +243,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         List<BackendQueryHolder<SliceQuery>> queries;
         if (types.isEmpty()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
-                    ((dir == Direction.BOTH || returnType == RelationType.PROPERTY && dir == Direction.OUT)
-                            && !conditions.hasChildren() && includeHidden), true, dir != Direction.BOTH);
+                    ((dir == Direction.BOTH || (returnType == RelationType.PROPERTY && dir == Direction.OUT))
+                            && !conditions.hasChildren() && includeHidden), true, null);
+
             query.getBackendQuery().setLimit(computeLimit(conditions,
                     ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
                             //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
@@ -416,7 +417,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                 && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
                         SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, Boolean.FALSE));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, null));
                     }
                 }
             }

@@ -1039,7 +1039,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         v.addProperty(name,"v");
         TitanVertex u = tx.addVertex();
         u.addProperty(name,"u");
-        int noVertices = 100;
+        int noVertices = 10000;
+        assertEquals(0,(noVertices-1)%3);
         TitanVertex[] vs = new TitanVertex[noVertices];
         for (int i = 1; i < noVertices; i++) {
             vs[i] = tx.addVertex();
@@ -1048,120 +1049,48 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanLabel[] labelsV = {connect,friend,knows};
         TitanLabel[] labelsU = {connectDesc,friendDesc,knows};
         for (int i = 1; i < noVertices; i++) {
-            for (int k=0;k<2;k++) {
-                TitanEdge e = k==0?v.addEdge(labelsV[i%3],vs[i]):
-                        u.addEdge(labelsU[i%3],vs[i]);
-                e.setProperty("time", i);
-                e.setProperty("weight", i % 4 + 0.5);
-                e.setProperty("name", "e" + i);
-                e.setProperty(author, i%5==0?v:vs[i % 5]);
+            for (TitanVertex vertex : new TitanVertex[]{v,u}) {
+                for (Direction d : new Direction[]{OUT,IN}) {
+                    TitanLabel label = vertex==v?labelsV[i%3]:labelsU[i%3];
+                    TitanEdge e = d==OUT?vertex.addEdge(label,vs[i]):
+                                         vs[i].addEdge(label,vertex);
+                    e.setProperty("time", i);
+                    e.setProperty("weight", i % 4 + 0.5);
+                    e.setProperty("name", "e" + i);
+                    e.setProperty(author, i%5==0?v:vs[i % 5]);
+                }
             }
         }
+        int edgesPerLabel = noVertices/3;
+
+
 
         VertexList vl;
+        Map<TitanVertex, Iterable<TitanEdge>> results;
+        Map<TitanVertex, Iterable<TitanProperty>> results2;
+        TitanVertex[] qvs;
+        int lastTime;
+        Iterator<Edge> outer;
+
         clopen();
-        for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
-        v = tx.getVertex(v.getID());
-        u = tx.getVertex(u.getID());
 
-
-        //Queries from cache
-        assertEquals(noVertices-1, Iterables.size(v.getEdges()));
-        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
-        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-
-        int lastTime = 0;
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
-            lastTime = nowTime;
-        }
-        lastTime = 100;
-        for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
-            lastTime = nowTime;
-        }
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-
-        Iterator<Edge> outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
-            assertEquals(e, outer.next());
-        }
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(33, v.query().labels("connect").direction(OUT).count());
-        assertEquals(33, v.query().labels("connect").has("undefined", null).direction(OUT).count());
-        assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
-        assertEquals(23, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
-        assertEquals(1, v.query().has("time", 1).count());
-        assertEquals(10, v.query().interval("time", 4, 14).count());
-        assertEquals(9, v.query().interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
-        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
-//        for (TitanRelation r : v.query().labels("friend", "connect", "knows").direction(OUT).has("time", 10, Query.Compare.NOT_EQUAL).relations()) System.out.println(r);
-        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
-        assertEquals(29, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
-        vl = v.query().labels().direction(OUT).interval("time", 3, 31).vertexIds();
-        vl.sort();
         long[] vidsubset = new long[31 - 3];
         for (int i = 0; i < vidsubset.length; i++) vidsubset[i] = vs[i + 3].getID();
         Arrays.sort(vidsubset);
-        for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
-        assertEquals(7, v.query().labels("knows").direction(OUT).has("author", v).count());
-        assertEquals(7, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-        assertEquals(4, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-        assertEquals(3, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
-        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
-        assertEquals(25, Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
-        //Adjacent queries
-        assertEquals(1, v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time", 6).count());
-        assertEquals(1, v.query().labels("connect").adjacentVertex(vs[6]).has("time", 6).count());
-        assertEquals(0, v.query().labels("connect").adjacentVertex(vs[8]).has("time", 8).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight", 3.5).count());
 
-        //Property queries
-        assertEquals(1, Iterables.size(v.query().properties()));
-        assertEquals(1, Iterables.size(v.query().keys("name").properties()));
-
-        //MultiQueries
-        TitanVertex[] qvs = {vs[6], vs[9], vs[12], vs[15], vs[60]};
-        Map<TitanVertex, Iterable<TitanEdge>> results;
-        Map<TitanVertex, Iterable<TitanProperty>> results2;
-        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(qvs).labels("knows").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
-        results = tx.multiQuery(qvs).titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).keys("name").properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-
+        //##################################################
+        //Queries from Cache
+        //##################################################
         clopen();
         for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
         v = tx.getVertex(v.getID());
         u = tx.getVertex(u.getID());
+        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
 
-        //##################################################
-        //Same queries as above but without memory loading
-        //##################################################
+        //To trigger queries from cache (don't copy!!!)
+        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
+
         assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
         assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
         assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
@@ -1173,7 +1102,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
             lastTime = nowTime;
         }
-        lastTime = 100;
+        lastTime = Integer.MAX_VALUE;
         for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
             int nowTime = e.getProperty("time");
             assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
@@ -1181,86 +1110,203 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         }
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
         assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+
+        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
+        for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+            assertEquals(e, outer.next());
+        }
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
         assertEquals(10, u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31).count());
-
-        assertEquals(0, v.query().labels("follows").has("time", Compare.LESS_THAN, 10).count());
-
-        //Adjacent queries
-        assertEquals(1, v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time", 6).count());
-        assertEquals(1, v.query().labels("connect").adjacentVertex(vs[6]).has("time", 6).count());
-        assertEquals(0, v.query().labels("connect").adjacentVertex(vs[8]).has("time", 8).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight", 3.5).count());
-
+        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
+        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
         assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(23, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
-
-
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
+        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
-        assertEquals(1, v.query().has("time", 1).count());
-        assertEquals(10, v.query().interval("time", 4, 14).count());
-        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
         assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
-        assertEquals(29, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
-        vl = v.query().labels().direction(OUT).interval("time", 3, 31).vertexIds();
-        vl.sort();
-        for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
-        assertEquals(7, v.query().labels("knows").direction(OUT).has("author", v).count());
-        assertEquals(7, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-        assertEquals(4, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-        assertEquals(3, v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
+        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+
+        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
+        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
+        assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
+        assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
         assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
         assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
-        assertEquals(25, Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-        assertEquals(33, v.query().labels("connect").direction(OUT).count());
-        assertEquals(33, v.query().labels("connect").has("undefined", null).direction(OUT).count());
-        assertEquals(98, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(99, Iterables.size(v.query().direction(OUT).vertices()));
+        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
+        assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
+
+        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
+        assertEquals(1, v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time", 6).count());
+        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
+        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight", 3.5).count());
+        assertEquals(2, v.query().labels("connect").adjacentVertex(vs[6]).has("time", 6).count());
+        assertEquals(0, v.query().labels("connect").adjacentVertex(vs[8]).has("time", 8).count());
+
+        assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
+        assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
+        assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+
+        assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+        assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
+        assertEquals(1, v.query().direction(IN).has("time", 1).count());
+        assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
+        assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+        assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+        assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
+        assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
+        for (Direction dir : new Direction[]{IN,OUT}) {
+            vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
+            vl.sort();
+            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
+        }
+        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
 
         //Property queries
         assertEquals(1, Iterables.size(v.query().properties()));
         assertEquals(1, Iterables.size(v.query().keys("name").properties()));
 
-        clopen();
-
         //MultiQueries
-        TitanVertex[] qvs2 = new TitanVertex[qvs.length];
-        for (int i = 0; i < qvs.length; i++) qvs2[i] = tx.getVertex(qvs[i].getID());
-        qvs = qvs2;
         results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
         results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
         results = tx.multiQuery(qvs).labels("knows").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
         results = tx.multiQuery(qvs).titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
         results2 = tx.multiQuery(qvs).properties();
         for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
         results2 = tx.multiQuery(qvs).keys("name").properties();
         for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+        //##################################################
+        //Same queries as above but without memory loading (i.e. omitting the first query)
+        //##################################################
+        clopen();
+        for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
+        v = tx.getVertex(v.getID());
+        u = tx.getVertex(u.getID());
+        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
+
+        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
+        assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
+        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+        assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+
+        lastTime = 0;
+        for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
+            int nowTime = e.getProperty("time");
+            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
+            lastTime = nowTime;
+        }
+        lastTime = Integer.MAX_VALUE;
+        for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
+            int nowTime = e.getProperty("time");
+            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
+            lastTime = nowTime;
+        }
+        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+        assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+
+        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
+        for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+            assertEquals(e, outer.next());
+        }
+        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
+        assertEquals(10, u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31).count());
+        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
+        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
+        assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
+        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
+        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
+        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
+        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
+        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
+        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+
+        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
+        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
+        assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
+        assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
+        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
+        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
+        assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
+
+        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
+        assertEquals(1, v.query().labels("connect").direction(OUT).adjacentVertex(vs[6]).has("time", 6).count());
+        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).count());
+        assertEquals(1, v.query().labels("knows").direction(OUT).adjacentVertex(vs[11]).has("weight", 3.5).count());
+        assertEquals(2, v.query().labels("connect").adjacentVertex(vs[6]).has("time", 6).count());
+        assertEquals(0, v.query().labels("connect").adjacentVertex(vs[8]).has("time", 8).count());
+
+        assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
+        assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
+        assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+
+        assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+        assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
+        assertEquals(1, v.query().direction(IN).has("time", 1).count());
+        assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
+        assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+        assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+        assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
+        assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
+        for (Direction dir : new Direction[]{IN,OUT}) {
+            vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
+            vl.sort();
+            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
+        }
+        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
+
+        //Property queries
+        assertEquals(1, Iterables.size(v.query().properties()));
+        assertEquals(1, Iterables.size(v.query().keys("name").properties()));
+
+        //MultiQueries
+        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+        results = tx.multiQuery(qvs).labels("knows").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
+        results = tx.multiQuery(qvs).titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
+        results2 = tx.multiQuery(qvs).properties();
+        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+        results2 = tx.multiQuery(qvs).keys("name").properties();
+        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+        //##################################################
+        //End copied queries
+        //##################################################
 
         newTx();
 
         v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
         assertNotNull(v);
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).vertexIds().size());
-        assertEquals(5, v.query().has("weight", 1.5).interval("time", 10, 30).vertexIds().size());
+        assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).vertexIds().size());
 
         newTx();
 
         v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
         assertNotNull(v);
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
-        assertEquals(5, v.query().has("weight", 1.5).interval("time", 10, 30).count());
+        assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).count());
     }
 
     //Merge above
