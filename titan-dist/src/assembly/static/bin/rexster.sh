@@ -1,12 +1,19 @@
 #!/bin/bash
 
 BIN="`dirname $0`"
-CP="$BIN/../conf"
-CP="$CP:$( echo $BIN/../lib/*.jar . | sed 's/ /:/g')"
-CP="$CP:$(find -L $BIN/../ext/ -name "*.jar" | tr '\n' ':')"
+# Rexster doesn't allow GraphConfiguration implementations a clean way
+# to know the path to the rexster.xml config file.  This makes implementing
+# Titan's relative storage directory interpretation (relative to the file in
+# which they appear rather than the process's current working directory)
+# impossible.  Change to the parent of the bin directory as a workaround.
+cd "$BIN/.."
+
+CP="conf"
+CP="$CP:$( echo lib/*.jar . | sed 's/ /:/g')"
+CP="$CP:$(find -L ext/ -name "*.jar" | tr '\n' ':')"
 export CLASSPATH="$CP"
 
-PUBLIC="$BIN"/../public/
+PUBLIC='public/'
 FOREGROUND=1
 ARGS=
 
@@ -27,7 +34,7 @@ fi
 
 # Set Java options
 if [ "$JAVA_OPTIONS" = "" ] ; then
-    JAVA_OPTIONS="-Xms128m -Xmx512m -Dlog4j.configuration=log4j-rexstitan.properties -Dtitan.logdir=$BIN/../log"
+    JAVA_OPTIONS="-Xms128m -Xmx512m -Dlog4j.configuration=log4j-rexstitan.properties -Dtitan.logdir=log"
 fi
 
 # Let Cassandra have 7199
@@ -35,8 +42,6 @@ JAVA_OPTIONS="$JAVA_OPTIONS \
               -Dcom.sun.management.jmxremote.port=7299 \
               -Dcom.sun.management.jmxremote.ssl=false \
               -Dcom.sun.management.jmxremote.authenticate=false"
-
-cd "$BIN"/..
 
 # Launch the application
 if [ 1 -eq $FOREGROUND ]; then

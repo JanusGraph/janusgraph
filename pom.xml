@@ -79,10 +79,11 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
-        <default.test.jvm.opts>-Xms256m -Xmx768m ${test.extra.jvm.opts}</default.test.jvm.opts>
-        <mem.jvm.opts>-Xms256m -Xmx256m -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx768m -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
         <titan.classifier />
+        <test.skip.default>false</test.skip.default>
     </properties>
     <modules>
         <module>titan-core</module>
@@ -184,6 +185,7 @@
                     <configuration>
                         <argLine>${default.test.jvm.opts}</argLine>
                         <runOrder>alphabetical</runOrder>
+                        <failIfNoTests>false</failIfNoTests>
                         <excludes>
                             <exclude>**/External*.java</exclude>
                             <exclude>**/*PerformanceTest.java</exclude>
@@ -192,6 +194,7 @@
                         <excludedGroups>
                             com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests
                         </excludedGroups>
+                        <skip>${test.skip.default}</skip>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -1023,7 +1026,10 @@
         <profile>
             <id>memory-test</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>test.skip.mem</name>
+                    <value>false</value>
+                </property>
             </activation>
             <build>
                 <plugins>
@@ -1036,7 +1042,7 @@
                                     <goal>test</goal>
                                 </goals>
                                 <phase>test</phase>
-                                <configuration>
+                                <configuration combine.self="override">
                                     <argLine>${mem.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
@@ -1048,10 +1054,6 @@
                                     <excludedGroups />
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>default-test</id>
-                                <phase>none</phase>
-                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -1061,7 +1063,10 @@
         <profile>
             <id>performance-test</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>test.skip.perf</name>
+                    <value>false</value>
+                </property>
             </activation>
             <build>
                 <plugins>
@@ -1082,18 +1087,12 @@
                                     <threadCount>1</threadCount>
                                     <perCoreThreadCount>1</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
-                                    <groups>
-                                        com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests
-                                    </groups>
+                                    <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
                                     <excludes>
                                         <exclude>**/External*</exclude>
                                     </excludes>
                                 </configuration>
-                            </execution>
-                            <execution>
-                                <id>default-test</id>
-                                <phase>none</phase>
                             </execution>
                         </executions>
                     </plugin>
@@ -1111,7 +1110,7 @@
                     <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <argLine>-Xms256m -Xmx1024m</argLine>
+                            <argLine>-Xms256m -Xmx1024m -ea</argLine>
                             <includes>
                                 <include>**/*Test.java</include>
                             </includes>

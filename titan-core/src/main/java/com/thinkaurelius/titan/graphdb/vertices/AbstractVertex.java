@@ -261,4 +261,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             return super.equals(other);
         }
     }
+    
+    /*
+     * This silences a static analysis warning about overridding equals without
+     * overridding hashcode.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
