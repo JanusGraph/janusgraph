@@ -126,6 +126,12 @@ public class GraphDatabaseConfiguration {
     public static final String STORAGE_DIRECTORY_KEY = "directory";
 
     /**
+     * Path to a configuration file for those storage backends that
+     * require/support an a separate config file
+     */
+    public static final String STORAGE_CONF_FILE_KEY = "conffile";
+    
+    /**
      * Define the storage backed to use for persistence
      */
     public static final String STORAGE_BACKEND_KEY = "backend";
@@ -631,11 +637,12 @@ public class GraphDatabaseConfiguration {
      * <ol>
      * <li>Load its contents into a {@link PropertiesConfiguration}</li>
      * <li>For each key starting with {@link #STORAGE_NAMESPACE} and ending in
-     * {@link #STORAGE_DIRECTORY_KEY}, check whether the associated value is a
-     * non-null, non-absolute path. If so, then prepend the absolute path of the
-     * parent directory of {@code dirorFile}. This has the effect of making
-     * non-absolute backend paths relative to the config file's directory rather
-     * than the JVM's working directory.
+     * {@link #STORAGE_DIRECTORY_KEY} or {@link #STORAGE_CONF_FILE_KEY}, check
+     * whether the associated value is a non-null, non-absolute path. If so,
+     * then prepend the absolute path of the parent directory of
+     * {@code dirorFile}. This has the effect of making non-absolute backend
+     * paths relative to the config file's directory rather than the JVM's
+     * working directory.
      * <li>Return the {@code PropertiesConfiguration}</li>
      * </ol>
      * <p/>
@@ -646,9 +653,10 @@ public class GraphDatabaseConfiguration {
      * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
      * the absolute path of the argument</li>
      * <li>Return the {@code BaseConfiguration}</li>
-     *
-     * @param dirOrFile A properties file to load or directory in which to read and
-     *                  write data
+     * 
+     * @param dirOrFile
+     *            A properties file to load or directory in which to read and
+     *            write data
      * @return A configuration derived from {@code dirOrFile}
      */
     @SuppressWarnings("unchecked")
@@ -668,9 +676,12 @@ public class GraphDatabaseConfiguration {
 
                 final Pattern p = Pattern.compile(
                         Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
-                                Pattern.quote(STORAGE_DIRECTORY_KEY));
+                                "(" +
+                                  Pattern.quote(STORAGE_DIRECTORY_KEY) + "|" +
+                                  Pattern.quote(STORAGE_CONF_FILE_KEY) +
+                                ")");
 
-                final Iterator<String> sdKeys = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
+                final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                     @Override
                     public boolean apply(String key) {
                         if (null == key)
@@ -679,8 +690,8 @@ public class GraphDatabaseConfiguration {
                     }
                 });
 
-                while (sdKeys.hasNext()) {
-                    String k = sdKeys.next();
+                while (keysToMangle.hasNext()) {
+                    String k = keysToMangle.next();
                     Preconditions.checkNotNull(k);
                     String s = configuration.getString(k);
 
@@ -689,8 +700,8 @@ public class GraphDatabaseConfiguration {
                         continue;
                     }
 
-                    File storedir = new File(s);
-                    if (!storedir.isAbsolute()) {
+                    File f = new File(s);
+                    if (!f.isAbsolute()) {
                         configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
                         log.debug("Overwrote relative path for key {}: was {}, now {}", k, s, configuration.getProperty(k));
                     } else {

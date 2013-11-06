@@ -23,15 +23,17 @@ import java.util.Iterator;
 
 public class InfinispanCacheStore implements CacheStore {
 
-    private final String name;
+    private final String fullName;
+    private final String shortName;
     private final EmbeddedCacheManager manager;
 
     private final Cache<StaticBuffer,StaticBuffer> cache;
 
-    public InfinispanCacheStore(String name, EmbeddedCacheManager manager) {
-        this.name = name;
+    public InfinispanCacheStore(String fullName, String shortName, EmbeddedCacheManager manager) {
+        this.fullName = fullName;
+        this.shortName = shortName;
         this.manager = manager;
-        cache = manager.getCache(name);
+        cache = manager.getCache(fullName);
     }
 
 
@@ -120,7 +122,7 @@ public class InfinispanCacheStore implements CacheStore {
 
     @Override
     public String getName() {
-        return name;
+        return shortName;
     }
 
     @Override
