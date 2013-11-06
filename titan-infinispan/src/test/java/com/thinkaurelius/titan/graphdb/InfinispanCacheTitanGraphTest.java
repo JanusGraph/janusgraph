@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.graphdb;
 
-import org.apache.commons.configuration.Configuration;
-
 import com.thinkaurelius.titan.InfinispanStorageSetup;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 

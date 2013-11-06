@@ -1,16 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.infinispan;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
-import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_CONF_FILE_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
+
+import java.io.IOException;
 
 import org.apache.commons.configuration.Configuration;
 import org.infinispan.Cache;
@@ -23,15 +17,17 @@ import org.infinispan.transaction.lookup.DummyTransactionManagerLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.transaction.TransactionManager;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_CONF_FILE_KEY;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

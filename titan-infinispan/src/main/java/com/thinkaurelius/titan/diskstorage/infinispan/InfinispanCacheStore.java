@@ -1,5 +1,12 @@
 package com.thinkaurelius.titan.diskstorage.infinispan;
 
+import java.util.Iterator;
+
+import javax.annotation.Nullable;
+
+import org.infinispan.Cache;
+import org.infinispan.manager.EmbeddedCacheManager;
+
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -10,12 +17,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheUpdateEx
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import org.infinispan.Cache;
-import org.infinispan.manager.EmbeddedCacheManager;
-
-import javax.annotation.Nullable;
-import java.util.Iterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -23,16 +24,14 @@ import java.util.Iterator;
 
 public class InfinispanCacheStore implements CacheStore {
 
-    private final String fullName;
     private final String shortName;
-    private final EmbeddedCacheManager manager;
+//    private final EmbeddedCacheManager manager;
 
     private final Cache<StaticBuffer,StaticBuffer> cache;
 
     public InfinispanCacheStore(String fullName, String shortName, EmbeddedCacheManager manager) {
-        this.fullName = fullName;
         this.shortName = shortName;
-        this.manager = manager;
+//        this.manager = manager;
         cache = manager.getCache(fullName);
     }
 
