@@ -15,10 +15,6 @@
         <jamm.group>com.github.stephenc</jamm.group>
         <dependency.plugin.version>2.8</dependency.plugin.version>
         <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
-        <default.test.jvm.opts>-Xms256m -Xmx512m ${test.extra.jvm.opts}</default.test.jvm.opts>
-        <test.categories.bop>com.thinkaurelius.titan.testcategory.ByteOrderedPartitionerTests,com.thinkaurelius.titan.testcategory.StandaloneTests</test.categories.bop>
-    	<test.categories.rp>com.thinkaurelius.titan.testcategory.RandomPartitionerTests</test.categories.rp>
-    	<test.categories.all>${test.categories.bop},${test.categories.rp}</test.categories.all>
     </properties>
     <!-- Libraries -->
     
@@ -127,7 +123,6 @@
         <dependency>
             <groupId>org.jboss.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>3.2.7.Final</version>
         </dependency>
         <dependency>
             <groupId>com.netflix.astyanax</groupId>
@@ -156,135 +151,6 @@
     </dependencies>
 
     <profiles>
-
-        <!--
-	This empty profile has a purpose.
-
-        When it is absent, specifying mvn -Pmemory-test won't disable
-        bop-test and rp-test.
-
-        The Maven documentation on profiles is misleading.  It states
-        that "When the [-P CLI option] is specified, no profiles other
-        than those specified in the option argument will be activated"
-        (http://maven.apache.org/guides/introduction/introduction-to-profiles.html).
-        This isn't true in a multi-module project.  Only profiles in
-        the same pom/module in which the -P argument(s) were defined
-        will be deactivated.  If a pom contains no profiles mentioned
-        in a -P invocation, then all profiles in that pom will be
-        activated or deactivated according to Maven's normal behavior
-        when -P isn't specified.
-
-        Maven testing tip: `mvn -P... help:active-profiles` is useful
-        when debugging profiles.
-
-	What does all this mean?  When running memory-tests, we want
-	disable all the other normal test classes.  This stub profile
-	is necessary to disable the bop-test and rp-test profiles and
-	all the ordinary Cassandra tests they contain.
-	-->
-        <profile>
-            <id>memory-test</id>
-        </profile>
-
-        <profile>
-            <id>performance-test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>filter-cassandra-rp-config</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>bop-test</id> <!-- ByteOrderedPartitioner tests + miscellaneous "standalone" tests that don't need Cassandra -->
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>filter-cassandra-bop-config</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>bop-test</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <phase>test</phase>
-                                <configuration>
-                                    <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
-                                    <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
-                                    <groups />
-                                    <forkCount>1</forkCount>
-                                    <reuseForks>true</reuseForks>
-                                    <parallel>classes</parallel>
-                                    <perCoreThreadCount>true</perCoreThreadCount>
-                                    <threadCount>2</threadCount>
-                                    <runOrder>random</runOrder>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>rp-test</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>filter-cassandra-bop-config</id>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>rp-test</id>
-                                <goals>
-                                    <goal>test</goal>
-                                </goals>
-                                <phase>test</phase>
-                                <configuration>
-                                    <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
-                                    <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
-                                    <groups />
-                                    <forkCount>1</forkCount>
-                                    <reuseForks>true</reuseForks>
-                                    <parallel>classes</parallel>
-                                    <perCoreThreadCount>true</perCoreThreadCount>
-                                    <threadCount>2</threadCount>
-                                    <runOrder>random</runOrder>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <profile>
             <id>aurelius-release</id>
             
@@ -308,7 +174,7 @@
     </profiles>
     
     <build>
-        <directory>${basedir}/target</directory>
+    
         <resources>
             <resource>
                 <directory>${basedir}/src/main/resources</directory>
@@ -320,55 +186,51 @@
                 <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>filter-cassandra-bop-config</id>
-                            <phase>process-test-resources</phase>
-                            <goals>
-                                <goal>copy-resources</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
-                                <filters>
-                                    <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
-                                </filters>
-                                <resources>
-                                    <resource>
-                                        <directory>${basedir}/config/cassandra</directory>
-                                        <filtering>true</filtering>
-                                    </resource>
-                                </resources>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>filter-cassandra-rp-config</id>
-                            <phase>process-test-resources</phase>
-                            <goals>
-                                <goal>copy-resources</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
-                                <filters>
-                                    <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
-                                </filters>
-                                <resources>
-                                    <resource>
-                                        <directory>${basedir}/config/cassandra</directory>
-                                        <filtering>true</filtering>
-                                    </resource>
-                                </resources>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
         
         <plugins>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-cassandra-bop-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-bop</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-bop.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>filter-cassandra-rp-config</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                            <filters>
+                                <filter>${basedir}/config/cassandra-filters/localhost-rp.properties</filter>
+                            </filters>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/config/cassandra</directory>
+                                    <filtering>true</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
@@ -379,38 +241,74 @@
                     </execution>
                     <execution>
                         <!-- Run by "mvn org.apache.maven.plugins:maven-surefire-plugin:test"
-			     
-			     Sonar does this when running JaCoCo and
-			     provides no configuration option to
-			     change its behavior.  Define a safe
-			     configuration for JaCoCo to use when run
-			     by Sonar.  This doesn't have to be fast,
-			     since it's only used for dynamic
-			     analysis, but it does have to cover all
-			     the tests.
-			-->
+                
+                            Sonar does this when running JaCoCo and
+                            provides no configuration option to
+                            change its behavior. Define a safe
+                            configuration for JaCoCo to use when run
+                            by Sonar. This doesn't have to be fast,
+                            since it's only used for dynamic
+                            analysis, but it does have to cover all
+                            the tests.
+                        -->
                         <id>default-cli</id>
                         <phase>none</phase>
-			<configuration combine.self="override">
+                        <configuration>
                             <includes>
                                 <include>Nope.java</include>
                             </includes>
                             <exclude>
                                 <exclude>**/*</exclude>
                             </exclude>
-			    <!-- <groups>${test.categories.all}</groups> -->
-			    <parallel />
-			    <reuseForks>false</reuseForks>
-			    <threadCount>1</threadCount>
-			    <perCoreThreadCount>false</perCoreThreadCount>
-			    <runOrder>random</runOrder>
-			</configuration>
+                            <parallel />
+                            <reuseForks>false</reuseForks>
+                            <threadCount>1</threadCount>
+                            <perCoreThreadCount>false</perCoreThreadCount>
+                            <runOrder>random</runOrder>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>bop-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-bop -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-bop</argLine>
+                            <excludedGroups>com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
+                            <groups />
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>2</threadCount>
+                            <runOrder>random</runOrder>
+                            <skip>${test.skip.ordered}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>rp-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <phase>test</phase>
+                        <configuration>
+                            <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
+                            <excludedGroups>com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests,com.thinkaurelius.titan.testcategory.MemoryTests,com.thinkaurelius.titan.testcategory.PerformanceTests</excludedGroups>
+                            <groups />
+                            <forkCount>1</forkCount>
+                            <reuseForks>true</reuseForks>
+                            <parallel>classes</parallel>
+                            <perCoreThreadCount>true</perCoreThreadCount>
+                            <threadCount>2</threadCount>
+                            <runOrder>random</runOrder>
+                            <skip>${test.skip.unordered}</skip>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>${dependency.plugin.version}</version>
                 <executions>
                     <!-- Provide Java Memory Meter for Cassandra. Cassandra logs warnings if JAMM 
                       is not available. Also, production Cassandra deployments will probably use JAMM, 

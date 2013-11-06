@@ -113,4 +113,13 @@ public class ReadByteBuffer extends StaticByteBuffer implements ReadBuffer {
         }
     }
 
+    @Override
+    public ReadBuffer invert() {
+        byte[] newvalues = new byte[super.length()];
+        for (int i=0;i<newvalues.length;i++) newvalues[i]=(byte)~super.getByte(i);
+        ReadArrayBuffer newread = new ReadArrayBuffer(newvalues);
+        newread.movePosition(this.position);
+        return newread;
+    }
+
 }

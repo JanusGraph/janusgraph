@@ -89,11 +89,22 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     @Override
     public Iterator<Entry> iterator() {
+        Iterator<Entry> iter;
         if (sliceQuery.hasLimit()) {
-            return new LimitAdjustingIterator();
+            iter = new LimitAdjustingIterator();
         } else {
-            return getBasicIterator();
+            iter = getBasicIterator();
         }
+        if (filterDirection!=null) {
+            assert filterDirection != Direction.BOTH;
+            iter = Iterators.filter(iter, new Predicate<Entry>() {
+                @Override
+                public boolean apply(@Nullable Entry entry) {
+                    return edgeSerializer.parseDirection(entry) == filterDirection;
+                }
+            });
+        }
+        return iter;
     }
 
     public Iterable<TitanRelation> relations() {
@@ -153,22 +164,12 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     private Iterator<Entry> getBasicIterator() {
-        Iterator<Entry> iter = vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, List<Entry>>() {
+        return vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, List<Entry>>() {
             @Override
             public List<Entry> get(SliceQuery query) {
                 return tx.getGraph().edgeQuery(vertex.getID(), query, tx.getTxHandle());
             }
         }).iterator();
-        if (filterDirection!=null) {
-            assert filterDirection != Direction.BOTH;
-            iter = Iterators.filter(iter, new Predicate<Entry>() {
-                @Override
-                public boolean apply(@Nullable Entry entry) {
-                    return edgeSerializer.parseDirection(entry) == filterDirection;
-                }
-            });
-        }
-        return iter;
     }
 
 

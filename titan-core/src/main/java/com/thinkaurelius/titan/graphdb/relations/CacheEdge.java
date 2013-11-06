@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -29,6 +30,10 @@ public class CacheEdge extends AbstractEdge {
 
         this.data = data;
         this.position = position;
+    }
+
+    public Direction getVertexCentricDirection() {
+        return data.getCache().direction;
     }
 
     //############## Similar code as CacheProperty but be careful when copying #############################

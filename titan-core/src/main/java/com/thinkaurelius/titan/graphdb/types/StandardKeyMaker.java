@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.KeyMaker;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -138,6 +135,11 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
 
     @Override
     public StandardKeyMaker sortKey(TitanType... types) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public StandardKeyMaker sortOrder(Order order) {
         throw new UnsupportedOperationException();
     }
 

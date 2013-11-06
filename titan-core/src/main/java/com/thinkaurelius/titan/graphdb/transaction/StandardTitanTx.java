@@ -749,10 +749,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
         @Override
         public Iterator<TitanRelation> execute(final VertexCentricQuery query, final SliceQuery sq, final Object exeInfo) {
+            assert exeInfo==null;
             if (query.getVertex().isNew())
                 return Iterators.emptyIterator();
 
-            final boolean filterDirection = (exeInfo != null) ? (Boolean) exeInfo : false;
             final InternalVertex v = query.getVertex();
 
             Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
@@ -761,16 +761,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                     return graph.edgeQuery(v.getID(), query, txHandle);
                 }
             });
-
-            if (filterDirection) {
-                assert query.getDirection() != Direction.BOTH;
-                iter = Iterables.filter(iter, new Predicate<Entry>() {
-                    @Override
-                    public boolean apply(@Nullable Entry entry) {
-                        return edgeSerializer.parseDirection(entry) == query.getDirection();
-                    }
-                });
-            }
 
             return Iterables.transform(iter, new Function<Entry, TitanRelation>() {
                 @Override

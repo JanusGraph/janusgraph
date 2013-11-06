@@ -126,6 +126,18 @@ public interface LabelMaker extends TypeMaker {
     public LabelMaker sortKey(TitanType... types);
 
     /**
+     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link Order#ASC}) or
+     * decreasing ({@link Order#DESC}).
+     *
+     * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
+     *
+     * @param order
+     * @return
+     * @see #sortKey(TitanType...)
+     */
+    public LabelMaker sortOrder(Order order);
+
+    /**
      * Configures the signature of this label.
      * <p/>
      * Specifying the signature of a type tells the graph database to <i>expect</i> that relations of this type

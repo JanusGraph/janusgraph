@@ -1,0 +1,1 @@
+.print-only{display:none;}.no-print{display:none;}.no-print-content{visibility:hidden;}.print-only,div.print-only{display:block;}span.print-only,label.print-only{display:inline;}table.print-only{display:table;}tr.print-only{display:table-row;}td.print-only{display:table-cell;}

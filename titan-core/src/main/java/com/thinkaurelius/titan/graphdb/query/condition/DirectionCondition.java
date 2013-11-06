@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -26,7 +27,11 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean evaluate(E element) {
-        return relationPos < 0 || ((InternalRelation) element).getVertex(relationPos).equals(vertex);
+        if (relationPos<0) return true;
+        if (element instanceof CacheEdge) {
+            return direction==((CacheEdge)element).getVertexCentricDirection();
+        }
+        return ((InternalRelation) element).getVertex(relationPos).equals(vertex);
     }
 
     public Direction getDirection() {
