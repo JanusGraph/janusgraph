@@ -42,7 +42,6 @@ public class VertexIDAssignerTest {
         }
 
         return configurations;
-
     }
 
     public VertexIDAssignerTest(boolean partition, int partitionMax, int[] localPartition) {

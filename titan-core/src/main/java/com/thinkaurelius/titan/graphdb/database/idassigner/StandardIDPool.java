@@ -44,6 +44,7 @@ public class StandardIDPool implements IDPool {
     public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID, long renewTimeoutMS, double renewBufferPercentage) {
         Preconditions.checkArgument(maximumID > 0);
         this.idAuthority = idAuthority;
+        Preconditions.checkArgument(partitionID<(1l<<32));
         this.partitionID = (int) partitionID;
         this.maxID = maximumID;
         Preconditions.checkArgument(renewTimeoutMS>0,"Renew-timeout must be positive");

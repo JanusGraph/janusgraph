@@ -82,6 +82,9 @@ public class CassandraTransaction extends AbstractStoreTransaction {
         } else if (config.getConsistency() == ConsistencyLevel.KEY_CONSISTENT) {
             this.readConsistency = Consistency.QUORUM;
             this.writeConsistency = Consistency.QUORUM;
+        } else if (config.getConsistency() == ConsistencyLevel.LOCAL_KEY_CONSISTENT) {
+            this.readConsistency = Consistency.LOCAL_QUORUM;
+            this.writeConsistency = Consistency.LOCAL_QUORUM;
         } else {
             throw new IllegalArgumentException("Unsupported consistency level: " + config.getConsistency());
         }

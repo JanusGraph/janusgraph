@@ -21,7 +21,4 @@ public class inMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStore
         //Does not apply to non-persisting in-memory store
     }
 
-    //TODO: should this test work in-memory?
-    @Override
-    public void testMultiIDAcquisition() {}
 }
