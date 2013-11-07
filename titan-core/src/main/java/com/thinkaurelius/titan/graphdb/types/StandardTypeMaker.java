@@ -3,10 +3,7 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -35,6 +32,7 @@ abstract class StandardTypeMaker implements TypeMaker {
     private boolean isHidden;
     private boolean isModifiable;
     private List<TitanType> sortKey;
+    private Order sortOrder;
     private List<TitanType> signature;
 
     public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
@@ -51,6 +49,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         isHidden = false;
         isModifiable = true;
         sortKey = new ArrayList<TitanType>(4);
+        sortOrder = Order.ASC;
         signature = new ArrayList<TitanType>(4);
     }
 
@@ -67,6 +66,7 @@ abstract class StandardTypeMaker implements TypeMaker {
             Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
                     "Must be unique in order to have a lock");
         checkSortKey(sortKey);
+        Preconditions.checkArgument(sortOrder==Order.ASC || !sortKey.isEmpty(),"Must define a sort key to use ordering");
         checkSignature(signature);
         Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(sortKey), Sets.newHashSet(signature)).isEmpty(),
                 "Signature and sort key must be disjoined");
@@ -109,6 +109,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         def.setValue(HIDDEN, isHidden);
         def.setValue(MODIFIABLE, isModifiable);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
+        def.setValue(SORT_ORDER, sortOrder);
         def.setValue(SIGNATURE, checkSignature(signature));
         return def;
     }
@@ -120,6 +121,12 @@ abstract class StandardTypeMaker implements TypeMaker {
 
     protected StandardTypeMaker sortKey(TitanType... types) {
         sortKey.addAll(Arrays.asList(types));
+        return this;
+    }
+
+    protected StandardTypeMaker sortOrder(Order order) {
+        Preconditions.checkNotNull(order);
+        this.sortOrder=order;
         return this;
     }
 

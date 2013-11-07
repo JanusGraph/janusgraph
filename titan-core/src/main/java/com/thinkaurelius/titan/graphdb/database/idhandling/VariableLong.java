@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.database.idhandling;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
@@ -12,9 +11,8 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 public class VariableLong {
 
-    public static final int unsignedByte(byte b) {
-        if (b<0) return b + 256;
-        else return b;
+    public static int unsignedByte(byte b) {
+        return b < 0 ? b + 256 : b;
     }
 
     //Move stop bit back to front => rewrite prefix variable encoding by custom writing first byte
@@ -27,20 +25,18 @@ public class VariableLong {
         byte b;
         do {
             b = in.getByte();
-            value = value << 7;
-            value = value | (b & BIT_MASK);
+            value = value << 7 | (b & BIT_MASK);
         } while (b >= 0);
         return value;
     }
 
 
     private static void writeUnsigned(WriteBuffer out, final long value) {
-        writeUnsigned(out,unsignedBlockBitLength(value),value);
-
+        writeUnsigned(out, unsignedBlockBitLength(value), value);
     }
 
     private static void writeUnsigned(WriteBuffer out, int offset, final long value) {
-        Preconditions.checkArgument(offset%7==0);
+        assert offset % 7 == 0;
         while (offset > 0) {
             offset -= 7;
             byte b = (byte) ((value >>> offset) & BIT_MASK);
@@ -59,14 +55,13 @@ public class VariableLong {
         return numVariableBlocks(unsignedBitLength(value));
     }
 
-    private static final int numVariableBlocks(final int numBits) {
-        Preconditions.checkArgument(numBits>0);
-        return (numBits-1)/7 + 1;
+    private static int numVariableBlocks(final int numBits) {
+        assert numBits > 0;
+        return (numBits - 1) / 7 + 1;
     }
 
-    private static final int unsignedBitLength(final long value) {
-        if (value==0) return 1;
-        else return Long.SIZE-Long.numberOfLeadingZeros(value);
+    public static int unsignedBitLength(final long value) {
+        return (value == 0) ? 1 : Long.SIZE - Long.numberOfLeadingZeros(value);
     }
 
     /* ##################################
@@ -81,7 +76,7 @@ public class VariableLong {
     }
 
     public static void writePositive(WriteBuffer out, final long value) {
-        Preconditions.checkArgument(value >= 0, "Positive value expected: %s", value);
+        assert value >= 0;
         writeUnsigned(out, value);
     }
 
@@ -94,9 +89,14 @@ public class VariableLong {
 
     public static StaticBuffer positiveByteBuffer(long[] value) {
         int len = 0;
-        for (int i = 0; i < value.length; i++) len += positiveLength(value[i]);
+        for (long aValue : value)
+            len += positiveLength(aValue);
+
         WriteBuffer buffer = new WriteByteBuffer(len);
-        for (int i = 0; i < value.length; i++) writePositive(buffer, value[i]);
+
+        for (long aValue : value)
+            writePositive(buffer, aValue);
+
         return buffer.getStaticBuffer();
     }
 
@@ -115,8 +115,7 @@ public class VariableLong {
     }
 
     private static long convertFromUnsigned(final long value) {
-        if ((value & 1) == 1) return -(value >>> 1);
-        else return value >>> 1;
+        return ((value & 1) == 1) ? -(value >>> 1) : value >>> 1;
     }
 
     public static int length(long value) {
@@ -137,8 +136,8 @@ public class VariableLong {
     ################################## */
 
     public static void writePositiveWithPrefix(final WriteBuffer out, long value, long prefix, final int prefixBitLen) {
-        Preconditions.checkArgument(value>=0);
-        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<6 && (prefix<(1l<<prefixBitLen)),"Invalid prefix [%s] for length [%s]",prefix,prefixBitLen);
+        assert value >= 0;
+        assert prefixBitLen > 0 && prefixBitLen < 6 && (prefix < (1L << prefixBitLen));
         //Write first byte
         int deltaLen = 8 - prefixBitLen;
         byte first = (byte)(prefix<<deltaLen);
@@ -164,13 +163,14 @@ public class VariableLong {
     }
 
     public static int positiveWithPrefixLength(final long value, final int prefixBitLen) {
-        Preconditions.checkArgument(value>=0);
-        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<6);
+        assert value >= 0;
+        assert prefixBitLen > 0 && prefixBitLen < 6;
         return numVariableBlocks(unsignedBitLength(value)+prefixBitLen);
     }
 
     public static long[] readPositiveWithPrefix(final ReadBuffer in, final int prefixBitLen) {
-        Preconditions.checkArgument(prefixBitLen>0 && prefixBitLen<6,"Invalid prefix bit length: %s",prefixBitLen);
+        assert prefixBitLen > 0 && prefixBitLen < 6;
+
         int first = unsignedByte(in.getByte());
         int deltaLen = 8 - prefixBitLen;
         long prefix = first>>deltaLen;
@@ -179,7 +179,7 @@ public class VariableLong {
             int deltaPos = in.getPosition();
             long remainder = readUnsigned(in);
             deltaPos = in.getPosition()-deltaPos;
-            Preconditions.checkArgument(deltaPos>0);
+            assert deltaPos > 0;
             value = (value<<(deltaPos*7)) + remainder;
         }
         return new long[]{value, prefix};
@@ -192,7 +192,7 @@ public class VariableLong {
     ################################## */
 
     public static void writePositiveBackward(WriteBuffer out, long value) {
-        Preconditions.checkArgument(value >= 0, "Positive value expected: %s", value);
+        assert value >= 0;
         writeUnsignedBackward(out,value);
     }
 
@@ -213,10 +213,6 @@ public class VariableLong {
         return convertFromUnsigned(readUnsignedBackward(in));
     }
 
-
-
-
-
     private static void writeUnsignedBackward(WriteBuffer out, long value) {
         boolean first = true;
         do {
@@ -236,8 +232,7 @@ public class VariableLong {
         int b;
         do {
             b = in.getByte(position);
-            value = value << 7;
-            value = value | (b & BIT_MASK);
+            value = value << 7 | b & BIT_MASK;
             position--;
         } while (b >= 0);
         in.movePosition(position-in.getPosition());

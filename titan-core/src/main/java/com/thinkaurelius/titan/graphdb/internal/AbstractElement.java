@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
-import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanElement;
@@ -14,15 +13,15 @@ import com.thinkaurelius.titan.core.TitanVertex;
  */
 public abstract class AbstractElement implements InternalElement {
 
-    private long id;
+    protected long id;
 
-    public AbstractElement(final long id) {
-        Preconditions.checkArgument(id != 0);
+    public AbstractElement(long id) {
+        assert id != 0;
         this.id = id;
     }
 
-    public static final boolean isTemporaryId(long elementId) {
-        return elementId<0;
+    public static boolean isTemporaryId(long elementId) {
+        return elementId < 0;
     }
 
 
@@ -33,17 +32,19 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) {
+        if (other == null)
+            return false;
+
+        if (this == other)
             return true;
-        } else if (other==null) {
-            return false;
-        } else if (this instanceof TitanVertex && other instanceof TitanVertex) {
-            return getID() == ((TitanVertex)other).getID();
-        } else if (this instanceof TitanEdge && other instanceof TitanEdge) {
-            return getID() == ((TitanEdge)other).getID();
-        } else {
-            return false;
-        }
+
+        if (this instanceof TitanVertex && other instanceof TitanVertex)
+            return id == ((TitanVertex) other).getID();
+
+        if (this instanceof TitanEdge && other instanceof TitanEdge)
+            return id == ((TitanEdge) other).getID();
+
+        return false;
     }
 
 
@@ -73,8 +74,8 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public void setID(long id) {
-        Preconditions.checkArgument(isTemporaryId(this.id),"Element has already been assigned an id");
-        Preconditions.checkArgument(id>0);
+        assert isTemporaryId(this.id);
+        assert id > 0;
         this.id=id;
     }
 

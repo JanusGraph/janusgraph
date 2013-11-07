@@ -17,6 +17,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Iterable<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
+    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
@@ -214,8 +215,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public Object getId() {
-        if (hasId()) return Long.valueOf(getID());
-        else return null;
+        return hasId() ? getID() : null;
     }
 
     @Override

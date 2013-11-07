@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 
 import javax.annotation.Nullable;
@@ -20,8 +19,8 @@ public class TypeAttribute {
     public TypeAttribute() {}
 
     public TypeAttribute(TypeAttributeType type, Object value) {
-        Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(value);
+        assert type  != null;
+        assert value != null;
         this.type = type;
         this.value = value;
     }
@@ -44,12 +43,12 @@ public class TypeAttribute {
     }
 
     private static void isValidDefinition(Map definition, Set<TypeAttributeType> types) {
-        Preconditions.checkNotNull(definition);
+        assert definition != null;
         Set<TypeAttributeType> keys = definition.keySet();
         for (TypeAttributeType type : types) {
-            Preconditions.checkArgument(keys.contains(type),"Missing type in definition: %s",type);
+           assert keys.contains(type);
         }
-        Preconditions.checkArgument(keys.size()==types.size(),"Extra types found in definition: %s",keys);
+        assert keys.size() == types.size();
     }
 
     public static class Map extends EnumMap<TypeAttributeType,Object> {
@@ -63,25 +62,23 @@ public class TypeAttribute {
         }
 
         public Map setValue(TypeAttributeType type, Object value) {
-            Preconditions.checkNotNull(type);
-            Preconditions.checkNotNull(value);
-            Preconditions.checkArgument(type.verifyAttribute(value));
+            assert type  != null;
+            assert value != null;
+            assert type.verifyAttribute(value);
             super.put(type,value);
             return this;
         }
 
         public<O> O getValue(TypeAttributeType type) {
-            Preconditions.checkNotNull(type);
+            assert type != null;
             Object value = super.get(type);
-            if (value==null) value = type.defaultValue(this);
-            return (O)value;
+            return (O) ((value == null) ? type.defaultValue(this) : value);
         }
 
         public<O> O getValue(TypeAttributeType type, Class<O> clazz) {
-            Preconditions.checkNotNull(type);
+            assert type != null;
             Object value = super.get(type);
-            if (value==null) value = type.defaultValue(this);
-            return (O)value;
+            return (O) ((value == null) ? type.defaultValue(this) : value);
         }
 
         public Iterable<TypeAttribute> getAttributes() {

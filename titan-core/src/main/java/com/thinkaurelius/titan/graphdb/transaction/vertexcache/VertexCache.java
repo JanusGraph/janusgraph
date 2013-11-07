@@ -21,7 +21,7 @@ public interface VertexCache {
      * @param id
      * @return
      */
-    public InternalVertex get(long id, Retriever<Long, InternalVertex> vertexConstructor);
+    public InternalVertex get(long id, Retriever<Long, InternalVertex> retriever);
 
     /**
      * Adds the given vertex with the given id to the cache. The given vertex may already be in the cache.

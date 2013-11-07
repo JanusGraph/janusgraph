@@ -15,6 +15,10 @@
             <outputDirectory>/</outputDirectory>
         </fileSet>
         <fileSet>
+            <directory>src/assembly/static</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+        <fileSet>
             <directory>../src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
@@ -47,6 +51,10 @@
         <file>
             <source>../../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
+        </file>
+        <file>
+            <source>../../titan-hazelcast/src/test/resources/hazelcast.xml</source>
+            <outputDirectory>/conf</outputDirectory>
         </file>
     </files>
 

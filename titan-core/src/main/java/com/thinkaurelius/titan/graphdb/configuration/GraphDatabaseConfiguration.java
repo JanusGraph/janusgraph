@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -79,7 +80,26 @@ public class GraphDatabaseConfiguration {
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
      */
     public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-    public static final long TX_CACHE_SIZE_DEFAULT = 20000;
+    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
+
+    /**
+     * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
+     * This will significantly speed up subsequent property lookups on the same vertex, hence this option is enabled by default.
+     * Disable this option when the graph contains vertices with very many properties such that retrieving all of them substantially
+     * increases latencies compared to a single property retrieval.
+     */
+    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
+
+    /**
+     * When enabled, Titan will accept user provided vertex ids as long as they are valid Titan vertex ids - see
+     * {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)}. When enabled, Titan will now longer allocate and assign
+     * ids internally, so all vertices must be added through {@link com.thinkaurelius.titan.core.TitanTransaction#addVertex(Long)}.
+     * <p/>
+     * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
+     * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
+     */
+    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
+    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 
 
     // ################ STORAGE #######################
@@ -147,6 +167,16 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
     public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
+
+
+    /**
+     * If enabled, Titan attempts to parallelize storage operations against the storage backend using a fixed thread pool shared
+     * across the entire Titan graph database instance. Parallelization is only applicable to certain storage operations and
+     * can be beneficial when the operation is I/O bound.
+     */
+    public static final String PARALLEL_BACKEND_OPS_KEY = "parallel-backend-ops";
+    public static final boolean PARALLEL_BACKEND_OPS_DEFAULT = true;
+
     /**
      * A unique identifier for the machine running the @TitanGraph@ instance.
      * It must be ensured that no other machine accessing the storage backend can have the same identifier.
@@ -199,6 +229,57 @@ public class GraphDatabaseConfiguration {
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
+     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
+     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
+     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
+     *
+     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
+     * same value. Otherwise, data corruption will occur.
+     */
+    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
+    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
+
+    /**
+     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
+     * must be non-negative and fit within the number of unique id bits configured.
+     * By assigning different unique id markers to individual Titan instances it can be assured
+     * that those instances don't conflict with one another when attempting to allocate new id blocks.
+     *
+     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     */
+    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
+    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
+
+    /**
+     * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
+     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUE_ID_KEY} where the
+     * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
+     * instances.
+     *
+     * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
+     * this option must be configured accordingly.
+     */
+    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
+    public static final boolean IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT = false;
+
+    /**
+     * Configures this Titan instance to use local consistency guarantees when allocating ids. This is useful
+     * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
+     * In this case, the consistency is only ensured within the local sub-clusters which does not require
+     * acquiring global locks that can be too expensive to acquire.
+     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUE_ID_KEY} is configured
+     * that fits within the bit width {@link #IDAUTHORITY_UNIQUE_ID_BITS_KEY} and that each local cluster of Titan
+     * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
+     *
+     * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in
+     * data corruption.
+     *
+     */
+    public static final String IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY = "idauthority-local-consistency";
+    public static final boolean IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT = false;
+
+
+    /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
      * <p/>
      * Value = {@value}
@@ -216,8 +297,16 @@ public class GraphDatabaseConfiguration {
      * Value = {@value}
      */
     public static final String PORT_KEY = "port";
+
     /**
-     * Default timeout whne connecting to a remote database instance
+     * Username and password keys to be used to specify an access credential that may be needed to connect
+     * with a secured storage backend.
+     */
+    public static final String AUTH_USERNAME_KEY = "user";
+    public static final String AUHT_PASSWORD_KEY = "password";
+
+    /**
+     * Default timeout when connecting to a remote database instance
      * <p/>
      * Value = {@value}
      */
@@ -334,19 +423,19 @@ public class GraphDatabaseConfiguration {
      */
     public static final String BASIC_METRICS = "enable-basic-metrics";
     public static final boolean BASIC_METRICS_DEFAULT = false;
-    
-    
+
+
     /**
      * The default name prefix for Metrics reported by Titan. All metric names
      * will begin with this string and a period. This value can be overridden on
      * a transaction-specific basis through
      * {@link StandardTransactionBuilder#setMetricsPrefix(String)}.
-     * <p>
+     * <p/>
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */
     public static final String METRICS_PREFIX_KEY = "prefix";
     public static final String METRICS_PREFIX_DEFAULT = "com.thinkaurelius.titan";
-    
+
     /**
      * This is the prefix used outside of a graph database configuration, or for
      * operations where a system-internal transaction is necessary as an
@@ -360,22 +449,22 @@ public class GraphDatabaseConfiguration {
     /**
      * Whether to aggregate measurements for the edge store, vertex index, edge
      * index, and ID store.
-     * <p>
+     * <p/>
      * If true, then metrics for each of these backends will use the same metric
      * name ("stores"). All of their measurements will be combined. This setting
      * measures the sum of Titan's backend activity without distinguishing
      * between contributions of its various internal stores.
-     * <p>
+     * <p/>
      * If false, then metrics for each of these backends will use a unique
      * metric name ("idStore", "edgeStore", "vertexIndex", and "edgeIndex").
      * This setting exposes the activity associated with each backend component,
      * but it also multiplies the number of measurements involved by four.
-     * <p>
+     * <p/>
      * This option has no effect when {@link #BASIC_METRICS} is false.
      */
     public static final String MERGE_BASIC_METRICS_KEY = "merge-basic-metrics";
     public static final boolean MERGE_BASIC_METRICS_DEFAULT = true;
-    
+
 
     /**
      * Metrics console reporter interval in milliseconds. Leaving this
@@ -433,86 +522,86 @@ public class GraphDatabaseConfiguration {
      */
     public static final String METRICS_SLF4J_LOGGER_KEY = "slf4j.logger";
     public static final String METRICS_SLF4J_LOGGER_DEFAULT = null;
-    
+
     /**
      * The configuration namespace within {@link #METRICS_NAMESPACE} for
      * Ganglia.
      */
     public static final String GANGLIA_NAMESPACE = "ganglia";
-    
+
     /**
      * The unicast host or multicast group name to which Metrics will send
      * Ganglia data. Setting this config key has no effect unless
      * {@link #GANGLIA_INTERVAL_KEY} is also set.
      */
     public static final String GANGLIA_HOST_OR_GROUP_KEY = "hostname";
-    
+
     /**
      * The number of milliseconds to wait between sending Metrics data to the
      * host or group specified by {@link #GANGLIA_HOST_OR_GROUP_KEY}. This has no
      * effect unless {@link #GANGLIA_HOST_OR_GROUP_KEY} is also set.
      */
     public static final String GANGLIA_INTERVAL_KEY = "interval";
-    
+
     /**
      * The port to which Ganglia data are sent.
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_PORT_DEFAULT}
      */
     public static final String GANGLIA_PORT = "port";
     public static final int GANGLIA_PORT_DEFAULT = 8649;
-    
+
     /**
      * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP_KEY} as a unicast or
      * multicast address. If present, it must be either the string "multicast"
      * or the string "unicast".
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_ADDRESSING_MODE_DEFAULT}
      */
     public static final String GANGLIA_ADDRESSING_MODE_KEY = "addressing-mode";
     public static final String GANGLIA_ADDRESSING_MODE_DEFAULT = "unicast";
-    
+
     /**
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
      * effect when {@link #GANGLIA_ADDRESSING_MODE_KEY} is set to "multicast".
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_TTL_DEFAULT}
      */
     public static final String GANGLIA_TTL_KEY = "ttl";
     public static final int GANGLIA_TTL_DEFAULT = 1;
-    
+
     /**
      * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
      * 3.0 protocol format (false).
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_USE_PROTOCOL_31_DEFAULT}
      */
     public static final String GANGLIA_USE_PROTOCOL_31_KEY = "protocol-31";
     public static final boolean GANGLIA_USE_PROTOCOL_31_DEFAULT = true;
-    
+
     /**
      * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
      * set on outgoing data.
-     * <p>
+     * <p/>
      * See https://github.com/ganglia/monitor-core/wiki/UUIDSources
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_UUID_DEFAULT}
      */
     public static final String GANGLIA_UUID_KEY = "uuid";
     public static final UUID GANGLIA_UUID_DEFAULT = null;
-    
+
     /**
      * If non-null, it must be a valid Gmetric spoof string formatted as an
      * IP:hostname pair. If null, Ganglia will automatically determine the IP
      * and hostname to set on outgoing datagrams.
-     * <p>
+     * <p/>
      * See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing
-     * <p>
+     * <p/>
      * Default = {@value #GANGLIA_SPOOF_DEFAULT}
      */
     public static final String GANGLIA_SPOOF_KEY = "spoof";
     public static final String GANGLIA_SPOOF_DEFAULT = null;
-    
+
     /**
      * The configuration namespace within {@link #METRICS_NAMESPACE} for
      * Graphite.
@@ -525,27 +614,27 @@ public class GraphDatabaseConfiguration {
      * set.
      */
     public static final String GRAPHITE_HOST_KEY = "hostname";
-    
+
     /**
      * The number of milliseconds to wait between sending Metrics data to the
      * host specified {@link #GRAPHITE_HOST_KEY}. This has no effect unless
      * {@link #GRAPHITE_HOST_KEY} is also set.
      */
     public static final String GRAPHITE_INTERVAL_KEY = "interval";
-    
+
     /**
      * The port to which Graphite data are sent.
-     * <p>
+     * <p/>
      * Default = {@value #GRAPHITE_PORT_DEFAULT}
      */
     public static final String GRAPHITE_PORT_KEY = "port";
     public static final int GRAPHITE_PORT_DEFAULT = 2003;
-    
+
     /**
      * A Graphite-specific prefix for reported metrics. If non-null, Metrics
      * prepends this and a "." to all metric names before reporting them to
      * Graphite.
-     * <p>
+     * <p/>
      * Default = {@value #GRAPHITE_PREFIX_DEFAULT}
      */
     public static final String GRAPHITE_PREFIX_KEY = "prefix";
@@ -556,9 +645,13 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
-    private long txCacheSize;
+    private int txCacheSize;
     private DefaultTypeMaker defaultTypeMaker;
+    private Boolean propertyPrefetching;
+    private boolean allowVertexIdSetting;
     private String metricsPrefix;
+
+    private StoreFeatures storeFeatures = null;
 
     public GraphDatabaseConfiguration(String dirOrFile) {
         this(new File(dirOrFile));
@@ -577,9 +670,9 @@ public class GraphDatabaseConfiguration {
     /**
      * Load a properties file containing a Titan graph configuration or create a
      * stub configuration for a directory.
-     * <p>
+     * <p/>
      * If the argument is a file:
-     * 
+     * <p/>
      * <ol>
      * <li>Load its contents into a {@link PropertiesConfiguration}</li>
      * <li>For each key starting with {@link #STORAGE_NAMESPACE} and ending in
@@ -590,18 +683,17 @@ public class GraphDatabaseConfiguration {
      * than the JVM's working directory.
      * <li>Return the {@code PropertiesConfiguration}</li>
      * </ol>
-     * 
-     * <p>
+     * <p/>
+     * <p/>
      * Otherwise (if the argument is not a file):
      * <ol>
      * <li>Create a new {@link BaseConfiguration}</li>
      * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
      * the absolute path of the argument</li>
      * <li>Return the {@code BaseConfiguration}</li>
-     * 
-     * @param dirOrFile
-     *            A properties file to load or directory in which to read and
-     *            write data
+     *
+     * @param dirOrFile A properties file to load or directory in which to read and
+     *                  write data
      * @return A configuration derived from {@code dirOrFile}
      */
     @SuppressWarnings("unchecked")
@@ -609,20 +701,20 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkNotNull(dirOrFile, "Need to specify a configuration file or storage directory");
 
         Configuration configuration;
-        
+
         try {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);
-                
+
                 final File configFileParent = dirOrFile.getParentFile();
-                
+
                 Preconditions.checkNotNull(configFileParent);
                 Preconditions.checkArgument(configFileParent.isDirectory());
-                    
+
                 final Pattern p = Pattern.compile(
                         Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
-                        Pattern.quote(STORAGE_DIRECTORY_KEY));
-                
+                                Pattern.quote(STORAGE_DIRECTORY_KEY));
+
                 final Iterator<String> sdKeys = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                     @Override
                     public boolean apply(String key) {
@@ -631,17 +723,17 @@ public class GraphDatabaseConfiguration {
                         return p.matcher(key).matches();
                     }
                 });
-                
+
                 while (sdKeys.hasNext()) {
                     String k = sdKeys.next();
                     Preconditions.checkNotNull(k);
                     String s = configuration.getString(k);
-                    
+
                     if (null == s) {
                         log.warn("Configuration key {} has null value", k);
                         continue;
                     }
-                    
+
                     File storedir = new File(s);
                     if (!storedir.isAbsolute()) {
                         configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
@@ -659,7 +751,7 @@ public class GraphDatabaseConfiguration {
         }
 
         return configuration;
-    }   
+    }
 
     public static final String toString(Configuration config) {
         StringBuilder s = new StringBuilder();
@@ -670,7 +762,7 @@ public class GraphDatabaseConfiguration {
         }
         return s.toString();
     }
-    
+
     public static final String getSystemMetricsPrefix() {
         return METRICS_SYSTEM_PREFIX_DEFAULT;
     }
@@ -680,32 +772,37 @@ public class GraphDatabaseConfiguration {
         readOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
         flushIDs = configuration.subset(IDS_NAMESPACE).getBoolean(IDS_FLUSH_KEY, IDS_FLUSH_DEFAULT);
         batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
-        txCacheSize = configuration.getLong(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
+        txCacheSize = configuration.getInt(TX_CACHE_SIZE_KEY, TX_CACHE_SIZE_DEFAULT);
         defaultTypeMaker = preregisteredAutoType.get(configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
         Preconditions.checkNotNull(defaultTypeMaker, "Invalid " + AUTO_TYPE_KEY + " option: " + configuration.getString(AUTO_TYPE_KEY, AUTO_TYPE_DEFAULT));
-
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+
+        if (configuration.containsKey(PROPERTY_PREFETCHING_KEY))
+            propertyPrefetching = configuration.getBoolean(PROPERTY_PREFETCHING_KEY);
+        else propertyPrefetching = null;
+        allowVertexIdSetting = configuration.getBoolean(ALLOW_SETTING_VERTEX_ID_KEY, ALLOW_SETTING_VERTEX_ID_DEFAULT);
+
 
         configureMetrics();
     }
 
     private void configureMetrics() {
         Preconditions.checkNotNull(configuration);
-        
+
 
         Configuration metricsConf = configuration.subset(METRICS_NAMESPACE);
 
         if (null != metricsConf && !metricsConf.isEmpty()) {
-            
+
             metricsPrefix = metricsConf.getString(METRICS_PREFIX_KEY, METRICS_PREFIX_DEFAULT);
-            
+
             if (!metricsConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
                 metricsPrefix = null;
             } else {
                 Preconditions.checkNotNull(metricsPrefix);
             }
-            
+
             configureMetricsConsoleReporter(metricsConf);
             configureMetricsCsvReporter(metricsConf);
             configureMetricsJmxReporter(metricsConf);
@@ -751,17 +848,17 @@ public class GraphDatabaseConfiguration {
             MetricManager.INSTANCE.addSlf4jReporter(ms, loggerName);
         }
     }
-    
+
     private void configureMetricsGangliaReporter(Configuration conf) {
-        
+
         Configuration ganglia = conf.subset(GANGLIA_NAMESPACE);
-        
+
         if (null == ganglia)
             return;
-        
+
         final String host = ganglia.getString(GANGLIA_HOST_OR_GROUP_KEY, null);
         final Long ms = ganglia.getLong(GANGLIA_INTERVAL_KEY, null);
-        
+
         if (null == host || null == ms) {
             return;
         }
@@ -780,11 +877,11 @@ public class GraphDatabaseConfiguration {
                     + "=\"" + addrModeStr
                     + "\": must be \"unicast\" or \"multicast\"");
         }
-        
+
         final Boolean proto31 = ganglia.getBoolean(GANGLIA_USE_PROTOCOL_31_KEY, GANGLIA_USE_PROTOCOL_31_DEFAULT);
 
         final int ttl = ganglia.getInt(GANGLIA_TTL_KEY, GANGLIA_TTL_DEFAULT);
-        
+
         final UUID uuid;
         final String uuidStr = ganglia.getString(GANGLIA_UUID_KEY);
         if (null != uuidStr) {
@@ -792,37 +889,37 @@ public class GraphDatabaseConfiguration {
         } else {
             uuid = GANGLIA_UUID_DEFAULT;
         }
-        
+
         String spoof = ganglia.getString(GANGLIA_SPOOF_KEY, GANGLIA_SPOOF_DEFAULT);
         if (null != spoof && 0 > spoof.indexOf(':')) {
             throw new RuntimeException("Invalid setting " + METRICS_NAMESPACE
                     + "." + GANGLIA_NAMESPACE + "." + GANGLIA_SPOOF_KEY + "=\""
                     + spoof + "\": must be formatted as \"IP:hostname\"");
         }
-        
+
         try {
             MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, spoof, ms);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-    
+
     private void configureMetricsGraphiteReporter(Configuration conf) {
         Configuration graphite = conf.subset(GRAPHITE_NAMESPACE);
-        
+
         if (null == graphite)
             return;
-        
+
         final String host = graphite.getString(GRAPHITE_HOST_KEY, null);
         final Long ms = graphite.getLong(GRAPHITE_INTERVAL_KEY, null);
-        
+
         if (null == host || null == ms) {
             return;
         }
 
         final Integer port = graphite.getInt(GRAPHITE_PORT_KEY, GRAPHITE_PORT_DEFAULT);
         final String prefix = graphite.getString(GRAPHITE_PREFIX_KEY, GRAPHITE_PREFIX_DEFAULT);
-        
+
         MetricManager.INSTANCE.addGraphiteReporter(host, port, prefix, ms);
     }
 
@@ -834,20 +931,33 @@ public class GraphDatabaseConfiguration {
         return flushIDs;
     }
 
-    public long getTxCacheSize() {
+    public int getTxCacheSize() {
         return txCacheSize;
     }
 
     public boolean isBatchLoading() {
         return batchLoading;
     }
-    
+
     public String getMetricsPrefix() {
         return metricsPrefix;
     }
 
     public DefaultTypeMaker getDefaultTypeMaker() {
         return defaultTypeMaker;
+    }
+
+    public boolean allowVertexIdSetting() {
+        return allowVertexIdSetting;
+    }
+
+    public boolean getPropertyPrefetching() {
+        if (propertyPrefetching == null) {
+            Preconditions.checkArgument(storeFeatures != null, "Cannot open transaction before the storage backend has been initialized");
+            return storeFeatures.isDistributed();
+        } else {
+            return propertyPrefetching;
+        }
     }
 
     public int getWriteAttempts() {
@@ -883,7 +993,7 @@ public class GraphDatabaseConfiguration {
                 try {
                     clazz = Class.forName(classname);
                 } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException("Could not find attribute class" + classname);
+                    throw new IllegalArgumentException("Could not find attribute class" + classname, e);
                 }
                 Preconditions.checkNotNull(clazz);
 
@@ -933,6 +1043,7 @@ public class GraphDatabaseConfiguration {
         Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
         Backend backend = new Backend(storageconfig);
         backend.initialize(storageconfig);
+        storeFeatures = backend.getStoreFeatures();
         return backend;
     }
 

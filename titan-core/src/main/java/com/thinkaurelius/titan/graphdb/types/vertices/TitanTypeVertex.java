@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
@@ -29,7 +29,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
                     type(SystemKey.TypeName).
                     properties(), null).getValue(String.class);
         }
-        Preconditions.checkNotNull(name);
+        assert name != null;
         return name;
     }
 
@@ -42,7 +42,6 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
             }
             definition = def;
         }
-        Preconditions.checkNotNull(definition);
         return definition;
     }
 
@@ -65,6 +64,11 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public long[] getSortKey() {
         return getDefinition().getValue(TypeAttributeType.SORT_KEY, long[].class);
+    }
+
+    @Override
+    public Order getSortOrder() {
+        return getDefinition().getValue(TypeAttributeType.SORT_ORDER, Order.class);
     }
 
     @Override

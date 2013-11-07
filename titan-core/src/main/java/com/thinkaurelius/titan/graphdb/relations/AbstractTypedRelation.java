@@ -18,20 +18,21 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     public AbstractTypedRelation(final long id, final TitanType type) {
         super(id);
-        Preconditions.checkArgument(type!=null && type instanceof InternalType);
+        assert type != null && type instanceof InternalType;
         this.type = (InternalType) type;
     }
 
     @Override
     public InternalRelation it() {
         InternalVertex v = getVertex(0);
-        if (v==v.it()) return this;
-        else {
-            InternalRelation next = (InternalRelation) RelationIdentifier.get(getVertex(0)
-                                                , type, super.getID()).findRelation(tx());
-            if (next==null) throw new InvalidElementException("Relation has been removed",this);
-            else return next;
-        }
+        if (v == v.it())
+            return this;
+
+        InternalRelation next = (InternalRelation) RelationIdentifier.get(v, type, super.getID()).findRelation(tx());
+        if (next == null)
+            throw new InvalidElementException("Relation has been removed", this);
+
+        return next;
     }
 
     @Override
@@ -112,6 +113,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         Preconditions.checkArgument(label.isUnidirected(),"Label must be unidirected");
         Preconditions.checkArgument(label.isUnique(Direction.OUT),"Label must have unique end point");
+        Preconditions.checkArgument(vertex!=null,"Vertex cannot be null");
         it().setPropertyDirect(label,vertex);
     }
 

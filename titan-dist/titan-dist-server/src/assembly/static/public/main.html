@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Rexster</title>
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/css/elastic.css" type="text/css" media="all"/>
+    <link rel="stylesheet" href="/static/css/elastic.print.css" type="text/css" media="print"/>
+    <link rel="stylesheet" href="/static/css/rexster.css" type="text/css" media="all"/>
+    <link rel="stylesheet" href="/static/css/dot-luv/jquery-ui-1.8.7.custom.css" type="text/css" media="all"/>
+    <!-- the {{inject}} is kind of a hack to allow injection of a small javascript provide by the ToolServlet  -->
+    {{inject}}
+    <script type="text/javascript" src="/static/javascript/require-jquery.js"></script>
+    <script type="text/javascript" src="/static/javascript/main.js"></script>
+    <script type="text/javascript" src="/static/javascript/rexster.js"></script>
+</head>
+<body>
+<div class="unit horizontal-center" style="width:1000px">
+<div id="header" class="unit on-2 columns make-space" style="height:40px">
+    <div class="column vertical-center">
+        <div class="unit">
+            <div id="radiosetMainMenu">
+                <!-- main menu goes here -->
+            </div>
+        </div>
+    </div>
+    <div class="column">
+        <div class="unit" style="text-align:right">
+            <img src="/static/img/rexster-logo.png" style="height:35px;width:95px"/>
+        </div>
+    </div>
+</div>
+
+<div id="info" class="unit ui-corner-all" style="display:none;cursor:pointer">
+    <p style="margin-bottom:0em;">
+        <span class="ui-icon" style="float: left; margin-right: .3em;"></span>
+        <strong></strong>
+        <span id="infoMessage"></span>
+    </p>
+
+    <p style="margin-bottom:0em;float:right;font-style:italic;">Click to Close</p>
+</div>
+
+<div id="slideHolder">
+    <div id="mainGremlin" class="unit on-2 columns main" style="display:none">
+        <div class="container">
+            <div class="fixed column">
+                <div id="panelGremlinMenuGraph" class="container ui-widget make-space" style="width:200px">
+                    <!-- graph menu set goes here  -->
+                </div>
+            </div>
+            <div class="fixed column" style="width:795px">
+                <div id="panelGremlin" class="container ui-widget make-space-all">
+                    <div class="ui-widget-header ui-corner-top">Gremlin Console</div>
+                    <div class="ui-widget-content ui-corner-bottom">
+                        <div class="container">
+                            <div class="make-space-all">
+                                <div id="terminal">
+                                    <p id="gremlinVersion"></p>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\,,,/</p>
+
+                                    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(o o)</p>
+
+                                    <p>-----oOOo-(_)-oOOo-----</p>
+                                </div>
+                                <div id="graph" style="margin:auto;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainGraph" class="unit on-2 columns main" style="display:none">
+        <div class="container">
+            <div class="fixed column">
+                <div id="panelGraphMenuGraph" class="container ui-widget make-space" style="width:200px">
+                    <!-- graph menu set goes here  -->
+                </div>
+            </div>
+            <div class="fixed column" style="width:795px">
+                <div id="panelGraph" class="container ui-widget make-space">
+                    <div class="ui-widget-header ui-corner-top">Graph</div>
+                    <div class="ui-widget-content ui-corner-bottom">
+                        <div class="container">
+                            <div class="make-space">
+                                <span id="panelGraphTitle" style="font-weight:bold"></span><span> - </span><span
+                                    id="panelGraphDetail"></span>
+                            </div>
+                            <div id="panelGraphMenu" class="make-space-all" style="font-size:small">
+                                <a _type="vertices">Browse Vertices</a>
+                                <a _type="edges">Browse Edges</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="panelExtensionsContainer" style="width:100%">
+                        <div class="ui-widget-header ui-corner-top">Extensions</div>
+                        <div class="ui-widget-content ui-corner-bottom">
+                            <div class="container">
+                                <div id="panelGraphExtensions" class="make-space-all"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="panelElementViewer" class="container ui-widget make-space" style="display:none">
+                    <div class="ui-widget-header ui-corner-top">Viewer</div>
+                    <div class="ui-widget-content ui-corner-bottom">
+                        <div class="unit on-3 columns">
+                            <div class="container">
+                                <div id="panelElementViewerLeft" class="column">
+                                    <h3>Out</h3>
+
+                                    <div class="intense ui-corner-all">
+                                        <div class="value"></div>
+                                        <div class="label">Edges</div>
+                                    </div>
+                                    <ul class="container edge-list"></ul>
+                                </div>
+                                <div class="column">
+                                    <div style="margin-left:4px;margin-right:4px">
+                                        <h3>Properties</h3>
+
+                                        <div id="panelElementViewerMiddle" class="container"
+                                             style="margin-left:-12px"></div>
+                                    </div>
+                                </div>
+                                <div id="panelElementViewerRight" class="column">
+                                    <h3>In</h3>
+
+                                    <div class="intense ui-corner-all">
+                                        <div class="value"></div>
+                                        <div class="label">Edges</div>
+                                    </div>
+                                    <ul class="container edge-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="panelBrowser" class="container ui-widget make-space" style="display:none">
+                    <div class="ui-widget-header ui-corner-top">Browser</div>
+                    <div class="ui-widget-content ui-corner-bottom">
+                        <div class="pager container make-space" style="font-size:small">
+                            <ul class="unit on-6 columns horizontal-center" style="width:410px">
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="First"><a class="ui-icon ui-icon-seek-first"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Previous"><a class="ui-icon ui-icon-seek-prev"></a>
+                                </li>
+                                <li class="fixed column pager-label" style="width:250px;text-align:center"></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Next"><a class="ui-icon ui-icon-seek-next"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Filter"><a class="ui-icon ui-icon-search"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Remove Filter" style="display:none;"><a
+                                        class="ui-icon ui-icon-cancel"></a></li>
+                            </ul>
+                        </div>
+                        <div id="panelBrowserMain">
+                        </div>
+                        <div class="pager container make-space" style="font-size:small">
+                            <ul class="unit on-6 columns horizontal-center" style="width:410px">
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="First"><a class="ui-icon ui-icon-seek-first"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Previous"><a class="ui-icon ui-icon-seek-prev"></a>
+                                </li>
+                                <li class="fixed column pager-label" style="width:250px;text-align:center"></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Next"><a class="ui-icon ui-icon-seek-next"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Filter"><a class="ui-icon ui-icon-search"></a></li>
+                                <li class="fixed column ui-state-default ui-corner-all pager-button"
+                                    style="width:30px" title="Remove Filter" style="display:none;"><a
+                                        class="ui-icon ui-icon-cancel"></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="footer" class="unit ui-corner-bottom ui-widget"
+     style="display: none; padding:4px;color: white;background: #0b3e6f url(/static/css/dot-luv/images/ui-bg_diagonals-thick_15_0b3e6f_40x40.png) 50% 50% repeat;margin-top:120px;">
+    <img src="/static/img/rexster-peek.png" style="float:left;margin-top:-99px;position:relative"/>
+    <span style="float:right">Rexster: The Dog House</span>
+</div>
+
+<div id="dialogForm" title="Rexster Extension" style="display:none">
+    <div id="dialogFormUri" style="margin-left:10px">
+        <form>
+            <fieldset>
+                <label for="dialogFormUriText">URI</label>
+                <input type="text" id="dialogFormUriText" name="dialogFormUriText"
+                       class="text ui-widget-content ui-corner-all" style="width:100%" readonly="readonly"/>
+            </fieldset>
+        </form>
+    </div>
+    <div id="dialogFormLoading" style="width:100%;display:none;">
+        <img src="/static/img/ajax-loader.gif" title="Loading"
+             style="display: block;margin-left: auto;margin-right: auto"/>
+
+        <h3 style="text-align:center">Loading</h3>
+    </div>
+    <div id="dialogFormJsonViewer"></div>
+</div>
+
+<div id="dialogGraphViz" title="Visualization" style="display:none">
+    <div id="dialogGraphVizStructure" class="unit on-2 columns">
+        <div class="container">
+            <div class="fixed column">
+                <div id="dialogGraphVizMain"
+                     style="position:relative;width:500px;height:475px;margin:auto;overflow:hidden;"></div>
+            </div>
+            <div class="fixed column" style="width:268px">
+                <div id="dialogGraphVizRight" class="container">
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="fixed column span-2" style="width:768px">
+                <span style="font-size:xx-small">left-click graph elements for details | right-click vertices to traverse | mousewheel to zoom | drag to pan</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="dialogIndices" title="Key Indices" style="display:none">
+    <form>
+        <fieldset>
+            <label for="dialogFormIndexSelect">Key</label>
+            <select id="dialogFormIndexSelect" name="dialogFormIndexSelect" class="text ui-widget-content ui-corner-all"
+                    style="width:100%"></select>
+            <label for="dialogFormIndexValueText">Value</label>
+            <input type="text" id="dialogFormIndexValueText" name="dialogFormIndexValueText"
+                   class="text ui-widget-content ui-corner-all" style="width:100%"/>
+        </fieldset>
+    </form>
+</div>
+</div>
+</body>
+</html>

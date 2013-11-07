@@ -29,16 +29,18 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean acquireLocks = true;
 
+    private boolean propertyPrefetching = true;
+
     private boolean singleThreaded = false;
 
     private boolean threadBound = false;
 
-    private long vertexCacheSize;
+    private int vertexCacheSize;
 
     private long indexCacheWeight;
 
     private Long timestamp = null;
-    
+
     private String metricsPrefix;
 
     /**
@@ -59,6 +61,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.propertyPrefetching = graphConfig.getPropertyPrefetching();
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();
@@ -92,7 +95,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setCacheSize(long size) {
+    public StandardTransactionBuilder setCacheSize(int size) {
         verifyOpen();
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
@@ -113,7 +116,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.timestamp = timestamp;
         return this;
     }
-    
+
     @Override
     public StandardTransactionBuilder setMetricsPrefix(String p) {
         verifyOpen();
@@ -169,6 +172,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         return verifyUniqueness;
     }
 
+    public boolean hasPropertyPrefetching() {
+        return propertyPrefetching;
+    }
+
     @Override
     public final boolean isSingleThreaded() {
         return singleThreaded;
@@ -180,7 +187,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final long getVertexCacheSize() {
+    public final int getVertexCacheSize() {
         return vertexCacheSize;
     }
 
@@ -193,7 +200,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public boolean hasTimestamp() {
         return timestamp != null;
     }
-    
+
     @Override
     public String getMetricsPrefix() {
         return metricsPrefix;

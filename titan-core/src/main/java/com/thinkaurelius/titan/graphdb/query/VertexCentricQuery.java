@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.relations.RelationComparator;
 import com.tinkerpop.blueprints.Direction;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
         this.vertex = vertex;
     }
 
-    public static final VertexCentricQuery emptyQuery(InternalVertex vertex) {
+    public static VertexCentricQuery emptyQuery(InternalVertex vertex) {
         return new VertexCentricQuery(vertex);
     }
 

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 
 import java.nio.ByteBuffer;
@@ -15,15 +14,6 @@ import java.nio.ByteBuffer;
  */
 
 public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
-
-    public ReadArrayBuffer(byte[] array, int offset, int limit) {
-        super(array, offset, limit);
-    }
-
-    public ReadArrayBuffer(byte[] array, int limit) {
-        super(array, limit);
-    }
-
     public ReadArrayBuffer(byte[] array) {
         super(array);
     }
@@ -32,18 +22,13 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
         super(buffer);
     }
 
-    public ReadArrayBuffer(ReadArrayBuffer buffer) {
-        super(buffer);
-        this.position=buffer.position;
-    }
-
     /*
     ############ IDENTICAL CODE #############
      */
 
     private transient int position=0;
 
-    private final int updatePos(int update) {
+    private int updatePos(int update) {
         int pos = position;
         position+=update;
         return pos;
@@ -61,8 +46,9 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
 
     @Override
     public void movePosition(int delta) {
-        Preconditions.checkArgument(position+delta>=0 && position+delta<=length(),"Invalid move, position out of bounce: %s",position+delta);
-        this.position=position+delta;
+        int newPosition = position + delta;
+        assert newPosition >= 0 && newPosition <= length();
+        position = newPosition;
     }
 
     @Override
@@ -119,5 +105,15 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
             });
         }
     }
+
+    @Override
+    public ReadBuffer invert() {
+        byte[] newvalues = new byte[super.length()];
+        for (int i=0;i<newvalues.length;i++) newvalues[i]=(byte)~super.getByte(i);
+        ReadArrayBuffer newread = new ReadArrayBuffer(newvalues);
+        newread.movePosition(this.position);
+        return newread;
+    }
+
 
 }

@@ -8,7 +8,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.QueryException;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.util.datastructures.Removable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +40,10 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
     @Override
     public Iterator<R> iterator() {
-        if (query.isEmpty()) return Iterators.emptyIterator();
-        else return new OuterIterator();
+        if (query.isEmpty())
+            return Iterators.emptyIterator();
+
+        return new OuterIterator();
     }
 
     private final class OuterIterator implements Iterator<R> {
@@ -57,9 +58,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         OuterIterator() {
             this.iter = getUnwrappedIterator();
-            if (query.hasLimit()) limit = query.getLimit();
-            else limit = Query.NO_LIMIT;
+            limit = (query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT;
             count = 0;
+
             this.current = null;
             this.next = nextInternal();
         }
@@ -79,7 +80,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public R next() {
-            if (!hasNext()) throw new NoSuchElementException();
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             current = next;
             count++;
             next = nextInternal();
@@ -88,8 +91,10 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public void remove() {
-            if (current instanceof Removable) ((Removable) current).remove();
-            else throw new UnsupportedOperationException();
+            if (current != null)
+                current.remove();
+            else
+                throw new UnsupportedOperationException();
         }
 
     }
@@ -101,18 +106,18 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         if (query.isSorted()) {
             for (int i = query.numSubQueries() - 1; i >= 0; i--) {
                 BackendQueryHolder<B> subq = query.getSubQuery(i);
-                Iterator<R> subqiter;
-                if (subq.isSorted()) {
-                    subqiter = new LimitAdjustingIterator(subq);
-                } else {
-                    subqiter = new PreSortingIterator(subq);
-                }
-                subqiter = getFilterIterator(subqiter, hasDeletions, !subq.isFitted());
+                Iterator<R> subqiter = getFilterIterator((subq.isSorted())
+                                                            ? new LimitAdjustingIterator(subq)
+                                                            : new PreSortingIterator(subq),
+                                                         hasDeletions,
+                                                         !subq.isFitted());
 
-                if (iter == null) iter = subqiter;
-                else iter = new MergeSortIterator<R>(subqiter, iter, query.getSortOrder(), query.hasDuplicateResults());
+                iter = (iter == null)
+                        ? subqiter
+                        : new MergeSortIterator<R>(subqiter, iter, query.getSortOrder(), query.hasDuplicateResults());
             }
-            Preconditions.checkArgument(iter != null, "Query without sub-queries: %s", query);
+
+            Preconditions.checkArgument(iter != null);
 
             if (newElements.hasNext()) {
                 final List<R> allNew = Lists.newArrayList(newElements);
@@ -130,7 +135,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
             List<Iterator<R>> iters = new ArrayList<Iterator<R>>(query.numSubQueries());
             for (int i = 0; i < query.numSubQueries(); i++) {
                 BackendQueryHolder<B> subq = query.getSubQuery(i);
-                Iterator subiter = new LimitAdjustingIterator(subq);
+                Iterator<R> subiter = new LimitAdjustingIterator(subq);
                 subiter = getFilterIterator(subiter, hasDeletions, !subq.isFitted());
                 if (!allNew.isEmpty()) {
                     subiter = Iterators.filter(subiter, new Predicate<R>() {
@@ -164,7 +169,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         return iter;
     }
 
-    private final Iterator<R> getFilterIterator(final Iterator<R> iter, final boolean filterDeletions, final boolean filterMatches) {
+    private Iterator<R> getFilterIterator(final Iterator<R> iter, final boolean filterDeletions, final boolean filterMatches) {
         if (filterDeletions || filterMatches) {
             return Iterators.filter(iter, new Predicate<R>() {
                 @Override
@@ -228,21 +233,27 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
         @Override
         public boolean hasNext() {
-            if (count < currentLimit) return iter.hasNext();
-            else {
-                //Update query and iterate through
-                currentLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.round(currentLimit * 2.0));
-                backendQuery = backendQuery.updateLimit(currentLimit);
-                iter = executor.execute(query, backendQuery, executionInfo);
-                for (int i = 0; i < count; i++) iter.next();
-                Preconditions.checkArgument(count < currentLimit);
-                return hasNext();
-            }
+            if (count < currentLimit)
+                return iter.hasNext();
+
+            //Update query and iterate through
+            currentLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.round(currentLimit * 2.0));
+            backendQuery = backendQuery.updateLimit(currentLimit);
+            iter = executor.execute(query, backendQuery, executionInfo);
+
+            // TODO: this is very-very bad, we at least should try to do that in parallel
+            for (int i = 0; i < count; i++)
+                iter.next();
+
+            Preconditions.checkArgument(count < currentLimit);
+            return hasNext();
         }
 
         @Override
         public R next() {
-            if (!hasNext()) throw new NoSuchElementException();
+            if (!hasNext())
+                throw new NoSuchElementException();
+
             count++;
             return iter.next();
         }

@@ -61,10 +61,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     static ByteBuffer getInternal(String keyspace,
-                                         String columnFamily,
-                                         ByteBuffer key,
-                                         ByteBuffer column,
-                                         org.apache.cassandra.db.ConsistencyLevel cl) throws StorageException {
+                                  String columnFamily,
+                                  ByteBuffer key,
+                                  ByteBuffer column,
+                                  org.apache.cassandra.db.ConsistencyLevel cl) throws StorageException {
 
         QueryPath slicePath = new QueryPath(columnFamily);
 
@@ -138,12 +138,12 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         SliceRange columnSlice = new SliceRange();
         if (sliceQuery == null) {
             columnSlice.setStart(ArrayUtils.EMPTY_BYTE_ARRAY)
-                       .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
-                       .setCount(5);
+                    .setFinish(ArrayUtils.EMPTY_BYTE_ARRAY)
+                    .setCount(5);
         } else {
             columnSlice.setStart(sliceQuery.getSliceStart().asByteBuffer())
-                       .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
-                       .setCount(sliceQuery.hasLimit() ? sliceQuery.getLimit() : Integer.MAX_VALUE);
+                    .setFinish(sliceQuery.getSliceEnd().asByteBuffer())
+                    .setCount(sliceQuery.hasLimit() ? sliceQuery.getLimit() : Integer.MAX_VALUE);
         }
         /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
         SlicePredicate predicate = new SlicePredicate().setSlice_range(columnSlice);
@@ -157,11 +157,11 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, Schema.instance.getComparator(keyspace, columnFamily));
 
             rows = StorageProxy.getRangeSlice(new RangeSliceCommand(keyspace,
-                                                                    new ColumnParent(columnFamily),
-                                                                    filter,
-                                                                    new Bounds<RowPosition>(startPosition, endPosition),
-                                                                    null,
-                                                                    pageSize), ConsistencyLevel.QUORUM);
+                    new ColumnParent(columnFamily),
+                    filter,
+                    new Bounds<RowPosition>(startPosition, endPosition),
+                    null,
+                    pageSize), ConsistencyLevel.QUORUM);
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         }
@@ -182,7 +182,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        
+
         QueryPath slicePath = new QueryPath(columnFamily);
         // TODO key.asByteBuffer() may entail an unnecessary buffer copy
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -264,21 +264,9 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return cfToEntries(cf, query.getSliceEnd());
     }
 
-    /**
-     * It's completely fair to do multiple
-     * {@link #getSlice(com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery,
-     *                  com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)} calls
-     * as Cassandra does the same thing in StorageProxy.
-     */
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
-
-        for (StaticBuffer key : keys) {
-            results.add(getSlice(new KeySliceQuery(key, query), txh));
-        }
-
-        return results;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -321,21 +309,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         assert !cf.isMarkedForDelete();
 
-        // Estimate size of Entry list, ignoring deleted columns
-        int resultSize = 0;
-        for (ByteBuffer col : cf.getColumnNames()) {
-            IColumn icol = cf.getColumn(col);
-            if (null == icol)
-                throw new PermanentStorageException("Unexpected null IColumn");
-
-            if (icol.isMarkedForDelete())
-                continue;
-
-            resultSize++;
-        }
-
-        // Instantiate return collection
-        List<Entry> result = new ArrayList<Entry>(resultSize);
+        Collection<IColumn> columns = cf.getSortedColumns();
+        List<Entry> result = new ArrayList<Entry>(columns.size());
 
         /*
          * We want to call columnEnd.equals() on column name ByteBuffers in the
@@ -348,9 +323,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         ByteBuffer columnEndBB = columnEnd.asByteBuffer();
 
         // Populate Entries into return collection
-        for (ByteBuffer col : cf.getColumnNames()) {
-
-            IColumn icol = cf.getColumn(col);
+        for (IColumn icol : columns) {
             if (null == icol)
                 throw new PermanentStorageException("Unexpected null IColumn");
 
@@ -382,9 +355,9 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize) throws StorageException {
             this(StorageService.getPartitioner().getToken(keyRangeQuery.getKeyStart().asByteBuffer()),
-                 StorageService.getPartitioner().getToken(keyRangeQuery.getKeyEnd().asByteBuffer()),
-                 keyRangeQuery,
-                 pageSize);
+                    StorageService.getPartitioner().getToken(keyRangeQuery.getKeyEnd().asByteBuffer()),
+                    keyRangeQuery,
+                    pageSize);
         }
 
         public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize) throws StorageException {
@@ -424,7 +397,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         public void close() {
             isClosed = true;
         }
-        
+
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
@@ -457,7 +430,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                     public void close() {
                         isClosed = true;
                     }
-                    
+
                     @Override
                     public void remove() {
                         throw new UnsupportedOperationException();
@@ -467,7 +440,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 throw new IllegalStateException(e);
             }
         }
-        
+
         private final boolean hasNextInternal() throws StorageException {
             ensureOpen();
 
@@ -510,18 +483,15 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             });
         }
 
-        private Iterator<Row> getRowsIterator(List<Row> rows, final ByteBuffer exceptKey)
-        {
+        private Iterator<Row> getRowsIterator(List<Row> rows, final ByteBuffer exceptKey) {
             Iterator<Row> rowIterator = getRowsIterator(rows);
 
             if (rowIterator == null)
                 return null;
 
-            return Iterators.filter(rowIterator, new Predicate<Row>()
-            {
+            return Iterators.filter(rowIterator, new Predicate<Row>() {
                 @Override
-                public boolean apply(@Nullable Row row)
-                {
+                public boolean apply(@Nullable Row row) {
                     return row != null && !row.key.key.equals(exceptKey);
                 }
             });

@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,11 @@ public class TransactionalIDManager extends AbstractIDManager {
             try {
                 txh = manager.beginTransaction(new StoreTxConfig(metricsPrefix));
                 long current = getCurrentID(partitionKey, txh);
-                Preconditions.checkArgument(Long.MAX_VALUE - blockSize > current, "ID overflow detected");
+                if (Long.MAX_VALUE - blockSize <= current) {
+                    throw new IDPoolExhaustedException("Exhausted id block for partition ["+partition+"]");
+                }
+
+                assert Long.MAX_VALUE - blockSize > current;
                 long next = current + blockSize;
                 idStore.mutate(partitionKey, ImmutableList.of(StaticBufferEntry.of(DEFAULT_COLUMN, ByteBufferUtil.getLongBuffer(next))), KeyColumnValueStore.NO_DELETIONS, txh);
                 txh.commit();

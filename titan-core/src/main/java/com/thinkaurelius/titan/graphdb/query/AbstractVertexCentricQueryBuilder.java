@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -24,29 +23,30 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
-
+    @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
 
     protected final EdgeSerializer serializer;
     protected final StandardTitanTx tx;
 
-    private Direction dir;
-    private Set<String> types;
-    private List<PredicateCondition<String, TitanRelation>> constraints;
+    protected Direction dir;
+    protected final Set<String> types;
+    protected final List<PredicateCondition<String, TitanRelation>> constraints;
 
     private boolean includeHidden;
     private int limit = Query.NO_LIMIT;
 
 
     public AbstractVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
-        Preconditions.checkNotNull(serializer);
-        Preconditions.checkNotNull(tx);
+        assert serializer != null;
+        assert tx != null;
+
         this.tx = tx;
         this.serializer = serializer;
         //Initial query configuration
         dir = Direction.BOTH;
-        types = new HashSet<String>(4);
-        constraints = new ArrayList(6);
+        types = new HashSet<String>();
+        constraints = new ArrayList<PredicateCondition<String, TitanRelation>>();
         includeHidden = false;
     }
 
@@ -59,7 +59,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 	 * ---------------------------------------------------------------
 	 */
 
-    private final InternalType getType(String typeName) {
+    private InternalType getType(String typeName) {
         TitanType t = tx.getType(typeName);
         if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
@@ -68,8 +68,8 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     }
 
     private AbstractVertexCentricQueryBuilder addConstraint(String type, TitanPredicate rel, Object value) {
-        Preconditions.checkNotNull(type);
-        Preconditions.checkNotNull(rel);
+        assert type != null;
+        assert rel != null;
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
         return this;
     }
@@ -138,13 +138,13 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder labels(String... labels) {
-        types.addAll(Arrays.asList(labels));
+        Collections.addAll(types, labels);
         return this;
     }
 
     @Override
     public AbstractVertexCentricQueryBuilder keys(String... keys) {
-        types.addAll(Arrays.asList(keys));
+        Collections.addAll(types, keys);
         return this;
     }
 
@@ -159,7 +159,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder direction(Direction d) {
-        Preconditions.checkNotNull(d);
+        assert d != null;
         dir = d;
         return this;
     }
@@ -171,7 +171,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     @Override
     public AbstractVertexCentricQueryBuilder limit(int limit) {
-        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative [%s]", limit);
+        assert limit >= 0;
         this.limit = limit;
         return this;
     }
@@ -181,7 +181,11 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 	 * ---------------------------------------------------------------
 	 */
 
-    protected static final Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
+    protected final boolean hasTypes() {
+        return !types.isEmpty();
+    }
+
+    protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
         return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
             @Nullable
             @Override
@@ -206,36 +210,42 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         return null;
     }
 
-    private static final int DEFAULT_NO_LIMIT = 100;
-    private static final int MAX_BASE_LIMIT = 20000;
-    private static final int HARD_MAX_LIMIT = 50000;
+    private static final int DEFAULT_NO_LIMIT = 1024;
+    private static final int MAX_BASE_LIMIT   = 20000;
+    private static final int HARD_MAX_LIMIT   = 50000;
 
     protected BaseVertexCentricQuery constructQuery(RelationType returnType) {
-        Preconditions.checkNotNull(returnType);
-        if (limit == 0) return BaseVertexCentricQuery.emptyQuery();
+        assert returnType != null;
+        if (limit == 0)
+            return BaseVertexCentricQuery.emptyQuery();
 
         //Prepare direction
         if (returnType == RelationType.PROPERTY) {
-            if (dir == Direction.IN) return BaseVertexCentricQuery.emptyQuery();
-            else dir = Direction.OUT;
+            if (dir == Direction.IN)
+                return BaseVertexCentricQuery.emptyQuery();
+
+            dir = Direction.OUT;
         }
-        Preconditions.checkArgument(getVertexConstraint() == null || returnType == RelationType.EDGE);
+
+        assert getVertexConstraint() == null || returnType == RelationType.EDGE;
 
         //Prepare constraints
         And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
-        if (conditions == null) return BaseVertexCentricQuery.emptyQuery();
+        if (conditions == null)
+            return BaseVertexCentricQuery.emptyQuery();
 
-        Preconditions.checkArgument(limit > 0);
-        int sliceLimit = limit;
-        if (sliceLimit == Query.NO_LIMIT) sliceLimit = DEFAULT_NO_LIMIT;
-        else sliceLimit = Math.min(sliceLimit, MAX_BASE_LIMIT);
+        assert limit > 0;
+        int sliceLimit = (limit == Query.NO_LIMIT)
+                            ? DEFAULT_NO_LIMIT
+                            : Math.min(limit, MAX_BASE_LIMIT);
 
         //Construct (optimal) SliceQueries
-        List<BackendQueryHolder<SliceQuery>> queries = null;
+        List<BackendQueryHolder<SliceQuery>> queries;
         if (types.isEmpty()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
-                    ((dir == Direction.BOTH || returnType == RelationType.PROPERTY && dir == Direction.OUT)
-                            && !conditions.hasChildren() && includeHidden), true, Boolean.valueOf(dir != Direction.BOTH));
+                    ((dir == Direction.BOTH || (returnType == RelationType.PROPERTY && dir == Direction.OUT))
+                            && !conditions.hasChildren() && includeHidden), true, null);
+
             query.getBackendQuery().setLimit(computeLimit(conditions,
                     ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
                             //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
@@ -244,7 +254,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             ));
             queries = ImmutableList.of(query);
             //Add remaining conditions that only apply if no type is defined
-            if (!includeHidden) conditions.add(new HiddenFilterCondition<TitanRelation>());
+            if (!includeHidden)
+                conditions.add(new HiddenFilterCondition<TitanRelation>());
+
             conditions.add(returnType);
         } else {
             Set<TitanType> ts = new HashSet<TitanType>(types.size());
@@ -343,10 +355,10 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                             //Now, we find the smallest and largest value in this group of equality constraints to bound the interval
                                             Comparable smallest = null, largest = null;
                                             for (Condition child : cond.getChildren()) {
-                                                Preconditions.checkArgument(child instanceof PredicateCondition);
+                                                assert child instanceof PredicateCondition;
                                                 PredicateCondition pc = (PredicateCondition) child;
-                                                Preconditions.checkArgument(pc.getKey().equals(pktype));
-                                                Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL);
+                                                assert pc.getKey().equals(pktype);
+                                                assert pc.getPredicate() == Cmp.EQUAL;
 
                                                 Object v = pc.getValue();
                                                 if (smallest == null) {
@@ -361,7 +373,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                                 }
                                             }
                                             //After finding the smallest and largest value respectively, we constrain the interval
-                                            Preconditions.checkArgument(smallest != null && largest != null); //due to probing, there must be at least one
+                                            assert smallest != null && largest != null; //due to probing, there must be at least one
                                             if (pint.getEnd() == null || pint.getEnd().compareTo(largest) > 0) {
                                                 pint.setEnd(largest);
                                                 pint.setEndInclusive(true);
@@ -405,34 +417,40 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                                 && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
                         SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
                         q.setLimit(computeLimit(remainingConditions, sliceLimit));
-                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, Boolean.FALSE));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, null));
                     }
                 }
             }
-            if (queries.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
-            else conditions.add(getTypeCondition(ts));
+            if (queries.isEmpty())
+                return BaseVertexCentricQuery.emptyQuery();
+
+            conditions.add(getTypeCondition(ts));
         }
 
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
     }
 
-    private static final boolean hasSortKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
+    private static boolean hasSortKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
         return cons.length > 0 && cons[0] != null;
     }
 
-    private final static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
-        Preconditions.checkArgument(!types.isEmpty());
-        if (types.size() == 1) return new LabelCondition<TitanRelation>(types.iterator().next());
-        else {
-            Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
-            for (TitanType type : types) typeCond.add(new LabelCondition<TitanRelation>(type));
-            return typeCond;
-        }
+    private static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
+        assert !types.isEmpty();
+        if (types.size() == 1)
+            return new LabelCondition<TitanRelation>(types.iterator().next());
+
+        Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
+
+        for (TitanType type : types)
+            typeCond.add(new LabelCondition<TitanRelation>(type));
+
+        return typeCond;
     }
 
-    private final int computeLimit(And<TitanRelation> conditions, int baseLimit) {
-        return getVertexConstraint() != null ? HARD_MAX_LIMIT :   //a vertex constraint is so selective, that we likely have to retrieve all edges
-                Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit));
+    private int computeLimit(And<TitanRelation> conditions, int baseLimit) {
+        return getVertexConstraint() != null
+                ? HARD_MAX_LIMIT   //a vertex constraint is so selective, that we likely have to retrieve all edges
+                : Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit));
     }
 
 

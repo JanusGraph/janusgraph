@@ -36,7 +36,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         return false;
     }
 
-    private final IndexType[] getIndexes() {
+    private IndexType[] getIndexes() {
         if (indexes==null) {
             indexes = getDefinition().getValue(TypeAttributeType.INDEXES,IndexType[].class);
         }

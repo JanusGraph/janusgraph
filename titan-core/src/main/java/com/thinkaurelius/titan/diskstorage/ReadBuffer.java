@@ -18,4 +18,6 @@ public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
     public<T> T asRelative(Factory<T> factory);
 
+    public ReadBuffer invert();
+
 }

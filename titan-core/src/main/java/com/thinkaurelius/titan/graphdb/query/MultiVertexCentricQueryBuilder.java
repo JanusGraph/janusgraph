@@ -24,19 +24,14 @@ import java.util.Set;
 
 public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanMultiVertexQuery {
 
-    private static final Logger log = LoggerFactory.getLogger(MultiVertexCentricQueryBuilder.class);
+    @SuppressWarnings("unused")
+    private static final Logger logger = LoggerFactory.getLogger(MultiVertexCentricQueryBuilder.class);
 
     private final Set<InternalVertex> vertices;
 
     public MultiVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
-        super(tx,serializer);
+        super(tx, serializer);
         vertices = Sets.newHashSet();
-    }
-
-    public MultiVertexCentricQueryBuilder(final EdgeSerializer serializer, final TitanVertex... vertices) {
-//        Preconditions.checkArgument(vertices.length > 0, "Must add at least one vertex");
-        this(((InternalVertex) vertices[0]).tx(), serializer);
-        for (TitanVertex v : vertices) addVertex(v);
     }
 
     /* ---------------------------------------------------------------
@@ -46,8 +41,8 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public TitanMultiVertexQuery addVertex(TitanVertex vertex) {
-        Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(vertex instanceof InternalVertex);
+        assert vertex != null;
+        assert vertex instanceof InternalVertex;
         vertices.add((InternalVertex)vertex);
         return this;
     }
@@ -60,37 +55,37 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public MultiVertexCentricQueryBuilder has(TitanKey key, Object value) {
-        super.has(key,value);
+        super.has(key, value);
         return this;
     }
 
     @Override
     public MultiVertexCentricQueryBuilder has(TitanLabel label, TitanVertex vertex) {
-        super.has(label,vertex);
+        super.has(label, vertex);
         return this;
     }
 
     @Override
     public MultiVertexCentricQueryBuilder has(String type, Object value) {
-        super.has(type,value);
+        super.has(type, value);
         return this;
     }
 
     @Override
     public MultiVertexCentricQueryBuilder hasNot(String key, Object value) {
-        super.hasNot(key,value);
+        super.hasNot(key, value);
         return this;
     }
 
     @Override
     public MultiVertexCentricQueryBuilder has(String key, Predicate predicate, Object value) {
-        super.has(key,predicate,value);
+        super.has(key, predicate, value);
         return this;
     }
 
     @Override
     public MultiVertexCentricQueryBuilder has(TitanKey key, Predicate predicate, Object value) {
-        super.has(key,predicate,value);
+        super.has(key, predicate, value);
         return this;
     }
 
@@ -108,13 +103,13 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public <T extends Comparable<?>> MultiVertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
-        super.interval(key,start,end);
+        super.interval(key, start, end);
         return this;
     }
 
     @Override
     public <T extends Comparable<?>> MultiVertexCentricQueryBuilder interval(String key, T start, T end) {
-        super.interval(key,start,end);
+        super.interval(key, start, end);
         return this;
     }
 
@@ -174,27 +169,30 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
     }
 
 
-    protected Map<TitanVertex,Iterable<? extends TitanRelation>> relations(RelationType returnType) {
-        Preconditions.checkArgument(!vertices.isEmpty(),"Need to add at least one vertex to query");
+    protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationType returnType) {
+        Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
-        Map<TitanVertex,Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex,Iterable<? extends TitanRelation>>(vertices.size());
+        Map<TitanVertex, Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size());
         if (!vq.isEmpty()) {
             for (BackendQueryHolder<SliceQuery> sq : vq.getQueries()) {
-                tx.executeMultiQuery(vertices,sq.getBackendQuery());
+                tx.executeMultiQuery(vertices, sq.getBackendQuery());
             }
 
             Condition<TitanRelation> condition = vq.getCondition();
             for (InternalVertex v : vertices) {
                 //Add other-vertex and direction related conditions
-                And<TitanRelation> newcond = new And<TitanRelation>(condition);
-                newcond.add(new DirectionCondition<TitanRelation>(v,getDirection()));
-                VertexCentricQuery vqsingle = new VertexCentricQuery(v,newcond,vq.getDirection(),vq.getQueries(),vq.getLimit());
-                result.put(v,new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(vqsingle, tx.edgeProcessor));
+                And<TitanRelation> newcond = new And<TitanRelation>();
+                if (condition instanceof And) newcond.addAll((And) condition);
+                else newcond.add(condition);
+                newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
+                VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
+                result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
 
             }
         } else {
             Iterable<? extends TitanRelation> emptyIter = IterablesUtil.emptyIterable();
-            for (TitanVertex v : vertices) result.put(v, emptyIter);
+            for (TitanVertex v : vertices)
+                result.put(v, emptyIter);
         }
         return result;
     }
@@ -202,24 +200,24 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public Map<TitanVertex, Iterable<TitanEdge>> titanEdges() {
-        return (Map)relations(RelationType.EDGE);
+        return (Map) relations(RelationType.EDGE);
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanProperty>> properties() {
-        return (Map)relations(RelationType.PROPERTY);
+        return (Map) relations(RelationType.PROPERTY);
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanRelation>> relations() {
-        return (Map)relations(RelationType.RELATION);
+        return (Map) relations(RelationType.RELATION);
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanVertex>> vertices() {
         Map<TitanVertex, Iterable<TitanEdge>> base = titanEdges();
         Map<TitanVertex, Iterable<TitanVertex>> result = new HashMap<TitanVertex, Iterable<TitanVertex>>(base.size());
-        for (Map.Entry<TitanVertex,Iterable<TitanEdge>> entry : base.entrySet()) {
+        for (Map.Entry<TitanVertex, Iterable<TitanEdge>> entry : base.entrySet()) {
             result.put(entry.getKey(), edges2Vertices(entry.getValue(), entry.getKey()));
         }
         return result;
@@ -229,8 +227,8 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
     public Map<TitanVertex, VertexList> vertexIds() {
         Map<TitanVertex, Iterable<TitanEdge>> base = titanEdges();
         Map<TitanVertex, VertexList> result = new HashMap<TitanVertex, VertexList>(base.size());
-        for (Map.Entry<TitanVertex,Iterable<TitanEdge>> entry : base.entrySet()) {
-            result.put(entry.getKey(),edges2VertexIds(entry.getValue(),entry.getKey()));
+        for (Map.Entry<TitanVertex, Iterable<TitanEdge>> entry : base.entrySet()) {
+            result.put(entry.getKey(), edges2VertexIds(entry.getValue(), entry.getKey()));
         }
         return result;
     }

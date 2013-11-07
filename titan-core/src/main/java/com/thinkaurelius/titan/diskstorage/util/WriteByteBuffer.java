@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
@@ -60,9 +61,22 @@ public class WriteByteBuffer implements WriteBuffer {
     }
 
     @Override
+    public int getPosition() {
+        return buffer.position();
+    }
+
+    @Override
     public StaticBuffer getStaticBuffer() {
+        return getStaticBufferFlipBytes(0,0);
+    }
+
+    @Override
+    public StaticBuffer getStaticBufferFlipBytes(int from, int to) {
         ByteBuffer b = buffer.duplicate();
         b.flip();
+        Preconditions.checkArgument(from>=0 && from<=to);
+        Preconditions.checkArgument(to<=b.limit());
+        for (int i=from;i<to;i++) b.put(i,(byte)~b.get(i));
         return new StaticByteBuffer(b);
     }
 }

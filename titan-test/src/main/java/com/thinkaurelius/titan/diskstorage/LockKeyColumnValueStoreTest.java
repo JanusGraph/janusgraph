@@ -60,7 +60,6 @@ public abstract class LockKeyColumnValueStoreTest {
     public KeyColumnValueStoreManager[] manager;
     public StoreTransaction[][] tx;
     public KeyColumnValueStore[] store;
-    public IDAuthority[] idAuthorities;
 
     private StaticBuffer k, c1, c2, v1, v2;
 
@@ -92,7 +91,6 @@ public abstract class LockKeyColumnValueStoreTest {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];
         tx = new StoreTransaction[CONCURRENCY][NUM_TX];
         store = new KeyColumnValueStore[CONCURRENCY];
-        idAuthorities = new IDAuthority[CONCURRENCY];
 
         for (int i = 0; i < CONCURRENCY; i++) {
             manager[i] = openStorageManager(i);
@@ -108,8 +106,6 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_RETRY_COUNT, 10);
             sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
-            sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY, 50);
-            sc.addProperty(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY, 100);
 
             if (!storeFeatures.supportsLocking()) {
                 if (storeFeatures.supportsTransactions()) {
@@ -123,13 +119,6 @@ public abstract class LockKeyColumnValueStoreTest {
                         tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
             }
-
-            KeyColumnValueStore idStore = manager[i].openDatabase("ids");
-            if (storeFeatures.supportsTransactions())
-                idAuthorities[i] = new TransactionalIDManager(idStore, manager[i], sc);
-            else if (storeFeatures.supportsConsistentKeyOperations())
-                idAuthorities[i] = new ConsistentKeyIDManager(idStore, manager[i], sc);
-            else throw new IllegalArgumentException("Cannot open id store");
         }
     }
 
@@ -149,7 +138,6 @@ public abstract class LockKeyColumnValueStoreTest {
     public void close() throws StorageException {
         for (int i = 0; i < CONCURRENCY; i++) {
             store[i].close();
-            idAuthorities[i].close();
 
             for (int j = 0; j < NUM_TX; j++) {
                 log.debug("Committing tx[{}][{}] = {}", new Object[]{i, j, tx[i][j]});
@@ -406,111 +394,10 @@ public abstract class LockKeyColumnValueStoreTest {
 
     }
 
-    @Test
-    public void testSimpleIDAcquisition() throws StorageException {
-        final int blockSize = 400;
-        final IDBlockSizer blockSizer = new IDBlockSizer() {
-            @Override
-            public long getBlockSize(int partitionID) {
-                return blockSize;
-            }
-        };
-        idAuthorities[0].setIDBlockSizer(blockSizer);
-        long[] block = idAuthorities[0].getIDBlock(0);
-        Assert.assertEquals(1, block[0]);
-        Assert.assertEquals(block[1], block[0] + blockSize);
-        block = idAuthorities[0].getIDBlock(0);
-        Assert.assertEquals(1 + blockSize, block[0]);
-        Assert.assertEquals(block[1], block[0] + blockSize);
-    }
-
-    @Test
-    public void testMultiIDAcquisition() throws Throwable {
-        final int numPartitions = 4;
-        final int numAcquisitionsPerThreadPartition = 300;
-        final int blockSize = 250;
-        final IDBlockSizer blockSizer = new IDBlockSizer() {
-            @Override
-            public long getBlockSize(int partitionID) {
-                return blockSize;
-            }
-        };
-        for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
-        final List<List<Long>> ids = new ArrayList<List<Long>>(numPartitions);
-        for (int i = 0; i < numPartitions; i++) {
-            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * CONCURRENCY)));
-        }
-
-        final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
-        final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
-        ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
-
-        for (int i = 0; i < CONCURRENCY; i++) {
-            final IDAuthority idAuthority = idAuthorities[i];
-            final IDStressor stressRunnable = new IDStressor(
-                    numAcquisitionsPerThreadPartition, numPartitions,
-                    maxIterations, blockSize, idAuthority, ids);
-            futures.add(es.submit(stressRunnable));
-        }
-
-        for (Future<?> f : futures) {
-            try {
-                f.get();
-            } catch (ExecutionException e) {
-                throw e.getCause();
-            }
-        }
-
-        for (int i = 0; i < numPartitions; i++) {
-            List<Long> list = ids.get(i);
-            Assert.assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
-            Collections.sort(list);
-
-            int pos = 0;
-            long id = 1;
-            while (pos < list.size()) {
-                long block = list.get(pos).longValue();
-                /*
-                 * If the ID allocator never timed out while servicing a
-                 * request, then id = block on every iteration. However, if the
-                 * ID allocator timed out while trying to claim some blocks,
-                 * then block = id + (blockSize * n) where n >= 1. Intuitively,
-                 * this allows "dead" blocks lost to timeout exceptions to be
-                 * skipped without failing the test.
-                 */
-                Assert.assertTrue(0 < block);
-                Assert.assertTrue(id <= block);
-                Assert.assertTrue(0 == (block - id) % blockSize);
-                final long skipped = (block - id) / blockSize;
-                Assert.assertTrue(0 <= skipped);
-                id = block + blockSize;
-                pos++;
-            }
-        }
-    }
-
-
-    @Test
-    public void testLocalPartitionAcquisition() throws StorageException {
-        for (int c = 0; c < CONCURRENCY; c++) {
-            if (manager[c].getFeatures().hasLocalKeyPartition()) {
-                try {
-                    StaticBuffer[] partition = idAuthorities[c].getLocalIDPartition();
-                    Assert.assertEquals(partition[0].length(), partition[1].length());
-                    for (int i = 0; i < 2; i++) {
-                        Assert.assertTrue(partition[i].length() >= 4);
-                    }
-                } catch (UnsupportedOperationException e) {
-                    Assert.fail();
-                }
-            }
-        }
-    }
-
     /**
      * Run lots of acquireLock() and commit() ops on a provided store and txn.
      * <p/>
-     * Used by {@link LockKeyColumnValueStoreTest#parallelLockStressTest()}.
+     * Used by {@link #parallelNoncontendedLockStressTest()}.
      *
      * @author "Dan LaRocque <dalaro@hopcount.org>"
      */
@@ -563,92 +450,5 @@ public abstract class LockKeyColumnValueStoreTest {
         }
     }
 
-    private class IDStressor implements Runnable {
-
-        private final int numRounds;
-        private final int numPartitions;
-        private final int maxIterations;
-        private final int blockSize;
-        private final IDAuthority authority;
-        private final List<List<Long>> allocatedBlocks;
-
-        private static final long sleepMS = 250L;
-
-        private IDStressor(int numRounds, int numPartitions, int maxIterations,
-                           int blockSize, IDAuthority authority, List<List<Long>> ids) {
-            this.numRounds = numRounds;
-            this.numPartitions = numPartitions;
-            this.maxIterations = maxIterations;
-            this.blockSize = blockSize;
-            this.authority = authority;
-            this.allocatedBlocks = ids;
-        }
-
-        @Override
-        public void run() {
-            try {
-                runInterruptible();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private void runInterruptible() throws InterruptedException {
-            int iterations = 0;
-            long lastStart[] = new long[numPartitions];
-            for (int i = 0; i < numPartitions; i++)
-                lastStart[i] = Long.MIN_VALUE;
-            for (int j = 0; j < numRounds; j++) {
-                for (int p = 0; p < numPartitions; p++) {
-                    if (maxIterations < ++iterations) {
-                        throwIterationsExceededException();
-                    }
-
-                    Long start = allocate(p);
-
-                    if (null == start) {
-                        Thread.sleep(sleepMS);
-                        p--;
-                    } else {
-                        Assert.assertTrue("Previous block start "
-                                + lastStart[p] + " exceeds next block start "
-                                + start, lastStart[p] <= start);
-                        Assert.assertFalse(allocatedBlocks.get(p).contains(start));
-                        allocatedBlocks.get(p).add(start);
-                        lastStart[p] = start;
-                    }
-                }
-            }
-        }
-
-        private Long allocate(int partitionIndex) {
-
-            final long[] block;
-            try {
-                block = authority.getIDBlock(partitionIndex);
-            } catch (StorageException e) {
-                log.error("Unexpected exception while getting ID block", e);
-                return null;
-            }
-
-            /*
-             * This is not guaranteed in the consistentkey implementation.
-             * Writers of ID block claims in that implementation delete their
-             * writes if they take too long. A peek can see this short-lived
-             * block claim even though a subsequent getblock does not.
-             */
-//            Assert.assertTrue(nextId <= block[0]);
-            Assert.assertEquals(block[0] + blockSize, block[1]);
-            log.trace("Obtained ID block {},{}", block[0], block[1]);
-
-            return block[0];
-        }
-
-        private boolean throwIterationsExceededException() {
-            throw new RuntimeException(
-                    "Exceeded maximum ID allocation iteration count ("
-                            + maxIterations + "); too many timeouts?");
-        }
-    }
 
 }

@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStore
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class inMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
+public class InMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int id) throws StorageException {
@@ -21,7 +21,4 @@ public class inMemoryLockKeyColumnValueStoreTest extends LockKeyColumnValueStore
         //Does not apply to non-persisting in-memory store
     }
 
-    //TODO: should this test work in-memory?
-    @Override
-    public void testMultiIDAcquisition() {}
 }

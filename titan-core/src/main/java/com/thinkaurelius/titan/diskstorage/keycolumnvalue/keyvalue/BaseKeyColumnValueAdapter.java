@@ -23,11 +23,7 @@ public abstract class BaseKeyColumnValueAdapter implements KeyColumnValueStore {
 
     @Override
     public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> resultSet = new ArrayList<List<Entry>>(keys.size());
-        for (StaticBuffer key : keys) {
-            resultSet.add(getSlice(new KeySliceQuery(key, query), txh));
-        }
-        return resultSet;
+        throw new UnsupportedOperationException();
     }
 
     @Override

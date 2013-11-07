@@ -147,7 +147,7 @@ class ColumnValueStore {
     private ReentrantLock lock = null;
 
     private Lock getLock(StoreTransaction txh) {
-        if (txh.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT) {
+        if (txh.getConfiguration().getConsistency().isKeyConsistent()) {
             if (lock == null) {
                 synchronized (this) {
                     if (lock == null) {

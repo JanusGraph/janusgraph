@@ -77,7 +77,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         this.serializer = config.getSerializer();
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
-        this.edgeSerializer = new EdgeSerializer(this.serializer, this.idManager);
+        this.edgeSerializer = new EdgeSerializer(this.serializer);
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
 
         isOpen = true;

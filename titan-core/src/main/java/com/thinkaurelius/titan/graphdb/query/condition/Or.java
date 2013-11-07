@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
-import com.google.common.base.Function;
 import com.thinkaurelius.titan.core.TitanElement;
 
 /**
@@ -27,7 +26,7 @@ public class Or<E extends TitanElement> extends MultiCondition<E> {
 
     @Override
     public Or<E> clone() {
-        return new Or(this);
+        return new Or<E>(this);
     }
 
     @Override
@@ -37,14 +36,18 @@ public class Or<E extends TitanElement> extends MultiCondition<E> {
 
     @Override
     public boolean evaluate(E element) {
-        if (!hasChildren()) return true;
+        if (!hasChildren())
+            return true;
+
         for (Condition<E> condition : this) {
-            if (condition.evaluate(element)) return true;
+            if (condition.evaluate(element))
+                return true;
         }
+
         return false;
     }
 
-    public static final<E extends TitanElement> Or<E> of(Condition<E>... elements) {
+    public static <E extends TitanElement> Or<E> of(Condition<E>... elements) {
         return new Or<E>(elements);
     }
 

@@ -1,25 +1,24 @@
 package com.thinkaurelius.titan.graphdb.query;
 
-import com.google.common.base.Preconditions;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class BaseQuery implements Query {
 
-    private int limit = Query.NO_LIMIT;
+    private int limit;
 
     public BaseQuery() {
+        this(NO_LIMIT);
     }
 
     public BaseQuery(final int limit) {
-        Preconditions.checkArgument(limit >= 0, "Inavlid limit: %s", limit);
+        assert limit >= 0;
         this.limit = limit;
     }
 
     public BaseQuery setLimit(final int limit) {
-        Preconditions.checkArgument(limit >= 0, "Inavlid limit: %s", limit);
+        assert limit >= 0;
         this.limit = limit;
         return this;
     }

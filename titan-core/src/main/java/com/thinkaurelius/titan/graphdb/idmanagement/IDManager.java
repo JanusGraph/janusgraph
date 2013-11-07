@@ -184,13 +184,12 @@ public class IDManager {
       *  [ 0 | count | ID padding ]
      */
 
-    public final static long getEdgeLabelID(long count) {
-        Preconditions.checkArgument(count > 0 && count < MAX_TITAN_TYPE_ID,
-                "Invalid count [%s] for bound: %s", count, MAX_TITAN_TYPE_ID);
+    public static long getEdgeLabelID(long count) {
+        assert count > 0 && count < MAX_TITAN_TYPE_ID;
         return IDType.EdgeLabel.addPadding(count);
     }
 
-    public final static long getPropertyKeyID(long count) {
+    public static long getPropertyKeyID(long count) {
         Preconditions.checkArgument(count > 0 && count < MAX_TITAN_TYPE_ID,
                 "Invalid count [%s] for bound: %s", count, MAX_TITAN_TYPE_ID);
         if (count < 0 || count > MAX_TITAN_TYPE_ID)
@@ -198,7 +197,7 @@ public class IDManager {
         return IDType.PropertyKey.addPadding(count);
     }
 
-    public final static long getTypeCount(long typeid) {
+    public static long getTypeCount(long typeid) {
         Preconditions.checkArgument(IDType.TitanType.is(typeid));
         return IDType.EdgeLabel.removePadding(typeid);
     }

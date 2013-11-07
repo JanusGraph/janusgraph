@@ -26,7 +26,18 @@ public class RelationComparator implements Comparator<InternalRelation> {
     @Override
     public int compare(final InternalRelation r1, final InternalRelation r2) {
         if (r1.equals(r2)) return 0;
-        //1) Direction
+
+        //0) RelationType
+        int reltypecompare = (r1.isProperty()?1:2) - (r2.isProperty()?1:2);
+        if (reltypecompare != 0) return reltypecompare;
+
+        //1) TitanType
+        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
+        int typecompare = t1.compareTo(t2);
+        if (typecompare != 0) return typecompare;
+        assert t1.equals(t2);
+
+        //2) Direction
         Direction dir1 = null, dir2 = null;
         for (int i = 0; i < r1.getLen(); i++)
             if (r1.getVertex(i).equals(vertex)) {
@@ -38,20 +49,16 @@ public class RelationComparator implements Comparator<InternalRelation> {
                 dir2 = EdgeDirection.fromPosition(i);
                 break;
             }
-        Preconditions.checkArgument(dir1 != null && dir2 != null, "Either relation is not incident on vertex [%s]", vertex);
+        assert dir1 != null && dir2 != null; // ("Either relation is not incident on vertex [%s]", vertex);
         int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
         if (dirCompare != 0) return dirCompare;
 
-        //2) Type
-        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
-        int typecompare = t1.compareTo(t2);
-        if (typecompare != 0) return typecompare;
-        assert t1.equals(t2);
+        // Breakout: If type&direction are the same and the type is unique in the direction it follows that the relations are the same
         if (t1.isUnique(dir1)) return 0;
 
         // 3) Compare sort key values
         for (long typeid : t1.getSortKey()) {
-            int keycompare = compareOnKey(r1, r2, typeid);
+            int keycompare = compareOnKey(r1, r2, typeid, t1.getSortOrder());
             if (keycompare != 0) return keycompare;
         }
         // 4) Compare property objects or other vertices
@@ -79,6 +86,10 @@ public class RelationComparator implements Comparator<InternalRelation> {
         return r1.compareTo(r2);
     }
 
+    public static int compareValues(Object v1, Object v2, Order order) {
+        return compareValues(v1,v2)*(order==Order.DESC?-1:1);
+    }
+
     public static int compareValues(Object v1, Object v2) {
         if (v1 == null || v2 == null) {
             if (v1 != null) return -1;
@@ -90,7 +101,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         }
     }
 
-    public int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid) {
+    public int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
         TitanType type = vertex.tx().getExistingType(typeid);
         Object v1, v2;
         if (type.isPropertyKey()) {
@@ -102,6 +113,6 @@ public class RelationComparator implements Comparator<InternalRelation> {
             v1 = r1.getProperty(label);
             v2 = r2.getProperty(label);
         }
-        return compareValues(v1, v2);
+        return compareValues(v1, v2,order);
     }
 }

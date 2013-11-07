@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
@@ -25,24 +23,25 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     protected AbstractVertex(StandardTitanTx tx, long id) {
         super(id);
-        Preconditions.checkNotNull(tx);
+        assert tx != null;
         this.tx = tx;
     }
 
     @Override
     public final InternalVertex it() {
-        if (tx.isOpen()) return this;
-        else {
-            InternalVertex next = (InternalVertex)tx.getNextTx().getVertex(getID());
-            if (next==null) throw new InvalidElementException("Vertex has been removed",this);
-            else return next;
-        }
+        if (tx.isOpen())
+            return this;
+
+        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(getID());
+        if (next == null)
+            throw new InvalidElementException("Vertex has been removed", this);
+
+        else return next;
     }
 
     @Override
     public final StandardTitanTx tx() {
-        if (tx.isOpen()) return tx;
-        else return tx.getNextTx();
+        return tx.isOpen() ? tx : tx.getNextTx();
     }
 
     @Override
@@ -52,7 +51,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public Object getId() {
-        return Long.valueOf(getID());
+        return getID();
     }
 
     @Override
@@ -232,16 +231,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O removeProperty(TitanType key) {
-        Preconditions.checkArgument(key.isPropertyKey());
+        assert key.isPropertyKey();
 
         Object result = null;
-        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
-        while (iter.hasNext()) {
-            TitanProperty p = iter.next();
+        for (TitanProperty p : query().type(key).properties()) {
             result = p.getValue();
             p.remove();
         }
-        return (O)result;
+        return (O) result;
     }
 
     @Override
@@ -250,4 +247,27 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         else return removeProperty(tx().getPropertyKey(key));
     }
 
+    @Override
+    public boolean equals(Object other) {
+        if (other == null)
+            return false;
+
+        if (this == other)
+            return true;
+
+        try {
+            return id == ((AbstractVertex) other).id;
+        } catch (ClassCastException e) {
+            return super.equals(other);
+        }
+    }
+    
+    /*
+     * This silences a static analysis warning about overridding equals without
+     * overridding hashcode.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

@@ -10,6 +10,7 @@ import org.junit.BeforeClass;
 import java.io.IOException;
 
 public class HBaseLockKeyColumnValueStoreTest extends LockKeyColumnValueStoreTest {
+
     @BeforeClass
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();

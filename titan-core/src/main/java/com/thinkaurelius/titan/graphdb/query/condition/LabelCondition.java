@@ -1,12 +1,9 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
-
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,16 +34,11 @@ public class LabelCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
-        else if (!getClass().isInstance(other)) return false;
-        LabelCondition oth = (LabelCondition)other;
-        return label.equals(oth.label);
+        return this == other || !(other == null || !getClass().isInstance(other)) && label.equals(((LabelCondition) other).label);
     }
 
     @Override
     public String toString() {
         return "label["+label.toString()+"]";
     }
-
 }

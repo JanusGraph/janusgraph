@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanType;
 import com.tinkerpop.blueprints.Direction;
 
@@ -20,5 +21,6 @@ public interface InternalType extends TitanType, InternalVertex {
 
     public long[] getSortKey();
 
+    public Order getSortOrder();
 
 }

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -29,7 +30,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
         this.isModifiable = isModifiable;
     }
 
-    static final long getSystemTypeId(long id, RelationType type) {
+    static long getSystemTypeId(long id, RelationType type) {
         Preconditions.checkArgument(id > 0);
         Preconditions.checkArgument(id <= SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());
@@ -83,6 +84,11 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     @Override
     public long[] getSortKey() {
         return new long[0];
+    }
+
+    @Override
+    public Order getSortOrder() {
+        return Order.ASC;
     }
 
     @Override

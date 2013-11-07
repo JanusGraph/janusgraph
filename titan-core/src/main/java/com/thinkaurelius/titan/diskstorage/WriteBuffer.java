@@ -24,4 +24,8 @@ public interface WriteBuffer {
 
     public StaticBuffer getStaticBuffer();
 
+    public int getPosition();
+
+    public StaticBuffer getStaticBufferFlipBytes(int from, int to);
+
 }
