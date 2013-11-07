@@ -5,6 +5,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import java.io.IOException;
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,13 +14,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -191,7 +185,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         return backend.getLocalKeyPartition();
     }
 

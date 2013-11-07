@@ -27,17 +27,17 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     public enum Deployment {
 
         /**
-         * Connects to storage backend over the network
+         * Connects to storage backend over the network or some other connection with significant latency
          */
         REMOTE,
 
         /**
-         * Connects to storage backend over localhost
+         * Connects to storage backend over localhost or some other connection with very low latency
          */
         LOCAL,
 
         /**
-         * Embedded with storage backend
+         * Embedded with storage backend and communicates inside the JVM
          */
         EMBEDDED;
 
@@ -82,6 +82,13 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     public int getPageSize() {
         return pageSize;
     }
+
+    /**
+     * Returns the {@link Deployment} mode of this connection to the storage backend
+     *
+     * @return
+     */
+    public abstract Deployment getDeployment();
 
     @Override
     public String toString() {

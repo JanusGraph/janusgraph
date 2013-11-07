@@ -127,7 +127,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         return store.getLocalKeyPartition();
     }
 

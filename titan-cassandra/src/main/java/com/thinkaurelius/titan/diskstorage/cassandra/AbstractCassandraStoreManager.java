@@ -165,8 +165,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
 
-    public abstract Deployment getDeployment();
-
     @Override
     public StoreTransaction beginTransaction(final StoreTxConfig config) {
         return new CassandraTransaction(config, readConsistencyLevel, writeConsistencyLevel);

@@ -233,8 +233,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        //Todo
     }
 
     @Override

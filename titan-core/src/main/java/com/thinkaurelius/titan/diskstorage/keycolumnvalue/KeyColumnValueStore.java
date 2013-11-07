@@ -176,7 +176,7 @@ public interface KeyColumnValueStore {
      * @return An array with two entries describing the locally hosted partition of this store.
      * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException;
+    public List<KeyRange> getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.

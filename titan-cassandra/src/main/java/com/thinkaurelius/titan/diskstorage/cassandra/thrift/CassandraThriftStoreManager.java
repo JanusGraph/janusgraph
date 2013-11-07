@@ -114,7 +114,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public Deployment getDeployment() {
-        return Deployment.REMOTE;
+        //return Deployment.REMOTE;
+        //return LOCAL if over localhost else REMOTE
     }
 
     @Override
