@@ -40,7 +40,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     public MockIDAuthority(int blockSize, int blockSizeLimit) {
-        blockSizer = new StaticIDBlockSizer(blockSize);
+        blockSizer = new StaticIDBlockSizer(blockSize,blockSizeLimit);
         this.blockSizeLimit = blockSizeLimit;
     }
 

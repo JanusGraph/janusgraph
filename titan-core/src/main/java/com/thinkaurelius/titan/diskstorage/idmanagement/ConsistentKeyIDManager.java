@@ -51,7 +51,6 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
-    private final long idBlockUpperBound;
     private final int uniqueId;
     private final boolean randomizeUniqueId;
     private final ConsistencyLevel consistencLevel;
@@ -67,7 +66,6 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         uniqueIdBitWidth = config.getInt(IDAUTHORITY_UNIQUE_ID_BITS_KEY,IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT);
         Preconditions.checkArgument(uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16,"Invalid unique id bit width defined [%s]. Must be in [0,16]",uniqueIdBitWidth);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
-        idBlockUpperBound = Long.MAX_VALUE>>uniqueIdBitWidth;
         if (config.getBoolean(IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY,IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT)) {
             Preconditions.checkArgument(!config.containsKey(IDAUTHORITY_UNIQUE_ID_KEY),"Conflicting configuration: a unique id and randomization have been set");
             Preconditions.checkArgument(!config.getBoolean(IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY, IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT),
@@ -133,7 +131,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     public long[] getIDBlock(int partition) throws StorageException {
         //partition id can be any integer, even negative, its only a partition identifier
 
-        long blockSize = getBlockSize(partition);
+        final long blockSize = getBlockSize(partition);
+        final long idUpperBound = getIdUpperBound(partition);
+
+        final int bitOffset = (VariableLong.unsignedBitLength(idUpperBound)-1)-uniqueIdBitWidth;
+        Preconditions.checkArgument(bitOffset>0,"Unique id bit width [%s] is too wide for partition [%s] id bound [%s]"
+                                                ,uniqueIdBitWidth,partition,idUpperBound);
+        final long idBlockUpperBound = (1l<<bitOffset);
+
+
         Preconditions.checkArgument(idBlockUpperBound>blockSize,
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
 
@@ -205,7 +211,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                             success = true;
                             //Pad ids
                             for (int i=0;i<result.length;i++) {
-                                result[i] = (result[i]<<uniqueIdBitWidth)+uniqueID;
+                                result[i] = (((long)uniqueID)<<bitOffset) + result[i];
                             }
                             return result;
                         } else {
