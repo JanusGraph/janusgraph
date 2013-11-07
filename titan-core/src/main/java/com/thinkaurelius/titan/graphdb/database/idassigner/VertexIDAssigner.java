@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.DefaultPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacementStrategy;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -99,18 +101,21 @@ public class VertexIDAssigner {
         if (!hasLocalPartitions) {
             placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
         } else {
-            StaticBuffer[] local = null;
+            //TODO: extend to multiple ranges!!
+            List<KeyRange> locals = null;
             try {
-                local = idAuthority.getLocalIDPartition();
+                locals = idAuthority.getLocalIDPartition();
+                if (locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
             } catch (Exception e) {
                 log.error("Could not read local id partition: {}", e);
                 placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
             }
-            if (local != null) {
-                Preconditions.checkArgument(local[0].length() >= 4 && local[1].length() >= 4);
+            if (locals != null) {
+                KeyRange local = locals.get(0);
+                Preconditions.checkArgument(local.getStart().length() >= 4 && local.getEnd().length() >= 4);
                 int[] partition = new int[2];
                 for (int i = 0; i < 2; i++) {
-                    partition[i] = local[i].getInt(0);
+                    partition[i] = local.getAt(i).getInt(0);
                 }
                 //Adjust lower end if necessary (needs to be inclusive)
                 if ((partition[0] & 3) > 0) partition[0] = (partition[0] >>> 2) + 1;

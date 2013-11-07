@@ -1,10 +1,12 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -13,6 +15,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.StaticIDBlockSizer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,7 +81,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public StaticBuffer[] getLocalIDPartition() throws StorageException {
+    public List<KeyRange> getLocalIDPartition() throws StorageException {
         ByteBuffer lower = ByteBuffer.allocate(4);
         ByteBuffer upper = ByteBuffer.allocate(4);
         lower.putInt(localPartition[0]);
@@ -86,7 +89,7 @@ public class MockIDAuthority implements IDAuthority {
         lower.rewind();
         upper.rewind();
         Preconditions.checkArgument(ByteBufferUtil.isSmallerThan(lower, upper), Arrays.toString(localPartition));
-        return new StaticBuffer[]{new StaticByteBuffer(lower), new StaticByteBuffer(upper)};
+        return Lists.newArrayList(new KeyRange(new StaticByteBuffer(lower), new StaticByteBuffer(upper)));
     }
 
     @Override

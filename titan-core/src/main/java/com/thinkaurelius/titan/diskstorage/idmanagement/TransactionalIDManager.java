@@ -13,6 +13,8 @@ import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 
 /**
  * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
@@ -69,7 +71,7 @@ public class TransactionalIDManager extends AbstractIDManager {
     }
 
     @Override
-    public StaticBuffer[] getLocalIDPartition() throws StorageException {
+    public List<KeyRange> getLocalIDPartition() throws StorageException {
         return idStore.getLocalKeyPartition();
     }
 
