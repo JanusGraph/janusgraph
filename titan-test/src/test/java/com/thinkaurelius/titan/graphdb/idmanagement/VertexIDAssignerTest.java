@@ -42,11 +42,10 @@ public class VertexIDAssignerTest {
         }
 
         return configurations;
-
     }
 
     public VertexIDAssignerTest(boolean partition, int partitionMax, int[] localPartition) {
-        MockIDAuthority idAuthority = new MockIDAuthority(500, partitionMax);
+        MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
 
         StoreFeatures features = StoreFeatures.defaultFeature(false);
         if (localPartition != null) {

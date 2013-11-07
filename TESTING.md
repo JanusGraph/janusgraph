@@ -5,6 +5,12 @@ Testing Titan
 
 This page is written for developers familiar with Java, Titan, and Maven who want information on how to run Titan's test suite.  Users interested in installing and running Titan releases should consult the [wiki](https://github.com/thinkaurelius/titan/wiki).
 
+### Overview
+
+Titan runs all tests using JUnit.  To compile, package, and run the default test suite for Titan, use the standard `mvn clean install` command.
+
+Titan has a specialty tests, disabled by default, intended to generate basic performance metrics or stress its cache structures under memory pressure.  The next section describes how Titan's tests are internally categorized and the Maven options that enabled/disable test categories.
+
 ### JUnit Test Categories
 
 All of Titan's tests are written for JUnit.  Titan's JUnit tests are annotated with the following [JUnit Categories](https://github.com/junit-team/junit/wiki/Categories):

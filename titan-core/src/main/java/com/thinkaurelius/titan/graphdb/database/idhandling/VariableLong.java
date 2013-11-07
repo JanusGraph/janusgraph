@@ -60,7 +60,7 @@ public class VariableLong {
         return (numBits - 1) / 7 + 1;
     }
 
-    private static int unsignedBitLength(final long value) {
+    public static int unsignedBitLength(final long value) {
         return (value == 0) ? 1 : Long.SIZE - Long.numberOfLeadingZeros(value);
     }
 

@@ -248,6 +248,57 @@ public class GraphDatabaseConfiguration {
     public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
     /**
+     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
+     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
+     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
+     *
+     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
+     * same value. Otherwise, data corruption will occur.
+     */
+    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
+    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
+
+    /**
+     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
+     * must be non-negative and fit within the number of unique id bits configured.
+     * By assigning different unique id markers to individual Titan instances it can be assured
+     * that those instances don't conflict with one another when attempting to allocate new id blocks.
+     *
+     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     */
+    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
+    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
+
+    /**
+     * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
+     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUE_ID_KEY} where the
+     * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
+     * instances.
+     *
+     * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
+     * this option must be configured accordingly.
+     */
+    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
+    public static final boolean IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT = false;
+
+    /**
+     * Configures this Titan instance to use local consistency guarantees when allocating ids. This is useful
+     * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
+     * In this case, the consistency is only ensured within the local sub-clusters which does not require
+     * acquiring global locks that can be too expensive to acquire.
+     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUE_ID_KEY} is configured
+     * that fits within the bit width {@link #IDAUTHORITY_UNIQUE_ID_BITS_KEY} and that each local cluster of Titan
+     * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
+     *
+     * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in
+     * data corruption.
+     *
+     */
+    public static final String IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY = "idauthority-local-consistency";
+    public static final boolean IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT = false;
+
+
+    /**
      * Configuration key for the hostname or list of hostname of remote storage backend servers to connect to.
      * <p/>
      * Value = {@value}
@@ -265,6 +316,14 @@ public class GraphDatabaseConfiguration {
      * Value = {@value}
      */
     public static final String PORT_KEY = "port";
+
+    /**
+     * Username and password keys to be used to specify an access credential that may be needed to connect
+     * with a secured storage backend.
+     */
+    public static final String AUTH_USERNAME_KEY = "user";
+    public static final String AUHT_PASSWORD_KEY = "password";
+
     /**
      * Default timeout when connecting to a remote database instance
      * <p/>

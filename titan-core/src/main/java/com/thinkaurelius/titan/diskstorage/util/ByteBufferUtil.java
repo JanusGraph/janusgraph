@@ -30,6 +30,15 @@ public class ByteBufferUtil {
         return new StaticArrayBuffer(arr);
     }
 
+    public static final StaticBuffer getIntBuffer(int[] ids) {
+        ByteBuffer buffer = ByteBuffer.allocate(intSize * ids.length);
+        for (int i = 0; i < ids.length; i++)
+            buffer.putInt(ids[i]);
+        byte[] arr = buffer.array();
+        Preconditions.checkArgument(arr.length == intSize * ids.length);
+        return new StaticArrayBuffer(arr);
+    }
+
     public static final StaticBuffer getLongBuffer(long id) {
         ByteBuffer buffer = ByteBuffer.allocate(longSize);
         buffer.putLong(id);

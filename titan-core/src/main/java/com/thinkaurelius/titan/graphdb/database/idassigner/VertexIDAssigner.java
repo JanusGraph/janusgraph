@@ -293,7 +293,7 @@ public class VertexIDAssigner {
         vertex.setID(id);
     }
 
-    private static class SimpleVertexIDBlockSizer implements IDBlockSizer {
+    private class SimpleVertexIDBlockSizer implements IDBlockSizer {
 
         private static final int AVG_EDGES_PER_VERTEX = 10;
         private static final int DEFAULT_NUM_EDGE_TYPES = 12;
@@ -314,6 +314,20 @@ public class VertexIDAssigner {
                     return baseBlockSize * AVG_EDGES_PER_VERTEX;
                 case RELATIONTYPE:
                     return DEFAULT_NUM_EDGE_TYPES;
+                default:
+                    throw new IllegalArgumentException("Unrecognized pool type");
+            }
+        }
+
+        @Override
+        public long getIdUpperBound(int fullPartitionID) {
+            switch (PoolType.getPoolType(fullPartitionID)) {
+                case VERTEX:
+                    return idManager.getMaxVertexCount()+1;
+                case RELATION:
+                    return idManager.getMaxRelationCount()+1;
+                case RELATIONTYPE:
+                    return idManager.getMaxTitanTypeCount()+1;
                 default:
                     throw new IllegalArgumentException("Unrecognized pool type");
             }
