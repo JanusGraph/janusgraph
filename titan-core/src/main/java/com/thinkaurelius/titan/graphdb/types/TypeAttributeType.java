@@ -22,12 +22,7 @@ public enum TypeAttributeType {
     INDEXES(IndexType[].class),
     DATATYPE(Class.class),
     UNIDIRECTIONAL(Boolean.class),
-    SORT_ORDER(Order.class) {
-        @Override
-        public Order defaultValue(TypeAttribute.Map map) {
-            return Order.ASC;
-        }
-    };
+    SORT_ORDER(Order.class);
 
     static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK, STATIC,
             HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, INDEXES, DATATYPE);
@@ -47,7 +42,10 @@ public enum TypeAttributeType {
     }
 
     public Object defaultValue(TypeAttribute.Map map) {
-        return null;
+        switch(this) {
+            case SORT_ORDER: return Order.ASC;
+            default: return null;
+        }
     }
 
 }
