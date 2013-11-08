@@ -146,9 +146,12 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
                 endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
                 endBytes[1] = (byte) (s & 0x000000FF);
             } else {
-
-                endBytes =
-                        ManagementFactory.getRuntimeMXBean().getName().getBytes();
+                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
+                            .append("@")
+                            .append(ManagementFactory.getRuntimeMXBean().getName())
+                            .toString()
+                            .getBytes();
             }
 
             byte[] addrBytes;
