@@ -130,7 +130,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public StandardTitanTx newTransaction(TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
-            return new StandardTitanTx(this, configuration, backend.beginTransaction(configuration));
+            IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInforRetriever();
+            StandardTitanTx tx = new StandardTitanTx(this, configuration, backend.beginTransaction(configuration,retriever));
+            retriever.setTransaction(tx);
+            return tx;
         } catch (StorageException e) {
             throw new TitanException("Could not start new transaction", e);
         }

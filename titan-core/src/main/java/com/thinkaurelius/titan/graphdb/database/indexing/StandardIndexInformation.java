@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.indexing;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 
 /**
@@ -17,13 +18,12 @@ public class StandardIndexInformation implements IndexInformation {
     }
 
     @Override
-    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate) {
+    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
         return titanPredicate == Cmp.EQUAL || titanPredicate == Contain.IN;
     }
 
     @Override
-    public boolean supports(Class<?> dataType) {
+    public boolean supports(KeyInformation information) {
         return true;
     }
-
 }

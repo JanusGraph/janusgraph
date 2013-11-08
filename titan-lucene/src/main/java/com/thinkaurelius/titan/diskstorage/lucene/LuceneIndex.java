@@ -12,10 +12,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
@@ -129,12 +126,14 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, Class<?> dataType, TransactionHandle tx) throws StorageException {
-        //No pre-registration needed for Lucene
-    }
+    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException {
+        Class<?> dataType = information.getDataType();
+        Mapping map = Mapping.getMapping(information);
+        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
+                "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
         Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
@@ -197,11 +196,19 @@ public class LuceneIndex implements IndexProvider {
                             doc.add(field);
                         } else if (AttributeUtil.isString(add.value)) {
                             String str = (String) add.value;
-                            Field field = new TextField(add.key, str, Field.Store.YES);
+                            Mapping mapping = Mapping.getMapping(storename,add.key,informations);
+                            Field field;
+                            switch(mapping) {
+                                case DEFAULT:
+                                case TEXT:
+                                    field = new TextField(add.key, str, Field.Store.YES);
+                                    break;
+                                case STRING:
+                                    field = new StringField(add.key, str, Field.Store.YES);
+                                    break;
+                                default: throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
+                            }
                             doc.add(field);
-//                            if (str.length()<MAX_STRING_FIELD_LEN)
-//                                field = new StringField(add.key+STR_SUFFIX, str, Field.Store.NO);
-//                            doc.add(field);
                         } else if (add.value instanceof Geoshape) {
                             Shape shape = ((Geoshape) add.value).convert2Spatial4j();
                             geofields.put(add.key, shape);
@@ -252,7 +259,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, TransactionHandle tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
         //Construct query
         Filter q = convertQuery(query.getCondition());
 
@@ -326,12 +333,12 @@ public class LuceneIndex implements IndexProvider {
                     return new PrefixFilter(new Term(key, ((String) value).toLowerCase()));
 //                } else if (titanPredicate == Text.REGEX) {
 //                    return new RegexpQuery(new Term(key,(String)value));
-//                } else if (relation == Cmp.EQUAL) {
-//                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
-//                } else if (relation == Cmp.NOT_EQUAL) {
-//                    BooleanFilter q = new BooleanFilter();
-//                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
-//                    return q;
+                } else if (titanPredicate == Cmp.EQUAL) {
+                    return new TermsFilter(new Term(key,(String)value));
+                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                    BooleanFilter q = new BooleanFilter();
+                    q.add(new TermsFilter(new Term(key,(String)value)), BooleanClause.Occur.MUST_NOT);
+                    return q;
                 } else
                     throw new IllegalArgumentException("Relation is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
@@ -365,22 +372,38 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate) {
+    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+        Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
+        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
+
         if (Number.class.isAssignableFrom(dataType)) {
             if (titanPredicate instanceof Cmp) return true;
-            return false;
+            else return false;
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
-        } else if (dataType == String.class) {
-            return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX; // || titanPredicate == Text.REGEX;
+        } else if (AttributeUtil.isString(dataType)) {
+            switch(mapping) {
+                case DEFAULT:
+                case TEXT:
+                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX; // || titanPredicate == Text.REGEX;
+                case STRING:
+                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+                default: return false;
+            }
         } else return false;
     }
 
+
     @Override
-    public boolean supports(Class<?> dataType) {
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || dataType == String.class)
-            return true;
-        else return false;
+    public boolean supports(KeyInformation information) {
+        Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || AttributeUtil.isString(dataType)) {
+            if (mapping==Mapping.DEFAULT) return true;
+            if (AttributeUtil.isString(dataType) && (mapping==Mapping.STRING || mapping==Mapping.TEXT)) return true;
+        }
+        return false;
     }
 
     @Override

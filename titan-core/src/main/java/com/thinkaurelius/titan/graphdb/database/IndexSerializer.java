@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.StandardKeyInformation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -22,11 +24,16 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.IndexDefinition;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,10 +62,61 @@ public class IndexSerializer {
         this.indexes = indexes;
     }
 
-    public IndexInformation getIndexInformation(String indexName) {
+//    public IndexInformation getIndexInformation(String indexName) {
+//        IndexInformation indexinfo = indexes.get(indexName);
+//        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", indexName);
+//        return indexinfo;
+//    }
+
+    public boolean supports(final String indexName, final Class<?> dataType, final Parameter[] parameters) {
         IndexInformation indexinfo = indexes.get(indexName);
         Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", indexName);
-        return indexinfo;
+        return indexinfo.supports(new StandardKeyInformation(dataType,parameters));
+    }
+
+    public boolean supports(final String indexName, final ElementType result, final TitanKey key, final TitanPredicate predicate) {
+        IndexInformation indexinfo = indexes.get(indexName);
+        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", indexName);
+        return indexinfo.supports(getKeyInformation(key,result.getElementType(),indexName),predicate);
+    }
+
+    private static StandardKeyInformation getKeyInformation(final TitanKey key, final Class<? extends Element> type, final String index) {
+        return new StandardKeyInformation(key.getDataType(),
+                (key instanceof TitanKeyVertex)?
+                        ((TitanKeyVertex)key).getIndex(index,type).getParameters()
+                        :new Parameter[0]);
+    }
+
+    public IndexInfoRetriever getIndexInforRetriever() {
+        return new IndexInfoRetriever();
+    }
+
+    public static class IndexInfoRetriever implements KeyInformation.Retriever {
+
+        private StandardTitanTx transaction;
+
+        private IndexInfoRetriever() {}
+
+        public void setTransaction(StandardTitanTx tx) {
+            Preconditions.checkNotNull(tx);
+            Preconditions.checkArgument(transaction==null);
+            transaction=tx;
+        }
+
+        @Override
+        public KeyInformation.IndexRetriever get(final String index) {
+            return new KeyInformation.IndexRetriever() {
+
+                @Override
+                public KeyInformation get(String store, String key) {
+                    Preconditions.checkState(transaction!=null,"Retriever has not been initialized");
+                    long keyid = string2KeyId(key);
+                    TitanKey titanKey = (TitanKey)transaction.getExistingType(keyid);
+                    ElementType elementType = getElementType(store);
+                    return getKeyInformation(titanKey,elementType.getElementType(),index);
+                }
+            };
+        }
     }
 
     /* ################################################
@@ -68,11 +126,11 @@ public class IndexSerializer {
     public void newPropertyKey(TitanKey key, BackendTransaction tx) throws StorageException {
         for (String index : key.getIndexes(Vertex.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(ElementType.VERTEX.getName(), key2String(key), key.getDataType());
+                tx.getIndexTransactionHandle(index).register(ElementType.VERTEX.getName(), key2String(key), getKeyInformation(key,Vertex.class,index));
         }
         for (String index : key.getIndexes(Edge.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(ElementType.EDGE.getName(), key2String(key), key.getDataType());
+                tx.getIndexTransactionHandle(index).register(ElementType.EDGE.getName(), key2String(key), getKeyInformation(key, Edge.class, index));
         }
     }
 
@@ -299,6 +357,10 @@ public class IndexSerializer {
 
     private static final String key2String(TitanKey key) {
         return longID2Name(key.getID());
+    }
+
+    private static final long string2KeyId(String key) {
+        return name2LongID(key);
     }
 
     private static final String longID2Name(long id) {

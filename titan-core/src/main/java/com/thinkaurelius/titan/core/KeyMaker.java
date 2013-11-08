@@ -92,7 +92,7 @@ public interface KeyMaker extends TypeMaker {
      * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(String, Class)
      * @since 0.3.0
      */
-    public KeyMaker indexed(String indexName, Class<? extends Element> clazz);
+    public KeyMaker indexed(String indexName, Class<? extends Element> clazz, Parameter... indexParameters);
 
     /**
      * Configures the data type for this type.  This only applies to property keys.

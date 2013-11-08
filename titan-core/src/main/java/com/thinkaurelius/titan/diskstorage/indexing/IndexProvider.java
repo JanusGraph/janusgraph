@@ -24,11 +24,11 @@ public interface IndexProvider extends IndexInformation {
      *
      * @param store Index store
      * @param key New key to register
-     * @param dataType Datatype to register for the key
+     * @param information Information on the key to register
      * @param tx enclosing transaction
      * @throws StorageException
      */
-    public void register(String store, String key, Class<?> dataType, TransactionHandle tx) throws StorageException;
+    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException;
 
     /**
      * Mutates the index (adds and removes fields or entire documents)
@@ -39,7 +39,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws StorageException
      * @see IndexMutation
      */
-    public void mutate(Map<String,Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException;
+    public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
 
     /**
      * Executes the given query against the index.
@@ -50,7 +50,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws StorageException
      * @see IndexQuery
      */
-    public List<String> query(IndexQuery query, TransactionHandle tx) throws StorageException;
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
 
     /**
      * Returns a transaction handle for a new index transaction.

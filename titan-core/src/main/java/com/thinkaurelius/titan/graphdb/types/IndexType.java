@@ -1,15 +1,13 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Titan;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
- * @author Matthias Broecheler (me@matthiasb.com)
- */
-
+* @author Matthias Broecheler (me@matthiasb.com)
+*/
 public class IndexType {
 
     private static final int VERTEX = 0;
@@ -30,21 +28,11 @@ public class IndexType {
     private String indexName;
     private int element;
 
-    public IndexType() {}
+    public IndexType() {} //For serialization
 
     public IndexType(final String indexName, final Class<? extends Element> element) {
-        Preconditions.checkNotNull(indexName);
-        Preconditions.checkNotNull(element);
         this.indexName=indexName;
         this.element=fromType(element);
-    }
-
-    public final static IndexType of(final String indexName, final Class<? extends Element> element) {
-        return new IndexType(indexName,element);
-    }
-
-    public final static IndexType of(final Class<? extends Element> element) {
-        return new IndexType(Titan.Token.STANDARD_INDEX,element);
     }
 
     public String getIndexName() {
@@ -53,10 +41,6 @@ public class IndexType {
 
     public Class<? extends Element> getElementType() {
         return toType(element);
-    }
-
-    public boolean isStandardIndex() {
-        return indexName.equals(Titan.Token.STANDARD_INDEX);
     }
 
     @Override
@@ -69,10 +53,7 @@ public class IndexType {
 
     @Override
     public int hashCode() {
-        int hash = indexName.hashCode();
-        hash *= 1711;
-        hash = hash << element;
-        return hash;
+        return new HashCodeBuilder().append(indexName).append(element).toHashCode();
     }
 
     @Override

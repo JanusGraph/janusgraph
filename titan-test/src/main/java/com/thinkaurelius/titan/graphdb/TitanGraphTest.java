@@ -1489,7 +1489,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             previous=v;
         }
-        graph.commit();
+        clopen();
 
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
