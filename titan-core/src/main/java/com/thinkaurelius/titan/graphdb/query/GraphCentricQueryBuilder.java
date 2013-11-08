@@ -137,19 +137,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     @Override
     public Iterable<Vertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementType.VERTEX);
-        if (QueryUtil.isEmpty(query.getCondition()))
-            return IterablesUtil.limitedIterable(tx.getVertices(), query.getLimit());
-        else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
     }
 
     @Override
     public Iterable<Edge> edges() {
         GraphCentricQuery query = constructQuery(ElementType.EDGE);
-        if (QueryUtil.isEmpty(query.getCondition()))
-            return IterablesUtil.limitedIterable(tx.getEdges(), query.getLimit());
-        else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
     }
 
     /* ---------------------------------------------------------------
