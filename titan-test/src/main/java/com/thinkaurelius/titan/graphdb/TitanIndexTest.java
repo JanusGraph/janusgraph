@@ -7,17 +7,14 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
-import com.thinkaurelius.titan.diskstorage.indexing.Mapping;
+import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tools.ant.taskdefs.Tstamp;
 import org.junit.Test;
-
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

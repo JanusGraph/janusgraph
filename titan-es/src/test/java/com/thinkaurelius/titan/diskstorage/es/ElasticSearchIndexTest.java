@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
-import com.thinkaurelius.titan.diskstorage.indexing.Mapping;
+import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;

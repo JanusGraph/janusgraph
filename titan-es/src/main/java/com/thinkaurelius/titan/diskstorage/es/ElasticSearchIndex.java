@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -45,7 +46,6 @@ import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -35,6 +35,7 @@ public interface IndexProvider extends IndexInformation {
      *
      * @param mutations Updates to the index. First map contains all the mutations for each store. The inner map contains
      *                  all changes for each document in an {@link IndexMutation}.
+     * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @throws StorageException
      * @see IndexMutation
@@ -45,6 +46,7 @@ public interface IndexProvider extends IndexInformation {
      * Executes the given query against the index.
      *
      * @param query Query to execute
+     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @return The ids of all matching documents
      * @throws StorageException

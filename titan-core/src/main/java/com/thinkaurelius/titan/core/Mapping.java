@@ -1,9 +1,25 @@
-package com.thinkaurelius.titan.diskstorage.indexing;
+package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 
 /**
+ * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
+ * {@link com.thinkaurelius.titan.core.KeyMaker#indexed(String, Class, com.thinkaurelius.titan.core.Parameter[])}.
+ *
+ * <p/>
+ *
+ * For instance, to configure that a string be indexed as a whole and not tokenized, pass in the following mapping parameter
+ * configuration to the above mentioned method:
+ *
+ * <pre>
+ *     {@code
+ *      TitanKey name = graph.makeKey("name").dataType(String.class).indexed("search",Vertex.class,Parameter.of("mapping",Mapping.STRING)).make()
+ *     }
+ * </pre>
+ *
+ *
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public enum Mapping {

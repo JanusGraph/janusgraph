@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -39,7 +40,7 @@ public abstract class IndexProviderTest {
     public static final String TEXT = "text", TIME = "time", WEIGHT = "weight", LOCATION = "location", NAME = "name";
 
     public static final Map<String,KeyInformation> allKeys = new HashMap<String,KeyInformation>() {{
-        put(TEXT,new StandardKeyInformation(String.class, new Parameter("mapping",Mapping.TEXT)));
+        put(TEXT,new StandardKeyInformation(String.class, new Parameter("mapping", Mapping.TEXT)));
         put(TIME,new StandardKeyInformation(Long.class));
         put(WEIGHT,new StandardKeyInformation(Double.class, new Parameter("mapping",Mapping.DEFAULT)));
         put(LOCATION,new StandardKeyInformation(Geoshape.class));
