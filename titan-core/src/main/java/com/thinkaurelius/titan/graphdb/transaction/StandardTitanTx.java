@@ -787,6 +787,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
             Preconditions.checkArgument(query.getResultType() == ElementType.VERTEX || query.getResultType() == ElementType.EDGE);
+            //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
+            if (!query.getCondition().hasChildren()) return Iterators.emptyIterator();
+
             if (query.getResultType() == ElementType.VERTEX && hasModifications()) {
                 Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));
                 PredicateCondition<TitanKey, TitanElement> standardIndexKey = getEqualityCondition(query.getCondition());
