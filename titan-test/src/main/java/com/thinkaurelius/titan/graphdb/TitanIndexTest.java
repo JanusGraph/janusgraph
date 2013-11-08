@@ -161,7 +161,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         clopen();
 
+        //##########################
         //Copied from above
+        //##########################
+
         for (int i = 0; i < words.length; i++) {
             int expectedSize = numV / words.length;
             assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));

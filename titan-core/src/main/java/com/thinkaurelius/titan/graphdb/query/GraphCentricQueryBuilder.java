@@ -194,6 +194,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
                 for (Set<String> indexes : andConditionCoverage.values()) {
                     for (String index : indexes) counts.incBy(index, 1.0);
                 }
+                //Give extra credit to indexes that cover the order
+                for (String index : counts.getObjects()) {
+                    if (indexCoversOrder(index, orders, resultType)) counts.incBy(index,1.0);
+                }
                 final String bestIndex = counts.getMaxObject();
                 Preconditions.checkNotNull(bestIndex);
                 boolean supportsOrder = indexCoversOrder(bestIndex, orders, resultType);
