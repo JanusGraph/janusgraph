@@ -2,12 +2,36 @@
 
 BIN="`dirname $0`"
 REXSTER_CONFIG=conf/rexster-cassandra-es.xml
+CASSANDRA_STARTUP_TIMEOUT_S=60
+
+wait_for_cassandra() {
+    local now_s=`date '+%s'`
+    local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))
+    local status_thrift=
+
+    while [ $now_s -le $stop_s ]; do
+        status_thrift="`$BIN/nodetool statusthrift 2>/dev/null`"
+        if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
+            echo 'Cassandra started and listening for Thrift connections'
+            return 0
+        fi
+        sleep 2
+        now_s=`date '+%s'`
+    done
+
+    echo "Cassandra startup timeout exceeded ($CASSANDRA_STARTUP_TIMEOUT_S seconds)" >&2
+    return 1
+}
 
 start() {
     echo "Starting Cassandra..." >&2
     CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra || exit 1
+    wait_for_cassandra || {
+        echo 'Failed to start Cassandra or starting Cassandra timed out.' >&2
+        echo "See $BIN/../log/cassandra.log for Cassandra log output."    >&2
+        return 1
+    }
     echo "Starting Titan + Rexster..." >&2
-    sleep 5
     "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
     echo "Processes forked.  Setup may take some time." >&2
     echo "Run $BIN/rexster-console.sh to connect."      >&2
