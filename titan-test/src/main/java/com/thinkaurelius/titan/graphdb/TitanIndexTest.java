@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
+import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -177,18 +178,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
                     )) {
-                        Element previous = null;
-                        int count = 0;
-                        for (Element element : iter) {
-                            if (previous != null) {
-                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
-                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
-                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
-                            }
-                            previous = element;
-                            count++;
-                        }
-                        assertEquals(expectedSize, count);
+                        TestUtil.verifyElementOrder(iter,orderKey,order,expectedSize);
                     }
                 }
             }

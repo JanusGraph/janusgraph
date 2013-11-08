@@ -1471,6 +1471,23 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testWithoutIndex() {
+        graph.makeKey("id").dataType(Long.class).single().make();
+        graph.makeKey("name").dataType(Long.class).single().make();
+        Random random = new Random();
+        int numV = 1000;
+        for (int i=0;i<numV;i++) {
+            TitanVertex v = graph.addVertex(null);
+            v.setProperty("id",random.nextInt(numV));
+            v.setProperty("name","v"+i);
+        }
+        graph.commit();
+
+        
+
+    }
+
+    @Test
     public void testSimpleGlobalVertexCount() {
         final int n = 3;
         for (int i = 0; i < n; i++) {
