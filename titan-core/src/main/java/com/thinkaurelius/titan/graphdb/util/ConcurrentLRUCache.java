@@ -619,6 +619,8 @@ public class ConcurrentLRUCache<V> {
 
         public CleanupThread(ConcurrentLRUCache c) {
             cache = new WeakReference<ConcurrentLRUCache>(c);
+            this.setDaemon(true);
+            this.setName("ConcurrentLRUCleaner-" + getId());
         }
 
         @Override
