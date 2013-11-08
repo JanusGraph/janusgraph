@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BIN="`dirname $0`"
-REXSTER_CONFIG=conf/rexster-cassandra-es.xml
+REXSTER_CONFIG_TAG=cassandra-es
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
 VERBOSE=
 COMMAND=
@@ -14,7 +14,7 @@ wait_for_cassandra() {
     while [ $now_s -le $stop_s ]; do
         status_thrift="`$BIN/nodetool statusthrift 2>/dev/null`"
         if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
-            echo 'Started Cassandra.  Thrift server is alive.'
+            echo 'Started Cassandra.  Thrift service is alive.'
             return 0
         fi
         sleep 2
@@ -28,9 +28,9 @@ wait_for_cassandra() {
 start() {
     echo "Starting Cassandra..." >&2
     if [ -n "$VERBOSE" ]; then
-        CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra || exit 1
+        CASSANDRA_INCLUDE="$BIN"/cassandra.in.sh "$BIN"/cassandra || exit 1
     else
-        CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra >/dev/null 2>&1 || exit 1
+        CASSANDRA_INCLUDE="$BIN"/cassandra.in.sh "$BIN"/cassandra >/dev/null 2>&1 || exit 1
     fi
     wait_for_cassandra || {
         echo 'Failed to start Cassandra or starting Cassandra timed out.' >&2
@@ -39,10 +39,11 @@ start() {
     }
     echo "Forking Titan + Rexster..." >&2
     if [ -n "$VERBOSE" ]; then
-        "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
+        "$BIN"/rexster.sh -s -wr public -c ../conf/rexster-${REXSTER_CONFIG_TAG}.xml &
     else
-        "$BIN"/rexster.sh -d -s $REXSTER_CONFIG >/dev/null 2>&1 || exit 2
+        "$BIN"/rexster.sh -s -wr public -c ../conf/rexster-${REXSTER_CONFIG_TAG}.xml >/dev/null 2>&1 &
     fi
+    disown
     echo "Forked Titan + Rexster." >&2
     echo "Rexster may need a few more seconds to finish bootstrapping." >&2
     echo "Run $BIN/rexster-console.sh to connect." >&2
@@ -115,7 +116,7 @@ while [ 1 ]; do
         OPTIND=$(($OPTIND + 1))
     elif getopts 'c:v' option; then
         case $option in
-        c) REXSTER_CONFIG="conf/rexster-${OPTARG}.xml";;
+        c) REXSTER_CONFIG_TAG="${OPTARG}";;
         v) VERBOSE=yes;;
         *) usage; exit 1;;
         esac

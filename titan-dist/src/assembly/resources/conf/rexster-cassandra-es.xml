@@ -94,7 +94,7 @@
             <properties>
                 <storage.backend>cassandra</storage.backend>
                 <storage.index.search.backend>elasticsearch</storage.index.search.backend>
-                <storage.index.search.directory>db/es</storage.index.search.directory>
+                <storage.index.search.directory>../db/es</storage.index.search.directory>
                 <storage.index.search.client-only>false</storage.index.search.client-only>
                 <storage.index.search.local-mode>true</storage.index.search.local-mode>
             </properties>
