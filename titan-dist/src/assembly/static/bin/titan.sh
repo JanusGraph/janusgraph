@@ -81,15 +81,27 @@ status() {
 }
 
 clean() {
-    echo -n "Are you sure you want to delete all stored data? [y/N] " >&2
+    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
     read response
     if [ "$response" != "y" -a "$response" != "Y" ]; then
-        echo "Response $response did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
+        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
         return 0
     fi
-    cd "$BIN"/../db 2>/dev/null || return
-    rm -rf cassandra es
-    echo "Deleted data." >&2
+
+    if cd "$BIN"/../db 2>/dev/null; then
+        rm -rf cassandra es
+        echo "Deleted data in `pwd`" >&2
+        cd - >/dev/null
+    else
+        echo 'Data directory does not exist.' >&2
+    fi
+
+    if cd "$BIN"/../log; then
+        rm -f cassandra.log
+        rm -f rexstitan.log
+        echo "Deleted logs in `pwd`" >&2
+        cd - >/dev/null
+    fi
 }
 
 usage() {
