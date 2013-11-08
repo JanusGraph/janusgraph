@@ -2,7 +2,9 @@
 
 BIN="`dirname $0`"
 REXSTER_CONFIG=conf/rexster-cassandra-es.xml
-CASSANDRA_STARTUP_TIMEOUT_S=60
+: ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
+VERBOSE=
+COMMAND=
 
 wait_for_cassandra() {
     local now_s=`date '+%s'`
@@ -12,7 +14,7 @@ wait_for_cassandra() {
     while [ $now_s -le $stop_s ]; do
         status_thrift="`$BIN/nodetool statusthrift 2>/dev/null`"
         if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
-            echo 'Cassandra started and listening for Thrift connections'
+            echo 'Started Cassandra.  Thrift server is alive.'
             return 0
         fi
         sleep 2
@@ -25,16 +27,25 @@ wait_for_cassandra() {
 
 start() {
     echo "Starting Cassandra..." >&2
-    CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra || exit 1
+    if [ -n "$VERBOSE" ]; then
+        CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra || exit 1
+    else
+        CASSANDRA_INCLUDE=`dirname $0`/cassandra.in.sh "$BIN"/cassandra >/dev/null 2>&1 || exit 1
+    fi
     wait_for_cassandra || {
         echo 'Failed to start Cassandra or starting Cassandra timed out.' >&2
         echo "See $BIN/../log/cassandra.log for Cassandra log output."    >&2
         return 1
     }
-    echo "Starting Titan + Rexster..." >&2
-    "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
-    echo "Processes forked.  Setup may take some time." >&2
-    echo "Run $BIN/rexster-console.sh to connect."      >&2
+    echo "Forking Titan + Rexster..." >&2
+    if [ -n "$VERBOSE" ]; then
+        "$BIN"/rexster.sh -d -s $REXSTER_CONFIG || exit 2
+    else
+        "$BIN"/rexster.sh -d -s $REXSTER_CONFIG >/dev/null 2>&1 || exit 2
+    fi
+    echo "Forked Titan + Rexster." >&2
+    echo "Rexster may need a few more seconds to finish bootstrapping." >&2
+    echo "Run $BIN/rexster-console.sh to connect." >&2
 }
 
 stop() {
@@ -77,27 +88,45 @@ clean() {
     fi
     cd "$BIN"/../db 2>/dev/null || return
     rm -rf cassandra es
+    echo "Deleted data." >&2
 }
 
 usage() {
-    echo "Usage: $0 {start|stop|clean}" >&2
-    echo " start: fork Cassandra and Rexster+Titan processes" >&2
-    echo " stop:  kill running Cassandra and Rexster+Titan processes" >&2
-    echo " clean: permanently delete all graph data (run when stopped)" >&2
+    echo "Usage: $0 {start|stop|status|clean}" >&2
+    echo " start:  fork Cassandra and Rexster+Titan processes" >&2
+    echo " stop:   kill running Cassandra and Rexster+Titan processes" >&2
+    echo " status: print Cassandra and Rexster+Titan process status" >&2
+    echo " clean:  permanently delete all graph data (run when stopped)" >&2
 }
 
-while getopts 'c:' option; do
-    case $option in
-    c) REXSTER_CONFIG="conf/rexster-${OPTARG}.xml"; shift;;
-    *) usage; exit 1;;
-    esac
-    shift
+find_verb() {
+    if [ "$1" = 'start' -o \
+         "$1" = 'stop' -o \
+         "$1" = 'clean' -o \
+         "$1" = 'status' ]; then
+        COMMAND="$1"
+        return 0
+    fi
+    return 1
+}
+
+while [ 1 ]; do
+    if find_verb ${!OPTIND}; then
+        OPTIND=$(($OPTIND + 1))
+    elif getopts 'c:v' option; then
+        case $option in
+        c) REXSTER_CONFIG="conf/rexster-${OPTARG}.xml";;
+        v) VERBOSE=yes;;
+        *) usage; exit 1;;
+        esac
+    else
+        break
+    fi
 done
 
-case $1 in
-    start)  start;;
-    stop)   stop;;
-    clean)  clean;;
-    status) status;;
-    *)      usage;;
-esac
+if [ -n "$COMMAND" ]; then
+    $COMMAND
+else
+    usage
+    exit 1
+fi
