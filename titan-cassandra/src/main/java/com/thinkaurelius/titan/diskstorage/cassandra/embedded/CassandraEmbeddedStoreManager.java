@@ -368,38 +368,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
-
-        ByteBuffer propertiesKey = UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY);
-        ByteBuffer column = UTF8Type.instance.fromString(key);
-
-        ByteBuffer value = getInternal(keySpaceName,
-                SYSTEM_PROPERTIES_CF,
-                propertiesKey,
-                column,
-                ConsistencyLevel.QUORUM);
-
-        return (value == null) ? null : UTF8Type.instance.getString(value);
-    }
-
-    @Override
-    public void setConfigurationProperty(final String rawKey, final String rawValue) throws StorageException {
-        if (rawKey == null || rawValue == null)
-            return;
-
-        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
-
-        ByteBuffer key = UTF8Type.instance.fromString(rawKey);
-        ByteBuffer val = UTF8Type.instance.fromString(rawValue);
-
-        RowMutation property = new RowMutation(keySpaceName, UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY));
-        property.add(new QueryPath(new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(key)), val, System.currentTimeMillis());
-
-        mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
-    }
-
-    @Override
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
 
         CFMetaData cfm = Schema.instance.getCFMetaData(keySpaceName, cf);

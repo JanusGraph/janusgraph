@@ -124,9 +124,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     private StoreFeatures features = null;
     private Partitioner partitioner = null;
 
-    protected static final String SYSTEM_PROPERTIES_CF = "system_properties";
-    protected static final String SYSTEM_PROPERTIES_KEY = "general";
-
     protected final boolean compressionEnabled;
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;

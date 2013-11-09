@@ -430,61 +430,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        CTConnection connection = null;
-
-        try {
-            ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            connection = pool.borrowObject(keySpaceName);
-            Cassandra.Client client = connection.getClient();
-            ColumnOrSuperColumn column = client.get(UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY),
-                    new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(UTF8Type.instance.fromString(key)),
-                    ConsistencyLevel.QUORUM);
-
-            if (column == null || !column.isSetColumn())
-                return null;
-
-            Column actualColumn = column.getColumn();
-
-            return (actualColumn.value == null)
-                    ? null
-                    : UTF8Type.instance.getString(actualColumn.value);
-        } catch (NotFoundException e) {
-            return null;
-        } catch (Exception e) {
-            throw new PermanentStorageException(e);
-        } finally {
-            pool.returnObjectUnsafe(keySpaceName, connection);
-        }
-    }
-
-    @Override
-    public void setConfigurationProperty(final String rawKey, final String rawValue) throws StorageException {
-        CTConnection connection = null;
-
-        try {
-            connection = pool.borrowObject(keySpaceName);
-
-            ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            ByteBuffer key = UTF8Type.instance.fromString(rawKey);
-            ByteBuffer val = UTF8Type.instance.fromString(rawValue);
-
-            Cassandra.Client client = connection.getClient();
-
-            client.insert(UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY),
-                    new ColumnParent(SYSTEM_PROPERTIES_CF),
-                    new Column(key).setValue(val).setTimestamp(System.currentTimeMillis()),
-                    ConsistencyLevel.QUORUM);
-        } catch (Exception e) {
-            throw new PermanentStorageException(e);
-        } finally {
-            pool.returnObjectUnsafe(keySpaceName, connection);
-        }
-    }
-
-    @Override
     public Map<String, String> getCompressionOptions(String cf) throws StorageException {
         CTConnection conn = null;
         Map<String, String> result = null;

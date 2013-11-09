@@ -19,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
@@ -29,7 +28,6 @@ import com.thinkaurelius.titan.util.system.IOUtils;
 public class PersistitStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
     private final Map<String, PersistitKeyValueStore> stores;
-    private final FileStorageConfiguration storageConfig;
 
     final static String VOLUME_NAME = "titan";
     final static String BUFFER_COUNT_KEY = "buffercount";
@@ -68,8 +66,6 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         } catch (PersistitException ex) {
             throw new PermanentStorageException(ex);
         }
-
-        storageConfig = new FileStorageConfiguration(directory);
     }
 
     Volume getVolume() {
@@ -159,16 +155,6 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         }
         close();
         IOUtils.deleteFromDirectory(directory);
-    }
-
-    @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        return storageConfig.getConfigurationProperty(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key, value);
     }
 
     @Override

@@ -126,15 +126,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
     public static final String RETRY_POLICY_KEY = "retry-policy";
 
-    private static final ColumnFamily<String, String> PROPERTIES_CF;
-
-    static {
-        PROPERTIES_CF = new ColumnFamily<String, String>(SYSTEM_PROPERTIES_CF,
-                StringSerializer.get(),
-                StringSerializer.get(),
-                StringSerializer.get());
-    }
-
     private final String clusterName;
 
     private final AstyanaxContext<Keyspace> keyspaceContext;
@@ -470,44 +461,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
 
         throw new Exception("Failed to identify a class matching the Astyanax Retry Policy config string \"" + raw + "\"");
-    }
-
-    @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        try {
-            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            OperationResult<Column<String>> result =
-                    keyspaceContext.getClient().prepareQuery(PROPERTIES_CF)
-                            .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
-                            .withRetryPolicy(retryPolicy.duplicate())
-                            .getKey(SYSTEM_PROPERTIES_KEY).getColumn(key)
-                            .execute();
-
-            return result.getResult().getStringValue();
-        } catch (NotFoundException e) {
-            return null;
-        } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        try {
-            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            Keyspace ks = keyspaceContext.getClient();
-
-            OperationResult<Void> result = ks.prepareColumnMutation(PROPERTIES_CF, SYSTEM_PROPERTIES_KEY, key)
-                    .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
-                    .putValue(value, null)
-                    .execute();
-
-            result.getResult();
-        } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
-        }
     }
 
     @Override

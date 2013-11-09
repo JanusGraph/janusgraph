@@ -73,16 +73,6 @@ public class CacheStoreManagerAdapter implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        return manager.getConfigurationProperty(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        manager.setConfigurationProperty(key, value);
-    }
-
-    @Override
     public String getName() {
         return manager.getName();
     }

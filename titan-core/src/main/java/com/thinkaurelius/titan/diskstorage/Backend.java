@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLo
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
@@ -70,6 +71,9 @@ public class Backend {
     public static final String TITAN_BACKEND_VERSION = "titan-version";
     public static final String MERGED_METRICS = "stores";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
+
+    public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
+    public static final String SYSTEM_PROPERTIES_IDENTIFIER = "general";
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
 
@@ -256,22 +260,19 @@ public class Backend {
                 edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore, getMetricsStoreName("edgeIndexStore"));
             }
 
-            String version = BackendOperation.execute(new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
-                    if (version == null) {
-                        storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                        version = TitanConstants.VERSION;
-                    }
-                    return version;
+            String version = null;
+            KCVSConfiguration systemConfig = new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
+                                                        SYSTEM_PROPERTIES_IDENTIFIER);
+            try {
+                systemConfig.setMaxOperationWaitTime(config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+                version = systemConfig.getConfigurationProperty(TITAN_BACKEND_VERSION);
+                if (version == null) {
+                    systemConfig.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                    version = TitanConstants.VERSION;
                 }
-
-                @Override
-                public String toString() {
-                    return "ConfigurationRead";
-                }
-            }, config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+            } finally {
+                systemConfig.close();
+            }
             Preconditions.checkState(version != null, "Could not read version from storage backend");
             if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
                 throw new TitanException("StorageBackend version is incompatible with current Titan version: " + version + " vs. " + TitanConstants.VERSION);

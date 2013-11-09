@@ -352,37 +352,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        ensureTableExists(tableName);
-
-        try {
-            return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(key);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        byte[] name = tableName.getBytes();
-
-        HTableDescriptor desc = ensureTableExists(tableName);
-
-        try {
-            HBaseAdmin adm = getAdminInterface();
-
-            adm.disableTable(tableName);
-
-            desc.setValue(key, value);
-
-            adm.modifyTable(name, desc);
-            adm.enableTable(tableName);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
     public String getName() {
         return tableName;
     }
