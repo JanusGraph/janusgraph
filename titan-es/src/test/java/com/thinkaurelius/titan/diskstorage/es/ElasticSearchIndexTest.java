@@ -28,6 +28,11 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         return new ElasticSearchIndex(getLocalESTestConfig());
     }
 
+    @Override
+    public boolean supportsLuceneStyleQueries() {
+        return true;
+    }
+
     public static final Configuration getLocalESTestConfig() {
         Configuration config = new BaseConfiguration();
         config.setProperty(LOCAL_MODE_KEY, true);

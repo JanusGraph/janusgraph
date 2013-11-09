@@ -131,6 +131,18 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanGraphQuery query();
 
     /**
+     * Returns a {@link TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
+     * the given query string. The query string is analyzed and answered by the underlying storage backend.
+     * <p/>
+     * Note, that using indexQuery will may ignore modifications in the current transaction.
+     *
+     * @param indexName Name of the indexing backend to query as configured
+     * @param query Query string
+     * @return TitanIndexQuery object to query the index directly
+     */
+    public TitanIndexQuery indexQuery(String indexName, String query);
+
+    /**
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
      */

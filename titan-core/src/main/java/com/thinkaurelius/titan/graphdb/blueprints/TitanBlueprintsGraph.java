@@ -188,6 +188,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
+    public TitanIndexQuery indexQuery(String indexName, String query) {
+        return getAutoStartTx().indexQuery(indexName,query);
+    }
+
+    @Override
     public TitanMultiVertexQuery multiQuery(TitanVertex... vertices) {
         return getAutoStartTx().multiQuery(vertices);
     }

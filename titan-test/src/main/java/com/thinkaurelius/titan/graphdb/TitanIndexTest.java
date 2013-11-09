@@ -39,6 +39,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         this.supportsText = supportsText;
     }
 
+    public abstract boolean supportsLuceneStyleQueries();
+
     @Test
     public void testOpenClose() {
     }
@@ -247,13 +249,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     }
 
-    @Test
-    public void testIndexParameters() {
+    private void setupChainGraph(int numV, String[] strs) {
         TitanKey name = graph.makeKey("name").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING)}).single().make();
         TitanKey text = graph.makeKey("text").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT)}).single().make();
         graph.makeLabel("knows").sortKey(name).sortOrder(Order.DESC).make();
-        int numV = 1000;
-        String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
             TitanVertex v = graph.addVertex(null);
@@ -264,6 +263,13 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             e.setProperty("text",strs[i%strs.length]);
             previous=v;
         }
+    }
+
+    @Test
+    public void testIndexParameters() {
+        int numV = 1000;
+        String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
+        setupChainGraph(numV,strs);
         clopen();
 
         assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").vertices()));
@@ -284,6 +290,29 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
         assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).edges()));
         assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").edges()));
+
+    }
+
+    @Test
+    public void testRawQueries() {
+        if (!supportsLuceneStyleQueries()) return;
+
+        int numV = 1000;
+        String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
+        setupChainGraph(numV,strs);
+        clopen();
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry)").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(beautiful are ducks)").vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).vertices()));
 
     }
 

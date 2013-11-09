@@ -68,6 +68,10 @@ public class IndexTransaction implements TransactionHandle {
         return index.query(query,keyInformations,indexTx);
     }
 
+    public Iterable<RawQuery.Result<String>> query(RawQuery query) throws StorageException {
+        return index.query(query,keyInformations,indexTx);
+    }
+
     @Override
     public void commit() throws StorageException {
         flushInternal();

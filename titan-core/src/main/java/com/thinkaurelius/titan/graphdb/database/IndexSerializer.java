@@ -3,14 +3,12 @@ package com.thinkaurelius.titan.graphdb.database;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.StandardKeyInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -23,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.internal.ElementType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import com.thinkaurelius.titan.graphdb.query.IndexQueryBuilder;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -35,6 +34,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -320,6 +320,55 @@ public class IndexSerializer {
         }
     }
 
+    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementType resultType,
+                                                  final BackendTransaction backendTx, final StandardTitanTx transaction) {
+        StringBuffer qB = new StringBuffer(query.getQuery());
+        final String prefix = query.getPrefix();
+        Preconditions.checkNotNull(prefix);
+        //Convert query string by replacing
+        int replacements = 0;
+        int pos = 0;
+        while (pos<qB.length()) {
+            pos = qB.indexOf(prefix,pos);
+            if (pos<0) break;
+
+            int startPos = pos;
+            pos += prefix.length();
+            StringBuilder keyBuilder = new StringBuilder();
+            boolean quoteTerminated = qB.charAt(pos)=='"';
+            if (quoteTerminated) pos++;
+            while (pos<qB.length() &&
+                    (Character.isLetterOrDigit(qB.charAt(pos))
+                            || (quoteTerminated && qB.charAt(pos)!='"')) ) {
+                keyBuilder.append(qB.charAt(pos));
+                pos++;
+            }
+            int endPos = pos;
+            String keyname = keyBuilder.toString();
+            Preconditions.checkArgument(StringUtils.isNotBlank(keyname),"Found reference to empty key at position [%s]",startPos);
+            Preconditions.checkArgument(transaction.containsType(keyname),"Found reference to non-existant property key in query at position [%s]: %s",startPos,keyname);
+            TitanKey key = transaction.getPropertyKey(keyname);
+            String replacement = key2String(key);
+            qB.replace(startPos,endPos,replacement);
+            pos = startPos+replacement.length();
+            replacements++;
+        }
+
+        String queryStr = qB.toString();
+        Preconditions.checkArgument(replacements>0,"Could not convert given raw index query: %s",query.getQuery());
+        log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
+        RawQuery rawQuery=new RawQuery(getStoreName(resultType),queryStr,query.getParameters());
+        if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
+        return Iterables.transform(backendTx.rawQuery(query.getIndex(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
+            @Nullable
+            @Override
+            public RawQuery.Result apply(@Nullable RawQuery.Result<String> result) {
+                return new RawQuery.Result(string2ElementId(result.getResult()), result.getScore());
+            }
+        });
+    }
+
+
     /* ################################################
                 Utility Functions
     ################################################### */
@@ -372,7 +421,7 @@ public class IndexSerializer {
         return LongEncoding.decode(name);
     }
 
-    private static final String getStoreName(TitanElement element) {
+    private static final String getStoreName(Element element) {
         if (element instanceof TitanVertex) return getStoreName(ElementType.VERTEX);
         else if (element instanceof TitanEdge) return getStoreName(ElementType.EDGE);
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());

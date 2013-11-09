@@ -27,6 +27,8 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.BooleanFilter;
 import org.apache.lucene.queries.TermsFilter;
+import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.spatial.SpatialStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -57,9 +59,11 @@ public class LuceneIndex implements IndexProvider {
     private static final String GEOID = "_____geo";
     private static final int MAX_STRING_FIELD_LEN = 256;
 
+    private static final Version LUCENE_VERSION = Version.LUCENE_41;
+
     private static final int GEO_MAX_LEVELS = 11;
 
-    private final Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_41);
+    private final Analyzer analyzer = new StandardAnalyzer(LUCENE_VERSION);
 
     private final Map<String, IndexWriter> writers = new HashMap<String, IndexWriter>(4);
     private final ReentrantLock writerLock = new ReentrantLock();
@@ -99,7 +103,7 @@ public class LuceneIndex implements IndexProvider {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
         if (writer == null) {
-            IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_41, analyzer);
+            IndexWriterConfig iwc = new IndexWriterConfig(LUCENE_VERSION, analyzer);
             iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
             try {
                 writer = new IndexWriter(getStoreDirectory(store), iwc);
@@ -365,6 +369,32 @@ public class LuceneIndex implements IndexProvider {
             }
             return q;
         } else throw new IllegalArgumentException("Invalid condition: " + condition);
+    }
+
+    @Override
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+        Query q;
+        try {
+            q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
+        } catch (ParseException e) {
+            throw new PermanentStorageException("Could not parse raw query: "+query.getQuery(),e);
+        }
+
+        try {
+            IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
+            if (searcher == null) return ImmutableList.of(); //Index does not yet exist
+
+            long time = System.currentTimeMillis();
+            TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1);
+            log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
+            List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
+            for (int i = 0; i < docs.scoreDocs.length; i++) {
+                result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
+            }
+            return result;
+        } catch (IOException e) {
+            throw new TemporaryStorageException("Could not execute Lucene query", e);
+        }
     }
 
     @Override

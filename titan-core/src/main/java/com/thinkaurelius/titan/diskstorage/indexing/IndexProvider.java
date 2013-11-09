@@ -54,6 +54,19 @@ public interface IndexProvider extends IndexInformation {
      */
     public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
 
+
+    /**
+     * Executes the given raw query against the index
+     *
+     * @param query Query to execute
+     * @param informations Information on the keys used in the query accessible through {@link KeyInformation.IndexRetriever}.
+     * @param tx Enclosing transaction
+     * @return Results objects for all matching documents (i.e. document id and score)
+     * @throws StorageException
+     * @see RawQuery
+     */
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
+
     /**
      * Returns a transaction handle for a new index transaction.
      *

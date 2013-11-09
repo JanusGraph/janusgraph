@@ -453,6 +453,30 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+        SearchRequestBuilder srb = client.prepareSearch(indexName);
+        srb.setTypes(query.getStore());
+        srb.setQuery(QueryBuilders.queryString(query.getQuery()));
+
+        srb.setFrom(0);
+        if (query.hasLimit()) srb.setSize(query.getLimit());
+        else srb.setSize(maxResultsSize);
+        srb.setNoFields();
+        //srb.setExplain(true);
+
+        SearchResponse response = srb.execute().actionGet();
+        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTookInMillis());
+        SearchHits hits = response.getHits();
+        if (!query.hasLimit() && hits.totalHits() >= maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
+        List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(hits.hits().length);
+        for (SearchHit hit : hits) {
+            result.add(new RawQuery.Result<String>(hit.id(),hit.getScore()));
+        }
+        return result;
+    }
+
+    @Override
     public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);

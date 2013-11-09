@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
@@ -33,6 +34,7 @@ public abstract class IndexProviderTest {
     private Logger log = LoggerFactory.getLogger(IndexProviderTest.class);
 
     private static final Random random = new Random();
+    private static final Parameter[] NO_PARAS = new Parameter[0];
 
     protected IndexProvider index;
     protected IndexTransaction tx;
@@ -61,6 +63,8 @@ public abstract class IndexProviderTest {
     }
 
     public abstract IndexProvider openIndex() throws StorageException;
+
+    public abstract boolean supportsLuceneStyleQueries();
 
     @Before
     public void setUp() throws Exception {
@@ -205,6 +209,17 @@ public abstract class IndexProviderTest {
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("blah", Cmp.GREATER_THAN, 10.0))));
             assertEquals(0, result.size());
 
+            if (supportsLuceneStyleQueries()) {
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:\"Hello Bob\"",NO_PARAS))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(world AND tomorrow)",NO_PARAS))));
+//                printResult(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS)));
+                assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS))));
+                assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:\"world\"",NO_PARAS))));
+                assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"time:[1000 TO 1020]",NO_PARAS))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:world AND time:1001",NO_PARAS))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"name:\"Hello world\"",NO_PARAS))));
+            }
+
             //Update some data
             add(store, "doc4", getDocument("I'ts all a big Bob", -100, 11.2, Geoshape.point(48.0, 8.0)), true);
             remove(store, "doc2", doc2, true);
@@ -244,6 +259,12 @@ public abstract class IndexProviderTest {
 
         }
 
+    }
+
+    private static String padNumber(long number) {
+        String s = Long.toString(number);
+        while (s.length()<18) s = "0"+s;
+        return s;
     }
 
 
@@ -313,6 +334,12 @@ public abstract class IndexProviderTest {
             put(WEIGHT, random.nextDouble());
             put(LOCATION, Geoshape.point(random.nextDouble() * 180 - 90, random.nextDouble() * 360 - 180));
         }};
+    }
+
+    public static void printResult(Iterable<RawQuery.Result<String>> result) {
+        for (RawQuery.Result<String> r : result) {
+            System.out.println(r.getResult() + ":"+r.getScore());
+        }
     }
 
 }

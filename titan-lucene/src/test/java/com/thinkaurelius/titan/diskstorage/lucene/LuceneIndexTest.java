@@ -26,6 +26,11 @@ public class LuceneIndexTest extends IndexProviderTest {
         return new LuceneIndex(getLocalLuceneTestConfig());
     }
 
+    @Override
+    public boolean supportsLuceneStyleQueries() {
+        return false;
+    }
+
     public static final Configuration getLocalLuceneTestConfig() {
         Configuration config = new BaseConfiguration();
         config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("lucene"));
