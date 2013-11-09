@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
+import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -343,7 +345,7 @@ public class BackendTransaction implements TransactionHandle {
         });
     }
 
-    public List<String> indexQuery(String index, final IndexQuery query) {
+    public List<String> indexQuery(final String index, final IndexQuery query) {
         final IndexTransaction indexTx = getIndexTransactionHandle(index);
         return executeRead(new Callable<List<String>>() {
             @Override
@@ -354,6 +356,21 @@ public class BackendTransaction implements TransactionHandle {
             @Override
             public String toString() {
                 return "IndexQuery";
+            }
+        });
+    }
+
+    public Iterable<RawQuery.Result<String>> rawQuery(final String index, final RawQuery query) {
+        final IndexTransaction indexTx = getIndexTransactionHandle(index);
+        return executeRead(new Callable<Iterable<RawQuery.Result<String>>>() {
+            @Override
+            public Iterable<RawQuery.Result<String>> call() throws Exception {
+                return indexTx.query(query);
+            }
+
+            @Override
+            public String toString() {
+                return "RawQuery";
             }
         });
     }

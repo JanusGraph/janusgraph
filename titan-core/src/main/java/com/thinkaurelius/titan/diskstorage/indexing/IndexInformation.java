@@ -11,18 +11,18 @@ import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 public interface IndexInformation {
 
     /**
-     * Whether the index supports executing queries with the given relation and data type.
-     * @param dataType
+     * Whether the index supports executing queries with the given predicate against a key with the given information
+     * @param information
      * @param titanPredicate
      * @return
      */
-    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate);
+    public boolean supports(KeyInformation information, TitanPredicate titanPredicate);
 
     /**
-     * Whether the index supports the given data type
-     * @param dataType
+     * Whether the index supports indexing a key with the given information
+     * @param information
      * @return
      */
-    public boolean supports(Class<?> dataType);
+    public boolean supports(KeyInformation information);
 
 }

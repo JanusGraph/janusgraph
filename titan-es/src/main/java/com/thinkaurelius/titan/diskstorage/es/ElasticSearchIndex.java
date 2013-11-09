@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -9,10 +10,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexMutation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
@@ -48,7 +46,6 @@ import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.FieldSortBuilder;
-import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,8 +183,12 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, Class<?> dataType, TransactionHandle tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException {
         XContentBuilder mapping = null;
+        Class<?> dataType = information.getDataType();
+        Mapping map = Mapping.getMapping(information);
+        Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
+                "Specified illegal mapping [%s] for data type [%s]",map,dataType);
 
         try {
             mapping = XContentFactory.jsonBuilder().
@@ -199,6 +200,8 @@ public class ElasticSearchIndex implements IndexProvider {
             if (AttributeUtil.isString(dataType)) {
                 log.debug("Registering string type for {}", key);
                 mapping.field("type", "string");
+                if (map==Mapping.STRING)
+                    mapping.field("index","not_analyzed");
             } else if (dataType == Float.class || dataType == FullFloat.class) {
                 log.debug("Registering float type for {}", key);
                 mapping.field("type", "float");
@@ -237,31 +240,6 @@ public class ElasticSearchIndex implements IndexProvider {
         } catch (Exception e) {
             throw convert(e);
         }
-//        if (dataType == Geoshape.class) { //Only need to update for geoshape
-//            log.debug("Registering geo_point type for {}", key);
-//            XContentBuilder mapping = null;
-//            try {
-//                mapping =
-//                        XContentFactory.jsonBuilder()
-//                                .startObject()
-//                                .startObject(store)
-//                                .startObject("properties")
-//                                .startObject(key)
-//                                .field("type", "geo_point")
-//                                .endObject()
-//                                .endObject()
-//                                .endObject()
-//                                .endObject();
-//            } catch (IOException e) {
-//                throw new PermanentStorageException("Could not render json for put mapping request", e);
-//            }
-//            try {
-//                PutMappingResponse response = client.admin().indices().preparePutMapping(indexName).
-//                        setIgnoreConflicts(false).setType(store).setSource(mapping).execute().actionGet();
-//            } catch (Exception e) {
-//                throw convert(e);
-//            }
-//        }
     }
 
     public XContentBuilder getContent(List<IndexEntry> additions) throws StorageException {
@@ -311,7 +289,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, TransactionHandle tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
         BulkRequestBuilder brb = client.prepareBulk();
         int bulkrequests = 0;
         try {
@@ -406,12 +384,10 @@ public class ElasticSearchIndex implements IndexProvider {
                     return FilterBuilders.prefixFilter(key, ((String) value).toLowerCase());
                 } else if (titanPredicate == Text.REGEX) {
                     return FilterBuilders.regexpFilter(key, (String) value);
-//                } else if (relation == Cmp.EQUAL) {
-//                    return new TermsFilter(new Term(key+STR_SUFFIX,(String)value));
-//                } else if (relation == Cmp.NOT_EQUAL) {
-//                    BooleanFilter q = new BooleanFilter();
-//                    q.add(new TermsFilter(new Term(key+STR_SUFFIX,(String)value)), BooleanClause.Occur.MUST_NOT);
-//                    return q;
+                } else if (titanPredicate == Cmp.EQUAL) {
+                    return FilterBuilders.termFilter(key, (String) value);
+                } else if (titanPredicate == Cmp.NOT_EQUAL) {
+                    return FilterBuilders.notFilter(FilterBuilders.termFilter(key, (String) value));
                 } else
                     throw new IllegalArgumentException("Predicate is not supported for string value: " + titanPredicate);
             } else if (value instanceof Geoshape) {
@@ -445,7 +421,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, TransactionHandle tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.matchAllQuery());
@@ -477,22 +453,62 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public boolean supports(Class<?> dataType, TitanPredicate titanPredicate) {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+        SearchRequestBuilder srb = client.prepareSearch(indexName);
+        srb.setTypes(query.getStore());
+        srb.setQuery(QueryBuilders.queryString(query.getQuery()));
+
+        srb.setFrom(0);
+        if (query.hasLimit()) srb.setSize(query.getLimit());
+        else srb.setSize(maxResultsSize);
+        srb.setNoFields();
+        //srb.setExplain(true);
+
+        SearchResponse response = srb.execute().actionGet();
+        log.debug("Executed query [{}] in {} ms", query.getQuery(), response.getTookInMillis());
+        SearchHits hits = response.getHits();
+        if (!query.hasLimit() && hits.totalHits() >= maxResultsSize)
+            log.warn("Query result set truncated to first [{}] elements for query: {}", maxResultsSize, query);
+        List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(hits.hits().length);
+        for (SearchHit hit : hits) {
+            result.add(new RawQuery.Result<String>(hit.id(),hit.getScore()));
+        }
+        return result;
+    }
+
+    @Override
+    public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+        Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
+        if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
+
         if (Number.class.isAssignableFrom(dataType)) {
             if (titanPredicate instanceof Cmp) return true;
             else return false;
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
-        } else if (dataType == String.class) {
-            return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX || titanPredicate == Text.REGEX;
+        } else if (AttributeUtil.isString(dataType)) {
+            switch(mapping) {
+                case DEFAULT:
+                case TEXT:
+                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX || titanPredicate == Text.REGEX;
+                case STRING:
+                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
+                default: return false;
+            }
         } else return false;
     }
 
+
     @Override
-    public boolean supports(Class<?> dataType) {
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || AttributeUtil.isString(dataType))
-            return true;
-        else return false;
+    public boolean supports(KeyInformation information) {
+        Class<?> dataType = information.getDataType();
+        Mapping mapping = Mapping.getMapping(information);
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || AttributeUtil.isString(dataType)) {
+            if (mapping==Mapping.DEFAULT) return true;
+            if (AttributeUtil.isString(dataType) && (mapping==Mapping.STRING || mapping==Mapping.TEXT)) return true;
+        }
+        return false;
     }
 
     @Override

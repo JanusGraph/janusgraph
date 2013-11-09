@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.indexing.StandardKeyInformation;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -11,12 +11,12 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.DATATYPE;
 import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.INDEXES;
+import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.INDEX_PARAMETERS;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -27,27 +27,14 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
 
     private Class<?> dataType;
-    private Set<IndexType> indexes;
+    private Set<IndexDefinition> indexes;
+    private Parameter[] indexParas;
 
     public StandardKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer) {
         super(tx, indexSerializer);
-        indexes = new HashSet<IndexType>(4);
+        indexes = new HashSet<IndexDefinition>(4);
         dataType = null;
         super.unique(Direction.OUT, UniquenessConsistency.NO_LOCK);
-    }
-
-    private IndexType[] checkIndexes(Set<IndexType> indexes) {
-        IndexType[] result = new IndexType[indexes.size()];
-        int i = 0;
-        for (IndexType it : indexes) {
-            Preconditions.checkArgument(isUnique(OUT) || (it.isStandardIndex() && it.getElementType() == Vertex.class),
-                    "Only standard index is allowed on list property keys");
-            Preconditions.checkArgument(indexSerializer.getIndexInformation(it.getIndexName()).supports(dataType), "" +
-                    "Index [" + it.getIndexName() + "] does not support data type: " + dataType);
-            result[i] = it;
-            i++;
-        }
-        return result;
     }
 
     @Override
@@ -90,21 +77,21 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
     @Override
     public StandardKeyMaker indexed(Class<? extends Element> clazz) {
         if (clazz == Element.class) {
-            this.indexes.add(IndexType.of(Vertex.class));
-            this.indexes.add(IndexType.of(Edge.class));
+            this.indexes.add(IndexDefinition.of(Vertex.class));
+            this.indexes.add(IndexDefinition.of(Edge.class));
         } else {
-            this.indexes.add(IndexType.of(clazz));
+            this.indexes.add(IndexDefinition.of(clazz));
         }
         return this;
     }
 
     @Override
-    public StandardKeyMaker indexed(String indexName, Class<? extends Element> clazz) {
+    public StandardKeyMaker indexed(String indexName, Class<? extends Element> clazz, Parameter... paras) {
         if (clazz == Element.class) {
-            this.indexes.add(IndexType.of(indexName, Vertex.class));
-            this.indexes.add(IndexType.of(indexName, Edge.class));
+            this.indexes.add(IndexDefinition.of(indexName, Vertex.class, paras));
+            this.indexes.add(IndexDefinition.of(indexName, Edge.class, paras));
         } else {
-            this.indexes.add(IndexType.of(indexName, clazz));
+            this.indexes.add(IndexDefinition.of(indexName, clazz, paras));
         }
         return this;
     }
@@ -150,10 +137,25 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
         Preconditions.checkArgument(!dataType.isInterface(), "Datatype must be a class and not an interface: %s", dataType);
         Preconditions.checkArgument(dataType.isArray() || !Modifier.isAbstract(dataType.getModifiers()), "Datatype cannot be an abstract class: %s", dataType);
         Preconditions.checkArgument(!isUnique(IN) ||
-                indexes.contains(IndexType.of(Vertex.class)), "A unique key must be indexed for vertices. Add 'indexed(Vertex.class)' to this key definition.");
+                indexes.contains(IndexDefinition.of(Vertex.class)), "A unique key must be indexed for vertices. Add 'indexed(Vertex.class)' to this key definition.");
+
+        IndexType[] indexTypes = new IndexType[indexes.size()];
+        IndexParameters[] indexParas = new IndexParameters[indexes.size()];
+
+        int i = 0;
+        for (IndexDefinition it : indexes) {
+            Preconditions.checkArgument(isUnique(OUT) || (it.isStandardIndex() && it.getElementType() == Vertex.class),
+                    "Only standard index is allowed on list property keys");
+            Preconditions.checkArgument(indexSerializer.supports(it.getIndexName(),dataType,it.getParameters()),
+                    "Index [%s] does not support data type [%s] with parameters [%s]",it.getIndexName(),dataType,it.getParameters());
+            Preconditions.checkArgument(!it.isStandardIndex() || it.getParameters().length==0,"Standard index does not support parameters");
+            indexTypes[i] = it.getIndexType();
+            indexParas[i] = it.getIndexParamters();
+            i++;
+        }
 
         TypeAttribute.Map definition = makeDefinition();
-        definition.setValue(DATATYPE, dataType).setValue(INDEXES, checkIndexes(indexes));
+        definition.setValue(DATATYPE, dataType).setValue(INDEXES, indexTypes).setValue(INDEX_PARAMETERS,indexParas);
         return tx.makePropertyKey(getName(), definition);
     }
 }

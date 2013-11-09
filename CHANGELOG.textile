@@ -33,6 +33,8 @@ h3. Version 0.4.1 (?)
 * Shortened HBase column-family names to reduce the HBase storage footprint. This feature is disabled by default for backwards-compatibility. Enable it via @storage.short-cf-names@
 * Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through graph.buildTransaction()
 * Metrics Ganglia and Graphite support
+* Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
+* Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
 
 *Bugfixes:*
 

@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
 import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.addedrelations.AddedRelationsContainer;
@@ -787,6 +788,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
             Preconditions.checkArgument(query.getResultType() == ElementType.VERTEX || query.getResultType() == ElementType.EDGE);
+            //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
+            if (!query.getCondition().hasChildren()) return Iterators.emptyIterator();
+
             if (query.getResultType() == ElementType.VERTEX && hasModifications()) {
                 Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));
                 PredicateCondition<TitanKey, TitanElement> standardIndexKey = getEqualityCondition(query.getCondition());
@@ -896,23 +900,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
 
                 List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
-                iter = Iterators.transform(resultSet.iterator(), new Function<Object, TitanElement>() {
-                    @Override
-                    public TitanElement apply(@Nullable Object id) {
-                        Preconditions.checkNotNull(id);
-
-                        switch (query.getResultType()) {
-                            case VERTEX:
-                                return getExistingVertex((Long) id);
-
-                            case EDGE:
-                                return (TitanElement) getEdge(id);
-
-                            default:
-                                throw new IllegalArgumentException("Unexpected id type: " + id);
-                        }
-                    }
-                });
+                iter = Iterators.transform(resultSet.iterator(), getConversionFunction(query.getResultType()));
             } else {
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
@@ -933,9 +921,43 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
 
     };
 
+    public Function<Object, ? extends TitanElement> getConversionFunction(final ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return vertexIDConversionFct;
+            case EDGE:
+                return edgeIDConversionFct;
+            default:
+                throw new IllegalArgumentException("Unexpected result type: " + elementType);
+        }
+    }
+
+    private final Function<Object, TitanVertex> vertexIDConversionFct = new Function<Object, TitanVertex>() {
+        @Override
+        public TitanVertex apply(@Nullable Object id) {
+            Preconditions.checkNotNull(id);
+            Preconditions.checkArgument(id instanceof Long);
+            return getExistingVertex((Long) id);
+        }
+    };
+
+    private final Function<Object, TitanEdge> edgeIDConversionFct = new Function<Object, TitanEdge>() {
+        @Override
+        public TitanEdge apply(@Nullable Object id) {
+            Preconditions.checkNotNull(id);
+            Preconditions.checkArgument(id instanceof RelationIdentifier);
+            return getEdge(id);
+        }
+    };
+
     @Override
     public GraphCentricQueryBuilder query() {
         return new GraphCentricQueryBuilder(this, graph.getIndexSerializer());
+    }
+
+    @Override
+    public TitanIndexQuery indexQuery(String indexName, String query) {
+        return new IndexQueryBuilder(this,indexSerializer).setIndex(indexName).setQuery(query);
     }
 
     @Override

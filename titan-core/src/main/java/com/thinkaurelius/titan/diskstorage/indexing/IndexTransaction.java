@@ -22,11 +22,14 @@ public class IndexTransaction implements TransactionHandle {
 
     private final IndexProvider index;
     private final TransactionHandle indexTx;
+    private final KeyInformation.IndexRetriever keyInformations;
     private Map<String,Map<String,IndexMutation>> mutations;
 
-    public IndexTransaction(final IndexProvider index) throws StorageException {
+    public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations) throws StorageException {
         Preconditions.checkNotNull(index);
+        Preconditions.checkNotNull(keyInformations);
         this.index=index;
+        this.keyInformations = keyInformations;
         this.indexTx=index.beginTransaction();
         Preconditions.checkNotNull(indexTx);
         this.mutations = null;
@@ -57,12 +60,16 @@ public class IndexTransaction implements TransactionHandle {
     }
 
 
-    public void register(String store, String key, Class<?> dataType) throws StorageException {
-        index.register(store,key,dataType,indexTx);
+    public void register(String store, String key, KeyInformation information) throws StorageException {
+        index.register(store,key,information,indexTx);
     }
 
     public List<String> query(IndexQuery query) throws StorageException {
-        return index.query(query,indexTx);
+        return index.query(query,keyInformations,indexTx);
+    }
+
+    public Iterable<RawQuery.Result<String>> query(RawQuery query) throws StorageException {
+        return index.query(query,keyInformations,indexTx);
     }
 
     @Override
@@ -85,7 +92,7 @@ public class IndexTransaction implements TransactionHandle {
 
     private void flushInternal() throws StorageException {
         if (mutations!=null && !mutations.isEmpty()) {
-            index.mutate(mutations,indexTx);
+            index.mutate(mutations,keyInformations,indexTx);
             mutations=null;
         }
     }

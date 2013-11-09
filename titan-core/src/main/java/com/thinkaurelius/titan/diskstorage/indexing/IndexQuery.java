@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.Comparator;
 import java.util.List;
@@ -45,8 +46,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         this.orders = orders;
         this.store = store;
 
-        this.hashcode = condition.hashCode() * 9876469 + store.hashCode() * 4711
-                + orders.hashCode() * 107 + limit;
+        this.hashcode = new HashCodeBuilder().append(condition).append(store).append(orders).append(limit).toHashCode();
     }
 
     public IndexQuery(String store, Condition condition, ImmutableList<OrderEntry> orders) {
