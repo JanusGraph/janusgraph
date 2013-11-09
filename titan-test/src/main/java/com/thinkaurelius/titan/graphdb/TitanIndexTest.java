@@ -308,11 +308,11 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(beautiful are ducks)").vertices()));
         assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
 
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").vertices()));
-        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").edges()));
+        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
 
     }
 

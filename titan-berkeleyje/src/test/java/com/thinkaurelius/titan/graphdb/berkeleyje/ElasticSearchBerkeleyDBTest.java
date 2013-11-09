@@ -36,6 +36,6 @@ public class ElasticSearchBerkeleyDBTest extends TitanIndexTest {
 
     @Override
     public boolean supportsLuceneStyleQueries() {
-        return false;
+        return true;
     }
 }

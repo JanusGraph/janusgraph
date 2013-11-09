@@ -343,6 +343,7 @@ public class IndexSerializer {
                 keyBuilder.append(qB.charAt(pos));
                 pos++;
             }
+            if (quoteTerminated) pos++;
             int endPos = pos;
             String keyname = keyBuilder.toString();
             Preconditions.checkArgument(StringUtils.isNotBlank(keyname),"Found reference to empty key at position [%s]",startPos);
@@ -355,7 +356,7 @@ public class IndexSerializer {
         }
 
         String queryStr = qB.toString();
-        Preconditions.checkArgument(replacements>0,"Could not convert given raw index query: %s",query.getQuery());
+        Preconditions.checkArgument(replacements>0,"Could not convert given %s index query: %s",resultType, query.getQuery());
         log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
         RawQuery rawQuery=new RawQuery(getStoreName(resultType),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
