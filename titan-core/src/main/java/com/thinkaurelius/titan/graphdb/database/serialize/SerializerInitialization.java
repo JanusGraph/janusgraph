@@ -30,7 +30,7 @@ public class SerializerInitialization {
         serializer.registerClass(long[].class, KRYO_OFFSET + 11);
         serializer.registerClass(byte[].class, new ByteArrayHandler(), KRYO_OFFSET + 12);
         serializer.registerClass(boolean[].class, KRYO_OFFSET + 13);
-//        serializer.registerClass(IndexType.class, KRYO_OFFSET + 14); //duplicate of 20
+        serializer.registerClass(IndexType.class, KRYO_OFFSET + 14); //duplicate of 20 TODO: remove one!
         serializer.registerClass(TitanTypeClass.class, KRYO_OFFSET + 15);
         serializer.registerClass(Integer.class, new IntegerSerializer(), KRYO_OFFSET + 16);
         serializer.registerClass(Double.class, new DoubleSerializer(), KRYO_OFFSET + 17);
