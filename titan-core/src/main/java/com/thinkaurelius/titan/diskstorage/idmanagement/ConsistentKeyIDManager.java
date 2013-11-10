@@ -4,10 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
-import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -36,7 +33,7 @@ import java.util.Random;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ConsistentKeyIDManager extends AbstractIDManager {
+public class ConsistentKeyIDManager extends AbstractIDManager implements BackendOperation.TransactionalProvider {
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
 
@@ -97,10 +94,20 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
         idStore.close();
     }
 
-    private long getCurrentID(StaticBuffer partitionKey, StoreTransaction txh) throws StorageException {
-        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
-        if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
+    @Override
+    public StoreTransaction openTx() throws StorageException {
+        return manager.beginTransaction(new StoreTxConfig(consistencLevel, metricsPrefix));
+    }
 
+    private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
+        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
+            @Override
+            public List<Entry> call(StoreTransaction txh) throws StorageException {
+                return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
+            }
+        },this);
+
+        if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
         long latest = BASE_ID;
 
         for (Entry e : blocks) {
@@ -144,14 +151,12 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
 
         for (int retry = 0; retry < idApplicationRetryCount; retry++) {
-            StoreTransaction txh = null;
             final int uniqueID = getUniqueID();
             try {
-                txh = manager.beginTransaction(new StoreTxConfig(consistencLevel, metricsPrefix));
                 // Read the latest counter values from the idStore
-                StaticBuffer partitionKey = getPartitionKey(partition,uniqueID);
+                final StaticBuffer partitionKey = getPartitionKey(partition,uniqueID);
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
-                long nextStart = getCurrentID(partitionKey, txh);
+                long nextStart = getCurrentID(partitionKey);
                 if (idBlockUpperBound - blockSize <= nextStart) {
                     log.info("ID overflow detected. Current id {}, block size {} and upper bound {} for bit width {}",
                             nextStart,blockSize,idBlockUpperBound,uniqueIdBitWidth);
@@ -163,14 +168,20 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
 
                 assert idBlockUpperBound - blockSize > nextStart;
                 long nextEnd = nextStart + blockSize;
-                StaticBuffer target = getBlockApplication(nextEnd);
+                final StaticBuffer target = getBlockApplication(nextEnd);
 
 
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
                     long before = System.currentTimeMillis();
-                    idStore.mutate(partitionKey, Arrays.asList(StaticBufferEntry.of(target, ByteBufferUtil.emptyBuffer())), KeyColumnValueStore.NO_DELETIONS, txh);
+                    BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
+                        @Override
+                        public Boolean call(StoreTransaction txh) throws StorageException {
+                            idStore.mutate(partitionKey, Arrays.asList(StaticBufferEntry.of(target, ByteBufferUtil.emptyBuffer())), KeyColumnValueStore.NO_DELETIONS, txh);
+                            return true;
+                        }
+                    },this);
                     long after = System.currentTimeMillis();
 
                     if (idApplicationWaitMS < after - before) {
@@ -178,7 +189,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                     } else {
 
                         assert 0 != target.length();
-                        StaticBuffer[] slice = getBlockSlice(nextEnd);
+                        final StaticBuffer[] slice = getBlockSlice(nextEnd);
 
                         /* At this point we've written our claim on [nextStart, nextEnd),
                          * but we haven't yet guaranteed the absence of a contending claim on
@@ -188,7 +199,12 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         TimeUtility.INSTANCE.sleepUntil(after + idApplicationWaitMS, log);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
-                        List<Entry> blocks = idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
+                        List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
+                            @Override
+                            public List<Entry> call(StoreTransaction txh) throws StorageException {
+                                return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
+                            }
+                        },this);
                         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentStorageException("It seems there is a race-condition in the block application. " +
@@ -224,7 +240,19 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                         //Delete claim to not pollute id space
                         for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
                             try {
-                                idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(target), txh);
+                                BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
+                                    @Override
+                                    public Boolean call(StoreTransaction txh) throws StorageException {
+                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(target), txh);
+                                        return true;
+                                    }
+                                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
+                                    @Override
+                                    public StoreTransaction openTx() throws StorageException {
+                                        return manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.DEFAULT,metricsPrefix));
+                                    }
+                                });
+
                                 break;
                             } catch (StorageException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
@@ -236,12 +264,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
                 }
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", idApplicationWaitMS, e);
-                if (txh != null) txh.rollback();
-                txh = null;
                 if (idApplicationWaitMS > 0)
                     TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
-            } finally {
-                if (txh != null) txh.commit();
             }
         }
 

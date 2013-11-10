@@ -242,26 +242,4 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         return getClass().getSimpleName() + keySpaceName;
     }
 
-    protected Timestamp getTimestamp(StoreTransaction txh) {
-        long time;
-        if (txh.getConfiguration().hasTimestamp()) {
-            time = (txh.getConfiguration().getTimestamp());
-        } else {
-            time = TimeUtility.INSTANCE.getApproxNSSinceEpoch();
-        }
-        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
-        return new Timestamp(time | 1L, time);
-    }
-
-    public static class Timestamp {
-        public final long additionTime;
-        public final long deletionTime;
-
-        public Timestamp(long additionTime, long deletionTime) {
-            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
-            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
-            this.additionTime = additionTime;
-            this.deletionTime = deletionTime;
-        }
-    }
 }

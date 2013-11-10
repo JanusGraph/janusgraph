@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -171,6 +172,24 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         return tentativeRid;
+    }
+
+    protected Timestamp getTimestamp(StoreTransaction txh) {
+        long time = txh.getConfiguration().getTimestamp();
+        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
+        return new Timestamp(time | 1L, time);
+    }
+
+    public static class Timestamp {
+        public final long additionTime;
+        public final long deletionTime;
+
+        public Timestamp(long additionTime, long deletionTime) {
+            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
+            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
+            this.additionTime = additionTime;
+            this.deletionTime = deletionTime;
+        }
     }
 
 }

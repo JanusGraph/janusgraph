@@ -43,6 +43,11 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         open();
     }
 
+    @After
+    public void tearDown() throws Exception {
+        close();
+    }
+
     public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
 
     public void open() throws StorageException {
@@ -54,21 +59,21 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     }
 
-    public void clopen() throws StorageException {
-        close();
-        open();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        close();
-    }
-
     public void close() throws StorageException {
         if (tx != null) tx.commit();
         if (null != store1) store1.close();
         if (null != store2) store2.close();
         if (null != manager) manager.close();
+    }
+
+    public void clopen() throws StorageException {
+        close();
+        open();
+    }
+
+    public void newTx() throws StorageException {
+        if (tx!=null) tx.commit();
+        tx = new BufferTransaction(manager.beginTransaction(new StoreTxConfig()), manager, bufferSize, 1, 0);
     }
 
     @Test
@@ -91,37 +96,37 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         addOnly.put(b1, new KCVMutation(additions, KeyColumnValueStore.NO_DELETIONS));
 
         store1.mutate(b1, additions, deletions, tx);
-        tx.flush();
+        newTx();
 
         StaticBuffer result = KCVSUtil.get(store1, b1, b1, tx);
 
         Assert.assertEquals(b1, result);
 
         store1.mutate(b1, NO_ADDITIONS, deletions, tx);
-        tx.flush();
+        newTx();
 
         for (int i = 0; i < 100; i++) {
             StaticBuffer n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
             store1.mutate(b1, additions, NO_DELETIONS, tx);
-            tx.flush();
+            newTx();
             store1.mutate(b1, NO_ADDITIONS, deletions, tx);
-            tx.flush();
+            newTx();
             n = KCVSUtil.get(store1, b1, b1, tx);
             Assert.assertNull(n);
         }
 
         for (int i = 0; i < 100; i++) {
             store1.mutate(b1, NO_ADDITIONS, deletions, tx);
-            tx.flush();
+            newTx();
             store1.mutate(b1, additions, NO_DELETIONS, tx);
-            tx.flush();
+            newTx();
             Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
 
         for (int i = 0; i < 100; i++) {
             store1.mutate(b1, additions, deletions, tx);
-            tx.flush();
+            newTx();
             Assert.assertEquals(b1, KCVSUtil.get(store1, b1, b1, tx));
         }
     }
@@ -177,7 +182,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
             applyChanges(changes, store1, tx);
             applyChanges(changes, store2, tx);
-            tx.flush();
+            newTx();
 
             int deletesExpected = 0 == round ? 0 : dels;
 

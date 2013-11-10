@@ -64,16 +64,8 @@ public enum TimeUtility implements TimestampProvider {
      * just over 292 years.  The first rollover starting
      * from the UNIX Epoch would be sometime in 2262.
      *
-     * @param setLSB should the smallest bit in the
-     *               returned value be one?
      * @return a timestamp as described above
      */
-//    @Override
-//    public long getApproxNSSinceEpoch(final boolean setLSB) {
-//        final long nanosSinceEpoch = System.nanoTime() - t0NanoTime + t0NanosSinceEpoch;
-//        final long ts = ((nanosSinceEpoch) & 0xFFFFFFFFFFFFFFFEL) + (setLSB ? 1L : 0L);
-//        return ts;
-//    }
     @Override
     public long getApproxNSSinceEpoch() {
         return (System.nanoTime() - t0NanoTime + t0NanosSinceEpoch);
