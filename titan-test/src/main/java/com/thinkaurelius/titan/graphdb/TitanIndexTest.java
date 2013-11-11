@@ -2,13 +2,13 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
+import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -38,6 +38,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         this.supportsNumeric = supportsNumeric;
         this.supportsText = supportsText;
     }
+
+    public abstract boolean supportsLuceneStyleQueries();
 
     @Test
     public void testOpenClose() {
@@ -161,7 +163,10 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         clopen();
 
+        //##########################
         //Copied from above
+        //##########################
+
         for (int i = 0; i < words.length; i++) {
             int expectedSize = numV / words.length;
             assertEquals(expectedSize, Iterables.size(tx.query().has("text", Text.CONTAINS, words[i]).vertices()));
@@ -174,18 +179,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).vertices(),
                             tx.query().has("text", Text.CONTAINS, words[i]).orderBy(orderKey, order).edges()
                     )) {
-                        Element previous = null;
-                        int count = 0;
-                        for (Element element : iter) {
-                            if (previous != null) {
-                                int cmp = ((Comparable) element.getProperty(orderKey)).compareTo(previous.getProperty(orderKey));
-                                assertTrue(element.getProperty(orderKey) + " <> " + previous.getProperty(orderKey),
-                                        order == Order.ASC ? cmp >= 0 : cmp <= 0);
-                            }
-                            previous = element;
-                            count++;
-                        }
-                        assertEquals(expectedSize, count);
+                        TestUtil.verifyElementOrder(iter,orderKey,order,expectedSize);
                     }
                 }
             }
@@ -252,6 +246,73 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         assertEquals(numV, Iterables.size(tx.getVertices()));
         assertEquals(numV, Iterables.size(tx.getEdges()));
+
+    }
+
+    private void setupChainGraph(int numV, String[] strs) {
+        TitanKey name = graph.makeKey("name").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING)}).single().make();
+        TitanKey text = graph.makeKey("text").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT)}).single().make();
+        graph.makeLabel("knows").sortKey(name).sortOrder(Order.DESC).make();
+        TitanVertex previous = null;
+        for (int i=0;i<numV;i++) {
+            TitanVertex v = graph.addVertex(null);
+            v.setProperty("name",strs[i%strs.length]);
+            v.setProperty("text",strs[i%strs.length]);
+            TitanEdge e = v.addEdge("knows",previous==null?v:previous);
+            e.setProperty("name",strs[i%strs.length]);
+            e.setProperty("text",strs[i%strs.length]);
+            previous=v;
+        }
+    }
+
+    @Test
+    public void testIndexParameters() {
+        int numV = 1000;
+        String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
+        setupChainGraph(numV,strs);
+        clopen();
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").vertices()));
+        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).vertices()));
+        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).vertices()));
+        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").vertices()));
+
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"ducks").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("text",Text.CONTAINS,"farm").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("text",Text.CONTAINS,"beautiful").edges()));
+        assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).edges()));
+        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).edges()));
+        assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").edges()));
+
+    }
+
+    @Test
+    public void testRawQueries() {
+        if (!supportsLuceneStyleQueries()) return;
+
+        int numV = 1000;
+        String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
+        setupChainGraph(numV,strs);
+        clopen();
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry)").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(beautiful are ducks)").vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").edges()));
+        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
 
     }
 

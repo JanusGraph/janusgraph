@@ -1,15 +1,19 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.Random;
+
+import org.junit.Test;
+
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StandardIDPool;
 import com.thinkaurelius.titan.util.datastructures.IntHashSet;
 import com.thinkaurelius.titan.util.datastructures.IntSet;
-import org.junit.Test;
-
-import java.util.Random;
-
-import static org.junit.Assert.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

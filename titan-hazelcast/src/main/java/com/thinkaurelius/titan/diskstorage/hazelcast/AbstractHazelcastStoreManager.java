@@ -19,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -37,7 +36,6 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
 
 
     protected final HazelcastInstance manager;
-    protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
     protected final long lockExpireMS;
 
@@ -57,7 +55,6 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
         sc.setImplementation(new StaticBufferSerializer()).setTypeClass(StaticBuffer.class);
         conf.getSerializationConfig().addSerializerConfig(sc);
         manager = Hazelcast.newHazelcastInstance(conf);
-        storageConfig = new FileStorageConfiguration(directory);
         lockExpireMS = config.getLong(GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
                 GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT);
 
@@ -79,16 +76,6 @@ public abstract class AbstractHazelcastStoreManager extends LocalStoreManager im
     @Override
     public StoreFeatures getFeatures() {
         return features;
-    }
-
-    @Override
-    public String getConfigurationProperty(String key) throws StorageException {
-        return storageConfig.getConfigurationProperty(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(String key, String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key, value);
     }
 
     @Override

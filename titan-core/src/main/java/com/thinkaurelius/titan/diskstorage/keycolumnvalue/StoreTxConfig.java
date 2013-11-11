@@ -50,12 +50,9 @@ public class StoreTxConfig {
         return consistency;
     }
 
-    public boolean hasTimestamp() {
-        return this.timestamp != null;
-    }
-
     public long getTimestamp() {
-        Preconditions.checkArgument(timestamp != null, "A timestamp has not been set");
+        if (timestamp==null) setTimestamp();
+        assert timestamp!=null;
         return timestamp;
     }
     

@@ -137,19 +137,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     @Override
     public Iterable<Vertex> vertices() {
         GraphCentricQuery query = constructQuery(ElementType.VERTEX);
-        if (QueryUtil.isEmpty(query.getCondition()))
-            return IterablesUtil.limitedIterable(tx.getVertices(), query.getLimit());
-        else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
     }
 
     @Override
     public Iterable<Edge> edges() {
         GraphCentricQuery query = constructQuery(ElementType.EDGE);
-        if (QueryUtil.isEmpty(query.getCondition()))
-            return IterablesUtil.limitedIterable(tx.getEdges(), query.getLimit());
-        else
-            return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
+        return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
     }
 
     /* ---------------------------------------------------------------
@@ -193,6 +187,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
                 final ObjectAccumulator<String> counts = new ObjectAccumulator<String>(5);
                 for (Set<String> indexes : andConditionCoverage.values()) {
                     for (String index : indexes) counts.incBy(index, 1.0);
+                }
+                //Give extra credit to indexes that cover the order
+                for (String index : counts.getObjects()) {
+                    if (indexCoversOrder(index, orders, resultType)) counts.incBy(index,1.0);
                 }
                 final String bestIndex = counts.getMaxObject();
                 Preconditions.checkNotNull(bestIndex);

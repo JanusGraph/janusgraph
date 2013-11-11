@@ -321,8 +321,8 @@ public class GraphDatabaseConfiguration {
      * Username and password keys to be used to specify an access credential that may be needed to connect
      * with a secured storage backend.
      */
-    public static final String AUTH_USERNAME_KEY = "user";
-    public static final String AUHT_PASSWORD_KEY = "password";
+    public static final String AUTH_USERNAME_KEY = "username";
+    public static final String AUTH_PASSWORD_KEY = "password";
 
     /**
      * Default timeout when connecting to a remote database instance

@@ -4,19 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy;
+import com.netflix.astyanax.connectionpool.impl.*;
 import com.netflix.astyanax.ddl.ColumnFamilyDefinition;
 import com.netflix.astyanax.ddl.KeyspaceDefinition;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
-import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
@@ -126,15 +119,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
     public static final String RETRY_POLICY_KEY = "retry-policy";
 
-    private static final ColumnFamily<String, String> PROPERTIES_CF;
-
-    static {
-        PROPERTIES_CF = new ColumnFamily<String, String>(SYSTEM_PROPERTIES_CF,
-                StringSerializer.get(),
-                StringSerializer.get(),
-                StringSerializer.get());
-    }
-
     private final String clusterName;
 
     private final AstyanaxContext<Keyspace> keyspaceContext;
@@ -150,7 +134,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because there is nothing we can do in Astyanax to apply those, warning is good enough here
         // otherwise it would make bad user experience if we don't warn at all or crash on this.
-        if (this.thriftFrameSize != THRIFT_DEFAULT_FRAME_SIZE)
+        if (config.containsKey(THRIFT_FRAME_SIZE_MB))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
         this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
@@ -361,6 +345,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         MAX_OPERATIONS_PER_CONNECTION_KEY,
                         MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
 
+
         ConnectionPoolConfigurationImpl cpool =
                 new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
                         .setPort(port)
@@ -381,15 +366,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             cpool.setMaxConns(maxConnections);
         }
 
-        AstyanaxContext.Builder builder =
-                new AstyanaxContext.Builder()
+        if (hasAuthentication()) {
+            cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
+        }
+
+        return new AstyanaxContext.Builder()
                         .forCluster(clusterName)
                         .forKeyspace(keySpaceName)
                         .withAstyanaxConfiguration(aconf)
                         .withConnectionPoolConfiguration(cpool)
                         .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
-
-        return builder;
     }
 
     private void ensureKeyspaceExists(Cluster cl) throws StorageException {
@@ -470,44 +456,6 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
 
         throw new Exception("Failed to identify a class matching the Astyanax Retry Policy config string \"" + raw + "\"");
-    }
-
-    @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        try {
-            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            OperationResult<Column<String>> result =
-                    keyspaceContext.getClient().prepareQuery(PROPERTIES_CF)
-                            .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
-                            .withRetryPolicy(retryPolicy.duplicate())
-                            .getKey(SYSTEM_PROPERTIES_KEY).getColumn(key)
-                            .execute();
-
-            return result.getResult().getStringValue();
-        } catch (NotFoundException e) {
-            return null;
-        } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        try {
-            ensureColumnFamilyExists(SYSTEM_PROPERTIES_CF, "org.apache.cassandra.db.marshal.UTF8Type");
-
-            Keyspace ks = keyspaceContext.getClient();
-
-            OperationResult<Void> result = ks.prepareColumnMutation(PROPERTIES_CF, SYSTEM_PROPERTIES_KEY, key)
-                    .setConsistencyLevel(ConsistencyLevel.CL_QUORUM)
-                    .putValue(value, null)
-                    .execute();
-
-            result.getResult();
-        } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
-        }
     }
 
     @Override

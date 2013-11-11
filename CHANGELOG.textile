@@ -36,6 +36,8 @@ h3. Version 0.4.1 (?)
 * Improvements to the internal memory structures and algorithms of a Titan transaction which lead to much improved traversal times
 * Better caching implementation for relations (RelationCache) to provide better de-serialization performance
 * Addition of a new query optimizer that can significantly speed up a subset of traversals
+* Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
+* Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
 
 *Bugfixes:*
 

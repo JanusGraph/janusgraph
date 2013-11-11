@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -55,6 +56,9 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected final int connectionPoolSize;
     protected final int pageSize;
 
+    protected final String username;
+    protected final String password;
+
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
         if (storageConfig.containsKey(HOSTNAME_KEY)) {
@@ -68,6 +72,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
         this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
         this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+
+
+        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY,null);
+        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY,null);
     }
 
     /**
@@ -77,6 +85,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      */
     protected String getSingleHostname() {
         return hostnames[random.nextInt(hostnames.length)];
+    }
+
+    public boolean hasAuthentication() {
+        return username!=null;
     }
 
     public int getPageSize() {
@@ -146,9 +158,12 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
                 endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
                 endBytes[1] = (byte) (s & 0x000000FF);
             } else {
-
-                endBytes =
-                        ManagementFactory.getRuntimeMXBean().getName().getBytes();
+                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
+                            .append("@")
+                            .append(ManagementFactory.getRuntimeMXBean().getName())
+                            .toString()
+                            .getBytes();
             }
 
             byte[] addrBytes;
@@ -168,6 +183,24 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         return tentativeRid;
+    }
+
+    protected Timestamp getTimestamp(StoreTransaction txh) {
+        long time = txh.getConfiguration().getTimestamp();
+        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
+        return new Timestamp(time | 1L, time);
+    }
+
+    public static class Timestamp {
+        public final long additionTime;
+        public final long deletionTime;
+
+        public Timestamp(long additionTime, long deletionTime) {
+            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
+            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
+            this.additionTime = additionTime;
+            this.deletionTime = deletionTime;
+        }
     }
 
 }

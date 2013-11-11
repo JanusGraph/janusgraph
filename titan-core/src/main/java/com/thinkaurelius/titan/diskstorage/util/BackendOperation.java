@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +81,33 @@ public class BackendOperation {
             }
         } while (retryAttempts<maxRetryAttempts);
         throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
+    }
+
+    public static<R> R execute(Transactional<R> exe, TransactionalProvider provider) throws StorageException {
+        StoreTransaction txh = null;
+        try {
+            txh = provider.openTx();
+            return exe.call(txh);
+        } catch (StorageException e) {
+            if (txh!=null) txh.rollback();
+            txh=null;
+            throw e;
+        } finally {
+            if (txh!=null) txh.commit();
+        }
+    }
+
+
+    public static interface Transactional<R> {
+
+        public R call(StoreTransaction txh) throws StorageException;
+
+    }
+
+    public static interface TransactionalProvider {
+
+        public StoreTransaction openTx() throws StorageException;
+
     }
 
 }

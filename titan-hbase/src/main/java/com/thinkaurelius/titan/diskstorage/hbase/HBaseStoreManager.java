@@ -161,9 +161,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+        //TODO: use same timestamp functionality as Cassandra
+//        final Timestamp timestamp = super.getTimestamp(txh);
+//        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.additionTime, timestamp.deletionTime);
+
         final long delTS = System.currentTimeMillis();
         final long putTS = delTS + 1;
-
         Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, putTS, delTS);
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -204,7 +207,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(connectionPool, tableName, cfName, longName);
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this,connectionPool, tableName, cfName, longName);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
@@ -348,37 +351,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         } finally {
             IOUtils.closeQuietly(table);
-        }
-    }
-
-    @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        ensureTableExists(tableName);
-
-        try {
-            return getAdminInterface().getTableDescriptor(tableName.getBytes()).getValue(key);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
-        }
-    }
-
-    @Override
-    public void setConfigurationProperty(final String key, final String value) throws StorageException {
-        byte[] name = tableName.getBytes();
-
-        HTableDescriptor desc = ensureTableExists(tableName);
-
-        try {
-            HBaseAdmin adm = getAdminInterface();
-
-            adm.disableTable(tableName);
-
-            desc.setValue(key, value);
-
-            adm.modifyTable(name, desc);
-            adm.enableTable(tableName);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
         }
     }
 

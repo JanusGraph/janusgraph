@@ -27,7 +27,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -40,7 +39,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheStoreManager.class);
     
-    protected final FileStorageConfiguration storageConfig;
     protected final StoreFeatures features = getDefaultFeatures();
     
     private final EmbeddedCacheManager manager;
@@ -48,8 +46,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
-        
-        storageConfig = new FileStorageConfiguration(directory);
         
         String xmlFile = config.getString(STORAGE_CONF_FILE_KEY, null);
         if (null == xmlFile) {
@@ -116,16 +112,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     @Override
     public StoreFeatures getFeatures() {
         return features;
-    }
-
-    @Override
-    public String getConfigurationProperty(String key) throws StorageException {
-        return storageConfig.getConfigurationProperty(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(String key, String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key, value);
     }
 
     private StoreFeatures getDefaultFeatures() {
