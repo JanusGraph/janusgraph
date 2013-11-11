@@ -5,10 +5,10 @@ import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import org.apache.cassandra.auth.IAuthenticator;
 import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.service.StorageProxy;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.InvalidRequestException;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,11 +37,15 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     private static final Logger log = LoggerFactory.getLogger(CTConnectionFactory.class);
     private static final long SCHEMA_WAIT_MAX = 5000L;
     private static final long SCHEMA_WAIT_INCREMENT = 25L;
-    private AtomicReference<Config> cfgRef;
-    
+
+    private final AtomicReference<Config> cfgRef;
+
     public CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize) {
-        this.cfgRef = new AtomicReference<Config>(new Config(hostname, port,
-                timeoutMS, frameSize));
+        this(hostname, port, null, null, timeoutMS, frameSize);
+    }
+
+    public CTConnectionFactory(String hostname, int port, String username, String password, int timeoutMS, int frameSize) {
+        this.cfgRef = new AtomicReference<Config>(new Config(hostname, port, username, password, timeoutMS, frameSize));
     }
 
     @Override
@@ -73,15 +78,28 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
      * @throws TTransportException on any Thrift transport failure
      */
     public CTConnection makeRawConnection() throws TTransportException {
-        Config cfg = cfgRef.get();
-        
-        log.debug("Creating TSocket({}, {}, {})", new Object[]{cfg.hostname, cfg.port, cfg.timeoutMS});
+        final Config cfg = cfgRef.get();
+
+        if (log.isDebugEnabled())
+            log.debug("Creating TSocket({}, {}, {}, {}, {})", cfg.hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
 
         TTransport transport = new TFramedTransport(new TSocket(cfg.hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
 
+        if (cfg.username != null) {
+            Map<String, String> credentials = new HashMap<String, String>() {{
+                put(IAuthenticator.USERNAME_KEY, cfg.username);
+                put(IAuthenticator.PASSWORD_KEY, cfg.password);
+            }};
+
+            try {
+                client.login(new AuthenticationRequest(credentials));
+            } catch (Exception e) { // TTransportException will propagate authentication/authorization failure
+                throw new TTransportException(e);
+            }
+        }
         return new CTConnection(transport, client, cfg);
     }
 
@@ -249,13 +267,19 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         private final int port;
         private final int timeoutMS;
         private final int frameSize;
+        private final String username;
+        private final String password;
 
-        public Config(String hostname, int port, int timeoutMS, int frameSize) {
+        public Config(String hostname, int port, String username, String password, int timeoutMS, int frameSize) {
             this.hostname = hostname;
             this.port = port;
+            this.username = username;
+            this.password = password;
             this.timeoutMS = timeoutMS;
             this.frameSize = frameSize;
         }
+
+        // TODO: we don't really need getters/setters here as all of the fields are final and immutable
 
         public String getHostname() {
             return hostname;
