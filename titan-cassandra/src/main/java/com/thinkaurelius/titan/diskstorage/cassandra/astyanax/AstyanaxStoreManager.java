@@ -4,19 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
-import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
-import com.netflix.astyanax.connectionpool.exceptions.NotFoundException;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.astyanax.connectionpool.impl.ConnectionPoolType;
-import com.netflix.astyanax.connectionpool.impl.CountingConnectionPoolMonitor;
-import com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy;
+import com.netflix.astyanax.connectionpool.impl.*;
 import com.netflix.astyanax.ddl.ColumnFamilyDefinition;
 import com.netflix.astyanax.ddl.KeyspaceDefinition;
 import com.netflix.astyanax.impl.AstyanaxConfigurationImpl;
-import com.netflix.astyanax.model.Column;
 import com.netflix.astyanax.model.ColumnFamily;
-import com.netflix.astyanax.model.ConsistencyLevel;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.netflix.astyanax.serializers.StringSerializer;
@@ -352,6 +345,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         MAX_OPERATIONS_PER_CONNECTION_KEY,
                         MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
 
+
         ConnectionPoolConfigurationImpl cpool =
                 new ConnectionPoolConfigurationImpl(usedFor + "TitanConnectionPool")
                         .setPort(port)
@@ -372,15 +366,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             cpool.setMaxConns(maxConnections);
         }
 
-        AstyanaxContext.Builder builder =
-                new AstyanaxContext.Builder()
+        if (username != null) {
+            cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
+        }
+
+        return new AstyanaxContext.Builder()
                         .forCluster(clusterName)
                         .forKeyspace(keySpaceName)
                         .withAstyanaxConfiguration(aconf)
                         .withConnectionPoolConfiguration(cpool)
                         .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
-
-        return builder;
     }
 
     private void ensureKeyspaceExists(Cluster cl) throws StorageException {

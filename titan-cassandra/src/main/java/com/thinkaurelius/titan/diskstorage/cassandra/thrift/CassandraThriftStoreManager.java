@@ -15,7 +15,6 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
@@ -23,8 +22,6 @@ import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.CfDef;
 import org.apache.cassandra.thrift.Column;
 import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ColumnParent;
-import org.apache.cassandra.thrift.ColumnPath;
 import org.apache.cassandra.thrift.ConsistencyLevel;
 import org.apache.cassandra.thrift.Deletion;
 import org.apache.cassandra.thrift.InvalidRequestException;
@@ -86,8 +83,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_KEY,
                 GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_DEFAULT);
 
-        this.factory = new CTConnectionFactory(randomInitialHostname, port,
-                thriftTimeoutMS, thriftFrameSize);
+        factory = new CTConnectionFactory(randomInitialHostname, port, username, password, thriftTimeoutMS, thriftFrameSize);
 
         CTConnectionPool p = new CTConnectionPool(factory);
         p.setTestOnBorrow(true);
@@ -618,7 +614,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 log.info(
                         "New hottest Cassandra endpoint found: {} with hotness {}",
                         hotHost, hottestEndTokenValue);
-                Config newConfig = new Config(hotHost, cfg.getPort(),
+                Config newConfig = new Config(hotHost, cfg.getPort(), username, password,
                         cfg.getTimeoutMS(), cfg.getFrameSize());
 
                 assert !newConfig.equals(cfg);

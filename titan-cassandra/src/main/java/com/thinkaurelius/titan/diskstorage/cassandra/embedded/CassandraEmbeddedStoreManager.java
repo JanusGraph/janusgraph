@@ -133,19 +133,17 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name)
-            throws StorageException {
-        if (openStores.containsKey(name)) return openStores.get(name);
-        else {
-            // Ensure that both the keyspace and column family exist
-            ensureKeyspaceExists(keySpaceName);
-            ensureColumnFamilyExists(keySpaceName, name);
+    public synchronized KeyColumnValueStore openDatabase(String name) throws StorageException {
+        if (openStores.containsKey(name))
+            return openStores.get(name);
 
-            CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName,
-                    name, this);
-            openStores.put(name, store);
-            return store;
-        }
+        // Ensure that both the keyspace and column family exist
+        ensureKeyspaceExists(keySpaceName);
+        ensureColumnFamilyExists(keySpaceName, name);
+
+        CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name, this);
+        openStores.put(name, store);
+        return store;
     }
 
     StaticBuffer[] getLocalKeyPartition() throws StorageException {

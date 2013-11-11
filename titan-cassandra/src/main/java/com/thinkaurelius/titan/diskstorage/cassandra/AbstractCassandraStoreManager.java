@@ -2,13 +2,12 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 
 import java.util.Map;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
 import org.apache.commons.configuration.Configuration;
@@ -128,6 +127,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;
 
+    protected final String username;
+    protected final String password;
+
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
 
@@ -146,6 +148,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
         this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
         this.compressionClass = storageConfig.getString(COMPRESSION_KEY, DEFAULT_COMPRESSION);
+
+        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY);
+        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY);
     }
 
     public final Partitioner getPartitioner() {
