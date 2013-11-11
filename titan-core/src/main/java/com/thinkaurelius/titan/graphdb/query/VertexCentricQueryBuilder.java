@@ -8,6 +8,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
@@ -190,8 +191,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     }
 
     protected SimpleVertexQueryProcessor getSimpleQuery(RelationType relationType, InternalVertex vertex) {
-        if (!vertex.isLoaded() || types.length>1 || !constraints.isEmpty()
-                || includeHidden || limit!=Query.NO_LIMIT || adjacentVertex!=null) {
+        if (!vertex.isLoaded() || types.length>1 || includeHidden || adjacentVertex!=null) {
             return null; //Simple query does not apply
         }
         TitanType type = null;
@@ -200,8 +200,20 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
             if (type==null) return null;
         }
         switch (relationType) {
-            case PROPERTY: return new SimpleVertexQueryProcessor(vertex,(TitanKey)type);
-            case EDGE: return new SimpleVertexQueryProcessor(vertex,dir,(TitanLabel)type);
+            case PROPERTY:
+                assert constraints.isEmpty();
+                if (limit!=Query.NO_LIMIT) return null;
+                return new SimpleVertexQueryProcessor(vertex,(TitanKey)type);
+            case EDGE:
+                if (type!=null) {
+                    //Get sortKey and accept if no further conditions are unmatched.
+                    EdgeSerializer.TypedInterval[] sortKeyConstraints = getFittingKeyConstraints((InternalType)type);
+                    if (sortKeyConstraints==null) return null;
+                    return new SimpleVertexQueryProcessor(vertex,dir,(TitanLabel)type,sortKeyConstraints,limit);
+                } else {
+                    if (!constraints.isEmpty()) return null;
+                    return new SimpleVertexQueryProcessor(vertex,dir,(TitanLabel)type,null,limit);
+                }
             default: throw new IllegalArgumentException("Invalid relation type: " + relationType);
         }
     }

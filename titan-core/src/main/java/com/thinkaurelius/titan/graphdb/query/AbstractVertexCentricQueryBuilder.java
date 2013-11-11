@@ -278,122 +278,16 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                     boolean vertexConstraintApplies = type.getSortKey().length == 0 || conditions.hasChildren();
                     if (type.getSortKey().length > 0 && conditions.hasChildren()) {
                         remainingConditions = conditions.clone();
-                        long[] sortKeys = type.getSortKey();
+                        sortKeyConstraints = compileSortKeyConstraints(type,tx,remainingConditions);
+                        if (sortKeyConstraints==null) continue; //Constraints cannot be matched
 
-                        for (int i = 0; i < sortKeys.length; i++) {
-                            InternalType pktype = (InternalType) tx.getExistingType(sortKeys[i]);
-                            Interval interval = null;
-                            //First check for equality constraints, since those are the most constraining
-                            for (Iterator<Condition<TitanRelation>> iter = remainingConditions.iterator(); iter.hasNext(); ) {
-                                PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) iter.next();
-                                if (atom.getKey().equals(pktype) && atom.getPredicate() == Cmp.EQUAL && interval == null) {
-                                    interval = new PointInterval(atom.getValue());
-                                    iter.remove();
-                                }
-                            }
+                        Interval interval;
+                        if (sortKeyConstraints[sortKeyConstraints.length-1] == null ||
+                                (interval=sortKeyConstraints[sortKeyConstraints.length-1].interval) == null || !interval.isPoint()) {
+                            vertexConstraintApplies = false;
 
-                            //If there are no equality constraints, check if the sort key's datatype allows comparison
-                            //and if so, find a bounding interval from the remaining constraints
-                            if (interval == null && pktype.isPropertyKey()
-                                    && Comparable.class.isAssignableFrom(((TitanKey) pktype).getDataType())) {
-                                ProperInterval pint = new ProperInterval();
-                                for (Iterator<Condition<TitanRelation>> iter = remainingConditions.iterator(); iter.hasNext(); ) {
-                                    Condition<TitanRelation> cond = iter.next();
-                                    if (cond instanceof PredicateCondition) {
-                                        PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) cond;
-                                        if (atom.getKey().equals(pktype)) {
-                                            TitanPredicate predicate = atom.getPredicate();
-                                            Object value = atom.getValue();
-                                            if (predicate instanceof Cmp) {
-                                                switch ((Cmp) predicate) {
-                                                    case NOT_EQUAL:
-                                                        break;
-                                                    case LESS_THAN:
-                                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) >= 0) {
-                                                            pint.setEnd((Comparable) value);
-                                                            pint.setEndInclusive(false);
-                                                        }
-                                                        iter.remove();
-                                                        break;
-                                                    case LESS_THAN_EQUAL:
-                                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) > 0) {
-                                                            pint.setEnd((Comparable) value);
-                                                            pint.setEndInclusive(true);
-                                                        }
-                                                        iter.remove();
-                                                        break;
-                                                    case GREATER_THAN:
-                                                        if (pint.getStart() == null || pint.getStart().compareTo(value) <= 0) {
-                                                            pint.setStart((Comparable) value);
-                                                            pint.setStartInclusive(false);
-                                                        }
-                                                        iter.remove();
-                                                        break;
-                                                    case GREATER_THAN_EQUAL:
-                                                        if (pint.getStart() == null || pint.getStart().compareTo(value) < 0) {
-                                                            pint.setStart((Comparable) value);
-                                                            pint.setStartInclusive(true);
-                                                        }
-                                                        iter.remove();
-                                                        break;
-                                                }
-                                            }
-                                        }
-                                    } else if (cond instanceof Or) {
-                                        //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this sort key
-                                        Condition probe = ((Or) cond).get(0);
-                                        if (probe instanceof PredicateCondition && ((PredicateCondition) probe).getKey().equals(pktype) &&
-                                                ((PredicateCondition) probe).getPredicate() == Cmp.EQUAL) {
-                                            //We make the assumption that this or-condition is a group of equality constraints for the same type (i.e. an unrolled Contain.IN)
-                                            //This assumption is enforced by precondition statements below
-                                            //TODO: Consider splitting query on sort key with a limited number (<=3) of possible values in or-clause
-
-                                            //Now, we find the smallest and largest value in this group of equality constraints to bound the interval
-                                            Comparable smallest = null, largest = null;
-                                            for (Condition child : cond.getChildren()) {
-                                                assert child instanceof PredicateCondition;
-                                                PredicateCondition pc = (PredicateCondition) child;
-                                                assert pc.getKey().equals(pktype);
-                                                assert pc.getPredicate() == Cmp.EQUAL;
-
-                                                Object v = pc.getValue();
-                                                if (smallest == null) {
-                                                    smallest = (Comparable) v;
-                                                    largest = (Comparable) v;
-                                                } else {
-                                                    if (smallest.compareTo(v) > 0) {
-                                                        smallest = (Comparable) v;
-                                                    } else if (largest.compareTo(v) < 0) {
-                                                        largest = (Comparable) v;
-                                                    }
-                                                }
-                                            }
-                                            //After finding the smallest and largest value respectively, we constrain the interval
-                                            assert smallest != null && largest != null; //due to probing, there must be at least one
-                                            if (pint.getEnd() == null || pint.getEnd().compareTo(largest) > 0) {
-                                                pint.setEnd(largest);
-                                                pint.setEndInclusive(true);
-                                            }
-                                            if (pint.getStart() == null || pint.getStart().compareTo(smallest) < 0) {
-                                                pint.setStart(smallest);
-                                                pint.setStartInclusive(true);
-                                            }
-                                            //We cannot remove this condition from remainingConditions, since its not exactly fulfilled (only bounded)
-                                        }
-                                    }
-                                }
-                                if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
-                                if (pint.getStart() != null || pint.getEnd() != null) interval = pint;
-                            }
-
-                            sortKeyConstraints[i] = new EdgeSerializer.TypedInterval(pktype, interval);
-                            if (interval == null || !interval.isPoint()) {
-                                vertexConstraintApplies = false;
-                                break;
-                            }
                         }
                     }
-
                     Direction[] dirs = {dir};
                     EdgeSerializer.VertexConstraint vertexConstraint = getVertexConstraint();
                     if (dir == Direction.BOTH &&
@@ -426,7 +320,136 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
     }
 
-    private static boolean hasSortKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
+    public EdgeSerializer.TypedInterval[] getFittingKeyConstraints(InternalType type) {
+        if (constraints.isEmpty()) return new EdgeSerializer.TypedInterval[type.getSortKey().length];
+        else if (dir==Direction.BOTH || type.isUnique(dir) || type.getSortKey().length<=0) return null;
+
+        And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
+        if (conditions == null) return null;
+        EdgeSerializer.TypedInterval[] sortKeyConstraints = compileSortKeyConstraints(type,tx,conditions);
+        if (!conditions.isEmpty()) return null;
+        return sortKeyConstraints;
+    }
+
+    private static EdgeSerializer.TypedInterval[] compileSortKeyConstraints(InternalType type, StandardTitanTx tx, And<TitanRelation> conditions) {
+        long[] sortKeys = type.getSortKey();
+        EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[type.getSortKey().length];
+
+        for (int i = 0; i < sortKeys.length; i++) {
+            InternalType pktype = (InternalType) tx.getExistingType(sortKeys[i]);
+            Interval interval = null;
+            //First check for equality constraints, since those are the most constraining
+            for (Iterator<Condition<TitanRelation>> iter = conditions.iterator(); iter.hasNext(); ) {
+                PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) iter.next();
+                if (atom.getKey().equals(pktype) && atom.getPredicate() == Cmp.EQUAL && interval == null) {
+                    interval = new PointInterval(atom.getValue());
+                    iter.remove();
+                }
+            }
+
+            //If there are no equality constraints, check if the sort key's datatype allows comparison
+            //and if so, find a bounding interval from the remaining constraints
+            if (interval == null && pktype.isPropertyKey()
+                    && Comparable.class.isAssignableFrom(((TitanKey) pktype).getDataType())) {
+                ProperInterval pint = new ProperInterval();
+                for (Iterator<Condition<TitanRelation>> iter = conditions.iterator(); iter.hasNext(); ) {
+                    Condition<TitanRelation> cond = iter.next();
+                    if (cond instanceof PredicateCondition) {
+                        PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition) cond;
+                        if (atom.getKey().equals(pktype)) {
+                            TitanPredicate predicate = atom.getPredicate();
+                            Object value = atom.getValue();
+                            if (predicate instanceof Cmp) {
+                                switch ((Cmp) predicate) {
+                                    case NOT_EQUAL:
+                                        break;
+                                    case LESS_THAN:
+                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) >= 0) {
+                                            pint.setEnd((Comparable) value);
+                                            pint.setEndInclusive(false);
+                                        }
+                                        iter.remove();
+                                        break;
+                                    case LESS_THAN_EQUAL:
+                                        if (pint.getEnd() == null || pint.getEnd().compareTo(value) > 0) {
+                                            pint.setEnd((Comparable) value);
+                                            pint.setEndInclusive(true);
+                                        }
+                                        iter.remove();
+                                        break;
+                                    case GREATER_THAN:
+                                        if (pint.getStart() == null || pint.getStart().compareTo(value) <= 0) {
+                                            pint.setStart((Comparable) value);
+                                            pint.setStartInclusive(false);
+                                        }
+                                        iter.remove();
+                                        break;
+                                    case GREATER_THAN_EQUAL:
+                                        if (pint.getStart() == null || pint.getStart().compareTo(value) < 0) {
+                                            pint.setStart((Comparable) value);
+                                            pint.setStartInclusive(true);
+                                        }
+                                        iter.remove();
+                                        break;
+                                }
+                            }
+                        }
+                    } else if (cond instanceof Or) {
+                        //Grab a probe so we can investigate what type of or-condition this is and whether it allows us to constrain this sort key
+                        Condition probe = ((Or) cond).get(0);
+                        if (probe instanceof PredicateCondition && ((PredicateCondition) probe).getKey().equals(pktype) &&
+                                ((PredicateCondition) probe).getPredicate() == Cmp.EQUAL) {
+                            //We make the assumption that this or-condition is a group of equality constraints for the same type (i.e. an unrolled Contain.IN)
+                            //This assumption is enforced by precondition statements below
+                            //TODO: Consider splitting query on sort key with a limited number (<=3) of possible values in or-clause
+
+                            //Now, we find the smallest and largest value in this group of equality constraints to bound the interval
+                            Comparable smallest = null, largest = null;
+                            for (Condition child : cond.getChildren()) {
+                                assert child instanceof PredicateCondition;
+                                PredicateCondition pc = (PredicateCondition) child;
+                                assert pc.getKey().equals(pktype);
+                                assert pc.getPredicate() == Cmp.EQUAL;
+
+                                Object v = pc.getValue();
+                                if (smallest == null) {
+                                    smallest = (Comparable) v;
+                                    largest = (Comparable) v;
+                                } else {
+                                    if (smallest.compareTo(v) > 0) {
+                                        smallest = (Comparable) v;
+                                    } else if (largest.compareTo(v) < 0) {
+                                        largest = (Comparable) v;
+                                    }
+                                }
+                            }
+                            //After finding the smallest and largest value respectively, we constrain the interval
+                            assert smallest != null && largest != null; //due to probing, there must be at least one
+                            if (pint.getEnd() == null || pint.getEnd().compareTo(largest) > 0) {
+                                pint.setEnd(largest);
+                                pint.setEndInclusive(true);
+                            }
+                            if (pint.getStart() == null || pint.getStart().compareTo(smallest) < 0) {
+                                pint.setStart(smallest);
+                                pint.setStartInclusive(true);
+                            }
+                            //We cannot remove this condition from remainingConditions, since its not exactly fulfilled (only bounded)
+                        }
+                    }
+                }
+                if (pint.isEmpty()) return null;
+                if (pint.getStart() != null || pint.getEnd() != null) interval = pint;
+            }
+
+            sortKeyConstraints[i] = new EdgeSerializer.TypedInterval(pktype, interval);
+            if (interval == null || !interval.isPoint()) {
+                break;
+            }
+        }
+        return sortKeyConstraints;
+    }
+
+    public static boolean hasSortKeyConstraints(EdgeSerializer.TypedInterval[] cons) {
         return cons.length > 0 && cons[0] != null;
     }
 

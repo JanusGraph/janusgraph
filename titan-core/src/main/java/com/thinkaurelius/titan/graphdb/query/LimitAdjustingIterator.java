@@ -18,6 +18,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
 
 
     public LimitAdjustingIterator(final int maxLimit, final int currentLimit) {
+        Preconditions.checkArgument(currentLimit>0 && maxLimit>0,"Invalid limits: current [%s], max [%s]",currentLimit,maxLimit);
         this.currentLimit = currentLimit;
         this.maxLimit = maxLimit;
         this.count = 0;
@@ -31,6 +32,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
         if (iter==null) iter = getNewIterator(currentLimit);
         if (count < currentLimit)
             return iter.hasNext();
+        if (currentLimit>=maxLimit) return false;
 
         //Update query and iterate through
         currentLimit = (int) Math.min(maxLimit, Math.round(currentLimit * 2.0));
@@ -40,7 +42,7 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
         for (int i = 0; i < count; i++)
             iter.next();
 
-        assert count < currentLimit;
+        assert count < currentLimit : count + " vs " + currentLimit + " | " + maxLimit;
         return hasNext();
     }
 

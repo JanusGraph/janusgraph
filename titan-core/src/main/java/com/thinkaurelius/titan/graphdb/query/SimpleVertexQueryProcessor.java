@@ -44,6 +44,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private final EdgeSerializer edgeSerializer;
 
     private SliceQuery sliceQuery;
+    private int limit = Integer.MAX_VALUE;
 
     private Direction filterDirection;
     private TitanKey key;
@@ -68,21 +69,29 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         }
     }
 
-    public SimpleVertexQueryProcessor(InternalVertex vertex, Direction dir, TitanLabel label) {
+    public SimpleVertexQueryProcessor(InternalVertex vertex, Direction dir, TitanLabel label,
+                                      EdgeSerializer.TypedInterval[] sortKeyConstraints, int limit) {
         this(vertex);
         Preconditions.checkNotNull(dir);
         RelationQueryCache cache = tx.getGraph().getRelationCache();
         if (label==null) {
+            assert sortKeyConstraints==null;
             sliceQuery = cache.getQuery(RelationType.EDGE);
             filterDirection = dir==Direction.BOTH?null:dir;
         } else {
-            sliceQuery = cache.getQuery((InternalType)label,dir);
+            if (AbstractVertexCentricQueryBuilder.hasSortKeyConstraints(sortKeyConstraints)) {
+                sliceQuery = edgeSerializer.getQuery((InternalType)label,dir,sortKeyConstraints,null);
+            } else {
+                sliceQuery = cache.getQuery((InternalType)label,dir);
+            }
             filterDirection = null;
         }
 
+        this.limit = limit;
         int baseLimit = tx.getGraph().getConfiguration().getResultSetLoadSize();
-        if (baseLimit>0) {
-            sliceQuery = sliceQuery.updateLimit(baseLimit);
+        if (baseLimit>0 || limit!=Query.NO_LIMIT) {
+            if (baseLimit>0) limit = Math.min(limit,baseLimit);
+            sliceQuery = sliceQuery.updateLimit(limit);
         }
     }
 
@@ -90,7 +99,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     @Override
     public Iterator<Entry> iterator() {
         Iterator<Entry> iter;
-        if (sliceQuery.hasLimit()) {
+        if (sliceQuery.hasLimit() && sliceQuery.getLimit()!=this.limit) {
             iter = new LimitAdjustingIterator();
         } else {
             iter = getBasicIterator();
@@ -176,7 +185,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<Entry> {
 
         private LimitAdjustingIterator() {
-            super(Integer.MAX_VALUE,sliceQuery.getLimit());
+            super(limit,sliceQuery.getLimit());
         }
 
         @Override
