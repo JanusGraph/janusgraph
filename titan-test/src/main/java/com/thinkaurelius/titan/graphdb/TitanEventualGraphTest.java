@@ -1,13 +1,14 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 import static org.junit.Assert.*;
@@ -15,6 +16,8 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -26,6 +29,19 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
     public TitanEventualGraphTest(Configuration config) {
         super(config);
+    }
+
+    public void updateConfiguration(Map<String,? extends Object> settings) {
+        super.close();
+
+        BaseConfiguration newConfig = new BaseConfiguration();
+        newConfig.copy(config);
+        for (Map.Entry<String,? extends Object> entry : settings.entrySet())
+            newConfig.addProperty(entry.getKey(),entry.getValue());
+
+        graph = (StandardTitanGraph) TitanFactory.open(newConfig);
+        tx = graph.newTransaction();
+
     }
 
     @Test
@@ -129,6 +145,47 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
         // Verify that the property value is unchanged
         assertEquals("15", afterTx5.getProperty(age));
+    }
+
+    @Test
+    public void testBatchLoadingNoLock() {
+        testBatchLoadingLocking(true);
+    }
+
+    @Test
+    public void testLockException() {
+        try {
+            testBatchLoadingLocking(false);
+            fail();
+        } catch (TitanException e) {
+            Throwable cause = e;
+            while (cause.getCause()!=null) cause=cause.getCause();
+            assertEquals(UnsupportedOperationException.class,cause.getClass());
+        }
+    }
+
+
+    public void testBatchLoadingLocking(boolean batchloading) {
+        tx.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single(TypeMaker.UniquenessConsistency.LOCK).unique(TypeMaker.UniquenessConsistency.LOCK).make();
+        tx.makeLabel("knows").oneToOne(TypeMaker.UniquenessConsistency.LOCK).make();
+        newTx();
+
+        TestLockerManager.ERROR_ON_LOCKING=true;
+        updateConfiguration(ImmutableMap.of("storage.batch-loading",batchloading,"storage.lock-backend","test"));
+
+
+        int numV = 100;
+        for (int i=0;i<numV;i++) {
+            TitanVertex v = tx.addVertex();
+            v.setProperty("uid",i+1);
+            v.addEdge("knows",v);
+        }
+        clopen();
+
+        for (int i=0;i<numV;i++) {
+            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices()));
+            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices().iterator().next().getEdges(Direction.OUT,"knows")));
+        }
     }
 
 
