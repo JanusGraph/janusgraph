@@ -126,7 +126,36 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
 
-        features.isDistributed = false;
+        /*
+         * isDistributed, isKeyOrdered, and hasLocalKeyPartition should
+         * technically assume different values depending on Infinispan's
+         * configured clustering mode.
+         * 
+         * local mode:
+         * http://infinispan.org/docs/6.0.x/user_guide/user_guide.html#_local_mode
+         * 
+         * isDistributed = false;
+         * isKeyOrdered = false;
+         * hasLocalKeyPartition = true;
+         * 
+         * 
+         * replicated mode:
+         * http://infinispan.org/docs/6.0.x/user_guide/user_guide.html#_replicated_mode
+         * 
+         * isDistributed = false; // this is semantically debatable, but false seems the best fit based on how it affects partitioning
+         * isKeyOrdered = false;
+         * hasLocalKeyPartition = true;
+         * 
+         * 
+         * distributed mode:
+         * http://infinispan.org/docs/6.0.x/user_guide/user_guide.html#_distribution_mode
+         * 
+         * isDistributed = true;
+         * isKeyOrdered = false;
+         * hasLocalKeyPartition = true; // true, but not sure how we would support it at a higher level
+         * 
+         */
+        features.isDistributed = true; 
         features.isKeyOrdered = false;
         features.hasLocalKeyPartition = false;
 
