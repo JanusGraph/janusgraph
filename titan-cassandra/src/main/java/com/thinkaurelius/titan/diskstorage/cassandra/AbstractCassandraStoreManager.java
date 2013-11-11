@@ -127,8 +127,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;
 
-    protected final String username;
-    protected final String password;
 
     public AbstractCassandraStoreManager(Configuration storageConfig) {
         super(storageConfig, PORT_DEFAULT);
@@ -148,9 +146,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
         this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
         this.compressionClass = storageConfig.getString(COMPRESSION_KEY, DEFAULT_COMPRESSION);
-
-        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY);
-        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY);
     }
 
     public final Partitioner getPartitioner() {

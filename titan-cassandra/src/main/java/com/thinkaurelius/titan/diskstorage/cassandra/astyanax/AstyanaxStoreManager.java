@@ -366,7 +366,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             cpool.setMaxConns(maxConnections);
         }
 
-        if (username != null) {
+        if (hasAuthentication()) {
             cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
         }
 

@@ -56,6 +56,9 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected final int connectionPoolSize;
     protected final int pageSize;
 
+    protected final String username;
+    protected final String password;
+
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
         if (storageConfig.containsKey(HOSTNAME_KEY)) {
@@ -69,6 +72,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
         this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
         this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+
+
+        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY,null);
+        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY,null);
     }
 
     /**
@@ -78,6 +85,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      */
     protected String getSingleHostname() {
         return hostnames[random.nextInt(hostnames.length)];
+    }
+
+    public boolean hasAuthentication() {
+        return username!=null;
     }
 
     public int getPageSize() {
