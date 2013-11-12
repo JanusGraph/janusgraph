@@ -3,11 +3,6 @@ package com.thinkaurelius.titan.diskstorage.infinispan;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.NotSupportedException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.infinispan.Cache;

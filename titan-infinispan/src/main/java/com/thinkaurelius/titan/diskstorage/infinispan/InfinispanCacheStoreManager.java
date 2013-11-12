@@ -15,7 +15,6 @@ import org.infinispan.lifecycle.ComponentStatus;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.transaction.TransactionMode;
-import org.infinispan.transaction.TransactionTable;
 import org.infinispan.transaction.lookup.TransactionManagerLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,7 +194,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     @Override
     public void close() throws StorageException {
         manager.stop(); // Stops all of the manager's caches
-        TransactionTable t;
     }
 
     @Override
