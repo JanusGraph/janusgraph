@@ -346,9 +346,13 @@ public class IndexSerializer {
             if (quoteTerminated) pos++;
             int endPos = pos;
             String keyname = keyBuilder.toString();
-            Preconditions.checkArgument(StringUtils.isNotBlank(keyname),"Found reference to empty key at position [%s]",startPos);
-            Preconditions.checkArgument(transaction.containsType(keyname),"Found reference to non-existant property key in query at position [%s]: %s",startPos,keyname);
+            Preconditions.checkArgument(StringUtils.isNotBlank(keyname),
+                    "Found reference to empty key at position [%s]",startPos);
+            Preconditions.checkArgument(transaction.containsType(keyname),
+                    "Found reference to non-existant property key in query at position [%s]: %s",startPos,keyname);
             TitanKey key = transaction.getPropertyKey(keyname);
+            Preconditions.checkArgument(key.hasIndex(query.getIndex(),resultType.getElementType()),
+                    "The used key [%s] is not indexed in the targeted index [%s]",key.getName(),query.getIndex());
             String replacement = key2String(key);
             qB.replace(startPos,endPos,replacement);
             pos = startPos+replacement.length();
