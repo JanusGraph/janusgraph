@@ -13,6 +13,7 @@ import org.apache.commons.configuration.Configuration;
 
 import static org.junit.Assert.*;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,6 +154,7 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    @Ignore
     public void testLockException() {
         try {
             testBatchLoadingLocking(false);
@@ -174,15 +176,17 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         updateConfiguration(ImmutableMap.of("storage.batch-loading",batchloading,"storage.lock-backend","test"));
 
 
-        int numV = 100;
+        int numV = 10000;
+        long start = System.currentTimeMillis();
         for (int i=0;i<numV;i++) {
             TitanVertex v = tx.addVertex();
             v.setProperty("uid",i+1);
             v.addEdge("knows",v);
         }
         clopen();
+//        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
-        for (int i=0;i<numV;i++) {
+        for (int i=0;i<Math.min(numV,300);i++) {
             assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices()));
             assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices().iterator().next().getEdges(Direction.OUT,"knows")));
         }
