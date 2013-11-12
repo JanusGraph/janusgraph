@@ -5,6 +5,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.Configuration;
@@ -14,6 +15,7 @@ import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.lifecycle.ComponentStatus;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.infinispan.transaction.LockingMode;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.lookup.TransactionManagerLookup;
 import org.slf4j.Logger;
@@ -29,6 +31,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -59,7 +62,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      * <p>
      * Default = {@value #INFINISPAN_CACHE_NAME_PREFIX_DEFAULT}
      */
-    public static final String INFINISPAN_CACHE_NAME_PREFIX_KEY = "cacheprefix";
+    public static final String INFINISPAN_CACHE_NAME_PREFIX_KEY = "cache-prefix";
     public static final String INFINISPAN_CACHE_NAME_PREFIX_DEFAULT = "titan";
     
     /**
@@ -82,7 +85,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      * <p>
      * Default = {@value #INFINISPAN_TXLOOKUP_CLASS_DEFAULT}
      */
-    public static final String INFINISPAN_TXLOOKUP_CLASS_KEY = "txlookup";
+    public static final String INFINISPAN_TXLOOKUP_CLASS_KEY = "tx-mgr-lookup";
     public static final String INFINISPAN_TXLOOKUP_CLASS_DEFAULT = "JBossStandaloneJTAManagerLookup";
     
     /**
@@ -93,23 +96,45 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      */
     public static final String INFINISPAN_TXLOOKUP_CLASS_PREFIX = "org.infinispan.transaction.lookup";
     
+    /**
+     * The Infinispan locking mode to use. This setting has no effect when
+     * {@value GraphDatabaseConfiguration#STORAGE_TRANSACTIONAL_KEY} is false.
+     * <p>
+     * The only valid settings for this property are the enum names for
+     * {@link LockingMode}: "OPTIMISTIC" or "PESSIMISTIC".
+     * <p>
+     * Default = {@value #INFINISPAN_TX_LOCK_MODE_DEFAULT}
+     */
+    public static final String INFINISPAN_TX_LOCK_MODE_KEY = "lock-mode";
+    public static final String INFINISPAN_TX_LOCK_MODE_DEFAULT = "OPTIMISTIC";
+    
+    /**
+     * The number of milliseconds to wait when acquiring a lock before failing
+     * the attempt. This setting has no effect when
+     * {@value GraphDatabaseConfiguration#STORAGE_TRANSACTIONAL_KEY} is false.
+     * <p>
+     * Default = {@value #INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT}
+     */
+    public static final String INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY = "lock-acquire-ms";
+    public static final long INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT = 30000L; // 10000 is infinispan default
+    
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheStoreManager.class);
     
     protected final StoreFeatures features = getDefaultFeatures();
     
     private final EmbeddedCacheManager manager;
     private final String cacheNamePrefix;
-    private final String transactionLookupClass;
-
+    private final TransactionManagerLookup txlookup;
+    private final LockingMode lockmode;
+    private final long lockAcquisitionTimeoutMS;
+    
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
-
         
         // TODO make these hacks configurable
         System.setProperty("JTAEnvironmentBean.jtaTMImplementation", "com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple");
         System.setProperty("JTAEnvironmentBean.jtaUTImplementation","com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple");
         System.setProperty("com.arjuna.ats.arjuna.coordinator.defaultTimeout", "600");
-        
         
         String xmlFile = config.getString(STORAGE_CONF_FILE_KEY, null);
         if (null == xmlFile) {
@@ -121,6 +146,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         if (manager.getStatus().equals(ComponentStatus.INSTANTIATED)) // TODO this is probably the wrong way to do this because it doesn't account for concurrency... investiagte whether start() is internally threadsafe
             manager.start();
         
+        // Transaction manager lookup class
         String txl = config.getString(INFINISPAN_TXLOOKUP_CLASS_KEY, INFINISPAN_TXLOOKUP_CLASS_DEFAULT);
         if (null == txl || txl.trim().isEmpty()) {
             throw new PermanentStorageException(INFINISPAN_TXLOOKUP_CLASS_KEY + " must be non-null and non-empty");
@@ -130,7 +156,25 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         }
         Preconditions.checkArgument(!txl.isEmpty());
         Preconditions.checkArgument(txl.contains("."));
-        transactionLookupClass = txl;
+        txlookup = instantiateStandardTransactionManagerLookup(txl);
+
+        // Locking mode
+        LockingMode lm = LockingMode.valueOf(INFINISPAN_TX_LOCK_MODE_DEFAULT);
+        String rawLM = config.getString(INFINISPAN_TX_LOCK_MODE_KEY, INFINISPAN_TX_LOCK_MODE_DEFAULT);
+        try {
+            lm = LockingMode.valueOf(rawLM);
+        } catch (NullPointerException e) {
+            log.error("Could not parse Infinispan locking mode configuration, using default {}", INFINISPAN_TX_LOCK_MODE_DEFAULT, e);
+        } catch (IllegalArgumentException e) {
+            log.error("Unrecognized locking mode string {}, using default", lm, INFINISPAN_TX_LOCK_MODE_DEFAULT, e);
+        }
+        lockmode = lm;
+        Preconditions.checkNotNull(lockmode);
+        
+        // Lock acquistiion timeout
+        lockAcquisitionTimeoutMS =
+                config.getLong(INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY,
+                               INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT);
         
         cacheNamePrefix = config.getString(INFINISPAN_CACHE_NAME_PREFIX_KEY, INFINISPAN_CACHE_NAME_PREFIX_DEFAULT);
     }
@@ -270,11 +314,14 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         cb.read(manager.getDefaultCacheConfiguration());
         
         if (transactional) {
-            cb.transaction()
-                    .transactionMode(TransactionMode.TRANSACTIONAL)
-                    .transactionManagerLookup(instantiateStandardTransactionManagerLookup()) // TODO instantiate only one and share it
-                    .autoCommit(false)
-                    .build();
+            cb.locking()
+              .lockAcquisitionTimeout(lockAcquisitionTimeoutMS, TimeUnit.MILLISECONDS)
+              .transaction()
+              .transactionMode(TransactionMode.TRANSACTIONAL)
+              .transactionManagerLookup(txlookup)
+              .lockingMode(lockmode)
+              .autoCommit(false)
+              .build();
         } else {
             cb.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL).build();
         }
@@ -284,10 +331,10 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         log.info("Defined transactional={} configuration for cache {}", transactional, cachename);
     }
     
-    private TransactionManagerLookup instantiateStandardTransactionManagerLookup() throws PermanentStorageException {
+    private static TransactionManagerLookup instantiateStandardTransactionManagerLookup(String classname) throws PermanentStorageException {
         Class<?> c;
         try {
-            c = Class.forName(transactionLookupClass);
+            c = Class.forName(classname);
         } catch (ClassNotFoundException e) {
             throw new PermanentStorageException(e);
         }

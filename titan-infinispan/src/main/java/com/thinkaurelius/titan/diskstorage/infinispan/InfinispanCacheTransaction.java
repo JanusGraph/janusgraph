@@ -15,6 +15,7 @@ import org.infinispan.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -45,6 +46,7 @@ public class InfinispanCacheTransaction extends AbstractStoreTransaction {
         State s = makeStateForCache(c);
         
         if (!state.compareAndSet(null, s)) {
+            Preconditions.checkArgument(s.m == c.getAdvancedCache().getTransactionManager());
             // Cleanup unused transaction
             try {
                 TransactionManager tm = c.getAdvancedCache().getTransactionManager();
