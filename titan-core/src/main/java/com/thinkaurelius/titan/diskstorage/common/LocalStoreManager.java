@@ -23,7 +23,10 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
     public LocalStoreManager(Configuration storageConfig) throws StorageException {
         super(storageConfig);
         String storageDir = storageConfig.getString(STORAGE_DIRECTORY_KEY);
-        Preconditions.checkArgument(storageDir != null, "Need to specify storage directory");
-        directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
+        if (null == storageDir) {
+            directory = null;
+        } else { 
+            directory = DirectoryUtil.getOrCreateDataDirectory(storageDir);
+        }
     }
 }

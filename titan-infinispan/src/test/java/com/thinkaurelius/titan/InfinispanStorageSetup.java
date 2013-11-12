@@ -17,7 +17,6 @@ public class InfinispanStorageSetup extends StorageSetup {
         BaseConfiguration config = new BaseConfiguration();
 
         Configuration storage = config.subset(STORAGE_NAMESPACE);
-        storage.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
         storage.addProperty(STORAGE_BACKEND_KEY, "infinispan");
         storage.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
         return config;
@@ -30,7 +29,6 @@ public class InfinispanStorageSetup extends StorageSetup {
 
     public static Configuration getInfinispanBaseConfig(boolean transactional) {
         BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(STORAGE_DIRECTORY_KEY, getHomeDir());
         config.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);
         return config;
     }

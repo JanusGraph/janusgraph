@@ -120,15 +120,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     public static final long INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT = 30000L; // 10000 is infinispan default
     
     /**
-     * Path to an Infinispan SingleFileCacheStore. Null disables persistence. If
-     * the value is non-null, then it must be a valid filesystem path.
-     * <p>
-     * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY}
-     */
-    public static final String INFINISPAN_SINGLE_FILE_STORE_PATH_KEY = "single-file-store-path";
-    public static final String INFINISPAN_SINGLE_FILE_STORE_PATH_DEFAULT = null;
-    
-    /**
      * Whether to propagates writes from the cache to the SingleFileCacheStore
      * asynchronously (write-behind persistence) or synchronously (write-through
      * persistence). True sets async persistence. False sets synchronous
@@ -136,11 +127,11 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      * duplicated on disk).
      * <p>
      * This setting has no effect when
-     * {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY} is null.
+     * {@value GraphDatabaseConfiguration#STORAGE_DIRECTORY_KEY} is null.
      * <p>
      * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT}
      */
-    public static final String INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY = "single-file-store-async";
+    public static final String INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY = "store-async";
     public static final boolean INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT = false;
     
     /**
@@ -149,11 +140,11 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      * (lazy loading).
      * <p>
      * This setting has no effect when
-     * {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY} is null.
+     * {@value GraphDatabaseConfiguration#STORAGE_DIRECTORY_KEY} is null.
      * <p>
      * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_PRELOAD_DEFAULT}
      */
-    public static final String INFINISPAN_SINGLE_FILE_STORE_PRELOAD_KEY = "single-file-store-preload";
+    public static final String INFINISPAN_SINGLE_FILE_STORE_PRELOAD_KEY = "store-preload";
     public static final boolean INFINISPAN_SINGLE_FILE_STORE_PRELOAD_DEFAULT = false;
     
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheStoreManager.class);
@@ -165,10 +156,29 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     private final TransactionManagerLookup txlookup;
     private final LockingMode lockmode;
     private final long lockAcquisitionTimeoutMS;
-    private final String singleFileStorePath;
     private final boolean singleFileStoreAsync;
     private final boolean singleFileStorePreload;
     
+    /**
+     * In addition to the public static final string configuration property keys
+     * on this class, this constructor respects two configuration property keys
+     * from {@link GraphDatabaseConfiguration}:
+     * 
+     * <ul>
+     * <li>{@link GraphDatabaseConfiguration#STORAGE_TRANSACTIONAL_KEY}: true to
+     * enable transactions, false to disable</li>
+     * <li>{@link GraphDatabaseConfiguration#STORAGE_DIRECTORY_KEY}: null to
+     * disable persistence (the default), false to enable reading and write on a
+     * {@link org.infinispan.loaders.file.SingleFileCacheStore} which uses one
+     * file per cache in the specified directory. The directory and its parents
+     * will be created automatically by Infinispan if they do not already exist.
+     * </li>
+     * </ul>
+     * 
+     * @param config
+     *            Infinispan store configuration
+     * @throws StorageException
+     */
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
         
@@ -218,9 +228,6 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
                                INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT);
         
         // Persistence
-        singleFileStorePath =
-                config.getString(INFINISPAN_SINGLE_FILE_STORE_PATH_KEY,
-                                 INFINISPAN_SINGLE_FILE_STORE_PATH_DEFAULT);
         singleFileStoreAsync =
                 config.getBoolean(INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY,
                                   INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT);
@@ -380,11 +387,11 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
             cb.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
         }
         
-        if (null != singleFileStorePath) {
+        if (null != directory) {
             cb.persistence()
               .addSingleFileStore()
               .preload(singleFileStorePreload)
-              .location(singleFileStorePath)
+              .location(directory.getAbsolutePath())
               .async()
               .enabled(singleFileStoreAsync);
         }
