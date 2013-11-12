@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.blueprints;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
+
 import org.apache.commons.configuration.Configuration;
 
 import com.google.common.collect.ImmutableSet;
@@ -7,13 +9,9 @@ import com.thinkaurelius.titan.InfinispanStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.BaseTest;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.GraphTestSuite;
-import com.tinkerpop.blueprints.KeyIndexableGraphTestSuite;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 
 public abstract class AbstractInfinispanBlueprintsTest extends TitanBlueprintsTest {
     
@@ -54,14 +52,6 @@ public abstract class AbstractInfinispanBlueprintsTest extends TitanBlueprintsTe
 
     private Configuration getGraphConfig() {
         return InfinispanStorageSetup.getInfinispanCacheGraphConfig(transactional);
-    }
-    
-    @Override
-    public void testTransactionalGraphTestSuite() {
-        /*
-         * I think this test method might not handle lock contention or expected value mismatch exceptions.
-         * The threads it starts dies with these types of exceptions on both Infinispan and InMemory.
-         */
     }
     
     @Override
