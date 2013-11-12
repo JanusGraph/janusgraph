@@ -159,17 +159,20 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     public void rollback() throws StorageException {
         deleteAllLocks();
         baseTx.rollback();
+        consistentTx.rollback();
     }
 
     @Override
     public void commit() throws StorageException {
         baseTx.commit();
         deleteAllLocks();
+        consistentTx.commit();
     }
 
     @Override
     public void flush() throws StorageException {
         baseTx.flush();
+        consistentTx.flush();
     }
 
 
