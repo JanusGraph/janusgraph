@@ -22,11 +22,6 @@ public class InfinispanStorageSetup extends StorageSetup {
         return config;
     }
 
-
-    public static Configuration getInfinispanBaseConfig() {
-        return getInfinispanBaseConfig(true);
-    }
-
     public static Configuration getInfinispanBaseConfig(boolean transactional) {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(STORAGE_TRANSACTIONAL_KEY, transactional);

@@ -8,10 +8,10 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class InfinispanCacheStoreTest extends CacheStoreTest {
+public abstract class AbstractInfinispanCacheStoreTest extends CacheStoreTest {
 
-    public InfinispanCacheStoreTest() throws StorageException {
-        super(new InfinispanCacheStoreManager(InfinispanStorageSetup.getInfinispanBaseConfig()));
+    public AbstractInfinispanCacheStoreTest(boolean transactional) throws StorageException {
+        super(new InfinispanCacheStoreManager(InfinispanStorageSetup.getInfinispanBaseConfig(transactional)));
     }
 
 }

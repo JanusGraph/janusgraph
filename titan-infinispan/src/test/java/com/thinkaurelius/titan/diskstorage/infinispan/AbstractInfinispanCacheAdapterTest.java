@@ -7,9 +7,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreManagerAdapter;
 
-public class InfinispanCacheAdapterTest extends KeyColumnValueStoreTest {
+public abstract class AbstractInfinispanCacheAdapterTest extends KeyColumnValueStoreTest {
 
-    public InfinispanCacheAdapterTest() throws StorageException {
+    private final boolean transactional;
+    
+    public AbstractInfinispanCacheAdapterTest(boolean transactional) throws StorageException {
+        this.transactional = transactional;
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
     }
@@ -18,7 +21,7 @@ public class InfinispanCacheAdapterTest extends KeyColumnValueStoreTest {
     public KeyColumnValueStoreManager openStorageManager()
             throws StorageException {
         return new CacheStoreManagerAdapter(new InfinispanCacheStoreManager(
-                InfinispanStorageSetup.getInfinispanBaseConfig()));
+                InfinispanStorageSetup.getInfinispanBaseConfig(transactional)));
     }
 
 

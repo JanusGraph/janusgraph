@@ -15,7 +15,13 @@ import com.tinkerpop.blueprints.KeyIndexableGraphTestSuite;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 
-public class InfinispanBlueprintsTest extends TitanBlueprintsTest {
+public abstract class AbstractInfinispanBlueprintsTest extends TitanBlueprintsTest {
+    
+    private final boolean transactional;
+    
+    public AbstractInfinispanBlueprintsTest(boolean transactional) {
+        this.transactional = transactional;
+    }
 
     @Override
     public boolean supportsMultipleGraphs() {
@@ -47,7 +53,7 @@ public class InfinispanBlueprintsTest extends TitanBlueprintsTest {
     }
 
     private Configuration getGraphConfig() {
-        return InfinispanStorageSetup.getInfinispanCacheGraphConfig(true);
+        return InfinispanStorageSetup.getInfinispanCacheGraphConfig(transactional);
     }
     
     @Override
