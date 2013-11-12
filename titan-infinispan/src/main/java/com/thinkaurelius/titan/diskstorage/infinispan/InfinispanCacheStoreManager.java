@@ -26,6 +26,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
+import com.thinkaurelius.titan.diskstorage.infinispan.ext.StaticBufferAE;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
@@ -118,6 +119,43 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     public static final String INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY = "lock-acquire-ms";
     public static final long INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT = 30000L; // 10000 is infinispan default
     
+    /**
+     * Path to an Infinispan SingleFileCacheStore. Null disables persistence. If
+     * the value is non-null, then it must be a valid filesystem path.
+     * <p>
+     * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY}
+     */
+    public static final String INFINISPAN_SINGLE_FILE_STORE_PATH_KEY = "single-file-store-path";
+    public static final String INFINISPAN_SINGLE_FILE_STORE_PATH_DEFAULT = null;
+    
+    /**
+     * Whether to propagates writes from the cache to the SingleFileCacheStore
+     * asynchronously (write-behind persistence) or synchronously (write-through
+     * persistence). True sets async persistence. False sets synchronous
+     * persistence (i.e. writes to the cache will block until the write has been
+     * duplicated on disk).
+     * <p>
+     * This setting has no effect when
+     * {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY} is null.
+     * <p>
+     * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT}
+     */
+    public static final String INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY = "single-file-store-async";
+    public static final boolean INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT = false;
+    
+    /**
+     * Whether to preload data from the single file store on startup. True
+     * preloads file store data into memory on startup. False does not preload
+     * (lazy loading).
+     * <p>
+     * This setting has no effect when
+     * {@value #INFINISPAN_SINGLE_FILE_STORE_PATH_KEY} is null.
+     * <p>
+     * Default = {@value #INFINISPAN_SINGLE_FILE_STORE_PRELOAD_DEFAULT}
+     */
+    public static final String INFINISPAN_SINGLE_FILE_STORE_PRELOAD_KEY = "single-file-store-preload";
+    public static final boolean INFINISPAN_SINGLE_FILE_STORE_PRELOAD_DEFAULT = false;
+    
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheStoreManager.class);
     
     protected final StoreFeatures features = getDefaultFeatures();
@@ -127,6 +165,9 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     private final TransactionManagerLookup txlookup;
     private final LockingMode lockmode;
     private final long lockAcquisitionTimeoutMS;
+    private final String singleFileStorePath;
+    private final boolean singleFileStoreAsync;
+    private final boolean singleFileStorePreload;
     
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
@@ -175,6 +216,19 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         lockAcquisitionTimeoutMS =
                 config.getLong(INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY,
                                INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT);
+        
+        // Persistence
+        singleFileStorePath =
+                config.getString(INFINISPAN_SINGLE_FILE_STORE_PATH_KEY,
+                                 INFINISPAN_SINGLE_FILE_STORE_PATH_DEFAULT);
+        singleFileStoreAsync =
+                config.getBoolean(INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY,
+                                  INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT);
+
+        singleFileStorePreload =
+                config.getBoolean(INFINISPAN_SINGLE_FILE_STORE_PRELOAD_KEY,
+                                  INFINISPAN_SINGLE_FILE_STORE_PRELOAD_DEFAULT);
+        
         
         cacheNamePrefix = config.getString(INFINISPAN_CACHE_NAME_PREFIX_KEY, INFINISPAN_CACHE_NAME_PREFIX_DEFAULT);
     }
@@ -314,16 +368,25 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         cb.read(manager.getDefaultCacheConfiguration());
         
         if (transactional) {
-            cb.locking()
-              .lockAcquisitionTimeout(lockAcquisitionTimeoutMS, TimeUnit.MILLISECONDS)
-              .transaction()
+            cb.transaction()
               .transactionMode(TransactionMode.TRANSACTIONAL)
               .transactionManagerLookup(txlookup)
               .lockingMode(lockmode)
               .autoCommit(false)
+              .locking()
+              .lockAcquisitionTimeout(lockAcquisitionTimeoutMS, TimeUnit.MILLISECONDS)
               .build();
         } else {
-            cb.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL).build();
+            cb.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL);
+        }
+        
+        if (null != singleFileStorePath) {
+            cb.persistence()
+              .addSingleFileStore()
+              .preload(singleFileStorePreload)
+              .location(singleFileStorePath)
+              .async()
+              .enabled(singleFileStoreAsync);
         }
         
         manager.defineConfiguration(cachename, cb.build());
@@ -360,7 +423,9 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      */
     private EmbeddedCacheManager getManagerWithStandardConfig() {
         GlobalConfigurationBuilder gcb = new GlobalConfigurationBuilder();
-        EmbeddedCacheManager m = new DefaultCacheManager(gcb.globalJmxStatistics().allowDuplicateDomains(true).build());
+        gcb.globalJmxStatistics().allowDuplicateDomains(true);
+        gcb.serialization().addAdvancedExternalizer(new StaticBufferAE());
+        EmbeddedCacheManager m = new DefaultCacheManager(gcb.build());
         log.info("Loaded ISPN cache manager using standard GlobalConfiguration");
         log.debug("Standard global configuration: {}",
                 m.getGlobalComponentRegistry().getGlobalConfiguration());
