@@ -47,7 +47,7 @@ public class InfinispanBlueprintsTest extends TitanBlueprintsTest {
     }
 
     private Configuration getGraphConfig() {
-        return InfinispanStorageSetup.getInfinispanCacheGraphConfig(false);
+        return InfinispanStorageSetup.getInfinispanCacheGraphConfig(true);
     }
     
     @Override

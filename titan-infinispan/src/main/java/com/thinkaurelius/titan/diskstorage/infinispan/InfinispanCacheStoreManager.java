@@ -5,15 +5,18 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
 
 import java.io.IOException;
+import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.Configuration;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
+import org.infinispan.lifecycle.ComponentStatus;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
 import org.infinispan.transaction.TransactionMode;
-import org.infinispan.transaction.lookup.DummyTransactionManagerLookup;
+import org.infinispan.transaction.TransactionTable;
+import org.infinispan.transaction.lookup.TransactionManagerLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +37,62 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.CacheStoreMan
 
 public class InfinispanCacheStoreManager extends LocalStoreManager implements CacheStoreManager {
     
+    /**
+     * Infinispan has a flat cache namespace. Titan forms cache names by
+     * concatenating three strings:
+     * 
+     * <ol>
+     * <li>Cache prefix string (the value of this configuration option)</li>
+     * <li>A colon, i.e. ":"</li>
+     * <li>Titan-internal store name, e.g. "edgestore"</li>
+     * </ol>
+     * 
+     * Under the default configuration, an example cache name used by Titan
+     * would be "titan:edgestore".
+     * <p>
+     * This configuration parameter can be set to any string. This is useful
+     * when running multiple Titan graph databases against a single Infinispan
+     * backend. To run logically separate Titan graph databases in a shared
+     * Infinispan backend, assign each a unique cache prefix. If these logically
+     * separate Titan graph databases were to use a shared Infinispan backend
+     * and the same cache prefix, then they would catastrophically overwrite one
+     * another.
+     * <p>
+     * Default = {@value #INFINISPAN_CACHE_NAME_PREFIX_DEFAULT}
+     */
     public static final String INFINISPAN_CACHE_NAME_PREFIX_KEY = "cacheprefix";
     public static final String INFINISPAN_CACHE_NAME_PREFIX_DEFAULT = "titan";
+    
+    /**
+     * The name of the Infinispan transaction manager lookup class to
+     * instantiate. This can be set to a fully-qualified classname or a string
+     * without any dots. If it is a string without any dots, then
+     * {@value #INFINISPAN_TXLOOKUP_CLASS_PREFIX} and a dot are prepended at
+     * runtime.
+     * <p>
+     * For more information about this setting and its possible values, see <a
+     * href=
+     * "http://infinispan.org/docs/6.0.x/user_guide/user_guide.html#_transactions"
+     * >the "Transactions" section of the Infinispan manual.</a>
+     * <p>
+     * The configured class must have a public no-arg constructor and it must
+     * implement the interface
+     * {@link org.infinispan.transaction.lookup.TransactionManagerLookup}. A
+     * class that doesn't meet these requirements will generate
+     * {@code StorageException}s at runtime.
+     * <p>
+     * Default = {@value #INFINISPAN_TXLOOKUP_CLASS_DEFAULT}
+     */
+    public static final String INFINISPAN_TXLOOKUP_CLASS_KEY = "txlookup";
+    public static final String INFINISPAN_TXLOOKUP_CLASS_DEFAULT = "JBossStandaloneJTAManagerLookup";
+    
+    /**
+     * If the value of {@link #INFINISPAN_TXLOOKUP_CLASS_KEY} doesn't include a
+     * dot, then this default packagename and a dot are prepended to the value.
+     * 
+     * @see #INFINISPAN_TXLOOKUP_CLASS_KEY
+     */
+    public static final String INFINISPAN_TXLOOKUP_CLASS_PREFIX = "org.infinispan.transaction.lookup";
     
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheStoreManager.class);
     
@@ -43,9 +100,17 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     
     private final EmbeddedCacheManager manager;
     private final String cacheNamePrefix;
+    private final String transactionLookupClass;
 
     public InfinispanCacheStoreManager(Configuration config) throws StorageException {
         super(config);
+
+        
+        // TODO make these hacks configurable
+        System.setProperty("JTAEnvironmentBean.jtaTMImplementation", "com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple");
+        System.setProperty("JTAEnvironmentBean.jtaUTImplementation","com.arjuna.ats.internal.jta.transaction.arjunacore.UserTransactionImple");
+        System.setProperty("com.arjuna.ats.arjuna.coordinator.defaultTimeout", "600");
+        
         
         String xmlFile = config.getString(STORAGE_CONF_FILE_KEY, null);
         if (null == xmlFile) {
@@ -53,6 +118,20 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         } else {
             manager = getManagerWithXmlConfig(xmlFile);
         }
+        
+        if (manager.getStatus().equals(ComponentStatus.INSTANTIATED)) // TODO this is probably the wrong way to do this because it doesn't account for concurrency... investiagte whether start() is internally threadsafe
+            manager.start();
+        
+        String txl = config.getString(INFINISPAN_TXLOOKUP_CLASS_KEY, INFINISPAN_TXLOOKUP_CLASS_DEFAULT);
+        if (null == txl || txl.trim().isEmpty()) {
+            throw new PermanentStorageException(INFINISPAN_TXLOOKUP_CLASS_KEY + " must be non-null and non-empty");
+        }
+        if (!txl.contains(".")) {
+            txl = INFINISPAN_TXLOOKUP_CLASS_PREFIX + "." + txl;
+        }
+        Preconditions.checkArgument(!txl.isEmpty());
+        Preconditions.checkArgument(txl.contains("."));
+        transactionLookupClass = txl;
         
         cacheNamePrefix = config.getString(INFINISPAN_CACHE_NAME_PREFIX_KEY, INFINISPAN_CACHE_NAME_PREFIX_DEFAULT);
     }
@@ -73,16 +152,27 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
             log.debug("Existing config for cache {}: {}", fullCacheName, conf);
         }
         
-        InfinispanCacheStore newStore = new InfinispanCacheStore(fullCacheName, storeName, manager);
+        final InfinispanCacheStore newStore;
+        final Cache<?,?> c = manager.getCache(fullCacheName);
+        if (c.getCacheConfiguration().transaction().transactionMode().equals(TransactionMode.TRANSACTIONAL)) {
+            newStore = new InfinispanCacheTransactionalStore(fullCacheName, storeName, manager);
+        } else {
+            newStore = new InfinispanCacheStore(fullCacheName, storeName, manager);
+        }
+        
+        
         return newStore;
     }
 
     @Override
     public void clearStorage() throws StorageException {
         
-        for (String storeName : manager.getCacheNames()) {
-            Cache<Object, Object> store = manager.getCache(storeName);
-            store.clear();
+        for (String fullName : manager.getCacheNames()) {
+            if (fullName.startsWith(cacheNamePrefix + ":")) {
+                String storeName = fullName.replaceFirst("^" + Pattern.quote(cacheNamePrefix + ":"), "");
+                CacheStore cs = openDatabase(storeName);
+                cs.clearStore();
+            }
         }
         // close();
     }
@@ -96,9 +186,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     @Override
     public StoreTransaction beginTransaction(StoreTxConfig config) throws StorageException {
         if (transactional) {
-//            TransactionManager tm = manager.getGlobalComponentRegistry().getComponent(TransactionManager.class);
-//            http://infinispan.org/docs/6.0.x/getting_started/getting_started.html#_cache_with_transaction_management
-            throw new UnsupportedOperationException();
+            return new InfinispanCacheTransaction(config);
         } else {
             return new NoOpStoreTransaction(config);
         }
@@ -107,6 +195,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     @Override
     public void close() throws StorageException {
         manager.stop(); // Stops all of the manager's caches
+        TransactionTable t;
     }
 
     @Override
@@ -122,7 +211,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         features.supportsBatchMutation = false;
         features.supportsMultiQuery = false;
 
-        features.supportsTransactions = false;
+        features.supportsTransactions = true;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
 
@@ -172,7 +261,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      * 
      * @param cachename the cache to define
      */
-    private void defineStandardCacheConfig(String cachename) {
+    private void defineStandardCacheConfig(String cachename) throws StorageException {
 
         ConfigurationBuilder cb = new ConfigurationBuilder();
         
@@ -183,8 +272,10 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         cb.read(manager.getDefaultCacheConfiguration());
         
         if (transactional) {
-            cb.transaction().transactionMode(TransactionMode.TRANSACTIONAL)
-                    .autoCommit(false).transactionManagerLookup(new DummyTransactionManagerLookup())
+            cb.transaction()
+                    .transactionMode(TransactionMode.TRANSACTIONAL)
+                    .transactionManagerLookup(instantiateStandardTransactionManagerLookup()) // TODO instantiate only one and share it
+                    .autoCommit(false)
                     .build();
         } else {
             cb.transaction().transactionMode(TransactionMode.NON_TRANSACTIONAL).build();
@@ -193,6 +284,26 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         manager.defineConfiguration(cachename, cb.build());
         
         log.info("Defined transactional={} configuration for cache {}", transactional, cachename);
+    }
+    
+    private TransactionManagerLookup instantiateStandardTransactionManagerLookup() throws PermanentStorageException {
+        Class<?> c;
+        try {
+            c = Class.forName(transactionLookupClass);
+        } catch (ClassNotFoundException e) {
+            throw new PermanentStorageException(e);
+        }
+        
+        try {
+            TransactionManagerLookup tml = (TransactionManagerLookup)c.newInstance();
+            return tml;
+        } catch (SecurityException e) {
+            throw new PermanentStorageException(e);
+        } catch (InstantiationException e) {
+            throw new PermanentStorageException(e);
+        } catch (IllegalAccessException e) {
+            throw new PermanentStorageException(e);
+        }
     }
 
     /**

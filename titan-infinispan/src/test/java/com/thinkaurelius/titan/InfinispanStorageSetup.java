@@ -25,7 +25,7 @@ public class InfinispanStorageSetup extends StorageSetup {
 
 
     public static Configuration getInfinispanBaseConfig() {
-        return getInfinispanBaseConfig(false);
+        return getInfinispanBaseConfig(true);
     }
 
     public static Configuration getInfinispanBaseConfig(boolean transactional) {

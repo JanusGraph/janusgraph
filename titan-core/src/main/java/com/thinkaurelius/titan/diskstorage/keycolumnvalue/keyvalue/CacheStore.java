@@ -18,7 +18,7 @@ public interface CacheStore extends KeyValueStore {
      * @param txh      The transaction context for the operation.
      * @throws CacheUpdateException If "oldValue" doesn't match currently find in the cache.
      */
-    public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException;
+    public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws StorageException;
 
     /**
      * Returns an iterator over all keys in this store that match the given KeySelector. The keys may be

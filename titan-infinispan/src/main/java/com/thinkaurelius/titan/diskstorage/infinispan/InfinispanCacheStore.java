@@ -3,6 +3,12 @@ package com.thinkaurelius.titan.diskstorage.infinispan;
 import java.util.Iterator;
 
 import javax.annotation.Nullable;
+import javax.transaction.HeuristicMixedException;
+import javax.transaction.HeuristicRollbackException;
+import javax.transaction.NotSupportedException;
+import javax.transaction.RollbackException;
+import javax.transaction.SystemException;
+import javax.transaction.TransactionManager;
 
 import org.infinispan.Cache;
 import org.infinispan.manager.EmbeddedCacheManager;
@@ -27,17 +33,19 @@ public class InfinispanCacheStore implements CacheStore {
     private final String shortName;
 //    private final EmbeddedCacheManager manager;
 
-    private final Cache<StaticBuffer,StaticBuffer> cache;
+    protected final Cache<StaticBuffer,StaticBuffer> cache;
+    protected final TransactionManager tm;
 
     public InfinispanCacheStore(String fullName, String shortName, EmbeddedCacheManager manager) {
         this.shortName = shortName;
 //        this.manager = manager;
         cache = manager.getCache(fullName);
+        tm = cache.getAdvancedCache().getTransactionManager();
     }
 
 
     @Override
-    public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws CacheUpdateException {
+    public void replace(StaticBuffer key, StaticBuffer newValue, StaticBuffer oldValue, StoreTransaction txh) throws StorageException {        
         // TODO simplify this if possible without violating the method contract
         if (null == newValue) {
             if (!cache.remove(key, oldValue)) {
@@ -57,7 +65,7 @@ public class InfinispanCacheStore implements CacheStore {
     }
 
     @Override
-    public RecordIterator<KeyValueEntry> getKeys(final KeySelector selector, StoreTransaction txh) throws StorageException {
+    public RecordIterator<KeyValueEntry> getKeys(final KeySelector selector, StoreTransaction txh) throws StorageException {        
         final Iterator<StaticBuffer> keys = Iterators.filter(cache.keySet().iterator(), new Predicate<StaticBuffer>() {
             @Override
             public boolean apply(@Nullable StaticBuffer key) {
@@ -90,7 +98,7 @@ public class InfinispanCacheStore implements CacheStore {
     }
 
     @Override
-    public void clearStore() {
+    public synchronized void clearStore() {
         cache.clear();
     }
 

@@ -11,7 +11,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-
+        <default.test.jvm.opts>-Xms256m -Xmx1536m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
     </properties>
 
     <dependencies>
@@ -34,7 +34,24 @@
             <artifactId>infinispan-core</artifactId>
             <version>6.0.0.CR1</version>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.narayana.jta</groupId>
+            <artifactId>jta</artifactId>
+            <version>5.0.0.CR1</version>
+            <optional>true</optional>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
+    
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <artifactId>jboss-logging</artifactId>
+                <groupId>org.jboss.logging</groupId>
+                <version>3.1.2.GA</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <directory>${basedir}/target</directory>
