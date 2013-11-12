@@ -314,7 +314,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         features.supportsBatchMutation = false;
         features.supportsMultiQuery = false;
 
-        features.supportsTransactions = true;
+        features.supportsTransactions = transactional;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
 
