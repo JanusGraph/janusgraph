@@ -73,7 +73,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public boolean isLoop() {
-        return getArity()==2 && it().getVertex(0).equals(it().getVertex(1));
+        return getArity()==2 && getVertex(0).equals(getVertex(1));
     }
 
     @Override

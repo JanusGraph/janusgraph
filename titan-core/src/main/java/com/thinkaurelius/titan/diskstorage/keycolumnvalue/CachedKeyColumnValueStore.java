@@ -7,7 +7,6 @@ import com.google.common.cache.Weigher;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,13 +29,13 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(CachedKeyColumnValueStore.class);
 
+    private static final AtomicLong CACHE_RETRIEVAL = new AtomicLong(0);
+    private static final AtomicLong CACHE_MISS = new AtomicLong(0);
+
     private static final long DEFAULT_CACHE_SIZE = 1000;
 
     private final KeyColumnValueStore store;
     private final Cache<KeySliceQuery, List<Entry>> cache;
-
-    private final AtomicLong cacheRetrieval = new AtomicLong(0);
-    private final AtomicLong cacheMiss = new AtomicLong(0);
 
     public CachedKeyColumnValueStore(final KeyColumnValueStore store) {
         this(store, DEFAULT_CACHE_SIZE);
@@ -54,9 +53,17 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
                 .build();
     }
 
-    public final double getCacheHitRatio() {
-        if (cacheRetrieval.get() == 0) return Double.NaN;
-        else return (cacheRetrieval.get() - cacheMiss.get()) * 1.0 / cacheRetrieval.get();
+    public static long getGlobalCacheHits() {
+        return CACHE_RETRIEVAL.get() - CACHE_MISS.get();
+    }
+
+    public static long getGlobalCacheMisses() {
+        return CACHE_MISS.get();
+    }
+
+    public static void resetGlobalMetrics() {
+        CACHE_MISS.set(0);
+        CACHE_RETRIEVAL.set(0);
     }
 
     @Override
@@ -66,15 +73,15 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
-        if (query.isStatic() && !query.hasLimit()) {
+        if (query.isStatic()) {
             try {
                 if (log.isDebugEnabled())
-                    log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", cacheRetrieval.get(), cacheMiss.get());
-                cacheRetrieval.incrementAndGet();
+                    log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", CACHE_RETRIEVAL.get(), CACHE_MISS.get());
+                CACHE_RETRIEVAL.incrementAndGet();
                 List<Entry> result = cache.get(query, new Callable<List<Entry>>() {
                     @Override
                     public List<Entry> call() throws StorageException {
-                        cacheMiss.incrementAndGet();
+                        CACHE_MISS.incrementAndGet();
                         return store.getSlice(query, txh);
                     }
                 });

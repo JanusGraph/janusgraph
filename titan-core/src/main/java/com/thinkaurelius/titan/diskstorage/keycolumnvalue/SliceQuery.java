@@ -31,8 +31,6 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     private final boolean isStatic;
 
-    protected int hashcode;
-
     public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, boolean isStatic) {
         assert sliceStart != null && sliceEnd != null;
 

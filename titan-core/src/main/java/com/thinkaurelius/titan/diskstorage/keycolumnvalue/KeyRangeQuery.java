@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * Extends a {@link SliceQuery} to express a range for columns and a range for
@@ -65,11 +66,7 @@ public class KeyRangeQuery extends SliceQuery {
 
     @Override
     public int hashCode() {
-        if (hashcode==0) {
-            hashcode = keyStart.hashCode()*102329 + keyEnd.hashCode()*234331 + super.hashCode();
-            if (hashcode==0) hashcode=1;
-        }
-        return hashcode;
+        return new HashCodeBuilder().append(keyStart).append(keyEnd).appendSuper(super.hashCode()).toHashCode();
     }
 
     @Override
