@@ -21,7 +21,7 @@ public class DirectoryUtil {
             throw new PermanentStorageException(String.format("%s exists but is a file.", location));
 
         if (!storageDir.exists() && !storageDir.mkdirs())
-            throw new PermanentStorageException(String.format("Failed to create directory %s for BerkleyDB storage.", location));
+            throw new PermanentStorageException(String.format("Failed to create directory %s for local storage.", location));
 
         return storageDir;
     }
