@@ -154,7 +154,6 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
-    @Ignore
     public void testLockException() {
         try {
             testBatchLoadingLocking(false);
