@@ -5,6 +5,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,21 +59,27 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     private static final Logger log =
             LoggerFactory.getLogger(MetricInstrumentedStore.class);
     
-    private static final String M_CONTAINS_KEY = "containsKey";
-    private static final String M_GET_SLICE = "getSlice";
-    private static final String M_MUTATE = "mutate";
-    private static final String M_ACQUIRE_LOCK = "acquireLock";
-    private static final String M_GET_KEYS = "getKeys";
-    private static final String M_GET_PART = "getLocalKeyPartition";
-    private static final String M_CLOSE = "close";
-    
-    private static final String M_CALLS = "calls";
-    private static final String M_TIME = "time";
-    private static final String M_EXCEPTIONS = "exceptions";
-    private static final String M_ENTRIES_COUNT = "entries-returned";
-    private static final String M_ENTRIES_HISTO = "entries-histogram";
-    
-    private static final String M_ITERATOR = "iterator";
+    public static final String M_CONTAINS_KEY = "containsKey";
+    public static final String M_GET_SLICE = "getSlice";
+    public static final String M_MUTATE = "mutate";
+    public static final String M_ACQUIRE_LOCK = "acquireLock";
+    public static final String M_GET_KEYS = "getKeys";
+    public static final String M_GET_PART = "getLocalKeyPartition";
+    public static final String M_CLOSE = "close";
+
+    public static final List<String> OPERATION_NAMES =
+            ImmutableList.of(M_CONTAINS_KEY,M_GET_SLICE,M_MUTATE,M_ACQUIRE_LOCK,M_GET_KEYS);
+
+    public static final String M_CALLS = "calls";
+    public static final String M_TIME = "time";
+    public static final String M_EXCEPTIONS = "exceptions";
+    public static final String M_ENTRIES_COUNT = "entries-returned";
+    public static final String M_ENTRIES_HISTO = "entries-histogram";
+
+    public static final List<String> EVENT_NAMES =
+            ImmutableList.of(M_CALLS,M_TIME,M_EXCEPTIONS,M_ENTRIES_COUNT,M_ENTRIES_HISTO);
+
+    public static final String M_ITERATOR = "iterator";
     
     private final String metricsStoreName;
 
@@ -132,12 +139,12 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                        final List<StaticBuffer> deletions,
                        final StoreTransaction txh) throws StorageException {
         runWithMetrics(txh.getConfiguration().getMetricsPrefix(), metricsStoreName, M_MUTATE,
-            new StorageCallable<Void>() {
-                public Void call() throws StorageException {
-                    backend.mutate(key, additions, deletions, txh);
-                    return null;
+                new StorageCallable<Void>() {
+                    public Void call() throws StorageException {
+                        backend.mutate(key, additions, deletions, txh);
+                        return null;
+                    }
                 }
-            }
         );
     }
 
