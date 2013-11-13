@@ -50,6 +50,7 @@ public class InMemoryMetricsTest {
     public void before() {
         graph = (StandardTitanGraph)TitanFactory.open(getConfiguration());
         metric = MetricManager.INSTANCE;
+        CachedKeyColumnValueStore.resetGlobalMetrics();
     }
 
     @After

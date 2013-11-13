@@ -53,17 +53,17 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
                 .build();
     }
 
-    public static final double getGlobalCacheHitRatio() {
-        if (CACHE_RETRIEVAL.get() == 0) return Double.NaN;
-        else return getGlobalCacheHits() * 1.0 / CACHE_RETRIEVAL.get();
-    }
-
-    public static final long getGlobalCacheHits() {
+    public static long getGlobalCacheHits() {
         return CACHE_RETRIEVAL.get() - CACHE_MISS.get();
     }
 
-    public static final long getGlobalCacheMisses() {
+    public static long getGlobalCacheMisses() {
         return CACHE_MISS.get();
+    }
+
+    public static void resetGlobalMetrics() {
+        CACHE_MISS.set(0);
+        CACHE_RETRIEVAL.set(0);
     }
 
     @Override
