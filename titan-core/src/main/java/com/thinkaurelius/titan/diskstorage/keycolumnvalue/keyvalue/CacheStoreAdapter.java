@@ -41,12 +41,12 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
     private final BackendCompression compression = BackendCompression.NO_COMPRESSION;
     private final int maxMutationRetries = 10;
     private final int mutationRetryWaitTimeMS = 50;
-    private final boolean storeSupportsLocking;
+    private final CacheStoreManagerAdapter manager;
 
-    public CacheStoreAdapter(CacheStore store, boolean storeSupportsLocking) {
+    public CacheStoreAdapter(CacheStore store, CacheStoreManagerAdapter manager) {
         super(store);
         this.store = store;
-        this.storeSupportsLocking = storeSupportsLocking;
+        this.manager = manager;
     }
 
     private final StaticBuffer decompress(StaticBuffer value) {
@@ -183,7 +183,7 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(storeSupportsLocking);
+        Preconditions.checkState(manager.getFeatures().supportsTransactions(),"Store does not support transactions and hence cannot acquire locks");
     }
 
     private class CacheKeyIterator implements KeyIterator {
