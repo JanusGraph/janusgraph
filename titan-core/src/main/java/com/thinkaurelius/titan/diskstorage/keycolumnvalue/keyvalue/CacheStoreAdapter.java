@@ -183,7 +183,8 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        Preconditions.checkState(manager.getFeatures().supportsTransactions(),"Store does not support transactions and hence cannot acquire locks");
+        //Awful hack to get around transactional constraint for Infinispan - TODO: This needs to be fixed!
+        Preconditions.checkState(manager.getFeatures().supportsLocking(),"Store does not support transactions and hence cannot acquire locks");
     }
 
     private class CacheKeyIterator implements KeyIterator {
