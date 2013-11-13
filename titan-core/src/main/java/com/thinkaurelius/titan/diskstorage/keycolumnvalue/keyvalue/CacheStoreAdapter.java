@@ -41,10 +41,12 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
     private final BackendCompression compression = BackendCompression.NO_COMPRESSION;
     private final int maxMutationRetries = 10;
     private final int mutationRetryWaitTimeMS = 50;
+    private final boolean storeSupportsLocking;
 
-    public CacheStoreAdapter(CacheStore store) {
+    public CacheStoreAdapter(CacheStore store, boolean storeSupportsLocking) {
         super(store);
         this.store = store;
+        this.storeSupportsLocking = storeSupportsLocking;
     }
 
     private final StaticBuffer decompress(StaticBuffer value) {
@@ -181,7 +183,7 @@ public class CacheStoreAdapter extends BaseKeyColumnValueAdapter {
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException(); //TODO: implement
+        Preconditions.checkArgument(storeSupportsLocking);
     }
 
     private class CacheKeyIterator implements KeyIterator {
