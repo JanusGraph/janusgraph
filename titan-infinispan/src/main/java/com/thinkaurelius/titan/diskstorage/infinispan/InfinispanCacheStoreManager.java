@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.configuration.Configuration;
 import org.infinispan.Cache;
+import org.infinispan.configuration.cache.AsyncStoreConfigurationBuilder;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.lifecycle.ComponentStatus;
@@ -298,6 +299,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
     @Override
     public void close() throws StorageException {
+        log.info("Shutting down cache - this might take a few seconds to release data structures");
         manager.stop(); // Stops all of the manager's caches
     }
 
@@ -388,12 +390,13 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         }
         
         if (null != directory) {
-            cb.persistence()
+            AsyncStoreConfigurationBuilder ab = cb.persistence()
               .addSingleFileStore()
               .preload(singleFileStorePreload)
-              .location(directory.getAbsolutePath())
-              .async()
-              .enabled(singleFileStoreAsync);
+              .location(directory.getAbsolutePath()).async();
+
+            ab.enabled(singleFileStoreAsync);
+            if (singleFileStoreAsync) ab.modificationQueueSize(100).shutdownTimeout(3,TimeUnit.SECONDS);
         }
         
         manager.defineConfiguration(cachename, cb.build());
