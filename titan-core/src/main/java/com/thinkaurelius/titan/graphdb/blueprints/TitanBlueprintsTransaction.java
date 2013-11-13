@@ -68,7 +68,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
             return addVertex(((Number) id).longValue());
         } else {
-            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
+//            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
             return addVertex(null);
         }
 
