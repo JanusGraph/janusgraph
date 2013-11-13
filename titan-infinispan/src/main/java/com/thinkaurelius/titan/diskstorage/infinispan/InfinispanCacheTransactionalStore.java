@@ -13,6 +13,7 @@ import org.infinispan.manager.EmbeddedCacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.NoOpStoreTransaction;
@@ -25,7 +26,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 public class InfinispanCacheTransactionalStore extends InfinispanCacheStore {
     
     private static final Logger log = LoggerFactory.getLogger(InfinispanCacheTransactionalStore.class);
-
+    
     private final NoOpStoreTransaction noopTx = new NoOpStoreTransaction(new StoreTxConfig()); // TODO pass through actual tx config?  i think this just affects metrics
     
     public InfinispanCacheTransactionalStore(String fullName, String shortName, EmbeddedCacheManager manager) {
@@ -82,18 +83,8 @@ public class InfinispanCacheTransactionalStore extends InfinispanCacheStore {
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue,
-            StoreTransaction txh) throws StorageException { // TODO implement with native locking
-        InfinispanCacheTransaction ict = (InfinispanCacheTransaction)txh;
-        ict.init(cache);
-//        if (!sameOrNullCache) {
-//            log.error("Infinispan transaction spans multiple caches ({} and {})", cache, ict.getCache());
-//        }
-        try {
-            ict.resume();
-            super.acquireLock(key, expectedValue, noopTx);
-        } finally {
-            ict.suspend();
-        }
+            StoreTransaction txh) throws StorageException {
+        // Do nothing
     }
 
     @Override
