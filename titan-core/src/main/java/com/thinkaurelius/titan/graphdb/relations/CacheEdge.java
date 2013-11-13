@@ -54,9 +54,7 @@ public class CacheEdge extends AbstractEdge {
                     return (internalRelation instanceof StandardEdge) && ((StandardEdge) internalRelation).getPreviousID() == id;
                 }
             });
-
-            int psize = Iterables.size(previous);
-            assert psize == 0 || psize == 1 || (isLoop() && psize == 2);
+            assert Iterables.size(previous) <= 1 || (isLoop() && Iterables.size(previous) == 2);
             it = Iterables.getFirst(previous, null);
         }
 
