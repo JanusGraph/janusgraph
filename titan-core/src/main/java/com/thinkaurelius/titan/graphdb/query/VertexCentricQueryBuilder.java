@@ -191,7 +191,8 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     }
 
     protected SimpleVertexQueryProcessor getSimpleQuery(RelationType relationType, InternalVertex vertex) {
-        if (!vertex.isLoaded() || types.length>1 || includeHidden || adjacentVertex!=null) {
+        if (!vertex.isLoaded() || types.length>1 || includeHidden || adjacentVertex!=null ||
+                (relationType==RelationType.PROPERTY && tx.getConfiguration().hasPropertyPrefetching())) {
             return null; //Simple query does not apply
         }
         TitanType type = null;

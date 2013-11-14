@@ -205,9 +205,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         return null;
     }
 
-    private static final int DEFAULT_NO_LIMIT = 1024;
-    private static final int MAX_BASE_LIMIT   = 20000;
-    private static final int HARD_MAX_LIMIT   = 50000;
+    private static final int HARD_MAX_LIMIT   = 300000;
 
     protected BaseVertexCentricQuery constructQuery(RelationType returnType) {
         assert returnType != null;
@@ -230,9 +228,8 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             return BaseVertexCentricQuery.emptyQuery();
 
         assert limit > 0;
-        int sliceLimit = (limit == Query.NO_LIMIT)
-                            ? DEFAULT_NO_LIMIT
-                            : Math.min(limit, MAX_BASE_LIMIT);
+        //Don't be smart with query limit adjustments - it just messes up the caching layer and penalizes when appropriate limits are set by the user!
+        int sliceLimit = limit;
 
         //Construct (optimal) SliceQueries
         EdgeSerializer serializer = tx.getEdgeSerializer();
@@ -467,9 +464,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     }
 
     private int computeLimit(And<TitanRelation> conditions, int baseLimit) {
-        return getVertexConstraint() != null
-                ? HARD_MAX_LIMIT   //a vertex constraint is so selective, that we likely have to retrieve all edges
-                : Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit));
+        if (baseLimit==Query.NO_LIMIT) return baseLimit;
+        assert baseLimit>0;
+        return Math.max(baseLimit,Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit)));
     }
 
 
