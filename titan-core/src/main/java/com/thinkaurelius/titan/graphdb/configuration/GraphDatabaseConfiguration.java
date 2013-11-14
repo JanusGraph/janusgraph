@@ -706,10 +706,22 @@ public class GraphDatabaseConfiguration {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);
 
-                final File configFileParent = dirOrFile.getParentFile();
+                final File tmpParent = dirOrFile.getParentFile();
+                final File configParent;
 
-                Preconditions.checkNotNull(configFileParent);
-                Preconditions.checkArgument(configFileParent.isDirectory());
+                if (null == tmpParent) {
+                    /*
+                     * null usually means we were given a Titan config file path
+                     * string like "foo.properties" that refers to the current
+                     * working directory of the process.
+                     */
+                    configParent = new File(System.getProperty("user.dir"));
+                } else {
+                    configParent = tmpParent;
+                }
+                
+                Preconditions.checkNotNull(configParent);
+                Preconditions.checkArgument(configParent.isDirectory());
 
                 final Pattern p = Pattern.compile(
                         Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
@@ -736,7 +748,7 @@ public class GraphDatabaseConfiguration {
 
                     File storedir = new File(s);
                     if (!storedir.isAbsolute()) {
-                        configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
+                        configuration.setProperty(k, configParent.getAbsolutePath() + File.separator + s);
                         log.debug("Overwrote relative path for key {}: was {}, now {}", k, s, configuration.getProperty(k));
                     } else {
                         log.debug("Loaded absolute path for key {}: {}", k, s);
