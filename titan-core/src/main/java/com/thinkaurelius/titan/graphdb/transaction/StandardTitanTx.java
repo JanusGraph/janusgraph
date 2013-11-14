@@ -999,9 +999,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         try {
             if (hasModifications()) {
-                graph.save(addedRelations.getAll(), deletedRelations.values(), this);
+                graph.commit(addedRelations.getAll(), deletedRelations.values(), this);
+            } else {
+                txHandle.commit();
             }
-            txHandle.commit();
         } catch (Exception e) {
             try {
                 txHandle.rollback();

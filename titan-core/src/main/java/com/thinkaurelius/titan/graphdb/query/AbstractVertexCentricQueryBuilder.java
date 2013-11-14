@@ -238,13 +238,15 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                     ((dir == Direction.BOTH || (returnType == RelationType.PROPERTY && dir == Direction.OUT))
                             && !conditions.hasChildren() && includeHidden), true, null);
-
-            query.getBackendQuery().setLimit(computeLimit(conditions,
-                    ((dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION)) ? sliceLimit * 2 : sliceLimit) +
-                            //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
-                            ((!includeHidden && (returnType == RelationType.PROPERTY || returnType == RelationType.RELATION)) ? 2 : 0)
-                    //on properties, add some for the hidden properties on a vertex
-            ));
+            if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
+                //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
+                if (dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION))
+                    sliceLimit *= 2;
+                //on properties, add some for the hidden properties on a vertex
+                if (!includeHidden && (returnType == RelationType.PROPERTY || returnType == RelationType.RELATION))
+                    sliceLimit += 3;
+            }
+            query.getBackendQuery().setLimit(computeLimit(conditions,sliceLimit));
             queries = ImmutableList.of(query);
             //Add remaining conditions that only apply if no type is defined
             if (!includeHidden)
@@ -466,7 +468,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     private int computeLimit(And<TitanRelation> conditions, int baseLimit) {
         if (baseLimit==Query.NO_LIMIT) return baseLimit;
         assert baseLimit>0;
-        return Math.max(baseLimit,Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit)));
+        baseLimit = Math.max(baseLimit,Math.min(HARD_MAX_LIMIT, QueryUtil.adjustLimitForTxModifications(tx, conditions.size(), baseLimit)));
+        assert baseLimit>0;
+        return baseLimit;
     }
 
 

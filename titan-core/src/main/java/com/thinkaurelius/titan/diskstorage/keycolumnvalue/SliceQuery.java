@@ -97,7 +97,6 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
                 && isStatic == oth.isStatic;
     }
 
-    //TODO: Need to update when introducing DESC
     public boolean subsumes(SliceQuery oth) {
         Preconditions.checkNotNull(oth);
         if (this == oth) return true;

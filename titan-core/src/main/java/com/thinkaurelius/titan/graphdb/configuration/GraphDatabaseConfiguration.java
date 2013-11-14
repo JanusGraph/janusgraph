@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
+import com.thinkaurelius.titan.graphdb.database.cache.PassThroughStoreCache;
+import com.thinkaurelius.titan.graphdb.database.cache.StoreCache;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -73,16 +76,6 @@ public class GraphDatabaseConfiguration {
     }};
 
     /**
-     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
-     * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
-     * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
-     * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
-     * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
-     */
-    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
-
-    /**
      * If this value is set to a positive integer, Titan will load the result sets of queries as multiples of this value.
      * Set to 0 to disable.
      * </p>
@@ -114,6 +107,56 @@ public class GraphDatabaseConfiguration {
     public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
     public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 
+    // ################ CACHE #######################
+    // ################################################
+
+    public static final String CACHE_NAMESPACE = "cache";
+
+    /**
+     * Whether this Titan instance should use a database level cache in front of the
+     * storage backend in order to speed up frequent queries across transactions
+     */
+    public static final String DB_CACHE_KEY = "db-cache";
+    public static final boolean DB_CACHE_DEFAULT = false;
+
+    /**
+     * The size of the database level cache.
+     * If this value is between 0.0 (strictly bigger) and 1.0 (strictly smaller), then it is interpreted as a
+     * percentage of the total heap space available to the JVM this Titan instance is running in.
+     * If this value is bigger than 1.0 it is interpreted as an absolute size in bytes.
+     */
+    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
+    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
+
+    /**
+     * How long the database level cache will keep keys expired while the mutations that triggered the expiration
+     * are being persisted. This value should be larger than the time it takes for persisted mutations to become visible.
+     * This setting only ever makes sense for distributed storage backends where writes may be accepted but are not
+     * immediately readable.
+     */
+    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
+    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
+
+    /**
+     * The default expiration time for elements held in the database level cache. This is the time period before
+     * Titan will check against storage backend for a newer query answer.
+     * Setting this value to 0 will cache elements forever (unless they get evicted due to space constraints). This only
+     * makes sense when this is the only Titan instance interacting with a storage backend.
+     */
+    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
+    public static final long DB_CACHE_TIME_DEFAULT = 10000;
+
+    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
+
+    /**
+     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
+     * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
+     * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
+     * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
+     * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
+     */
+    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
+    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
 
     // ################ STORAGE #######################
     // ################################################
@@ -1075,6 +1118,39 @@ public class GraphDatabaseConfiguration {
         storeFeatures = backend.getStoreFeatures();
         return backend;
     }
+
+    public StoreCache getEdgeStoreCache() {
+        Preconditions.checkArgument(storeFeatures != null, "Cannot open edge store cache before the storage backend has been initialized");
+        Configuration cacheconf = configuration.subset(CACHE_NAMESPACE);
+        if (this.batchLoading || !cacheconf.getBoolean(DB_CACHE_KEY,DB_CACHE_DEFAULT))
+            return new PassThroughStoreCache();
+
+        long expirationTime = cacheconf.getLong(DB_CACHE_TIME_KEY,DB_CACHE_TIME_DEFAULT);
+        Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
+        if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
+
+        long cacheSizeBytes;
+        double cachesize = cacheconf.getDouble(DB_CACHE_SIZE_KEY,DB_CACHE_SIZE_DEFAULT);
+        Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
+        if (cachesize<1.0) {
+            //Its a percentage
+            Runtime runtime = Runtime.getRuntime();
+            cacheSizeBytes = (long)(runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory()) * cachesize);
+        } else {
+            Preconditions.checkArgument(cachesize>100,"Cache size is too small: %s",cachesize);
+            cacheSizeBytes = (long)cachesize;
+        }
+        log.info("Configuring edge store cache size: {}",cacheSizeBytes);
+
+        return new ExpirationStoreCache(expirationTime,
+                cacheconf.getLong(DB_CACHE_CLEAN_WAIT_KEY,DB_CACHE_CLEAN_WAIT_DEFAULT),
+                cacheSizeBytes);
+    }
+
+
+
+
+
 
     public Serializer getSerializer() {
         Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
