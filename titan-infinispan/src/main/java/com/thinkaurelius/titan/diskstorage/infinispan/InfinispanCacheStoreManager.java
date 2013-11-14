@@ -4,6 +4,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NAMESPACE;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL_KEY;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -12,10 +13,13 @@ import org.apache.commons.configuration.Configuration;
 import org.infinispan.Cache;
 import org.infinispan.configuration.cache.AsyncStoreConfigurationBuilder;
 import org.infinispan.configuration.cache.ConfigurationBuilder;
+import org.infinispan.configuration.cache.StoreConfigurationBuilder;
 import org.infinispan.configuration.global.GlobalConfigurationBuilder;
 import org.infinispan.lifecycle.ComponentStatus;
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.manager.EmbeddedCacheManager;
+import org.infinispan.persistence.leveldb.configuration.CompressionType;
+import org.infinispan.persistence.leveldb.configuration.LevelDBStoreConfigurationBuilder;
 import org.infinispan.transaction.LockingMode;
 import org.infinispan.transaction.TransactionMode;
 import org.infinispan.transaction.lookup.TransactionManagerLookup;
@@ -40,7 +44,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 
 public class InfinispanCacheStoreManager extends LocalStoreManager implements CacheStoreManager {
-    
+
     /**
      * Infinispan has a flat cache namespace. Titan forms cache names by
      * concatenating three strings:
@@ -119,7 +123,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
      */
     public static final String INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY = "lock-acquire-ms";
     public static final long INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT = 30000L; // 10000 is infinispan default
-    
+
     /**
      * Whether to propagates writes from the cache to the SingleFileCacheStore
      * asynchronously (write-behind persistence) or synchronously (write-through
@@ -159,7 +163,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
     private final long lockAcquisitionTimeoutMS;
     private final boolean singleFileStoreAsync;
     private final boolean singleFileStorePreload;
-    
+
     /**
      * In addition to the public static final string configuration property keys
      * on this class, this constructor respects two configuration property keys
@@ -227,11 +231,11 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         lockAcquisitionTimeoutMS =
                 config.getLong(INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_KEY,
                                INFINISPAN_TX_LOCK_ACQUIRE_TIMEOUT_MS_DEFAULT);
-        
+
         // Persistence
         singleFileStoreAsync =
                 config.getBoolean(INFINISPAN_SINGLE_FILE_STORE_ASYNC_KEY,
-                                  INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT);
+                                  this.batchLoading?true:INFINISPAN_SINGLE_FILE_STORE_ASYNC_DEFAULT);
 
         singleFileStorePreload =
                 config.getBoolean(INFINISPAN_SINGLE_FILE_STORE_PRELOAD_KEY,
@@ -299,7 +303,7 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
 
     @Override
     public void close() throws StorageException {
-        log.info("Shutting down cache - this might take a few seconds to release data structures");
+        if (singleFileStoreAsync) log.warn("Shutting down cache - this will take a few seconds to flush caches. DO NOT INTERRUPT");
         manager.stop(); // Stops all of the manager's caches
     }
 
@@ -390,13 +394,32 @@ public class InfinispanCacheStoreManager extends LocalStoreManager implements Ca
         }
         
         if (null != directory) {
-            AsyncStoreConfigurationBuilder ab = cb.persistence()
-              .addSingleFileStore()
-              .preload(singleFileStorePreload)
-              .location(directory.getAbsolutePath()).async();
+            StoreConfigurationBuilder sb;
+//            switch(storeImplementation) {
+//                case FILE:
+                    sb = cb.persistence()
+                          .addSingleFileStore()
+                          .preload(singleFileStorePreload)
+                          .location(directory.getAbsolutePath());
+//                    break;
+//                case LEVELDB:
+//                    sb = cb.persistence()
+//                            .addStore(LevelDBStoreConfigurationBuilder.class)
+//                            .preload(singleFileStorePreload)
+//                            .location(directory.getAbsolutePath() + File.separator + "data")
+//                            .expiredLocation(directory.getAbsolutePath() + File.separator + "expired")
+//                            .compressionType(CompressionType.SNAPPY);
+//                    break;
+//                default: throw new IllegalArgumentException("Unknown store implementation: " + storeImplementation);
+//            }
 
-            ab.enabled(singleFileStoreAsync);
-            if (singleFileStoreAsync) ab.modificationQueueSize(100).shutdownTimeout(3,TimeUnit.SECONDS);
+            AsyncStoreConfigurationBuilder ab = sb.async().enabled(singleFileStoreAsync);
+            if (singleFileStoreAsync) {
+                ab.flushLockTimeout(3,TimeUnit.SECONDS)
+                  .threadPoolSize(2)
+                  .modificationQueueSize(10000)
+                  .shutdownTimeout(30,TimeUnit.SECONDS);
+            }
         }
         
         manager.defineConfiguration(cachename, cb.build());
