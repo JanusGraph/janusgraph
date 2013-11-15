@@ -251,8 +251,8 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         timehotglobal = timehotglobal/measurements;
 
         System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
-        assertTrue(timecoldglobal>timewarmglobal*5);
-        assertTrue(timewarmglobal>timehotglobal*2);
+        assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
+        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal*2);
     }
 
     private double testAllVertices(long vid, int numV) {
