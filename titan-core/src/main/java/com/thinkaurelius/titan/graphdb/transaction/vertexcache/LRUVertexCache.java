@@ -9,7 +9,9 @@ import com.thinkaurelius.titan.graphdb.util.ConcurrentLRUCache;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
+
 public class LRUVertexCache implements VertexCache {
+
     private final NonBlockingHashMapLong<InternalVertex> volatileVertices;
     private final ConcurrentLRUCache<InternalVertex> cache;
 
@@ -65,11 +67,9 @@ public class LRUVertexCache implements VertexCache {
     public void add(InternalVertex vertex, long id) {
         Preconditions.checkNotNull(vertex);
         Preconditions.checkArgument(id != 0);
-
         Long vertexId = id;
 
         cache.put(vertexId, vertex);
-
         if (vertex.isNew() || vertex.hasAddedRelations())
             volatileVertices.put(vertexId, vertex);
     }
@@ -78,8 +78,7 @@ public class LRUVertexCache implements VertexCache {
     public List<InternalVertex> getAllNew() {
         List<InternalVertex> vertices = new ArrayList<InternalVertex>(10);
         for (InternalVertex v : volatileVertices.values()) {
-            if (v.isNew())
-                vertices.add(v);
+            if (v.isNew()) vertices.add(v);
         }
         return vertices;
     }

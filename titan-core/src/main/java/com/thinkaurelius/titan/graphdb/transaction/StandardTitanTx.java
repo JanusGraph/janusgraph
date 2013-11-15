@@ -34,6 +34,7 @@ import com.thinkaurelius.titan.graphdb.transaction.addedrelations.SimpleBufferAd
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.ConcurrentIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
+import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.LRUVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyMaker;
@@ -176,7 +177,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
             addedRelations = new ConcurrentBufferAddedRelations();
-            concurrencyLevel = 4;
+            concurrencyLevel = 1; //TODO: should we increase this?
             typeCache = new NonBlockingHashMap<String, Long>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
@@ -184,7 +185,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
         internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
 
-        vertexCache = new LRUVertexCache(config.getVertexCacheSize());
+        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel);
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<IndexQuery, List<Object>>() {
             @Override
             public int weigh(IndexQuery q, List<Object> r) {
