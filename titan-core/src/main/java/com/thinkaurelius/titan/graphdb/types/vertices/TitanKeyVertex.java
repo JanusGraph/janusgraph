@@ -16,6 +16,7 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
+
 import java.util.List;
 
 public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
@@ -50,18 +51,19 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
                     indexParas[i]=new IndexParameters(indexTypes[i].getIndexName(),new Parameter[0]);
             }
             Preconditions.checkArgument(indexTypes.length==indexParas.length,"Lengths don't agree: %s vs %s",indexTypes.length,indexParas.length);
-            indexes = new IndexDefinition[indexTypes.length];
+            IndexDefinition tmp[] = new IndexDefinition[indexTypes.length];
             for (int i=0;i<indexTypes.length;i++) {
-                indexes[i]=IndexDefinition.of(indexTypes[i],indexParas[i]);
+                tmp[i]=IndexDefinition.of(indexTypes[i],indexParas[i]);
             }
+            indexes = tmp;
         }
         Preconditions.checkNotNull(indexes);
         return indexes;
     }
 
-    private transient IndexDefinition[] indexes;
-    private transient List<IndexDefinition> vertexIndexes;
-    private transient List<IndexDefinition> edgeIndexes;
+    private volatile transient IndexDefinition[] indexes;
+    private volatile transient List<IndexDefinition> vertexIndexes;
+    private volatile transient List<IndexDefinition> edgeIndexes;
 
     @Override
     public Iterable<String> getIndexes(Class<? extends Element> clazz) {
@@ -98,7 +100,9 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         if (result==null) {
             //Build it
             ImmutableList.Builder b = new ImmutableList.Builder();
-            for (IndexDefinition it : getIndexes()) if (type.isAssignableFrom(it.getElementType())) b.add(it);
+            for (IndexDefinition it : getIndexes())
+                if (type.isAssignableFrom(it.getElementType()))
+                    b.add(it);
             result = b.build();
             if (type==Vertex.class) vertexIndexes=result;
             else if (type==Edge.class) edgeIndexes=result;
