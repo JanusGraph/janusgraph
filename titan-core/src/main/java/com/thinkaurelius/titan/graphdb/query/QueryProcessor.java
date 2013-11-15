@@ -213,55 +213,24 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         }
     }
 
-    private final class LimitAdjustingIterator implements Iterator<R> {
+    private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;
         private final Object executionInfo;
-        private int currentLimit;
-        private int count;
-
-        private Iterator<R> iter;
-
 
         private LimitAdjustingIterator(BackendQueryHolder<B> backendQueryHolder) {
+            super(Integer.MAX_VALUE-1,backendQueryHolder.getBackendQuery().getLimit());
             this.backendQuery = backendQueryHolder.getBackendQuery();
             this.executionInfo = backendQueryHolder.getExecutionInfo();
-            this.currentLimit = backendQuery.getLimit();
-            this.count = 0;
-            this.iter = executor.execute(query, backendQuery, executionInfo);
         }
 
         @Override
-        public boolean hasNext() {
-            if (count < currentLimit)
-                return iter.hasNext();
-
-            //Update query and iterate through
-            currentLimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.round(currentLimit * 2.0));
-            backendQuery = backendQuery.updateLimit(currentLimit);
-            iter = executor.execute(query, backendQuery, executionInfo);
-
-            // TODO: this is very-very bad, we at least should try to do that in parallel
-            for (int i = 0; i < count; i++)
-                iter.next();
-
-            Preconditions.checkArgument(count < currentLimit);
-            return hasNext();
+        public Iterator<R> getNewIterator(int newLimit) {
+            if (!backendQuery.hasLimit() || newLimit>backendQuery.getLimit())
+                backendQuery = backendQuery.updateLimit(newLimit);
+            return executor.execute(query, backendQuery, executionInfo);
         }
 
-        @Override
-        public R next() {
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            count++;
-            return iter.next();
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
     }
 
 

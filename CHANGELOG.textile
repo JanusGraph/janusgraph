@@ -33,12 +33,16 @@ h3. Version 0.4.1 (?)
 * Shortened HBase column-family names to reduce the HBase storage footprint. This feature is disabled by default for backwards-compatibility. Enable it via @storage.short-cf-names@
 * Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through graph.buildTransaction()
 * Metrics Ganglia and Graphite support
+* Improvements to the internal memory structures and algorithms of a Titan transaction which lead to much improved traversal times
+* Better caching implementation for relations (RelationCache) to provide better de-serialization performance
+* Addition of a new query optimizer that can significantly speed up a subset of traversals
 * Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
 * Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
 
 *Bugfixes:*
 
 * Fixed multiQuery() for specific has() conditions. Added support for multiQuery(Collection).
+* Fixed limit adjustment issue for unconstrainted IN/OUT queries
 
 h3. Version 0.4.0 (October 16, 2013)
 

@@ -47,7 +47,7 @@ public class CacheStoreManagerAdapter implements KeyColumnValueStoreManager {
     public synchronized CacheStoreAdapter openDatabase(String name)
             throws StorageException {
         if (!stores.containsKey(name)) {
-            CacheStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name));
+            CacheStoreAdapter store = new CacheStoreAdapter(manager.openDatabase(name), this);
             stores.put(name, store);
         }
         return stores.get(name);
@@ -66,10 +66,6 @@ public class CacheStoreManagerAdapter implements KeyColumnValueStoreManager {
                 store.mutate(key, mutation.getAdditions(), mutation.getDeletions(), txh);
             }
         }
-    }
-
-    private static final CacheStoreAdapter wrapKeyValueStore(CacheStore store) {
-        return new CacheStoreAdapter(store);
     }
 
     @Override

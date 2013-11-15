@@ -19,15 +19,13 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 public class CacheVertex extends StandardVertex {
     // We don't try to be smart and match with previous queries
     // because that would waste more cycles on lookup than save actual memory
-    private final Cache<SliceQuery, List<Entry>> queryCache;
+    // We use a normal map with synchronization since the likelihood of contention
+    // is super low in a single transaction
+    private final Map<SliceQuery,List<Entry>> queryCache;
 
     public CacheVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
-        // TODO: add MemoryMeter agent to Titan to use memory measurement instead of size
-        queryCache = CacheBuilder.newBuilder()
-                .concurrencyLevel(1)
-                .maximumSize(32)
-                .build();
+        queryCache = new HashMap<SliceQuery,List<Entry>>(4);
     }
 
     @Override
@@ -35,32 +33,39 @@ public class CacheVertex extends StandardVertex {
         if (isNew())
             return Collections.EMPTY_SET;
 
-        try {
-            return queryCache.get(query, new Callable<List<Entry>>() {
-                @Override
-                public List<Entry> call() throws Exception {
-                    Map.Entry<SliceQuery, List<Entry>> superset = getSuperResultSet(query);
-                    if (superset == null) {
-                        return lookup.get(query);
-                    } else {
-                        return query.getSubset(superset.getKey(), superset.getValue());
-                    }
-                }
-            });
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        List<Entry> result;
+        synchronized (queryCache) {
+            result = queryCache.get(query);
         }
+        if (result==null) {
+            //First check for super
+            Map.Entry<SliceQuery, List<Entry>> superset = getSuperResultSet(query);
+            if (superset==null) {
+                result = lookup.get(query);
+            } else {
+                result = query.getSubset(superset.getKey(), superset.getValue());
+            }
+            synchronized (queryCache) {
+                //TODO: become smarter about what to cache and when (e.g. memory pressure)
+                queryCache.put(query,result);
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean hasLoadedRelations(final SliceQuery query) {
-        return queryCache.getIfPresent(query) != null || getSuperResultSet(query) != null;
+        synchronized (queryCache) {
+            return queryCache.get(query) != null || getSuperResultSet(query) != null;
+        }
     }
 
     private Map.Entry<SliceQuery, List<Entry>> getSuperResultSet(final SliceQuery query) {
         if (queryCache.size() > 0) {
-            for (Map.Entry<SliceQuery, List<Entry>> entry : queryCache.asMap().entrySet()) {
-                if (entry.getKey().subsumes(query)) return entry;
+            synchronized (queryCache) {
+                for (Map.Entry<SliceQuery, List<Entry>> entry : queryCache.entrySet()) {
+                    if (entry.getKey().subsumes(query)) return entry;
+                }
             }
         }
         return null;

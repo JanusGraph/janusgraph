@@ -61,7 +61,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
-        this.propertyPrefetching = graphConfig.getPropertyPrefetching();
+        this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();

@@ -4,11 +4,15 @@ import java.util.Iterator;
 
 import javax.annotation.Nullable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.esotericsoftware.minlog.Log;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.HazelcastInstanceNotActiveException;
 import com.hazelcast.core.IMap;
-
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -23,6 +27,8 @@ import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 public class HazelcastCacheStore implements CacheStore {
 
     private static final String UPDATE_EXCEPTION_FORMAT = "Key: %s, has current value different from %s, can't replace with %s.";
+    
+    private static final Logger log = LoggerFactory.getLogger(HazelcastCacheStore.class);
 
     private final IMap<byte[], StaticBuffer> cache;
 
@@ -113,11 +119,19 @@ public class HazelcastCacheStore implements CacheStore {
 
     @Override
     public void clearStore() {
-        cache.clear();
+        try {
+            cache.clear();
+        } catch (HazelcastInstanceNotActiveException e) {
+            log.debug("Hazelcast instance inactive during cache clearing", e);
+        }
     }
 
     @Override
     public void close() throws StorageException {
-        cache.destroy();
+        try {
+            cache.destroy();
+        } catch (HazelcastInstanceNotActiveException e) {
+            log.debug("Hazelcast instance inactive during cache deletion", e);
+        }
     }
 }

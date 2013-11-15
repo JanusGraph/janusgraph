@@ -107,9 +107,9 @@ public class InMemoryMetricsTest {
         //Check type index lookup caching
         tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         v = tx.getVertex(v.getID());
-        assertNotNull(v.getProperties("age"));
-        assertNotNull(v.getProperties("name"));
-        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 17l));
+        assertNotNull(v.getProperty("age"));
+        assertNotNull(v.getProperty("name"));
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 19l));
         verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 5l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
         verifyMetrics(STORE_NAMES.get(2));
         verifyMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 4l, M_GET_SLICE, 8l));
@@ -119,9 +119,9 @@ public class InMemoryMetricsTest {
 
         tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         v = tx.getVertex(v.getID());
-        assertNotNull(v.getProperties("age"));
-        assertNotNull(v.getProperties("name"));
-        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 22l));
+        assertNotNull(v.getProperty("age"));
+        assertNotNull(v.getProperty("name"));
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 26l));
         verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 7l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
         verifyMetrics(STORE_NAMES.get(2));
         verifyMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 4l, M_GET_SLICE, 8l));

@@ -45,12 +45,6 @@ public class EdgeSerializer {
     private static final int DEFAULT_COLUMN_CAPACITY = 60;
     private static final int DEFAULT_VALUE_CAPACITY = 128;
 
-    private static final long DIRECTION_ID = -101;
-    private static final long TYPE_ID = -102;
-    private static final long VALUE_ID = -103;
-    private static final long OTHER_VERTEX_ID = -104;
-    private static final long RELATION_ID = -105;
-
     private final Serializer serializer;
 
     public EdgeSerializer(Serializer serializer) {
@@ -60,7 +54,11 @@ public class EdgeSerializer {
     public InternalRelation readRelation(final InternalVertex vertex, final Entry data) {
         StandardTitanTx tx = vertex.tx();
         RelationCache relation = readRelation(vertex.getID(), data, true, tx);
+        return readRelation(vertex,relation,data,tx);
+    }
 
+    public InternalRelation readRelation(final InternalVertex vertex, final RelationCache relation,
+                                         final Entry data, final StandardTitanTx tx) {
         TitanType type = tx.getExistingType(relation.typeId);
 
         if (type.isPropertyKey()) {

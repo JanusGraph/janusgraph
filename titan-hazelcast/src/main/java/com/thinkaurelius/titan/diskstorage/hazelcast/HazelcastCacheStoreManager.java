@@ -43,5 +43,6 @@ public class HazelcastCacheStoreManager extends AbstractHazelcastStoreManager im
         for (HazelcastCacheStore store : stores.values()) {
             store.close();
         }
+        manager.getLifecycleService().shutdown();
     }
 }

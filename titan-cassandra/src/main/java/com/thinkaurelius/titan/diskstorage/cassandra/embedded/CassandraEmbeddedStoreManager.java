@@ -130,6 +130,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     @Override
     public void close() {
         openStores.clear();
+        CassandraDaemonWrapper.stop();
     }
 
     @Override

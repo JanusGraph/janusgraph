@@ -97,7 +97,6 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
                 && isStatic == oth.isStatic;
     }
 
-    //TODO: Need to update when introducing DESC
     public boolean subsumes(SliceQuery oth) {
         Preconditions.checkNotNull(oth);
         if (this == oth) return true;
@@ -111,7 +110,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
         assert otherQuery.subsumes(this);
         List<Entry> result = new ArrayList<Entry>();
-        int pos = Collections.binarySearch(result, StaticBufferEntry.of(sliceStart));
+        int pos = Collections.binarySearch(otherResult, StaticBufferEntry.of(sliceStart));
         if (pos < 0) pos = -pos - 1;
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
             Entry e = otherResult.get(pos);
