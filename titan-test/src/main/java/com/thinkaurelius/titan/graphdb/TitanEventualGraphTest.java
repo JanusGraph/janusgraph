@@ -6,17 +6,19 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
+import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,6 +197,7 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
 
     @Test
+    @Category({ SerialTests.class })
     public void testCachePerformance() {
 //        Map<String,? extends Object> newConfig = ImmutableMap.of();
         Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",0);
