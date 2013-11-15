@@ -93,12 +93,10 @@
         <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <module>titan-hazelcast</module>
         <module>titan-rexster</module>
         <module>titan-all</module>
         <module>titan-site</module>
         <module>titan-dist</module>
-        <module>titan-infinispan</module>
     </modules>
     <build>
         <directory>${basedir}/target</directory>

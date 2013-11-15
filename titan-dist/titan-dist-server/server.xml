@@ -52,10 +52,6 @@
             <source>../../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
         </file>
-        <file>
-            <source>../../titan-hazelcast/src/test/resources/hazelcast.xml</source>
-            <outputDirectory>/conf</outputDirectory>
-        </file>
     </files>
 
     <dependencySets>

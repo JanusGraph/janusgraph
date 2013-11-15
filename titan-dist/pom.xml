@@ -37,7 +37,6 @@
         <module>titan-dist-berkeleyje</module>
         <module>titan-dist-cassandra</module>
         <module>titan-dist-hbase</module>
-        <module>titan-dist-hazelcast</module>
         <module>titan-dist-server</module>
     </modules>
 

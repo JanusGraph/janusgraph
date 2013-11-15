@@ -46,12 +46,6 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hazelcast</artifactId>
-            <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hbase</artifactId>
             <version>${project.version}</version>
             <classifier>${titan.classifier}</classifier>
@@ -152,13 +146,6 @@
                 </dependency>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-dist-hazelcast</artifactId>
-                    <version>${project.version}</version>
-                    <classifier>tests</classifier>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-dist-persistit</artifactId>
                     <version>${project.version}</version>
                     <classifier>tests</classifier>
@@ -174,7 +161,6 @@
                             <dependenciesToScan>
                                 <dependency>com.thinkaurelius.titan:titan-dist-berkeleyje</dependency>
                                 <dependency>com.thinkaurelius.titan:titan-dist-cassandra</dependency>
-                                <dependency>com.thinkaurelius.titan:titan-dist-hazelcast</dependency>
                                 <dependency>com.thinkaurelius.titan:titan-dist-persistit</dependency>
                             </dependenciesToScan>
                         </configuration>
