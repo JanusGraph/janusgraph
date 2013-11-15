@@ -89,7 +89,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     @After
     public void tearDown() throws Exception {
         executor.shutdown();
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
             log.error("Abnormal executor shutdown");
             Thread.dumpStack();
         } else {
