@@ -48,10 +48,10 @@ public class CassandraProcessStarter {
         this.address = address;
 
         cassandraDataDir = StringUtils.join(new String[]{"target",
-                "cassandra-tmp", "workdir", address}, File.separator);
+                "cassandra", "workdir", address}, File.separator);
 
         cassandraConfigDir = StringUtils.join(new String[]{"target",
-                "cassandra-tmp", "conf", address}, File.separator);
+                "cassandra", "conf", address}, File.separator);
 
         cassandraInclude = cassandraConfigDir + File.separator
                 + "cassandra.in.sh";
@@ -62,7 +62,7 @@ public class CassandraProcessStarter {
     }
 
     public CassandraProcessStarter() {
-        this("127.0.0.1");
+        this("localhost-rp");
     }
 
     public CassandraProcessStarter setDelete(boolean delete) {
