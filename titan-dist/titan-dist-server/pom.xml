@@ -52,12 +52,6 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-infinispan</artifactId>
-            <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-lucene</artifactId>
             <version>${project.version}</version>
             <classifier>${titan.classifier}</classifier>
