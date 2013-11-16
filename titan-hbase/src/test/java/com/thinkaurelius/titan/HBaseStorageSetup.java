@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan;
 
+import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.apache.commons.configuration.BaseConfiguration;
@@ -9,8 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.lang.ProcessBuilder.Redirect;
 
 public class HBaseStorageSetup {
     
@@ -69,17 +72,24 @@ public class HBaseStorageSetup {
     }
 
     public static void startHBase() throws IOException {
-        if (HBASE != null)
+        if (HBASE != null) {
+            log.info("HBase already started");
             return; // already started, nothing to do
+        }
 
         try {
+            log.info("Starting HBase");
+            
             // start HBase instance with environment set
-            HBASE = Runtime.getRuntime().exec(String.format("./bin/hbase-daemon.sh --config %s start master", HBASE_CONFIG_DIR));
+            String cmd = String.format("./bin/hbase-daemon.sh --config %s start master", HBASE_CONFIG_DIR);
+            log.info("Executing {}", cmd);
+            HBASE = Runtime.getRuntime().exec(cmd);
 
             try {
                 HBASE.waitFor(); // wait for script to return
+                log.info("HBase forked");
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
 
             assert HBASE.exitValue() >= 0; // check if we have started successfully
@@ -91,8 +101,62 @@ public class HBaseStorageSetup {
     private static void shutdownHBase() throws IOException {
         if (HBASE == null)
             return; // HBase hasn't been started yet
-
+        
+        // First try graceful shutdown through the script...
+        String cmdParts[] = new String[]{ "./bin/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master" };
+        log.info("Executing {}", Joiner.on(" ").join(cmdParts));
+        ProcessBuilder pb = new ProcessBuilder(cmdParts);
+        pb.redirectInput(Redirect.INHERIT)
+          .redirectOutput(Redirect.INHERIT)
+          .redirectError(Redirect.INHERIT);
+        Process stopMaster = pb.start();
+        
+        // ...but send SIGKILL if that times out
+        HBaseKiller killer = new HBaseKiller();
+        killer.start();
         try {
+            stopMaster.waitFor();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        killer.abort();
+        killer.interrupt();
+        try {
+            killer.join();
+        } catch (InterruptedException e) {
+            log.warn("Failed to join HBase process killer thread", e);
+        }
+    }
+    
+    private static class HBaseKiller extends Thread {
+        
+        private volatile boolean proceed = true;
+        
+        @Override
+        public void run() {
+            try {
+                log.info("Waiting {} seconds for HBase to shutdown...", SHUTDOWN_TIMEOUT_SEC);
+                Thread.sleep(SHUTDOWN_TIMEOUT_SEC * 1000L);
+            } catch (InterruptedException e) {
+                log.info("HBase killer thread interrupted");
+            }
+            
+            if (proceed) {
+                try {
+                    readPidfileAndKill();
+                } catch (Exception e) {
+                    log.error("Failed to kill HBase", e);
+                }
+            } else {
+                log.info("HBase shutdown cleanly, not attempting to kill its process");
+            }
+        }
+        
+        public void abort() {
+            proceed = false;
+        }
+        
+        private void readPidfileAndKill() throws IOException, InterruptedException {
             File pid = new File(HBASE_PID_FILE);
 
             if (pid.exists()) {
@@ -103,7 +167,9 @@ public class HBaseStorageSetup {
                 while (pidFile.getFilePointer() < (pidFile.length() - 1)) // we don't need newline
                    b.append((char) pidFile.readByte());
 
-                Process kill = Runtime.getRuntime().exec("kill -TERM " + b.toString());
+                String cmd = "kill -KILL " + b.toString();
+                log.info("Executing {}", cmd);
+                Process kill = Runtime.getRuntime().exec(cmd);
                 kill.waitFor();
 
                 pidFile.close();
@@ -111,15 +177,6 @@ public class HBaseStorageSetup {
 
                 return;
             }
-
-            // fall back to scripting
-            Runtime.getRuntime().exec(String.format("./bin/hbase-daemon.sh --config %s stop master", HBASE_CONFIG_DIR));
-
-            log.info("Waiting 20 seconds for HBase to shutdown...");
-
-            Thread.sleep(SHUTDOWN_TIMEOUT_SEC * 1000); // wait no longer than timeout seconds
-        } catch (Exception e) {
-            throw new AssertionError(e);
         }
-    }
+    };
 }
