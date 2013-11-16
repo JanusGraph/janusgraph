@@ -1086,15 +1086,12 @@
                                     <argLine>${default.test.jvm.opts} ${perf.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel />
+                                    <parallel>none</parallel>
                                     <threadCount>1</threadCount>
-                                    <perCoreThreadCount>1</perCoreThreadCount>
+                                    <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
-                                    <excludes>
-                                        <exclude>**/External*</exclude>
-                                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>
