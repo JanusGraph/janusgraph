@@ -1049,9 +1049,9 @@
                                     <argLine>${mem.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel />
-                                    <threadCount>0</threadCount>
-                                    <perCoreThreadCount>1</perCoreThreadCount>
+                                    <parallel>none</parallel>
+                                    <threadCount>1</threadCount>
+                                    <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.MemoryTests</groups>
                                     <excludedGroups />

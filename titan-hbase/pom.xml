@@ -14,6 +14,8 @@
         <hadoop.version>1.0.4</hadoop.version>
         <hadoop.artifact>hadoop-core</hadoop.artifact>
         <titan.hbase.mvn.opts />
+        <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
     </properties>
     <dependencies>
         <dependency>
