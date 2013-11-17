@@ -9,21 +9,42 @@ BIN="`dirname $0`"
 # XML configs can assume this working directory.
 cd "$BIN/../rexhome"
 
-CP="../conf"
-CP="$CP:$( echo ../lib/*.jar . | sed 's/ /:/g')"
-CP="$CP:$(find -L ../ext/ -name "*.jar" | tr '\n' ':')"
-export CLASSPATH="$CP"
+# This script is tested mostly under Linux and Mac OS X, but it 
+# can also run through Cygwin.
+#
+# When running through Cygwin, Java file paths and CLASSPATH require
+# special handling.  Cygwin uses *NIX style paths, but Java is outside
+# Cygwin's control and uses Windows style paths.  Any CLASSPATH or 
+# file paths strings provided to Java must be sent through the utility
+# command `cygpath --path --windows`.
+
+set_unix_paths() {
+	CP="$(echo ../conf ../lib/*.jar . | tr ' ' ':')"
+	CP="$CP:$(find -L ../ext/ -name "*.jar" | tr '\n' ':')"
+	export CLASSPATH="$CP"
+	PUBLIC=../public/
+	LOG_DIR=../log
+}
+
+convert_unix_paths_to_win_paths() {
+	export CLASSPATH="$(echo $CLASSPATH | cygpath --windows --path -f -)"
+	PUBLIC="$(echo $PUBLIC | cygpath --windows --path -f -)"
+	LOG_DIR="$(echo $LOG_DIR | cygpath --windows --path -f -)"
+}
+
+set_unix_paths
+[ "`uname -o`" = 'Cygwin' ] && convert_unix_paths_to_win_paths
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then
-    JAVA="java -server"
+    JAVA="java"
 else
-    JAVA="$JAVA_HOME/bin/java -server"
+    JAVA="$JAVA_HOME/bin/java"
 fi
 
 # Set Java options
 if [ "$JAVA_OPTIONS" = "" ] ; then
-    JAVA_OPTIONS="-Xms128m -Xmx512m -Dtitan.logdir=../log"
+    JAVA_OPTIONS="-server -Xms128m -Xmx512m -Dtitan.logdir=$LOG_DIR"
 fi
 
 # Let Cassandra have 7199
@@ -33,6 +54,6 @@ JAVA_OPTIONS="$JAVA_OPTIONS \
               -Dcom.sun.management.jmxremote.authenticate=false"
 
 # Launch the application
-$JAVA $JAVA_OPTIONS com.tinkerpop.rexster.Application "$@"
+"$JAVA" $JAVA_OPTIONS com.tinkerpop.rexster.Application "$@"
 # Return the program's exit code
 exit $?

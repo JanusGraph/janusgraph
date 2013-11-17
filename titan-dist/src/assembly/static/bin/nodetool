@@ -28,7 +28,7 @@ export CASSANDRA_INCLUDE="`dirname $0`/cassandra.in.sh"
 if [ -x $JAVA_HOME/bin/java ]; then
     JAVA=$JAVA_HOME/bin/java
 else
-    JAVA=`which java`
+    JAVA="`which java`"
 fi
 
 if [ -z $CASSANDRA_CONF -o -z $CLASSPATH ]; then
@@ -44,7 +44,7 @@ case "`uname`" in
     ;;
 esac
 
-$JAVA -cp $CLASSPATH \
+"$JAVA" -cp $CLASSPATH \
       -Xmx32m \
       -Dlog4j.configuration=log4j-tools.properties \
       -Dstorage-config=$CASSANDRA_CONF \

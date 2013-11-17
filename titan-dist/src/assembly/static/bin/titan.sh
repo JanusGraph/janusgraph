@@ -12,7 +12,8 @@ wait_for_cassandra() {
     local status_thrift=
 
     while [ $now_s -le $stop_s ]; do
-        status_thrift="`$BIN/nodetool statusthrift 2>/dev/null`"
+        # The \r\n deletion bit is necessary for Cygwin compatibility
+        status_thrift="`$BIN/nodetool statusthrift 2>/dev/null | tr -d '\n\r'`"
         if [ $? -eq 0 -a 'running' = "$status_thrift" ]; then
             echo 'Started Cassandra.  Thrift service is alive.'
             return 0
@@ -61,7 +62,11 @@ kill_class() {
         return
     fi
     echo "Killing $1 (pid $p)..." >&2
-    kill "$p"
+    if [ "`uname -o`" = 'Cygwin' ]; then
+        taskkill /F /PID "$p"
+    else
+        kill "$p"
+    fi
 }
 
 status_class() {
