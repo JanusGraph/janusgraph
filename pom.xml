@@ -82,7 +82,6 @@
         <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
-        <titan.classifier />
         <test.skip.default>false</test.skip.default>
     </properties>
     <modules>
@@ -719,7 +718,6 @@
                 <compiler.source>1.6</compiler.source>
                 <compiler.target>1.6</compiler.target>
                 <compiler.args>-Xbootclasspath:/opt/jdk1.6.0_45/jre/lib/rt.jar</compiler.args>
-                <titan.classifier>jre6</titan.classifier>
             </properties>
 
             <build>

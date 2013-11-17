@@ -15,7 +15,6 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.tinkerpop.rexster</groupId>

@@ -25,7 +25,6 @@
                     <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-hbase</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${titan.classifier}</classifier>
                 </dependency>
             </dependencies> 
         </profile>

@@ -28,7 +28,6 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

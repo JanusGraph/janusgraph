@@ -28,13 +28,11 @@
                     <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-cassandra</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${titan.classifier}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-es</artifactId>
                     <version>${project.version}</version>
-                    <classifier>${titan.classifier}</classifier>
                 </dependency>
                 <dependency>
                     <groupId>net.java.dev.jna</groupId>

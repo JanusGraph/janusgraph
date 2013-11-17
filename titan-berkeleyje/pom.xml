@@ -22,21 +22,18 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>

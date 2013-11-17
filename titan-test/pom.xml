@@ -30,7 +30,6 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <!-- TinkerPop -->
         <dependency>
