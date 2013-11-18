@@ -32,7 +32,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     private static final AtomicLong CACHE_RETRIEVAL = new AtomicLong(0);
     private static final AtomicLong CACHE_MISS = new AtomicLong(0);
 
-    private static final long DEFAULT_CACHE_SIZE = 1000;
+    private static final long DEFAULT_CACHE_SIZE = 2*1000; //1000 types
 
     private final KeyColumnValueStore store;
     private final Cache<KeySliceQuery, List<Entry>> cache;

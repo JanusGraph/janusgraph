@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.graphdb.inmemory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import static com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore.*;
@@ -23,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -119,15 +118,71 @@ public class InMemoryMetricsTest {
 
         tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         v = tx.getVertex(v.getID());
-        assertNotNull(v.getProperty("age"));
-        assertNotNull(v.getProperty("name"));
-        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 26l));
-        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 7l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
+        Iterable<TitanRelation> relations = v.query().relations();
+        Iterator<TitanRelation> relationsIter = relations.iterator();
+        while (relationsIter.hasNext()) {
+            relationsIter.next();
+        }
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 27l));
+        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 5l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
         verifyMetrics(STORE_NAMES.get(2));
         verifyMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 4l, M_GET_SLICE, 8l));
-        assertEquals(9, CachedKeyColumnValueStore.getGlobalCacheMisses());
-        assertEquals(14, CachedKeyColumnValueStore.getGlobalCacheHits());
+        assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(12, CachedKeyColumnValueStore.getGlobalCacheHits());
         tx.commit();
+    }
+
+    @Test
+    public void testKCVSAccess2() throws InterruptedException {
+        TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        TitanVertex parentVertex = tx.addVertex();
+        parentVertex.setProperty("name", "vParent");
+        parentVertex.setProperty("other-prop-key1", "other-prop-value1");
+        parentVertex.setProperty("other-prop-key2", "other-prop-value2");
+
+        TitanVertex parentVertex2 = tx.addVertex();
+        parentVertex2.setProperty("name", "vParent2");
+        parentVertex2.setProperty("other-prop-key1", "other-prop-value12");
+        parentVertex2.setProperty("other-prop-key2", "other-prop-value22");
+
+        tx.commit();
+        verifyMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l));
+        verifyMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
+        assertEquals(3, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
+
+        tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        Iterable<TitanRelation> relations = ((TitanVertexQuery)tx.getVertex(parentVertex).query()).relations();
+        Iterator<TitanRelation> relationsIter = relations.iterator();
+
+        while (relationsIter.hasNext()) {
+            relationsIter.next();
+        }
+
+        tx.commit();
+        verifyMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 8l));
+        verifyMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
+        assertEquals(9, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
+        //==> 8 edgeStore.getSlice (1 for vertex existence, 1 to retrieve all relations, 2 call per type (name+definition) for all 3 types)
+        //==> of those, the 6 type related calls go through the cache which is empty at this point ==> 6 (additional) misses
+        //all other stats remain unchanged
+
+        tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        relations = ((TitanVertexQuery)tx.getVertex(parentVertex2).query()).relations();
+        Iterator<TitanRelation> relationsIter2 = relations.iterator();
+
+        while (relationsIter2.hasNext()) {
+            relationsIter2.next();
+        }
+        verifyMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 16l));
+        verifyMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
+        assertEquals(9, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(6, CachedKeyColumnValueStore.getGlobalCacheHits());
+        //==> 8 edgeStore.getSlice (1 for vertex existence, 1 to retrieve all relations, 2 call per type (name+definition) for all 3 types)
+        //==> of those, the 6 type related calls go through the cache which is loaded at this point ==> 6 cache hits, no misses
+        //==> there are only 2 getSlice calls that hit the storage backend
+        //all other stats remain unchanged
     }
 
     public void verifyMetrics(String storeName) {
