@@ -33,7 +33,6 @@ public class InMemoryMetricsTest {
     public StandardTitanGraph graph;
     public MetricManager metric;
 
-    public final String METRICS = "metrics";
     public final String SYSTEM_METRICS  = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 
     public static final Configuration getConfiguration() {
@@ -61,7 +60,10 @@ public class InMemoryMetricsTest {
             ImmutableList.of("edgeStore", "vertexIndexStore", "edgeIndexStore", "idStore");
 
     @Test
-    public void testKCVSAccess() throws InterruptedException {
+    public void testKCVSAccess1() throws InterruptedException {
+        CachedKeyColumnValueStore.resetGlobalMetrics();
+        METRICS = "metrics1";
+
         TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         TitanVertex v = tx.addVertex(null);
         verifyMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
@@ -134,6 +136,9 @@ public class InMemoryMetricsTest {
 
     @Test
     public void testKCVSAccess2() throws InterruptedException {
+        CachedKeyColumnValueStore.resetGlobalMetrics();
+        METRICS = "metrics2";
+
         TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         TitanVertex parentVertex = tx.addVertex();
         parentVertex.setProperty("name", "vParent");
@@ -187,6 +192,8 @@ public class InMemoryMetricsTest {
         //==> there are only 2 getSlice calls that hit the storage backend
         //all other stats remain unchanged
     }
+
+    private String METRICS;
 
     public void verifyMetrics(String storeName) {
         verifyMetrics(storeName,new HashMap<String,Long>(0));
