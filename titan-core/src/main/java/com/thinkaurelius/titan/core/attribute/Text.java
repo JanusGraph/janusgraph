@@ -19,24 +19,25 @@ import java.util.List;
 public enum Text implements TitanPredicate {
 
     /**
-     * Whether the text contains a given term
+     * Whether the text contains a given term as a token in the text (case insensitive)
      */
     CONTAINS {
 
-        private static final int MIN_TERM_LENGTH = 2;
-
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            this.preevaluate(value,condition);
             if (value == null) return false;
-            if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            String term = ((String) condition).trim().toLowerCase();
-            if (term.length() < MIN_TERM_LENGTH) return false;
-            for (String token : tokenize(value.toString().toLowerCase())) {
-                if (token.equals(term)) return true;
+            return evaluateRaw(value.toString(),(String)condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String term) {
+            for (String token : tokenize(value.toLowerCase())) {
+                if (token.equalsIgnoreCase(term.trim())) return true;
             }
             return false;
         }
+
 
         @Override
         public boolean isValidCondition(Object condition) {
@@ -47,17 +48,20 @@ public enum Text implements TitanPredicate {
     },
 
     /**
-     * Whether the text contains a token that starts with a given term
+     * Whether the text contains a token that starts with a given term (case insensitive)
      */
-    PREFIX {
+    CONTAINS_PREFIX {
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            this.preevaluate(value,condition);
             if (value == null) return false;
-            if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            String prefix = ((String) condition).trim().toLowerCase();
-            for (String token : tokenize(value.toString().toLowerCase())) {
-                if (token.startsWith(prefix)) return true;
+            return evaluateRaw(value.toString(),(String)condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String prefix) {
+            for (String token : tokenize(value.toLowerCase())) {
+                if (PREFIX.evaluateRaw(token,prefix.toLowerCase())) return true;
             }
             return false;
         }
@@ -72,18 +76,65 @@ public enum Text implements TitanPredicate {
     /**
      * Whether the text contains a token that matches a regular expression
      */
+    CONTAINS_REGEX {
+        @Override
+        public boolean evaluate(Object value, Object condition) {
+            this.preevaluate(value,condition);
+            if (value == null) return false;
+            return evaluateRaw(value.toString(),(String)condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String regex) {
+            for (String token : tokenize(value.toLowerCase())) {
+                if (REGEX.evaluateRaw(token,regex)) return true;
+            }
+            return false;
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition != null && condition instanceof String && StringUtils.isNotBlank(condition.toString());
+        }
+
+    },
+
+    /**
+     * Whether the text starts with a given prefix (case sensitive)
+     */
+    PREFIX {
+        @Override
+        public boolean evaluate(Object value, Object condition) {
+            this.preevaluate(value,condition);
+            if (value==null) return false;
+            return evaluateRaw(value.toString(),(String)condition);
+        }
+
+        @Override
+        public boolean evaluateRaw(String value, String prefix) {
+            return value.startsWith(prefix.trim());
+        }
+
+        @Override
+        public boolean isValidCondition(Object condition) {
+            return condition != null && condition instanceof String;
+        }
+
+    },
+
+    /**
+     * Whether the text matches a regular expression (case sensitive)
+     */
     REGEX {
         @Override
         public boolean evaluate(Object value, Object condition) {
-            Preconditions.checkArgument(isValidCondition(condition), "Invalid condition provided: %s", condition);
+            this.preevaluate(value,condition);
             if (value == null) return false;
-            if (!(value instanceof String)) log.debug("Value not a string: " + value);
-            String regex = (String) condition;
-            //TODO: compile regex for efficiency
-            for (String token : tokenize(value.toString().toLowerCase())) {
-                if (token.matches(regex)) return true;
-            }
-            return false;
+            return evaluateRaw(value.toString(),(String)condition);
+        }
+
+        public boolean evaluateRaw(String value, String regex) {
+            return value.matches(regex);
         }
 
         @Override
@@ -95,16 +146,25 @@ public enum Text implements TitanPredicate {
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);
 
+    public void preevaluate(Object value, Object condition) {
+        Preconditions.checkArgument(this.isValidCondition(condition), "Invalid condition provided: %s", condition);
+        if (!(value instanceof String)) log.debug("Value not a string: " + value);
+    }
+
+    abstract boolean evaluateRaw(String value, String condition);
+
+    private static final int MIN_TOKEN_LENGTH = 1;
+
     public static List<String> tokenize(String str) {
         ArrayList<String> tokens = new ArrayList<String>();
         int previous = 0;
         for (int p = 0; p < str.length(); p++) {
             if (!Character.isLetterOrDigit(str.charAt(p))) {
-                if (p > previous) tokens.add(str.substring(previous, p));
+                if (p > previous + MIN_TOKEN_LENGTH) tokens.add(str.substring(previous, p));
                 previous = p + 1;
             }
         }
-        if (previous < str.length()) tokens.add(str.substring(previous, str.length()));
+        if (previous + MIN_TOKEN_LENGTH < str.length()) tokens.add(str.substring(previous, str.length()));
         return tokens;
     }
 

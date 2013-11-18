@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
@@ -24,6 +25,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -55,6 +57,16 @@ public abstract class IndexProviderTest {
         public KeyInformation get(String store, String key) {
             //Same for all stores
             return allKeys.get(key);
+        }
+
+        @Override
+        public KeyInformation.StoreRetriever get(String store) {
+            return new KeyInformation.StoreRetriever() {
+                @Override
+                public KeyInformation get(String key) {
+                    return allKeys.get(key);
+                }
+            };
         }
     };
 
@@ -133,17 +145,13 @@ public abstract class IndexProviderTest {
         clopen();
 
         for (String store : stores) {
-
+            //Token
             List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
             assertEquals(ImmutableSet.copyOf(result), ImmutableSet.copyOf(tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "wOrLD")))));
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "bob"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "worl"))).size());
             assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "Tomorrow is the world"))).size());
-
-            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Tomorrow is the world"))).size());
-            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "world"))).size());
-            assertEquals(3, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "jubidoo"))).size());
-
 
             //Ordering
             result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), orderTimeDesc));
@@ -157,20 +165,44 @@ public abstract class IndexProviderTest {
             result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "world"), jointOrder));
             assertEquals(ImmutableList.of("doc2", "doc1"), result);
 
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.PREFIX, "w")));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "w")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
-            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.PREFIX, "wOr")));
+            result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "wOr")));
             assertEquals(ImmutableSet.of("doc1", "doc2"), ImmutableSet.copyOf(result));
+            assertEquals(0,tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_PREFIX, "bobi"))).size());
 
+            if (index.supports(new StandardKeyInformation(String.class), Text.CONTAINS_REGEX)) {
+                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "he[l]+(.*)")));
+                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
+                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "[h]+e[l]+(.*)")));
+                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
+                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "he[l]+")));
+                assertTrue(result.isEmpty());
+                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS_REGEX, "e[l]+(.*)")));
+                assertTrue(result.isEmpty());
+            }
+            for (TitanPredicate tp : new Text[]{Text.PREFIX, Text.REGEX}) {
+                try {
+                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, tp, "world"))).size());
+                    fail();
+                } catch (IllegalArgumentException e) {}
+            }
+
+            //String
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "Tomorrow is the world"))).size());
+            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, "world"))).size());
+            assertEquals(3, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.NOT_EQUAL, "bob"))).size());
+            assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "Tomorrow"))).size());
+            assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.PREFIX, "wor"))).size());
+            for (TitanPredicate tp : new Text[]{Text.CONTAINS,Text.CONTAINS_PREFIX, Text.CONTAINS_REGEX}) {
+                try {
+                    assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, tp, "world"))).size());
+                    fail();
+                } catch (IllegalArgumentException e) {}
+            }
             if (index.supports(new StandardKeyInformation(String.class), Text.REGEX)) {
-                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.REGEX, "he[l]+(.*)")));
-                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
-                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.REGEX, "[h]+e[l]+(.*)")));
-                assertEquals(ImmutableSet.of("doc1", "doc3"), ImmutableSet.copyOf(result));
-                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.REGEX, "he[l]+")));
-                assertTrue(result.isEmpty());
-                result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.REGEX, "e[l]+(.*)")));
-                assertTrue(result.isEmpty());
+                assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomo[r]+ow is.*world"))).size());
+                assertEquals(0, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Text.REGEX, "Tomorrow"))).size());
             }
 
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(TEXT, Text.CONTAINS, "world"), PredicateCondition.of(TEXT, Text.CONTAINS, "hello"))));

@@ -40,6 +40,17 @@ public interface KeyInformation {
     public Parameter[] getParameters();
 
 
+    public interface StoreRetriever {
+
+        /**
+         * Returns the {@link KeyInformation} for a particular key for this store
+         * @param key
+         * @return
+         */
+        public KeyInformation get(String key);
+
+    }
+
     public interface IndexRetriever {
 
         /**
@@ -50,6 +61,13 @@ public interface KeyInformation {
          * @return
          */
         public KeyInformation get(String store, String key);
+
+        /**
+         * Returns a {@link StoreRetriever} for the given store on this IndexRetriever
+         * @param store
+         * @return
+         */
+        public StoreRetriever get(String store);
 
     }
 

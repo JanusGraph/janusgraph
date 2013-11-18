@@ -62,7 +62,7 @@ public class GuavaVertexCache implements VertexCache {
             assert newVertex!=null;
             try {
                 vertex = cache.get(vertexId, new NewVertexCallable(newVertex));
-            } catch (Exception e) { throw new AssertionError("Should not happen: ",e); }
+            } catch (Exception e) { throw new AssertionError("Should not happen: "+e.getMessage()); }
             assert vertex!=null;
         }
 

@@ -62,9 +62,12 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertFalse(index.supports(of(Exception.class)));
 
         assertTrue(index.supports(of(String.class), Text.CONTAINS));
-        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.PREFIX));
-        assertTrue(index.supports(of(String.class), Text.REGEX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.CONTAINS_REGEX));
+        assertFalse(index.supports(of(String.class, new Parameter("mapping", Mapping.TEXT)), Text.REGEX));
         assertFalse(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Text.CONTAINS));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.PREFIX));
+        assertTrue(index.supports(of(String.class, new Parameter("mapping", Mapping.STRING)), Text.REGEX));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.EQUAL));
         assertTrue(index.supports(of(String.class, new Parameter("mapping",Mapping.STRING)), Cmp.NOT_EQUAL));
 

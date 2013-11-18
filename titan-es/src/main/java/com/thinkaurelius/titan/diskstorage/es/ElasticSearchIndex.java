@@ -350,7 +350,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public FilterBuilder getFilter(Condition<?> condition) {
+    public FilterBuilder getFilter(Condition<?> condition, KeyInformation.StoreRetriever informations) {
         if (condition instanceof PredicateCondition) {
             PredicateCondition<String, ?> atom = (PredicateCondition) condition;
             Object value = atom.getValue();
@@ -378,10 +378,23 @@ public class ElasticSearchIndex implements IndexProvider {
                         throw new IllegalArgumentException("Unexpected relation: " + numRel);
                 }
             } else if (value instanceof String) {
+                Mapping map = Mapping.getMapping(informations.get(key));
+                if ((map==Mapping.DEFAULT || map==Mapping.TEXT) && !titanPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("Text mapped string values only support CONTAINS queries and not: " + titanPredicate);
+                if (map==Mapping.STRING && titanPredicate.toString().startsWith("CONTAINS"))
+                    throw new IllegalArgumentException("String mapped string values do not support CONTAINS queries: " + titanPredicate);
+
                 if (titanPredicate == Text.CONTAINS) {
-                    return FilterBuilders.termFilter(key, ((String) value).toLowerCase());
+                    value = ((String) value).toLowerCase();
+                    return FilterBuilders.termFilter(key, (String) value);
+                } else if (titanPredicate == Text.CONTAINS_PREFIX) {
+                    value = ((String) value).toLowerCase();
+                    return FilterBuilders.prefixFilter(key, (String) value);
+                } else if (titanPredicate == Text.CONTAINS_REGEX) {
+                    value = ((String) value).toLowerCase();
+                    return FilterBuilders.regexpFilter(key, (String) value);
                 } else if (titanPredicate == Text.PREFIX) {
-                    return FilterBuilders.prefixFilter(key, ((String) value).toLowerCase());
+                    return FilterBuilders.prefixFilter(key, (String) value);
                 } else if (titanPredicate == Text.REGEX) {
                     return FilterBuilders.regexpFilter(key, (String) value);
                 } else if (titanPredicate == Cmp.EQUAL) {
@@ -404,17 +417,17 @@ public class ElasticSearchIndex implements IndexProvider {
                     throw new IllegalArgumentException("Unsupported or invalid search shape type: " + shape.getType());
             } else throw new IllegalArgumentException("Unsupported type: " + value);
         } else if (condition instanceof Not) {
-            return FilterBuilders.notFilter(getFilter(((Not) condition).getChild()));
+            return FilterBuilders.notFilter(getFilter(((Not) condition).getChild(),informations));
         } else if (condition instanceof And) {
             AndFilterBuilder b = FilterBuilders.andFilter();
             for (Condition c : condition.getChildren()) {
-                b.add(getFilter(c));
+                b.add(getFilter(c,informations));
             }
             return b;
         } else if (condition instanceof Or) {
             OrFilterBuilder b = FilterBuilders.orFilter();
             for (Condition c : condition.getChildren()) {
-                b.add(getFilter(c));
+                b.add(getFilter(c,informations));
             }
             return b;
         } else throw new IllegalArgumentException("Invalid condition: " + condition);
@@ -425,7 +438,7 @@ public class ElasticSearchIndex implements IndexProvider {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.matchAllQuery());
-        srb.setFilter(getFilter(query.getCondition()));
+        srb.setFilter(getFilter(query.getCondition(),informations.get(query.getStore())));
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {
@@ -484,19 +497,18 @@ public class ElasticSearchIndex implements IndexProvider {
 
         if (Number.class.isAssignableFrom(dataType)) {
             if (titanPredicate instanceof Cmp) return true;
-            else return false;
         } else if (dataType == Geoshape.class) {
             return titanPredicate == Geo.WITHIN;
         } else if (AttributeUtil.isString(dataType)) {
             switch(mapping) {
                 case DEFAULT:
                 case TEXT:
-                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.PREFIX || titanPredicate == Text.REGEX;
+                    return titanPredicate == Text.CONTAINS || titanPredicate == Text.CONTAINS_PREFIX || titanPredicate == Text.CONTAINS_REGEX;
                 case STRING:
-                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL;
-                default: return false;
+                    return titanPredicate == Cmp.EQUAL || titanPredicate==Cmp.NOT_EQUAL || titanPredicate==Text.REGEX || titanPredicate==Text.PREFIX;
             }
-        } else return false;
+        }
+        return false;
     }
 
 
@@ -504,9 +516,10 @@ public class ElasticSearchIndex implements IndexProvider {
     public boolean supports(KeyInformation information) {
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
-        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class || AttributeUtil.isString(dataType)) {
+        if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
             if (mapping==Mapping.DEFAULT) return true;
-            if (AttributeUtil.isString(dataType) && (mapping==Mapping.STRING || mapping==Mapping.TEXT)) return true;
+        } else if (AttributeUtil.isString(dataType)) {
+            if (mapping==Mapping.DEFAULT || mapping==Mapping.STRING || mapping==Mapping.TEXT) return true;
         }
         return false;
     }

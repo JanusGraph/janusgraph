@@ -115,6 +115,17 @@ public class IndexSerializer {
                     ElementType elementType = getElementType(store);
                     return getKeyInformation(titanKey,elementType.getElementType(),index);
                 }
+
+                @Override
+                public KeyInformation.StoreRetriever get(final String store) {
+                    final KeyInformation.IndexRetriever retriever = this;
+                    return new KeyInformation.StoreRetriever() {
+                        @Override
+                        public KeyInformation get(String key) {
+                            return retriever.get(store,key);
+                        }
+                    };
+                }
             };
         }
     }
