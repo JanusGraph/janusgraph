@@ -150,6 +150,9 @@ public class InMemoryMetricsTest {
         verifyMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
         assertEquals(3, CachedKeyColumnValueStore.getGlobalCacheMisses());
         assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
+        //==> 3 lookups in vertexIndex to see if types already exist, then 6 mutations (3+3 for lock) and 3 lock applications to create them
+        //==> 8 mutations in edgeStore to create vertices and types
+        //3 cache misses when doing the index lookup for the type names (since they are not yet defined)
 
         tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         Iterable<TitanRelation> relations = ((TitanVertexQuery)tx.getVertex(parentVertex).query()).relations();
