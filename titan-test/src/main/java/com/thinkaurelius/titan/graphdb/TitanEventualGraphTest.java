@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -269,11 +270,23 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
     @Test
     @Category({ SerialTests.class })
-    public void testCacheExpiration() throws InterruptedException {
+    public void testCacheExpirationTimeOut() throws InterruptedException {
+        testCacheExpiration(4000,6000);
+    }
+
+    @Test
+    @Category({ SerialTests.class })
+    public void testCacheExpirationNoTimeOut() throws InterruptedException {
+        testCacheExpiration(0,5000);
+    }
+
+
+    public void testCacheExpiration(final int timeOutTime, final int waitTime) throws InterruptedException {
+        Preconditions.checkArgument(timeOutTime==0 || timeOutTime<waitTime);
         final int cleanTime = 400;
         final int numV = 10;
         final int edgePerV = 10;
-        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",0,"cache.db-cache-clean-wait",cleanTime);
+        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",timeOutTime,"cache.db-cache-clean-wait",cleanTime);
         clopen(newConfig);
         long[] vs = new long[numV];
         for (int i=0;i<numV;i++) {
@@ -340,7 +353,15 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         //Nothing changes without commit => hitting transactional caches
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
         verifyCacheCalls(calls*2,calls,calls);
+        graph.commit();
 
+        //Time the cache out
+        Thread.sleep(waitTime);
+        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
+        if (timeOutTime==0)
+            verifyCacheCalls(calls*3,calls,calls*2);
+        else
+            verifyCacheCalls(calls*3,calls*2,calls);
     }
 
     private void verifyCacheCalls(int total, int misses, int hits) {
