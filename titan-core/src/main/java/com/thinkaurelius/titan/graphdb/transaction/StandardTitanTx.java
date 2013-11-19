@@ -35,7 +35,6 @@ import com.thinkaurelius.titan.graphdb.transaction.indexcache.ConcurrentIndexCac
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
-import com.thinkaurelius.titan.graphdb.transaction.vertexcache.LRUVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.StandardKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardLabelMaker;
