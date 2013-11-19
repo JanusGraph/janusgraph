@@ -1147,9 +1147,9 @@ public class GraphDatabaseConfiguration {
         if (cachesize<1.0) {
             //Its a percentage
             Runtime runtime = Runtime.getRuntime();
-            cacheSizeBytes = (long)(runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory()) * cachesize);
+            cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
         } else {
-            Preconditions.checkArgument(cachesize>100,"Cache size is too small: %s",cachesize);
+            Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
             cacheSizeBytes = (long)cachesize;
         }
         log.info("Configuring edge store cache size: {}",cacheSizeBytes);

@@ -59,7 +59,7 @@ public class ExpirationStoreCache implements StoreCache {
         CacheBuilder<KeySliceQuery,List<Entry>> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)
                 .concurrencyLevel(CONCURRENCY_LEVEL)
-                .initialCapacity(200)
+                .initialCapacity(1000)
                 .expireAfterWrite(cacheTimeMS, TimeUnit.MILLISECONDS)
                 .weigher(new Weigher<KeySliceQuery, List<Entry>>() {
                     @Override

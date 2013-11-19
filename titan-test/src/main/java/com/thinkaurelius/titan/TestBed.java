@@ -3,6 +3,9 @@ package com.thinkaurelius.titan;
 import cern.colt.function.LongObjectProcedure;
 import cern.colt.map.AbstractLongObjectMap;
 import cern.colt.map.OpenLongObjectHashMap;
+import com.google.common.base.Preconditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -11,6 +14,7 @@ import com.tinkerpop.blueprints.Vertex;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Callable;
 
 public class TestBed {
 
@@ -35,14 +39,33 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        System.out.println((int) Character.MIN_VALUE);
-        System.out.println((int) Character.MAX_VALUE);
+        int size = 100000;
+        Cache<Long,Long> cache = CacheBuilder.newBuilder()
+                .maximumSize(size*2)//.softValues()
+                .concurrencyLevel(3)
+                .initialCapacity(size).build();
+
+        long time = System.currentTimeMillis();
+        for (int j=0;j<8;j++) {
+            for (int i=0;i<size;i++) {
+                final Long value = (long)i;
+                Preconditions.checkArgument(i == cache.get(value, new Callable<Long>() {
+                    @Override
+                    public Long call() throws Exception {
+                        return value;
+                    }
+                }));
+            }
+        }
+        System.out.println(System.currentTimeMillis()-time);
+
+
         System.exit(0);
 
         Object o = Long.valueOf(5);
         ByteBuffer bb = ByteBuffer.allocate(16);
         bb.putLong(1).putLong(2).flip();
-        long time = System.currentTimeMillis();
+        time = System.currentTimeMillis();
         for (long i = 0; i < 1000000000l; i++) {
 //            A a = new A(o);
 //            a.inc();
@@ -88,7 +111,7 @@ public class TestBed {
         System.out.println(Runtime.getRuntime().freeMemory() / 1024);
         long memBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         System.out.println(memBefore / 1024);
-        int size = 10000000;
+        size = 10000000;
         final int modulo = 7;
         final AbstractLongObjectMap map = new OpenLongObjectHashMap(size);
         for (int i = 1; i <= size; i++) {

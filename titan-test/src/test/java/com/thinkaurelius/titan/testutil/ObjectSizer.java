@@ -119,7 +119,7 @@ public final class ObjectSizer {
         public Object newInstance() {
             int size = 10000;
             Cache<Nothing,Nothing> cache = CacheBuilder.newBuilder()
-                    .maximumSize(size)
+                    .maximumSize(size)//.softValues()
                     .concurrencyLevel(3)
                     .initialCapacity(size).build();
             for (int i=0;i<size;i++) {

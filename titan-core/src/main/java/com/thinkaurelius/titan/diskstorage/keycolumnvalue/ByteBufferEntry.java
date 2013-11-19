@@ -36,7 +36,7 @@ public class ByteBufferEntry implements Entry {
     @Override
     public int getByteSize() {
         return ByteSize.OBJECT_HEADER + ByteSize.OBJECT_REFERENCE +
-                2 * (ByteSize.OBJECT_REFERENCE + ByteSize.STATICARRAYBUFFER_RAW_SIZE) +
+                2 * (ByteSize.OBJECT_REFERENCE + ByteSize.BYTEBUFFER_RAW_SIZE) +
                 2 * (column.limit()-column.position() + value.limit()-value.position()); //multiply by 2 to account for approx storage of RelationCache
     }
 
