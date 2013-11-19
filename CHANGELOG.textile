@@ -36,10 +36,11 @@ h3. Version 0.4.1 (October 25, 2013)
 * Added database level cache for lower latency query answering against warm data (disabled by default)
 * Better caching implementation for relations (RelationCache) to provide better de-serialization performance
 * Addition of a new query optimizer that can significantly speed up a subset of traversals
+* Support for reverse ordering in vertex centric queries by defining: makeLabel(..).sortKey(..).sortOrder(Order.DESC).make()
 * Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
 * Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
 * Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching
-* Added support for scaling the IDAuthority to hundreds of parallel Titan instances
+* Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options
 
 *Bugfixes:*
 
