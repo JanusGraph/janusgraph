@@ -658,7 +658,7 @@ public class ConcurrentLRUCache<V> {
     protected void finalize() throws Throwable {
         try {
             if (!isDestroyed) {
-                log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEALong!!!");
+                log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
                 destroy();
             }
         } finally {
