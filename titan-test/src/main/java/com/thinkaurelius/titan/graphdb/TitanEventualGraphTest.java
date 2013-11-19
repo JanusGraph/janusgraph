@@ -16,6 +16,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -24,6 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -194,6 +198,93 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
             assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices()));
             assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices().iterator().next().getEdges(Direction.OUT,"knows")));
         }
+    }
+
+    @Test
+    @Category({ SerialTests.class })
+    public void testCacheConcurrency() throws InterruptedException {
+        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",0,"cache.db-cache-clean-wait",0,"cache.db-cache-size",0.25);
+        clopen(newConfig);
+        final String prop = "property";
+        graph.makeKey(prop).dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+
+        final int numV = 100;
+        final long[] vids = new long[numV];
+        for (int i=0;i<numV;i++) {
+            TitanVertex v = graph.addVertex(null);
+            v.setProperty(prop,0);
+            graph.commit();
+            vids[i]=v.getID();
+        }
+        clopen(newConfig);
+        ExpirationStoreCache.resetGlobablCounts();
+
+        final AtomicBoolean[] precommit = new AtomicBoolean[numV];
+        final AtomicBoolean[] postcommit = new AtomicBoolean[numV];
+        for (int i=0;i<numV;i++) {
+            precommit[i]=new AtomicBoolean(false);
+            postcommit[i]=new AtomicBoolean(false);
+        }
+        final AtomicInteger lookups = new AtomicInteger(0);
+        final Random random = new Random();
+        final int updateSleepTime = 40;
+        final int readSleepTime = 2;
+        final int numReads = Math.round((numV*updateSleepTime)/readSleepTime*2.0f);
+
+        Thread reader = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                int reads = 0;
+                while (reads<numReads) {
+                    final int pos = random.nextInt(vids.length);
+                    long vid = vids[pos];
+                    TitanVertex v = graph.getVertex(vid);
+                    assertNotNull(v);
+                    boolean postCommit = postcommit[pos].get();
+                    Integer value = v.getProperty(prop);
+                    lookups.incrementAndGet();
+                    assertNotNull("On pos ["+pos+"]",value);
+                    if (!precommit[pos].get()) assertEquals(0,value.intValue());
+                    else if (postCommit) assertEquals(1,value.intValue());
+                    graph.commit();
+                    try {
+                        Thread.sleep(readSleepTime);
+                    } catch (InterruptedException e) {
+                        return;
+                    }
+                    reads++;
+                }
+            }
+        });
+        reader.start();
+
+        Thread updater = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i=0;i<numV;i++) {
+                    try {
+                        TitanVertex v = graph.getVertex(vids[i]);
+                        v.setProperty(prop,1);
+                        precommit[i].set(true);
+                        graph.commit();
+                        postcommit[i].set(true);
+                        Thread.sleep(updateSleepTime);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException("Unexpected interruption",e);
+                    }
+                }
+            }
+        });
+        updater.start();
+        updater.join();
+//        reader.start();
+        reader.join();
+
+        System.out.println("Retrievals: " + ExpirationStoreCache.getGlobalCacheRetrievals());
+        System.out.println("Hits: " + ExpirationStoreCache.getGlobalCacheHits());
+        System.out.println("Misses: " + ExpirationStoreCache.getGlobalCacheMisses());
+        assertEquals(numReads,lookups.get());
+        assertEquals(4*numV+1,ExpirationStoreCache.getGlobalCacheMisses());
     }
 
 
