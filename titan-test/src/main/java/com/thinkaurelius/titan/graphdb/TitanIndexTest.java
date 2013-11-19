@@ -250,8 +250,8 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     }
 
     private void setupChainGraph(int numV, String[] strs) {
-        TitanKey name = graph.makeKey("name").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING)}).single().make();
-        TitanKey text = graph.makeKey("text").dataType(String.class).indexed(INDEX, Element.class, new Parameter[]{Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT)}).single().make();
+        TitanKey name = graph.makeKey("name").dataType(String.class).indexed(INDEX, Element.class, Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING)).single().make();
+        TitanKey text = graph.makeKey("text").dataType(String.class).indexed(INDEX, Element.class, Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT)).single().make();
         graph.makeLabel("knows").sortKey(name).sortOrder(Order.DESC).make();
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
