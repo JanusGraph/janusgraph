@@ -255,7 +255,7 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
 
         System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
         assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
-        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal*2);
+        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal*1.2);
     }
 
     private double testAllVertices(long vid, int numV) {
@@ -268,7 +268,7 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
-    @Ignore //Only works if run individually due to concurrency issues in how we access the stats
+    @Category({ SerialTests.class })
     public void testCacheExpiration() throws InterruptedException {
         final int cleanTime = 400;
         final int numV = 10;

@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import com.thinkaurelius.titan.util.datastructures.ByteSize;
 
 import java.nio.ByteBuffer;
 
@@ -25,12 +26,20 @@ public class StaticBufferEntry implements Entry {
         this.value = value;
     }
 
+
     public static Entry of(StaticBuffer column) {
         return new StaticBufferEntry(column, NO_VALUE);
     }
 
     public static Entry of(StaticBuffer column, StaticBuffer value) {
         return new StaticBufferEntry(column, value);
+    }
+
+    @Override
+    public int getByteSize() {
+        return ByteSize.OBJECT_HEADER + ByteSize.OBJECT_REFERENCE +
+                2 * (ByteSize.OBJECT_REFERENCE + ByteSize.STATICARRAYBUFFER_RAW_SIZE) +
+                2 * (column.length() + value.length()); //multiply by 2 to account for approx storage of RelationCache
     }
 
     @Override
