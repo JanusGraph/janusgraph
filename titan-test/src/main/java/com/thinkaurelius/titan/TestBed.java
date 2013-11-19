@@ -41,7 +41,7 @@ public class TestBed {
     public static void main(String[] args) throws Exception {
         int size = 100000;
         Cache<Long,Long> cache = CacheBuilder.newBuilder()
-                .maximumSize(size*2)//.softValues()
+                .maximumSize(size*2).softValues()
                 .concurrencyLevel(3)
                 .initialCapacity(size).build();
 

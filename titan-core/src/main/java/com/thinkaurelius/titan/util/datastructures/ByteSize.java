@@ -11,6 +11,9 @@ public class ByteSize {
 
     public static final int GUAVA_CACHE_ENTRY_SIZE = 104;
 
+    public static final int GUAVA_CACHE_SOFT_ENTRY_SIZE = 136;
+
+
     //Does not include array contents of byte[]
     public static final int STATICARRAYBUFFER_RAW_SIZE = OBJECT_HEADER + 2*4 + 6 + (OBJECT_REFERENCE + OBJECT_HEADER + 8); // 6 = overhead & padding, (byte[] array)
 
