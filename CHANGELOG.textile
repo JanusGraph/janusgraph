@@ -41,6 +41,7 @@ h3. Version 0.4.1 (October 25, 2013)
 * Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
 * Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching
 * Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options
+* Support for secure access to storage backend through username/password authentication in Cassandra
 
 *Bugfixes:*
 
