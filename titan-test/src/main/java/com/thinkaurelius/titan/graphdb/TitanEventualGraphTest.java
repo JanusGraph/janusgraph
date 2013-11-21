@@ -284,7 +284,7 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         System.out.println("Hits: " + ExpirationStoreCache.getGlobalCacheHits());
         System.out.println("Misses: " + ExpirationStoreCache.getGlobalCacheMisses());
         assertEquals(numReads,lookups.get());
-        assertEquals(4*numV+1,ExpirationStoreCache.getGlobalCacheMisses());
+        assertEquals(4*numV+2,ExpirationStoreCache.getGlobalCacheMisses());
     }
 
 
@@ -392,7 +392,8 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         }
         clopen(newConfig);
         ExpirationStoreCache.resetGlobablCounts();
-        int calls = numV*2+1; // numV * (vertex existence + loading edges) + getting "knows" definition
+        int labelcalls = 2;
+        int calls = numV*2+labelcalls; // numV * (vertex existence + loading edges) + 2 getting "knows" definition
         for (int i=0;i<numV;i++) assertEquals(edgePerV,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
         verifyCacheCalls(calls,calls,0);
         graph.commit();
@@ -413,20 +414,20 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         verifyCacheCalls(calls,calls,0); //Everything served out of tx cache
         graph.commit();
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyCacheCalls(calls+1,calls,1); //Due to invalid cache, only edge label is served from it
+        verifyCacheCalls(calls+labelcalls,calls,labelcalls); //Due to invalid cache, only edge label is served from it
         graph.commit();
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyCacheCalls(calls+2,calls,2); //Things are still invalid....
+        verifyCacheCalls(calls+2*labelcalls,calls,2*labelcalls); //Things are still invalid....
         graph.commit();
         Thread.sleep(cleanTime*2); //until we wait for the expiration threshold, now the next lookup should trigger a clean
-        verifyCacheCalls(calls+2,calls,2);
+        verifyCacheCalls(calls+2*labelcalls,calls,2*labelcalls);
         ExpirationStoreCache.resetGlobablCounts();
 
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
         graph.commit();
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
         assertTrue(ExpirationStoreCache.getGlobalCacheRetrievals()>=calls-1); //Things are somewhat non-deterministic here due to the parallel cleanup thread
-        assertEquals(calls-1,ExpirationStoreCache.getGlobalCacheMisses());
+        assertEquals(calls-labelcalls,ExpirationStoreCache.getGlobalCacheMisses());
         graph.commit();
         ExpirationStoreCache.resetGlobablCounts();
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
