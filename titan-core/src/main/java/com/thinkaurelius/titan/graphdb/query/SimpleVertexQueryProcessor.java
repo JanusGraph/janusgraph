@@ -59,6 +59,8 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     public SimpleVertexQueryProcessor(InternalVertex vertex, TitanKey key) {
         this(vertex);
+        assert key==null || !((InternalType)key).isHidden();
+        assert key==null || !((InternalType)key).isStatic(Direction.OUT);
         RelationQueryCache cache = tx.getGraph().getRelationCache();
         filterHiddenProperties = key==null;
         if (key==null || tx.getConfiguration().hasPropertyPrefetching()) {

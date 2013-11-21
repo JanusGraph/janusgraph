@@ -1018,8 +1018,7 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasPropertyPrefetching() {
         if (propertyPrefetching == null) {
-            Preconditions.checkArgument(storeFeatures != null, "Cannot open transaction before the storage backend has been initialized");
-            return storeFeatures.isDistributed();
+            return getStoreFeatures().isDistributed();
         } else {
             return propertyPrefetching;
         }
@@ -1112,8 +1111,12 @@ public class GraphDatabaseConfiguration {
         return backend;
     }
 
+    public StoreFeatures getStoreFeatures() {
+        Preconditions.checkArgument(storeFeatures != null, "Cannot retrieve store features before the storage backend has been initialized");
+        return storeFeatures;
+    }
+
     public StoreCache getEdgeStoreCache() {
-        Preconditions.checkArgument(storeFeatures != null, "Cannot open edge store cache before the storage backend has been initialized");
         Configuration cacheconf = configuration.subset(CACHE_NAMESPACE);
         if (this.batchLoading || !cacheconf.getBoolean(DB_CACHE_KEY,DB_CACHE_DEFAULT))
             return new PassThroughStoreCache();

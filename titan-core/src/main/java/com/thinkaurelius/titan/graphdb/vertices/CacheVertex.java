@@ -1,16 +1,11 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
-import java.util.*;
-import java.util.concurrent.Callable;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
+
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

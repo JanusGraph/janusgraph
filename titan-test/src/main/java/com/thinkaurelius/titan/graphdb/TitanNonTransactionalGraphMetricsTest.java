@@ -1,10 +1,12 @@
-package com.thinkaurelius.titan.graphdb.inmemory;
+package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import static com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore.*;
 import static junit.framework.Assert.assertEquals;
@@ -12,6 +14,7 @@ import static junit.framework.Assert.assertNotNull;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -20,6 +23,7 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,25 +33,32 @@ import java.util.Map;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class InMemoryMetricsTest {
+@Category({ SerialTests.class })
+public abstract class TitanNonTransactionalGraphMetricsTest {
 
     public StandardTitanGraph graph;
     public MetricManager metric;
+    public StoreFeatures features;
 
     public final String SYSTEM_METRICS  = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 
-    public static final Configuration getConfiguration() {
-        Configuration config = new BaseConfiguration();
+    public abstract Configuration getConfiguration();
+
+    public Configuration getMetricsConfiguration() {
+        Configuration config = getConfiguration();
         Configuration storeconfig = config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        storeconfig.setProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "inmemory");
         storeconfig.setProperty(GraphDatabaseConfiguration.BASIC_METRICS,true);
         storeconfig.setProperty(GraphDatabaseConfiguration.MERGE_BASIC_METRICS_KEY,false);
+        config.setProperty(GraphDatabaseConfiguration.PROPERTY_PREFETCHING_KEY,false);
         return config;
     }
 
     @Before
-    public void before() {
-        open(getConfiguration());
+    public void before() throws StorageException {
+        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(getConfiguration());
+        graphconfig.getBackend().clearStorage();
+        features = graphconfig.getStoreFeatures();
+        open(getMetricsConfiguration());
     }
 
     public void open(Configuration config) {
@@ -63,7 +74,7 @@ public class InMemoryMetricsTest {
 
     public void clopen(Map<String,? extends Object> settings) {
         close();
-        Configuration config = getConfiguration();
+        Configuration config = getMetricsConfiguration();
         for (Map.Entry<String,? extends Object> entry : settings.entrySet()) {
             config.setProperty(entry.getKey(),entry.getValue());
         }
@@ -208,10 +219,20 @@ public class InMemoryMetricsTest {
     }
 
     @Test
-    public void checkFastPropertyAndLocking() {
-        clopen(ImmutableMap.of("fast-property",true));
+    public void checkFastPropertyTrue() {
+        checkFastPropertyAndLocking(true);
+    }
+
+    @Test
+    public void checkFastPropertyFalse() {
+        checkFastPropertyAndLocking(false);
+    }
+
+
+    public void checkFastPropertyAndLocking(boolean fastProperty) {
+        clopen(ImmutableMap.of("fast-property",fastProperty));
         CachedKeyColumnValueStore.resetGlobalMetrics();
-        METRICS = "metrics3";
+        METRICS = "metrics3"+fastProperty;
 
         TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
         tx.makeKey("name").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
@@ -231,9 +252,15 @@ public class InMemoryMetricsTest {
         v.setProperty("age",35);
         v.setProperty("name","johnny");
         tx.commit();
-        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 8l));
+        if (fastProperty)
+            verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 8l));
+        else
+            verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 7l));
         verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 6l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
-        assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        if (fastProperty)
+            assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        else
+            assertEquals(9, CachedKeyColumnValueStore.getGlobalCacheMisses());
         assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
 
         tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
@@ -241,10 +268,29 @@ public class InMemoryMetricsTest {
         v.setProperty("age",45);
         v.setProperty("name","johnnie");
         tx.commit();
-        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 9l, M_GET_SLICE, 15l));
+        if (fastProperty)
+            verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 9l, M_GET_SLICE, 16l));
+        else
+            verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 9l, M_GET_SLICE, 14l));
         verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 8l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
-        assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
-        assertEquals(7, CachedKeyColumnValueStore.getGlobalCacheHits());
+        if (fastProperty) {
+            assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+            assertEquals(8, CachedKeyColumnValueStore.getGlobalCacheHits());
+        } else {
+            assertEquals(9, CachedKeyColumnValueStore.getGlobalCacheMisses());
+            assertEquals(6, CachedKeyColumnValueStore.getGlobalCacheHits());
+        }
+
+        //Check no further locks on read all
+        tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        v = tx.getVertex(v.getID());
+        for (TitanProperty p : v.getProperties()) {
+            assertNotNull(p.getValue());
+            assertNotNull(p.getPropertyKey());
+        }
+        tx.commit();
+        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 8l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
+
     }
 
     private String METRICS;

@@ -180,8 +180,15 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
             condition=newcond;
         }
         if (returnType == RelationType.PROPERTY && hasTypes() && tx.getConfiguration().hasPropertyPrefetching()) {
+            //1st check that non of those types are static
+            boolean isStatic = false;
+            for (String type : types) {
+                if (getType(type).isStatic(Direction.OUT)) isStatic=true;
+            }
             //Retrieve all
-            vertex.query().includeHidden().properties().iterator().hasNext();
+            if (!isStatic) {
+                vertex.query().includeHidden().properties().iterator().hasNext();
+            }
         }
         return new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());
     }
