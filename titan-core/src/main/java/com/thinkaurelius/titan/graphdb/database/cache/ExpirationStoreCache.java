@@ -29,8 +29,6 @@ public class ExpirationStoreCache implements StoreCache {
     private static final Logger log =
             LoggerFactory.getLogger(ExpirationStoreCache.class);
 
-    private static final int CONCURRENCY_LEVEL = 3;
-
     //Weight estimation
     private static final int STATICARRAYBUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length
     private static final int KEY_QUERY_SIZE = OBJECT_HEADER + 4 + 1 + 3 * (OBJECT_REFERENCE + STATICARRAYBUFFER_SIZE); // object_size + int + boolean + 3 static buffers
@@ -54,11 +52,12 @@ public class ExpirationStoreCache implements StoreCache {
         Preconditions.checkArgument(cacheTimeMS>0,"Cache expiration must be positive: %s");
         Preconditions.checkArgument(System.currentTimeMillis()+1000l*3600*24*365*100+cacheTimeMS>0,"Cache expiration time too large, overflow may occur: %s",cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
+        int concurrencyLevel = Runtime.getRuntime().availableProcessors();
         Preconditions.checkArgument(expirationGracePeriodMS>=0,"Invalid expiration grace peiod: %s",expirationGracePeriodMS);
         this.expirationGracePeriodMS = expirationGracePeriodMS;
         CacheBuilder<KeySliceQuery,List<Entry>> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)
-                .concurrencyLevel(CONCURRENCY_LEVEL)
+                .concurrencyLevel(concurrencyLevel)
                 .initialCapacity(1000)
                 .expireAfterWrite(cacheTimeMS, TimeUnit.MILLISECONDS)
                 .weigher(new Weigher<KeySliceQuery, List<Entry>>() {
@@ -71,7 +70,7 @@ public class ExpirationStoreCache implements StoreCache {
                 });
 
         cache = cachebuilder.build();
-        expiredKeys = new ConcurrentHashMap<StaticBuffer, Long>(50,0.75f,CONCURRENCY_LEVEL);
+        expiredKeys = new ConcurrentHashMap<StaticBuffer, Long>(50,0.75f,concurrencyLevel);
         penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
 
         cleanupThread = new CleanupThread();

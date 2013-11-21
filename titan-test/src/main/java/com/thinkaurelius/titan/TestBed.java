@@ -14,6 +14,9 @@ import com.tinkerpop.blueprints.Vertex;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 public class TestBed {
@@ -39,22 +42,27 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        int size = 100000;
-        Cache<Long,Long> cache = CacheBuilder.newBuilder()
-                .maximumSize(size*2).softValues()
-                .concurrencyLevel(3)
-                .initialCapacity(size).build();
+        int size = 100; int trials = 10000; int arrsize = 40;
+        Random r = new Random();
+
+        List<byte[]> entries = new ArrayList<byte[]>();
+        for (int i=0;i<size;i++) {
+            byte[] b = new byte[arrsize];
+            for (int j=0;j<b.length;j++) b[j]=(byte)r.nextInt(Byte.MAX_VALUE);
+            entries.add(b);
+        }
 
         long time = System.currentTimeMillis();
-        for (int j=0;j<8;j++) {
-            for (int i=0;i<size;i++) {
-                final Long value = (long)i;
-                Preconditions.checkArgument(i == cache.get(value, new Callable<Long>() {
-                    @Override
-                    public Long call() throws Exception {
-                        return value;
-                    }
-                }));
+        for (int i=0;i<trials;i++) {
+            int totallength = 0;
+            for (byte[] barr : entries) totallength+=barr.length;
+            byte[] total = new byte[totallength];
+            int[] offsets = new int[entries.size()];
+            int pos=0; int index = 0;
+            for (byte[] barr : entries) {
+                offsets[index++]=pos;
+                System.arraycopy(barr,0,total,pos,barr.length);
+                pos+=barr.length;
             }
         }
         System.out.println(System.currentTimeMillis()-time);

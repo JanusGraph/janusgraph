@@ -13,6 +13,7 @@ import static junit.framework.Assert.assertNotNull;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.util.stats.MetricManager;
+import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -46,7 +47,11 @@ public class InMemoryMetricsTest {
 
     @Before
     public void before() {
-        graph = (StandardTitanGraph)TitanFactory.open(getConfiguration());
+        open(getConfiguration());
+    }
+
+    public void open(Configuration config) {
+        graph = (StandardTitanGraph)TitanFactory.open(config);
         metric = MetricManager.INSTANCE;
         CachedKeyColumnValueStore.resetGlobalMetrics();
     }
@@ -54,6 +59,15 @@ public class InMemoryMetricsTest {
     @After
     public void close() {
         graph.shutdown();
+    }
+
+    public void clopen(Map<String,? extends Object> settings) {
+        close();
+        Configuration config = getConfiguration();
+        for (Map.Entry<String,? extends Object> entry : settings.entrySet()) {
+            config.setProperty(entry.getKey(),entry.getValue());
+        }
+        open(config);
     }
 
     public static final List<String> STORE_NAMES =
@@ -193,6 +207,46 @@ public class InMemoryMetricsTest {
         //all other stats remain unchanged
     }
 
+    @Test
+    public void checkFastPropertyAndLocking() {
+        clopen(ImmutableMap.of("fast-property",true));
+        CachedKeyColumnValueStore.resetGlobalMetrics();
+        METRICS = "metrics3";
+
+        TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        tx.makeKey("name").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+        tx.makeKey("age").dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+        tx.makeKey("uid").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
+                .unique(TypeMaker.UniquenessConsistency.LOCK).indexed(Vertex.class).make();
+        TitanVertex v = tx.addVertex(null);
+        ElementHelper.setProperties(v, "uid", "v1", "age", 25, "name", "john");
+        tx.commit();
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 7l));
+        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
+        assertEquals(3, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
+
+        tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        v = tx.getVertex(v.getID());
+        v.setProperty("age",35);
+        v.setProperty("name","johnny");
+        tx.commit();
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 8l));
+        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 6l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
+        assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(0, CachedKeyColumnValueStore.getGlobalCacheHits());
+
+        tx = graph.buildTransaction().setMetricsPrefix(METRICS).start();
+        v = tx.getVertex(v.getID());
+        v.setProperty("age",45);
+        v.setProperty("name","johnnie");
+        tx.commit();
+        verifyMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 9l, M_GET_SLICE, 15l));
+        verifyMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 8l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
+        assertEquals(11, CachedKeyColumnValueStore.getGlobalCacheMisses());
+        assertEquals(7, CachedKeyColumnValueStore.getGlobalCacheHits());
+    }
+
     private String METRICS;
 
     public void verifyMetrics(String storeName) {
@@ -207,7 +261,7 @@ public class InMemoryMetricsTest {
         for (String operation : OPERATION_NAMES) {
             Long count = operationCounts.get(operation);
             if (count==null) count = 0l;
-            assertEquals(count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
+            assertEquals("On "+storeName+"-"+operation,count.longValue(), metric.getCounter(prefix, storeName, operation, MetricInstrumentedStore.M_CALLS).getCount());
         }
     }
 
