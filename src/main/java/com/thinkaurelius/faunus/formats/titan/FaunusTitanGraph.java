@@ -39,7 +39,7 @@ public class FaunusTitanGraph extends StandardTitanGraph {
         for (final Entry data : entries) {
             try {
                 final FaunusVertexLoader.RelationFactory factory = loader.getFactory();
-                super.edgeSerializer.readRelation(tx.getExistingVertex(factory.getVertexID()), data);
+                super.edgeSerializer.readRelation(factory,data,tx);
                 factory.build();
             } catch (Exception e) {
                 //  TODO: log exception
