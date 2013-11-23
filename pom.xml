@@ -279,6 +279,11 @@
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>xml-maven-plugin</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>cobertura-maven-plugin</artifactId>
                     <version>2.5.2</version>
                     <configuration>
@@ -1145,7 +1150,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>xml-maven-plugin</artifactId>
-                        <version>1.0</version>
                         <configuration>
                             <forceCreation>true</forceCreation>
                             <transformationSets>
@@ -1157,6 +1161,20 @@
                                     <stylesheet>${top.level.basedir}/jre6.xslt</stylesheet>
                                 </transformationSet>
                             </transformationSets>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <configuration>
+                            <outputDirectory>${basedir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/target/generated-resources/xml/xslt/</directory>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -1173,7 +1191,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>xml-maven-plugin</artifactId>
-                        <version>1.0</version>
                         <configuration>
                             <forceCreation>true</forceCreation>
                             <transformationSets>
@@ -1185,6 +1202,20 @@
                                     <stylesheet>${top.level.basedir}/jre7.xslt</stylesheet>
                                 </transformationSet>
                             </transformationSets>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <configuration>
+                            <outputDirectory>${basedir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/target/generated-resources/xml/xslt/</directory>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </plugin>
                 </plugins>
