@@ -84,6 +84,9 @@
         <test.extra.jvm.opts />
         <test.skip.default>false</test.skip.default>
         <top.level.basedir>${basedir}</top.level.basedir>
+        <compiler.source>1.6</compiler.source>
+        <compiler.target>1.7</compiler.target>
+        <compiler.args />
     </properties>
     <modules>
         <module>titan-core</module>
@@ -599,6 +602,11 @@
                 <version>0.6.2.201302030002</version>
             </dependency>
             <dependency>
+                <groupId>net.sourceforge.saxon</groupId>
+                <artifactId>saxon</artifactId>
+                <version>9.1.0.8</version>
+            </dependency>
+            <dependency>
                 <groupId>com.yammer.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
                 <version>${metrics2.version}</version>
@@ -711,46 +719,11 @@
 
     <profiles>
         <profile>
-            <id>jre6</id>
-
-            <activation>
-                <property>
-                    <name>targetjre</name>
-                    <value>6</value>
-                </property>
-            </activation>
-
-            <properties>
-                <compiler.source>1.6</compiler.source>
-                <compiler.target>1.6</compiler.target>
-                <compiler.args>-Xbootclasspath:/opt/jdk1.6.0_45/jre/lib/rt.jar</compiler.args>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <configuration>
-                            <classifier>jre6</classifier>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
             <id>jre7</id>
 
             <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
-
-            <properties>
-                <compiler.source>1.6</compiler.source>
-                <compiler.target>1.7</compiler.target>
-            </properties>
 
             <modules>
                 <module>titan-persistit</module>
@@ -758,7 +731,6 @@
         </profile>
 
         <profile>
-
             <id>sonatype-oss-release</id>
             <build>
                 <plugins>
@@ -1162,6 +1134,12 @@
                                 </transformationSet>
                             </transformationSets>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sourceforge.saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
@@ -1203,6 +1181,12 @@
                                 </transformationSet>
                             </transformationSets>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sourceforge.saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>

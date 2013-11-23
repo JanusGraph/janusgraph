@@ -106,9 +106,7 @@
             <id>jre7</id>
             
             <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
+                <activeByDefault>true</activeByDefault>
             </activation>
             
             <dependencies>
@@ -121,4 +119,3 @@
         </profile>
     </profiles>
 </project>
- 

@@ -15,6 +15,7 @@
     <properties>
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
         <top.level.basedir>${basedir}/../..</top.level.basedir>
+        <distribution.assembly.filebase>titan-${distribution.assembly.name}-${project.version}</distribution.assembly.filebase>
     </properties>
     
     <dependencies>
@@ -189,7 +190,8 @@
                                   archive filenames are of the form
                                   ${finalName}-${<id /> from assembly descriptor}.${archive format extension}
                                 -->
-                                <finalName>titan</finalName>
+                                <finalName>${distribution.assembly.filebase}</finalName>
+				<appendAssemblyId>false</appendAssemblyId>
                                 <tarLongFileMode>gnu</tarLongFileMode>
                                 <descriptors>
                                     <!-- This property is intended to be set in submodules -->
@@ -227,7 +229,7 @@
                             </executions>
                         </plugin>
 			
-			<plugin>
+                        <plugin>
                             <artifactId>maven-jar-plugin</artifactId>
                             <executions>
                                 <execution>
@@ -317,4 +319,3 @@
         </profile>
     </profiles>
 </project>
- 
