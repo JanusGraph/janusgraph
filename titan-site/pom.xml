@@ -9,6 +9,10 @@
     <artifactId>titan-site</artifactId>
     <name>Titan-Site: Static Webpages and Docs</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
 
     <build>
         <plugins>

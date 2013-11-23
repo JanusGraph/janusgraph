@@ -14,6 +14,7 @@
 
     <properties>
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
     
     <dependencies>

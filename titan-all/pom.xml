@@ -18,6 +18,10 @@
       besides some redundant properties files.
     -->
 
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>

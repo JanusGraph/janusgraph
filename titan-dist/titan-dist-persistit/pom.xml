@@ -17,6 +17,7 @@
         <expect.graph.config>conf/titan-persistit.properties</expect.graph.config>
         <expect.graph.id>titangraph.persistit:.*conf/\.\./db/persistit</expect.graph.id>
         <test.zipfile.path>${project.build.directory}/titan-persistit-${project.version}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>

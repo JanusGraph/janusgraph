@@ -9,6 +9,9 @@
     <artifactId>titan-berkeleyje</artifactId>
     <name>Titan-BerkeleyJE: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
     <repositories>
         <repository>
             <id>oracleReleases</id>

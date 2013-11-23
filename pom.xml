@@ -83,6 +83,7 @@
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
         <test.skip.default>false</test.skip.default>
+        <top.level.basedir>${basedir}</top.level.basedir>
     </properties>
     <modules>
         <module>titan-core</module>
@@ -1131,6 +1132,63 @@
             <modules>
                 <module>titan-dist/titan-dist-parent</module>
             </modules>
+        </profile>
+        
+        
+        <profile>
+            <id>target-jre6</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <version>1.0</version>
+                        <configuration>
+                            <forceCreation>true</forceCreation>
+                            <transformationSets>
+                                <transformationSet>
+                                    <dir>${basedir}</dir>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                    <stylesheet>${top.level.basedir}/jre6.xslt</stylesheet>
+                                </transformationSet>
+                            </transformationSets>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <profile>
+            <id>target-jre7</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <version>1.0</version>
+                        <configuration>
+                            <forceCreation>true</forceCreation>
+                            <transformationSets>
+                                <transformationSet>
+                                    <dir>${basedir}/</dir>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                    <stylesheet>${top.level.basedir}/jre7.xslt</stylesheet>
+                                </transformationSet>
+                            </transformationSets>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

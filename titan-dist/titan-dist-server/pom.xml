@@ -17,6 +17,7 @@
         <expect.graph.config />
         <expect.graph.id />
         <test.zipfile.path>${project.build.directory}/titan-server-${project.version}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <dependencies>

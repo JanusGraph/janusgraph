@@ -10,6 +10,10 @@
     <name>Titan-Rexster: Support for Titan in Rexster</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>

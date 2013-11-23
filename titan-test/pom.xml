@@ -9,6 +9,10 @@
     <artifactId>titan-test</artifactId>
     <name>Titan-Test: Test Suite for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
 
     <repositories>
         <!-- Access Sonatype OSS Snapshots for Furnace artifacts. This can 

@@ -42,6 +42,7 @@
 
     <properties>
       <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
+      <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
 
     <dependencies>

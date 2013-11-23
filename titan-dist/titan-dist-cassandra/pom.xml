@@ -17,6 +17,7 @@
         <expect.graph.config>conf/titan-cassandra.properties</expect.graph.config>
         <expect.graph.id>titangraph.cassandra:127.0.0.1</expect.graph.id>
         <test.zipfile.path>${project.build.directory}/titan-cassandra-${project.version}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>

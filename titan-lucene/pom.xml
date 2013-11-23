@@ -11,6 +11,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
         <!--
           Both this module and titan-es depend on Lucene (the titan-es
           pom does not explicitly depend on Lucene, but the ES

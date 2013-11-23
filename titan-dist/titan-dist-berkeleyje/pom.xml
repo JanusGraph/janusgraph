@@ -17,6 +17,7 @@
         <expect.graph.config>conf/titan-berkeleydb.properties</expect.graph.config>
         <expect.graph.id>titangraph.berkeleyje:.*conf/\.\./db/berkeley</expect.graph.id>
         <test.zipfile.path>${project.build.directory}/titan-berkeleydb-${project.version}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>
