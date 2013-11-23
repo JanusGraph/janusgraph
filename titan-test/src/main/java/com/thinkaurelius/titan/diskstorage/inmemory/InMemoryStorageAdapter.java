@@ -61,7 +61,7 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
             }
 
             @Override
-            public StaticBuffer[] getLocalKeyPartition() throws StorageException {
+            public List<KeyRange> getLocalKeyPartition() throws StorageException {
                 throw new UnsupportedOperationException();
             }
 

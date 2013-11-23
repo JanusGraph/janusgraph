@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static org.apache.cassandra.db.Table.SYSTEM_KS;
 
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,6 +16,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.thinkaurelius.titan.util.system.NetworkUtil;
 import org.apache.cassandra.db.marshal.UTF8Type;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
@@ -72,6 +74,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final Map<String, CassandraThriftKeyColumnValueStore> openStores;
     private final CTConnectionPool pool;
     private final CTConnectionFactory factory;
+    private final Deployment deployment;
 
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
@@ -106,15 +109,20 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         // Only watch the ring and change endpoints with BOP
         if (getCassandraPartitioner() instanceof ByteOrderedPartitioner) {
+            // mark deployment as local only in case we have byte ordered partitioner and local connection
+            deployment = (isLocalConnection(randomInitialHostname)) ? Deployment.LOCAL : Deployment.REMOTE;
+
             this.backgroundThread = new Thread(new HostUpdater());
             this.backgroundThread.start();
+        } else {
+            deployment = Deployment.REMOTE;
         }
     }
 
 
     @Override
     public Deployment getDeployment() {
-        return Deployment.REMOTE;
+        return deployment;
     }
 
     @Override
@@ -849,5 +857,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                     * Math.exp(-DECAY_EXPONENT_MULTI
                     * (System.currentTimeMillis() - lastUpdate));
         }
+    }
+
+    private boolean isLocalConnection(String cassandraHost) {
+        InetAddress localhost = NetworkUtil.getLocalHost();
+        return cassandraHost.equalsIgnoreCase(NetworkUtil.getLoopbackAddress())
+                || cassandraHost.equals(localhost.getHostAddress())
+                || cassandraHost.equals(localhost.getHostName());
     }
 }

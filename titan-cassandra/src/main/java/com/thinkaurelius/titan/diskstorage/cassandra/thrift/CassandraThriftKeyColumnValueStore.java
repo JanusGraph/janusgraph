@@ -16,24 +16,17 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.util.system.NetworkUtil;
 import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
 import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.RandomPartitioner;
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KeyRange;
-import org.apache.cassandra.thrift.KeySlice;
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.SliceRange;
-import org.apache.cassandra.thrift.TimedOutException;
-import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -50,15 +43,6 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ByteBufferEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
@@ -288,8 +272,34 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        CTConnection conn = null;
+        IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
+
+        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
+            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
+
+        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
+
+        try {
+            conn = pool.borrowObject(keyspace);
+            List<TokenRange> ranges  = conn.getClient().describe_ring(keyspace);
+            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
+
+            for (TokenRange range : ranges) {
+                System.out.println(range);
+                if (!NetworkUtil.hasLocalAddress(range.endpoints))
+                    continue;
+
+                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
+            }
+
+            return keyRanges;
+        } catch (Exception e) {
+            throw convertException(e);
+        } finally {
+            pool.returnObjectUnsafe(keyspace, conn);
+        }
     }
 
 
@@ -334,7 +344,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                                            ByteBuffer endKey,
                                            SliceQuery columnSlice,
                                            int count) throws StorageException {
-        return getRangeSlices(client, new KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(count), columnSlice);
+        return getRangeSlices(client, new org.apache.cassandra.thrift.KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(count), columnSlice);
     }
 
     private <T extends Token<?>> List<KeySlice> getTokenSlice(
@@ -344,7 +354,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         String st = sanitizeBrokenByteToken(startToken);
         String et = sanitizeBrokenByteToken(endToken);
         
-        KeyRange kr = new KeyRange().setStart_token(st).setEnd_token(et).setCount(count);
+        org.apache.cassandra.thrift.KeyRange kr = new org.apache.cassandra.thrift.KeyRange().setStart_token(st).setEnd_token(et).setCount(count);
 
         return getRangeSlices(client, kr, sliceQuery);
     }
@@ -380,7 +390,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private List<KeySlice> getRangeSlices(Cassandra.Client client,
-                                           KeyRange keyRange,
+                                           org.apache.cassandra.thrift.KeyRange keyRange,
                                            @Nullable SliceQuery sliceQuery) throws StorageException {
         SliceRange sliceRange = new SliceRange();
 

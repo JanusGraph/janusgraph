@@ -39,7 +39,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         /**
          * Embedded with storage backend
          */
-        EMBEDDED;
+        EMBEDDED
 
     }
 
@@ -169,5 +169,4 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
         return tentativeRid;
     }
-
 }

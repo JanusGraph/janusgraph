@@ -4,14 +4,11 @@ import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction
 import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -49,10 +46,6 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
@@ -148,49 +141,15 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
     }
 
-    StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        // getLocalPrimaryRange() returns a raw type
-        @SuppressWarnings({"rawtypes", "deprecation"})
-        Range<Token> range = StorageService.instance.getLocalPrimaryRange();
-        Token<?> leftKeyExclusive = range.left;
-        Token<?> rightKeyInclusive = range.right;
+    List<KeyRange> getLocalKeyPartition() throws StorageException {
+        Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges();
+        List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
-        if (leftKeyExclusive instanceof BytesToken) {
-            assert rightKeyInclusive instanceof BytesToken;
-
-            // l is exclusive, r is inclusive
-            BytesToken l = (BytesToken) leftKeyExclusive;
-            BytesToken r = (BytesToken) rightKeyInclusive;
-
-            Preconditions.checkArgument(l.token.length == r.token.length, "Tokens have unequal length");
-            int tokenLength = l.token.length;
-            log.debug("Token length: " + tokenLength);
-
-            byte[][] tokens = new byte[][]{l.token, r.token};
-            byte[][] plusOne = new byte[2][tokenLength];
-
-            for (int j = 0; j < 2; j++) {
-                boolean carry = true;
-                for (int i = tokenLength - 1; i >= 0; i--) {
-                    byte b = tokens[j][i];
-                    if (carry) {
-                        b++;
-                        carry = false;
-                    }
-                    if (b == 0) carry = true;
-                    plusOne[j][i] = b;
-                }
-            }
-
-            StaticBuffer lb = new StaticArrayBuffer(plusOne[0]);
-            StaticBuffer rb = new StaticArrayBuffer(plusOne[1]);
-            Preconditions.checkArgument(lb.length() == tokenLength, lb.length());
-            Preconditions.checkArgument(rb.length() == tokenLength, rb.length());
-
-            return new StaticBuffer[]{lb, rb};
-        } else {
-            throw new UnsupportedOperationException();
+        for (Range<Token> range : ranges) {
+            keyRanges.add(CassandraHelper.transformRange(range));
         }
+
+        return keyRanges;
     }
 
     /*

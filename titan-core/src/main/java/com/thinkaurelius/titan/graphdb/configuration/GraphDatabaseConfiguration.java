@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.util.system.NetworkUtil;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -290,7 +291,8 @@ public class GraphDatabaseConfiguration {
      * <p/>
      * Value = {@value}
      */
-    public static final String HOSTNAME_DEFAULT = "127.0.0.1";
+    public static final String HOSTNAME_DEFAULT = NetworkUtil.getLoopbackAddress();
+
     /**
      * Configuration key for the port on which to connect to remote storage backend servers.
      * <p/>
