@@ -35,4 +35,8 @@
     <xsl:template match="/project/profiles/profile[id='jre7']/activation/activeByDefault">
         <activeByDefault>false</activeByDefault>
     </xsl:template>
+    
+    <!-- Disable persistit artifacts in the server and all distros -->
+    <xsl:template match="/project/profiles/profile[id='aurelius-release']/dependencies/dependency[artifactId='titan-dist-persistit-jre6']"/>
+    <xsl:template match="dependenciesToScan/dependency[contains(text(), 'persistit')]"/>
 </xsl:stylesheet>
