@@ -31,12 +31,9 @@
         <dependency><xsl:value-of select="./text()" />-jre6</dependency>
     </xsl:template>
 
-    <!-- Disable the JRE7 build profiles -->
-    <xsl:template match="/project/profiles/profile[id='jre7']/activation/activeByDefault">
-        <activeByDefault>false</activeByDefault>
-    </xsl:template>
-    
-    <!-- Disable persistit artifacts in the server and all distros -->
+    <!-- Delete persistit dependency and module references -->
     <xsl:template match="/project/profiles/profile[id='aurelius-release']/dependencies/dependency[artifactId='titan-dist-persistit-jre6']"/>
     <xsl:template match="dependenciesToScan/dependency[contains(text(), 'persistit')]"/>
+    <xsl:template match="modules/module[contains(text(), 'persistit')]"/>
+
 </xsl:stylesheet>

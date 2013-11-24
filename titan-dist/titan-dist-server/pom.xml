@@ -53,6 +53,11 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-persistit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-rexster</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -88,22 +93,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>jre7</id>
-            
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-persistit</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-            
         <profile>
             <id>aurelius-release</id>
 

@@ -37,6 +37,7 @@
         <module>titan-dist-berkeleyje</module>
         <module>titan-dist-cassandra</module>
         <module>titan-dist-hbase</module>
+        <module>titan-dist-persistit</module>
         <module>titan-dist-server</module>
     </modules>
 
@@ -187,21 +188,9 @@
     </build>
 
     <profiles>
-        
-        <profile>
-            <id>jre7</id>
-        
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-
-            <modules>
-                <module>titan-dist-persistit</module>
-            </modules>
-        </profile>
-        
         <profile>
             <id>pkg-tools</id>
+
             <build>
                 <plugins>
                     <plugin>
