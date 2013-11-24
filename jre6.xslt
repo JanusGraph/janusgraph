@@ -33,7 +33,8 @@
     </xsl:template>
 
     <!-- Delete persistit dependency and module references -->
-    <xsl:template match="/project/profiles/profile[id='aurelius-release']/dependencies/dependency[artifactId='titan-dist-persistit-jre6']"/>
+    <xsl:template match="dependency[artifactId='titan-persistit']"/>
+    <xsl:template match="dependency[artifactId='titan-dist-persistit']"/>
     <xsl:template match="dependenciesToScan/dependency[contains(text(), 'persistit')]"/>
     <xsl:template match="modules/module[contains(text(), 'persistit')]"/>
 
