@@ -1147,52 +1147,5 @@
                 </plugins>
             </build>
         </profile>
-        
-        <profile>
-            <id>target-jre7</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>xml-maven-plugin</artifactId>
-                        <configuration>
-                            <forceCreation>true</forceCreation>
-                            <transformationSets>
-                                <transformationSet>
-                                    <dir>${basedir}/</dir>
-                                    <includes>
-                                        <include>pom.xml</include>
-                                    </includes>
-                                    <stylesheet>${top.level.basedir}/jre7.xslt</stylesheet>
-                                </transformationSet>
-                            </transformationSets>
-                        </configuration>
-                        <dependencies>
-                            <dependency>
-                                <groupId>net.sourceforge.saxon</groupId>
-                                <artifactId>saxon</artifactId>
-                            </dependency>
-                        </dependencies>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <configuration>
-                            <outputDirectory>${basedir}</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${basedir}/target/generated-resources/xml/xslt/</directory>
-                                    <includes>
-                                        <include>pom.xml</include>
-                                    </includes>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
 </project>
