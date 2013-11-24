@@ -27,7 +27,8 @@
     </xsl:template>
 
     <!-- Rewrite failsafe dependency scan configuration (used in titan-dist) -->
-    <xsl:template match="dependenciesToScan/dependency[contains(text(), 'com.thinkaurelius.titan') and not(contains(text(), '-jre6'))]">
+    <!-- Persistit is excluded to avoid an overlapping match with the templates below, which would cause a Saxon warning -->
+    <xsl:template match="dependenciesToScan/dependency[contains(text(), 'com.thinkaurelius.titan') and not(contains(text(), 'persistit')) and not(contains(text(), '-jre6'))]">
         <dependency><xsl:value-of select="./text()" />-jre6</dependency>
     </xsl:template>
 
