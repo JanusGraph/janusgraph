@@ -13,7 +13,7 @@
         <componentDescriptor>../src/assembly/descriptor/common.component.xml</componentDescriptor>
         <componentDescriptor>../src/assembly/descriptor/readmes.component.xml</componentDescriptor>
         <componentDescriptor>../src/assembly/descriptor/htmldocs.component.xml</componentDescriptor>
-        <componentDescriptor>../src/assembly/descriptor/cassandra.component.xml</componentDescriptor>
+        <componentDescriptor>../src/assembly/descriptor/cassandra-no-es.component.xml</componentDescriptor>
     </componentDescriptors>
 
 </assembly>

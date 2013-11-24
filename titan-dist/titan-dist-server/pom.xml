@@ -99,6 +99,13 @@
             <dependencies>
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-dist-all</artifactId>
+                    <version>${project.version}</version>
+                    <classifier>tests</classifier>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-dist-berkeleyje</artifactId>
                     <version>${project.version}</version>
                     <classifier>tests</classifier>
@@ -133,6 +140,7 @@
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <dependenciesToScan>
+                                <dependency>com.thinkaurelius.titan:titan-dist-all</dependency>
                                 <dependency>com.thinkaurelius.titan:titan-dist-berkeleyje</dependency>
                                 <dependency>com.thinkaurelius.titan:titan-dist-cassandra</dependency>
                                 <dependency>com.thinkaurelius.titan:titan-dist-persistit</dependency>

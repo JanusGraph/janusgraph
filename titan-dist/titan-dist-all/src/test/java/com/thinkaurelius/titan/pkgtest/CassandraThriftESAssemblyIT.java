@@ -9,7 +9,7 @@ import org.junit.Test;
 import java.io.File;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
 
-public class CassandraThriftAssemblyIT extends AssemblyITSupport {
+public class CassandraThriftESAssemblyIT extends AssemblyITSupport {
 
     @BeforeClass
     public static void startCassandra() {
@@ -27,7 +27,7 @@ public class CassandraThriftAssemblyIT extends AssemblyITSupport {
     }
 
     @Test
-    public void testCassandraThriftSimpleSession() throws Exception {
-        testSimpleGremlinSession("conf/titan-cassandra.properties", "cassandrathrift");
+    public void testCassandraGettingStarted() throws Exception {
+        testGettingStartedGremlinSession("conf/titan-cassandra-es.properties", "cassandrathrift");
     }
 }

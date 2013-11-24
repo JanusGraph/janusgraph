@@ -31,11 +31,6 @@
                     <version>${project.version}</version>
                 </dependency>
                 <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-es</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
                     <groupId>net.java.dev.jna</groupId>
                     <artifactId>jna</artifactId>
                     <version>${jna.version}</version>
