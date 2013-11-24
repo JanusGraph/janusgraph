@@ -110,11 +110,22 @@ clean() {
 }
 
 usage() {
-    echo "Usage: $0 {start|stop|status|clean}" >&2
+    echo "Usage: $0 [options] {start|stop|status|clean}" >&2
     echo " start:  fork Cassandra and Rexster+Titan processes" >&2
     echo " stop:   kill running Cassandra and Rexster+Titan processes" >&2
     echo " status: print Cassandra and Rexster+Titan process status" >&2
     echo " clean:  permanently delete all graph data (run when stopped)" >&2
+    echo "Options:" >&2
+    echo " -v      enable logging to console in addition to logfiles" >&2
+    echo " -c str  configure rexster with conf/rexster-<str>.xml" >&2
+    echo "         recognized arguments to -c:" >&2
+    shopt -s nullglob
+    for f in "$BIN"/../conf/rexster-*.xml; do
+        f="`basename $f`"
+        f="${f#rexster-}"
+        f="${f%.xml}"
+        echo "           $f" >&2
+    done
 }
 
 find_verb() {
