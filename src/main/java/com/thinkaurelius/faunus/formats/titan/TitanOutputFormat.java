@@ -6,23 +6,14 @@ import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.JobConfigurationFormat;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat;
-import com.thinkaurelius.faunus.hdfs.HDFSTools;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-
-import java.io.IOException;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapReduceFormat, JobConfigurationFormat {
+public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapReduceFormat {
 
     public static final String FAUNUS_GRAPH_OUTPUT_TITAN = "faunus.graph.output.titan";
     public static final String FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "faunus.graph.output.titan.infer-schema";
@@ -39,7 +30,7 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                     FaunusVertex.class,
                     SchemaInferencerMapReduce.createConfiguration());
         }
-        compiler.addMapReduce(BlueprintsGraphOutputMapReduce.Map.class,
+        compiler.addMapReduce(BlueprintsGraphOutputMapReduce.VertexMap.class,
                 null,
                 BlueprintsGraphOutputMapReduce.Reduce.class,
                 LongWritable.class,
@@ -47,9 +38,13 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                 NullWritable.class,
                 FaunusVertex.class,
                 BlueprintsGraphOutputMapReduce.createConfiguration());
+        compiler.addMap(BlueprintsGraphOutputMapReduce.EdgeMap.class,
+                NullWritable.class,
+                FaunusVertex.class,
+                BlueprintsGraphOutputMapReduce.createConfiguration());
     }
 
-    @Override
+    /*@Override
     public void updateJob(final Job job) throws InterruptedException, IOException {
         try {
             final Configuration configuration = job.getConfiguration();
@@ -74,5 +69,5 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
         } catch (final ClassNotFoundException e) {
             throw new InterruptedException(e.getMessage());
         }
-    }
+    }*/
 }
