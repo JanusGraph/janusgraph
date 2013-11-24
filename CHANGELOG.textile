@@ -5,13 +5,13 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
-h3. Version 0.4.1 (NOT OFFICIALLY RELEASED YET)
+h3. Version 0.4.1 (Nov 24, 2013)
 
 ```xml
 <dependency>
   <groupId>com.thinkaurelius.faunus</groupId>
   <artifactId>faunus</artifactId>
-  <version>0.4.1-SNAPSHOT</version>
+  <version>0.4.1</version>
 </dependency>
 ```
 
