@@ -603,11 +603,6 @@
                 <version>0.6.2.201302030002</version>
             </dependency>
             <dependency>
-                <groupId>net.sourceforge.saxon</groupId>
-                <artifactId>saxon</artifactId>
-                <version>9.1.0.8</version>
-            </dependency>
-            <dependency>
                 <groupId>com.yammer.metrics</groupId>
                 <artifactId>metrics-core</artifactId>
                 <version>${metrics2.version}</version>
@@ -1127,6 +1122,7 @@
                             <dependency>
                                 <groupId>net.sourceforge.saxon</groupId>
                                 <artifactId>saxon</artifactId>
+                                <version>9.1.0.8</version>
                             </dependency>
                         </dependencies>
                     </plugin>
