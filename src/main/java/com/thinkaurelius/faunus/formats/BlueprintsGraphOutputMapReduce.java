@@ -66,6 +66,7 @@ public class BlueprintsGraphOutputMapReduce {
     public static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
     // some random property that will 'never' be used by anyone
     public static final String BLUEPRINTS_ID = "_bId0192834";
+    public static final String ID_MAP_KEY = "_iDMaPKeY";
 
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
@@ -87,7 +88,7 @@ public class BlueprintsGraphOutputMapReduce {
     ////////////// MAP/REDUCE WORK FROM HERE ON OUT
 
     // WRITE ALL THE VERTICES AND THEIR PROPERTIES
-    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
+    public static class VertexMap extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
         static GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
         static boolean firstRead = true;
@@ -190,67 +191,76 @@ public class BlueprintsGraphOutputMapReduce {
         }
     }
 
-    // WRITE ALL THE EDGES CONNECTING THE VERTICES
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
+        @Override
+        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+
+            FaunusVertex faunusVertex = null;
+            // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
+            final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
+            for (final Holder<FaunusVertex> holder : values) {
+                if (holder.getTag() == 's') {
+                    faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
+                } else {
+                    final FaunusVertex toClone = holder.get();
+                    faunusVertex = new FaunusVertex(toClone.getIdAsLong());
+                    faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
+                    faunusVertex.addEdges(OUT, toClone);
+                }
+            }
+            if (null != faunusVertex) {
+                faunusVertex.setProperty(ID_MAP_KEY, faunusBlueprintsIdMap);
+                context.write(NullWritable.get(), faunusVertex);
+            } else {
+                LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
+                context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
+            }
+        }
+    }
+
+    // WRITE ALL THE EDGES CONNECTING THE VERTICES
+    public static class EdgeMap extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+
         Graph graph;
-        private final static FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
+        private static final FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
 
         @Override
-        public void setup(final Reduce.Context context) throws IOException, InterruptedException {
+        public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
-                FaunusVertex faunusVertex = null;
-                // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
-                final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
-                for (final Holder<FaunusVertex> holder : values) {
-                    if (holder.getTag() == 's') {
-                        faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
-                    } else {
-                        final FaunusVertex toClone = holder.get();
-                        faunusVertex = new FaunusVertex(toClone.getIdAsLong());
-                        faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
-                        faunusVertex.addEdges(OUT, toClone);
-                    }
-                }
-                // this means that the vertex receiving adjacent vertex messages wasn't created
-                if (null != faunusVertex) {
-                    final Object blueprintsId = faunusVertex.getProperty(BLUEPRINTS_ID);
-                    Vertex blueprintsVertex = null;
-                    if (null != blueprintsId)
-                        blueprintsVertex = this.graph.getVertex(blueprintsId);
-                    // this means that an adjacent vertex to this vertex wasn't created
-                    if (null != blueprintsVertex) {
-                        for (final Edge faunusEdge : faunusVertex.getEdges(OUT)) {
-                            final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
-                            Vertex otherVertex = null;
-                            if (null != otherId)
-                                otherVertex = this.graph.getVertex(otherId);
-                            if (null != otherVertex) {
-                                final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
-                                context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
-                                for (final String property : faunusEdge.getPropertyKeys()) {
-                                    blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
-                                    context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
-                                }
-                            } else {
-                                LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
-                                context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
+                final java.util.Map<Long, Object> faunusBlueprintsIdMap = value.getProperty(ID_MAP_KEY);
+                final Object blueprintsId = value.getProperty(BLUEPRINTS_ID);
+                Vertex blueprintsVertex = null;
+                if (null != blueprintsId)
+                    blueprintsVertex = this.graph.getVertex(blueprintsId);
+                // this means that an adjacent vertex to this vertex wasn't created
+                if (null != blueprintsVertex) {
+                    for (final Edge faunusEdge : value.getEdges(OUT)) {
+                        final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
+                        Vertex otherVertex = null;
+                        if (null != otherId)
+                            otherVertex = this.graph.getVertex(otherId);
+                        if (null != otherVertex) {
+                            final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
+                            context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                            for (final String property : faunusEdge.getPropertyKeys()) {
+                                blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
+                                context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
                             }
+                        } else {
+                            LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
+                            context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
-                    } else {
-                        LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
-                        context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                     }
                 } else {
-                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
+                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
-
                 // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
                 context.write(NullWritable.get(), DEAD_FAUNUS_VERTEX);
             } catch (final Exception e) {
@@ -260,10 +270,11 @@ public class BlueprintsGraphOutputMapReduce {
                 }
                 throw new IOException(e.getMessage(), e);
             }
+
         }
 
         @Override
-        public void cleanup(final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             if (this.graph instanceof TransactionalGraph) {
                 try {
                     ((TransactionalGraph) this.graph).commit();

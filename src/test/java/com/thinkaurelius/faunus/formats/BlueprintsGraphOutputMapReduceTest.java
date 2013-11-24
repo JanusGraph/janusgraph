@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -14,7 +15,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
+import org.apache.hadoop.mrunit.types.Pair;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,21 +31,30 @@ import java.util.Set;
  */
 public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> vertexMapReduceDriver;
+    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> edgeMapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
-        mapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.Map());
-        mapReduceDriver.setReducer(new TinkerGraphOutputMapReduce.Reduce());
+        vertexMapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
+        vertexMapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.VertexMap());
+        vertexMapReduceDriver.setReducer(new TinkerGraphOutputMapReduce.Reduce());
+
+        edgeMapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        edgeMapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.EdgeMap());
+        edgeMapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
     }
 
     public void testTinkerGraphIncrementalLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
-        Configuration conf = new Configuration();
+        Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
         conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
-        mapReduceDriver.withConfiguration(conf);
-
-        runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), mapReduceDriver);
+        vertexMapReduceDriver.withConfiguration(conf);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
+        edgeMapReduceDriver.withConfiguration(conf);
+        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+            edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
+        }
+        edgeMapReduceDriver.run();
 
         Map<Long, FaunusVertex> incrementalGraph = new HashMap<Long, FaunusVertex>();
         // VERTICES
@@ -68,9 +80,15 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
 
         setUp();
-        mapReduceDriver.withConfiguration(conf);
-        Map<Long, FaunusVertex> graph = runWithGraph(incrementalGraph, mapReduceDriver);
-        final Graph tinkerGraph = ((TinkerGraphOutputMapReduce.Map) mapReduceDriver.getMapper()).graph;
+        vertexMapReduceDriver.withConfiguration(conf);
+        graph = runWithGraph(incrementalGraph, vertexMapReduceDriver);
+        edgeMapReduceDriver.withConfiguration(conf);
+        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+            edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
+        }
+        edgeMapReduceDriver.run();
+
+        final Graph tinkerGraph = ((TinkerGraphOutputMapReduce.VertexMap) vertexMapReduceDriver.getMapper()).graph;
 
         Vertex marko = null;
         Vertex peter = null;
@@ -174,16 +192,32 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
     public void testTinkerGraphMapping() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
-        mapReduceDriver.withConfiguration(new Configuration());
-        final Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, new Configuration()), mapReduceDriver);
-        for (FaunusVertex vertex : graph.values()) {
-            assertEquals(count(vertex.getEdges(Direction.IN)), 0);
-            assertEquals(count(vertex.getEdges(Direction.OUT)), 0);
-            assertEquals(vertex.getProperties().size(), 0);
-            assertEquals(vertex.getIdAsLong(), -1);
+        Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
+        vertexMapReduceDriver.withConfiguration(conf);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
+        conf = BlueprintsGraphOutputMapReduce.createConfiguration();
+        edgeMapReduceDriver.withConfiguration(conf);
+        edgeMapReduceDriver.resetOutput();
+        edgeMapReduceDriver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
+        assertEquals(graph.size(), 6);
+        int counter = 0;
+        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+            edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
+            counter++;
         }
+        assertEquals(counter, 6);
+        counter = 0;
+        for (Pair<NullWritable, FaunusVertex> entry : edgeMapReduceDriver.run()) {
+            counter++;
+            // THIS IS THE DEAD_VERTEX (NOTHING EMITTED TO HDFS)
+            assertEquals(count(entry.getSecond().getEdges(Direction.IN)), 0);
+            assertEquals(count(entry.getSecond().getEdges(Direction.OUT)), 0);
+            assertEquals(entry.getSecond().getProperties().size(), 0);
+            assertEquals(entry.getSecond().getIdAsLong(), -1);
+        }
+        assertEquals(counter, 6);
 
-        final Graph tinkerGraph = ((TinkerGraphOutputMapReduce.Map) mapReduceDriver.getMapper()).graph;
+        final Graph tinkerGraph = ((TinkerGraphOutputMapReduce.VertexMap) vertexMapReduceDriver.getMapper()).graph;
 
         Vertex marko = null;
         Vertex peter = null;
@@ -332,7 +366,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
             return graph;
         }
 
-        public static class Map extends BlueprintsGraphOutputMapReduce.Map {
+        public static class VertexMap extends BlueprintsGraphOutputMapReduce.VertexMap {
             @Override
             public void setup(final Mapper.Context context) throws IOException, InterruptedException {
                 this.graph = TinkerGraphOutputMapReduce.getGraph();
@@ -352,8 +386,12 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         }
 
         public static class Reduce extends BlueprintsGraphOutputMapReduce.Reduce {
+
+        }
+
+        public static class EdgeMap extends BlueprintsGraphOutputMapReduce.EdgeMap {
             @Override
-            public void setup(final Reduce.Context context) throws IOException, InterruptedException {
+            public void setup(final Mapper.Context context) throws IOException, InterruptedException {
                 this.graph = TinkerGraphOutputMapReduce.getGraph();
             }
         }
