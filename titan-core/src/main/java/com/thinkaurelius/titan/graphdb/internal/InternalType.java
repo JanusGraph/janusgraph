@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.tinkerpop.blueprints.Direction;
 
 /**

@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
@@ -90,7 +91,7 @@ public class CacheEdge extends AbstractEdge {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = tx().getGraph().getEdgeSerializer().readRelation(getVertex(position), data, tx());
+            map = RelationConstructor.readRelation(getVertex(position), data, tx());
         }
         return map;
     }

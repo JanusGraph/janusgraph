@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.graphdb.database.RelationQueryCache;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
@@ -121,7 +122,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
             @Nullable
             @Override
             public TitanRelation apply(@Nullable Entry entry) {
-                return edgeSerializer.readRelation(vertex, entry);
+                return RelationConstructor.readRelation(vertex, entry,edgeSerializer);
             }
         });
     }

@@ -25,6 +25,7 @@ import com.thinkaurelius.titan.graphdb.configuration.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
+import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -35,10 +36,7 @@ import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -313,7 +311,7 @@ public class Backend {
 
     private final static Map<String, IndexProvider> getIndexes(Configuration storageConfig) {
         Configuration indexConfig = storageConfig.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE);
-        Set<String> indexes = GraphDatabaseConfiguration.getUnqiuePrefixes(indexConfig);
+        List<String> indexes = ConfigurationUtil.getUnqiuePrefixes(indexConfig);
         ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
         for (String index : indexes) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);

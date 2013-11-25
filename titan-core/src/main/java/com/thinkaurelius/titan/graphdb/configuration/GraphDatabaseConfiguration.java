@@ -1233,17 +1233,4 @@ public class GraphDatabaseConfiguration {
         return config;
     }
 
-
-    private static final char CONFIGURATION_SEPARATOR = '.';
-
-    public static Set<String> getUnqiuePrefixes(Configuration config) {
-        Set<String> names = new HashSet<String>();
-        Iterator<String> keyiter = config.getKeys();
-        while (keyiter.hasNext()) {
-            String key = keyiter.next();
-            int pos = key.indexOf(CONFIGURATION_SEPARATOR);
-            if (pos > 0) names.add(key.substring(0, pos));
-        }
-        return names;
-    }
 }

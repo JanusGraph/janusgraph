@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -73,7 +74,7 @@ public class CacheProperty extends AbstractProperty {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = tx().getGraph().getEdgeSerializer().readRelation(getVertex(0), data, tx());
+            map = RelationConstructor.readRelation(getVertex(0), data, tx());
         }
         return map;
     }
