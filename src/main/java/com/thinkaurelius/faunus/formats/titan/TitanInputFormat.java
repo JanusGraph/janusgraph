@@ -24,7 +24,7 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     private static final StaticBuffer DEFAULT_COLUMN = new StaticByteBuffer(new byte[0]);
     private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
-    public static SliceQuery inputSlice(final VertexQueryFilter inputFilter, final TitanGraph graph) {
+    public static SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
         if (inputFilter.limit == 0) {
             final StaticBuffer[] endPoints = IDHandler.getBounds(RelationType.PROPERTY);
             return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);

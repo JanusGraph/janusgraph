@@ -60,7 +60,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
 
     @Override
     public void close() throws IOException {
-        this.graph.shutdown();
+        this.graph.close();
         this.reader.close();
     }
 

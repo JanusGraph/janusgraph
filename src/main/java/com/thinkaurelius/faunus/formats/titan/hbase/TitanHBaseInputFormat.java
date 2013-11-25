@@ -78,7 +78,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     }
 
     private Filter getColumnFilter(VertexQueryFilter inputFilter) {
-        return HBaseKeyColumnValueStore.getFilter(TitanInputFormat.inputSlice(inputFilter, graph));
+        return HBaseKeyColumnValueStore.getFilter(TitanInputFormat.inputSlice(inputFilter));
     }
 
     @Override

@@ -18,7 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sesame.version>2.6.10</sesame.version>
         <tinkerpop.version>2.4.0</tinkerpop.version>
-        <titan.version>0.4.1</titan.version>
+        <titan.version>0.4.2-SNAPSHOT</titan.version>
         <slf4j.version>1.7.5</slf4j.version>
     </properties>
     <developers>

@@ -65,7 +65,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     private SliceRange getSliceRange(final VertexQueryFilter inputFilter, final int limit) {
-        final SliceQuery slice = TitanInputFormat.inputSlice(inputFilter, this.graph);
+        final SliceQuery slice = TitanInputFormat.inputSlice(inputFilter);
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(slice.getSliceStart().asByteBuffer());
         sliceRange.setFinish(slice.getSliceEnd().asByteBuffer());

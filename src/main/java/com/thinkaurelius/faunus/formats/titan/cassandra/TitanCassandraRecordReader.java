@@ -61,7 +61,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
 
     @Override
     public void close() throws IOException {
-        this.graph.shutdown();
+        this.graph.close();
         this.reader.close();
     }
 
