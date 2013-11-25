@@ -17,7 +17,7 @@ set -e # No errors allowed from here to end
 echo Reading settings from $1
 declare -r SCM_TAG=`sed -rn 's|\\\\||g; s|^scm\.tag=||p' $1`
 declare -r TAG_REF=refs/tags/"$SCM_TAG"
-declare -r NEW_ANNOTATION="Faunus $SCM_TAG"
+declare -r NEW_ANNOTATION="Titan $SCM_TAG"
 echo Read SCM_TAG: "$SCM_TAG"
 
 echo Listing $TAG_REF '(before)'...

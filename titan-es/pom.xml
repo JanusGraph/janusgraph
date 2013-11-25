@@ -4,13 +4,14 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-es</artifactId>
     <name>Titan-ElasticSearch: Distributed Indexing Support</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
         <!--
           ES depends on Lucene.  This ES dependency can affect the
           version used by the titan-lucene module.  When updating

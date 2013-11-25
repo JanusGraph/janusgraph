@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -14,9 +14,11 @@
     <properties>
         <distribution.assembly.name>berkeleydb</distribution.assembly.name>
         <distribution.assembly.descriptor>../src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
+        <distribution.assembly.configglob>titan-berkeley*.properties</distribution.assembly.configglob>
         <expect.graph.config>conf/titan-berkeleydb.properties</expect.graph.config>
         <expect.graph.id>titangraph.berkeleyje:.*conf/\.\./db/berkeley</expect.graph.id>
-        <test.zipfile.path>${project.build.directory}/titan-berkeleydb-${project.version}.zip</test.zipfile.path>
+        <test.zipfile.path>${project.build.directory}/${distribution.assembly.filebase}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>

@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-lucene</artifactId>
@@ -11,6 +11,7 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
         <!--
           Both this module and titan-es depend on Lucene (the titan-es
           pom does not explicitly depend on Lucene, but the ES

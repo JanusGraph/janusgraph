@@ -9,11 +9,13 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.lang.ProcessBuilder.Redirect;
 
 public class HBaseStorageSetup {
     
@@ -106,10 +108,11 @@ public class HBaseStorageSetup {
         String cmdParts[] = new String[]{ "./bin/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master" };
         log.info("Executing {}", Joiner.on(" ").join(cmdParts));
         ProcessBuilder pb = new ProcessBuilder(cmdParts);
-        pb.redirectInput(Redirect.INHERIT)
-          .redirectOutput(Redirect.INHERIT)
-          .redirectError(Redirect.INHERIT);
+        pb.redirectErrorStream(true);
         Process stopMaster = pb.start();
+        StreamLogger sl = new StreamLogger(stopMaster.getInputStream());
+        sl.setDaemon(true);
+        sl.start();
         
         // ...but send SIGKILL if that times out
         HBaseKiller killer = new HBaseKiller();
@@ -125,6 +128,13 @@ public class HBaseStorageSetup {
             killer.join();
         } catch (InterruptedException e) {
             log.warn("Failed to join HBase process killer thread", e);
+        }
+        
+        // StreamLogger is a daemon thread, so failing to stop it isn't so bad
+        try {
+            sl.join(1000L);
+        } catch (InterruptedException e) {
+            log.warn("Failed to stop HBase output logger thread", e);
         }
     }
     
@@ -178,5 +188,37 @@ public class HBaseStorageSetup {
                 return;
             }
         }
-    };
+    }
+    
+    /*
+     * This could be retired in favor of ProcessBuilder.Redirect when we move to
+     * source level 1.7.
+     */
+    private static class StreamLogger extends Thread {
+        
+        private final BufferedReader reader;
+        private static final Logger log =
+                LoggerFactory.getLogger(StreamLogger.class);
+        
+        private StreamLogger(InputStream is) {
+            this.reader = new BufferedReader(new InputStreamReader(is));
+        }
+        
+        @Override
+        public void run() {
+            String line;
+            try {
+                while (null != (line = reader.readLine())) {
+                    log.info("> {}", line);
+                    if (Thread.currentThread().isInterrupted()) {
+                        break;
+                    }
+                }
+                    
+                log.info("End of stream.");
+            } catch (IOException e) {
+                log.error("Unexpected IOException while reading stream {}", reader, e);
+            }
+        }
+    }
 }

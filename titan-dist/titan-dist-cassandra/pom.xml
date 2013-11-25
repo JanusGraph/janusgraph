@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -16,7 +16,8 @@
         <distribution.assembly.descriptor>cassandra.xml</distribution.assembly.descriptor>
         <expect.graph.config>conf/titan-cassandra.properties</expect.graph.config>
         <expect.graph.id>titangraph.cassandra:127.0.0.1</expect.graph.id>
-        <test.zipfile.path>${project.build.directory}/titan-cassandra-${project.version}.zip</test.zipfile.path>
+        <test.zipfile.path>${project.build.directory}/${distribution.assembly.filebase}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>
@@ -27,11 +28,6 @@
                 <dependency>
                     <groupId>com.thinkaurelius.titan</groupId>
                     <artifactId>titan-cassandra</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-es</artifactId>
                     <version>${project.version}</version>
                 </dependency>
                 <dependency>

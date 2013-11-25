@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -37,11 +37,13 @@
         <module>titan-dist-berkeleyje</module>
         <module>titan-dist-cassandra</module>
         <module>titan-dist-hbase</module>
+        <module>titan-dist-persistit</module>
         <module>titan-dist-server</module>
     </modules>
 
     <properties>
       <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
+      <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
 
     <dependencies>
@@ -186,23 +188,9 @@
     </build>
 
     <profiles>
-        
-        <profile>
-            <id>jre7</id>
-        
-            <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
-            </activation>
-
-            <modules>
-                <module>titan-dist-persistit</module>
-            </modules>
-        </profile>
-        
         <profile>
             <id>pkg-tools</id>
+
             <build>
                 <plugins>
                     <plugin>

@@ -18,7 +18,7 @@
             <directory>../src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
-                <include>titan-${distribution.assembly.name}.properties</include>
+                <include>${distribution.assembly.configglob}</include>
             </includes>
         </fileSet>
     </fileSets>

@@ -3,12 +3,15 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-berkeleyje</artifactId>
     <name>Titan-BerkeleyJE: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
     <repositories>
         <repository>
             <id>oracleReleases</id>

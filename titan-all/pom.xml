@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-all</artifactId>
@@ -17,6 +17,10 @@
       pulled in automatically.  The JAR doesn't contain anything
       besides some redundant properties files.
     -->
+
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -47,6 +51,11 @@
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-lucene</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-persistit</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -96,25 +105,4 @@
             <!-- Done disabling unnecessary plugins -->
         </plugins>
     </build>
-
-    <profiles>
-        <profile>
-            <id>jre7</id>
-            
-            <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
-            </activation>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-persistit</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
 </project>
- 

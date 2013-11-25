@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -13,10 +13,12 @@
 
     <properties>
         <distribution.assembly.descriptor>all.xml</distribution.assembly.descriptor>
+        <distribution.assembly.name>all</distribution.assembly.name>
         <run.dir>${project.basedir}/../..</run.dir>
         <expect.graph.config>conf/titan-persistit.properties</expect.graph.config>
         <expect.graph.id>titangraph.persistit:.*conf/\.\./db/persistit</expect.graph.id>
-        <test.zipfile.path>${project.build.directory}/titan-all-${project.version}.zip</test.zipfile.path>
+        <test.zipfile.path>${project.build.directory}/${distribution.assembly.filebase}.zip</test.zipfile.path>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <dependencies>
@@ -48,6 +50,11 @@
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-lucene</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-persistit</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -129,24 +136,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>jre7</id>
-
-            <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
-            </activation>
-
-            <dependencies>
-                <dependency>
-                    <groupId>com.thinkaurelius.titan</groupId>
-                    <artifactId>titan-persistit</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-
         <profile>
             <id>aurelius-release</id>
 

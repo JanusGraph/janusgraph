@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;

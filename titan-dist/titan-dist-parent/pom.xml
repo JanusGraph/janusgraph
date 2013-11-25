@@ -3,17 +3,19 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <artifactId>titan-dist-parent</artifactId>
-    <version>0.4.1-SNAPSHOT</version>
+    <version>0.4.2-SNAPSHOT</version>
     <name>Titan-Dist-Parent</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
+        <distribution.assembly.filebase>titan-${distribution.assembly.name}-${project.version}</distribution.assembly.filebase>
     </properties>
     
     <dependencies>
@@ -188,7 +190,8 @@
                                   archive filenames are of the form
                                   ${finalName}-${<id /> from assembly descriptor}.${archive format extension}
                                 -->
-                                <finalName>titan</finalName>
+                                <finalName>${distribution.assembly.filebase}</finalName>
+				<appendAssemblyId>false</appendAssemblyId>
                                 <tarLongFileMode>gnu</tarLongFileMode>
                                 <descriptors>
                                     <!-- This property is intended to be set in submodules -->
@@ -226,7 +229,7 @@
                             </executions>
                         </plugin>
 			
-			<plugin>
+                        <plugin>
                             <artifactId>maven-jar-plugin</artifactId>
                             <executions>
                                 <execution>
@@ -316,4 +319,3 @@
         </profile>
     </profiles>
 </project>
- 

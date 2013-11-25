@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-cassandra</artifactId>
@@ -17,6 +17,7 @@
         <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
         <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
     <!-- Libraries -->
     
@@ -312,7 +313,7 @@
                         <phase>test</phase>
                         <configuration>
                             <argLine>${default.test.jvm.opts} -Dtest.cassandra.confdir=${project.build.directory}/cassandra/conf/localhost-rp -Dtest.cassandra.datadir=${project.build.directory}/cassandra/data/localhost-rp</argLine>
-                            <excludedGroups/>
+                            <excludedGroups />
                             <groups>com.thinkaurelius.titan.testcategory.SerialTests</groups>
                             <forkCount>1</forkCount>
                             <reuseForks>false</reuseForks>

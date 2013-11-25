@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan-dist-parent</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../titan-dist-parent/pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
@@ -14,6 +14,8 @@
     <properties>
         <distribution.assembly.name>hbase</distribution.assembly.name>
         <distribution.assembly.descriptor>${project.basedir}/../src/assembly/descriptor/backend.xml</distribution.assembly.descriptor>
+        <distribution.assembly.configglob>titan-hbase*.properties</distribution.assembly.configglob>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
     </properties>
 
     <profiles>

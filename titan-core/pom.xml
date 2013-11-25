@@ -3,12 +3,16 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.1-SNAPSHOT</version>
+        <version>0.4.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-core</artifactId>
     <name>Titan-Core: Core Library for Titan</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
 
     <dependencies>
         <!-- TinkerPop -->
