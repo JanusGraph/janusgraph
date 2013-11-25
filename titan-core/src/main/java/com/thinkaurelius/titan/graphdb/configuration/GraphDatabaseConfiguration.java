@@ -1144,11 +1144,12 @@ public class GraphDatabaseConfiguration {
     }
 
 
-
-
-
-
     public Serializer getSerializer() {
+        return getSerializer(configuration);
+    }
+
+
+    public static Serializer getSerializer(Configuration configuration) {
         Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
         Serializer serializer = new KryoSerializer(config.getBoolean(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY, ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT));
         for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(config)) {
