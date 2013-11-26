@@ -1,12 +1,18 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.VertexQuery;
 import com.tinkerpop.blueprints.util.DefaultVertexQuery;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataInput;
@@ -29,8 +35,10 @@ import static com.tinkerpop.blueprints.Direction.*;
  */
 public class FaunusVertex extends FaunusElement implements Vertex {
 
-    private Map<String, List<Edge>> outEdges = new HashMap<String, List<Edge>>();
-    private Map<String, List<Edge>> inEdges = new HashMap<String, List<Edge>>();
+    public static final Direction[] PROPER_DIR = new Direction[]{IN,OUT};
+
+    protected ListMultimap<FaunusType,FaunusEdge> outEdges = ArrayListMultimap.create();
+    protected ListMultimap<FaunusType,FaunusEdge> inEdges = ArrayListMultimap.create();
 
     public FaunusVertex() {
         super(-1l);
@@ -57,36 +65,60 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         return this;
     }
 
-    public void enablePath(final boolean enablePath) {
-        super.enablePath(enablePath);
-        if (this.pathEnabled) {
-            for (final Edge edge : this.getEdges(BOTH)) {
-                ((FaunusEdge) edge).enablePath(true);
-            }
-        }
-    }
-
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getIdAsLong();
-        this.properties = vertex.getProperties();
+        this.properties = vertex.properties;
         this.getPaths(vertex, false);
         this.addEdges(BOTH, vertex);
     }
+
+    @Override
+    void updateSchema(FaunusSerializer.Schema schema) {
+        super.updateSchema(schema);
+        for (Direction dir : PROPER_DIR) {
+            for (FaunusEdge edge : getAdjacency(dir).values())
+                edge.updateSchema(schema);
+        }
+    }
+
+    //##################################
+    // Property Handling
+    //##################################
+
+
+    public void addProperty(final String key, final Object value) {
+        ElementHelper.validateProperty(this, key, value);
+        FaunusType type = FaunusGraph.getCurrent().getTypes().get(key);
+        if (properties == FaunusElement.NO_PROPERTIES)
+            this.properties = ArrayListMultimap.create();
+        this.properties.put(type, value);
+    }
+
+    public <T> List<T> getProperties(final String key) {
+        return (List)properties.get(FaunusGraph.getCurrent().getTypes().get(key));
+    }
+
+    //##################################
+    // Edge Handling
+    //##################################
 
     public VertexQuery query() {
         return new DefaultVertexQuery(this);
     }
 
-    public Set<String> getEdgeLabels(final Direction direction) {
-        if (direction.equals(Direction.OUT))
-            return this.outEdges.keySet();
-        else if (direction.equals(Direction.IN))
-            return this.inEdges.keySet();
-        else {
-            final Set<String> labels = new HashSet<String>();
-            labels.addAll(this.outEdges.keySet());
-            labels.addAll(this.inEdges.keySet());
-            return labels;
+    private ListMultimap<FaunusType,FaunusEdge> getAdjacency(final Direction dir) {
+        switch(dir) {
+            case IN: return inEdges;
+            case OUT: return outEdges;
+            default: throw ExceptionFactory.bothIsNotSupported();
+        }
+    }
+
+    public Set<FaunusType> getEdgeLabels(final Direction direction) {
+        if (direction==BOTH) {
+            return Sets.union(getEdgeLabels(IN),getEdgeLabels(OUT));
+        } else {
+            return getAdjacency(direction).keySet();
         }
     }
 
@@ -113,70 +145,46 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         };
     }
 
+    @Override
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
+        FaunusType[] types = new FaunusType[labels.length];
+        for (int i=0;i<labels.length;i++) types[i]=FaunusGraph.getCurrent().getTypes().get(labels[i]);
+        return getEdges(direction,types);
+    }
+
+    //Need to disambiguate the getEdges() methods when no label is specified.
+    public Iterable<Edge> getEdges(final Direction direction) {
+        return getEdges(direction,new FaunusType[0]);
+    }
+
+    public Iterable<Edge> getEdges(final Direction direction, final FaunusType... labels) {
         final List<List<Edge>> edgeLists = new ArrayList<List<Edge>>();
 
-        if (direction.equals(OUT) || direction.equals(BOTH)) {
+        for (Direction dir : PROPER_DIR) {
+            if (direction!=BOTH && direction!=dir) continue;
+            ListMultimap<FaunusType,FaunusEdge> adj = getAdjacency(dir);
             if (null == labels || labels.length == 0) {
-                for (final List<Edge> temp : this.outEdges.values()) {
+                for (FaunusType type : adj.keySet()) edgeLists.add((List)adj.get(type));
+            } else {
+                for (final FaunusType label : labels) {
+                    final List<Edge> temp = (List)this.outEdges.get(label);
                     edgeLists.add(temp);
                 }
-            } else {
-                for (final String label : labels) {
-                    final List<Edge> temp = this.outEdges.get(label);
-                    if (null != temp)
-                        edgeLists.add(temp);
-                }
             }
-
-        }
-
-        if (direction.equals(IN) || direction.equals(BOTH)) {
-            if (null == labels || labels.length == 0) {
-                for (final List<Edge> temp : this.inEdges.values()) {
-                    edgeLists.add(temp);
-                }
-            } else {
-                for (final String label : labels) {
-                    final List<Edge> temp = this.inEdges.get(label);
-                    if (null != temp)
-                        edgeLists.add(temp);
-                }
-            }
-
         }
         return new EdgeList(edgeLists);
     }
 
-    private void addEdges(final Direction direction, final String label, final List<FaunusEdge> edges) {
-        List<Edge> list;
-        if (direction.equals(OUT))
-            list = this.outEdges.get(label);
-        else if (direction.equals(IN))
-            list = this.inEdges.get(label);
-        else
-            throw ExceptionFactory.bothIsNotSupported();
-
-        if (null == list) {
-            list = new ArrayList<Edge>();
-            if (direction.equals(OUT))
-                this.outEdges.put(label, list);
-            else
-                this.inEdges.put(label, list);
-        }
-        list.addAll(edges);
+    private void addEdges(final Direction direction, final FaunusType label, final List<FaunusEdge> edges) {
+        getAdjacency(direction).putAll(label,edges);
     }
 
     public void addEdges(final Direction direction, final FaunusVertex vertex) {
-        if (direction.equals(OUT) || direction.equals(BOTH)) {
-            for (final String label : vertex.getEdgeLabels(OUT)) {
-                this.addEdges(OUT, label, (List) vertex.getEdges(OUT, label));
-            }
-        }
-
-        if (direction.equals(IN) || direction.equals(BOTH)) {
-            for (final String label : vertex.getEdgeLabels(IN)) {
-                this.addEdges(IN, label, (List) vertex.getEdges(IN, label));
+        for (Direction dir : PROPER_DIR) {
+            if (direction==dir || direction.equals(BOTH)) {
+                for (final FaunusType label : vertex.getEdgeLabels(dir)) {
+                    this.addEdges(dir, label, (List) vertex.getEdges(dir, label));
+                }
             }
         }
     }
@@ -186,110 +194,56 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     public Edge addEdge(final Direction direction, final String label, final long otherVertexId) {
-        if (direction.equals(Direction.OUT))
-            return this.addEdge(Direction.OUT, new FaunusEdge(this.id, otherVertexId, label));
-        else if (direction.equals(Direction.IN))
+        if (direction==OUT)
+            return this.addEdge(OUT, new FaunusEdge(this.id, otherVertexId, label));
+        else if (direction==Direction.IN)
             return this.addEdge(Direction.IN, new FaunusEdge(otherVertexId, this.id, label));
         else
             throw ExceptionFactory.bothIsNotSupported();
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
-        if (OUT.equals(direction)) {
-            List<Edge> edges = this.outEdges.get(edge.getLabel());
-            if (null == edges) {
-                edges = new ArrayList<Edge>();
-                this.outEdges.put(edge.getLabel(), edges);
-            }
-            edges.add(edge);
-        } else if (IN.equals(direction)) {
-            List<Edge> edges = this.inEdges.get(edge.getLabel());
-            if (null == edges) {
-                edges = new ArrayList<Edge>();
-                this.inEdges.put(edge.getLabel(), edges);
-            }
-            edges.add(edge);
-        } else
-            throw ExceptionFactory.bothIsNotSupported();
-
+        getAdjacency(direction).put(edge.getType(),edge);
         return edge;
     }
 
     public void removeEdgesToFrom(final Set<Long> ids) {
-        Iterator<Edge> itty = this.getEdges(OUT).iterator();
-        while (itty.hasNext()) {
-            final Long id = (Long) itty.next().getVertex(IN).getId();
-            if (ids.contains(id))
-                itty.remove();
-        }
-
-        itty = this.getEdges(IN).iterator();
-        while (itty.hasNext()) {
-            final Long id = (Long) itty.next().getVertex(OUT).getId();
-            if (ids.contains(id))
-                itty.remove();
+        for (Direction dir : PROPER_DIR) {
+            Iterator<FaunusEdge> edges = getAdjacency(dir).values().iterator();
+            while (edges.hasNext()) {
+                if (ids.contains(edges.next().getVertexId(dir.opposite())))
+                    edges.remove();
+            }
         }
     }
 
-    public void removeEdges(final Tokens.Action action, final Direction direction, final String... labels) {
-        if (action.equals(Tokens.Action.KEEP)) {
-            final Set<String> keep = new HashSet<String>(Arrays.asList(labels));
-            if (direction.equals(BOTH) || direction.equals(OUT)) {
-                if (labels.length > 0) {
-                    for (final String label : new ArrayList<String>(this.outEdges.keySet())) {
-                        if (!keep.contains(label))
-                            this.outEdges.remove(label);
-                    }
-                } else if (direction.equals(OUT))
-                    this.inEdges.clear();
-            }
+    public void removeEdges(final Tokens.Action action, final Direction direction, final String... strlabels) {
+        Set<FaunusType> labels = Sets.newHashSet();
+        for (String label : strlabels) labels.add(FaunusGraph.getCurrent().getTypes().get(label));
 
-            if (direction.equals(BOTH) || direction.equals(IN)) {
-                if (labels.length > 0) {
-                    for (final String label : new ArrayList<String>(this.inEdges.keySet())) {
-                        if (!keep.contains(label))
-                            this.inEdges.remove(label);
-                    }
-                } else if (direction.equals(IN))
-                    this.outEdges.clear();
+        if (action.equals(Tokens.Action.KEEP)) {
+            for (Direction dir : PROPER_DIR) {
+                if (direction==BOTH || direction==dir) {
+                    ListMultimap<FaunusType,FaunusEdge> adj = getAdjacency(dir);
+                    if (labels.size() > 0) {
+                        Set<FaunusType> removal = Sets.newHashSet(adj.keySet());
+                        removal.removeAll(labels);
+                        for (FaunusType type : removal) adj.removeAll(type);
+                    } else if (direction==dir)
+                        getAdjacency(dir.opposite()).clear();
+                }
             }
         } else {
-            if (direction.equals(BOTH) || direction.equals(OUT)) {
-                if (labels.length == 0) {
-                    this.outEdges.clear();
-                } else {
-                    for (final String label : labels) {
-                        this.outEdges.remove(label);
-                    }
-                }
-            }
-
-            if (direction.equals(BOTH) || direction.equals(IN)) {
-                if (labels.length == 0) {
-                    this.inEdges.clear();
-                } else {
-                    for (final String label : labels) {
-                        this.inEdges.remove(label);
+            assert action.equals(Tokens.Action.DROP);
+            for (Direction dir : PROPER_DIR) {
+                if (direction==BOTH || direction==dir) {
+                    if (labels.isEmpty()) getAdjacency(dir).clear();
+                    else {
+                        for (FaunusType label: labels) getAdjacency(dir).removeAll(label);
                     }
                 }
             }
         }
-    }
-
-    public void write(final DataOutput out) throws IOException {
-        super.write(out);
-        EdgeMap.write((Map) this.inEdges, out, Direction.OUT);
-        EdgeMap.write((Map) this.outEdges, out, Direction.IN);
-    }
-
-    public void readFields(final DataInput in) throws IOException {
-        super.readFields(in);
-        this.inEdges = (Map) EdgeMap.readFields(in, Direction.OUT, this.id);
-        this.outEdges = (Map) EdgeMap.readFields(in, Direction.IN, this.id);
-    }
-
-    public String toString() {
-        return StringFactory.vertexString(this);
     }
 
     private class EdgeList extends AbstractList<Edge> {
@@ -363,41 +317,43 @@ public class FaunusVertex extends FaunusElement implements Vertex {
 
     }
 
-    private static class EdgeMap {
+    //##################################
+    // Serialization Proxy
+    //##################################
 
-        public static Map<String, List<FaunusEdge>> readFields(final DataInput in, final Direction idToRead, final long otherId) throws IOException {
-            final Map<String, List<FaunusEdge>> edges = new HashMap<String, List<FaunusEdge>>();
-            int edgeTypes = WritableUtils.readVInt(in);
-            for (int i = 0; i < edgeTypes; i++) {
-                final String label = in.readUTF();
-                final int size = WritableUtils.readVInt(in);
-                final List<FaunusEdge> temp = new ArrayList<FaunusEdge>(size);
-                for (int j = 0; j < size; j++) {
-                    final FaunusEdge edge = new FaunusEdge();
-                    edge.readFieldsCompressed(in, idToRead);
-                    edge.setLabel(label);
-                    if (idToRead.equals(Direction.OUT))
-                        edge.inVertex = otherId;
-                    else
-                        edge.outVertex = otherId;
-                    temp.add(edge);
-                }
-                edges.put(label, temp);
-            }
-            return edges;
-        }
+    public void write(final DataOutput out) throws IOException {
+        FaunusGraph.getCurrent().getSerializer().writeVertex(this, out);
+    }
 
-        public static void write(final Map<String, List<FaunusEdge>> edges, final DataOutput out, final Direction idToWrite) throws IOException {
-            WritableUtils.writeVInt(out, edges.size());
-            for (final Map.Entry<String, List<FaunusEdge>> entry : edges.entrySet()) {
-                out.writeUTF(entry.getKey());
-                WritableUtils.writeVInt(out, entry.getValue().size());
-                for (final FaunusEdge edge : entry.getValue()) {
-                    edge.writeCompressed(out, idToWrite);
-                }
+    public void readFields(final DataInput in) throws IOException {
+        FaunusGraph.getCurrent().getSerializer().readVertex(this,in);
+    }
+
+    //##################################
+    // General Utility
+    //##################################
+
+    @Override
+    public String toString() {
+        return StringFactory.vertexString(this);
+    }
+
+
+    //##################################
+    // Path Handling
+    //##################################
+
+
+    @Override
+    public void enablePath(final boolean enablePath) {
+        super.enablePath(enablePath);
+        if (this.pathEnabled) {
+            for (final Edge edge : this.getEdges(BOTH)) {
+                ((FaunusEdge) edge).enablePath(true);
             }
         }
     }
+
 
     public static class MicroVertex extends MicroElement {
 

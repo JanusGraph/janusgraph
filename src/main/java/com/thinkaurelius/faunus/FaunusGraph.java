@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.formats.Inverter;
 import com.thinkaurelius.faunus.hdfs.HDFSTools;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
@@ -27,7 +28,16 @@ public class FaunusGraph implements Configurable {
     public static final String FAUNUS_OUTPUT_LOCATION = "faunus.output.location";
     public static final String FAUNUS_OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
 
+    private final FaunusType.Manager types = new FaunusType.Manager();
     private Configuration configuration;
+    private FaunusSerializer serializer;
+
+    private static FaunusGraph current;
+
+    public static final FaunusGraph getCurrent() {
+        Preconditions.checkState(current!=null,"FaunusGraph has not yet been initialized");
+        return current;
+    }
 
     public FaunusGraph() {
         this(new Configuration());
@@ -35,10 +45,21 @@ public class FaunusGraph implements Configurable {
 
     public FaunusGraph(final Configuration configuration) {
         this.configuration = new Configuration(configuration);
+        Preconditions.checkState(current==null,"FaunusGraph has already been initialized");
+        current = this;
     }
 
     public Configuration getConf() {
         return this.configuration;
+    }
+
+    public FaunusType.Manager getTypes() {
+        return types;
+    }
+
+    public FaunusSerializer getSerializer() {
+        Preconditions.checkState(serializer!=null);
+        return serializer;
     }
 
     public Configuration getConf(final String prefix) {

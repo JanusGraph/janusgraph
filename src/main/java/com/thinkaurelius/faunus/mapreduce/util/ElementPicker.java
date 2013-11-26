@@ -1,7 +1,10 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
+import com.thinkaurelius.faunus.FaunusProperty;
 import com.thinkaurelius.faunus.Tokens;
 
 import java.util.HashMap;
@@ -19,9 +22,9 @@ public class ElementPicker {
         if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
             return element.getId().toString();
         else if (key.equals(Tokens._PROPERTIES)) {
-            final Map<String, Object> properties = new HashMap<String, Object>();
-            for (final Map.Entry<String, Object> entry : element.getProperties().entrySet()) {
-                properties.put(entry.getKey(), entry.getValue());
+            final ListMultimap<String, Object> properties = ArrayListMultimap.create();
+            for (final FaunusProperty property : element.getProperties()) {
+                properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
             return properties.toString();
@@ -40,9 +43,9 @@ public class ElementPicker {
         if (key.equals(Tokens._ID) || key.equals(Tokens.ID))
             return element.getId();
         else if (key.equals(Tokens._PROPERTIES)) {
-            final Map<String, Object> properties = new HashMap<String, Object>();
-            for (final Map.Entry<String, Object> entry : element.getProperties().entrySet()) {
-                properties.put(entry.getKey(), entry.getValue());
+            final ListMultimap<String, Object> properties = ArrayListMultimap.create();
+            for (final FaunusProperty property : element.getProperties()) {
+                properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
             return properties;

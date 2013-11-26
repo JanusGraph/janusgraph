@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -19,27 +20,24 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  */
 public class FaunusEdge extends FaunusElement implements Edge {
 
-    private static final String LINK = "_link";
-
     protected long outVertex;
     protected long inVertex;
-    private String label;
+    private FaunusType label;
 
     public FaunusEdge() {
-        super(-1l);
-        this.label = LINK;
+        this(false);
     }
 
     public FaunusEdge(final boolean enablePaths) {
         super(-1l);
-        this.label = LINK;
+        this.label = FaunusType.LINK;
         this.enablePath(enablePaths);
     }
 
-    public FaunusEdge(final DataInput in) throws IOException {
-        super(-1l);
-        this.readFields(in);
-    }
+//    public FaunusEdge(final DataInput in) throws IOException {
+//        super(-1l);
+//        this.readFields(in);
+//    }
 
     public FaunusEdge(final long outVertex, final long inVertex, final String label) {
         this(-1l, outVertex, inVertex, label);
@@ -60,6 +58,13 @@ public class FaunusEdge extends FaunusElement implements Edge {
         return this;
     }
 
+    @Override
+    void updateSchema(FaunusSerializer.Schema schema) {
+        super.updateSchema(schema);
+        schema.add(label);
+    }
+
+    @Override
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
             return new FaunusVertex(this.outVertex);
@@ -80,51 +85,42 @@ public class FaunusEdge extends FaunusElement implements Edge {
         }
     }
 
+    @Override
     public String getLabel() {
-        return this.label;
+        return label.getName();
     }
 
-    protected final void setLabel(String label) {
-        this.label = TYPE_MAP.get(label);
+    public FaunusType getType() {
+        return label;
     }
+
+    final void setLabel(FaunusType label) {
+        Preconditions.checkNotNull(label);
+        this.label = label;
+    }
+
+    final void setLabel(String label) {
+        setLabel(FaunusGraph.getCurrent().getTypes().get(label));
+    }
+
+    //##################################
+    // Serialization Proxy
+    //##################################
 
     public void write(final DataOutput out) throws IOException {
-        super.write(out);
-        WritableUtils.writeVLong(out, this.inVertex);
-        WritableUtils.writeVLong(out, this.outVertex);
-        //WritableUtils.writeCompressedString(out,this.getLabel());
-        out.writeUTF(this.label);
+        FaunusGraph.getCurrent().getSerializer().writeEdge(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        super.readFields(in);
-        this.inVertex = WritableUtils.readVLong(in);
-        this.outVertex = WritableUtils.readVLong(in);
-        //setLabel(WritableUtils.readCompressedString(in));
-        setLabel(in.readUTF());
+        FaunusGraph.getCurrent().getSerializer().readEdge(this, in);
+
     }
 
-    public void writeCompressed(final DataOutput out, final Direction idToWrite) throws IOException {
-        super.write(out);
-        if (idToWrite.equals(Direction.IN))
-            WritableUtils.writeVLong(out, this.inVertex);
-        else if (idToWrite.equals(Direction.OUT))
-            WritableUtils.writeVLong(out, this.outVertex);
-        else
-            throw ExceptionFactory.bothIsNotSupported();
-    }
+    //##################################
+    // General Utility
+    //##################################
 
-    public void readFieldsCompressed(final DataInput in, final Direction idToRead) throws IOException {
-        super.readFields(in);
-        if (idToRead.equals(Direction.IN))
-            this.inVertex = WritableUtils.readVLong(in);
-        else if (idToRead.equals(Direction.OUT))
-            this.outVertex = WritableUtils.readVLong(in);
-        else
-            throw ExceptionFactory.bothIsNotSupported();
-        this.label = null;
-    }
-
+    @Override
     public String toString() {
         return StringFactory.edgeString(this);
     }

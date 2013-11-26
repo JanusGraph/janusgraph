@@ -70,7 +70,7 @@ public class EdgeListInputMapReduce {
                     vertex = new FaunusVertex(id);
                     this.map.put(id, vertex);
                 }
-                vertex.getProperties().putAll(value.getProperties());
+                vertex.addAllProperties(value.getProperties());
                 vertex.addEdges(BOTH, WritableUtils.clone((FaunusVertex) value, context.getConfiguration()));
                 this.counter++;
             }
@@ -103,7 +103,7 @@ public class EdgeListInputMapReduce {
             this.vertex.reuse(key.get());
             for (final FaunusVertex value : values) {
                 this.vertex.addEdges(BOTH, value);
-                this.vertex.getProperties().putAll(value.getProperties());
+                this.vertex.addAllProperties(value.getProperties());
             }
             context.write(key, this.vertex);
         }
@@ -118,7 +118,7 @@ public class EdgeListInputMapReduce {
             this.vertex.reuse(key.get());
             for (final FaunusVertex value : values) {
                 this.vertex.addEdges(BOTH, value);
-                this.vertex.getProperties().putAll(value.getProperties());
+                this.vertex.addAllProperties(value.getProperties());
             }
             context.getCounter(Counters.VERTICES_CREATED).increment(1l);
             context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(this.vertex.getProperties().size());
