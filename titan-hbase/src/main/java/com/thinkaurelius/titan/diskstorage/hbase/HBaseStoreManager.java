@@ -166,7 +166,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         features.supportsLocking = false;
         features.isKeyOrdered = true;
         features.isDistributed = true;
-        features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+        features.hasLocalKeyPartition = false;
+        try {
+            features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+        } catch (Exception e) {
+            logger.warn("Unexpected exception during getDeployment()", e);
+        }
         return features;
     }
 
