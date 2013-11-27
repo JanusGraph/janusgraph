@@ -163,8 +163,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public Deployment getDeployment() {
-        //return Deployment.REMOTE;
-        //return LOCAL if over localhost else REMOTE
+        return Deployment.REMOTE; // TODO
     }
 
     @Override
