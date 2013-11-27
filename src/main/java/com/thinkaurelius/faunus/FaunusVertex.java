@@ -94,8 +94,8 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         this.properties.put(type, value);
     }
 
-    public <T> List<T> getProperties(final String key) {
-        return (List)properties.get(FaunusType.DEFAULT_MANAGER.get(key));
+    public <T> Iterable<T> getProperties(final String key) {
+        return (Iterable)properties.get(FaunusType.DEFAULT_MANAGER.get(key));
     }
 
     //##################################

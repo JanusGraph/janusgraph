@@ -1,5 +1,7 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -90,13 +92,20 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.setProperty("latitude", 11.399f);
         vertex1.setProperty("size", 10l);
         vertex1.setProperty("boolean", true);
-        assertEquals(vertex1.getPropertyKeys().size(), 6);
+        vertex1.addProperty("home","New Mexico");
+        vertex1.addProperty("home","California");
+        assertEquals(vertex1.getPropertyKeys().size(), 7);
         assertEquals(vertex1.getProperty("name"), "marko");
         assertEquals(vertex1.getProperty("age"), 32);
         assertEquals(vertex1.getProperty("longitude"), 10.01d);
         assertEquals(vertex1.getProperty("latitude"), 11.399f);
         assertEquals(vertex1.getProperty("size"), 10l);
         assertTrue((Boolean) vertex1.getProperty("boolean"));
+        assertEquals(2, Iterables.size(vertex1.getProperties("home")));
+        for (Object p : vertex1.getProperties("home")) {
+            assertTrue(ImmutableSet.of("New Mexico","California").contains(p));
+        }
+        assertEquals(8, Iterables.size(vertex1.getProperties()));
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
@@ -108,13 +117,19 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.compareTo(vertex2), 0);
         assertEquals(vertex2.compareTo(vertex1), 0);
         assertEquals(vertex2.getId(), 10l);
-        assertEquals(vertex2.getPropertyKeys().size(), 6);
-        assertEquals(vertex2.getProperty("name"), "marko");
-        assertEquals(vertex2.getProperty("age"), 32);
-        assertEquals(vertex2.getProperty("longitude"), 10.01d);
-        assertEquals(vertex2.getProperty("latitude"), 11.399f);
+        assertEquals(vertex1.getPropertyKeys().size(), 7);
+        assertEquals(vertex1.getProperty("name"), "marko");
+        assertEquals(vertex1.getProperty("age"), 32);
+        assertEquals(vertex1.getProperty("longitude"), 10.01d);
+        assertEquals(vertex1.getProperty("latitude"), 11.399f);
         assertEquals(vertex1.getProperty("size"), 10l);
-        assertTrue((Boolean) vertex2.getProperty("boolean"));
+        assertTrue((Boolean) vertex1.getProperty("boolean"));
+        assertEquals(2, Iterables.size(vertex1.getProperties("home")));
+        for (Object p : vertex1.getProperties("home")) {
+            assertTrue(ImmutableSet.of("New Mexico","California").contains(p));
+        }
+        assertEquals(8, Iterables.size(vertex1.getProperties()));
+
         Iterator<Edge> edges = vertex2.getEdges(Direction.OUT).iterator();
         assertTrue(edges.hasNext());
         assertEquals(edges.next().getLabel(), "knows");
