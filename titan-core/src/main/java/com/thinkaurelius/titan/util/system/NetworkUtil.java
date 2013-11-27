@@ -33,6 +33,7 @@ public class NetworkUtil {
         InetAddress localhost = NetworkUtil.getLocalHost();
         return hostname.equalsIgnoreCase(NetworkUtil.getLoopbackAddress())
                 || hostname.equals(localhost.getHostAddress())
-                || hostname.equals(localhost.getHostName());
+                || hostname.equals(localhost.getHostName())
+                || hostname.equals(localhost.getCanonicalHostName());
     }
 }
