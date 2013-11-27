@@ -5,13 +5,16 @@ import cern.colt.list.ObjectArrayList;
 import cern.colt.map.AbstractIntObjectMap;
 import cern.colt.map.OpenIntObjectHashMap;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.DefaultPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacementStrategy;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionAssignment;
@@ -46,6 +49,13 @@ public class VertexIDAssigner {
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
     private static final int DEFAULT_PARTITION = 0;
 
+    public static final String PLACEMENT_STRATEGY_KEY = "placement";
+    public static final String PLACEMENT_STRATEGY_DEFAULT = "simplebulk";
+
+    private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of(
+            "simplebulk", SimpleBulkPlacementStrategy.class.getName()
+    );
+
     final AbstractIntObjectMap idPools;
     final ReadWriteLock idPoolsLock;
 
@@ -71,7 +81,9 @@ public class VertexIDAssigner {
             //Use a placement strategy that balances partitions
             partitionBits = DEFAULT_PARTITION_BITS;
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
-            placementStrategy = new SimpleBulkPlacementStrategy(config);
+
+            placementStrategy = Backend.getImplementationClass(config, PLACEMENT_STRATEGY_KEY,
+                    PLACEMENT_STRATEGY_DEFAULT, REGISTERED_PLACEMENT_STRATEGIES);
         } else {
             if (idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed())
                 log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
