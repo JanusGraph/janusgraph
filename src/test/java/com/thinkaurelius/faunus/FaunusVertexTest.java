@@ -51,13 +51,14 @@ public class FaunusVertexTest extends BaseTest {
         DataOutputStream out = new DataOutputStream(bytes);
         vertex1.write(out);
 
+        // schema length is 1 byte
         // id length is 1 byte (variable long)
         // pathsEnabled boolean 1 byte (boolean)
         // paths size 1 byte (variable int)
         // properties size 1 byte (variable int)
         // out edge types size 1 byte (variable int)
         // in edge types size 1 byte (variable int)
-        assertEquals(bytes.toByteArray().length, 6);
+        assertEquals(7, bytes.toByteArray().length);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 0 properties has a byte size of: " + bytes.toByteArray().length);
 

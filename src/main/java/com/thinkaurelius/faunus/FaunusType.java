@@ -35,7 +35,7 @@ public class FaunusType {
     }
 
     private static final String checkName(String name) {
-        Preconditions.checkArgument(!name.startsWith("_"),"Cannot use reserved name as type: " + name);
+        //Preconditions.checkArgument(!name.startsWith("_"),"Cannot use reserved name as type: " + name);
         return name;
     }
 

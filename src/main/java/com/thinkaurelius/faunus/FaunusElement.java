@@ -25,10 +25,10 @@ import java.util.*;
  */
 public abstract class FaunusElement implements Element, WritableComparable<FaunusElement> {
 
-    static final ListMultimap<FaunusType,Object> NO_PROPERTIES = ImmutableListMultimap.of();
+    static final Multimap<FaunusType,Object> NO_PROPERTIES = ImmutableListMultimap.of();
 
     protected long id;
-    protected ListMultimap<FaunusType, Object> properties = NO_PROPERTIES;
+    protected Multimap<FaunusType, Object> properties = NO_PROPERTIES;
     protected List<List<MicroElement>> paths = null;
     protected MicroElement microVersion = null;
     protected boolean pathEnabled = false;
@@ -40,7 +40,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     protected FaunusElement reuse(final long id) {
         this.id = id;
-        this.properties = null;
+        this.properties = NO_PROPERTIES;
         this.clearPaths();
         return this;
     }
@@ -68,12 +68,15 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     // Property Handling
     //##################################
 
+    void initializeProperties() {
+        if (properties==NO_PROPERTIES) properties = HashMultimap.create();
+    }
+
     @Override
     public void setProperty(final String key, final Object value) {
         ElementHelper.validateProperty(this, key, value);
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        if (properties == NO_PROPERTIES)
-            this.properties = ArrayListMultimap.create();
+        initializeProperties();
         this.properties.removeAll(type);
         this.properties.put(type, value);
     }
@@ -116,6 +119,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     }
 
     public void addAllProperties(Iterable<FaunusProperty> properties) {
+        initializeProperties();
         for (FaunusProperty p : properties) {
             this.properties.put(p.getType(),p.getValue());
         }

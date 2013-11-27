@@ -1,10 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ListMultimap;
+import com.google.common.collect.*;
 import com.thinkaurelius.faunus.FaunusElement.MicroElement;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -47,15 +44,13 @@ public class FaunusSerializer {
     public void writeVertex(final FaunusVertex vertex, final DataOutput out) throws IOException {
         Schema schema = new Schema();
         vertex.updateSchema(schema);
-        schema.writeSchema(out);
-        writeElement(vertex, schema, out);
+        writeElement(vertex, true, schema, out);
         writeEdges(vertex.inEdges, out, Direction.OUT, schema);
         writeEdges(vertex.outEdges, out, Direction.IN, schema);
     }
 
     public void readVertex(final FaunusVertex vertex, final DataInput in) throws IOException {
-        Schema schema = readSchema(in);
-        readElement(vertex, schema, in);
+        Schema schema = readElement(vertex, true, null, in);
         vertex.inEdges = readEdges(in, Direction.OUT, vertex.id, schema);
         vertex.outEdges = readEdges(in, Direction.IN, vertex.id, schema);
     }
@@ -75,15 +70,19 @@ public class FaunusSerializer {
     }
 
     public void readElement(final FaunusElement element, final DataInput in) throws IOException {
-        readElement(element, null, in);
+        readElement(element, false, null, in);
     }
 
     public void writeElement(final FaunusElement element, final DataOutput out) throws IOException {
-        writeElement(element, null, out);
+        writeElement(element, false, null, out);
     }
 
-    public void readElement(final FaunusElement element, final Schema schema, final DataInput in) throws IOException {
+    public Schema readElement(final FaunusElement element, final boolean readSchema, Schema schema, final DataInput in) throws IOException {
         element.id = WritableUtils.readVLong(in);
+        if (readSchema) {
+            assert schema==null;
+            schema=readSchema(in);
+        }
         element.pathEnabled = in.readBoolean();
         if (element.pathEnabled) {
             element.paths = readElementPaths(in);
@@ -91,10 +90,15 @@ public class FaunusSerializer {
         } else
             element.pathCounter = WritableUtils.readVLong(in);
         element.properties = readProperties(schema, in);
+        return schema;
     }
 
-    private void writeElement(final FaunusElement element, final Schema schema, final DataOutput out) throws IOException {
+    private void writeElement(final FaunusElement element, final boolean writeSchema, final Schema schema, final DataOutput out) throws IOException {
         WritableUtils.writeVLong(out, element.id);
+        if (writeSchema) {
+            assert schema!=null;
+            schema.writeSchema(out);
+        }
         out.writeBoolean(element.pathEnabled);
         if (element.pathEnabled)
             writeElementPaths(element.paths, out);
@@ -103,7 +107,7 @@ public class FaunusSerializer {
         writeProperties(element.properties, schema, out);
     }
 
-    private void writeProperties(final ListMultimap<FaunusType, Object> properties, final Schema schema, final DataOutput out) throws IOException {
+    private void writeProperties(final Multimap<FaunusType, Object> properties, final Schema schema, final DataOutput out) throws IOException {
         if (properties.isEmpty())
             WritableUtils.writeVInt(out, 0);
         else {
@@ -120,12 +124,12 @@ public class FaunusSerializer {
         }
     }
 
-    private ListMultimap<FaunusType, Object> readProperties(final Schema schema, final DataInput in) throws IOException {
+    private Multimap<FaunusType, Object> readProperties(final Schema schema, final DataInput in) throws IOException {
         final int numPropertyBytes = WritableUtils.readVInt(in);
         if (numPropertyBytes == 0)
-            return null;
+            return FaunusElement.NO_PROPERTIES;
         else {
-            final ListMultimap<FaunusType, Object> properties = ArrayListMultimap.create();
+            final Multimap<FaunusType, Object> properties = HashMultimap.create();
 //            byte[] bytes = new byte[WritableUtils.readVInt(in)];
             byte[] bytes = new byte[numPropertyBytes];
             in.readFully(bytes);
@@ -149,7 +153,7 @@ public class FaunusSerializer {
             final int size = WritableUtils.readVInt(in);
             for (int j = 0; j < size; j++) {
                 final FaunusEdge edge = new FaunusEdge();
-                readElement(edge,schema,in);
+                readElement(edge,false,schema,in);
                 edge.setLabel(type);
                 long vertexId = WritableUtils.readVLong(in);
                 switch(idToRead) {
@@ -176,7 +180,7 @@ public class FaunusSerializer {
             WritableUtils.writeVLong(out, schema.getTypeId(type));
             WritableUtils.writeVInt(out, subset.size());
             for (final FaunusEdge edge : subset) {
-                writeElement(edge,schema,out);
+                writeElement(edge,false,schema,out);
                 WritableUtils.writeVLong(out, edge.getVertexId(idToWrite));
             }
         }

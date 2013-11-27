@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
@@ -89,8 +90,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     public void addProperty(final String key, final Object value) {
         ElementHelper.validateProperty(this, key, value);
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        if (properties == FaunusElement.NO_PROPERTIES)
-            this.properties = ArrayListMultimap.create();
+        initializeProperties();
         this.properties.put(type, value);
     }
 
@@ -146,7 +146,8 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
+    public Iterable<Edge> getEdges(final Direction direction, String... labels) {
+        if (labels==null) labels = new String[0];
         FaunusType[] types = new FaunusType[labels.length];
         for (int i=0;i<labels.length;i++) types[i]=FaunusType.DEFAULT_MANAGER.get(labels[i]);
         return getEdges(direction,types);
@@ -167,7 +168,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
                 for (FaunusType type : adj.keySet()) edgeLists.add((List)adj.get(type));
             } else {
                 for (final FaunusType label : labels) {
-                    final List<Edge> temp = (List)this.outEdges.get(label);
+                    final List<Edge> temp = (List)adj.get(label);
                     edgeLists.add(temp);
                 }
             }
@@ -326,7 +327,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     public void readFields(final DataInput in) throws IOException {
-        FaunusSerializer.DEFAULT_SERIALIZER.readVertex(this,in);
+        FaunusSerializer.DEFAULT_SERIALIZER.readVertex(this, in);
     }
 
     //##################################
