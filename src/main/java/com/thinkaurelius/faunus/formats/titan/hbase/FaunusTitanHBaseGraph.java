@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -23,8 +24,8 @@ import java.util.NavigableMap;
 
 public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
 
-    public FaunusTitanHBaseGraph(Serializer serializer, Configuration configuration) {
-        super(serializer, configuration);
+    public FaunusTitanHBaseGraph(Serializer serializer, final TypeReferenceContainer types) {
+        super(serializer, types);
     }
 
     public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {

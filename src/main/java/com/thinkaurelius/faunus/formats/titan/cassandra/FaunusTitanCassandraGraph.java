@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import org.apache.cassandra.db.IColumn;
 import org.apache.commons.configuration.Configuration;
 
@@ -22,8 +23,8 @@ import java.util.SortedMap;
 public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
 
 
-    public FaunusTitanCassandraGraph(Serializer serializer, Configuration configuration) {
-        super(serializer, configuration);
+    public FaunusTitanCassandraGraph(Serializer serializer, final TypeReferenceContainer types) {
+        super(serializer, types);
     }
 
     public FaunusVertex readFaunusVertex(final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {

@@ -4,9 +4,10 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanOutputFormat;
+import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -71,7 +72,7 @@ public class BlueprintsGraphOutputMapReduce {
     public static Graph generateGraph(final Configuration config) {
         final Class<? extends OutputFormat> format = config.getClass(FaunusGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return GraphFactory.generateGraph(config, TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN);
+            return TitanFactory.open(ConfigurationUtil.extractConfiguration(config, TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN));
         } else {
             // TODO: this is where Rexster can come into play here
             throw new RuntimeException("The provide graph output format is not supported: " + format.getName());

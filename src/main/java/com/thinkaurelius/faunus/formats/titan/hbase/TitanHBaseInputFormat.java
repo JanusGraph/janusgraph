@@ -2,9 +2,7 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
-import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore;
 import org.apache.hadoop.conf.Configuration;
@@ -35,8 +33,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
     private FaunusTitanHBaseGraph graph;
-    private VertexQueryFilter vertexQuery;
-    private boolean pathEnabled;
+
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -50,9 +47,10 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
-        this.graph = new FaunusTitanHBaseGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
-        this.vertexQuery = VertexQueryFilter.create(config);
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        super.setConf(config);
+        Setup setup = super.setupConfiguration(config);
+        this.graph = new FaunusTitanHBaseGraph(setup.serializer,setup.types);
+
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));

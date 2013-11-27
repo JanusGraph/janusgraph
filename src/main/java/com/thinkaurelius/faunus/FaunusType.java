@@ -69,6 +69,9 @@ public class FaunusType {
         return name.equals(((FaunusType)other).name);
     }
 
+    public static final FaunusType.Manager DEFAULT_MANAGER = new FaunusType.Manager();
+
+
     public static class Manager extends HashMap<String,FaunusType> {
 
         Manager() {

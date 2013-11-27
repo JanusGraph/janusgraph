@@ -88,14 +88,14 @@ public class FaunusVertex extends FaunusElement implements Vertex {
 
     public void addProperty(final String key, final Object value) {
         ElementHelper.validateProperty(this, key, value);
-        FaunusType type = FaunusGraph.getCurrent().getTypes().get(key);
+        FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
         if (properties == FaunusElement.NO_PROPERTIES)
             this.properties = ArrayListMultimap.create();
         this.properties.put(type, value);
     }
 
     public <T> List<T> getProperties(final String key) {
-        return (List)properties.get(FaunusGraph.getCurrent().getTypes().get(key));
+        return (List)properties.get(FaunusType.DEFAULT_MANAGER.get(key));
     }
 
     //##################################
@@ -148,7 +148,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     @Override
     public Iterable<Edge> getEdges(final Direction direction, final String... labels) {
         FaunusType[] types = new FaunusType[labels.length];
-        for (int i=0;i<labels.length;i++) types[i]=FaunusGraph.getCurrent().getTypes().get(labels[i]);
+        for (int i=0;i<labels.length;i++) types[i]=FaunusType.DEFAULT_MANAGER.get(labels[i]);
         return getEdges(direction,types);
     }
 
@@ -219,7 +219,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
 
     public void removeEdges(final Tokens.Action action, final Direction direction, final String... strlabels) {
         Set<FaunusType> labels = Sets.newHashSet();
-        for (String label : strlabels) labels.add(FaunusGraph.getCurrent().getTypes().get(label));
+        for (String label : strlabels) labels.add(FaunusType.DEFAULT_MANAGER.get(label));
 
         if (action.equals(Tokens.Action.KEEP)) {
             for (Direction dir : PROPER_DIR) {
@@ -322,11 +322,11 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        FaunusGraph.getCurrent().getSerializer().writeVertex(this, out);
+        FaunusSerializer.DEFAULT_SERIALIZER.writeVertex(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        FaunusGraph.getCurrent().getSerializer().readVertex(this,in);
+        FaunusSerializer.DEFAULT_SERIALIZER.readVertex(this,in);
     }
 
     //##################################

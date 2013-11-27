@@ -71,7 +71,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     @Override
     public void setProperty(final String key, final Object value) {
         ElementHelper.validateProperty(this, key, value);
-        FaunusType type = FaunusGraph.getCurrent().getTypes().get(key);
+        FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
         if (properties == NO_PROPERTIES)
             this.properties = ArrayListMultimap.create();
         this.properties.removeAll(type);
@@ -81,7 +81,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     @Override
     public <T> T removeProperty(final String key) {
         if (properties.isEmpty()) return null;
-        Collection<Object>  removed = this.properties.removeAll(FaunusGraph.getCurrent().getTypes().get(key));
+        Collection<Object>  removed = this.properties.removeAll(FaunusType.DEFAULT_MANAGER.get(key));
         if (removed.isEmpty()) return null;
         else if (removed.size()==1) return (T)removed.iterator().next();
         else return (T)removed;
@@ -89,7 +89,7 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
 
     @Override
     public <T> T getProperty(final String key) {
-        FaunusType type = FaunusGraph.getCurrent().getTypes().get(key);
+        FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
         //First, handle special cases
         if (type.equals(FaunusType.COUNT))
             return (T) Long.valueOf(this.pathCount());

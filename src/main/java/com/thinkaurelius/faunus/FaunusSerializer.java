@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import org.apache.hadoop.io.WritableComparable;
@@ -30,6 +31,8 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class FaunusSerializer {
+
+    public static final FaunusSerializer DEFAULT_SERIALIZER = new FaunusSerializer(new KryoSerializer(true),FaunusType.DEFAULT_MANAGER);
 
     private final Serializer serializer;
     private final FaunusType.Manager types;
@@ -61,7 +64,7 @@ public class FaunusSerializer {
         writeElement(edge,out);
         WritableUtils.writeVLong(out, edge.inVertex);
         WritableUtils.writeVLong(out, edge.outVertex);
-        writeFaunusType(edge.getType(),out);
+        writeFaunusType(edge.getType(), out);
     }
 
     public void readEdge(final FaunusEdge edge, final DataInput in) throws IOException {
@@ -160,7 +163,7 @@ public class FaunusSerializer {
                         break;
                     default: throw ExceptionFactory.bothIsNotSupported();
                 }
-                edges.put(type,edge);
+                edges.put(type, edge);
             }
         }
         return edges;

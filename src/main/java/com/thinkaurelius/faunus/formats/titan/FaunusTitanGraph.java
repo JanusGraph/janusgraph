@@ -39,9 +39,9 @@ public class FaunusTitanGraph {
     private final EdgeSerializer edgeSerializer;
     private final TypeReferenceContainer typeManager;
 
-    public FaunusTitanGraph(final Serializer serializer, final Configuration configuration) {
+    public FaunusTitanGraph(final Serializer serializer, final TypeReferenceContainer types) {
         this.edgeSerializer = new EdgeSerializer(serializer);
-        typeManager = new TypeReferenceContainer(configuration);
+        typeManager = types;
     }
 
     protected FaunusVertex readFaunusVertex(final StaticBuffer key, Iterable<Entry> entries) {

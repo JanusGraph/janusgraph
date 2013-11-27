@@ -34,10 +34,10 @@ public class FaunusEdge extends FaunusElement implements Edge {
         this.enablePath(enablePaths);
     }
 
-//    public FaunusEdge(final DataInput in) throws IOException {
-//        super(-1l);
-//        this.readFields(in);
-//    }
+    public FaunusEdge(final DataInput in) throws IOException {
+        super(-1l);
+        this.readFields(in);
+    }
 
     public FaunusEdge(final long outVertex, final long inVertex, final String label) {
         this(-1l, outVertex, inVertex, label);
@@ -100,7 +100,7 @@ public class FaunusEdge extends FaunusElement implements Edge {
     }
 
     final void setLabel(String label) {
-        setLabel(FaunusGraph.getCurrent().getTypes().get(label));
+        setLabel(FaunusType.DEFAULT_MANAGER.get(label));
     }
 
     //##################################
@@ -108,11 +108,11 @@ public class FaunusEdge extends FaunusElement implements Edge {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        FaunusGraph.getCurrent().getSerializer().writeEdge(this, out);
+        FaunusSerializer.DEFAULT_SERIALIZER.writeEdge(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        FaunusGraph.getCurrent().getSerializer().readEdge(this, in);
+        FaunusSerializer.DEFAULT_SERIALIZER.readEdge(this, in);
 
     }
 

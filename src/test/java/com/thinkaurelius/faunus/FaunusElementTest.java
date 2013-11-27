@@ -78,7 +78,7 @@ public class FaunusElementTest extends TestCase {
 
         //////// test raw byte comparator
 
-        FaunusElement.Comparator comparator = new FaunusElement.Comparator();
+        FaunusSerializer.Comparator comparator = new FaunusSerializer.Comparator();
 
         assertEquals(0, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), aBytes.toByteArray(), 0, aBytes.size()));
         assertEquals(-1, comparator.compare(aBytes.toByteArray(), 0, aBytes.size(), bBytes.toByteArray(), 0, bBytes.size()));

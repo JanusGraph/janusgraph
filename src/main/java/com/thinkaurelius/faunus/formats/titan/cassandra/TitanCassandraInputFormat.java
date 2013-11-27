@@ -2,9 +2,7 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
-import com.thinkaurelius.faunus.formats.titan.GraphFactory;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
@@ -47,9 +45,9 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     @Override
     public void setConf(final Configuration config) {
-        this.graph = new FaunusTitanCassandraGraph(GraphFactory.generateTitanConfiguration(config, FAUNUS_GRAPH_INPUT_TITAN));
-        this.vertexQuery = VertexQueryFilter.create(config);
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        super.setConf(config);
+        Setup setup = super.setupConfiguration(config);
+        this.graph = new FaunusTitanCassandraGraph(setup.serializer,setup.types);
 
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
