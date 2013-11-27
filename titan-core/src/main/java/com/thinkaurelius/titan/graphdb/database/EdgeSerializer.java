@@ -98,7 +98,7 @@ public class EdgeSerializer {
         }
     }
 
-    private RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
+    public RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         assert vertexid > 0;
 
         ReadBuffer column = data.getReadColumn();

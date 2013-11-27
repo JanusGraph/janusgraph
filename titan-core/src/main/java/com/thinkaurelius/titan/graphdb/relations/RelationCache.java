@@ -37,7 +37,7 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
     }
 
     public boolean hasProperties() {
-        return properties != null;
+        return properties != null && !properties.isEmpty();
     }
 
     public int numProperties() {
