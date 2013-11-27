@@ -33,7 +33,5 @@ public abstract class DistributedStoreManagerTest {
         assertEquals(1, local.size());
         assertNotNull(local.get(0).getStart());
         assertNotNull(local.get(0).getEnd());
-        System.err.println("range: " + local.get(0).getStart() + ":" + local.get(0).getStart().length() + " " + local.get(0).getEnd() + ":" + local.get(0).getEnd().length());
     }
-
 }
