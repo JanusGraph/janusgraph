@@ -9,5 +9,8 @@ public interface TypeInspector {
 
     public TitanType getExistingType(long id);
 
+    public boolean containsType(String name);
+
+    public TitanType getType(String name);
 
 }

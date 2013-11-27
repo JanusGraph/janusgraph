@@ -67,7 +67,7 @@ public class TypeReferenceContainer implements TypeInspector {
             }
         }
         for (long id : ids) {
-            getFromConfiguration(config,id);
+            add(getFromConfiguration(config,id));
         }
     }
 
@@ -89,13 +89,14 @@ public class TypeReferenceContainer implements TypeInspector {
         return (TitanType)type;
     }
 
+    @Override
     public boolean containsType(String name) {
         return typesByName.containsKey(name);
     }
 
-    public TitanType getExistingType(String name) {
+    @Override
+    public TitanType getType(String name) {
         TitanTypeReference type = typesByName.get(name);
-        Preconditions.checkArgument(type!=null,"Type could not be found for name: %s",name);
         return type;
     }
 
@@ -151,7 +152,7 @@ public class TypeReferenceContainer implements TypeInspector {
                     String[] names = sub.getStringArray(key);
                     long[] ids = new long[names.length];
                     for (int i=0;i<ids.length;i++)
-                        ids[i]=getExistingType(names[i]).getID();
+                        ids[i]=getType(names[i]).getID();
                     value = ids;
                     break;
                 case INDEXES:
@@ -180,6 +181,16 @@ public class TypeReferenceContainer implements TypeInspector {
 
             Preconditions.checkNotNull(value);
             definition.setValue(tat,value);
+        }
+
+        for (TypeAttributeType key : new TypeAttributeType[]{TypeAttributeType.SIGNATURE,TypeAttributeType.SORT_KEY}) {
+            if (definition.getValue(key)==null) definition.setValue(key,new long[0]);
+        }
+        if (definition.getValue(TypeAttributeType.INDEXES)==null) {
+            definition.setValue(TypeAttributeType.INDEXES,new IndexType[0]);
+        }
+        if (definition.getValue(TypeAttributeType.INDEX_PARAMETERS)==null) {
+            definition.setValue(TypeAttributeType.INDEX_PARAMETERS,new IndexParameters[0]);
         }
 
         switch(typeClass) {
