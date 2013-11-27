@@ -36,6 +36,7 @@ It also includes software from other open source projects including, but not lim
  * Mockito [http://code.google.com/p/mockito/]
  * Persistit [https://github.com/pdbeaman/persistit]
  * Hazelcast [https://github.com/hazelcast/hazelcast]
+ * Infinispan [http://www.infinispan.org]
  * Oracle's BerkeleyDB [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
 
 

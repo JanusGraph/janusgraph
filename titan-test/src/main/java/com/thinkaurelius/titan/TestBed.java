@@ -3,6 +3,9 @@ package com.thinkaurelius.titan;
 import cern.colt.function.LongObjectProcedure;
 import cern.colt.map.AbstractLongObjectMap;
 import cern.colt.map.OpenLongObjectHashMap;
+import com.google.common.base.Preconditions;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -11,6 +14,10 @@ import com.tinkerpop.blueprints.Vertex;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.Callable;
 
 public class TestBed {
 
@@ -35,14 +42,38 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
-        System.out.println((int) Character.MIN_VALUE);
-        System.out.println((int) Character.MAX_VALUE);
+        int size = 100; int trials = 10000; int arrsize = 40;
+        Random r = new Random();
+
+        List<byte[]> entries = new ArrayList<byte[]>();
+        for (int i=0;i<size;i++) {
+            byte[] b = new byte[arrsize];
+            for (int j=0;j<b.length;j++) b[j]=(byte)r.nextInt(Byte.MAX_VALUE);
+            entries.add(b);
+        }
+
+        long time = System.currentTimeMillis();
+        for (int i=0;i<trials;i++) {
+            int totallength = 0;
+            for (byte[] barr : entries) totallength+=barr.length;
+            byte[] total = new byte[totallength];
+            int[] offsets = new int[entries.size()];
+            int pos=0; int index = 0;
+            for (byte[] barr : entries) {
+                offsets[index++]=pos;
+                System.arraycopy(barr,0,total,pos,barr.length);
+                pos+=barr.length;
+            }
+        }
+        System.out.println(System.currentTimeMillis()-time);
+
+
         System.exit(0);
 
         Object o = Long.valueOf(5);
         ByteBuffer bb = ByteBuffer.allocate(16);
         bb.putLong(1).putLong(2).flip();
-        long time = System.currentTimeMillis();
+        time = System.currentTimeMillis();
         for (long i = 0; i < 1000000000l; i++) {
 //            A a = new A(o);
 //            a.inc();
@@ -88,7 +119,7 @@ public class TestBed {
         System.out.println(Runtime.getRuntime().freeMemory() / 1024);
         long memBefore = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
         System.out.println(memBefore / 1024);
-        int size = 10000000;
+        size = 10000000;
         final int modulo = 7;
         final AbstractLongObjectMap map = new OpenLongObjectHashMap(size);
         for (int i = 1; i <= size; i++) {

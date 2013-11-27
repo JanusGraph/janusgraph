@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -54,6 +55,14 @@ public class StorageSetup {
         BaseConfiguration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "inmemory");
         return TitanFactory.open(config);
+    }
+
+
+    public static Configuration addPermanentCache(Configuration conf) {
+        Configuration cacheconf = conf.subset(GraphDatabaseConfiguration.CACHE_NAMESPACE);
+        cacheconf.addProperty(GraphDatabaseConfiguration.DB_CACHE_KEY,true);
+        cacheconf.addProperty(GraphDatabaseConfiguration.DB_CACHE_TIME_KEY,0);
+        return conf;
     }
 
 }

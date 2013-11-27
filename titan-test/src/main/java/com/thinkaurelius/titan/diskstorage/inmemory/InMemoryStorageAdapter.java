@@ -135,18 +135,6 @@ public class InMemoryStorageAdapter implements KeyColumnValueStoreManager {
         return f;
     }
 
-    private final Map<String, String> config = Maps.newHashMap();
-
-    @Override
-    public String getConfigurationProperty(String key) throws StorageException {
-        return config.get(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(String key, String value) throws StorageException {
-        config.put(key, value);
-    }
-
     private static class EmptyRowIterator implements KeyIterator {
         @Override
         public RecordIterator<Entry> getEntries() {

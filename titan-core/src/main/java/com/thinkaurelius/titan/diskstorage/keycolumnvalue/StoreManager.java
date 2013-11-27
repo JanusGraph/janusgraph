@@ -40,24 +40,6 @@ public interface StoreManager {
     public StoreFeatures getFeatures();
 
     /**
-     * Reads the configuration property for this StoreManager
-     *
-     * @param key Key identifying the configuration property
-     * @return Value stored for the key or null if the configuration property has not (yet) been defined.
-     * @throws StorageException
-     */
-    public String getConfigurationProperty(final String key) throws StorageException;
-
-    /**
-     * Sets a configuration property for this StoreManager.
-     *
-     * @param key   Key identifying the configuration property
-     * @param value Value to be stored for the key
-     * @throws StorageException
-     */
-    public void setConfigurationProperty(final String key, final String value) throws StorageException;
-
-    /**
      * Return an identifier for the StoreManager. Two managers with the same
      * name would open databases that read and write the same underlying data;
      * two store managers with different names should be, for data read/write

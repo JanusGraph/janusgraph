@@ -55,8 +55,8 @@
         <connection>scm:git:git@github.com:thinkaurelius/titan.git</connection>
         <developerConnection>scm:git:git@github.com:thinkaurelius/titan.git</developerConnection>
         <url>git@github.com:thinkaurelius/titan.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
     <properties>
         <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
         <tinkerpop.version>2.4.0</tinkerpop.version>
@@ -79,11 +79,14 @@
         <titan.testdir>${project.build.directory}/titan-test</titan.testdir>
         <gpg.skip>false</gpg.skip>
         <perf.jvm.opts />
-        <default.test.jvm.opts>-Xms256m -Xmx768m -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx768m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx256m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <test.extra.jvm.opts />
-        <titan.classifier />
         <test.skip.default>false</test.skip.default>
+        <top.level.basedir>${basedir}</top.level.basedir>
+        <compiler.source>1.6</compiler.source>
+        <compiler.target>1.7</compiler.target>
+        <compiler.args />
     </properties>
     <modules>
         <module>titan-core</module>
@@ -93,7 +96,7 @@
         <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <module>titan-hazelcast</module>
+        <module>titan-persistit</module>
         <module>titan-rexster</module>
         <module>titan-all</module>
         <module>titan-site</module>
@@ -280,6 +283,11 @@
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>xml-maven-plugin</artifactId>
+                    <version>1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>cobertura-maven-plugin</artifactId>
                     <version>2.5.2</version>
                     <configuration>
@@ -400,6 +408,11 @@
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
                 <version>1.4.1</version>
+            </dependency>
+            <dependency>
+                <artifactId>jboss-logging</artifactId>
+                <groupId>org.jboss.logging</groupId>
+                <version>3.1.2.GA</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -702,55 +715,6 @@
 
     <profiles>
         <profile>
-            <id>jre6</id>
-
-            <activation>
-                <property>
-                    <name>targetjre</name>
-                    <value>6</value>
-                </property>
-            </activation>
-
-            <properties>
-                <compiler.source>1.6</compiler.source>
-                <compiler.target>1.6</compiler.target>
-                <compiler.args>-Xbootclasspath:/opt/jdk1.6.0_45/jre/lib/rt.jar</compiler.args>
-                <titan.classifier>jre6</titan.classifier>
-            </properties>
-
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <configuration>
-                            <classifier>jre6</classifier>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>jre7</id>
-
-            <activation>
-                <property>
-                    <name>!targetjre</name>
-                </property>
-            </activation>
-
-            <properties>
-                <compiler.source>1.6</compiler.source>
-                <compiler.target>1.7</compiler.target>
-            </properties>
-
-            <modules>
-                <module>titan-persistit</module>
-            </modules>
-        </profile>
-
-        <profile>
-
             <id>sonatype-oss-release</id>
             <build>
                 <plugins>
@@ -1045,9 +1009,9 @@
                                     <argLine>${mem.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel />
-                                    <threadCount>0</threadCount>
-                                    <perCoreThreadCount>1</perCoreThreadCount>
+                                    <parallel>none</parallel>
+                                    <threadCount>1</threadCount>
+                                    <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.MemoryTests</groups>
                                     <excludedGroups />
@@ -1082,15 +1046,12 @@
                                     <argLine>${default.test.jvm.opts} ${perf.jvm.opts}</argLine>
                                     <reuseForks>false</reuseForks>
                                     <forkCount>1</forkCount>
-                                    <parallel />
+                                    <parallel>none</parallel>
                                     <threadCount>1</threadCount>
-                                    <perCoreThreadCount>1</perCoreThreadCount>
+                                    <perCoreThreadCount>false</perCoreThreadCount>
                                     <runOrder>alphabetical</runOrder>
                                     <groups>com.thinkaurelius.titan.testcategory.PerformanceTests</groups>
                                     <excludedGroups />
-                                    <excludes>
-                                        <exclude>**/External*</exclude>
-                                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>
@@ -1132,6 +1093,55 @@
             <modules>
                 <module>titan-dist/titan-dist-parent</module>
             </modules>
+        </profile>
+        
+        
+        <profile>
+            <id>target-jre6</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <configuration>
+                            <forceCreation>true</forceCreation>
+                            <transformationSets>
+                                <transformationSet>
+                                    <dir>${basedir}</dir>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                    <stylesheet>${top.level.basedir}/jre6.xslt</stylesheet>
+                                </transformationSet>
+                            </transformationSets>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sourceforge.saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                                <version>9.1.0.8</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <configuration>
+                            <outputDirectory>${basedir}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${basedir}/target/generated-resources/xml/xslt/</directory>
+                                    <includes>
+                                        <include>pom.xml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

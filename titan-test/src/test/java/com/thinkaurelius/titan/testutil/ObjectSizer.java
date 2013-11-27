@@ -2,12 +2,14 @@ package com.thinkaurelius.titan.testutil;
 
 import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.Weigher;
 import com.google.common.collect.HashMultimap;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -112,6 +114,23 @@ public final class ObjectSizer {
         }
     };
 
+    public static Factory guavaFactory = new Factory() {
+        @Override
+        public Object newInstance() {
+            int size = 10000;
+            Cache<Nothing,Nothing> cache = CacheBuilder.newBuilder()
+                    .maximumSize(size).softValues()
+                    .concurrencyLevel(3)
+                    .initialCapacity(size).build();
+            for (int i=0;i<size;i++) {
+                cache.put(new Nothing(),new Nothing());
+            }
+            return cache;
+        }
+    };
+
+    private static class Nothing {}
+
 
     public static Map fill(Map m, int size) {
         for (int i = 0; i < size; i++) m.put(i, i);
@@ -135,7 +154,7 @@ public final class ObjectSizer {
     public static void main(String... aArguments) {
         Factory theClass = null;
         try {
-            theClass = stringConcurrenthashmap;
+            theClass = guavaFactory;
         } catch (Exception ex) {
             System.err.println("Cannot build a Class object: " + aArguments[0]);
             System.err.println("Use a package-qualified name, and check classpath.");
@@ -154,7 +173,7 @@ public final class ObjectSizer {
 
         //this array will simply hold a bunch of references, such that
         //the objects cannot be garbage-collected
-        Object[] objects = new Object[fSAMPLE_SIZE];
+        Object[] objects = new Object[SAMPLE_SIZE];
         MemoryAssess mem = new MemoryAssess();
         //build a bunch of identical objects
         try {
@@ -164,7 +183,7 @@ public final class ObjectSizer {
             for (int idx = 0; idx < objects.length; ++idx) {
                 objects[idx] = factory.newInstance();
             }
-            float approximateSize = mem.end() / 100f;
+            double approximateSize = (mem.end() - 12 - SAMPLE_SIZE*OBJECT_POINTER_SIZE) * 1.0 / SAMPLE_SIZE;
             result = Math.round(approximateSize);
         } catch (Exception ex) {
             System.err.println("Cannot create object using " + factory);
@@ -173,10 +192,11 @@ public final class ObjectSizer {
     }
 
     // PRIVATE //
-    private static int fSAMPLE_SIZE = 100;
+    private static int SAMPLE_SIZE = 100;
 
+    private static int OBJECT_POINTER_SIZE = 6; //assuming compressed pointers
 
-    private static long fSLEEP_INTERVAL = 100;
+    private static long SLEEP_INTERVAL = 100;
 
     private static long getMemoryUse() {
         putOutTheGarbage();
@@ -196,9 +216,9 @@ public final class ObjectSizer {
     private static void collectGarbage() {
         try {
             System.gc();
-            Thread.currentThread().sleep(fSLEEP_INTERVAL);
+            Thread.currentThread().sleep(SLEEP_INTERVAL);
             System.runFinalization();
-            Thread.currentThread().sleep(fSLEEP_INTERVAL);
+            Thread.currentThread().sleep(SLEEP_INTERVAL);
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }

@@ -10,10 +10,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
-import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
@@ -24,6 +21,7 @@ import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLo
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
@@ -73,6 +71,9 @@ public class Backend {
     public static final String TITAN_BACKEND_VERSION = "titan-version";
     public static final String MERGED_METRICS = "stores";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
+
+    public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
+    public static final String SYSTEM_PROPERTIES_IDENTIFIER = "general";
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
 
@@ -259,22 +260,19 @@ public class Backend {
                 edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore, getMetricsStoreName("edgeIndexStore"));
             }
 
-            String version = BackendOperation.execute(new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    String version = storeManager.getConfigurationProperty(TITAN_BACKEND_VERSION);
-                    if (version == null) {
-                        storeManager.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                        version = TitanConstants.VERSION;
-                    }
-                    return version;
+            String version = null;
+            KCVSConfiguration systemConfig = new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
+                                                        SYSTEM_PROPERTIES_IDENTIFIER);
+            try {
+                systemConfig.setMaxOperationWaitTime(config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+                version = systemConfig.getConfigurationProperty(TITAN_BACKEND_VERSION);
+                if (version == null) {
+                    systemConfig.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                    version = TitanConstants.VERSION;
                 }
-
-                @Override
-                public String toString() {
-                    return "ConfigurationRead";
-                }
-            }, config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+            } finally {
+                systemConfig.close();
+            }
             Preconditions.checkState(version != null, "Could not read version from storage backend");
             if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
                 throw new TitanException("StorageBackend version is incompatible with current Titan version: " + version + " vs. " + TitanConstants.VERSION);
@@ -331,7 +329,6 @@ public class Backend {
     }
 
     public final static <T> T instantiate(String clazzname, Object... constructorArgs) {
-
         try {
             Class clazz = Class.forName(clazzname);
             Constructor constructor = clazz.getConstructor(Configuration.class);
@@ -400,7 +397,7 @@ public class Backend {
      * @return
      * @throws StorageException
      */
-    public BackendTransaction beginTransaction(TransactionConfiguration configuration) throws StorageException {
+    public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws StorageException {
         StoreTxConfig txConfig = new StoreTxConfig(configuration.getMetricsPrefix());
         if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
         StoreTransaction tx = storeManager.beginTransaction(txConfig);
@@ -423,7 +420,7 @@ public class Backend {
         //Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue()));
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey())));
         }
 
         return new BackendTransaction(tx, storeManager.getFeatures(),
@@ -467,6 +464,7 @@ public class Backend {
         put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
+        put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
@@ -521,10 +519,43 @@ public class Backend {
         }
     };
 
+    private final Function<String, Locker> TEST_LOCKER_CREATOR = new Function<String, Locker>() {
+
+        @Override
+        public Locker apply(String lockerName) {
+            return openManagedLocker("com.thinkaurelius.titan.diskstorage.util.TestLockerManager",lockerName);
+
+        }
+    };
+
     private final Map<String, Function<String, Locker>> REGISTERED_LOCKERS = ImmutableMap.of(
             "consistentkey", CONSISTENT_KEY_LOCKER_CREATOR,
-            "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR
+            "astyanaxrecipe", ASTYANAX_RECIPE_LOCKER_CREATOR,
+            "test", TEST_LOCKER_CREATOR
     );
+
+    private static Locker openManagedLocker(String classname, String lockerName) {
+        try {
+            Class c = Class.forName(classname);
+            Constructor constructor = c.getConstructor();
+            Object instance = constructor.newInstance();
+            Method method = c.getMethod("openLocker", String.class);
+            Object o = method.invoke(instance, lockerName);
+            return (Locker) o;
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could not find implementation class: " + classname);
+        } catch (InstantiationException e) {
+            throw new IllegalArgumentException("Could not instantiate implementation: " + classname, e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Could not find method when configuring locking for: " + classname,e);
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("Could not access method when configuring locking for: " + classname,e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalArgumentException("Could not invoke method when configuring locking for: " + classname,e);
+        } catch (ClassCastException e) {
+            throw new IllegalArgumentException("Could not instantiate implementation: " + classname, e);
+        }
+    }
 
     static {
         Properties props;

@@ -30,9 +30,4 @@ public class CassandraThriftAssemblyIT extends AssemblyITSupport {
     public void testCassandraThriftSimpleSession() throws Exception {
         testSimpleGremlinSession("conf/titan-cassandra.properties", "cassandrathrift");
     }
-    
-    @Test
-    public void testCassandraThriftGettingStarted() throws Exception {
-        testGettingStartedGremlinSession("conf/titan-cassandra-es.properties", "cassandrathrift");
-    }
 }

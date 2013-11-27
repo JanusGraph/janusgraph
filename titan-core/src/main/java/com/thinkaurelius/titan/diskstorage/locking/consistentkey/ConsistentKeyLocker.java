@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -296,7 +297,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         StaticBuffer newLockCol = serializer.toLockCol(before, rid);
         Entry newLockEntry = new StaticBufferEntry(newLockCol, zeroBuf);
         try {
-            store.mutate(key, Arrays.asList(newLockEntry), null == del ? ImmutableList.<StaticBuffer>of() : Arrays.asList(del), txh);
+            store.mutate(key, Arrays.asList(newLockEntry), null == del ? ImmutableList.<StaticBuffer>of() : Arrays.asList(del), overrideTimestamp(txh, before));
         } catch (StorageException e) {
             t = e;
         }
@@ -309,7 +310,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Throwable t = null;
         final long before = times.getApproxNSSinceEpoch();
         try {
-            store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), txh);
+            store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), overrideTimestamp(txh, before));
         } catch (StorageException e) {
             t = e;
         }
@@ -432,7 +433,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), rid));
         for (int i = 0; i < lockRetryCount; i++) {
             try {
-                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, tx);
+                long before = times.getApproxNSSinceEpoch();
+                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, overrideTimestamp(tx, before));
                 return;
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
@@ -442,6 +444,11 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 return; // give up on this lock
             }
         }
+    }
+    
+    private static StoreTransaction overrideTimestamp(final StoreTransaction tx, final long nanoTimestamp) {
+        tx.getConfiguration().setTimestamp(nanoTimestamp);
+        return tx;
     }
 
     private static class WriteResult {

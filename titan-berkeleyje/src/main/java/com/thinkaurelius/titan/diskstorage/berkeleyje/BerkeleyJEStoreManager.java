@@ -6,13 +6,11 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.FileStorageConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
 import org.apache.commons.configuration.Configuration;
@@ -33,7 +31,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     protected Environment environment;
     protected final StoreFeatures features;
-    protected final FileStorageConfiguration storageConfig;
 
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
@@ -55,8 +52,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features.isDistributed = false;
         features.hasLocalKeyPartition = false;
         features.supportsMultiQuery = false;
-
-        storageConfig = new FileStorageConfiguration(directory);
     }
 
     private void initialize(int cachePercent) throws StorageException {
@@ -172,16 +167,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         }
         close();
         IOUtils.deleteFromDirectory(directory);
-    }
-
-    @Override
-    public String getConfigurationProperty(String key) throws StorageException {
-        return storageConfig.getConfigurationProperty(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(String key, String value) throws StorageException {
-        storageConfig.setConfigurationProperty(key, value);
     }
 
     @Override

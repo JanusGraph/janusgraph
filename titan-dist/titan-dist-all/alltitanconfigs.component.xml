@@ -9,11 +9,4 @@
             </includes>
         </fileSet>
     </fileSets>
-
-    <files>
-        <file>
-            <source>../../titan-hazelcast/src/test/resources/hazelcast.xml</source>
-            <outputDirectory>/conf</outputDirectory>
-        </file>
-    </files>
 </component>

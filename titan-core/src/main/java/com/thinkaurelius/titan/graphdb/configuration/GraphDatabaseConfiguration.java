@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
+import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
+import com.thinkaurelius.titan.graphdb.database.cache.PassThroughStoreCache;
+import com.thinkaurelius.titan.graphdb.database.cache.StoreCache;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -74,16 +77,6 @@ public class GraphDatabaseConfiguration {
     }};
 
     /**
-     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
-     * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
-     * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
-     * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
-     * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
-     */
-    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
-    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
-
-    /**
      * If this option is enabled, a transaction will retrieval all of a vertex's properties when asking for any property.
      * This will significantly speed up subsequent property lookups on the same vertex, hence this option is enabled by default.
      * Disable this option when the graph contains vertices with very many properties such that retrieving all of them substantially
@@ -102,6 +95,56 @@ public class GraphDatabaseConfiguration {
     public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
     public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 
+    // ################ CACHE #######################
+    // ################################################
+
+    public static final String CACHE_NAMESPACE = "cache";
+
+    /**
+     * Whether this Titan instance should use a database level cache in front of the
+     * storage backend in order to speed up frequent queries across transactions
+     */
+    public static final String DB_CACHE_KEY = "db-cache";
+    public static final boolean DB_CACHE_DEFAULT = false;
+
+    /**
+     * The size of the database level cache.
+     * If this value is between 0.0 (strictly bigger) and 1.0 (strictly smaller), then it is interpreted as a
+     * percentage of the total heap space available to the JVM this Titan instance is running in.
+     * If this value is bigger than 1.0 it is interpreted as an absolute size in bytes.
+     */
+    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
+    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
+
+    /**
+     * How long the database level cache will keep keys expired while the mutations that triggered the expiration
+     * are being persisted. This value should be larger than the time it takes for persisted mutations to become visible.
+     * This setting only ever makes sense for distributed storage backends where writes may be accepted but are not
+     * immediately readable.
+     */
+    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
+    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
+
+    /**
+     * The default expiration time for elements held in the database level cache. This is the time period before
+     * Titan will check against storage backend for a newer query answer.
+     * Setting this value to 0 will cache elements forever (unless they get evicted due to space constraints). This only
+     * makes sense when this is the only Titan instance interacting with a storage backend.
+     */
+    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
+    public static final long DB_CACHE_TIME_DEFAULT = 10000;
+
+    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
+
+    /**
+     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
+     * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
+     * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
+     * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
+     * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
+     */
+    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
+    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
 
     // ################ STORAGE #######################
     // ################################################
@@ -113,6 +156,12 @@ public class GraphDatabaseConfiguration {
      */
     public static final String STORAGE_DIRECTORY_KEY = "directory";
 
+    /**
+     * Path to a configuration file for those storage backends that
+     * require/support an a separate config file
+     */
+    public static final String STORAGE_CONF_FILE_KEY = "conffile";
+    
     /**
      * Define the storage backed to use for persistence
      */
@@ -304,8 +353,8 @@ public class GraphDatabaseConfiguration {
      * Username and password keys to be used to specify an access credential that may be needed to connect
      * with a secured storage backend.
      */
-    public static final String AUTH_USERNAME_KEY = "user";
-    public static final String AUHT_PASSWORD_KEY = "password";
+    public static final String AUTH_USERNAME_KEY = "username";
+    public static final String AUTH_PASSWORD_KEY = "password";
 
     /**
      * Default timeout when connecting to a remote database instance
@@ -678,11 +727,12 @@ public class GraphDatabaseConfiguration {
      * <ol>
      * <li>Load its contents into a {@link PropertiesConfiguration}</li>
      * <li>For each key starting with {@link #STORAGE_NAMESPACE} and ending in
-     * {@link #STORAGE_DIRECTORY_KEY}, check whether the associated value is a
-     * non-null, non-absolute path. If so, then prepend the absolute path of the
-     * parent directory of {@code dirorFile}. This has the effect of making
-     * non-absolute backend paths relative to the config file's directory rather
-     * than the JVM's working directory.
+     * {@link #STORAGE_DIRECTORY_KEY} or {@link #STORAGE_CONF_FILE_KEY}, check
+     * whether the associated value is a non-null, non-absolute path. If so,
+     * then prepend the absolute path of the parent directory of
+     * {@code dirorFile}. This has the effect of making non-absolute backend
+     * paths relative to the config file's directory rather than the JVM's
+     * working directory.
      * <li>Return the {@code PropertiesConfiguration}</li>
      * </ol>
      * <p/>
@@ -693,9 +743,10 @@ public class GraphDatabaseConfiguration {
      * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
      * the absolute path of the argument</li>
      * <li>Return the {@code BaseConfiguration}</li>
-     *
-     * @param dirOrFile A properties file to load or directory in which to read and
-     *                  write data
+     * 
+     * @param dirOrFile
+     *            A properties file to load or directory in which to read and
+     *            write data
      * @return A configuration derived from {@code dirOrFile}
      */
     @SuppressWarnings("unchecked")
@@ -708,16 +759,31 @@ public class GraphDatabaseConfiguration {
             if (dirOrFile.isFile()) {
                 configuration = new PropertiesConfiguration(dirOrFile);
 
-                final File configFileParent = dirOrFile.getParentFile();
+                final File tmpParent = dirOrFile.getParentFile();
+                final File configParent;
 
-                Preconditions.checkNotNull(configFileParent);
-                Preconditions.checkArgument(configFileParent.isDirectory());
+                if (null == tmpParent) {
+                    /*
+                     * null usually means we were given a Titan config file path
+                     * string like "foo.properties" that refers to the current
+                     * working directory of the process.
+                     */
+                    configParent = new File(System.getProperty("user.dir"));
+                } else {
+                    configParent = tmpParent;
+                }
+                
+                Preconditions.checkNotNull(configParent);
+                Preconditions.checkArgument(configParent.isDirectory());
 
                 final Pattern p = Pattern.compile(
                         Pattern.quote(STORAGE_NAMESPACE) + "\\..*" +
-                                Pattern.quote(STORAGE_DIRECTORY_KEY));
+                                "(" +
+                                  Pattern.quote(STORAGE_DIRECTORY_KEY) + "|" +
+                                  Pattern.quote(STORAGE_CONF_FILE_KEY) +
+                                ")");
 
-                final Iterator<String> sdKeys = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
+                final Iterator<String> keysToMangle = Iterators.filter(configuration.getKeys(), new Predicate<String>() {
                     @Override
                     public boolean apply(String key) {
                         if (null == key)
@@ -726,8 +792,8 @@ public class GraphDatabaseConfiguration {
                     }
                 });
 
-                while (sdKeys.hasNext()) {
-                    String k = sdKeys.next();
+                while (keysToMangle.hasNext()) {
+                    String k = keysToMangle.next();
                     Preconditions.checkNotNull(k);
                     String s = configuration.getString(k);
 
@@ -738,7 +804,7 @@ public class GraphDatabaseConfiguration {
 
                     File storedir = new File(s);
                     if (!storedir.isAbsolute()) {
-                        configuration.setProperty(k, configFileParent.getAbsolutePath() + File.separator + s);
+                        configuration.setProperty(k, configParent.getAbsolutePath() + File.separator + s);
                         log.debug("Overwrote relative path for key {}: was {}, now {}", k, s, configuration.getProperty(k));
                     } else {
                         log.debug("Loaded absolute path for key {}: {}", k, s);
@@ -784,7 +850,6 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.getBoolean(PROPERTY_PREFETCHING_KEY);
         else propertyPrefetching = null;
         allowVertexIdSetting = configuration.getBoolean(ALLOW_SETTING_VERTEX_ID_KEY, ALLOW_SETTING_VERTEX_ID_DEFAULT);
-
 
         configureMetrics();
     }
@@ -953,10 +1018,9 @@ public class GraphDatabaseConfiguration {
         return allowVertexIdSetting;
     }
 
-    public boolean getPropertyPrefetching() {
+    public boolean hasPropertyPrefetching() {
         if (propertyPrefetching == null) {
-            Preconditions.checkArgument(storeFeatures != null, "Cannot open transaction before the storage backend has been initialized");
-            return storeFeatures.isDistributed();
+            return getStoreFeatures().isDistributed();
         } else {
             return propertyPrefetching;
         }
@@ -1048,6 +1112,43 @@ public class GraphDatabaseConfiguration {
         storeFeatures = backend.getStoreFeatures();
         return backend;
     }
+
+    public StoreFeatures getStoreFeatures() {
+        Preconditions.checkArgument(storeFeatures != null, "Cannot retrieve store features before the storage backend has been initialized");
+        return storeFeatures;
+    }
+
+    public StoreCache getEdgeStoreCache() {
+        Configuration cacheconf = configuration.subset(CACHE_NAMESPACE);
+        if (this.batchLoading || !cacheconf.getBoolean(DB_CACHE_KEY,DB_CACHE_DEFAULT))
+            return new PassThroughStoreCache();
+
+        long expirationTime = cacheconf.getLong(DB_CACHE_TIME_KEY,DB_CACHE_TIME_DEFAULT);
+        Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
+        if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
+
+        long cacheSizeBytes;
+        double cachesize = cacheconf.getDouble(DB_CACHE_SIZE_KEY,DB_CACHE_SIZE_DEFAULT);
+        Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
+        if (cachesize<1.0) {
+            //Its a percentage
+            Runtime runtime = Runtime.getRuntime();
+            cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
+        } else {
+            Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
+            cacheSizeBytes = (long)cachesize;
+        }
+        log.info("Configuring edge store cache size: {}",cacheSizeBytes);
+
+        return new ExpirationStoreCache(expirationTime,
+                cacheconf.getLong(DB_CACHE_CLEAN_WAIT_KEY,DB_CACHE_CLEAN_WAIT_DEFAULT),
+                cacheSizeBytes);
+    }
+
+
+
+
+
 
     public Serializer getSerializer() {
         Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);

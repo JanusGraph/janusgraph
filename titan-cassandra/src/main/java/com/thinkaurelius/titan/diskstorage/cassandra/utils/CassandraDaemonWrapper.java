@@ -1,8 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.utils;
 
+import java.lang.Thread.UncaughtExceptionHandler;
+
+import org.apache.cassandra.db.commitlog.CommitLog;
+import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
 
 /**
  * This class starts a Thrift CassandraDaemon inside the current JVM.
@@ -12,14 +18,14 @@ import org.slf4j.LoggerFactory;
  */
 public class CassandraDaemonWrapper {
 
-    private static volatile boolean started = false;
-
     private static final Logger log = LoggerFactory.getLogger(CassandraDaemonWrapper.class);
 
     private static String liveCassandraYamlPath;
+    
+    private static long refcount = 0;
 
     public static synchronized void start(String cassandraYamlPath) {
-        if (started) {
+        if (0 < refcount++) {
             if (null != cassandraYamlPath && !cassandraYamlPath.equals(liveCassandraYamlPath)) {
                 log.warn("Can't start in-process Cassandra instance " +
                          "with yaml path {} because an instance was " +
@@ -45,11 +51,83 @@ public class CassandraDaemonWrapper {
         CassandraDaemon.main(new String[0]);
 
         liveCassandraYamlPath = cassandraYamlPath;
-
-        started = true;
     }
     
     public static synchronized boolean isStarted() {
-        return started;
+        return 0 < refcount;
+    }
+    
+    public static synchronized void stop() {
+        if (0 >= refcount--) {
+            log.warn("Can't stop in-process Cassandra instance because it is not running");
+            return;
+        }
+        
+        if (0 == refcount) {
+            log.info("Stopping in-process Cassandra daemon");
+            CassandraDaemon.stop(null);
+            try {
+                CommitLog.instance.shutdownBlocking();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            CommitLog.instance.sync();
+            terminatePeriodicCommitLogThread();
+            MessagingService.instance().shutdown();
+        }
+    }
+    
+    private static void terminatePeriodicCommitLogThread() {
+        ThreadGroup root = getRootThreadGroup();
+        
+        if (null == root)
+            return; // Shouldn't happen, but give up if it does
+        
+        int tc = 4096;
+        Thread[] threads = new Thread[tc];
+        int enumerated = root.enumerate(threads);
+        if (enumerated == tc)
+            return; // Wait it out, the perodic commit syncer will die eventually
+        
+        for (int i = 0; i < enumerated; i++) {
+            final Thread t = threads[i];
+            if (t.getName().equals("PERIODIC-COMMIT-LOG-SYNCER")) {
+                installUncaughtInterruptSwallower(t);
+                t.interrupt();
+            }
+        }
+    }
+    
+    private static ThreadGroup getRootThreadGroup() {
+        ThreadGroup g = Thread.currentThread().getThreadGroup();
+        if (null == g)
+            return null;
+        
+        ThreadGroup next = g.getParent();
+        while (null != next) {
+            g = next;
+            next = next.getParent();
+        }
+        
+        return g;
+    }
+
+    // this is not the greatest idea i've ever had
+    private static void installUncaughtInterruptSwallower(final Thread t) {
+        
+        t.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread actualThread, Throwable a) {
+                if (t.equals(actualThread) && a instanceof AssertionError) {
+                    Throwable cause = a.getCause();
+                    if (null != cause && cause instanceof InterruptedException)
+                        return;
+                }
+                
+                log.error("Uncaught exception", a);
+            }
+        });
+        
+        log.debug("Installed uncaught exception handler on {}", t);
     }
 }

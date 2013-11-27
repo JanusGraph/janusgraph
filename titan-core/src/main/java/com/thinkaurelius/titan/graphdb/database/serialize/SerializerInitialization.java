@@ -1,14 +1,12 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.FullDouble;
 import com.thinkaurelius.titan.core.attribute.FullFloat;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.*;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -30,9 +28,9 @@ public class SerializerInitialization {
         serializer.registerClass(int[].class, KRYO_OFFSET + 9);
         serializer.registerClass(double[].class, KRYO_OFFSET + 10);
         serializer.registerClass(long[].class, KRYO_OFFSET + 11);
-        serializer.registerClass(byte[].class, KRYO_OFFSET + 12);
+        serializer.registerClass(byte[].class, new ByteArrayHandler(), KRYO_OFFSET + 12);
         serializer.registerClass(boolean[].class, KRYO_OFFSET + 13);
-        serializer.registerClass(IndexType.class, KRYO_OFFSET + 14);
+        serializer.registerClass(IndexType.class, KRYO_OFFSET + 14); //duplicate of 20 TODO: remove one!
         serializer.registerClass(TitanTypeClass.class, KRYO_OFFSET + 15);
         serializer.registerClass(Integer.class, new IntegerSerializer(), KRYO_OFFSET + 16);
         serializer.registerClass(Double.class, new DoubleSerializer(), KRYO_OFFSET + 17);
@@ -51,8 +49,12 @@ public class SerializerInitialization {
         serializer.registerClass(char[].class, KRYO_OFFSET + 30);
         serializer.registerClass(short[].class, KRYO_OFFSET + 31);
         serializer.registerClass(float[].class, KRYO_OFFSET + 32);
+        serializer.registerClass(Parameter.class,KRYO_OFFSET + 33);
+        serializer.registerClass(Parameter[].class,KRYO_OFFSET + 34);
+        serializer.registerClass(IndexParameters.class,KRYO_OFFSET + 35);
+        serializer.registerClass(IndexParameters[].class,KRYO_OFFSET + 36);
 
-        Preconditions.checkArgument(KRYO_OFFSET + 29 < RESERVED_ID_OFFSET, "ID allocation overflow!");
+        Preconditions.checkArgument(KRYO_OFFSET + 50 < RESERVED_ID_OFFSET, "ID allocation overflow!");
     }
 
 }

@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import com.thinkaurelius.titan.util.datastructures.ByteSize;
 
 import java.nio.ByteBuffer;
 
@@ -30,6 +31,13 @@ public class ByteBufferEntry implements Entry {
 
     public static Entry of(ByteBuffer column, ByteBuffer value) {
         return new ByteBufferEntry(column, value);
+    }
+
+    @Override
+    public int getByteSize() {
+        return ByteSize.OBJECT_HEADER + ByteSize.OBJECT_REFERENCE +
+                2 * (ByteSize.OBJECT_REFERENCE + ByteSize.BYTEBUFFER_RAW_SIZE) +
+                2 * (column.limit()-column.position() + value.limit()-value.position()); //multiply by 2 to account for approx storage of RelationCache
     }
 
     @Override

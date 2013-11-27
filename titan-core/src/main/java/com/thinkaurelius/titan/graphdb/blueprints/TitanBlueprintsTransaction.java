@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
@@ -67,7 +68,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
             return addVertex(((Number) id).longValue());
         } else {
-            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
+//            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
             return addVertex(null);
         }
 

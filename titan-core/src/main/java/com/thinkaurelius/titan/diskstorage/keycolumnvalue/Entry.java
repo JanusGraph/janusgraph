@@ -73,6 +73,14 @@ public interface Entry extends Comparable<Entry> {
      */
     public ByteBuffer getByteBufferValue();
 
+
+    /**
+     * Returns the total amount of bytes this entry consumes on the heap - including all object headers.
+     *
+     * @return
+     */
+    public int getByteSize();
+
     /**
      * Returns the cached parsed representation of this Entry if it exists, else NULL
      *

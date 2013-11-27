@@ -85,7 +85,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because embedded doesn't use Thrift, warning is good enough here otherwise it would
         // make bad user experience if we don't warn at all or crash on this.
-        if (this.thriftFrameSize != THRIFT_DEFAULT_FRAME_SIZE)
+        if (config.containsKey(THRIFT_FRAME_SIZE_MB))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
         String cassandraConfigDir = config.getString(CASSANDRA_CONFIG_DIR_KEY, CASSANDRA_CONFIG_DIR_DEFAULT);
@@ -123,22 +123,21 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     @Override
     public void close() {
         openStores.clear();
+        CassandraDaemonWrapper.stop();
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name)
-            throws StorageException {
-        if (openStores.containsKey(name)) return openStores.get(name);
-        else {
-            // Ensure that both the keyspace and column family exist
-            ensureKeyspaceExists(keySpaceName);
-            ensureColumnFamilyExists(keySpaceName, name);
+    public synchronized KeyColumnValueStore openDatabase(String name) throws StorageException {
+        if (openStores.containsKey(name))
+            return openStores.get(name);
 
-            CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName,
-                    name, this);
-            openStores.put(name, store);
-            return store;
-        }
+        // Ensure that both the keyspace and column family exist
+        ensureKeyspaceExists(keySpaceName);
+        ensureColumnFamilyExists(keySpaceName, name);
+
+        CassandraEmbeddedKeyColumnValueStore store = new CassandraEmbeddedKeyColumnValueStore(keySpaceName, name, this);
+        openStores.put(name, store);
+        return store;
     }
 
     List<KeyRange> getLocalKeyPartition() throws StorageException {
@@ -324,38 +323,6 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
         }
-    }
-
-    @Override
-    public String getConfigurationProperty(final String key) throws StorageException {
-        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
-
-        ByteBuffer propertiesKey = UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY);
-        ByteBuffer column = UTF8Type.instance.fromString(key);
-
-        ByteBuffer value = getInternal(keySpaceName,
-                SYSTEM_PROPERTIES_CF,
-                propertiesKey,
-                column,
-                ConsistencyLevel.QUORUM);
-
-        return (value == null) ? null : UTF8Type.instance.getString(value);
-    }
-
-    @Override
-    public void setConfigurationProperty(final String rawKey, final String rawValue) throws StorageException {
-        if (rawKey == null || rawValue == null)
-            return;
-
-        ensureColumnFamilyExists(keySpaceName, SYSTEM_PROPERTIES_CF, UTF8Type.instance);
-
-        ByteBuffer key = UTF8Type.instance.fromString(rawKey);
-        ByteBuffer val = UTF8Type.instance.fromString(rawValue);
-
-        RowMutation property = new RowMutation(keySpaceName, UTF8Type.instance.fromString(SYSTEM_PROPERTIES_KEY));
-        property.add(new QueryPath(new ColumnPath(SYSTEM_PROPERTIES_CF).setColumn(key)), val, System.currentTimeMillis());
-
-        mutate(Arrays.asList(property), ConsistencyLevel.QUORUM);
     }
 
     @Override

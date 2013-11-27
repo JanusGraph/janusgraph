@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
+import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
@@ -1468,6 +1469,33 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(alice, Iterators.getOnlyElement(i.iterator()).getProperty(fn));
         assertEquals(user, Iterators.getOnlyElement(i.iterator()).getProperty(vt));
         assertEquals(1, Iterators.size(i.iterator()));
+    }
+
+    @Test
+    public void testWithoutIndex() {
+        TitanKey kid = graph.makeKey("kid").dataType(Long.class).single().make();
+        graph.makeKey("name").dataType(String.class).single().make();
+        graph.makeLabel("knows").signature(kid).make();
+        Random random = new Random();
+        int numV = 1000;
+        TitanVertex previous = null;
+        for (int i=0;i<numV;i++) {
+            TitanVertex v = graph.addVertex(null);
+            v.setProperty("kid",random.nextInt(numV));
+            v.setProperty("name","v"+i);
+            if (previous!=null) {
+                TitanEdge e = v.addEdge("knows",previous);
+                e.setProperty("kid",random.nextInt(numV/2));
+            }
+            previous=v;
+        }
+        clopen();
+
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(400).vertices(),"kid",Order.DESC,400);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
+
     }
 
     @Test

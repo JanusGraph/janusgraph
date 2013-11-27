@@ -1,0 +1,32 @@
+<component xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+
+    <fileSets>
+        <fileSet>
+            <directory>../src/assembly/static/bin</directory>
+            <outputDirectory>/bin</outputDirectory>
+            <includes>
+                <include>*cassandra*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../src/assembly/static/conf</directory>
+            <outputDirectory>/conf</outputDirectory>
+            <includes>
+                <include>cassandra-env.sh</include>
+                <include>cassandra.yaml</include>
+                <include>log4j-cassandra.properties</include>
+                <include>titan-cassandra-embedded.properties</include>
+                <include>titan-cassandra.properties</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <files>
+        <file>
+            <source>../src/assembly/static/log/cassandra.log</source>
+            <outputDirectory>/log</outputDirectory>
+        </file>
+    </files>
+
+</component>

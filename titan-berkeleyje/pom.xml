@@ -9,6 +9,9 @@
     <artifactId>titan-berkeleyje</artifactId>
     <name>Titan-BerkeleyJE: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+    </properties>
     <repositories>
         <repository>
             <id>oracleReleases</id>
@@ -22,21 +25,18 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.sleepycat</groupId>

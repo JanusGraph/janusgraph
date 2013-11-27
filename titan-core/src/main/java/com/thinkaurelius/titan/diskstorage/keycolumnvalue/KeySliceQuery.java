@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
@@ -50,11 +51,7 @@ public class KeySliceQuery extends SliceQuery {
 
     @Override
     public int hashCode() {
-        if (hashcode==0) {
-            hashcode = key.hashCode()*102329 + super.hashCode();
-            if (hashcode==0) hashcode=1;
-        }
-        return hashcode;
+        return new HashCodeBuilder().append(key).appendSuper(super.hashCode()).toHashCode();
     }
 
     @Override

@@ -619,6 +619,8 @@ public class ConcurrentLRUCache<V> {
 
         public CleanupThread(ConcurrentLRUCache c) {
             cache = new WeakReference<ConcurrentLRUCache>(c);
+            this.setDaemon(true);
+            this.setName("ConcurrentLRUCleaner-" + getId());
         }
 
         @Override
@@ -656,7 +658,7 @@ public class ConcurrentLRUCache<V> {
     protected void finalize() throws Throwable {
         try {
             if (!isDestroyed) {
-                log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEALong!!!");
+                log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
                 destroy();
             }
         } finally {

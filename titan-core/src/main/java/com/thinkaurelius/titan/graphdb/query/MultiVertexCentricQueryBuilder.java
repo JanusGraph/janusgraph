@@ -136,11 +136,6 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
         return this;
     }
 
-    public MultiVertexCentricQueryBuilder type(String type) {
-        super.type(type);
-        return this;
-    }
-
     @Override
     public MultiVertexCentricQueryBuilder direction(Direction d) {
         super.direction(d);

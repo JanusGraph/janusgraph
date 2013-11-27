@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
@@ -101,6 +102,8 @@ public class VertexIDAssignerTest {
                     }
                     System.out.println("_____________________________________________");
                 }
+                graph.rollback();
+                graph.shutdown();
             }
         }
     }

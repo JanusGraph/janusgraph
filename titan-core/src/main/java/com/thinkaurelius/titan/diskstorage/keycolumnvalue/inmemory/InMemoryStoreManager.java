@@ -72,16 +72,6 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public String getConfigurationProperty(String key) throws StorageException {
-        return storeConfig.get(key);
-    }
-
-    @Override
-    public void setConfigurationProperty(String key, String value) throws StorageException {
-        storeConfig.put(key, value);
-    }
-
-    @Override
     public KeyColumnValueStore openDatabase(final String name) throws StorageException {
         if (!stores.containsKey(name)) {
             stores.putIfAbsent(name, new InMemoryKeyColumnValueStore(name));

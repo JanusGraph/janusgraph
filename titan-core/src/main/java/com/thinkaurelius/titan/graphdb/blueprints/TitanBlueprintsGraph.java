@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.*;
+import com.tinkerpop.blueprints.Parameter;
 import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,6 +185,11 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     @Override
     public TitanGraphQuery query() {
         return getAutoStartTx().query();
+    }
+
+    @Override
+    public TitanIndexQuery indexQuery(String indexName, String query) {
+        return getAutoStartTx().indexQuery(indexName,query);
     }
 
     @Override

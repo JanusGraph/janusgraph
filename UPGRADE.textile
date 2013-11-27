@@ -2,6 +2,36 @@ Please follow these instructions when upgrading from an older Titan release.
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.1 (November 24, 2013)
+
+*From 0.4.0*
+
+h4. Data Upgrade
+
+Titan 0.4.1 is fully backwards compatible to Titan 0.4.0 on the data layer. No need to reload or upgrade the data. However, once
+new types are added to the database through Titan 0.4.1, older versions of Titan cannot read those newly added types.
+Hence, ensure that all instances of Titan that are accessing the same storage backend are updated before adding new types. Note,
+that you can have mixed Titan 0.4.0 and 0.4.1 instances reading from the cluster as long as the latter don't add new types.
+
+h4. API Text Search Changes
+
+Titan 0.4.1 provides some new features that have extended the API, however, those do not break the existing API. There is one change to
+the API that requires updating. We changed the Text.PREFIX/REGEX to Text.CONTAINS_PREFIX/REGEX to make is obvious what the semantics
+of those predicates is.
+
+If you are using either of those predicate, rename:
+
+* Text.PREFIX -> Text.CONTAINS_PREFIX
+* Text.REGEX -> Text.CONTAINS_REGEX
+
+h4. Version compatibility check
+
+In Titan 0.4.1 we are storing all Titan flag in the storage backend (i.e. no more local properties files in the data directory).
+This means, that Titan 0.4.1 will rewrite this flag and ignore its current value. This disables the version compatibility check.
+Hence, make sure that you are running Titan 0.4.1 against a 0.4.0 or newer database. Running it against older versions of Titan
+will not cause an immediate exception but undetermined behavior down the road.
+
+
 h3. Version 0.4.0 (October 16, 2013)
 
 h4. Data Upgrade

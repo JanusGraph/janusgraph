@@ -47,15 +47,21 @@ public class JUnitBenchmarkProvider {
     
     public static final String ENV_EFFORT_GENERATE = "JUB_EFFORT_GENERATE";
     public static final String ENV_EFFORT_FILE  = "JUB_EFFORT_FILE";
+    public static final String ENV_DEFAULT_ROUNDS = "JUB_DEFAULT_ROUNDS";
+    public static final String ENV_WARMUP_ROUNDS = "JUB_WARMUP_ROUNDS";
+    
     public static final String DEFAULT_EFFORT_FILE = "../titan-test/data/jub-effort.txt";
     public static final long TARGET_RUNTIME_MS = 5000L;
-    public static final int WARMUP_ROUNDS = 1;
+    public static final int DEFAULT_ROUNDS;
+    public static final int WARMUP_ROUNDS;
     
     private static final Map<String, Integer> efforts;
     private static final Logger log = LoggerFactory.getLogger(JUnitBenchmarkProvider.class);
     
     static {
         efforts = loadScalarsFromEnvironment();
+        DEFAULT_ROUNDS = loadIntFromEnvironment(ENV_DEFAULT_ROUNDS, 1);
+        WARMUP_ROUNDS = loadIntFromEnvironment(ENV_WARMUP_ROUNDS, 1);
     }
     
     /**
@@ -285,6 +291,22 @@ public class JUnitBenchmarkProvider {
                 new WrappedBenchmarkOptionsHandler(base, rounds));
     }
     
+    private static int loadIntFromEnvironment(String envKey, int dfl) {
+        String s = System.getenv(envKey);
+        
+        if (null != s) {
+            try {
+                return Integer.valueOf(s);
+            } catch (NumberFormatException e) {
+                log.warn("Could not interpret value \"{}\" for environment variable {} as an integer", s, envKey, e);
+            }
+        } else {
+            log.debug("Using default value {} for environment variable {}", dfl, envKey);
+        }
+        
+        return dfl;
+    }
+    
     
     /**
      * This class uses particularly awkward and inelegant encapsulation. I don't
@@ -344,7 +366,7 @@ public class JUnitBenchmarkProvider {
         private int getRoundsForFullMethodName(String fullname) {
             Integer r = efforts.get(fullname);
             if (null == r) {
-                r = 1;
+                r = DEFAULT_ROUNDS;
                 log.warn("Applying default iteration count ({}) to method {}", r, fullname);
             } else {
                 log.debug("Loaded iteration count {} on method {}", r, fullname);

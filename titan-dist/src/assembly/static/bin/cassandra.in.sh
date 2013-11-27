@@ -38,4 +38,6 @@ for jar in $CASSANDRA_HOME/lib/*.jar; do
 done
 
 # This system property is referenced in log4j-server.properties
-export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$CASSANDRA_HOME/log"
+logdir="$CASSANDRA_HOME/log"
+[ "`uname -o`" = 'Cygwin' ] && logdir="$(echo $logdir | cygpath --windows --path -f -)"
+export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$logdir"

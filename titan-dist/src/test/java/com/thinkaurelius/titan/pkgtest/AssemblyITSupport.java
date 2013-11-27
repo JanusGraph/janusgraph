@@ -11,7 +11,6 @@ import org.apache.velocity.exception.MethodInvocationException;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.ProcessBuilder.Redirect;
 import java.util.Properties;
 
 import java.io.Writer;
@@ -92,7 +91,7 @@ public class AssemblyITSupport {
     private static void command(File dir, String... command) throws IOException, InterruptedException {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(dir);
-        pb.redirectInput(Redirect.PIPE);
+//        pb.redirectInput(Redirect.PIPE);
         /*
          * Using Redirect.INHERIT with expect breaks maven-failsafe-plugin when
          * failsafe is configured to fork. The parent and child normally
@@ -108,8 +107,8 @@ public class AssemblyITSupport {
          */
 //        pb.redirectOutput(Redirect.INHERIT);
 //        pb.redirectError(Redirect.INHERIT);
-        pb.redirectOutput(Redirect.PIPE);
-        pb.redirectError(Redirect.PIPE);
+//        pb.redirectOutput(Redirect.PIPE);
+//        pb.redirectError(Redirect.PIPE);
         final Process p = pb.start();
         // Sense of "input" and "output" are reversed between ProcessBuilder and Process
         p.getOutputStream().close(); // Child process sees EOF on stdin (if it reads stdin at all)

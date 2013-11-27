@@ -218,7 +218,7 @@ public class QueryUtil {
                 indexes = Sets.newHashSet(key.getIndexes(result.getElementType()));
                 Iterator<String> indexiter = indexes.iterator();
                 while (indexiter.hasNext()) {
-                    if (!indexInfo.getIndexInformation(indexiter.next()).supports(key.getDataType(), atom.getPredicate())) {
+                    if (!indexInfo.supports(indexiter.next(),result,key,atom.getPredicate())) {
                         indexiter.remove();
                     }
                 }

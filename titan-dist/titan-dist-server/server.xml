@@ -1,8 +1,8 @@
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
   
-    <id>server-${project.version}</id>
-    <baseDirectory>titan-server-${project.version}</baseDirectory>
+    <id>${distribution.assembly.name}-${project.version}</id>
+    <baseDirectory>titan-${distribution.assembly.name}-${project.version}</baseDirectory>
 
     <formats>
         <format>zip</format>
@@ -51,10 +51,6 @@
         <file>
             <source>../../UPGRADE.textile</source>
             <outputDirectory>/</outputDirectory>
-        </file>
-        <file>
-            <source>../../titan-hazelcast/src/test/resources/hazelcast.xml</source>
-            <outputDirectory>/conf</outputDirectory>
         </file>
     </files>
 

@@ -202,9 +202,9 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
         System.out.println("Write time for " + (rounds * commitSize * writeThreads.length) + " vertices & edges: " + (System.currentTimeMillis() - start));
 
         final int maxUID = uidCounter.get();
-        final int trials = 100000;
+        final int trials = 1000;
         final String fixedName = "john";
-        Thread[] readThreads = new Thread[8];
+        Thread[] readThreads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
         start = System.currentTimeMillis();
         for (int t = 0; t < readThreads.length; t++) {
             readThreads[t] = new Thread(new Runnable() {

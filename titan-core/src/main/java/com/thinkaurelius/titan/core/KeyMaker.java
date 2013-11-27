@@ -85,14 +85,19 @@ public interface KeyMaker extends TypeMaker {
      * Configures instances of this type to be indexed for the specified Element type using the external index with the given name.
      * This index must be configured prior to startup. One can either index vertices or edges.
      * <p/>
-     * This only applies to property keys.
+     *
      * By default, the type is not indexed.
+     *
+     * <p/>
+     *
+     * Optionally, one can provide parameters that are passed on to the indexing backend to configure how exactly this key
+     * should be indexed. Which paramters are accepted depends on the storage backend that is configured for the given indexName.
      *
      * @return this type maker
      * @see com.thinkaurelius.titan.core.TitanKey#hasIndex(String, Class)
      * @since 0.3.0
      */
-    public KeyMaker indexed(String indexName, Class<? extends Element> clazz);
+    public KeyMaker indexed(String indexName, Class<? extends Element> clazz, Parameter... indexParameters);
 
     /**
      * Configures the data type for this type.  This only applies to property keys.

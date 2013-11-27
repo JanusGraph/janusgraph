@@ -14,27 +14,27 @@
         <hadoop.version>1.0.4</hadoop.version>
         <hadoop.artifact>hadoop-core</hadoop.artifact>
         <titan.hbase.mvn.opts />
+        <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-            <classifier>${titan.classifier}</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>

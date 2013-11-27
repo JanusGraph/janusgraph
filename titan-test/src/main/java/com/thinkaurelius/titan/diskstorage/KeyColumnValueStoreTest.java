@@ -89,6 +89,11 @@ public abstract class KeyColumnValueStoreTest {
         manager.close();
     }
 
+    public void newTx() throws StorageException {
+        if (tx!=null) tx.commit();
+        tx = startTx();
+    }
+
     @Test
     public void createDatabase() {
         //Just setup and shutdown
@@ -319,6 +324,7 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
+        newTx();
         Set<KeyColumn> deleted = deleteValues(7);
         clopen();
         log.debug("Checking values...");
@@ -331,6 +337,7 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
+        newTx();
         Set<Integer> deleted = deleteKeys(11);
         clopen();
         checkKeys(deleted);
@@ -508,7 +515,7 @@ public abstract class KeyColumnValueStoreTest {
                         Collection<StaticBuffer> actual = Sets.newHashSet(i);
 
                         // Check
-                        log.error("Checking bounds [{}, {}) (expect {} keys)",
+                        log.debug("Checking bounds [{}, {}) (expect {} keys)",
                                 new Object[]{startCol, endCol, expected.size()});
                         Assert.assertEquals(expected, actual);
                         i.close();
@@ -544,7 +551,7 @@ public abstract class KeyColumnValueStoreTest {
                         KeyIterator i = store.getKeys(krq, tx);
                         Collection<StaticBuffer> actual = Lists.newArrayList(i);
 
-                        log.error("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
+                        log.debug("Checking bounds key:[{}, {}) & col:[{}, {}) (expect {} keys)",
                                 new Object[]{keyStart, keyEnd, startCol, endCol, expected.size()});
                         Assert.assertEquals(expected, actual);
                         i.close();
@@ -610,6 +617,7 @@ public abstract class KeyColumnValueStoreTest {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
+        newTx();
         Set<KeyColumn> deleted = deleteValues(7);
         clopen();
         int trails = 5000;
