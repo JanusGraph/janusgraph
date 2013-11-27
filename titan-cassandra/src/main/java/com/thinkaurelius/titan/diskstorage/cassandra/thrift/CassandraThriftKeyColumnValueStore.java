@@ -287,7 +287,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
             for (TokenRange range : ranges) {
-                System.out.println(range);
                 if (!NetworkUtil.hasLocalAddress(range.endpoints))
                     continue;
 
