@@ -28,4 +28,11 @@ public class NetworkUtil {
     public static boolean hasLocalAddress(Collection<String> endpoints) {
         return endpoints.contains(getLoopbackAddress()) || endpoints.contains(getLocalAddress()) || endpoints.contains(getLocalHostName());
     }
+
+    public static boolean isLocalConnection(String hostname) {
+        InetAddress localhost = NetworkUtil.getLocalHost();
+        return hostname.equalsIgnoreCase(NetworkUtil.getLoopbackAddress())
+                || hostname.equals(localhost.getHostAddress())
+                || hostname.equals(localhost.getHostName());
+    }
 }

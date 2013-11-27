@@ -106,7 +106,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Only watch the ring and change endpoints with BOP
         if (getCassandraPartitioner() instanceof ByteOrderedPartitioner) {
             // mark deployment as local only in case we have byte ordered partitioner and local connection
-            deployment = (isLocalConnection(randomInitialHostname)) ? Deployment.LOCAL : Deployment.REMOTE;
+            deployment = (NetworkUtil.isLocalConnection(randomInitialHostname)) ? Deployment.LOCAL : Deployment.REMOTE;
 
             this.backgroundThread = new Thread(new HostUpdater());
             this.backgroundThread.start();
@@ -799,10 +799,5 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private boolean isLocalConnection(String cassandraHost) {
-        InetAddress localhost = NetworkUtil.getLocalHost();
-        return cassandraHost.equalsIgnoreCase(NetworkUtil.getLoopbackAddress())
-                || cassandraHost.equals(localhost.getHostAddress())
-                || cassandraHost.equals(localhost.getHostName());
-    }
+
 }
