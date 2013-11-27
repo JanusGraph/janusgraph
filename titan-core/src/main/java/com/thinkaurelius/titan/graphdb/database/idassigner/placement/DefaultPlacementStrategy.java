@@ -7,9 +7,11 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import java.util.Map;
 
 /**
+ * Default {@link IDPlacementStrategy} that assigns all vertices to a fixed partition configured upon construction.
+ * This strategy is used when partitioning is disabled. This strategy is not configurable.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class DefaultPlacementStrategy implements IDPlacementStrategy {
 
     private final int partitionID;

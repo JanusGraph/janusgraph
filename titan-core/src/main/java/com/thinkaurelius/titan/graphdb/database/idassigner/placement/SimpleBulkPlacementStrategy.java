@@ -11,9 +11,14 @@ import java.util.Map;
 import java.util.Random;
 
 /**
+ * A id placement strategy that assigns all vertices created in a transaction
+ * to the same partition id. The partition id is selected randomly from a set
+ * of partition ids that are retrieved upon initialization.
+ *
+ * The number of partition ids to choose from is configurable.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
 
     private static final Logger log =

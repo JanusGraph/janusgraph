@@ -6,9 +6,14 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import java.util.Map;
 
 /**
+ * Determines how vertices are placed in individual graph partitions.
+ * A particular implementation determines the partition id of a (newly created) vertex. The vertex is
+ * then assigned to said partition by Titan.
+ *
+ * The id placement strategy is configurable.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface IDPlacementStrategy {
 
     /**
