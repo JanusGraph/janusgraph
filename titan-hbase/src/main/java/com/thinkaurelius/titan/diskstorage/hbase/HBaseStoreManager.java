@@ -139,9 +139,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         features.supportsLocking = false;
         features.isKeyOrdered = true;
         features.isDistributed = true;
-        features.hasLocalKeyPartition = false;
+        features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
     }
 
+    @Override
+    public Deployment getDeployment() {
+        //TODO: return LOCAL if over localhost, else REMOTE
+    }
 
     @Override
     public String toString() {

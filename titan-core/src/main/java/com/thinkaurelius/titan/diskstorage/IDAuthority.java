@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+
+import java.util.List;
 
 /**
  * Handles the unique allocation of ids. Returns blocks of ids that are uniquely allocated to the caller so that
@@ -44,7 +47,7 @@ public interface IDAuthority {
      * @return
      * @throws StorageException
      */
-    public StaticBuffer[] getLocalIDPartition() throws StorageException;
+    public List<KeyRange> getLocalIDPartition() throws StorageException;
 
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for

@@ -259,10 +259,12 @@ public abstract class IDAllocationTest {
         for (int c = 0; c < CONCURRENCY; c++) {
             if (manager[c].getFeatures().hasLocalKeyPartition()) {
                 try {
-                    StaticBuffer[] partition = idAuthorities[c].getLocalIDPartition();
-                    Assert.assertEquals(partition[0].length(), partition[1].length());
-                    for (int i = 0; i < 2; i++) {
-                        Assert.assertTrue(partition[i].length() >= 4);
+                    List<KeyRange> partitions = idAuthorities[c].getLocalIDPartition();
+                    for (KeyRange range : partitions) {
+                        Assert.assertEquals(range.getStart().length(), range.getEnd().length());
+                        for (int i = 0; i < 2; i++) {
+                            Assert.assertTrue(range.getAt(i).length() >= 4);
+                        }
                     }
                 } catch (UnsupportedOperationException e) {
                     Assert.fail();

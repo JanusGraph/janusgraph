@@ -119,7 +119,6 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-
     @Override
     public Deployment getDeployment() {
         return deployment;

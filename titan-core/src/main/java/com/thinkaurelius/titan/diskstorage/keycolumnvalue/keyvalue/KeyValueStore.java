@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
+import java.util.List;
+
 /**
  * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
  * associated with a value. Keys and values are generic ByteBuffers.

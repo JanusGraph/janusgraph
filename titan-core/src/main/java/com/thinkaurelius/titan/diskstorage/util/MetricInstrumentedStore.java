@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 import java.io.IOException;
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +12,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**

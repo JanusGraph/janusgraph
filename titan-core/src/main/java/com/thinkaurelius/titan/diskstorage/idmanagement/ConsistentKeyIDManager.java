@@ -88,7 +88,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager {
     }
 
     @Override
-    public StaticBuffer[] getLocalIDPartition() throws StorageException {
+    public List<KeyRange> getLocalIDPartition() throws StorageException {
         return idStore.getLocalKeyPartition();
     }
 
