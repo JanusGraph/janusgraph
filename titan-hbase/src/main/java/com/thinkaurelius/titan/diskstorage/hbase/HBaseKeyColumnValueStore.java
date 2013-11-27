@@ -9,10 +9,20 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.util.system.IOUtils;
+import com.thinkaurelius.titan.util.system.NetworkUtil;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.ClusterStatus;
+import org.apache.hadoop.hbase.HRegionInfo;
+import org.apache.hadoop.hbase.HRegionLocation;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.slf4j.Logger;
@@ -21,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -52,7 +63,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, HTablePool pool, String tableName, String columnFamily, String storeName) {
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager,  HTablePool pool, String tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
         this.tableName = tableName;
         this.pool = pool;
@@ -220,8 +231,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        //TODO
-        throw new UnsupportedOperationException();
+        return storeManager.getLocalKeyPartition();
     }
 
     @Override

@@ -12,13 +12,21 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
+import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HRegionInfo;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.MasterNotRunningException;
+import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableNotFoundException;
+import org.apache.hadoop.hbase.ZooKeeperConnectionException;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Pair;
@@ -26,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -144,7 +153,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public Deployment getDeployment() {
-        //TODO: return LOCAL if over localhost, else REMOTE
+        List<KeyRange> local = getLocalKeyPartition();
+        return null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
     }
 
     @Override
@@ -211,7 +221,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this,connectionPool, tableName, cfName, longName);
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, connectionPool, tableName, cfName, longName);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
@@ -222,6 +232,53 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         return store;
+    }
+    
+    List<KeyRange> getLocalKeyPartition() {
+        
+        List<KeyRange> result = new LinkedList<KeyRange>();
+        
+        HTable table = null;
+        try {
+            table = new HTable(hconf, tableName);
+            NavigableMap<HRegionInfo, ServerName> regionLocs =
+                    table.getRegionLocations();
+            
+            for (Map.Entry<HRegionInfo, ServerName> e : regionLocs.entrySet()) {
+                if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
+                    HRegionInfo regionInfo = e.getKey();
+                    byte startKey[] = regionInfo.getStartKey();
+                    byte endKey[]   = regionInfo.getEndKey();
+                    
+                    StaticBuffer startBuf =
+                            new StaticArrayBuffer(startKey);
+                    StaticBuffer endBuf = 
+                            new StaticByteBuffer(ByteBufferUtil.nextBiggerBuffer(ByteBuffer.wrap(endKey)));
+                    
+                    KeyRange kr = new KeyRange(startBuf, endBuf);
+                    
+                    result.add(kr);
+                    
+                    logger.debug("Found local key/row partition {} on host {}", kr, e.getValue());
+                }
+            }
+        } catch (MasterNotRunningException e) {
+            logger.warn("Unexpected MasterNotRunningException", e);
+        } catch (ZooKeeperConnectionException e) {
+            logger.warn("Unexpected ZooKeeperConnectionException", e);
+        } catch (IOException e) {
+            logger.warn("Unexpected IOException", e);
+        } finally {
+            if (null != table) {
+                try {
+                    table.close();
+                } catch (IOException e) {
+                    logger.warn("Failed to close HTable {}", table, e);
+                }
+            }
+        }
+        
+        return result;
     }
 
     private String shortenCfName(String longName) throws PermanentStorageException {
