@@ -63,6 +63,14 @@ public class ByteBufferUtil {
     }
 
     public static final ByteBuffer nextBiggerBuffer(ByteBuffer buffer) {
+        return nextBiggerBuffer(buffer, false);
+    }
+    
+    public static final ByteBuffer nextBiggerBufferAllowOverflow(ByteBuffer buffer) {
+        return nextBiggerBuffer(buffer, true);
+    }
+    
+    private static final ByteBuffer nextBiggerBuffer(ByteBuffer buffer, boolean allowOverflow) {
         int len = buffer.remaining();
         int pos = buffer.position();
         ByteBuffer next = ByteBuffer.allocate(len);
@@ -75,9 +83,16 @@ public class ByteBufferUtil {
             }
             next.put(i, b);
         }
-        Preconditions.checkArgument(!carry, "Buffer overflow");
         next.position(0);
         next.limit(len);
+        if (!allowOverflow) {
+            Preconditions.checkArgument(!carry, "Buffer overflow");
+        } else {
+            while (next.hasRemaining()) {
+                next.put((byte)0);
+            }
+            next.rewind();
+        }
         return next;
     }
 

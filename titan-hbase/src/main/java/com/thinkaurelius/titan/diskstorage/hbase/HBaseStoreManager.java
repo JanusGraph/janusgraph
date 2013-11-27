@@ -79,8 +79,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
     private final HTablePool connectionPool;
 
-    private final StoreFeatures features;
-
     private final boolean shortCfNames;
     private static final BiMap<String, String> shortCfNameMap =
             ImmutableBiMap.<String, String>builder()
@@ -136,19 +134,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.shortCfNames = config.getBoolean(SHORT_CF_NAMES_KEY, SHORT_CF_NAMES_DEFAULT);
 
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
-
-        // TODO: allowing publicly mutate fields is bad, should be fixed
-        features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = true;
-        features.supportsBatchMutation = true;
-        features.supportsTransactions = false;
-        features.supportsMultiQuery = true;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = false;
-        features.isKeyOrdered = true;
-        features.isDistributed = true;
-        features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
     }
 
     @Override
@@ -170,6 +155,18 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public StoreFeatures getFeatures() {
+        // TODO: allowing publicly mutate fields is bad, should be fixed
+        StoreFeatures features = new StoreFeatures();
+        features.supportsOrderedScan = true;
+        features.supportsUnorderedScan = true;
+        features.supportsBatchMutation = true;
+        features.supportsTransactions = false;
+        features.supportsMultiQuery = true;
+        features.supportsConsistentKeyOperations = true;
+        features.supportsLocking = false;
+        features.isKeyOrdered = true;
+        features.isDistributed = true;
+        features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
         return features;
     }
 
@@ -253,13 +250,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     StaticBuffer startBuf =
                             new StaticArrayBuffer(startKey);
                     StaticBuffer endBuf = 
-                            new StaticByteBuffer(ByteBufferUtil.nextBiggerBuffer(ByteBuffer.wrap(endKey)));
+                            new StaticByteBuffer(ByteBufferUtil.nextBiggerBufferAllowOverflow(ByteBuffer.wrap(endKey)));
                     
                     KeyRange kr = new KeyRange(startBuf, endBuf);
                     
                     result.add(kr);
                     
                     logger.debug("Found local key/row partition {} on host {}", kr, e.getValue());
+                } else {
+                    logger.debug("Discarding remote {}", e.getValue());
                 }
             }
         } catch (MasterNotRunningException e) {
