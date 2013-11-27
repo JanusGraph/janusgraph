@@ -14,9 +14,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 
-public abstract class DistributedStoreManagerTest {
+public abstract class DistributedStoreManagerTest<T extends DistributedStoreManager> {
     
-    protected DistributedStoreManager manager;
+    protected T manager;
     protected KeyColumnValueStore store;
     
     @Test

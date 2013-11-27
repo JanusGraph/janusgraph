@@ -10,9 +10,7 @@ import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.DistributedStoreManagerTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
-public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTest {
-    
-    private HBaseStoreManager hsm;
+public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTest<HBaseStoreManager> {
     
     @BeforeClass
     public static void startHBase() throws IOException {
@@ -21,14 +19,13 @@ public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTes
     
     @Before
     public void setUp() throws StorageException {
-        hsm = new HBaseStoreManager(HBaseStorageSetup.getHBaseStorageConfiguration()); 
-        manager = hsm;
-        store = hsm.openDatabase("distributedStoreTest");
+        manager = new HBaseStoreManager(HBaseStorageSetup.getHBaseStorageConfiguration());
+        store = manager.openDatabase("distributedStoreTest");
     }
     
     @After
     public void tearDown() {
-        if (null != hsm)
-            hsm.close();
+        if (null != manager)
+            manager.close();
     }
 }

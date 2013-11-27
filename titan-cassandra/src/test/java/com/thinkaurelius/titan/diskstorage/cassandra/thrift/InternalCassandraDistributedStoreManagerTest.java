@@ -9,9 +9,7 @@ import com.thinkaurelius.titan.diskstorage.DistributedStoreManagerTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 
-public class InternalCassandraDistributedStoreManagerTest extends DistributedStoreManagerTest {
-    
-    private CassandraThriftStoreManager sm;
+public class InternalCassandraDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
     
     @BeforeClass
     public static void startCassandra() {
@@ -20,15 +18,14 @@ public class InternalCassandraDistributedStoreManagerTest extends DistributedSto
     
     @Before
     public void setUp() throws StorageException {
-        sm = new CassandraThriftStoreManager(
+        manager = new CassandraThriftStoreManager(
                 CassandraStorageSetup.getGenericCassandraStorageConfiguration(this.getClass().getSimpleName()));
-        manager = sm;
-        store = sm.openDatabase("distributedcf");
+        store = manager.openDatabase("distributedcf");
     }
     
     @After
     public void tearDown() throws StorageException {
-        if (null != sm)
-            sm.close();
+        if (null != manager)
+            manager.close();
     }
 }
