@@ -5,8 +5,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -79,11 +82,14 @@ public class TypeReferenceContainer implements TypeInspector {
     }
 
     public boolean containsType(long id) {
-        return typesById.containsKey(id);
+        return typesById.containsKey(id) || SystemTypeManager.isSystemRelationType(id);
     }
 
     @Override
     public TitanType getExistingType(long id) {
+        if (SystemTypeManager.isSystemRelationType(id))
+            return SystemTypeManager.getSystemRelationType(id);
+
         Object type = typesById.get(id);
         Preconditions.checkArgument(type!=null,"Type could not be found for id: %s",id);
         return (TitanType)type;
@@ -91,12 +97,13 @@ public class TypeReferenceContainer implements TypeInspector {
 
     @Override
     public boolean containsType(String name) {
-        return typesByName.containsKey(name);
+        return typesByName.containsKey(name) || SystemKey.KEY_MAP.containsKey(name);
     }
 
     @Override
     public TitanType getType(String name) {
-        TitanTypeReference type = typesByName.get(name);
+        TitanType type = SystemKey.KEY_MAP.get(name);
+        if (type==null) type = typesByName.get(name);
         return type;
     }
 

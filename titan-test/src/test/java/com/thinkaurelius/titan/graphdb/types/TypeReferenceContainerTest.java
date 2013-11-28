@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -74,6 +75,10 @@ public class TypeReferenceContainerTest {
         assertFalse(((InternalType) uid).uniqueLock(Direction.OUT));
         assertTrue(((InternalType) uid).uniqueLock(Direction.IN));
         assertEquals(String.class,uid.getDataType());
+
+        assertTrue(types.containsType(SystemKey.VertexState.getName()));
+        assertEquals(SystemKey.TypeDefinition,types.getExistingType(SystemKey.TypeDefinition.getID()));
+        assertEquals(SystemKey.TypeClass,types.getType(SystemKey.TypeClass.getName()));
     }
 
     @Test
