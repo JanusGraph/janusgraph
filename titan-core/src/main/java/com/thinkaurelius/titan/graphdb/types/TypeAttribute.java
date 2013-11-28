@@ -57,6 +57,13 @@ public class TypeAttribute {
             super(TypeAttributeType.class);
         }
 
+        public Map(TypeAttribute.Map copy) {
+            this();
+            for (Map.Entry<TypeAttributeType,Object> entry : copy.entrySet()) {
+                this.setValue(entry.getKey(),entry.getValue());
+            }
+        }
+
         public void add(TypeAttribute attribute) {
             setValue(attribute.getType(),attribute.getValue());
         }

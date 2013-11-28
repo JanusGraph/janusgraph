@@ -1,51 +1,53 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package com.thinkaurelius.titan.graphdb.types.reference;
 
-import com.google.common.collect.Iterables;
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
+import com.thinkaurelius.titan.graphdb.types.system.EmptyVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.tinkerpop.blueprints.Direction;
+import org.apache.commons.lang.StringUtils;
 
-public abstract class TitanTypeVertex extends CacheVertex implements InternalType {
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public abstract class TitanTypeReference extends EmptyVertex implements InternalType {
 
-    private String name = null;
-    private TypeAttribute.Map definition = null;
+    private final long id;
+    private final String name;
+    private final TypeAttribute.Map definition;
 
-    public TitanTypeVertex(StandardTitanTx tx, long id, byte lifecycle) {
-        super(tx, id, lifecycle);
+    protected TitanTypeReference(TitanTypeVertex type) {
+        this(type.getID(),type.getName(),type.getDefinition());
+    }
+
+    protected TitanTypeReference(long id, String name, TypeAttribute.Map definition) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name));
+        Preconditions.checkNotNull(definition);
+        Preconditions.checkArgument(id>0);
+        this.id=id;
+        this.name = name;
+        this.definition = definition;
     }
 
     @Override
     public String getName() {
-        if (name == null) {
-            name = Iterables.getOnlyElement(query().
-                    includeHidden().
-                    type(SystemKey.TypeName).
-                    properties(), null).getValue(String.class);
-        }
-        assert name != null;
         return name;
     }
 
     public TypeAttribute.Map getDefinition() {
-        if (definition == null) {
-            TypeAttribute.Map def = new TypeAttribute.Map();
-            for (TitanProperty p : query().includeHidden().
-                    type(SystemKey.TypeDefinition).properties()) {
-                def.add(p.getValue(TypeAttribute.class));
-            }
-            definition = def;
-        }
         return definition;
     }
 
-    //####### IDENTICAL TO TitanTypeReference
+    @Override
+    public long getID() {
+        return id;
+    }
+
+    //####### IDENTICAL TO TitanTypeVertex
 
     @Override
     public boolean isUnique(Direction direction) {
@@ -86,5 +88,6 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     public boolean isHidden() {
         return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
     }
+
 
 }

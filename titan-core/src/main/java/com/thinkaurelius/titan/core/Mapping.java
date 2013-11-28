@@ -35,8 +35,11 @@ public enum Mapping {
         for (Parameter p : information.getParameters()) {
             if (p.getKey().equalsIgnoreCase(MAPPING_PREFIX)) {
                 Object value = p.getValue();
-                Preconditions.checkArgument(value!=null && value instanceof Mapping,"Invalid mapping for specified: %s",value);
+                Preconditions.checkArgument(value!=null && (value instanceof Mapping || value instanceof String),"Invalid mapping specified: %s",value);
                 Preconditions.checkArgument(mapping==null,"Multiple mappings specified");
+                if (value instanceof String) {
+                    value = Mapping.valueOf(value.toString().toUpperCase());
+                }
                 mapping = (Mapping)value;
             }
         }

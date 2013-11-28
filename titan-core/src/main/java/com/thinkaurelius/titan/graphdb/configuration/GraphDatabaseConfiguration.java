@@ -1146,11 +1146,12 @@ public class GraphDatabaseConfiguration {
     }
 
 
-
-
-
-
     public Serializer getSerializer() {
+        return getSerializer(configuration);
+    }
+
+
+    public static Serializer getSerializer(Configuration configuration) {
         Configuration config = configuration.subset(ATTRIBUTE_NAMESPACE);
         Serializer serializer = new KryoSerializer(config.getBoolean(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_KEY, ATTRIBUTE_ALLOW_ALL_SERIALIZABLE_DEFAULT));
         for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(config)) {
@@ -1235,17 +1236,4 @@ public class GraphDatabaseConfiguration {
         return config;
     }
 
-
-    private static final char CONFIGURATION_SEPARATOR = '.';
-
-    public static Set<String> getUnqiuePrefixes(Configuration config) {
-        Set<String> names = new HashSet<String>();
-        Iterator<String> keyiter = config.getKeys();
-        while (keyiter.hasNext()) {
-            String key = keyiter.next();
-            int pos = key.indexOf(CONFIGURATION_SEPARATOR);
-            if (pos > 0) names.add(key.substring(0, pos));
-        }
-        return names;
-    }
 }

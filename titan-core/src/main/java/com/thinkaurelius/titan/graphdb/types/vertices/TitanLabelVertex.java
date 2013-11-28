@@ -10,6 +10,8 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
         super(tx, id, lifecycle);
     }
 
+    //######## IDENTICAL TO TitanLabelReference
+
     public boolean isDirected() {
         return !isUnidirected();
     }

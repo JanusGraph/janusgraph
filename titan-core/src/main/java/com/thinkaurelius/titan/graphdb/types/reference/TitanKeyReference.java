@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.types.vertices;
+package com.thinkaurelius.titan.graphdb.types.reference;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
@@ -6,26 +6,31 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.IndexDefinition;
-import com.thinkaurelius.titan.graphdb.types.IndexParameters;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 import javax.annotation.Nullable;
-
 import java.util.List;
 
-public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class TitanKeyReference extends TitanTypeReference implements TitanKey {
 
-    public TitanKeyVertex(StandardTitanTx tx, long id, byte lifecycle) {
-        super(tx, id, lifecycle);
+    public TitanKeyReference(TitanKey type) {
+        super((TitanTypeVertex)type);
     }
 
-    //############## IDENTICAL TO TitanKeyReference
+    public TitanKeyReference(long id, String name, TypeAttribute.Map definition) {
+        super(id, name, definition);
+    }
+
+    //############## IDENTICAL TO TitanKeyVertex
 
     @Override
     public Class<?> getDataType() {
@@ -46,7 +51,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         if (indexes==null) {
             IndexType[] indexTypes = getDefinition().getValue(TypeAttributeType.INDEXES,IndexType[].class);
             IndexParameters[] indexParas = getDefinition().getValue(TypeAttributeType.INDEX_PARAMETERS,IndexParameters[].class);
-            Preconditions.checkArgument(indexTypes!=null,"Missing index types!");
+            Preconditions.checkArgument(indexTypes != null, "Missing index types!");
             if (indexParas==null) { //Default initialization to no parameters
                 indexParas = new IndexParameters[indexTypes.length];
                 for (int i=0;i<indexTypes.length;i++)
@@ -111,5 +116,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         }
         return result;
     }
+
+
 
 }

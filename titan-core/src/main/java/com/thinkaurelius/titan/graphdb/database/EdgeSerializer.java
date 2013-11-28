@@ -20,11 +20,9 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
-import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
-import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
 
@@ -51,40 +49,8 @@ public class EdgeSerializer {
         this.serializer = serializer;
     }
 
-    public InternalRelation readRelation(final InternalVertex vertex, final Entry data) {
-        StandardTitanTx tx = vertex.tx();
-        RelationCache relation = readRelation(vertex.getID(), data, true, tx);
-        return readRelation(vertex,relation,data,tx);
-    }
-
-    public InternalRelation readRelation(final InternalVertex vertex, final RelationCache relation,
-                                         final Entry data, final StandardTitanTx tx) {
-        TitanType type = tx.getExistingType(relation.typeId);
-
-        if (type.isPropertyKey()) {
-            assert relation.direction == Direction.OUT;
-            return new CacheProperty(relation.relationId, (TitanKey) type, vertex, relation.getValue(), data);
-        }
-
-        if (type.isEdgeLabel()) {
-            InternalVertex otherVertex = tx.getExistingVertex(relation.getOtherVertexId());
-            switch (relation.direction) {
-                case IN:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, otherVertex, vertex, (byte) 1, data);
-
-                case OUT:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, vertex, otherVertex, (byte) 0, data);
-
-                default:
-                    throw new AssertionError();
-            }
-        }
-
-        throw new AssertionError();
-    }
-
     //Used by Faunus - DON'T REMOVE
-    public void readRelation(RelationFactory factory, Entry data, StandardTitanTx tx) {
+    public void readRelation(RelationFactory factory, Entry data, TypeInspector tx) {
         RelationCache relation = readRelation(factory.getVertexID(), data, false, tx);
         assert relation.hasProperties();
 
@@ -106,11 +72,7 @@ public class EdgeSerializer {
         }
     }
 
-    public RelationCache readRelation(InternalVertex vertex, Entry data, StandardTitanTx tx) {
-        return readRelation(vertex.getID(), data, false, tx);
-    }
-
-    public RelationCache readRelation(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+    public RelationCache readRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         RelationCache map = data.getCache();
         if (map == null || !(parseHeaderOnly || map.hasProperties())) {
             map = parseRelation(vertexid, data, parseHeaderOnly, tx);
@@ -136,7 +98,7 @@ public class EdgeSerializer {
         }
     }
 
-    private RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, StandardTitanTx tx) {
+    public RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         assert vertexid > 0;
 
         ReadBuffer column = data.getReadColumn();
@@ -234,7 +196,7 @@ public class EdgeSerializer {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] typeids, LongObjectOpenHashMap properties, ReadBuffer in, StandardTitanTx tx) {
+    private void readInlineTypes(long[] typeids, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx) {
         for (long typeid : typeids) {
             TitanType keyType = tx.getExistingType(typeid);
             Object value = readInline(in, keyType);
@@ -282,18 +244,18 @@ public class EdgeSerializer {
         }
     }
 
-    public Entry writeRelation(InternalRelation relation, int pos, StandardTitanTx tx) {
+    public Entry writeRelation(InternalRelation relation, int pos, TypeInspector tx) {
         return writeRelation(relation, pos, true, tx);
     }
 
-    private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, StandardTitanTx tx) {
+    private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, TypeInspector tx) {
         for (long typeid : typeids) {
             TitanType t = tx.getExistingType(typeid);
             writeInline(out, t, relation.getProperty(t), false);
         }
     }
 
-    public Entry writeRelation(InternalRelation relation, int position, boolean writeValue, StandardTitanTx tx) {
+    public Entry writeRelation(InternalRelation relation, int position, boolean writeValue, TypeInspector tx) {
         Preconditions.checkArgument(position < relation.getLen());
         TitanType type = relation.getType();
         long typeid = type.getID();

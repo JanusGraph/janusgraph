@@ -36,10 +36,7 @@ import com.thinkaurelius.titan.graphdb.transaction.indexcache.IndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.indexcache.SimpleIndexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
-import com.thinkaurelius.titan.graphdb.types.StandardKeyMaker;
-import com.thinkaurelius.titan.graphdb.types.StandardLabelMaker;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
+import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -73,7 +70,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardTitanTx extends TitanBlueprintsTransaction {
+public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeInspector {
 
     private static final Logger log = LoggerFactory.getLogger(StandardTitanTx.class);
 
@@ -615,6 +612,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
     }
 
     // this is critical path we can't allow anything heavier then assertion in here
+    @Override
     public TitanType getExistingType(long typeid) {
         assert idInspector.isTypeID(typeid);
 
@@ -766,7 +764,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             return Iterables.transform(iter, new Function<Entry, TitanRelation>() {
                 @Override
                 public TitanRelation apply(@Nullable Entry entry) {
-                    return edgeSerializer.readRelation(v, entry);
+                    return RelationConstructor.readRelation(v, entry,edgeSerializer);
                 }
             }).iterator();
         }

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
+import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -58,7 +59,21 @@ public class IndexType {
 
     @Override
     public String toString() {
-        return indexName+":"+toType(element).getSimpleName();
+        return indexName+':'+(element==VERTEX?"vertex":"edge");
+    }
+
+    public static IndexType valueOf(String definition) {
+        int pos = definition.indexOf(':');
+        Preconditions.checkArgument(pos>0,"Invalid IndexType definition: %s",definition);
+        String indexName = definition.substring(0,pos-1);
+        String element = definition.substring(pos+1);
+        Class<? extends Element> elementClass;
+        if (element.equalsIgnoreCase("vertex")) {
+            elementClass = Vertex.class;
+        } else if (element.equalsIgnoreCase("edge")) {
+            elementClass = Edge.class;
+        } else throw new IllegalArgumentException("Invalid IndexType definition: " + definition);
+        return new IndexType(indexName,elementClass);
     }
 
 }
