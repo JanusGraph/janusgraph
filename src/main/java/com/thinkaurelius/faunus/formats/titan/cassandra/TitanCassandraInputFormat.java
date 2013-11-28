@@ -29,9 +29,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
 
     private final ColumnFamilyInputFormat columnFamilyInputFormat = new ColumnFamilyInputFormat();
     private FaunusTitanCassandraGraph graph;
-    private boolean pathEnabled;
     private Configuration config;
-    private VertexQueryFilter vertexQuery;
 
     @Override
     public List<InputSplit> getSplits(final JobContext jobContext) throws IOException, InterruptedException {
@@ -47,7 +45,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     public void setConf(final Configuration config) {
         super.setConf(config);
         Setup setup = super.setupConfiguration(config);
-        this.graph = new FaunusTitanCassandraGraph(setup.serializer,setup.types);
+        this.graph = new FaunusTitanCassandraGraph(setup.serializer, setup.types);
 
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
