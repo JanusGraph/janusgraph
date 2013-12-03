@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -30,10 +32,7 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     private final Random random = new Random();
 
     private final int[] currentPartitions;
-    private int lowerPartitionID = -1;
-    private int partitionWidth = -1;
-    private int idCeiling = -1;
-//    private IntSet exhaustedPartitions = new IntHashSet(); NOT THREAD SAFE!!
+    private List<PartitionIDRange> localPartitionIdRanges;
 
     public SimpleBulkPlacementStrategy(int concurrentPartitions) {
         Preconditions.checkArgument(concurrentPartitions > 0);
@@ -49,9 +48,8 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     }
 
     private final void updateElement(int index) {
-        Preconditions.checkArgument(lowerPartitionID >= 0 && partitionWidth > 0 && idCeiling > 0);
-        Preconditions.checkArgument(index >= 0 && index < currentPartitions.length);
-        currentPartitions[index] = (random.nextInt(partitionWidth) + lowerPartitionID) % idCeiling;
+        Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty(),"Local partition id ranges have not been initialized");
+        currentPartitions[index] = localPartitionIdRanges.get(random.nextInt(localPartitionIdRanges.size())).getRandomID();
     }
 
     @Override
@@ -73,15 +71,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public void setLocalPartitionBounds(int lowerID, int upperID, int idLimit) {
-        Preconditions.checkArgument(idLimit > 0);
-        Preconditions.checkArgument(lowerID >= 0 && lowerID < idLimit, lowerID);
-        Preconditions.checkArgument(upperID >= 0 && upperID <= idLimit, upperID);
-        lowerPartitionID = lowerID;
-        idCeiling = idLimit;
-        if (lowerID < upperID) partitionWidth = upperID - lowerPartitionID;
-        else partitionWidth = (idLimit - lowerID) + upperID;
-        Preconditions.checkArgument(partitionWidth > 0, partitionWidth);
+    public void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges) {
+        Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty());
+        this.localPartitionIdRanges = Lists.newArrayList(localPartitionIdRanges); //copy
         for (int i = 0; i < currentPartitions.length; i++) {
             updateElement(i);
         }
@@ -96,11 +88,5 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
                 found = true;
             }
         }
-//        if (found) {
-//            exhaustedPartitions.add(partitionID);
-//        } else {
-//            if (!exhaustedPartitions.contains(partitionID))
-//                log.error("Non-existant partition exhausted {} in {}", partitionID, Arrays.toString(currentPartitions));
-//        }
     }
 }

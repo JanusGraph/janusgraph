@@ -5,7 +5,9 @@ import cern.colt.list.ObjectArrayList;
 import cern.colt.map.AbstractIntObjectMap;
 import cern.colt.map.OpenIntObjectHashMap;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
@@ -15,10 +17,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.DefaultPlacementStrategy;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.IDPlacementStrategy;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionAssignment;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
+import com.thinkaurelius.titan.graphdb.database.idassigner.placement.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -106,37 +105,49 @@ public class VertexIDAssigner {
         idPools = new OpenIntObjectHashMap();
         idPoolsLock = new ReentrantReadWriteLock();
 
-        setLocalPartitions();
+        setLocalPartitions(partitionBits);
     }
 
-    private void setLocalPartitions() {
+    private void setLocalPartitionsToGlobal() {
+        placementStrategy.setLocalPartitionBounds(ImmutableList.of(new PartitionIDRange(0, maxPartitionID + 1, maxPartitionID + 1)));
+    }
+
+    private void setLocalPartitions(long partitionBits) {
         if (!hasLocalPartitions) {
-            placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
+            setLocalPartitionsToGlobal();
         } else {
-            //TODO: extend to multiple ranges!!
-            List<KeyRange> locals = null;
+            Preconditions.checkArgument(partitionBits==30); //The adjustment code below assume a 30 bit partition id size
+            List<PartitionIDRange> partitionRanges = Lists.newArrayList();
             try {
-                locals = idAuthority.getLocalIDPartition();
-                if (locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
-            } catch (Exception e) {
-                log.error("Could not read local id partition: {}", e);
-                placementStrategy.setLocalPartitionBounds(0, maxPartitionID + 1, maxPartitionID + 1);
-            }
-            if (locals != null) {
-                KeyRange local = locals.get(0);
-                Preconditions.checkArgument(local.getStart().length() >= 4 && local.getEnd().length() >= 4);
-                int[] partition = new int[2];
-                for (int i = 0; i < 2; i++) {
-                    partition[i] = local.getAt(i).getInt(0);
+                List<KeyRange> locals = idAuthority.getLocalIDPartition();
+                if (locals==null || locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
+                for (KeyRange local : locals) {
+                    Preconditions.checkArgument(local.getStart().length() >= 4 && local.getEnd().length() >= 4);
+                    int[] partition = new int[2];
+                    for (int i = 0; i < 2; i++) {
+                        partition[i] = local.getAt(i).getInt(0);
+                    }
+                    //Adjust lower end if necessary (needs to be inclusive)
+                    if ((partition[0] & 3) > 0) partition[0] = (partition[0] >>> 2) + 1;
+                    else partition[0] = (partition[0] >>> 2);
+                    //Upper bound needs to be exclusive
+                    partition[1] = (partition[1] >>> 2) - 1;
+                    if (partition[0]==partition[1]) {
+                        log.warn("Individual key range is too small for partition block: {}",local);
+                        continue;
+                    } else {
+                        log.info("Setting individual partition bound [{},{}]", partition[0], partition[1]);
+                        partitionRanges.add(new PartitionIDRange(partition[0], partition[1], maxPartitionID + 1));
+                    }
                 }
-                //Adjust lower end if necessary (needs to be inclusive)
-                if ((partition[0] & 3) > 0) partition[0] = (partition[0] >>> 2) + 1;
-                else partition[0] = (partition[0] >>> 2);
-                //Upper bound needs to be exclusive
-                partition[1] = (partition[1] >>> 2) - 1;
-                Preconditions.checkArgument(partition[0] != partition[1]);
-                log.info("Setting partition bound [{},{}]", partition[0], partition[1]);
-                placementStrategy.setLocalPartitionBounds(partition[0], partition[1], maxPartitionID + 1);
+            } catch (Exception e) {
+                log.error("Could not read local id partitions: {}", e);
+            }
+
+            if (!partitionRanges.isEmpty()) {
+                placementStrategy.setLocalPartitionBounds(partitionRanges);
+            } else {
+                setLocalPartitionsToGlobal();
             }
         }
     }

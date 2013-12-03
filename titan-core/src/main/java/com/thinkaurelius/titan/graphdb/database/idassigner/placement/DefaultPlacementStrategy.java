@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,14 +44,15 @@ public class DefaultPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public void setLocalPartitionBounds(int lowerID, int upperID, int idLimit) {
-        if (lowerID < upperID) {
-            Preconditions.checkArgument(lowerID <= partitionID);
-            Preconditions.checkArgument(upperID > partitionID);
-        } else {
-            Preconditions.checkArgument((lowerID <= partitionID && partitionID < idLimit) ||
-                    (upperID > partitionID && partitionID >= 0));
+    public void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges) {
+        boolean isContained = false;
+        for (PartitionIDRange range : localPartitionIdRanges) {
+            if (range.contains(partitionID)) {
+                isContained = true;
+                break;
+            }
         }
+        Preconditions.checkArgument(isContained,"None of the local partition id ranges contains the configured partition id: %s",partitionID);
     }
 
     @Override
