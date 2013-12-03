@@ -94,7 +94,7 @@ public class TypeReferenceContainerTest {
 
         BaseConfiguration config = new BaseConfiguration();
         types.exportToConfiguration(config);
-        printConfiguration(config);
+//        printConfiguration(config);
 
         TypeReferenceContainer types2 = new TypeReferenceContainer(config);
         verifyTypes(types2);
