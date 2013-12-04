@@ -31,7 +31,7 @@ if [ "$1" = "-e" ]; then
   if [ $# -gt 2 ]; then
     for (( i=3 ; i < $# + 1 ; i++ ))
     do
-      eval a=\$$i
+      eval a=\${${i}}
       k="$k \"$a\""
     done
   fi
