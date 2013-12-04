@@ -17,6 +17,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
