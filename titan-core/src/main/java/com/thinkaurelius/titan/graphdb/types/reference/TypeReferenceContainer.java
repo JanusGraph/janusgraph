@@ -3,21 +3,28 @@ package com.thinkaurelius.titan.graphdb.types.reference;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
+import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+import javax.json.*;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -47,30 +54,24 @@ public class TypeReferenceContainer implements TypeInspector {
         }
     }
 
-    public TypeReferenceContainer(String filename) throws ConfigurationException {
-        this(getPropertiesConfiguration(filename));
+    public TypeReferenceContainer(String filename) {
+        this(getJsonArray(filename));
     }
 
-    private static final Configuration getPropertiesConfiguration(String filename) {
+    private static final JsonArray getJsonArray(String filename) {
         try {
-            return new PropertiesConfiguration(filename);
-        } catch (ConfigurationException e) {
+            JsonReader reader = Json.createReader(new FileReader(filename));
+            JsonArray array = reader.readArray();
+            reader.close();
+            return array;
+        } catch (IOException e) {
             throw new RuntimeException("Could not load schema from file: " + filename,e);
         }
     }
 
-    public TypeReferenceContainer(Configuration config) {
-        List<String> idsStr = ConfigurationUtil.getUnqiuePrefixes(config);
-        List<Long> ids = new ArrayList<Long>(idsStr.size());
-        for (String id : idsStr) {
-            try {
-                ids.add(Long.parseLong(id));
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Could not parse type id: " + id,e);
-            }
-        }
-        for (long id : ids) {
-            add(getFromConfiguration(config,id));
+    public TypeReferenceContainer(JsonArray input) {
+        for (int i=0;i<input.size();i++) {
+            add(getFromJson(input.getJsonObject(i)));
         }
     }
 
@@ -109,34 +110,35 @@ public class TypeReferenceContainer implements TypeInspector {
 
     public void exportToFile(String filename) {
         Preconditions.checkArgument(!(new File(filename).exists()),"A file with the given name already exists: %",filename);
-        PropertiesConfiguration config = new PropertiesConfiguration();
-        exportToConfiguration(config);
         try {
-            config.save(filename);
-        } catch (ConfigurationException e) {
+            JsonWriter writer = Json.createWriter(new FileWriter(filename));
+            writer.writeArray(exportToJson());
+            writer.close();
+        } catch (IOException e) {
             throw new RuntimeException("Could not save schema to file: " + filename,e);
         }
     }
 
-    public void exportToConfiguration(Configuration config) {
-        for (TitanTypeReference type : typesWithoutKey()) exportToConfiguration(config,type);
-        for (TitanTypeReference type : typesWithKey()) exportToConfiguration(config,type);
-    }
-
     private static final String NAME_KEY = "name";
     private static final String TYPE_KEY = "type";
+    private static final String ID_KEY = "id";
+    private static final Set<String> META_KEYS = ImmutableSet.of(NAME_KEY, TYPE_KEY, ID_KEY);
 
-    private TitanTypeReference getFromConfiguration(Configuration config, long id) {
-        Configuration sub = config.subset(String.valueOf(id));
-        Iterator<String> keys = sub.getKeys();
-        TypeAttribute.Map definition = new TypeAttribute.Map();
-        String name = sub.getString(NAME_KEY);
+    private static final String INDEX_NAME = "indexname";
+    private static final String INDEX_ELEMENTTYPE = "elementtype";
+    private static final String INDEX_PARAMETERS = "parameters";
+    private static final String PARAMETER_NAME = "name";
+    private static final String PARAMETER_VALUE = "value";
+
+    private TitanTypeReference getFromJson(JsonObject input) {
+        final long id = input.getJsonNumber(ID_KEY).longValue();
+        final String name = input.getString(NAME_KEY);
+        final TitanTypeClass typeClass = TitanTypeClass.valueOf(input.getString(TYPE_KEY).toUpperCase());
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Invalid name found for id: %s",id);
-        TitanTypeClass typeClass = TitanTypeClass.valueOf(sub.getString(TYPE_KEY).toUpperCase());
         Preconditions.checkArgument(typeClass!=null,"Invalid type found for id: %s",id);
-        while (keys.hasNext()) {
-            String key = keys.next();
-            if (key.equalsIgnoreCase(NAME_KEY) || key.equalsIgnoreCase(TYPE_KEY)) continue;
+        TypeAttribute.Map definition = new TypeAttribute.Map();
+        for (String key : input.keySet()) {
+            if (META_KEYS.contains(key)) continue;
             TypeAttributeType tat = TypeAttributeType.valueOf(key.toUpperCase());
             Preconditions.checkArgument(tat!=null,"Unknown attribute: %s",key);
             Object value=null;
@@ -144,48 +146,64 @@ public class TypeReferenceContainer implements TypeInspector {
                 case HIDDEN:
                 case MODIFIABLE:
                 case UNIDIRECTIONAL:
-                    value = sub.getBoolean(key);
+                    value = input.getBoolean(key);
+                    break;
+                case DATATYPE:
+                    try {
+                        value = Class.forName(input.getString(key));
+                    } catch (ClassNotFoundException e) {
+                        throw new IllegalArgumentException("Could not find attribute class" + input.getString(key), e);
+                    }
+                    break;
+                case SORT_ORDER:
+                    value = Order.valueOf(input.getString(key));
                     break;
                 case UNIQUENESS:
                 case UNIQUENESS_LOCK:
                 case STATIC:
-                    String[] conv = sub.getStringArray(key);
-                    boolean[] bools = new boolean[conv.length];
-                    for (int i=0;i<bools.length;i++) bools[i]=Boolean.parseBoolean(conv[i]);
+                    JsonArray arr = input.getJsonArray(key);
+                    boolean[] bools = new boolean[arr.size()];
+                    for (int i=0;i<bools.length;i++) bools[i]=arr.getBoolean(i);
                     value = bools;
                     break;
                 case SORT_KEY:
                 case SIGNATURE:
-                    String[] names = sub.getStringArray(key);
-                    long[] ids = new long[names.length];
+                    JsonArray names = input.getJsonArray(key);
+                    long[] ids = new long[names.size()];
                     for (int i=0;i<ids.length;i++)
-                        ids[i]=getType(names[i]).getID();
+                        ids[i]=getType(names.getString(i)).getID();
                     value = ids;
                     break;
                 case INDEXES:
-                    names = sub.getStringArray(key);
-                    IndexType[] indexes = new IndexType[names.length];
-                    for (int i=0;i< indexes.length;i++) indexes[i]=IndexType.valueOf(names[i]);
+                    arr = input.getJsonArray(key);
+                    IndexType[] indexes = new IndexType[arr.size()];
+                    for (int i=0;i< indexes.length;i++) {
+                        JsonObject obj = arr.getJsonObject(i);
+                        String elementType = obj.getString(INDEX_ELEMENTTYPE);
+                        Class<? extends Element> element=null;
+                        if (elementType.equalsIgnoreCase("vertex")) element = Vertex.class;
+                        else if (elementType.equalsIgnoreCase("edge")) element = Edge.class;
+                        Preconditions.checkArgument(element!=null,"Invalid element type: " + elementType);
+                        indexes[i]=new IndexType(obj.getString(INDEX_NAME),element);
+                    }
                     value = indexes;
                     break;
-                case DATATYPE:
-                    try {
-                        value = Class.forName(sub.getString(key));
-                    } catch (ClassNotFoundException e) {
-                        throw new IllegalArgumentException("Could not find attribute class" + sub.getShort(key), e);
-                    }
-                    break;
-                case SORT_ORDER:
-                    value = Order.valueOf(sub.getString(key));
-                    break;
                 case INDEX_PARAMETERS:
-                    names = sub.getStringArray(key);
-                    IndexParameters[] paras = new IndexParameters[names.length];
-                    for (int i=0;i<paras.length;i++) paras[i]=IndexParameters.valueOf(names[i]);
+                    arr = input.getJsonArray(key);
+                    IndexParameters[] paras = new IndexParameters[arr.size()];
+                    for (int i=0;i<paras.length;i++) {
+                        JsonObject obj = arr.getJsonObject(i);
+                        JsonArray parameters = obj.getJsonArray(INDEX_PARAMETERS);
+                        Parameter[] ps = new Parameter[parameters.size()];
+                        for (int j=0;j<ps.length;j++) {
+                            JsonObject p = parameters.getJsonObject(j);
+                            ps[j]=Parameter.of(p.getString(PARAMETER_NAME),p.getString(PARAMETER_VALUE));
+                        }
+                        paras[i]=new IndexParameters(obj.getString(INDEX_NAME),ps);
+                    }
                     value = paras;
                     break;
             }
-
             Preconditions.checkNotNull(value);
             definition.setValue(tat,value);
         }
@@ -207,11 +225,19 @@ public class TypeReferenceContainer implements TypeInspector {
         }
     }
 
-    private void exportToConfiguration(Configuration config, TitanTypeReference type) {
-        Configuration sub = config.subset(String.valueOf(type.getID()));
-        sub.addProperty(NAME_KEY,type.getName());
+    public JsonArray exportToJson() {
+        JsonArrayBuilder result = Json.createArrayBuilder();
+        for (TitanTypeReference type : typesWithoutKey()) result.add(exportToJson(type));
+        for (TitanTypeReference type : typesWithKey()) result.add(exportToJson(type));
+        return result.build();
+    }
+
+    private JsonObject exportToJson(TitanTypeReference type) {
+        JsonObjectBuilder result = Json.createObjectBuilder();
+        result.add(ID_KEY,type.getID());
+        result.add(NAME_KEY, type.getName());
         TitanTypeClass typeClass = type.isPropertyKey()?TitanTypeClass.KEY:TitanTypeClass.LABEL;
-        sub.addProperty(TYPE_KEY,typeClass.toString().toLowerCase());
+        result.add(TYPE_KEY, typeClass.toString().toLowerCase());
         for (TypeAttribute ta : type.getDefinition().getAttributes()) {
             String name = ta.getType().toString().toLowerCase();
             Object value = ta.getValue();
@@ -219,49 +245,61 @@ public class TypeReferenceContainer implements TypeInspector {
                 case HIDDEN:
                 case MODIFIABLE:
                 case UNIDIRECTIONAL:
-                    value = ((Boolean)value).booleanValue();
+                    result.add(name, ((Boolean) value).booleanValue());
+                    break;
+                case DATATYPE:
+                    result.add(name,((Class<?>)value).getName());
+                    break;
+                case SORT_ORDER:
+                    result.add(name,((Order)value).toString());
                     break;
                 case UNIQUENESS:
                 case UNIQUENESS_LOCK:
                 case STATIC:
                     boolean[] bools = (boolean[])value;
-                    String[] conv = new String[bools.length];
-                    for (int i=0;i<bools.length;i++) conv[i]=Boolean.toString(bools[i]);
-                    value = conv;
+                    assert bools.length==2;
+                    JsonArrayBuilder arr = Json.createArrayBuilder();
+                    for (int i=0;i<bools.length;i++) arr.add(bools[i]);
+                    result.add(name,arr.build());
                     break;
                 case SORT_KEY:
                 case SIGNATURE:
                     long[] ids = (long[])value;
-                    String[] names = new String[ids.length];
-                    for (int i=0;i<ids.length;i++)
-                        names[i]=getExistingType(ids[i]).getName();
-                    value = names;
+                    arr = Json.createArrayBuilder();
+                    for (int i=0;i<ids.length;i++) arr.add(getExistingType(ids[i]).getName());
+                    result.add(name,arr.build());
                     break;
                 case INDEXES:
                     IndexType[] indexes = (IndexType[])value;
-                    names = new String[indexes.length];
-                    for (int i=0;i< indexes.length;i++) names[i]=indexes[i].toString();
-                    value = names;
-                    break;
-                case DATATYPE:
-                    value = ((Class<?>)value).getName();
-                    break;
-                case SORT_ORDER:
-                    value = ((Order)value).toString();
+                    arr = Json.createArrayBuilder();
+                    for (int i=0;i< indexes.length;i++) {
+                        arr.add(Json.createObjectBuilder().add(INDEX_NAME,indexes[i].getIndexName())
+                                .add(INDEX_ELEMENTTYPE,indexes[i].getElementType().getSimpleName().toLowerCase())
+                                .build());
+                    }
+                    result.add(name,arr.build());
                     break;
                 case INDEX_PARAMETERS:
                     IndexParameters[] paras = (IndexParameters[])value;
-                    names = new String[paras.length];
-                    for (int i=0;i<paras.length;i++) names[i]=paras[i].toString();
-                    value = names;
+                    arr = Json.createArrayBuilder();
+                    for (int i=0;i<paras.length;i++) {
+                        Parameter[] ps = paras[i].getParameters();
+                        JsonArrayBuilder parameters = Json.createArrayBuilder();
+                        for (Parameter p : ps) {
+                            parameters.add(Json.createObjectBuilder().add(PARAMETER_NAME,p.getKey())
+                                                    .add(PARAMETER_VALUE,p.getValue().toString()).build());
+                        }
+
+                        arr.add(Json.createObjectBuilder().add(INDEX_NAME, paras[i].getIndexName())
+                                .add(INDEX_PARAMETERS, parameters)
+                                .build());
+                    }
+                    result.add(name,arr.build());
                     break;
             }
-            Preconditions.checkNotNull(value);
-            sub.setProperty(name,value);
         }
+        return result.build();
     }
-
-
 
 
     public void installInGraph(TitanGraph graph) {
@@ -328,5 +366,6 @@ public class TypeReferenceContainer implements TypeInspector {
             return type.getSortKey().length==0 && type.getSignature().length==0;
         }
     };
+
 
 }

@@ -53,20 +53,4 @@ public class IndexParameters {
         return str.toString();
     }
 
-    public static IndexParameters valueOf(String definition) {
-        int pos = definition.indexOf("::");
-        Preconditions.checkArgument(pos > 0, "Invalid definition: %s", definition);
-        String indexName = definition.substring(0,pos-1);
-        String parastr = definition.substring(pos+2).trim();
-        Parameter[] paras = new Parameter[0];
-        if (!parastr.isEmpty()) {
-            String[] paratoks = parastr.split("#:#");
-            paras = new Parameter[paratoks.length];
-            for (int i=0;i<paratoks.length;i++) {
-                paras[i] = Parameter.valueOf(paratoks[i].trim());
-            }
-        }
-        return new IndexParameters(indexName,paras);
-    }
-
 }

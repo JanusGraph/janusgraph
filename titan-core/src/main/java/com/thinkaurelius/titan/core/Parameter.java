@@ -52,10 +52,4 @@ public class Parameter<V> {
         return key+"->"+String.valueOf(value);
     }
 
-    public static Parameter<String> valueOf(String parameter) {
-        int pos = parameter.indexOf("->");
-        Preconditions.checkArgument(pos>0,"Invalid Parameter: %s",parameter);
-        return new Parameter<String>(parameter.substring(0,pos-1),parameter.substring(pos+2));
-    }
-
 }

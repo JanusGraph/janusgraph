@@ -17,6 +17,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Iterator;
 
 import static org.junit.Assert.*;
@@ -92,9 +98,8 @@ public class TypeReferenceContainerTest {
 
         verifyTypes(types);
 
-        BaseConfiguration config = new BaseConfiguration();
-        types.exportToConfiguration(config);
-//        printConfiguration(config);
+        JsonArray config = types.exportToJson();
+        printConfiguration(config);
 
         TypeReferenceContainer types2 = new TypeReferenceContainer(config);
         verifyTypes(types2);
@@ -103,12 +108,12 @@ public class TypeReferenceContainerTest {
 
 
 
-    private void printConfiguration(Configuration config) {
-        Iterator<String> keys = config.getKeys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            System.out.println(key + ": " + config.getProperty(key).toString());
-        }
+    private void printConfiguration(JsonArray config) {
+        StringWriter s = new StringWriter();
+        JsonWriter writer = Json.createWriter(s);
+        writer.writeArray(config);
+        writer.close();
+        System.out.println(s.toString());
     }
 
 
