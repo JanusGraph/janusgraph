@@ -35,6 +35,10 @@ public class TypeReferenceContainer implements TypeInspector {
     private final LongObjectOpenHashMap typesById = new LongObjectOpenHashMap();
     private final Map<String,TitanTypeReference> typesByName = new HashMap<String, TitanTypeReference>();
 
+    public TypeReferenceContainer() {
+
+    }
+
     public TypeReferenceContainer(TitanGraph graph) {
         TitanTransaction tx = null;
         try {
@@ -75,7 +79,7 @@ public class TypeReferenceContainer implements TypeInspector {
         }
     }
 
-    private void add(TitanTypeReference type) {
+    public void add(TitanTypeReference type) {
         Preconditions.checkArgument(!typesById.containsKey(type.getID()));
         typesById.put(type.getID(),type);
         Preconditions.checkArgument(!typesByName.containsKey(type.getName()));
