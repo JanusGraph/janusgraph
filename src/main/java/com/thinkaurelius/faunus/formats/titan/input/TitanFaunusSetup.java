@@ -25,4 +25,6 @@ public interface TitanFaunusSetup {
 
     public SliceQuery inputSlice(final VertexQueryFilter inputFilter);
 
+    public void close();
+
 }

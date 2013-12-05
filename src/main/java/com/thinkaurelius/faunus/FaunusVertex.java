@@ -1,10 +1,9 @@
 package com.thinkaurelius.faunus;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.base.Predicate;
+import com.google.common.collect.*;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -16,6 +15,7 @@ import com.tinkerpop.blueprints.util.StringFactory;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableUtils;
 
+import javax.annotation.Nullable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -34,7 +34,7 @@ import static com.tinkerpop.blueprints.Direction.*;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusVertex extends FaunusElement implements Vertex {
+public class FaunusVertex extends FaunusPathElement implements Vertex {
 
     public static final Direction[] PROPER_DIR = new Direction[]{IN,OUT};
 
@@ -86,16 +86,31 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     // Property Handling
     //##################################
 
+    @Override
+    public void addProperty(FaunusProperty property) {
+        super.addProperty(property);
+    }
 
     public void addProperty(final String key, final Object value) {
-        ElementHelper.validateProperty(this, key, value);
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        initializeProperties();
-        this.properties.put(type, value);
+        addProperty(new FaunusProperty(type, value));
     }
 
     public <T> Iterable<T> getProperties(final String key) {
-        return (Iterable)properties.get(FaunusType.DEFAULT_MANAGER.get(key));
+        FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
+        if (type.isImplicit()) return getImplicitProperty(type);
+        return Iterables.transform(Iterables.filter(properties.get(type),FILTER_DELETED_PROPERTIES),new Function<FaunusProperty, T>() {
+            @Nullable
+            @Override
+            public T apply(@Nullable FaunusProperty faunusProperty) {
+                return (T)faunusProperty.getValue();
+            }
+        });
+    }
+
+    public Iterable<FaunusProperty> getProperties(final FaunusType type) {
+        Preconditions.checkArgument(!type.isImplicit());
+        return Iterables.filter(properties.get(type),FILTER_DELETED_PROPERTIES);
     }
 
     //##################################
@@ -118,7 +133,12 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         if (direction==BOTH) {
             return Sets.union(getEdgeLabels(IN),getEdgeLabels(OUT));
         } else {
-            return getAdjacency(direction).keySet();
+            return Sets.filter(getAdjacency(direction).keySet(), new Predicate<FaunusType>() {
+                @Override
+                public boolean apply(@Nullable FaunusType faunusType) {
+                    return !faunusType.isHidden() && !Iterables.isEmpty(Iterables.filter(getAdjacency(direction).get(faunusType),FILTER_DELETED_EDGES));
+                }
+            });
         }
     }
 
@@ -159,21 +179,27 @@ public class FaunusVertex extends FaunusElement implements Vertex {
     }
 
     public Iterable<Edge> getEdges(final Direction direction, final FaunusType... labels) {
-        final List<List<Edge>> edgeLists = new ArrayList<List<Edge>>();
+        final List<List<FaunusEdge>> edgeLists = new ArrayList<List<FaunusEdge>>();
 
         for (Direction dir : PROPER_DIR) {
             if (direction!=BOTH && direction!=dir) continue;
             ListMultimap<FaunusType,FaunusEdge> adj = getAdjacency(dir);
             if (null == labels || labels.length == 0) {
-                for (FaunusType type : adj.keySet()) edgeLists.add((List)adj.get(type));
+                for (FaunusType type : adj.keySet()) {
+                    if (!type.isHidden()) edgeLists.add((List)adj.get(type));
+                }
             } else {
                 for (final FaunusType label : labels) {
-                    final List<Edge> temp = (List)adj.get(label);
+                    final List<FaunusEdge> temp = adj.get(label);
                     edgeLists.add(temp);
                 }
             }
         }
-        return new EdgeList(edgeLists);
+        return (Iterable)new EdgeList(edgeLists);
+    }
+
+    public Iterable<FaunusEdge> getAllEdges() {
+        return Iterables.concat(outEdges.values(),inEdges.values());
     }
 
     private void addEdges(final Direction direction, final FaunusType label, final List<FaunusEdge> edges) {
@@ -247,29 +273,30 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         }
     }
 
-    private class EdgeList extends AbstractList<Edge> {
+    private class EdgeList extends AbstractList<FaunusEdge> {
 
-        final List<List<Edge>> edges;
+        final List<List<FaunusEdge>> edges;
 
+        int fullsize;
         int size;
 
-        public EdgeList(final List<List<Edge>> edgeLists) {
+        public EdgeList(final List<List<FaunusEdge>> edgeLists) {
             this.edges = edgeLists;
-            int counter = 0;
-            for (final List<Edge> temp : this.edges) {
-                counter = counter + temp.size();
+            fullsize = 0; size = 0;
+            for (final List<FaunusEdge> temp : this.edges) {
+                fullsize += temp.size();
+                for (FaunusEdge e : temp) if (!e.isDeleted()) size++;
             }
-            this.size = counter;
         }
 
         public int size() {
             return this.size;
         }
 
-        public Edge get(final int index) {
+        public FaunusEdge get(final int index) {
             int lowIndex = 0;
             int highIndex = 0;
-            for (final List<Edge> temp : this.edges) {
+            for (final List<FaunusEdge> temp : this.edges) {
                 highIndex = highIndex + temp.size();
                 if (index < highIndex) {
                     return temp.get(index - lowIndex);
@@ -282,7 +309,7 @@ public class FaunusVertex extends FaunusElement implements Vertex {
         private void removeList(final int index) {
             int lowIndex = 0;
             int highIndex = 0;
-            for (final List<Edge> temp : this.edges) {
+            for (final List<FaunusEdge> temp : this.edges) {
                 highIndex = highIndex + temp.size();
                 if (index < highIndex) {
                     temp.remove(index - lowIndex);
@@ -294,23 +321,35 @@ public class FaunusVertex extends FaunusElement implements Vertex {
             throw new ArrayIndexOutOfBoundsException(index);
         }
 
-        public Iterator<Edge> iterator() {
-            return new Iterator<Edge>() {
-                private int index = 0;
+        public Iterator<FaunusEdge> iterator() {
+            return new Iterator<FaunusEdge>() {
+                private int current = -1;
+                private int next = findNext(current);
 
-                @Override
-                public boolean hasNext() {
-                    return this.index < size;
+                private int findNext(int current) {
+                    int next = current+1;
+                    while (next<fullsize && get(next).isDeleted()) next++;
+                    return next;
                 }
 
                 @Override
-                public Edge next() {
-                    return get(this.index++);
+                public boolean hasNext() {
+                    return this.next < fullsize;
+                }
+
+                @Override
+                public FaunusEdge next() {
+                    current = next;
+                    next = findNext(current);
+                    return get(current);
                 }
 
                 @Override
                 public void remove() {
-                    removeList(--this.index);
+                    removeList(current);
+                    current = -1;
+                    next--;
+                    fullsize--;
                     size--;
                 }
             };

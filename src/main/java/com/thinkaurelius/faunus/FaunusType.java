@@ -2,8 +2,6 @@ package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.HashMap;
@@ -14,24 +12,27 @@ import java.util.Set;
  */
 public class FaunusType {
 
-    public static final FaunusType COUNT = new FaunusType(Tokens._COUNT,true);
-    public static final FaunusType LINK = new FaunusType(Tokens._LINK,true);
+    private enum TypeVisibility { NORMAL, HIDDEN, IMPLICIT };
+
+    public static final FaunusType COUNT = new FaunusType(Tokens._COUNT, TypeVisibility.IMPLICIT);
+    public static final FaunusType LINK = new FaunusType(Tokens._LINK,TypeVisibility.NORMAL);
 
 
     private static final Set<FaunusType> PREDEFINED_TYPES = ImmutableSet.of(COUNT,LINK);
 
     private final String name;
-    private final boolean isHidden;
+    private final TypeVisibility visibility;
 
     public FaunusType(String name) {
-        this(checkName(name),false);
+        this(checkName(name), TypeVisibility.NORMAL);
     }
 
-    private FaunusType(String name, boolean isHidden) {
+    private FaunusType(String name, TypeVisibility visibility) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Invalid type name: %s",name);
+        Preconditions.checkNotNull(visibility);
 
         this.name = name;
-        this.isHidden = isHidden;
+        this.visibility = visibility;
     }
 
     private static final String checkName(String name) {
@@ -49,7 +50,11 @@ public class FaunusType {
     }
 
     public boolean isHidden() {
-        return isHidden;
+        return visibility==TypeVisibility.HIDDEN || visibility==TypeVisibility.IMPLICIT;
+    }
+
+    public boolean isImplicit() {
+        return visibility==TypeVisibility.IMPLICIT;
     }
 
     @Override

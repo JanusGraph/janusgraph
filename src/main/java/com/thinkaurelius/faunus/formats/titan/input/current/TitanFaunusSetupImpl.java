@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
+import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetupCommon;
 import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -23,12 +24,9 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanFaunusSetupImpl implements TitanFaunusSetup {
+public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
 
     private final GraphDatabaseConfiguration graphConfig;
-
-    private static final StaticBuffer DEFAULT_COLUMN = new StaticByteBuffer(new byte[0]);
-    private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);
 
     public TitanFaunusSetupImpl(final Configuration config) {
         BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
@@ -64,7 +62,7 @@ public class TitanFaunusSetupImpl implements TitanFaunusSetup {
             final StaticBuffer[] endPoints = IDHandler.getBounds(RelationType.PROPERTY);
             return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
         } else {
-            return DEFAULT_SLICE_QUERY;
+            return super.inputSlice(inputFilter);
         }
     }
 }

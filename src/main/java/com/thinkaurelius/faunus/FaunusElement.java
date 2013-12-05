@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -23,16 +24,28 @@ import java.util.*;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement implements Element, WritableComparable<FaunusElement> {
+public abstract class FaunusElement implements Element, Comparable<FaunusElement> {
 
-    static final Multimap<FaunusType,Object> NO_PROPERTIES = ImmutableListMultimap.of();
+    static final Multimap<FaunusType,FaunusProperty> NO_PROPERTIES = ImmutableListMultimap.of();
+
+    protected static final Predicate<FaunusProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusProperty>() {
+        @Override
+        public boolean apply(@Nullable FaunusProperty p) {
+            return !p.isDeleted();
+        }
+    };
+
+    protected static final Predicate<FaunusEdge> FILTER_DELETED_EDGES = new Predicate<FaunusEdge>() {
+        @Override
+        public boolean apply(@Nullable FaunusEdge e) {
+            return !e.isDeleted();
+        }
+    };
 
     protected long id;
-    protected Multimap<FaunusType, Object> properties = NO_PROPERTIES;
-    protected List<List<MicroElement>> paths = null;
-    protected MicroElement microVersion = null;
-    protected boolean pathEnabled = false;
-    protected long pathCounter = 0;
+    protected Multimap<FaunusType, FaunusProperty> properties = NO_PROPERTIES;
+    protected ElementState state = ElementState.LOADED;
+
 
     public FaunusElement(final long id) {
         this.id = id;
@@ -41,7 +54,6 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
     protected FaunusElement reuse(final long id) {
         this.id = id;
         this.properties = NO_PROPERTIES;
-        this.clearPaths();
         return this;
     }
 
@@ -64,65 +76,112 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         schema.addAll(properties.keySet());
     }
 
+    void setState(ElementState state) {
+        Preconditions.checkNotNull(state);
+        this.state=state;
+    }
+
+    public ElementState getState() {
+        return state;
+    }
+
+    public boolean isNew() {
+        return state==ElementState.NEW;
+    }
+
+    public boolean isDeleted() {
+        return state==ElementState.DELETED;
+    }
+
+    public boolean isModified() {
+        return state!=ElementState.LOADED;
+    }
+
     //##################################
     // Property Handling
     //##################################
 
-    void initializeProperties() {
+    protected void initializeProperties() {
         if (properties==NO_PROPERTIES) properties = HashMultimap.create();
+    }
+
+    protected void addProperty(final FaunusProperty property) {
+        Preconditions.checkNotNull(property);
+        ElementHelper.validateProperty(this, property.getType().getName(), property.getValue());
+        //TODO: property.setState(ElementState.NEW) ???
+        initializeProperties();
+        this.properties.put(property.getType(),property);
+    }
+
+    protected <T> T getImplicitProperty(final FaunusType type) {
+        assert type.isImplicit();
+        return null;
     }
 
     @Override
     public void setProperty(final String key, final Object value) {
-        ElementHelper.validateProperty(this, key, value);
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        initializeProperties();
-        this.properties.removeAll(type);
-        this.properties.put(type, value);
+        if (!this.properties.isEmpty()) this.properties.removeAll(type);
+        addProperty(new FaunusProperty(type, value));
     }
 
     @Override
     public <T> T removeProperty(final String key) {
         if (properties.isEmpty()) return null;
-        Collection<Object>  removed = this.properties.removeAll(FaunusType.DEFAULT_MANAGER.get(key));
+        FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
+        List<FaunusProperty>  removed = Lists.newArrayList();
+        for (FaunusProperty p : properties.get(type)) {
+            if (p.isDeleted()) continue;
+            p.setState(ElementState.DELETED);
+            removed.add(p);
+        }
+        properties.removeAll(type);
         if (removed.isEmpty()) return null;
-        else if (removed.size()==1) return (T)removed.iterator().next();
+        else if (removed.size()==1) return (T)removed.iterator().next().getValue();
         else return (T)removed;
     }
+
 
     @Override
     public <T> T getProperty(final String key) {
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        //First, handle special cases
-        if (type.equals(FaunusType.COUNT))
-            return (T) Long.valueOf(this.pathCount());
+        if (type.isImplicit()) return getImplicitProperty(type);
 
-        Collection<Object> values = properties.get(type);
-        if (values.isEmpty()) return null;
-        else if (values.size()==1) return (T)values.iterator().next();
-        else throw new IllegalStateException("Use getProperties(String) method for multi-valued properties");
+        Object result = null;
+        for (FaunusProperty p : properties.get(type)) {
+            if (p.isDeleted()) continue;
+            if (result!=null) throw new IllegalStateException("Use getProperties(String) method for multi-valued properties");
+            result = p.getValue();
+        }
+        return (T)result;
     }
 
     @Override
     public Set<String> getPropertyKeys() {
         Set<String> result = Sets.newHashSet();
-        for (FaunusType type : properties.keySet()) result.add(type.getName());
+        for (FaunusProperty p : properties.values()) {
+            if (!p.isDeleted() && !p.getType().isHidden()) result.add(p.getType().getName());
+        }
         return result;
     }
 
     public Collection<FaunusProperty> getProperties() {
-        List<FaunusProperty> result = Lists.newArrayList();
-        for (Map.Entry<FaunusType,Object> entry : properties.entries()) {
-            result.add(new FaunusProperty(entry.getKey(),entry.getValue()));
-        }
+        List<FaunusProperty> result = Lists.newArrayList(Iterables.filter(properties.values(),new Predicate<FaunusProperty>() {
+            @Override
+            public boolean apply(@Nullable FaunusProperty property) {
+                return !property.getType().isHidden() && !property.isDeleted();
+            }
+        }));
         return result;
     }
 
+    public Collection<FaunusProperty> getAllProperties() {
+        return properties.values();
+    }
+
     public void addAllProperties(Iterable<FaunusProperty> properties) {
-        initializeProperties();
-        for (FaunusProperty p : properties) {
-            this.properties.put(p.getType(),p.getValue());
-        }
+        //TODO: Should those be marked as NEW?
+        for (FaunusProperty p : properties) addProperty(p);
     }
 
     //##################################
@@ -144,121 +203,5 @@ public abstract class FaunusElement implements Element, WritableComparable<Faunu
         return new Long(this.id).compareTo((Long) other.getId());
     }
 
-    //##################################
-    // Path Handling
-    //##################################
 
-    public void enablePath(final boolean enablePath) {
-        this.pathEnabled = enablePath;
-        if (this.pathEnabled) {
-            if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
-            if (null == this.paths)
-                this.paths = new ArrayList<List<MicroElement>>();
-        }
-        // TODO: else make pathCounter = paths.size()?
-    }
-
-    public void addPath(final List<MicroElement> path, final boolean append) throws IllegalStateException {
-        if (this.pathEnabled) {
-            if (append) path.add(this.microVersion);
-            this.paths.add(path);
-        } else {
-            throw new IllegalStateException("Path calculations are not enabled");
-        }
-    }
-
-    public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
-        if (this.pathEnabled) {
-            if (append) {
-                for (final List<MicroElement> path : paths) {
-                    this.addPath(path, append);
-                }
-            } else
-                this.paths.addAll(paths);
-        } else {
-            throw new IllegalStateException("Path calculations are not enabled");
-        }
-    }
-
-    public List<List<MicroElement>> getPaths() throws IllegalStateException {
-        if (this.pathEnabled)
-            return this.paths;
-        else
-            throw new IllegalStateException("Path calculations are not enabled");
-    }
-
-    public void getPaths(final FaunusElement element, final boolean append) {
-        if (this.pathEnabled) {
-            this.addPaths(element.getPaths(), append);
-        } else {
-            this.pathCounter = this.pathCounter + element.pathCount();
-        }
-    }
-
-    public long incrPath(final long amount) throws IllegalStateException {
-        if (this.pathEnabled)
-            throw new IllegalStateException("Path calculations are enabled -- use addPath()");
-        else
-            this.pathCounter = this.pathCounter + amount;
-        return this.pathCounter;
-    }
-
-    public boolean hasPaths() {
-        if (this.pathEnabled)
-            return !this.paths.isEmpty();
-        else
-            return this.pathCounter > 0;
-    }
-
-    public void clearPaths() {
-        if (this.pathEnabled) {
-            this.paths = new ArrayList<List<MicroElement>>();
-            this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
-        } else
-            this.pathCounter = 0;
-    }
-
-    public long pathCount() {
-        if (this.pathEnabled)
-            return this.paths.size();
-        else
-            return this.pathCounter;
-    }
-
-    public void startPath() {
-        if (this.pathEnabled) {
-            this.clearPaths();
-            final List<MicroElement> startPath = new ArrayList<MicroElement>();
-            startPath.add(this.microVersion);
-            this.paths.add(startPath);
-        } else {
-            this.pathCounter = 1;
-        }
-    }
-
-
-
-    public static abstract class MicroElement {
-
-        protected final long id;
-
-        public MicroElement(final long id) {
-            this.id = id;
-        }
-
-        public long getId() {
-            return this.id;
-        }
-
-        @Override
-        public int hashCode() {
-            return Long.valueOf(this.id).hashCode();
-        }
-
-        @Override
-        public boolean equals(final Object object) {
-            return (object.getClass().equals(this.getClass()) && this.id == ((MicroElement) object).getId());
-        }
-    }
 }

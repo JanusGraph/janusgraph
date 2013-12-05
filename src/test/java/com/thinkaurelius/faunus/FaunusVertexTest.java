@@ -177,7 +177,7 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(vertex1.getProperty("size"), 10l);
         assertEquals(vertex2.pathCount(), 2);
         assertTrue(vertex2.hasPaths());
-        for (List<FaunusElement.MicroElement> path : vertex2.getPaths()) {
+        for (List<FaunusPathElement.MicroElement> path : vertex2.getPaths()) {
             assertEquals(path.get(0).getId(), 10l);
             assertTrue(path.get(1).getId() == 1l || path.get(1).getId() == 2l);
             assertEquals(path.size(), 2);

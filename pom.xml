@@ -110,6 +110,15 @@
             <artifactId>titan-hbase</artifactId>
             <version>${titan.version}</version>
         </dependency>
+
+
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-core</artifactId>
+            <version>0.3.3-SNAPSHOT</version>
+            <classifier>shaded03</classifier>
+        </dependency>
+
         <!-- RDF PARSING -->
         <dependency>
             <groupId>org.openrdf.sesame</groupId>

@@ -1,9 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.filter;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.*;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -53,9 +50,9 @@ public class CyclicPathFilterMap {
             long pathsFiltered = 0l;
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Iterator<List<FaunusElement.MicroElement>> itty = value.getPaths().iterator();
+                    final Iterator<List<FaunusPathElement.MicroElement>> itty = value.getPaths().iterator();
                     while (itty.hasNext()) {
-                        final List<FaunusElement.MicroElement> path = itty.next();
+                        final List<FaunusPathElement.MicroElement> path = itty.next();
                         this.set.clear();
                         this.set.addAll(path);
                         if (path.size() != this.set.size()) {
@@ -68,9 +65,9 @@ public class CyclicPathFilterMap {
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        final Iterator<List<FaunusElement.MicroElement>> itty = edge.getPaths().iterator();
+                        final Iterator<List<FaunusPathElement.MicroElement>> itty = edge.getPaths().iterator();
                         while (itty.hasNext()) {
-                            final List<FaunusElement.MicroElement> path = itty.next();
+                            final List<FaunusPathElement.MicroElement> path = itty.next();
                             this.set.clear();
                             this.set.addAll(path);
                             if (path.size() != this.set.size()) {

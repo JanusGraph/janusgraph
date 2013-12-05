@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Holder<T extends FaunusElement> extends GenericWritable implements WritableComparable<Holder<T>> {
+public class Holder<T extends FaunusPathElement> extends GenericWritable implements WritableComparable<Holder<T>> {
 
     protected char tag;
 

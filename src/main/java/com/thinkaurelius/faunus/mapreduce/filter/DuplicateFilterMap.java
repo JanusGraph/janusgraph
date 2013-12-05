@@ -1,9 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.filter;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.*;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -52,7 +49,7 @@ public class DuplicateFilterMap {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     if (this.pathEnabled) {
-                        final List<FaunusElement.MicroElement> path = value.getPaths().get(0);
+                        final List<FaunusPathElement.MicroElement> path = value.getPaths().get(0);
                         value.clearPaths();
                         value.addPath(path, false);
                     } else {
@@ -67,7 +64,7 @@ public class DuplicateFilterMap {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
                         if (this.pathEnabled) {
-                            final List<FaunusElement.MicroElement> path = edge.getPaths().get(0);
+                            final List<FaunusPathElement.MicroElement> path = edge.getPaths().get(0);
                             edge.clearPaths();
                             edge.addPath(path, false);
                         } else {

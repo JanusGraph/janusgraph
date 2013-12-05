@@ -2,7 +2,7 @@ package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
-import com.thinkaurelius.faunus.FaunusElement.MicroElement;
+import com.thinkaurelius.faunus.FaunusPathElement.MicroElement;
 import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -74,15 +74,15 @@ public class FaunusSerializer {
         edge.setLabel(readFaunusType(in));
     }
 
-    public void readElement(final FaunusElement element, final DataInput in) throws IOException {
+    public void readElement(final FaunusPathElement element, final DataInput in) throws IOException {
         readElement(element, false, null, in);
     }
 
-    public void writeElement(final FaunusElement element, final DataOutput out) throws IOException {
+    public void writeElement(final FaunusPathElement element, final DataOutput out) throws IOException {
         writeElement(element, false, null, out);
     }
 
-    public Schema readElement(final FaunusElement element, final boolean readSchema, Schema schema, final DataInput in) throws IOException {
+    public Schema readElement(final FaunusPathElement element, final boolean readSchema, Schema schema, final DataInput in) throws IOException {
         element.id = WritableUtils.readVLong(in);
         if (readSchema) {
             assert schema==null;
@@ -98,7 +98,7 @@ public class FaunusSerializer {
         return schema;
     }
 
-    private void writeElement(final FaunusElement element, final boolean writeSchema, final Schema schema, final DataOutput out) throws IOException {
+    private void writeElement(final FaunusPathElement element, final boolean writeSchema, final Schema schema, final DataOutput out) throws IOException {
         WritableUtils.writeVLong(out, element.id);
         if (writeSchema) {
             assert schema!=null;
@@ -112,16 +112,17 @@ public class FaunusSerializer {
         writeProperties(element.properties, schema, out);
     }
 
-    private void writeProperties(final Multimap<FaunusType, Object> properties, final Schema schema, final DataOutput out) throws IOException {
+    private void writeProperties(final Multimap<FaunusType, FaunusProperty> properties, final Schema schema, final DataOutput out) throws IOException {
         if (properties.isEmpty())
             WritableUtils.writeVInt(out, 0);
         else {
 //            WritableUtils.writeVInt(out, properties.size());
             final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serializer.getDataOutput(properties.size()*40, true);
-            for (final Map.Entry<FaunusType, Object> entry : properties.entries()) {
-                if (schema==null) writeFaunusType(entry.getKey(),o);
-                else VariableLong.writePositive(o,schema.getTypeId(entry.getKey()));
-                o.writeClassAndObject(entry.getValue());
+            for (final FaunusProperty property : properties.values()) {
+                VariableLong.writePositive(o,property.getIdAsLong());
+                if (schema==null) writeFaunusType(property.getType(),o);
+                else VariableLong.writePositive(o,schema.getTypeId(property.getType()));
+                o.writeClassAndObject(property.getValue());
             }
             final StaticBuffer buffer = o.getStaticBuffer();
             WritableUtils.writeVInt(out, buffer.length());
@@ -129,22 +130,23 @@ public class FaunusSerializer {
         }
     }
 
-    private Multimap<FaunusType, Object> readProperties(final Schema schema, final DataInput in) throws IOException {
+    private Multimap<FaunusType, FaunusProperty> readProperties(final Schema schema, final DataInput in) throws IOException {
         final int numPropertyBytes = WritableUtils.readVInt(in);
         if (numPropertyBytes == 0)
             return FaunusElement.NO_PROPERTIES;
         else {
-            final Multimap<FaunusType, Object> properties = HashMultimap.create();
+            final Multimap<FaunusType, FaunusProperty> properties = HashMultimap.create();
 //            byte[] bytes = new byte[WritableUtils.readVInt(in)];
             byte[] bytes = new byte[numPropertyBytes];
             in.readFully(bytes);
             final ReadBuffer buffer = new ReadByteBuffer(bytes);
             while (buffer.hasRemaining()) {
                 FaunusType type;
+                long id = VariableLong.readPositive(buffer);
                 if (schema==null) type = readFaunusType(buffer);
                 else type = schema.getType(VariableLong.readPositive(buffer));
                 Object value = serializer.readClassAndObject(buffer);
-                properties.put(type,value);
+                properties.put(type,new FaunusProperty(id,type,value));
             }
             return properties;
         }
@@ -312,12 +314,12 @@ public class FaunusSerializer {
 
 
     static {
-        WritableComparator.define(FaunusElement.class, new Comparator());
+        WritableComparator.define(FaunusPathElement.class, new Comparator());
     }
 
     public static class Comparator extends WritableComparator {
         public Comparator() {
-            super(FaunusElement.class);
+            super(FaunusPathElement.class);
         }
 
         @Override
@@ -345,7 +347,7 @@ public class FaunusSerializer {
     public void writeVertex(final Vertex vertex, final ElementIdHandler elementIdHandler, final DataOutput out) throws IOException {
         Schema schema = new Schema();
         //Convert properties and update schema
-        Multimap<FaunusType,Object> properties = getProperties(vertex);
+        Multimap<FaunusType,FaunusProperty> properties = getProperties(vertex);
         for (FaunusType type : properties.keySet()) schema.add(type);
         for (Edge edge : vertex.getEdges(Direction.BOTH)) {
             schema.add(edge.getLabel());
@@ -362,11 +364,11 @@ public class FaunusSerializer {
 
     }
 
-    private Multimap<FaunusType,Object> getProperties(Element element) {
-        Multimap<FaunusType,Object> properties = HashMultimap.create();
+    private Multimap<FaunusType,FaunusProperty> getProperties(Element element) {
+        Multimap<FaunusType,FaunusProperty> properties = HashMultimap.create();
         for (String key : element.getPropertyKeys()) {
             FaunusType type = types.get(key);
-            properties.put(type,element.getProperty(key));
+            properties.put(type,new FaunusProperty(type,element.getProperty(key)));
         }
         return properties;
     }

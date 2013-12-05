@@ -18,7 +18,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusEdge extends FaunusElement implements Edge {
+public class FaunusEdge extends FaunusPathElement implements Edge {
 
     protected long outVertex;
     protected long inVertex;

@@ -1,10 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.*;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -46,7 +42,7 @@ public class VerticesEdgesMapReduce {
         private String[] labels;
         private boolean pathEnabled;
 
-        private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
         private FaunusEdge edge;
 
@@ -71,7 +67,7 @@ public class VerticesEdgesMapReduce {
                         this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
                         if (this.pathEnabled) {
-                            final List<List<FaunusElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
                             this.edge.addPaths(paths, false);
                         } else {
@@ -90,7 +86,7 @@ public class VerticesEdgesMapReduce {
                         this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
                         if (this.pathEnabled) {
-                            final List<List<FaunusElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
+                            final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
                             this.edge.addPaths(paths, false);
                         } else {
@@ -113,10 +109,10 @@ public class VerticesEdgesMapReduce {
         }
 
         // TODO: this is horribly inefficient due to an efficiency of object reuse in path calculations
-        private List<List<FaunusElement.MicroElement>> clonePaths(final FaunusVertex vertex, final FaunusEdge.MicroEdge edge) {
-            final List<List<FaunusElement.MicroElement>> paths = new ArrayList<List<FaunusElement.MicroElement>>();
-            for (List<FaunusElement.MicroElement> path : vertex.getPaths()) {
-                final List<FaunusElement.MicroElement> p = new ArrayList<FaunusElement.MicroElement>();
+        private List<List<FaunusPathElement.MicroElement>> clonePaths(final FaunusVertex vertex, final FaunusEdge.MicroEdge edge) {
+            final List<List<FaunusPathElement.MicroElement>> paths = new ArrayList<List<FaunusPathElement.MicroElement>>();
+            for (List<FaunusPathElement.MicroElement> path : vertex.getPaths()) {
+                final List<FaunusPathElement.MicroElement> p = new ArrayList<FaunusPathElement.MicroElement>();
                 p.addAll(path);
                 p.add(edge);
                 paths.add(p);

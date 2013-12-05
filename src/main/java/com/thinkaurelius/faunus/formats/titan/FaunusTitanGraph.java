@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.formats.titan;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusProperty;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -47,7 +48,7 @@ public class FaunusTitanGraph {
                 RelationCache relation = relationReader.parseRelation(vertexId, data, false, typeManager);
                 TitanType type = typeManager.getExistingType(relation.typeId);
                 if (type == SystemKey.TypeClass) {
-                    isSystemType = true;
+                    isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
                 } else if (type == SystemKey.VertexState) {
                     foundVertexState = true;
                 }
@@ -57,10 +58,7 @@ public class FaunusTitanGraph {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    if (type.isUnique(Direction.OUT))
-                        vertex.setProperty(type.getName(), value);
-                    else
-                        vertex.addProperty(type.getName(), value);
+                    vertex.addProperty(new FaunusProperty(relation.relationId,type.getName(),value));
                 } else {
                     assert type.isEdgeLabel();
                     FaunusEdge edge = null;

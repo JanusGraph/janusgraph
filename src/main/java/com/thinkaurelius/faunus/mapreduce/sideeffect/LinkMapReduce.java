@@ -1,10 +1,6 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
-import com.thinkaurelius.faunus.FaunusEdge;
-import com.thinkaurelius.faunus.FaunusElement;
-import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.*;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
@@ -60,7 +56,7 @@ public class LinkMapReduce {
         private Direction direction;
         private String label;
         private int step;
-        private final Holder<FaunusElement> holder = new Holder<FaunusElement>();
+        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
         private boolean mergeDuplicates;
         private String mergeWeightKey;
@@ -88,7 +84,7 @@ public class LinkMapReduce {
                 long edgesCreated = 0;
                 if (this.mergeDuplicates) {
                     final CounterMap<Long> map = new CounterMap<Long>();
-                    for (final List<FaunusElement.MicroElement> path : value.getPaths()) {
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
                         map.incr(path.get(this.step).getId(), 1);
                     }
                     for (java.util.Map.Entry<Long, Long> entry : map.entrySet()) {
@@ -109,7 +105,7 @@ public class LinkMapReduce {
                         context.write(this.longWritable, this.holder.set('e', edge));
                     }
                 } else {
-                    for (final List<FaunusElement.MicroElement> path : value.getPaths()) {
+                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
                         final long linkElementId = path.get(this.step).getId();
                         final FaunusEdge edge;
                         if (this.direction.equals(IN))
