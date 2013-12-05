@@ -49,9 +49,10 @@ public class JUnitBenchmarkProvider {
     public static final String ENV_EFFORT_FILE  = "JUB_EFFORT_FILE";
     public static final String ENV_DEFAULT_ROUNDS = "JUB_DEFAULT_ROUNDS";
     public static final String ENV_WARMUP_ROUNDS = "JUB_WARMUP_ROUNDS";
+    public static final String ENV_TARGET_RUNTIME_MS = "JUB_TARGET_RUNTIME_MS";
     
     public static final String DEFAULT_EFFORT_FILE = "../titan-test/data/jub-effort.txt";
-    public static final long TARGET_RUNTIME_MS = 5000L;
+    public static final long TARGET_RUNTIME_MS;
     public static final int DEFAULT_ROUNDS;
     public static final int WARMUP_ROUNDS;
     
@@ -62,6 +63,7 @@ public class JUnitBenchmarkProvider {
         efforts = loadScalarsFromEnvironment();
         DEFAULT_ROUNDS = loadIntFromEnvironment(ENV_DEFAULT_ROUNDS, 1);
         WARMUP_ROUNDS = loadIntFromEnvironment(ENV_WARMUP_ROUNDS, 1);
+        TARGET_RUNTIME_MS = loadIntFromEnvironment(ENV_TARGET_RUNTIME_MS, 5000);
     }
     
     /**
