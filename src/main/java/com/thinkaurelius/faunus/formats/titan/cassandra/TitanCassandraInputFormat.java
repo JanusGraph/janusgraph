@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import org.apache.cassandra.hadoop.ColumnFamilyInputFormat;
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.cassandra.hadoop.ConfigHelper;
@@ -44,8 +45,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        Setup setup = super.setupConfiguration(config);
-        this.graph = new FaunusTitanCassandraGraph(setup.serializer, setup.types);
+        this.graph = new FaunusTitanCassandraGraph(titanSetup.getRelationReader(),titanSetup.getTypeInspector());
 
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);
@@ -61,7 +61,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     private SliceRange getSliceRange(final VertexQueryFilter inputFilter, final int limit) {
-        final SliceQuery slice = TitanInputFormat.inputSlice(inputFilter);
+        final SliceQuery slice = titanSetup.inputSlice(inputFilter);
         final SliceRange sliceRange = new SliceRange();
         sliceRange.setStart(slice.getSliceStart().asByteBuffer());
         sliceRange.setFinish(slice.getSliceEnd().asByteBuffer());

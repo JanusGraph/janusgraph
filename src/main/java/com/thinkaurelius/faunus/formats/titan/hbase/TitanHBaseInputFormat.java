@@ -48,8 +48,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        Setup setup = super.setupConfiguration(config);
-        this.graph = new FaunusTitanHBaseGraph(setup.serializer,setup.types);
+        this.graph = new FaunusTitanHBaseGraph(titanSetup.getRelationReader(),titanSetup.getTypeInspector());
 
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
@@ -76,7 +75,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     }
 
     private Filter getColumnFilter(VertexQueryFilter inputFilter) {
-        return HBaseKeyColumnValueStore.getFilter(TitanInputFormat.inputSlice(inputFilter));
+        return HBaseKeyColumnValueStore.getFilter(titanSetup.inputSlice(inputFilter));
     }
 
     @Override

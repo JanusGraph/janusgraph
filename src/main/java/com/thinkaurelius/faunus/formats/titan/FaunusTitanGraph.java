@@ -7,25 +7,17 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
+import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
-import org.apache.commons.configuration.Configuration;
-
-import java.nio.ByteBuffer;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
  * The backend agnostic Titan graph reader for pulling a graph of Titan and into Faunus.
@@ -36,11 +28,11 @@ import java.util.Map;
 
 public class FaunusTitanGraph {
 
-    private final EdgeSerializer edgeSerializer;
-    private final TypeReferenceContainer typeManager;
+    private final RelationReader relationReader;
+    private final TypeInspector typeManager;
 
-    public FaunusTitanGraph(final Serializer serializer, final TypeReferenceContainer types) {
-        this.edgeSerializer = new EdgeSerializer(serializer);
+    public FaunusTitanGraph(final RelationReader relationReader, final TypeInspector types) {
+        this.relationReader = relationReader;
         typeManager = types;
     }
 
@@ -52,7 +44,7 @@ public class FaunusTitanGraph {
         boolean foundVertexState = false;
         for (final Entry data : entries) {
             try {
-                RelationCache relation = edgeSerializer.parseRelation(vertexId, data, false, typeManager);
+                RelationCache relation = relationReader.parseRelation(vertexId, data, false, typeManager);
                 TitanType type = typeManager.getExistingType(relation.typeId);
                 if (type == SystemKey.TypeClass) {
                     isSystemType = true;
