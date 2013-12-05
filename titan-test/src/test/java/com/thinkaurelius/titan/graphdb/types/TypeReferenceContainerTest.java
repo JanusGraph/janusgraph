@@ -6,6 +6,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.reference.TitanTypeReference;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
@@ -13,6 +15,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +23,7 @@ import org.junit.Test;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -103,6 +107,19 @@ public class TypeReferenceContainerTest {
 
         TypeReferenceContainer types2 = new TypeReferenceContainer(config);
         verifyTypes(types2);
+
+        String filename = "target" + File.separator + "schema.json";
+        types.exportToFile(filename);
+
+        TypeReferenceContainer types3 = new TypeReferenceContainer(filename);
+        verifyTypes(types3);
+
+        FileUtils.deleteQuietly(new File(filename));
+
+        TitanGraph graph2 = StorageSetup.getInMemoryGraph();
+        types3.installInGraph(graph2);
+        verifyTypes((StandardTitanTx)graph2.newTransaction());
+        graph2.shutdown();
 
     }
 

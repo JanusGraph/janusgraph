@@ -46,9 +46,9 @@ public class TypeAttribute {
         assert definition != null;
         Set<TypeAttributeType> keys = definition.keySet();
         for (TypeAttributeType type : types) {
-           assert keys.contains(type);
+           assert keys.contains(type) : type + " not in " + definition;
         }
-        assert keys.size() == types.size();
+        assert keys.size() == types.size() : keys.size() + " vs " + types.size() + " : " + keys.toString();
     }
 
     public static class Map extends EnumMap<TypeAttributeType,Object> {

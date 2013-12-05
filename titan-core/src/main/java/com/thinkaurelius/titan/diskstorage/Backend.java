@@ -326,34 +326,13 @@ public class Backend {
         return builder.build();
     }
 
-    public final static <T> T instantiate(String clazzname, Object... constructorArgs) {
-        try {
-            Class clazz = Class.forName(clazzname);
-            Constructor constructor = clazz.getConstructor(Configuration.class);
-            T instance = (T) constructor.newInstance(constructorArgs);
-            return instance;
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could not find implementation class: " + clazzname);
-        } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("Configured backend implementation does not have required constructor: " + clazzname);
-        } catch (InstantiationException e) {
-            throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
-        } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
-        } catch (InvocationTargetException e) {
-            throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
-        } catch (ClassCastException e) {
-            throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
-        }
-    }
-
     public final static <T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String, String> registeredImpls) {
         String clazzname = config.getString(key, defaultValue);
         if (registeredImpls.containsKey(clazzname.toLowerCase())) {
             clazzname = registeredImpls.get(clazzname.toLowerCase());
         }
 
-        return instantiate(clazzname, config);
+        return ConfigurationUtil.instantiate(clazzname, new Object[]{config}, new Class[]{Configuration.class});
     }
 
     //1. Store

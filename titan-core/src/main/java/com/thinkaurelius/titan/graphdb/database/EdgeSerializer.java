@@ -35,7 +35,7 @@ import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class EdgeSerializer {
+public class EdgeSerializer implements RelationReader {
     @SuppressWarnings("unused")
     private static final Logger logger = LoggerFactory.getLogger(EdgeSerializer.class);
 
@@ -49,29 +49,6 @@ public class EdgeSerializer {
         this.serializer = serializer;
     }
 
-    //Used by Faunus - DON'T REMOVE
-    public void readRelation(RelationFactory factory, Entry data, TypeInspector tx) {
-        RelationCache relation = readRelation(factory.getVertexID(), data, false, tx);
-        assert relation.hasProperties();
-
-        factory.setDirection(relation.direction);
-        TitanType type = tx.getExistingType(relation.typeId);
-        factory.setType(type);
-        factory.setRelationID(relation.relationId);
-        if (type.isPropertyKey()) {
-            factory.setValue(relation.getValue());
-        } else if (type.isEdgeLabel()) {
-            factory.setOtherVertexID(relation.getOtherVertexId());
-        } else throw new AssertionError();
-        //Add properties
-        for (LongObjectCursor<Object> entry : relation) {
-            TitanType pt = tx.getExistingType(entry.key);
-            if (entry.value != null) {
-                factory.addProperty(pt, entry.value);
-            }
-        }
-    }
-
     public RelationCache readRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         RelationCache map = data.getCache();
         if (map == null || !(parseHeaderOnly || map.hasProperties())) {
@@ -80,7 +57,6 @@ public class EdgeSerializer {
         }
         return map;
     }
-
 
     public Direction parseDirection(Entry data) {
         RelationCache map = data.getCache();
@@ -98,6 +74,7 @@ public class EdgeSerializer {
         }
     }
 
+    @Override
     public RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
         assert vertexid > 0;
 

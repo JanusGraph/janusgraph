@@ -208,15 +208,15 @@ public class TypeReferenceContainer implements TypeInspector {
             definition.setValue(tat,value);
         }
 
-        for (TypeAttributeType key : new TypeAttributeType[]{TypeAttributeType.SIGNATURE,TypeAttributeType.SORT_KEY}) {
-            if (definition.getValue(key)==null) definition.setValue(key,new long[0]);
-        }
-        if (definition.getValue(TypeAttributeType.INDEXES)==null) {
-            definition.setValue(TypeAttributeType.INDEXES,new IndexType[0]);
-        }
-        if (definition.getValue(TypeAttributeType.INDEX_PARAMETERS)==null) {
-            definition.setValue(TypeAttributeType.INDEX_PARAMETERS,new IndexParameters[0]);
-        }
+//        for (TypeAttributeType key : new TypeAttributeType[]{TypeAttributeType.SIGNATURE,TypeAttributeType.SORT_KEY}) {
+//            if (definition.getValue(key)==null) definition.setValue(key,new long[0]);
+//        }
+//        if (definition.getValue(TypeAttributeType.INDEXES)==null) {
+//            definition.setValue(TypeAttributeType.INDEXES,new IndexType[0]);
+//        }
+//        if (definition.getValue(TypeAttributeType.INDEX_PARAMETERS)==null) {
+//            definition.setValue(TypeAttributeType.INDEX_PARAMETERS,new IndexParameters[0]);
+//        }
 
         switch(typeClass) {
             case KEY: return new TitanKeyReference(id,name,definition);
@@ -313,7 +313,7 @@ public class TypeReferenceContainer implements TypeInspector {
                     newType = tx.makePropertyKey(baseType.getName(),baseType.getDefinition());
                 } else {
                     assert baseType instanceof TitanLabel;
-                    newType = tx.makePropertyKey(baseType.getName(),baseType.getDefinition());
+                    newType = tx.makeEdgeLabel(baseType.getName(),baseType.getDefinition());
                 }
                 Preconditions.checkNotNull(newType);
                 typeMapping.put(baseType.getID(),newType.getID());
@@ -339,7 +339,7 @@ public class TypeReferenceContainer implements TypeInspector {
                     newType = tx.makePropertyKey(name,definition);
                 } else {
                     assert baseType instanceof TitanLabel;
-                    newType = tx.makePropertyKey(name,definition);
+                    newType = tx.makeEdgeLabel(name,definition);
                 }
             }
         } finally {
