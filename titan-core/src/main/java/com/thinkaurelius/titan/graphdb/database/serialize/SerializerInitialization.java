@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.FullDouble;
 import com.thinkaurelius.titan.core.attribute.FullFloat;
@@ -53,6 +54,7 @@ public class SerializerInitialization {
         serializer.registerClass(Parameter[].class,KRYO_OFFSET + 34);
         serializer.registerClass(IndexParameters.class,KRYO_OFFSET + 35);
         serializer.registerClass(IndexParameters[].class,KRYO_OFFSET + 36);
+        serializer.registerClass(Order.class,KRYO_OFFSET + 37);
 
         Preconditions.checkArgument(KRYO_OFFSET + 50 < RESERVED_ID_OFFSET, "ID allocation overflow!");
     }
