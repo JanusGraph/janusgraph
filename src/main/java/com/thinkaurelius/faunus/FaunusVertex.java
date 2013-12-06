@@ -87,13 +87,13 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
     //##################################
 
     @Override
-    public void addProperty(FaunusProperty property) {
-        super.addProperty(property);
+    public FaunusProperty addProperty(FaunusProperty property) {
+        return super.addProperty(property);
     }
 
-    public void addProperty(final String key, final Object value) {
+    public FaunusProperty addProperty(final String key, final Object value) {
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        addProperty(new FaunusProperty(type, value));
+        return addProperty(new FaunusProperty(type, value));
     }
 
     public <T> Iterable<T> getProperties(final String key) {
@@ -129,6 +129,10 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         }
     }
 
+    static boolean containsUndeletedEdge(ListMultimap<FaunusType,FaunusEdge> adj, FaunusType type) {
+        return !Iterables.isEmpty(Iterables.filter(adj.get(type),FILTER_DELETED_EDGES));
+    }
+
     public Set<FaunusType> getEdgeLabels(final Direction direction) {
         if (direction==BOTH) {
             return Sets.union(getEdgeLabels(IN),getEdgeLabels(OUT));
@@ -136,7 +140,7 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
             return Sets.filter(getAdjacency(direction).keySet(), new Predicate<FaunusType>() {
                 @Override
                 public boolean apply(@Nullable FaunusType faunusType) {
-                    return !faunusType.isHidden() && !Iterables.isEmpty(Iterables.filter(getAdjacency(direction).get(faunusType),FILTER_DELETED_EDGES));
+                    return !faunusType.isHidden() && containsUndeletedEdge(getAdjacency(direction),faunusType);
                 }
             });
         }
@@ -198,9 +202,6 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         return (Iterable)new EdgeList(edgeLists);
     }
 
-    public Iterable<FaunusEdge> getAllEdges() {
-        return Iterables.concat(outEdges.values(),inEdges.values());
-    }
 
     private void addEdges(final Direction direction, final FaunusType label, final List<FaunusEdge> edges) {
         getAdjacency(direction).putAll(label,edges);
@@ -238,8 +239,24 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         for (Direction dir : PROPER_DIR) {
             Iterator<FaunusEdge> edges = getAdjacency(dir).values().iterator();
             while (edges.hasNext()) {
-                if (ids.contains(edges.next().getVertexId(dir.opposite())))
-                    edges.remove();
+                FaunusEdge edge = edges.next();
+                if (ids.contains(edge.getVertexId(dir.opposite()))) {
+                    if (edge.isNew()) edges.remove();
+                    edge.setState(ElementState.DELETED);
+                }
+            }
+        }
+    }
+
+    private void removeAllEdges(final Direction dir, Iterable<FaunusType> types) {
+        types = Lists.newArrayList(types);
+        ListMultimap<FaunusType,FaunusEdge> adj = getAdjacency(dir);
+        for (FaunusType type : types) {
+            Iterator<FaunusEdge> iter = adj.get(type).iterator();
+            while (iter.hasNext()) {
+                FaunusEdge edge = iter.next();
+                if (edge.isNew()) iter.remove();
+                edge.setState(ElementState.DELETED);
             }
         }
     }
@@ -255,18 +272,18 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
                     if (labels.size() > 0) {
                         Set<FaunusType> removal = Sets.newHashSet(adj.keySet());
                         removal.removeAll(labels);
-                        for (FaunusType type : removal) adj.removeAll(type);
+                        removeAllEdges(dir,removal);
                     } else if (direction==dir)
-                        getAdjacency(dir.opposite()).clear();
+                        removeAllEdges(dir.opposite(),getAdjacency(dir.opposite()).keySet());
                 }
             }
         } else {
             assert action.equals(Tokens.Action.DROP);
             for (Direction dir : PROPER_DIR) {
                 if (direction==BOTH || direction==dir) {
-                    if (labels.isEmpty()) getAdjacency(dir).clear();
+                    if (labels.isEmpty()) removeAllEdges(dir,getAdjacency(dir).keySet());
                     else {
-                        for (FaunusType label: labels) getAdjacency(dir).removeAll(label);
+                        removeAllEdges(dir,labels);
                     }
                 }
             }
@@ -294,6 +311,10 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         }
 
         public FaunusEdge get(final int index) {
+            throw new UnsupportedOperationException();
+        }
+
+        public FaunusEdge getDirect(final int index) {
             int lowIndex = 0;
             int highIndex = 0;
             for (final List<FaunusEdge> temp : this.edges) {
@@ -328,7 +349,7 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
 
                 private int findNext(int current) {
                     int next = current+1;
-                    while (next<fullsize && get(next).isDeleted()) next++;
+                    while (next<fullsize && getDirect(next).isDeleted()) next++;
                     return next;
                 }
 
@@ -341,15 +362,19 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
                 public FaunusEdge next() {
                     current = next;
                     next = findNext(current);
-                    return get(current);
+                    return getDirect(current);
                 }
 
                 @Override
                 public void remove() {
-                    removeList(current);
+                    FaunusEdge toDelete = getDirect(current);
+                    if (toDelete.isNew()) {
+                        removeList(current);
+                        next--;
+                        fullsize--;
+                    }
+                    toDelete.setState(ElementState.DELETED);
                     current = -1;
-                    next--;
-                    fullsize--;
                     size--;
                 }
             };

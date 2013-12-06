@@ -60,7 +60,7 @@ public class FaunusVertexTest extends BaseTest {
         // properties size 1 byte (variable int)
         // out edge types size 1 byte (variable int)
         // in edge types size 1 byte (variable int)
-        assertEquals(7, bytes.toByteArray().length);
+        assertEquals(8, bytes.toByteArray().length);
         FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 0 properties has a byte size of: " + bytes.toByteArray().length);
 

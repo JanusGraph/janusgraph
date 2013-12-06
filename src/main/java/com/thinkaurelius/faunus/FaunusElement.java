@@ -44,7 +44,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
 
     protected long id;
     protected Multimap<FaunusType, FaunusProperty> properties = NO_PROPERTIES;
-    protected ElementState state = ElementState.LOADED;
+    protected ElementState state = ElementState.NEW;
 
 
     public FaunusElement(final long id) {
@@ -54,6 +54,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
     protected FaunusElement reuse(final long id) {
         this.id = id;
         this.properties = NO_PROPERTIES;
+        this.state = ElementState.NEW;
         return this;
     }
 
@@ -76,7 +77,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         schema.addAll(properties.keySet());
     }
 
-    void setState(ElementState state) {
+    public void setState(ElementState state) {
         Preconditions.checkNotNull(state);
         this.state=state;
     }
@@ -93,8 +94,8 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         return state==ElementState.DELETED;
     }
 
-    public boolean isModified() {
-        return state!=ElementState.LOADED;
+    public boolean isLoaded() {
+        return state==ElementState.LOADED;
     }
 
     //##################################
@@ -105,23 +106,45 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         if (properties==NO_PROPERTIES) properties = HashMultimap.create();
     }
 
-    protected void addProperty(final FaunusProperty property) {
-        Preconditions.checkNotNull(property);
-        ElementHelper.validateProperty(this, property.getType().getName(), property.getValue());
-        //TODO: property.setState(ElementState.NEW) ???
-        initializeProperties();
-        this.properties.put(property.getType(),property);
-    }
-
     protected <T> T getImplicitProperty(final FaunusType type) {
         assert type.isImplicit();
         return null;
     }
 
+    protected FaunusProperty addProperty(final FaunusProperty property) {
+        Preconditions.checkNotNull(property);
+        ElementHelper.validateProperty(this, property.getType().getName(), property.getValue());
+        initializeProperties();
+        if (properties.containsEntry(property.getType(),property)) {
+            //Need to consolidate element states
+            FaunusProperty old = Iterables.getOnlyElement(Iterables.filter(properties.get(property.getType()),new Predicate<FaunusProperty>() {
+                @Override
+                public boolean apply(@Nullable FaunusProperty faunusProperty) {
+                    return faunusProperty.equals(property);
+                }
+            }));
+            if (property.isNew() && old.isDeleted()) {
+                old.setState(ElementState.LOADED);
+            } else if (property.isLoaded() && old.isNew()) {
+                old.setState(ElementState.LOADED);
+            }
+            return old;
+        } else {
+            properties.put(property.getType(),property);
+            return property;
+        }
+    }
+
     @Override
     public void setProperty(final String key, final Object value) {
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        if (!this.properties.isEmpty()) this.properties.removeAll(type);
+        //Mark all existing ones for the type as deleted
+        Iterator<FaunusProperty> props = properties.get(type).iterator();
+        while (props.hasNext()) {
+            FaunusProperty p = props.next();
+            if (p.isNew()) props.remove();
+            else p.setState(ElementState.DELETED);
+        }
         addProperty(new FaunusProperty(type, value));
     }
 
@@ -129,13 +152,15 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
     public <T> T removeProperty(final String key) {
         if (properties.isEmpty()) return null;
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
+
         List<FaunusProperty>  removed = Lists.newArrayList();
-        for (FaunusProperty p : properties.get(type)) {
-            if (p.isDeleted()) continue;
-            p.setState(ElementState.DELETED);
-            removed.add(p);
+        Iterator<FaunusProperty> props = properties.get(type).iterator();
+        while (props.hasNext()) {
+            FaunusProperty p = props.next();
+            if (!p.isDeleted()) removed.add(p);
+            if (p.isNew()) props.remove();
+            else p.setState(ElementState.DELETED);
         }
-        properties.removeAll(type);
         if (removed.isEmpty()) return null;
         else if (removed.size()==1) return (T)removed.iterator().next().getValue();
         else return (T)removed;
@@ -175,12 +200,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         return result;
     }
 
-    public Collection<FaunusProperty> getAllProperties() {
-        return properties.values();
-    }
-
     public void addAllProperties(Iterable<FaunusProperty> properties) {
-        //TODO: Should those be marked as NEW?
         for (FaunusProperty p : properties) addProperty(p);
     }
 
