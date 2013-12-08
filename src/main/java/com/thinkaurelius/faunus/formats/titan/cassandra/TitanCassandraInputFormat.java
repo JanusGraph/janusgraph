@@ -45,7 +45,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        this.graph = new FaunusTitanCassandraGraph(titanSetup.getRelationReader(),titanSetup.getTypeInspector());
+        this.graph = new FaunusTitanCassandraGraph(titanSetup);
 
         config.set("cassandra.input.keyspace", config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_KEYSPACE));
         ConfigHelper.setInputColumnFamily(config, ConfigHelper.getInputKeyspace(config), Backend.EDGESTORE_NAME);

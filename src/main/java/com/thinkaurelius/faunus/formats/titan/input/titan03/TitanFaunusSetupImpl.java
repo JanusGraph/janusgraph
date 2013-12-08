@@ -3,15 +3,19 @@ package com.thinkaurelius.faunus.formats.titan.input.titan03;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
+import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetupCommon;
+import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.FullDouble;
 import com.thinkaurelius.titan.core.attribute.FullFloat;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.reference.TitanKeyReference;
@@ -49,13 +53,7 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
 
     public TitanFaunusSetupImpl(final Configuration config) {
         BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
-        titan03.org.apache.commons.configuration.BaseConfiguration copyConfig = new titan03.org.apache.commons.configuration.BaseConfiguration();
-        Iterator<String> keys = titan.getKeys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            copyConfig.setProperty(key,titan.getProperty(key));
-        }
-        graphConfig = new GraphDatabaseConfiguration(copyConfig);
+        graphConfig = new GraphDatabaseConfiguration(titan);
         graph = new StandardTitanGraph(graphConfig);
         tx = (StandardTitanTx)graph.newTransaction();
     }
@@ -186,6 +184,39 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
         else if (clazz.equals(titan03.com.thinkaurelius.titan.core.attribute.FullDouble.class)) return FullDouble.class;
         else if (clazz.equals(titan03.com.thinkaurelius.titan.core.attribute.FullFloat.class)) return FullFloat.class;
         else return clazz;
+    }
+
+    @Override
+    public SystemTypeInspector getSystemTypeInspector() {
+        return new SystemTypeInspector() {
+            @Override
+            public boolean isSystemType(long typeid) {
+                return isVertexExistsSystemType(typeid) || isTypeSystemType(typeid);
+            }
+
+            @Override
+            public boolean isVertexExistsSystemType(long typeid) {
+                return typeid == SystemKey.VertexState.getID();
+            }
+
+            @Override
+            public boolean isTypeSystemType(long typeid) {
+                return typeid == SystemKey.TypeClass.getID() ||
+                        typeid == SystemKey.PropertyKeyDefinition.getID() ||
+                        typeid == SystemKey.RelationTypeDefinition.getID() ||
+                        typeid == SystemKey.TypeName.getID();
+            }
+        };
+    }
+
+    @Override
+    public VertexReader getVertexReader() {
+        return new VertexReader() {
+            @Override
+            public long getVertexId(StaticBuffer key) {
+                return IDHandler.getKeyID(key);
+            }
+        };
     }
 
 

@@ -3,19 +3,14 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.FaunusTitanGraph;
+import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -26,8 +21,8 @@ import java.util.NavigableMap;
 
 public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
 
-    public FaunusTitanHBaseGraph(RelationReader relationReader, TypeInspector types) {
-        super(relationReader, types);
+    public FaunusTitanHBaseGraph(TitanFaunusSetup setup) {
+        super(setup);
     }
 
     public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {

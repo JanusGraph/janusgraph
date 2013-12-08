@@ -6,18 +6,15 @@ import com.thinkaurelius.faunus.ElementState;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusProperty;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
+import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
+import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 
@@ -32,14 +29,18 @@ public class FaunusTitanGraph {
 
     private final RelationReader relationReader;
     private final TypeInspector typeManager;
+    private final SystemTypeInspector systemTypes;
+    private final VertexReader vertexReader;
 
-    public FaunusTitanGraph(final RelationReader relationReader, final TypeInspector types) {
-        this.relationReader = relationReader;
-        typeManager = types;
+    public FaunusTitanGraph(final TitanFaunusSetup setup) {
+        this.relationReader = setup.getRelationReader();
+        this.typeManager = setup.getTypeInspector();
+        this.systemTypes = setup.getSystemTypeInspector();
+        this.vertexReader = setup.getVertexReader();
     }
 
     protected FaunusVertex readFaunusVertex(final StaticBuffer key, Iterable<Entry> entries) {
-        final long vertexId = IDHandler.getKeyID(key);
+        final long vertexId = vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
         FaunusVertex vertex = new FaunusVertex(vertexId);
         vertex.setState(ElementState.LOADED);
@@ -48,14 +49,14 @@ public class FaunusTitanGraph {
         for (final Entry data : entries) {
             try {
                 RelationCache relation = relationReader.parseRelation(vertexId, data, false, typeManager);
-                TitanType type = typeManager.getExistingType(relation.typeId);
-                if (type == SystemKey.TypeClass) {
+                if (systemTypes.isTypeSystemType(relation.typeId)) {
                     isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
-                } else if (type == SystemKey.VertexState) {
+                } else if (systemTypes.isVertexExistsSystemType(relation.typeId)) {
                     foundVertexState = true;
                 }
-                if (type instanceof SystemType) continue; //Ignore system types
+                if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
+                TitanType type = typeManager.getExistingType(relation.typeId);
                 if (type.isPropertyKey()) {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();

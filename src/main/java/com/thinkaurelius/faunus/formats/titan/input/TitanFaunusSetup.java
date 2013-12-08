@@ -21,7 +21,11 @@ public interface TitanFaunusSetup {
 
     public TypeInspector getTypeInspector();
 
+    public SystemTypeInspector getSystemTypeInspector();
+
     public RelationReader getRelationReader();
+
+    public VertexReader getVertexReader();
 
     public SliceQuery inputSlice(final VertexQueryFilter inputFilter);
 

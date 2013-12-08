@@ -3,8 +3,10 @@ package com.thinkaurelius.faunus.formats.titan.input.current;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
+import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetupCommon;
+import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -18,6 +20,8 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
@@ -47,6 +51,38 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
         }
         Preconditions.checkNotNull(types);
         return types;
+    }
+
+    @Override
+    public SystemTypeInspector getSystemTypeInspector() {
+        return new SystemTypeInspector() {
+            @Override
+            public boolean isSystemType(long typeid) {
+                return SystemTypeManager.isSystemRelationType(typeid);
+            }
+
+            @Override
+            public boolean isVertexExistsSystemType(long typeid) {
+                return typeid == SystemKey.VertexState.getID();
+            }
+
+            @Override
+            public boolean isTypeSystemType(long typeid) {
+                return typeid == SystemKey.TypeClass.getID() ||
+                        typeid == SystemKey.TypeDefinition.getID() ||
+                        typeid == SystemKey.TypeName.getID();
+            }
+        };
+    }
+
+    @Override
+    public VertexReader getVertexReader() {
+        return new VertexReader() {
+            @Override
+            public long getVertexId(StaticBuffer key) {
+                return IDHandler.getKeyID(key);
+            }
+        };
     }
 
     @Override

@@ -118,6 +118,18 @@
             <version>0.3.3-SNAPSHOT</version>
             <classifier>shaded03</classifier>
         </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>0.3.3-SNAPSHOT</version>
+            <classifier>shaded03</classifier>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hbase</artifactId>
+            <version>0.3.3-SNAPSHOT</version>
+            <classifier>shaded03</classifier>
+        </dependency>
 
         <!-- RDF PARSING -->
         <dependency>

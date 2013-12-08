@@ -48,7 +48,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        this.graph = new FaunusTitanHBaseGraph(titanSetup.getRelationReader(),titanSetup.getTypeInspector());
+        this.graph = new FaunusTitanHBaseGraph(titanSetup);
 
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
