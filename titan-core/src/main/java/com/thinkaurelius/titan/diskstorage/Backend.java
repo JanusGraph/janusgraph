@@ -437,7 +437,9 @@ public class Backend {
         edgeIndexStore.close();
         idAuthority.close();
         storeManager.close();
-        threadPool.shutdown();
+        if(threadPool != null) {
+        	threadPool.shutdown();
+        }
         //Indexes
         for (IndexProvider index : indexes.values()) index.close();
     }
