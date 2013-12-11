@@ -18,10 +18,9 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.KCVSConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
@@ -263,9 +262,9 @@ public class Backend {
                                                         SYSTEM_PROPERTIES_IDENTIFIER);
             try {
                 systemConfig.setMaxOperationWaitTime(config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
-                version = systemConfig.getConfigurationProperty(TITAN_BACKEND_VERSION);
+                version = systemConfig.get(TITAN_BACKEND_VERSION,String.class);
                 if (version == null) {
-                    systemConfig.setConfigurationProperty(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                    systemConfig.set(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
                     version = TitanConstants.VERSION;
                 }
             } finally {
