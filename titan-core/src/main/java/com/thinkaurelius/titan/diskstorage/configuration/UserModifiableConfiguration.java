@@ -34,7 +34,7 @@ public class UserModifiableConfiguration {
                 }
             } else {
                 for (ConfigElement element : ns.getChildren()) {
-                    s.append(toString(element)).append("\n");
+                    s.append(toString(element,"")).append("\n");
                 }
             }
             return s.toString();
@@ -59,10 +59,12 @@ public class UserModifiableConfiguration {
         }
     }
 
-    private static String toString(ConfigElement element) {
+    private static String toString(ConfigElement element,String indent) {
         String result = element.getName();
         if (element.isNamespace()) {
-            return "+ " + result;
+            result = "+ " + result;
+            if (((ConfigNamespace)element).isUmbrella())
+                result += " [*]";
         } else {
             result = "- " + result;
             ConfigOption option = (ConfigOption)element;
@@ -78,8 +80,25 @@ public class UserModifiableConfiguration {
             result+=","+option.getDefaultValue();
             result+="]";
         }
+        result = indent + result + "\n" + indent;
         String desc = element.getDescription();
-        result+="\t"+desc.substring(0, Math.min(desc.length(), 30));
+        result+="\t"+'"'+desc.substring(0, Math.min(desc.length(), 30))+'"';
+        return result;
+    }
+
+    public static String toString(ConfigElement element) {
+        return toStringRecursive(element,"");
+    }
+
+    private static String toStringRecursive(ConfigElement element, String indent) {
+        String result = toString(element,indent) + "\n";
+        if (element.isNamespace()) {
+            ConfigNamespace ns = (ConfigNamespace)element;
+            indent += "\t";
+            for (ConfigElement child : ns.getChildren()) {
+                result += toStringRecursive(child,indent);
+            }
+        }
         return result;
     }
 

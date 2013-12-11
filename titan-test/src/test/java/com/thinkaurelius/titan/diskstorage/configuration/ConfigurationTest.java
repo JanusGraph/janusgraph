@@ -71,7 +71,7 @@ public class ConfigurationTest {
             config.set(retry,(short)100);
             fail();
         } catch (IllegalArgumentException e) {}
-        System.out.println(userconfig.get("storage"));
+//        System.out.println(userconfig.get("storage"));
         userconfig.close();
         ReadConfiguration localConfig = userconfig.getConfiguration();
 
@@ -115,6 +115,8 @@ public class ConfigurationTest {
         assertEquals(1111,mixed.get(locktime).longValue());
 
         mixed.close();
+
+        System.out.println(UserModifiableConfiguration.toString(root));
 
     }
 
