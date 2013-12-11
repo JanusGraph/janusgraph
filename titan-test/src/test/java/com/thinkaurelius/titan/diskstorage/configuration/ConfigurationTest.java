@@ -33,7 +33,8 @@ public class ConfigurationTest {
                 ConfigOption.Type.GLOBAL, (short)200);
         ConfigOption<Double> bar = new ConfigOption<Double>(special,"bar","bar",
                 ConfigOption.Type.GLOBAL, 1.5d);
-
+        ConfigOption<Integer> bim = new ConfigOption<Integer>(special,"bim","bim",
+                ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.allowEmpty(Integer.class));
 
         ConfigOption<String> indexback = new ConfigOption<String>(indexes,"name","index name",
                 ConfigOption.Type.MASKABLE, String.class);
@@ -53,6 +54,7 @@ public class ConfigurationTest {
         assertEquals("[localhost,some.where.org]", userconfig.get("storage.hostname"));
         userconfig.set("storage.hostname", "localhost");
         assertEquals("[localhost]", userconfig.get("storage.hostname"));
+        assertEquals("null",userconfig.get("storage.special.bim"));
         assertEquals("", userconfig.get("indexes"));
         userconfig.set("indexes.search.name", "foo");
         assertEquals("+ search", userconfig.get("indexes").trim());
@@ -106,8 +108,9 @@ public class ConfigurationTest {
         assertEquals(false,mixed.get(presort,"find").booleanValue());
         assertEquals(400,mixed.get(ping,"search").intValue());
         assertEquals(false,mixed.get(presort,"search").booleanValue());
+        assertNull(mixed.get(bim));
 
-        assertEquals(1.5d,mixed.get(bar).doubleValue());
+        assertEquals(1.5d,mixed.get(bar).doubleValue(),0.0);
         assertEquals("localhost",mixed.get(hostnames)[0]);
         assertEquals(1111,mixed.get(locktime).longValue());
 
