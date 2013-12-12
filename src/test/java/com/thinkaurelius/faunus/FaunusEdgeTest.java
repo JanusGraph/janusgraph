@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import junit.framework.TestCase;
 
@@ -24,12 +25,12 @@ public class FaunusEdgeTest extends TestCase {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
-        assertEquals(bytes.size(), 13);
+        assertEquals(bytes.size(), 12);
         // long id (vlong), path counters (vlong), long vid (vlong), long vid (vlong), String label
         // 1 + 1 + 1 + 1 + 10 byte label = 13
 
 
-        FaunusEdge edge2 = new FaunusEdge(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusEdge edge2 = new FaunusEdge(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(edge1, edge2);
         assertEquals(edge2.getId(), -1l);
         assertEquals(edge2.getLabel(), "knows");
@@ -55,7 +56,7 @@ public class FaunusEdgeTest extends TestCase {
         DataOutputStream out = new DataOutputStream(bytes);
         edge1.write(out);
 
-        FaunusEdge edge2 = new FaunusEdge(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusEdge edge2 = new FaunusEdge(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(edge1, edge2);
         assertEquals(edge2.getId(), -1l);

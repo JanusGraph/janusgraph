@@ -45,6 +45,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
 
     public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
+    public static final String ELEMENT_STATE = Tokens.makeNamespace(FaunusCompiler.class) + ".elementState";
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
     public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
 

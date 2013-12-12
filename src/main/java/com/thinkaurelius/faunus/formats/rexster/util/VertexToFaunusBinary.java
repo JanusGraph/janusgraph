@@ -1,19 +1,11 @@
 package com.thinkaurelius.faunus.formats.rexster.util;
 
 import com.thinkaurelius.faunus.FaunusSerializer;
-import com.thinkaurelius.faunus.mapreduce.util.CounterMap;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.hadoop.io.WritableUtils;
 
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -22,7 +14,6 @@ public class VertexToFaunusBinary {
 
     private static final ElementIdHandler DEFAULT_ELEMENT_ID_HANDLER = new DefaultElementIdHandler();
     private final ElementIdHandler elementIdHandler;
-    protected static final KryoSerializer serialize = new KryoSerializer(true);
 
     public VertexToFaunusBinary() {
         this(DEFAULT_ELEMENT_ID_HANDLER);
@@ -42,7 +33,7 @@ public class VertexToFaunusBinary {
     }
 
     public void writeVertex(final Vertex vertex, final DataOutput out) throws IOException {
-        FaunusSerializer.DEFAULT_SERIALIZER.writeVertex(vertex,elementIdHandler,out);
+        new FaunusSerializer(new EmptyConfiguration()).writeVertex(vertex, elementIdHandler, out);
     }
 
 //        WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(vertex));

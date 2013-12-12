@@ -1,10 +1,12 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
+import com.thinkaurelius.faunus.ElementState;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
@@ -14,6 +16,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -51,7 +54,7 @@ public class CommitVerticesMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.drop = Tokens.Action.valueOf(context.getConfiguration().get(ACTION)).equals(Tokens.Action.DROP);
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -77,20 +80,28 @@ public class CommitVerticesMapReduce {
                 final long vertexId = value.getIdAsLong();
                 this.vertex.reuse(vertexId);
                 this.holder.set('k', this.vertex);
-                for (final Edge edge : value.getEdges(OUT)) {
+
+                Iterator<Edge> itty = value.getEdges(OUT).iterator();
+                while (itty.hasNext()) {
+                    Edge edge = itty.next();
                     final Long id = (Long) edge.getVertex(IN).getId();
                     if (!id.equals(vertexId)) {
                         this.longWritable.set(id);
                         context.write(this.longWritable, this.holder);
                     }
                 }
-                for (final Edge edge : value.getEdges(IN)) {
+
+                itty = value.getEdges(IN).iterator();
+                while (itty.hasNext()) {
+                    Edge edge = itty.next();
                     final Long id = (Long) edge.getVertex(OUT).getId();
                     if (!id.equals(vertexId)) {
                         this.longWritable.set(id);
                         context.write(this.longWritable, this.holder);
                     }
                 }
+                this.longWritable.set(value.getIdAsLong());
+                context.write(this.longWritable, this.holder.set('d', value));
                 verticesDropped++;
             }
 
@@ -106,7 +117,7 @@ public class CommitVerticesMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
 
@@ -114,19 +125,22 @@ public class CommitVerticesMapReduce {
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             FaunusVertex vertex = null;
             final Set<Long> ids = new HashSet<Long>();
+
+            boolean isDeleted = false;
             for (final Holder holder : values) {
-                final char tag = holder.getTag();
+                char tag = holder.getTag();
                 if (tag == 'k') {
                     ids.add(holder.get().getIdAsLong());
                     // todo: once vertex is found, do individual removes to save memory
                 } else {
                     vertex = (FaunusVertex) holder.get();
+                    isDeleted = tag == 'd';
                 }
             }
             if (null != vertex) {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
-                context.write(key, this.holder.set('v', vertex));
+                context.write(key, this.holder.set(isDeleted ? 'd' : 'v', vertex));
             } else {
                 // vertex not on the same machine as the vertices being deleted
                 for (final Long id : ids) {
@@ -148,14 +162,24 @@ public class CommitVerticesMapReduce {
                 if (tag == 'k') {
                     ids.add(holder.get().getIdAsLong());
                     // todo: once vertex is found, do individual removes to save memory
+                } else if (tag == 'v') {
+                    vertex = (FaunusVertex) holder.get();
                 } else {
                     vertex = (FaunusVertex) holder.get();
+                    vertex.setState(ElementState.DELETED);
+                    Iterator<Edge> itty = vertex.getEdges(Direction.BOTH).iterator();
+                    while (itty.hasNext()) {
+                        itty.next();
+                        itty.remove();
+                    }
                 }
             }
             if (null != vertex) {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
-                context.write(NullWritable.get(), vertex);
+
+                if (!vertex.isDeleted() && context.getConfiguration().getBoolean(FaunusCompiler.ELEMENT_STATE, false))
+                    context.write(NullWritable.get(), vertex);
 
                 context.getCounter(Counters.OUT_EDGES_KEPT).increment(((List) vertex.getEdges(OUT)).size());
                 context.getCounter(Counters.IN_EDGES_KEPT).increment(((List) vertex.getEdges(IN)).size());

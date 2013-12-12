@@ -4,8 +4,6 @@ import com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat;
 import com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat;
 import com.thinkaurelius.faunus.formats.script.ScriptInputFormat;
 import com.thinkaurelius.faunus.formats.script.ScriptOutputFormat;
-import com.thinkaurelius.faunus.formats.sequence.FaunusSequenceFileInputFormat;
-import com.thinkaurelius.faunus.formats.sequence.FaunusSequenceFileOutputFormat;
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat;
 import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.faunus.formats.titan.hbase.TitanHBaseInputFormat;
@@ -31,8 +29,6 @@ public class Inverter {
             return TitanCassandraOutputFormat.class;
         else if (inputFormat.equals(ScriptInputFormat.class))
             return ScriptOutputFormat.class;
-        else if (inputFormat.equals(FaunusSequenceFileInputFormat.class))
-            return FaunusSequenceFileOutputFormat.class;
 
         throw new UnsupportedOperationException("There currently is no inverse for " + inputFormat.getName());
     }
@@ -48,8 +44,6 @@ public class Inverter {
             return TitanCassandraInputFormat.class;
         else if (outputFormat.equals(ScriptOutputFormat.class))
             return ScriptInputFormat.class;
-        else if (outputFormat.equals(FaunusSequenceFileOutputFormat.class))
-            return FaunusSequenceFileInputFormat.class;
 
         throw new UnsupportedOperationException("There currently is no inverse for " + outputFormat.getName());
     }

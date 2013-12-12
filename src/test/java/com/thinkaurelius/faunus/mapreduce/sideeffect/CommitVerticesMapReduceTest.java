@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -28,8 +29,8 @@ public class CommitVerticesMapReduceTest extends BaseTest {
     }
 
     public void testKeepAllVertices() throws Exception {
-
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
+        config.setBoolean(FaunusCompiler.ELEMENT_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -49,6 +50,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropAllVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.DROP);
+        config.setBoolean(FaunusCompiler.ELEMENT_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -61,6 +63,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testKeepProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
+        config.setBoolean(FaunusCompiler.ELEMENT_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -82,6 +85,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
+        config.setBoolean(FaunusCompiler.ELEMENT_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);

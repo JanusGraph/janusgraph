@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -51,7 +50,7 @@ public class VerticesVerticesMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -93,7 +92,7 @@ public class VerticesVerticesMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override

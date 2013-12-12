@@ -129,9 +129,9 @@ public abstract class BaseTest extends TestCase {
 
 
         for (final FaunusVertex vertex : vertices) {
-            vertex.enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            vertex.setConf(configuration);
             for (final Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+                ((FaunusEdge) edge).setConf(configuration);
             }
         }
 

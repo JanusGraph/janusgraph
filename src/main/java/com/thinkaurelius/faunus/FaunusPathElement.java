@@ -1,21 +1,25 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import org.apache.hadoop.conf.Configurable;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class FaunusPathElement extends FaunusElement implements WritableComparable<FaunusElement> {
+public abstract class FaunusPathElement extends FaunusElement implements WritableComparable<FaunusElement>, Configurable {
 
     protected List<List<MicroElement>> paths = null;
     protected MicroElement microVersion = null;
     protected boolean pathEnabled = false;
     protected long pathCounter = 0;
+    protected Configuration configuration = new EmptyConfiguration();
 
     public FaunusPathElement(final long id) {
         super(id);
@@ -35,6 +39,14 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
         else return super.getImplicitProperty(type);
     }
 
+    public void setConf(Configuration configuration) {
+        this.configuration = configuration;
+        this.enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+    }
+
+    public Configuration getConf() {
+        return this.configuration;
+    }
 
     //##################################
     // Path Handling
@@ -83,9 +95,9 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     public void getPaths(final FaunusElement element, final boolean append) {
         Preconditions.checkArgument(element instanceof FaunusPathElement);
         if (this.pathEnabled) {
-            this.addPaths(((FaunusPathElement)element).getPaths(), append);
+            this.addPaths(((FaunusPathElement) element).getPaths(), append);
         } else {
-            this.pathCounter = this.pathCounter + ((FaunusPathElement)element).pathCount();
+            this.pathCounter = this.pathCounter + ((FaunusPathElement) element).pathCount();
         }
     }
 
@@ -129,7 +141,6 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
             this.pathCounter = 1;
         }
     }
-
 
 
     public static abstract class MicroElement {

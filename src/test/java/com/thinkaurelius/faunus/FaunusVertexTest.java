@@ -2,6 +2,8 @@ package com.thinkaurelius.faunus;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -50,13 +52,12 @@ public class FaunusVertexTest extends BaseTest {
 
         // schema length is 1 byte
         // id length is 1 byte (variable long)
-        // pathsEnabled boolean 1 byte (boolean)
         // paths size 1 byte (variable int)
         // properties size 1 byte (variable int)
         // out edge types size 1 byte (variable int)
         // in edge types size 1 byte (variable int)
-        assertEquals(8, bytes.toByteArray().length);
-        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        assertEquals(7, bytes.toByteArray().length);
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 0 properties has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -105,7 +106,7 @@ public class FaunusVertexTest extends BaseTest {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         vertex1.write(new DataOutputStream(bytes));
-        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 6 properties and 2 outgoing edges has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -135,9 +136,11 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testVertexSerializationWithPaths() throws IOException {
+        Configuration configuration = new EmptyConfiguration();
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
         FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.enablePath(true); // TODO: look this all over
+        vertex1.setConf(configuration);
         vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
         vertex1.addEdge(IN, new FaunusEdge(3, vertex1.getIdAsLong(), "knows"));
         vertex1.setProperty("name", "marko");
@@ -157,7 +160,8 @@ public class FaunusVertexTest extends BaseTest {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         vertex1.write(new DataOutputStream(bytes));
-        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+
+        FaunusVertex vertex2 = new FaunusVertex(configuration, new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         System.out.println("Vertex with 4 properties and 2 paths has a byte size of: " + bytes.toByteArray().length);
 
         assertEquals(vertex1, vertex2);
@@ -208,7 +212,7 @@ public class FaunusVertexTest extends BaseTest {
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
-        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
@@ -408,7 +412,7 @@ public class FaunusVertexTest extends BaseTest {
         vertex1.setProperty("name", value);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
-        FaunusVertex vertex2 = new FaunusVertex(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
         assertEquals(vertex2.getProperty("name"), value);
     }
 }

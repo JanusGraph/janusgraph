@@ -1,12 +1,13 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
 import com.tinkerpop.blueprints.util.StringFactory;
-import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.conf.Configuration;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -25,17 +26,18 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     private FaunusType label;
 
     public FaunusEdge() {
-        this(false);
+        this(new EmptyConfiguration());
     }
 
-    public FaunusEdge(final boolean enablePaths) {
+    public FaunusEdge(final Configuration configuration) {
         super(-1l);
         this.label = FaunusType.LINK;
-        this.enablePath(enablePaths);
+        this.setConf(configuration);
     }
 
-    public FaunusEdge(final DataInput in) throws IOException {
+    public FaunusEdge(final Configuration configuration, final DataInput in) throws IOException {
         super(-1l);
+        this.setConf(configuration);
         this.readFields(in);
     }
 
@@ -108,11 +110,11 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        FaunusSerializer.DEFAULT_SERIALIZER.writeEdge(this, out);
+        new FaunusSerializer(this.getConf()).writeEdge(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        FaunusSerializer.DEFAULT_SERIALIZER.readEdge(this, in);
+        new FaunusSerializer(this.getConf()).readEdge(this, in);
 
     }
 

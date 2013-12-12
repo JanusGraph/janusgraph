@@ -45,7 +45,7 @@ public class BackFilterMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.step = context.getConfiguration().getInt(STEP, -1);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -100,7 +100,7 @@ public class BackFilterMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -128,7 +128,7 @@ public class BackFilterMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
 

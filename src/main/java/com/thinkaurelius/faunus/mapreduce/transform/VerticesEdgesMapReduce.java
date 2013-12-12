@@ -51,7 +51,7 @@ public class VerticesEdgesMapReduce {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
             this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
-            this.edge = new FaunusEdge(this.pathEnabled);
+            this.edge = new FaunusEdge(context.getConfiguration());
 
         }
 
@@ -135,7 +135,7 @@ public class VerticesEdgesMapReduce {
                 this.direction = this.direction.opposite();
 
             this.labels = context.getConfiguration().getStrings(LABELS);
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override

@@ -140,7 +140,7 @@ public class LinkMapReduce {
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(LinkMapReduce.DIRECTION));
             this.direction = this.direction.opposite();
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
@@ -182,7 +182,7 @@ public class LinkMapReduce {
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.direction = this.direction.opposite();
-            this.vertex = new FaunusVertex(context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false));
+            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
