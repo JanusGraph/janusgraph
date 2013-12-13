@@ -44,8 +44,6 @@ public class FaunusCompiler extends Configured implements Tool {
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
 
-    public static final String PATH_ENABLED = Tokens.makeNamespace(FaunusCompiler.class) + ".pathEnabled";
-    public static final String ELEMENT_STATE = Tokens.makeNamespace(FaunusCompiler.class) + ".elementState";
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
     public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
 
@@ -66,7 +64,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
-    private boolean pathEnabled = false;
+    private boolean trackPaths = false;
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
@@ -95,8 +93,8 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
-            if (entry.getKey().equals(PATH_ENABLED) & Boolean.valueOf(entry.getValue()))
-                this.pathEnabled = true;
+            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue()))
+                this.trackPaths = true;
             this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
             this.getConf().set(entry.getKey(), entry.getValue());
         }
@@ -238,7 +236,7 @@ public class FaunusCompiler extends Configured implements Tool {
         if (null == hadoopFileJar)
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
 
-        if (this.pathEnabled)
+        if (this.trackPaths)
             logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
@@ -249,7 +247,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
-            job.getConfiguration().setBoolean(PATH_ENABLED, this.pathEnabled);
+            job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, this.trackPaths);
             job.getConfiguration().set("mapred.jar", hadoopFileJar);
 
             FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));

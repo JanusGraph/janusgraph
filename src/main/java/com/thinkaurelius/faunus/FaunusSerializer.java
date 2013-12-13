@@ -14,7 +14,6 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
 import com.thinkaurelius.faunus.FaunusPathElement.MicroElement;
 import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
@@ -46,15 +45,15 @@ public class FaunusSerializer {
 
     private final Serializer serializer;
     private final FaunusType.Manager types;
-    private final boolean trackElementState;
+    private final boolean trackState;
     private final boolean trackPaths;
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
         this.serializer = new KryoSerializer(true);
         this.types = FaunusType.DEFAULT_MANAGER;
-        this.trackElementState = configuration.getBoolean(FaunusCompiler.ELEMENT_STATE, false);
-        this.trackPaths = configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.trackState = configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+        this.trackPaths = configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
     }
 
     public void writeVertex(final FaunusVertex vertex, final DataOutput out) throws IOException {
@@ -103,10 +102,10 @@ public class FaunusSerializer {
         if (trackPaths) {
             element.paths = readElementPaths(in);
             element.microVersion = (element instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(element.id) : new FaunusEdge.MicroEdge(element.id);
-            element.pathEnabled = true;
+            element.trackPaths = true;
         } else {
             element.pathCounter = WritableUtils.readVLong(in);
-            element.pathEnabled = false;
+            element.trackPaths = false;
         }
     }
 
@@ -120,19 +119,19 @@ public class FaunusSerializer {
 
     private void readElement(final FaunusElement element, Schema schema, final DataInput in) throws IOException {
         element.id = WritableUtils.readVLong(in);
-        if (trackElementState) element.setState(ElementState.valueOf(in.readByte()));
+        if (trackState) element.setState(ElementState.valueOf(in.readByte()));
         element.properties = readProperties(schema, in);
     }
 
     private void writeElement(final FaunusElement element, final Schema schema, final DataOutput out) throws IOException {
-        Preconditions.checkArgument(trackElementState || !element.isDeleted());
+        Preconditions.checkArgument(trackState || !element.isDeleted());
         WritableUtils.writeVLong(out, element.id);
-        if (trackElementState) out.writeByte(element.getState().getByteValue());
+        if (trackState) out.writeByte(element.getState().getByteValue());
         writeProperties(element.properties, schema, out);
     }
 
     private <T extends FaunusElement> Iterable<T> filterDeleted(Iterable<T> elements) {
-        if (trackElementState) return elements;
+        if (trackState) return elements;
         else return Iterables.filter(elements, new Predicate<T>() {
             @Override
             public boolean apply(@Nullable T element) {
@@ -394,7 +393,7 @@ public class FaunusSerializer {
         WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(vertex));
         schema.writeSchema(out);
         WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(vertex));
-        if (trackElementState) out.writeByte(ElementState.NEW.getByteValue());
+        if (trackState) out.writeByte(ElementState.NEW.getByteValue());
         writeProperties(properties, schema, out);
         out.writeBoolean(false);
         WritableUtils.writeVLong(out, 0);
@@ -425,7 +424,7 @@ public class FaunusSerializer {
             WritableUtils.writeVInt(out, labelCount.count(label));
             for (final Edge edge : vertex.getEdges(direction, label)) {
                 WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(edge));
-                if (trackElementState) out.writeByte(ElementState.NEW.getByteValue());
+                if (trackState) out.writeByte(ElementState.NEW.getByteValue());
                 writeProperties(getProperties(edge), schema, out);
                 out.writeBoolean(false);
                 WritableUtils.writeVLong(out, 0);

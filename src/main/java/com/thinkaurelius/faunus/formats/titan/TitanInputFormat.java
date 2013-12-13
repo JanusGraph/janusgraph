@@ -1,9 +1,9 @@
 package com.thinkaurelius.faunus.formats.titan;
 
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -27,13 +27,13 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
 
 
     protected VertexQueryFilter vertexQuery;
-    protected boolean pathEnabled;
+    protected boolean trackPaths;
     protected TitanFaunusSetup titanSetup;
 
     @Override
     public void setConf(final Configuration config) {
         this.vertexQuery = VertexQueryFilter.create(config);
-        this.pathEnabled = config.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.trackPaths = config.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
 
         String titanVersion = config.get(FAUNUS_GRAPH_INPUT_TITAN_VERION, FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT);
         String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;

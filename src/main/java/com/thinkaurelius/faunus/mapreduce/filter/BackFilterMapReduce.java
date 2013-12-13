@@ -32,7 +32,7 @@ public class BackFilterMapReduce {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setInt(STEP, step);
         configuration.setClass(CLASS, klass, Element.class);
-        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
         return configuration;
     }
 

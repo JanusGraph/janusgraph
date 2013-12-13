@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.ElementState;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.Tokens;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -110,7 +109,6 @@ public class CommitVerticesMapReduce {
 
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
 
-
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             FaunusVertex vertex = null;
@@ -143,6 +141,13 @@ public class CommitVerticesMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
+        private boolean trackState;
+
+        @Override
+        public void setup(final Reducer.Context context) {
+            this.trackState = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+        }
+
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             FaunusVertex vertex = null;
@@ -168,7 +173,7 @@ public class CommitVerticesMapReduce {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
 
-                if (!vertex.isDeleted() && context.getConfiguration().getBoolean(FaunusCompiler.ELEMENT_STATE, false))
+                if (!vertex.isDeleted() && this.trackState)
                     context.write(NullWritable.get(), vertex);
 
                 context.getCounter(Counters.OUT_EDGES_KEPT).increment(((List) vertex.getEdges(OUT)).size());

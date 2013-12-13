@@ -40,7 +40,7 @@ public abstract class BaseTest extends TestCase {
 
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example) throws Exception {
         Configuration configuration = new Configuration();
-        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
         return generateGraph(example, configuration);
     }
 

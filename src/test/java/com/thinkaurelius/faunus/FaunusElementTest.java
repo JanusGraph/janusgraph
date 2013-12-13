@@ -132,7 +132,7 @@ public class FaunusElementTest extends TestCase {
 
     public void testPathIteratorRemove() {
         Configuration configuration = new EmptyConfiguration();
-        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
         FaunusVertex vertex1 = new FaunusVertex(configuration, 10);
         assertEquals(vertex1.pathCount(), 0);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);

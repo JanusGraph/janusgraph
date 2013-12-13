@@ -68,8 +68,8 @@ public class FaunusVertexTest extends BaseTest {
         assertFalse(vertex2.hasPaths());
         assertEquals(vertex1.pathCount(), 0);
         assertEquals(vertex2.pathCount(), 0);
-        assertFalse(vertex1.pathEnabled);
-        assertFalse(vertex2.pathEnabled);
+        assertFalse(vertex1.trackPaths);
+        assertFalse(vertex2.trackPaths);
         assertFalse(vertex2.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.IN).iterator().hasNext());
         assertFalse(vertex2.getEdges(Direction.BOTH).iterator().hasNext());
@@ -137,7 +137,7 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerializationWithPaths() throws IOException {
         Configuration configuration = new EmptyConfiguration();
-        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
 
         FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
         vertex1.setConf(configuration);

@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.mapreduce.filter;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -67,7 +68,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
     public void testDedupVerticesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
@@ -105,7 +106,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
     public void testDedupEdgesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Edge.class);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 

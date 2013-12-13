@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -63,7 +64,7 @@ public class PathMapTest extends BaseTest {
 
     public void testPathsAndGetException() throws Exception {
         Configuration config = PathMap.createConfiguration(Vertex.class);
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
 
         mapReduceDriver.withConfiguration(config);
 

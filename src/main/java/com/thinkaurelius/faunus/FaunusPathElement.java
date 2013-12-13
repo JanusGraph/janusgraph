@@ -17,7 +17,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     protected List<List<MicroElement>> paths = null;
     protected MicroElement microVersion = null;
-    protected boolean pathEnabled = false;
+    protected boolean trackPaths = false;
     protected long pathCounter = 0;
     protected Configuration configuration = new EmptyConfiguration();
 
@@ -34,7 +34,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        this.enablePath(configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false));
+        this.enablePath(configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false));
     }
 
     public Configuration getConf() {
@@ -46,8 +46,8 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     //##################################
 
     private void enablePath(final boolean enablePath) {
-        this.pathEnabled = enablePath;
-        if (this.pathEnabled) {
+        this.trackPaths = enablePath;
+        if (this.trackPaths) {
             if (null == this.microVersion)
                 this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
             if (null == this.paths)
@@ -57,7 +57,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public void addPath(final List<MicroElement> path, final boolean append) throws IllegalStateException {
-        if (this.pathEnabled) {
+        if (this.trackPaths) {
             if (append) path.add(this.microVersion);
             this.paths.add(path);
         } else {
@@ -66,7 +66,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public void addPaths(final List<List<MicroElement>> paths, final boolean append) throws IllegalStateException {
-        if (this.pathEnabled) {
+        if (this.trackPaths) {
             if (append) {
                 for (final List<MicroElement> path : paths) {
                     this.addPath(path, append);
@@ -79,7 +79,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public List<List<MicroElement>> getPaths() throws IllegalStateException {
-        if (this.pathEnabled)
+        if (this.trackPaths)
             return this.paths;
         else
             throw new IllegalStateException("Path calculations are not enabled");
@@ -87,7 +87,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     public void getPaths(final FaunusElement element, final boolean append) {
         Preconditions.checkArgument(element instanceof FaunusPathElement);
-        if (this.pathEnabled) {
+        if (this.trackPaths) {
             this.addPaths(((FaunusPathElement) element).getPaths(), append);
         } else {
             this.pathCounter = this.pathCounter + ((FaunusPathElement) element).pathCount();
@@ -95,7 +95,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public long incrPath(final long amount) throws IllegalStateException {
-        if (this.pathEnabled)
+        if (this.trackPaths)
             throw new IllegalStateException("Path calculations are enabled -- use addPath()");
         else
             this.pathCounter = this.pathCounter + amount;
@@ -103,14 +103,14 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public boolean hasPaths() {
-        if (this.pathEnabled)
+        if (this.trackPaths)
             return !this.paths.isEmpty();
         else
             return this.pathCounter > 0;
     }
 
     public void clearPaths() {
-        if (this.pathEnabled) {
+        if (this.trackPaths) {
             this.paths = new ArrayList<List<MicroElement>>();
             this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
         } else
@@ -118,14 +118,14 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     public long pathCount() {
-        if (this.pathEnabled)
+        if (this.trackPaths)
             return this.paths.size();
         else
             return this.pathCounter;
     }
 
     public void startPath() {
-        if (this.pathEnabled) {
+        if (this.trackPaths) {
             this.clearPaths();
             final List<MicroElement> startPath = new ArrayList<MicroElement>();
             startPath.add(this.microVersion);

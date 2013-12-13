@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.mapreduce.transform;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -42,7 +43,7 @@ public class TransformMapTest extends BaseTest {
 
     public void testVerticesPropertyKeySizeWithPaths() throws Exception {
         Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
 

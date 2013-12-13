@@ -65,5 +65,7 @@ public class Tokens {
 
     public static int DEFAULT_MAP_SPILL_OVER = 500;
     public static final String FAUNUS_PIPELINE_MAP_SPILL_OVER = "faunus.pipeline.map-spill-over";
+    public static final String FAUNUS_PIPELINE_TRACK_PATHS = "faunus.pipeline.track-paths";
+    public static final String FAUNUS_PIPELINE_TRACK_STATE = "faunus.pipeline.track-state";
 
 }

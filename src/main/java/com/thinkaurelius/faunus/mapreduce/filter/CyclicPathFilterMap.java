@@ -33,7 +33,7 @@ public class CyclicPathFilterMap {
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
-        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
         return configuration;
     }
 

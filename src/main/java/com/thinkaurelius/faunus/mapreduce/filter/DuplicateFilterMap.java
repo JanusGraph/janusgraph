@@ -38,12 +38,12 @@ public class DuplicateFilterMap {
     public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         private boolean isVertex;
-        private boolean pathEnabled;
+        private boolean trackPaths;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
-            this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+            this.trackPaths = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
         }
 
         @Override
@@ -51,7 +51,7 @@ public class DuplicateFilterMap {
 
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    if (this.pathEnabled) {
+                    if (this.trackPaths) {
                         final List<FaunusPathElement.MicroElement> path = value.getPaths().get(0);
                         value.clearPaths();
                         value.addPath(path, false);
@@ -66,7 +66,7 @@ public class DuplicateFilterMap {
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {
-                        if (this.pathEnabled) {
+                        if (this.trackPaths) {
                             final List<FaunusPathElement.MicroElement> path = edge.getPaths().get(0);
                             edge.clearPaths();
                             edge.addPath(path, false);

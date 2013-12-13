@@ -44,7 +44,7 @@ public class VerticesEdgesMapReduce {
 
         private Direction direction;
         private String[] labels;
-        private boolean pathEnabled;
+        private boolean trackPaths;
 
         private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
@@ -53,7 +53,7 @@ public class VerticesEdgesMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+            this.trackPaths = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
         }
 
         @Override
@@ -68,7 +68,7 @@ public class VerticesEdgesMapReduce {
                         final FaunusEdge shellEdge = new FaunusEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
 
-                        if (this.pathEnabled) {
+                        if (this.trackPaths) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
@@ -87,7 +87,7 @@ public class VerticesEdgesMapReduce {
                         final FaunusEdge edge = (FaunusEdge) e;
                         final FaunusEdge shellEdge = new FaunusEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
-                        if (this.pathEnabled) {
+                        if (this.trackPaths) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
                             shellEdge.addPaths(paths, false);
