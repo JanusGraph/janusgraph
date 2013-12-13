@@ -5,6 +5,7 @@ import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.rexster.util.HttpHelper;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -24,22 +25,12 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
 
     private final RexsterConfiguration rexsterConf;
     private VertexQueryFilter vertexQuery;
-
     private final NullWritable key = NullWritable.get();
-
-    /**
-     * The current vertex in the reader.
-     */
-    private FaunusVertex vertex = new FaunusVertex(new EmptyConfiguration(), -1l);
-
+    private FaunusVertex vertex;
     private DataInputStream rexsterInputStream;
-
     private long splitStart;
     private long splitEnd;
-
     private long itemsIterated = 0;
-
-    private boolean pathEnabled;
 
     public RexsterRecordReader(final RexsterConfiguration conf, final VertexQueryFilter vertexQuery) {
         this.rexsterConf = conf;
@@ -47,11 +38,11 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     }
 
     @Override
-    public void initialize(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public void initialize(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         final RexsterInputSplit rexsterInputSplit = (RexsterInputSplit) inputSplit;
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
-        this.pathEnabled = taskAttemptContext.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.vertex = new FaunusVertex(taskAttemptContext.getConfiguration());
         this.openRexsterStream();
     }
 
@@ -62,8 +53,6 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         try {
             this.vertex.readFields(this.rexsterInputStream);
             this.vertexQuery.defaultFilter(this.vertex);
-            if (this.pathEnabled)
-                this.vertex.enablePath(true);
             itemsIterated++;
             isNext = true;
         } catch (Exception e) {

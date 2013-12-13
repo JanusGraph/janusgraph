@@ -406,23 +406,6 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         return StringFactory.vertexString(this);
     }
 
-
-    //##################################
-    // Path Handling
-    //##################################
-
-
-    @Override
-    public void enablePath(final boolean enablePath) {
-        super.enablePath(enablePath);
-        if (this.pathEnabled) {
-            for (final Edge edge : this.getEdges(BOTH)) {
-                ((FaunusEdge) edge).enablePath(true);
-            }
-        }
-    }
-
-
     public static class MicroVertex extends MicroElement {
 
         private static final String V1 = "v[";

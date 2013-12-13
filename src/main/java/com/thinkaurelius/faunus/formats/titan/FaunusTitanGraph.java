@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+import org.apache.hadoop.conf.Configuration;
 
 /**
  * The backend agnostic Titan graph reader for pulling a graph of Titan and into Faunus.
@@ -40,10 +41,10 @@ public class FaunusTitanGraph {
         this.vertexReader = setup.getVertexReader();
     }
 
-    protected FaunusVertex readFaunusVertex(final StaticBuffer key, Iterable<Entry> entries) {
+    protected FaunusVertex readFaunusVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
         final long vertexId = vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, vertexId);
+        FaunusVertex vertex = new FaunusVertex(configuration, vertexId);
         vertex.setState(ElementState.LOADED);
         boolean isSystemType = false;
         boolean foundVertexState = false;
@@ -69,9 +70,9 @@ public class FaunusTitanGraph {
                     assert type.isEdgeLabel();
                     FaunusEdge edge = null;
                     if (relation.direction.equals(Direction.IN))
-                        edge = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        edge = new FaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
                     else if (relation.direction.equals(Direction.OUT))
-                        edge = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        edge = new FaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
                     else if (relation.direction.equals(Direction.BOTH))
                         throw ExceptionFactory.bothIsNotSupported();
                     edge.setState(ElementState.LOADED);

@@ -47,9 +47,9 @@ public abstract class BaseTest extends TestCase {
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            vertices = new FaunusGraphSONUtility().fromJSON(FaunusGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            vertices = new FaunusGraphSONUtility().fromJSON(configuration, FaunusGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
-            vertices = new FaunusGraphSONUtility().fromJSON(FaunusGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            vertices = new FaunusGraphSONUtility().fromJSON(configuration, FaunusGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
         else {
             vertices = new ArrayList<FaunusVertex>();
             FaunusVertex saturn = new FaunusVertex(configuration, 4l);
@@ -128,12 +128,12 @@ public abstract class BaseTest extends TestCase {
         }
 
 
-        for (final FaunusVertex vertex : vertices) {
+        /*for (final FaunusVertex vertex : vertices) {
             vertex.setConf(configuration);
             for (final Edge edge : vertex.getEdges(Direction.BOTH)) {
                 ((FaunusEdge) edge).setConf(configuration);
             }
-        }
+        }*/
 
         final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
         for (final FaunusVertex vertex : vertices) {

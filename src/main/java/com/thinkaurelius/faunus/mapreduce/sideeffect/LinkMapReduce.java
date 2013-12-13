@@ -65,8 +65,6 @@ public class LinkMapReduce {
         private boolean mergeDuplicates;
         private String mergeWeightKey;
 
-        private boolean pathEnabled;
-
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.step = context.getConfiguration().getInt(STEP, -1);
@@ -74,9 +72,8 @@ public class LinkMapReduce {
             this.label = context.getConfiguration().get(LABEL);
             this.mergeDuplicates = context.getConfiguration().getBoolean(MERGE_DUPLICATES, false);
             this.mergeWeightKey = context.getConfiguration().get(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
-            this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
 
-            if (!this.pathEnabled)
+            if (!context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false))
                 throw new IllegalStateException(LinkMapReduce.class.getSimpleName() + " requires that paths be enabled");
         }
 
@@ -98,7 +95,6 @@ public class LinkMapReduce {
                             edge = new FaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
                             edge = new FaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
-                        edge.enablePath(this.pathEnabled);
 
                         if (!this.mergeWeightKey.equals(NO_WEIGHT_KEY))
                             edge.setProperty(this.mergeWeightKey, entry.getValue());
@@ -116,7 +112,7 @@ public class LinkMapReduce {
                             edge = new FaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
                             edge = new FaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
-                        edge.enablePath(this.pathEnabled);
+
                         value.addEdge(this.direction, edge);
                         edgesCreated++;
                         this.longWritable.set(linkElementId);

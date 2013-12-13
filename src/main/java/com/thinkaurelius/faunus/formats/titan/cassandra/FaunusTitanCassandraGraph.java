@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import org.apache.cassandra.db.IColumn;
+import org.apache.hadoop.conf.Configuration;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -24,8 +25,8 @@ public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
         super(setup);
     }
 
-    public FaunusVertex readFaunusVertex(final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {
-        return super.readFaunusVertex(new StaticByteBuffer(key), new CassandraMapIterable(value));
+    public FaunusVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {
+        return super.readFaunusVertex(configuration, new StaticByteBuffer(key), new CassandraMapIterable(value));
     }
 
     private static class CassandraMapIterable implements Iterable<Entry> {

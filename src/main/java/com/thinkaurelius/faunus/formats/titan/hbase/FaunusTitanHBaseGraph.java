@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import org.apache.hadoop.conf.Configuration;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -23,8 +24,8 @@ public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
         super(setup);
     }
 
-    public FaunusVertex readFaunusVertex(byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
-        return super.readFaunusVertex(new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
+    public FaunusVertex readFaunusVertex(final Configuration configuration, byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
+        return super.readFaunusVertex(configuration, new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
     }
 
     private static class HBaseMapIterable implements Iterable<Entry> {

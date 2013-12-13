@@ -1,6 +1,9 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import junit.framework.TestCase;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableUtils;
 
 import java.io.ByteArrayInputStream;
@@ -128,9 +131,9 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testPathIteratorRemove() {
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        assertEquals(vertex1.pathCount(), 0);
-        vertex1.enablePath(true);
+        Configuration configuration = new EmptyConfiguration();
+        configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
+        FaunusVertex vertex1 = new FaunusVertex(configuration, 10);
         assertEquals(vertex1.pathCount(), 0);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(2l)), false);
         vertex1.addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);

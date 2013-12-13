@@ -45,7 +45,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     // Path Handling
     //##################################
 
-    public void enablePath(final boolean enablePath) {
+    private void enablePath(final boolean enablePath) {
         this.pathEnabled = enablePath;
         if (this.pathEnabled) {
             if (null == this.microVersion)
