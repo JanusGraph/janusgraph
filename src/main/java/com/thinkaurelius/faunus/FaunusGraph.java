@@ -1,6 +1,5 @@
 package com.thinkaurelius.faunus;
 
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.formats.Inverter;
 import com.thinkaurelius.faunus.hdfs.HDFSTools;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;

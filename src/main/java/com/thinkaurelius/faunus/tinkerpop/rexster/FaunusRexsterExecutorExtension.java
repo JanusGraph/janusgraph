@@ -41,7 +41,7 @@ public class FaunusRexsterExecutorExtension extends AbstractRexsterExtension {
     public static final String FIELD_STATUS = "status";
     public static final String FIELD_MESSAGE = "message";
 
-    private static final ConcurrentMap<String,FaunusEvaluationJob> jobs = new ConcurrentHashMap<String, FaunusEvaluationJob>();
+    private static final ConcurrentMap<String, FaunusEvaluationJob> jobs = new ConcurrentHashMap<String, FaunusEvaluationJob>();
 
     @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, method = HttpMethod.POST)
     @ExtensionDescriptor(description = "Execute a Faunus job")
@@ -69,7 +69,9 @@ public class FaunusRexsterExecutorExtension extends AbstractRexsterExtension {
             }
         }).start();
 
-        return ExtensionResponse.ok(new HashMap<String,Object>() {{ put(FIELD_JOB, jobId.toString()); }});
+        return ExtensionResponse.ok(new HashMap<String, Object>() {{
+            put(FIELD_JOB, jobId.toString());
+        }});
     }
 
     @ExtensionDefinition(extensionPoint = ExtensionPoint.GRAPH, method = HttpMethod.GET)
@@ -94,7 +96,7 @@ public class FaunusRexsterExecutorExtension extends AbstractRexsterExtension {
                 jobs.remove(job);
             }
 
-            return ExtensionResponse.ok(new HashMap<String,Object>(){{
+            return ExtensionResponse.ok(new HashMap<String, Object>() {{
                 put(FIELD_JOB, job);
                 put(FIELD_STATUS, status);
                 put(FIELD_MESSAGE, fej.getErrorMessage());
@@ -102,8 +104,8 @@ public class FaunusRexsterExecutorExtension extends AbstractRexsterExtension {
         }
     }
 
-    private static Map<String,String> convertToMap(final JSONObject config) {
-        final Map<String,String> m = new HashMap<String, String>();
+    private static Map<String, String> convertToMap(final JSONObject config) {
+        final Map<String, String> m = new HashMap<String, String>();
 
         if (config != null) {
             final Iterator itty = config.keys();

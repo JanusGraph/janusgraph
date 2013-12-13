@@ -15,8 +15,8 @@ import java.io.IOException;
 public class HolderTest extends TestCase {
 
     public void testRawComparison() throws IOException {
-        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', new FaunusVertex(10));
-        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>('b', new FaunusVertex(11));
+        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10));
+        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>('b', new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 11));
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         holder1.write(new DataOutputStream(bytes1));
@@ -29,7 +29,7 @@ public class HolderTest extends TestCase {
     }
 
     public void testSerialization1() throws IOException {
-        FaunusVertex vertex = new FaunusVertex(1l);
+        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', vertex);
         assertEquals(holder1.get(), vertex);
         assertEquals(holder1.getTag(), 'a');

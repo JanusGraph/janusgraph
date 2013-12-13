@@ -5,8 +5,6 @@ import com.tinkerpop.gremlin.groovy.console.ErrorHookClosure;
 import com.tinkerpop.gremlin.groovy.console.NullResultHookClosure;
 import com.tinkerpop.gremlin.groovy.console.PromptClosure;
 import jline.History;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 import org.codehaus.groovy.tools.shell.Groovysh;
 import org.codehaus.groovy.tools.shell.IO;
 import org.codehaus.groovy.tools.shell.InteractiveShellRunner;

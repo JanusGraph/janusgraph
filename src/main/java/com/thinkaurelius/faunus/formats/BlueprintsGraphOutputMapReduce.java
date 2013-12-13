@@ -98,7 +98,6 @@ public class BlueprintsGraphOutputMapReduce {
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
-        private final FaunusVertex shellVertex = new FaunusVertex();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -129,12 +128,12 @@ public class BlueprintsGraphOutputMapReduce {
                 final Vertex blueprintsVertex = this.getOrCreateVertex(value, context);
 
                 // Propagate shell vertices with Blueprints ids
-                this.shellVertex.reuse(value.getIdAsLong());
-                this.shellVertex.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
+                final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), value.getIdAsLong());
+                shellVertex.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
                 // TODO: Might need to be OUT for the sake of unidirectional edges in Titan
                 for (final Edge faunusEdge : value.getEdges(IN)) {
                     this.longWritable.set((Long) faunusEdge.getVertex(OUT).getId());
-                    context.write(this.longWritable, this.vertexHolder.set('s', this.shellVertex));
+                    context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 }
 
                 this.longWritable.set(value.getIdAsLong());
@@ -205,7 +204,7 @@ public class BlueprintsGraphOutputMapReduce {
                     faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
                     final FaunusVertex toClone = holder.get();
-                    faunusVertex = new FaunusVertex(toClone.getIdAsLong());
+                    faunusVertex = new FaunusVertex(context.getConfiguration(), toClone.getIdAsLong());
                     faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
                     faunusVertex.addEdges(OUT, toClone);
                 }
@@ -224,7 +223,7 @@ public class BlueprintsGraphOutputMapReduce {
     public static class EdgeMap extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
         Graph graph;
-        private static final FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
+        private static final FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex(new EmptyConfiguration(), -1l);
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
@@ -259,7 +258,7 @@ public class BlueprintsGraphOutputMapReduce {
                         }
                     }
                 } else {
-                    LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "] blueprintsVertex[" + blueprintsId + "]");
+                    LOGGER.warn("No source vertex: faunusVertex[" + value.getId() + "] blueprintsVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
                 // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead

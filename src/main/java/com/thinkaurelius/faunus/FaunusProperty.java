@@ -12,11 +12,11 @@ public class FaunusProperty extends FaunusElement {
     private final Object value;
 
     public FaunusProperty(FaunusType type, Object value) {
-        this(0l,type,value);
+        this(0l, type, value);
     }
 
     public FaunusProperty(long id, String type, Object value) {
-        this(id,FaunusType.DEFAULT_MANAGER.get(type),value);
+        this(id, FaunusType.DEFAULT_MANAGER.get(type), value);
     }
 
     public FaunusProperty(long id, FaunusType type, Object value) {
@@ -46,9 +46,9 @@ public class FaunusProperty extends FaunusElement {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        FaunusProperty p = (FaunusProperty)oth;
+        if (this == oth) return true;
+        else if (oth == null || !getClass().isInstance(oth)) return false;
+        FaunusProperty p = (FaunusProperty) oth;
         return type.equals(p.type) && value.equals(p.value);
     }
 

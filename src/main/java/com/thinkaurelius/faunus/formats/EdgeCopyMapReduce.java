@@ -37,7 +37,6 @@ public class EdgeCopyMapReduce {
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>> {
 
         private final Holder<FaunusVertex> vertexHolder = new Holder<FaunusVertex>();
-        private final FaunusVertex shellVertex = new FaunusVertex();
         private final LongWritable longWritable = new LongWritable();
         private Direction direction = Direction.OUT;
 
@@ -54,9 +53,9 @@ public class EdgeCopyMapReduce {
             for (final Edge edge : value.getEdges(this.direction)) {
                 final long id = (Long) edge.getVertex(this.direction.opposite()).getId();
                 this.longWritable.set(id);
-                this.shellVertex.reuse(id);
-                this.shellVertex.addEdge(this.direction.opposite(), (FaunusEdge) edge);
-                context.write(this.longWritable, this.vertexHolder.set('s', this.shellVertex));
+                final FaunusVertex shellVertex = new FaunusVertex(context.getConfiguration(), id);
+                shellVertex.addEdge(this.direction.opposite(), (FaunusEdge) edge);
+                context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 edgesInverted++;
             }
             this.longWritable.set(value.getIdAsLong());
@@ -69,7 +68,6 @@ public class EdgeCopyMapReduce {
     public static class Reduce extends Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> {
 
         private Direction direction = Direction.OUT;
-        private final FaunusVertex vertex = new FaunusVertex();
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
@@ -81,16 +79,16 @@ public class EdgeCopyMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<FaunusVertex>> values, final Reducer<LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             long edgesAggregated = 0;
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder<FaunusVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     edgesAggregated = edgesAggregated + ((List) holder.get().getEdges(direction.opposite())).size();
-                    this.vertex.addEdges(direction.opposite(), holder.get());
+                    vertex.addEdges(direction.opposite(), holder.get());
                 } else {
-                    this.vertex.addAll(holder.get());
+                    vertex.addAll(holder.get());
                 }
             }
-            context.write(NullWritable.get(), this.vertex);
+            context.write(NullWritable.get(), vertex);
             context.getCounter(Counters.EDGES_ADDED).increment(edgesAggregated);
         }
     }

@@ -19,8 +19,8 @@ import java.util.List;
 public class FaunusElementTest extends TestCase {
 
     public void testBasicSerialization() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(10);
-        FaunusVertex vertex2 = new FaunusVertex(Long.MAX_VALUE);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        FaunusVertex vertex2 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, Long.MAX_VALUE);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
@@ -42,10 +42,10 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testElementComparator() throws IOException {
-        FaunusVertex a = new FaunusVertex(10);
-        FaunusVertex b = new FaunusVertex(Long.MAX_VALUE);
-        FaunusVertex c = new FaunusVertex(10);
-        FaunusVertex d = new FaunusVertex(12);
+        FaunusVertex a = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        FaunusVertex b = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, Long.MAX_VALUE);
+        FaunusVertex c = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        FaunusVertex d = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 12);
 
         assertEquals(a.compareTo(a), 0);
         assertEquals(a.compareTo(b), -1);
@@ -102,7 +102,7 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testSettingIdPropertyException() {
-        FaunusVertex a = new FaunusVertex(10l);
+        FaunusVertex a = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
         try {
             a.setProperty(Tokens.ID, 11l);
             assertFalse(true);
@@ -110,7 +110,7 @@ public class FaunusElementTest extends TestCase {
             assertTrue(true);
         }
 
-        FaunusEdge b = new FaunusEdge(1l, 2l, 13l, "self");
+        FaunusEdge b = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
             assertFalse(true);
@@ -128,7 +128,7 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testPathIteratorRemove() {
-        FaunusVertex vertex1 = new FaunusVertex(10);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
         assertEquals(vertex1.pathCount(), 0);
         vertex1.enablePath(true);
         assertEquals(vertex1.pathCount(), 0);

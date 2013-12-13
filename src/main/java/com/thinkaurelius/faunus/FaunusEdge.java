@@ -1,7 +1,6 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -26,7 +25,7 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     private FaunusType label;
 
     public FaunusEdge() {
-        this(new EmptyConfiguration());
+        this(EMPTY_CONFIGURATION);
     }
 
     public FaunusEdge(final Configuration configuration) {
@@ -41,27 +40,20 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
         this.readFields(in);
     }
 
-    public FaunusEdge(final long outVertex, final long inVertex, final String label) {
-        this(-1l, outVertex, inVertex, label);
+    public FaunusEdge(final Configuration configuration, final long outVertex, final long inVertex, final String label) {
+        this(configuration, -1l, outVertex, inVertex, label);
     }
 
-    public FaunusEdge(final long id, final long outVertex, final long inVertex, final String label) {
+    public FaunusEdge(final Configuration configuration, final long id, final long outVertex, final long inVertex, final String label) {
         super(id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         setLabel(label);
-    }
-
-    public FaunusEdge reuse(final long id, final long outVertex, final long inVertex, final String label) {
-        super.reuse(id);
-        this.outVertex = outVertex;
-        this.inVertex = inVertex;
-        this.setLabel(label);
-        return this;
+        this.setConf(configuration);
     }
 
     @Override
-    void updateSchema(FaunusSerializer.Schema schema) {
+    void updateSchema(final FaunusSerializer.Schema schema) {
         super.updateSchema(schema);
         schema.add(label);
     }
@@ -69,9 +61,9 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     @Override
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
-            return new FaunusVertex(this.outVertex);
+            return new FaunusVertex(EMPTY_CONFIGURATION, this.outVertex);
         } else if (IN.equals(direction)) {
-            return new FaunusVertex(this.inVertex);
+            return new FaunusVertex(EMPTY_CONFIGURATION, this.inVertex);
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }

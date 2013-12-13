@@ -7,8 +7,6 @@ import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import com.thinkaurelius.titan.graphdb.database.RelationReader;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import org.apache.cassandra.db.IColumn;
 
 import java.nio.ByteBuffer;

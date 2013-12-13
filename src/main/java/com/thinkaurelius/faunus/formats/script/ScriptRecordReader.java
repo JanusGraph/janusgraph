@@ -2,8 +2,8 @@ package com.thinkaurelius.faunus.formats.script;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.FaunusGremlinScriptEngine;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.NullWritable;
@@ -27,15 +27,14 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
 
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
     private final VertexQueryFilter vertexQuery;
-    private boolean pathEnabled;
+    private final Configuration configuration;
     private final LineRecordReader lineRecordReader;
-    private FaunusVertex vertex;
+    private FaunusVertex vertex = new FaunusVertex();
 
     public ScriptRecordReader(final VertexQueryFilter vertexQuery, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader = new LineRecordReader();
-        this.vertex = new FaunusVertex();
         this.vertexQuery = vertexQuery;
-        this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.configuration = context.getConfiguration();
 
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         try {
@@ -56,9 +55,9 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
             else {
                 try {
                     this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
+                    this.vertex = new FaunusVertex(this.configuration);
                     this.engine.put(VERTEX, this.vertex);
                     if ((Boolean) engine.eval(READ_CALL)) {
-                        this.vertex.enablePath(this.pathEnabled);
                         this.vertexQuery.defaultFilter(this.vertex);
                         return true;
                     }

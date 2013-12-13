@@ -1,6 +1,9 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.*;
+import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusPathElement;
+import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.faunus.mapreduce.util.SafeMapperOutputs;

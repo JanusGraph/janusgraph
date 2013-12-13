@@ -1,6 +1,10 @@
 package com.thinkaurelius.faunus.mapreduce.transform;
 
-import com.thinkaurelius.faunus.*;
+import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusPathElement;
+import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -44,15 +48,12 @@ public class VerticesEdgesMapReduce {
 
         private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
-        private FaunusEdge edge;
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
             this.pathEnabled = context.getConfiguration().getBoolean(FaunusCompiler.PATH_ENABLED, false);
-            this.edge = new FaunusEdge(context.getConfiguration());
-
         }
 
         @Override
@@ -64,18 +65,19 @@ public class VerticesEdgesMapReduce {
                 if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(IN, this.labels)) {
                         final FaunusEdge edge = (FaunusEdge) e;
-                        this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final FaunusEdge shellEdge = new FaunusEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+
 
                         if (this.pathEnabled) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
-                            this.edge.addPaths(paths, false);
+                            shellEdge.addPaths(paths, false);
                         } else {
                             edge.getPaths(value, false);
-                            this.edge.getPaths(value, false);
+                            shellEdge.getPaths(value, false);
                         }
                         this.longWritable.set(edge.getVertexId(OUT));
-                        context.write(this.longWritable, this.holder.set('p', this.edge));
+                        context.write(this.longWritable, this.holder.set('p', shellEdge));
                         edgesTraversed++;
                     }
                 }
@@ -83,18 +85,18 @@ public class VerticesEdgesMapReduce {
                 if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                     for (final Edge e : value.getEdges(OUT, this.labels)) {
                         final FaunusEdge edge = (FaunusEdge) e;
-                        this.edge.reuse(edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
+                        final FaunusEdge shellEdge = new FaunusEdge(context.getConfiguration(), edge.getIdAsLong(), edge.getVertexId(OUT), edge.getVertexId(IN), edge.getLabel());
 
                         if (this.pathEnabled) {
                             final List<List<FaunusPathElement.MicroElement>> paths = clonePaths(value, new FaunusEdge.MicroEdge(edge.getIdAsLong()));
                             edge.addPaths(paths, false);
-                            this.edge.addPaths(paths, false);
+                            shellEdge.addPaths(paths, false);
                         } else {
                             edge.getPaths(value, false);
-                            this.edge.getPaths(value, false);
+                            shellEdge.getPaths(value, false);
                         }
                         this.longWritable.set(edge.getVertexId(IN));
-                        context.write(this.longWritable, this.holder.set('p', this.edge));
+                        context.write(this.longWritable, this.holder.set('p', shellEdge));
                         edgesTraversed++;
                     }
                 }
@@ -126,7 +128,6 @@ public class VerticesEdgesMapReduce {
 
         private Direction direction;
         private String[] labels;
-        private FaunusVertex vertex;
 
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
@@ -135,23 +136,22 @@ public class VerticesEdgesMapReduce {
                 this.direction = this.direction.opposite();
 
             this.labels = context.getConfiguration().getStrings(LABELS);
-            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             final List<FaunusEdge> edges = new ArrayList<FaunusEdge>();
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    this.vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else {
                     edges.add((FaunusEdge) holder.get());
                 }
             }
 
-            for (final Edge e : this.vertex.getEdges(this.direction, this.labels)) {
+            for (final Edge e : vertex.getEdges(this.direction, this.labels)) {
                 for (final FaunusEdge edge : edges) {
                     if (e.getId().equals(edge.getId())) {
                         ((FaunusEdge) e).getPaths(edge, false);
@@ -160,7 +160,7 @@ public class VerticesEdgesMapReduce {
                 }
             }
 
-            context.write(NullWritable.get(), this.vertex);
+            context.write(NullWritable.get(), vertex);
         }
     }
 }

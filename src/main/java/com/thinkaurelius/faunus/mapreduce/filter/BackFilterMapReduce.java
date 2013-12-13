@@ -1,6 +1,10 @@
 package com.thinkaurelius.faunus.mapreduce.filter;
 
-import com.thinkaurelius.faunus.*;
+import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusPathElement;
+import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.Holder;
+import com.thinkaurelius.faunus.Tokens;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -36,7 +40,6 @@ public class BackFilterMapReduce {
 
         private int step;
         private boolean isVertex;
-        private FaunusVertex vertex;
         private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
         private final LongWritable longWritable = new LongWritable();
 
@@ -45,7 +48,6 @@ public class BackFilterMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.step = context.getConfiguration().getInt(STEP, -1);
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
-            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -58,9 +60,9 @@ public class BackFilterMapReduce {
 
                         final long backElementId = path.get(this.step).getId();
                         this.longWritable.set(backElementId);
-                        this.vertex.reuse(backElementId);
-                        this.vertex.addPath(path, false);
-                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), backElementId);
+                        vertex.addPath(path, false);
+                        context.write(this.longWritable, this.holder.set('p', vertex));
                     }
                     value.clearPaths();
                 }
@@ -74,9 +76,9 @@ public class BackFilterMapReduce {
 
                             final long backElementId = path.get(this.step).getId();
                             this.longWritable.set(backElementId);
-                            this.vertex.reuse(backElementId);
-                            this.vertex.addPath(path, false);
-                            context.write(this.longWritable, this.holder.set('p', this.vertex));
+                            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), backElementId);
+                            vertex.addPath(path, false);
+                            context.write(this.longWritable, this.holder.set('p', vertex));
                         }
                         edge.clearPaths();
                     }
@@ -95,57 +97,43 @@ public class BackFilterMapReduce {
     }
 
     public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
-        private FaunusVertex vertex;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
 
         @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration());
-        }
-
-        @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             char outTag = 'x';
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    this.vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                     outTag = 'v';
                 } else if (tag == 'p') {
-                    this.vertex.getPaths(holder.get(), true);
+                    vertex.getPaths(holder.get(), true);
                 } else {
-                    this.vertex.getPaths(holder.get(), false);
+                    vertex.getPaths(holder.get(), false);
                 }
             }
-            context.write(key, this.holder.set(outTag, this.vertex));
+            context.write(key, this.holder.set(outTag, vertex));
         }
     }
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
-        private FaunusVertex vertex;
-
-        @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration());
-        }
-
-
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    this.vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else if (tag == 'p') {
-                    this.vertex.getPaths(holder.get(), true);
+                    vertex.getPaths(holder.get(), true);
                 } else {
-                    this.vertex.getPaths(holder.get(), false);
+                    vertex.getPaths(holder.get(), false);
                 }
             }
-            context.write(NullWritable.get(), this.vertex);
+            context.write(NullWritable.get(), vertex);
         }
     }
 }

@@ -34,7 +34,7 @@ public class ScriptRecordReaderTest extends BaseTest {
             if (id == 1 || id == 2 || id == 3 || id == 7 || id == 11) {
                 assertTrue(count(vertex.getEdges(Direction.OUT)) > 0);
             } else {
-                assertTrue(count(vertex.getEdges(Direction.OUT)) == 0);
+                assertEquals(count(vertex.getEdges(Direction.OUT)), 0);
             }
         }
         assertEquals(counter, 12);

@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus.formats.graphson;
 
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -83,9 +84,9 @@ public class FaunusGraphSONUtility {
                 final JSONObject edge = edges.optJSONObject(i);
                 FaunusEdge faunusEdge = null;
                 if (direction.equals(Direction.IN)) {
-                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, new FaunusVertex(edge.optLong(GraphSONTokens._OUT_V)), vertex);
+                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, edge.optLong(GraphSONTokens._OUT_V)), vertex);
                 } else if (direction.equals(Direction.OUT)) {
-                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, vertex, new FaunusVertex(edge.optLong(GraphSONTokens._IN_V)));
+                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, vertex, new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, edge.optLong(GraphSONTokens._IN_V)));
                 }
 
                 if (faunusEdge != null) {
@@ -148,12 +149,12 @@ public class FaunusGraphSONUtility {
     private static class FaunusElementFactory implements ElementFactory<FaunusVertex, FaunusEdge> {
         @Override
         public FaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
-            return new FaunusEdge(convertIdentifier(id), out.getIdAsLong(), in.getIdAsLong(), label);
+            return new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, convertIdentifier(id), out.getIdAsLong(), in.getIdAsLong(), label);
         }
 
         @Override
         public FaunusVertex createVertex(final Object id) {
-            return new FaunusVertex(convertIdentifier(id));
+            return new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, convertIdentifier(id));
         }
 
         private long convertIdentifier(final Object id) {

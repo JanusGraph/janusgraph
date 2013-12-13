@@ -41,7 +41,6 @@ public class VerticesVerticesMapReduce {
         private Direction direction;
         private String[] labels;
 
-        private FaunusVertex vertex;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
@@ -50,7 +49,6 @@ public class VerticesVerticesMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -60,20 +58,20 @@ public class VerticesVerticesMapReduce {
                 long edgesTraversed = 0l;
                 if (this.direction.equals(OUT) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(OUT, this.labels)) {
-                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(IN));
-                        this.vertex.getPaths(value, false);
-                        this.longWritable.set(this.vertex.getIdAsLong());
-                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), ((FaunusEdge) edge).getVertexId(IN));
+                        vertex.getPaths(value, false);
+                        this.longWritable.set(vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
                 }
 
                 if (this.direction.equals(IN) || this.direction.equals(BOTH)) {
                     for (final Edge edge : value.getEdges(IN, this.labels)) {
-                        this.vertex.reuse(((FaunusEdge) edge).getVertexId(OUT));
-                        this.vertex.getPaths(value, false);
-                        this.longWritable.set(this.vertex.getIdAsLong());
-                        context.write(this.longWritable, this.holder.set('p', this.vertex));
+                        final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), ((FaunusEdge) edge).getVertexId(OUT));
+                        vertex.getPaths(value, false);
+                        this.longWritable.set(vertex.getIdAsLong());
+                        context.write(this.longWritable, this.holder.set('p', vertex));
                         edgesTraversed++;
                     }
                 }
@@ -88,27 +86,20 @@ public class VerticesVerticesMapReduce {
 
     public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
 
-        private FaunusVertex vertex;
-
-        @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration());
-        }
-
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    this.vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((FaunusVertex) holder.get());
                 } else if (tag == 'p') {
-                    this.vertex.getPaths(holder.get(), true);
+                    vertex.getPaths(holder.get(), true);
                 } else {
-                    this.vertex.getPaths(holder.get(), false);
+                    vertex.getPaths(holder.get(), false);
                 }
             }
-            context.write(NullWritable.get(), this.vertex);
+            context.write(NullWritable.get(), vertex);
         }
     }
 }

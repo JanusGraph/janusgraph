@@ -24,10 +24,10 @@ public class FaunusEvaluationJob {
     private volatile String errorMessage = "";
     private UUID jobId;
     private final RexsterApplicationGraph rag;
-    private final Map<String,String> configOverrides;
+    private final Map<String, String> configOverrides;
 
     public FaunusEvaluationJob(final String script, final UUID jobId, final RexsterApplicationGraph rag,
-                               final Map<String,String> configOverrides) {
+                               final Map<String, String> configOverrides) {
         this.script = script;
         this.jobId = jobId;
         this.rag = rag;
@@ -66,11 +66,11 @@ public class FaunusEvaluationJob {
     }
 
     private static FaunusGremlinScriptEngine getScriptEngine(final RexsterApplicationGraph rag,
-                                                             final Map<String,String> configOverrides) {
+                                                             final Map<String, String> configOverrides) {
         final FaunusGremlinScriptEngine engine = new FaunusGremlinScriptEngine();
         final Configuration configuration = new Configuration();
 
-        final Map<String,String> properties = rag.findExtensionConfiguration(
+        final Map<String, String> properties = rag.findExtensionConfiguration(
                 FaunusRexsterExecutorExtension.EXTENSION_NAMESPACE, FaunusRexsterExecutorExtension.EXTENSION_NAME)
                 .tryGetMapFromConfiguration();
 
@@ -102,7 +102,7 @@ public class FaunusEvaluationJob {
 
         final Iterator itty = conf.iterator();
         while (itty.hasNext()) {
-            final Map.Entry<String,String> e = (Map.Entry<String,String>) itty.next();
+            final Map.Entry<String, String> e = (Map.Entry<String, String>) itty.next();
 
             sb.append(e.getKey());
             sb.append("=");

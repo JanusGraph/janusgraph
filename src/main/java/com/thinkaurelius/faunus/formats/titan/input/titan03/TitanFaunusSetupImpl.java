@@ -17,7 +17,11 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.IndexParameters;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
+import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.reference.TitanKeyReference;
 import com.thinkaurelius.titan.graphdb.types.reference.TitanLabelReference;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
@@ -37,7 +41,6 @@ import titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex;
 import titan03.com.thinkaurelius.titan.util.datastructures.ImmutableLongObjectMap;
 
-import java.util.Iterator;
 import java.util.List;
 
 import static titan03.com.thinkaurelius.titan.graphdb.database.EdgeSerializer.*;
@@ -55,7 +58,7 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
         BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
         graphConfig = new GraphDatabaseConfiguration(titan);
         graph = new StandardTitanGraph(graphConfig);
-        tx = (StandardTitanTx)graph.newTransaction();
+        tx = (StandardTitanTx) graph.newTransaction();
     }
 
     @Override
@@ -65,43 +68,44 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
             TitanKeyVertex k = (TitanKeyVertex) v;
             PropertyKeyDefinition def = k.getDefinition();
             TypeAttribute.Map definition = new TypeAttribute.Map();
-            transfer(def,definition);
+            transfer(def, definition);
             List<IndexType> indexes = Lists.newArrayList();
             for (String indexname : def.getIndexes(titan03.com.tinkerpop.blueprints.Vertex.class)) {
-                indexes.add(new IndexType(indexname,com.tinkerpop.blueprints.Vertex.class));
+                indexes.add(new IndexType(indexname, com.tinkerpop.blueprints.Vertex.class));
             }
             for (String indexname : def.getIndexes(titan03.com.tinkerpop.blueprints.Edge.class)) {
-                indexes.add(new IndexType(indexname,com.tinkerpop.blueprints.Edge.class));
+                indexes.add(new IndexType(indexname, com.tinkerpop.blueprints.Edge.class));
             }
-            definition.setValue(TypeAttributeType.INDEXES,indexes.toArray(new IndexType[indexes.size()]));
+            definition.setValue(TypeAttributeType.INDEXES, indexes.toArray(new IndexType[indexes.size()]));
             IndexParameters[] indexparas = new IndexParameters[indexes.size()];
-            for (int i=0;i<indexparas.length;i++) indexparas[i]=new IndexParameters(indexes.get(i).getIndexName(),new Parameter[0]);
-            definition.setValue(TypeAttributeType.INDEX_PARAMETERS,indexparas);
-            definition.setValue(TypeAttributeType.DATATYPE,convertDatatype(def.getDataType()));
-            types.add(new TitanKeyReference(k.getID(),k.getName(),definition));
+            for (int i = 0; i < indexparas.length; i++)
+                indexparas[i] = new IndexParameters(indexes.get(i).getIndexName(), new Parameter[0]);
+            definition.setValue(TypeAttributeType.INDEX_PARAMETERS, indexparas);
+            definition.setValue(TypeAttributeType.DATATYPE, convertDatatype(def.getDataType()));
+            types.add(new TitanKeyReference(k.getID(), k.getName(), definition));
         }
         for (TitanVertex v : tx.getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL)) {
             TitanLabelVertex l = (TitanLabelVertex) v;
             EdgeLabelDefinition def = l.getDefinition();
             TypeAttribute.Map definition = new TypeAttribute.Map();
-            transfer(def,definition);
-            definition.setValue(TypeAttributeType.UNIDIRECTIONAL,def.isUnidirectional());
-            types.add(new TitanLabelReference(l.getID(),l.getName(),definition));
+            transfer(def, definition);
+            definition.setValue(TypeAttributeType.UNIDIRECTIONAL, def.isUnidirectional());
+            types.add(new TitanLabelReference(l.getID(), l.getName(), definition));
         }
         return types;
     }
 
     private static void transfer(TypeDefinition typedef, TypeAttribute.Map definition) {
-        definition.setValue(TypeAttributeType.HIDDEN,typedef.isHidden());
-        definition.setValue(TypeAttributeType.MODIFIABLE,typedef.isModifiable());
-        boolean[] uniqueness = {typedef.isUnique(titan03.com.tinkerpop.blueprints.Direction.OUT),typedef.isUnique(titan03.com.tinkerpop.blueprints.Direction.IN)};
-        boolean[] uniqunesslock = {typedef.uniqueLock(titan03.com.tinkerpop.blueprints.Direction.OUT),typedef.uniqueLock(titan03.com.tinkerpop.blueprints.Direction.IN)};
-        boolean[] isstatic = {typedef.isStatic(titan03.com.tinkerpop.blueprints.Direction.OUT),typedef.isStatic(titan03.com.tinkerpop.blueprints.Direction.IN)};
-        definition.setValue(TypeAttributeType.UNIQUENESS,uniqueness);
-        definition.setValue(TypeAttributeType.UNIQUENESS_LOCK,uniqunesslock);
-        definition.setValue(TypeAttributeType.STATIC,isstatic);
-        definition.setValue(TypeAttributeType.SORT_KEY,typedef.getPrimaryKey());
-        definition.setValue(TypeAttributeType.SIGNATURE,typedef.getSignature());
+        definition.setValue(TypeAttributeType.HIDDEN, typedef.isHidden());
+        definition.setValue(TypeAttributeType.MODIFIABLE, typedef.isModifiable());
+        boolean[] uniqueness = {typedef.isUnique(titan03.com.tinkerpop.blueprints.Direction.OUT), typedef.isUnique(titan03.com.tinkerpop.blueprints.Direction.IN)};
+        boolean[] uniqunesslock = {typedef.uniqueLock(titan03.com.tinkerpop.blueprints.Direction.OUT), typedef.uniqueLock(titan03.com.tinkerpop.blueprints.Direction.IN)};
+        boolean[] isstatic = {typedef.isStatic(titan03.com.tinkerpop.blueprints.Direction.OUT), typedef.isStatic(titan03.com.tinkerpop.blueprints.Direction.IN)};
+        definition.setValue(TypeAttributeType.UNIQUENESS, uniqueness);
+        definition.setValue(TypeAttributeType.UNIQUENESS_LOCK, uniqunesslock);
+        definition.setValue(TypeAttributeType.STATIC, isstatic);
+        definition.setValue(TypeAttributeType.SORT_KEY, typedef.getPrimaryKey());
+        definition.setValue(TypeAttributeType.SIGNATURE, typedef.getSignature());
         definition.setValue(TypeAttributeType.SORT_ORDER, Order.ASC);
     }
 
@@ -114,34 +118,39 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
                 titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getArrayColumn());
                 titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getArrayValue());
 
-                ImmutableLongObjectMap map = graph.getEdgeSerializer().parseProperties(vertexid,titan03.com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry.of(column,value),headerOnly,tx);
+                ImmutableLongObjectMap map = graph.getEdgeSerializer().parseProperties(vertexid, titan03.com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry.of(column, value), headerOnly, tx);
                 titan03.com.tinkerpop.blueprints.Direction dir = map.get(DIRECTION_ID);
                 Direction direction;
                 switch (dir) {
-                    case IN: direction=Direction.IN; break;
-                    case OUT: direction=Direction.OUT; break;
-                    default: throw new IllegalArgumentException("Invalid direction found");
+                    case IN:
+                        direction = Direction.IN;
+                        break;
+                    case OUT:
+                        direction = Direction.OUT;
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid direction found");
                 }
 
                 long typeid = map.get(TYPE_ID);
                 long relationid = map.get(RELATION_ID);
                 Object propValue = map.get(VALUE_ID);
-                if (propValue!=null) { //Property
+                if (propValue != null) { //Property
                     propValue = convertPropertyValue(propValue);
-                    return new RelationCache(direction,typeid,relationid,propValue,null);
+                    return new RelationCache(direction, typeid, relationid, propValue, null);
                 } else { //Edge
                     long otherVertexId = map.get(OTHER_VERTEX_ID);
                     LongObjectOpenHashMap<Object> properties = new LongObjectOpenHashMap<Object>();
                     //Add properties
-                    for (int i=0;i<map.size();i++) {
+                    for (int i = 0; i < map.size(); i++) {
                         long propTypeId = map.getKey(i);
-                        if (propTypeId>0) {
-                            if (map.getValue(i)!=null) {
+                        if (propTypeId > 0) {
+                            if (map.getValue(i) != null) {
                                 properties.put(propTypeId, convertPropertyValue(map.getValue(i)));
                             }
                         }
                     }
-                    return new RelationCache(direction,typeid,relationid,otherVertexId,properties);
+                    return new RelationCache(direction, typeid, relationid, otherVertexId, properties);
                 }
             }
 
@@ -149,14 +158,14 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
     }
 
     private static Object convertPropertyValue(Object value) {
-        assert value!=null;
+        assert value != null;
         if (value instanceof titan03.com.thinkaurelius.titan.core.attribute.Geoshape) {
-            titan03.com.thinkaurelius.titan.core.attribute.Geoshape geo = (titan03.com.thinkaurelius.titan.core.attribute.Geoshape)value;
+            titan03.com.thinkaurelius.titan.core.attribute.Geoshape geo = (titan03.com.thinkaurelius.titan.core.attribute.Geoshape) value;
             Geoshape newgeo;
-            switch(geo.getType()) {
+            switch (geo.getType()) {
                 case POINT:
                     titan03.com.thinkaurelius.titan.core.attribute.Geoshape.Point p = geo.getPoint();
-                    newgeo = Geoshape.point(p.getLatitude(),p.getLongitude());
+                    newgeo = Geoshape.point(p.getLatitude(), p.getLongitude());
                     break;
                 case CIRCLE:
                     p = geo.getPoint();
@@ -165,21 +174,21 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
                 case BOX:
                     titan03.com.thinkaurelius.titan.core.attribute.Geoshape.Point p1 = geo.getPoint(1);
                     titan03.com.thinkaurelius.titan.core.attribute.Geoshape.Point p2 = geo.getPoint(2);
-                    newgeo = Geoshape.box(p1.getLatitude(),p1.getLongitude(),p2.getLatitude(),p2.getLongitude());
+                    newgeo = Geoshape.box(p1.getLatitude(), p1.getLongitude(), p2.getLatitude(), p2.getLongitude());
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid geoshape found: " + geo);
             }
             return newgeo;
         } else if (value instanceof titan03.com.thinkaurelius.titan.core.attribute.FullDouble) {
-            return new FullDouble(((titan03.com.thinkaurelius.titan.core.attribute.FullDouble)value).doubleValue());
+            return new FullDouble(((titan03.com.thinkaurelius.titan.core.attribute.FullDouble) value).doubleValue());
         } else if (value instanceof titan03.com.thinkaurelius.titan.core.attribute.FullFloat) {
-            return new FullFloat(((titan03.com.thinkaurelius.titan.core.attribute.FullFloat)value).floatValue());
+            return new FullFloat(((titan03.com.thinkaurelius.titan.core.attribute.FullFloat) value).floatValue());
         } else return value;
     }
 
     private static Class convertDatatype(Class clazz) {
-        assert clazz!=null;
+        assert clazz != null;
         if (clazz.equals(titan03.com.thinkaurelius.titan.core.attribute.Geoshape.class)) return Geoshape.class;
         else if (clazz.equals(titan03.com.thinkaurelius.titan.core.attribute.FullDouble.class)) return FullDouble.class;
         else if (clazz.equals(titan03.com.thinkaurelius.titan.core.attribute.FullFloat.class)) return FullFloat.class;
@@ -222,8 +231,8 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
 
     @Override
     public void close() {
-        if (tx!=null) tx.rollback();
-        if (graph!=null) graph.shutdown();
+        if (tx != null) tx.rollback();
+        if (graph != null) graph.shutdown();
     }
 
 }

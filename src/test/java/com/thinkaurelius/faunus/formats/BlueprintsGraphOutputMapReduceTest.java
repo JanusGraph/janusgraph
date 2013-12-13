@@ -46,11 +46,11 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
     public void testTinkerGraphIncrementalLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
-        Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
-        vertexMapReduceDriver.withConfiguration(conf);
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
-        edgeMapReduceDriver.withConfiguration(conf);
+        Configuration configuration = BlueprintsGraphOutputMapReduce.createConfiguration();
+        configuration.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        vertexMapReduceDriver.withConfiguration(configuration);
+        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, configuration), vertexMapReduceDriver);
+        edgeMapReduceDriver.withConfiguration(configuration);
         for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }
@@ -58,12 +58,12 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
         Map<Long, FaunusVertex> incrementalGraph = new HashMap<Long, FaunusVertex>();
         // VERTICES
-        FaunusVertex marko1 = new FaunusVertex(11l);
+        FaunusVertex marko1 = new FaunusVertex(configuration, 11l);
         marko1.setProperty("name", "marko");
         marko1.setProperty("height", "5'11");
-        FaunusVertex stephen1 = new FaunusVertex(22l);
+        FaunusVertex stephen1 = new FaunusVertex(configuration, 22l);
         stephen1.setProperty("name", "stephen");
-        FaunusVertex vadas1 = new FaunusVertex(33l);
+        FaunusVertex vadas1 = new FaunusVertex(configuration, 33l);
         vadas1.setProperty("name", "vadas");
         // EDGES
         marko1.addEdge(Direction.OUT, "worksWith", stephen1.getIdAsLong());
@@ -75,14 +75,14 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         incrementalGraph.put(11l, marko1);
         incrementalGraph.put(22l, stephen1);
         incrementalGraph.put(33l, vadas1);
-        conf = new Configuration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        configuration = new Configuration();
+        configuration.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
 
 
         setUp();
-        vertexMapReduceDriver.withConfiguration(conf);
+        vertexMapReduceDriver.withConfiguration(configuration);
         graph = runWithGraph(incrementalGraph, vertexMapReduceDriver);
-        edgeMapReduceDriver.withConfiguration(conf);
+        edgeMapReduceDriver.withConfiguration(configuration);
         for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }

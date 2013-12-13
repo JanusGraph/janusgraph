@@ -4,6 +4,7 @@ import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.ElementState;
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusProperty;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
@@ -42,7 +43,7 @@ public class FaunusTitanGraph {
     protected FaunusVertex readFaunusVertex(final StaticBuffer key, Iterable<Entry> entries) {
         final long vertexId = vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
-        FaunusVertex vertex = new FaunusVertex(vertexId);
+        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, vertexId);
         vertex.setState(ElementState.LOADED);
         boolean isSystemType = false;
         boolean foundVertexState = false;
@@ -61,24 +62,24 @@ public class FaunusTitanGraph {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    FaunusProperty p = new FaunusProperty(relation.relationId,type.getName(),value);
+                    FaunusProperty p = new FaunusProperty(relation.relationId, type.getName(), value);
                     p.setState(ElementState.LOADED);
                     vertex.addProperty(p);
                 } else {
                     assert type.isEdgeLabel();
                     FaunusEdge edge = null;
                     if (relation.direction.equals(Direction.IN))
-                        edge = new FaunusEdge(relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        edge = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
                     else if (relation.direction.equals(Direction.OUT))
-                        edge = new FaunusEdge(relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        edge = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
                     else if (relation.direction.equals(Direction.BOTH))
                         throw ExceptionFactory.bothIsNotSupported();
                     edge.setState(ElementState.LOADED);
                     if (relation.hasProperties()) {
                         // load edge properties
-                        for (LongObjectCursor<Object> next: relation) {
-                            assert next.value!=null;
-                            edge.setProperty(typeManager.getExistingType(next.key).getName(),next.value);
+                        for (LongObjectCursor<Object> next : relation) {
+                            assert next.value != null;
+                            edge.setProperty(typeManager.getExistingType(next.key).getName(), next.value);
                         }
                         for (FaunusProperty p : edge.getProperties()) p.setState(ElementState.LOADED);
                         vertex.addEdge(relation.direction, edge);

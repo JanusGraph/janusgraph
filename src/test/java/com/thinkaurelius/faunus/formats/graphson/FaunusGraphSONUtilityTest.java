@@ -2,6 +2,7 @@ package com.thinkaurelius.faunus.formats.graphson;
 
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
@@ -71,15 +72,15 @@ public class FaunusGraphSONUtilityTest extends TestCase {
     }
 
     public void testWriter1() throws Exception {
-        FaunusVertex marko = new FaunusVertex(1l);
+        FaunusVertex marko = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         marko.setProperty("name", "marko");
-        FaunusVertex stephen = new FaunusVertex(2l);
+        FaunusVertex stephen = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2l);
         stephen.setProperty("name", "stephen");
-        FaunusVertex vadas = new FaunusVertex(3l);
+        FaunusVertex vadas = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 3l);
         vadas.setProperty("name", "vadas");
 
-        marko.addEdge(OUT, new FaunusEdge(marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
-        marko.addEdge(IN, new FaunusEdge(vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
+        marko.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
+        marko.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
 
         JSONObject m = FaunusGraphSONUtility.toJSON(marko);
         JSONObject s = FaunusGraphSONUtility.toJSON(stephen);

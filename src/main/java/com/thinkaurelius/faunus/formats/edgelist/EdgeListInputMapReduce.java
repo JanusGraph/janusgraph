@@ -49,7 +49,7 @@ public class EdgeListInputMapReduce {
                 final long inId = ((FaunusEdge) value).getVertexId(IN);
                 FaunusVertex vertex = this.map.get(outId);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(outId);
+                    vertex = new FaunusVertex(context.getConfiguration(), outId);
                     this.map.put(outId, vertex);
                 }
                 vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
@@ -57,7 +57,7 @@ public class EdgeListInputMapReduce {
 
                 vertex = this.map.get(inId);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(inId);
+                    vertex = new FaunusVertex(context.getConfiguration(), inId);
                     this.map.put(inId, vertex);
                 }
                 vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
@@ -67,7 +67,7 @@ public class EdgeListInputMapReduce {
                 final long id = value.getIdAsLong();
                 FaunusVertex vertex = this.map.get(id);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(id);
+                    vertex = new FaunusVertex(context.getConfiguration(), id);
                     this.map.put(id, vertex);
                 }
                 vertex.addAllProperties(value.getProperties());
@@ -96,35 +96,32 @@ public class EdgeListInputMapReduce {
 
     public static class Combiner extends Reducer<LongWritable, FaunusVertex, LongWritable, FaunusVertex> {
 
-        private final FaunusVertex vertex = new FaunusVertex();
-
         @Override
         public void reduce(final LongWritable key, final Iterable<FaunusVertex> values, final Reducer<LongWritable, FaunusVertex, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final FaunusVertex value : values) {
-                this.vertex.addEdges(BOTH, value);
-                this.vertex.addAllProperties(value.getProperties());
+                vertex.addEdges(BOTH, value);
+                vertex.addAllProperties(value.getProperties());
             }
-            context.write(key, this.vertex);
+            context.write(key, vertex);
         }
     }
 
     public static class Reduce extends Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
-        private final FaunusVertex vertex = new FaunusVertex();
 
         @Override
         public void reduce(final LongWritable key, final Iterable<FaunusVertex> values, final Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            this.vertex.reuse(key.get());
+            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
             for (final FaunusVertex value : values) {
-                this.vertex.addEdges(BOTH, value);
-                this.vertex.addAllProperties(value.getProperties());
+                vertex.addEdges(BOTH, value);
+                vertex.addAllProperties(value.getProperties());
             }
             context.getCounter(Counters.VERTICES_CREATED).increment(1l);
-            context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(this.vertex.getProperties().size());
-            context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) this.vertex.getEdges(OUT)).size());
-            context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) this.vertex.getEdges(IN)).size());
-            context.write(NullWritable.get(), this.vertex);
+            context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(vertex.getProperties().size());
+            context.getCounter(Counters.OUT_EDGES_CREATED).increment(((List) vertex.getEdges(OUT)).size());
+            context.getCounter(Counters.IN_EDGES_CREATED).increment(((List) vertex.getEdges(IN)).size());
+            context.write(NullWritable.get(), vertex);
         }
     }
 }

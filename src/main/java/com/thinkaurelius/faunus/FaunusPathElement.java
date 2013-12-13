@@ -26,13 +26,6 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     }
 
     @Override
-    protected FaunusPathElement reuse(final long id) {
-        super.reuse(id);
-        this.clearPaths();
-        return this;
-    }
-
-    @Override
     protected <T> T getImplicitProperty(final FaunusType type) {
         if (type.equals(FaunusType.COUNT))
             return (T) Long.valueOf(this.pathCount());

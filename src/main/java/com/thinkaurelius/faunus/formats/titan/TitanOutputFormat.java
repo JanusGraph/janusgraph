@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats.titan;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
-import com.thinkaurelius.faunus.formats.JobConfigurationFormat;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;

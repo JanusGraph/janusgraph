@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.formats.titan;
 
+import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
@@ -35,7 +36,7 @@ public class SchemaInferencerMapReduce {
 
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex> {
 
-        private final FaunusVertex funnyVertex = new FaunusVertex(funnyKey.get());
+        private final FaunusVertex funnyVertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, funnyKey.get());
         private final LongWritable longWritable = new LongWritable();
 
         @Override

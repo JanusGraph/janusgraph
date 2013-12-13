@@ -7,9 +7,6 @@ import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusProperty;
 import com.thinkaurelius.faunus.Tokens;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */

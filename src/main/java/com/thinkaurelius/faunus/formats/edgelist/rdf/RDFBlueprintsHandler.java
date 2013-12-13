@@ -3,7 +3,6 @@ package com.thinkaurelius.faunus.formats.edgelist.rdf;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -34,8 +33,8 @@ import java.util.Set;
 public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement> {
 
     private final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
-    private final boolean enablePath;
     private final boolean useFragments;
+    private final Configuration configuration;
     private final Set<String> asProperties = new HashSet<String>();
     private final boolean literalAsProperty;
     private static final String BASE_URI = "http://thinkaurelius.com#";
@@ -74,7 +73,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
     }
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
-        this.enablePath = configuration.getBoolean(FaunusCompiler.PATH_ENABLED, false);
+        this.configuration = configuration;
         this.useFragments = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
         this.literalAsProperty = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
         for (final String property : configuration.getStringCollection(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
@@ -138,45 +137,39 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
-            final FaunusVertex subject = new FaunusVertex(Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
-            subject.enablePath(this.enablePath);
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
-            final FaunusVertex subject = new FaunusVertex(Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
-            subject.enablePath(this.enablePath);
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
-            final FaunusVertex subject = new FaunusVertex(subjectId);
-            subject.reuse(subjectId);
+            final FaunusVertex subject = new FaunusVertex(this.configuration, subjectId);
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
-            subject.enablePath(this.enablePath);
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
-            final FaunusVertex object = new FaunusVertex(objectId);
-            object.reuse(objectId);
+            final FaunusVertex object = new FaunusVertex(this.configuration, objectId);
             object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());
             if (this.useFragments)
                 object.setProperty(RDFInputFormat.NAME, postProcess(s.getObject()));
-            object.enablePath(this.enablePath);
             this.queue.add(object);
 
-            final FaunusEdge predicate = new FaunusEdge(-1, subjectId, objectId, postProcess(s.getPredicate()));
+            final FaunusEdge predicate = new FaunusEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
             predicate.setProperty(RDFInputFormat.URI, s.getPredicate().stringValue());
             if (null != s.getContext())
                 predicate.setProperty(RDFInputFormat.CONTEXT, s.getContext().stringValue());
-            predicate.enablePath(this.enablePath);
+            // TODO predicate.enablePath(this.enablePath);
             this.queue.add(predicate);
         }
     }

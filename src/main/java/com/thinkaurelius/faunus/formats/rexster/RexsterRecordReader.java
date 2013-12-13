@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.rexster.util.HttpHelper;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -29,7 +30,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     /**
      * The current vertex in the reader.
      */
-    private FaunusVertex vertex = new FaunusVertex();
+    private FaunusVertex vertex = new FaunusVertex(new EmptyConfiguration(), -1l);
 
     private DataInputStream rexsterInputStream;
 

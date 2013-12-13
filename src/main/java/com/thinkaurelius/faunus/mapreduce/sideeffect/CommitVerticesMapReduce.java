@@ -46,15 +46,12 @@ public class CommitVerticesMapReduce {
     public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
 
         private boolean drop;
-
-        private FaunusVertex vertex;
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.drop = Tokens.Action.valueOf(context.getConfiguration().get(ACTION)).equals(Tokens.Action.DROP);
-            this.vertex = new FaunusVertex(context.getConfiguration());
         }
 
         @Override
@@ -78,8 +75,7 @@ public class CommitVerticesMapReduce {
                 verticesKept++;
             } else {
                 final long vertexId = value.getIdAsLong();
-                this.vertex.reuse(vertexId);
-                this.holder.set('k', this.vertex);
+                this.holder.set('k', new FaunusVertex(context.getConfiguration(), vertexId));
 
                 Iterator<Edge> itty = value.getEdges(OUT).iterator();
                 while (itty.hasNext()) {
@@ -113,12 +109,6 @@ public class CommitVerticesMapReduce {
     public static class Combiner extends Reducer<LongWritable, Holder, LongWritable, Holder> {
 
         private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
-        private FaunusVertex vertex;
-
-        @Override
-        public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.vertex = new FaunusVertex(context.getConfiguration());
-        }
 
 
         @Override
@@ -144,7 +134,7 @@ public class CommitVerticesMapReduce {
             } else {
                 // vertex not on the same machine as the vertices being deleted
                 for (final Long id : ids) {
-                    context.write(key, this.holder.set('k', this.vertex.reuse(id)));
+                    context.write(key, this.holder.set('k', new FaunusVertex(context.getConfiguration(), id)));
                 }
             }
 

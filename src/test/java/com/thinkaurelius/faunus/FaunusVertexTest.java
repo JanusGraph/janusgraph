@@ -27,8 +27,8 @@ import static com.tinkerpop.blueprints.Direction.*;
 public class FaunusVertexTest extends BaseTest {
 
     public void testRawComparator() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(10);
-        FaunusVertex vertex2 = new FaunusVertex(11);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        FaunusVertex vertex2 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 11);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
@@ -44,7 +44,7 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testSimpleSerialization() throws IOException {
 
-        FaunusVertex vertex1 = new FaunusVertex(10l);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -79,9 +79,9 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerialization() throws IOException {
 
-        FaunusVertex vertex1 = new FaunusVertex(10);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 3, "knows"));
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 3, "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -139,10 +139,10 @@ public class FaunusVertexTest extends BaseTest {
         Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean(FaunusCompiler.PATH_ENABLED, true);
 
-        FaunusVertex vertex1 = new FaunusVertex(10);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
         vertex1.setConf(configuration);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(IN, new FaunusEdge(3, vertex1.getIdAsLong(), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 3, vertex1.getIdAsLong(), "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -202,8 +202,8 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testVertexSerializationNoProperties() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(1l);
-        vertex1.addEdge(OUT, new FaunusEdge(vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
 
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
@@ -238,33 +238,33 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testRemovingEdges() {
-        FaunusVertex vertex = new FaunusVertex(1l);
+        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new FaunusVertex(1l);
+        vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new FaunusVertex(1l);
+        vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new FaunusEdge(vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
@@ -335,49 +335,6 @@ public class FaunusVertexTest extends BaseTest {
         assertEquals(asList(vertices.get(4l).getEdges(Direction.BOTH, "blah")).size(), 0);
     }
 
-    public void testVertexReuse() throws Exception {
-        FaunusVertex vertex = new FaunusVertex();
-        assertEquals(vertex.getId(), -1l);
-        assertFalse(vertex.pathEnabled);
-        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
-        vertex.addEdge(OUT, new FaunusEdge(1, 2, "knows"));
-        assertTrue(vertex.getEdges(BOTH).iterator().hasNext());
-        assertEquals(vertex.getPropertyKeys().size(), 0);
-        vertex.setProperty("name", "marko");
-        assertEquals(vertex.getProperty("name"), "marko");
-        assertEquals(vertex.getPropertyKeys().size(), 1);
-
-        vertex.reuse(10);
-        assertEquals(vertex.getId(), 10l);
-        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
-        assertEquals(vertex.getPropertyKeys().size(), 0);
-        assertNull(vertex.getProperty("name"));
-        assertFalse(vertex.pathEnabled);
-
-        vertex.enablePath(true);
-        assertTrue(vertex.pathEnabled);
-        assertEquals(vertex.getPaths().size(), 0);
-
-        vertex.reuse(220);
-        assertEquals(vertex.getId(), 220l);
-        assertFalse(vertex.getEdges(BOTH).iterator().hasNext());
-        assertEquals(vertex.getPropertyKeys().size(), 0);
-        assertNull(vertex.getProperty("name"));
-        assertTrue(vertex.pathEnabled);
-        vertex.startPath();
-        assertEquals(vertex.getPaths().size(), 1);
-        assertEquals(vertex.getPaths().get(0).size(), 1);
-        assertEquals(vertex.getPaths().get(0).get(0).getId(), 220);
-
-        vertex.reuse(34);
-        assertTrue(vertex.pathEnabled);
-        assertEquals(vertex.getPaths().size(), 0);
-        vertex.startPath();
-        assertEquals(vertex.getPaths().size(), 1);
-        assertEquals(vertex.getPaths().get(0).size(), 1);
-        assertEquals(vertex.getPaths().get(0).get(0).getId(), 34);
-    }
-
     public void testNoPathsOnConstruction() throws Exception {
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class);
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Edge.class);
@@ -408,7 +365,7 @@ public class FaunusVertexTest extends BaseTest {
         // a 2.6 million length string == ~5 books worth of data
         assertEquals(value.length(), 2621440);
 
-        FaunusVertex vertex1 = new FaunusVertex(1l);
+        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
         vertex1.setProperty("name", value);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));

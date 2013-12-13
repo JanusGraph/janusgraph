@@ -4,13 +4,11 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
-import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetupCommon;
 import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
@@ -45,9 +43,9 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
             graph = new StandardTitanGraph(graphConfig);
             types = new TypeReferenceContainer(graph);
         } catch (Exception e) {
-            throw new RuntimeException("Could not read schema from TitanGraph",e);
+            throw new RuntimeException("Could not read schema from TitanGraph", e);
         } finally {
-            if (graph!=null) graph.shutdown();
+            if (graph != null) graph.shutdown();
         }
         Preconditions.checkNotNull(types);
         return types;

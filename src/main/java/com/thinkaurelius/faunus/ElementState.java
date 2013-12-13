@@ -10,11 +10,11 @@ public enum ElementState {
     LOADED; //The FaunusElement has been loaded from a base source
 
     public byte getByteValue() {
-        return (byte)this.ordinal();
+        return (byte) this.ordinal();
     }
 
     public static ElementState valueOf(byte ordinal) {
-        for (ElementState s : ElementState.values()) if (s.ordinal()==ordinal) return s;
+        for (ElementState s : ElementState.values()) if (s.ordinal() == ordinal) return s;
         throw new IllegalArgumentException("Unknown state id: " + ordinal);
     }
 
