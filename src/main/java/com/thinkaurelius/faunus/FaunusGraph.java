@@ -123,6 +123,22 @@ public class FaunusGraph implements Configurable {
         this.configuration.setBoolean(FAUNUS_OUTPUT_LOCATION_OVERWRITE, overwrite);
     }
 
+    public void setTrackPaths(final boolean trackPaths) {
+        this.configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, trackPaths);
+    }
+
+    public boolean getTrackPaths() {
+        return this.configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
+    }
+
+    public void setTrackState(final boolean trackState) {
+        this.configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, trackState);
+    }
+
+    public boolean getTrackState() {
+        return this.configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+    }
+
     public void shutdown() {
         this.configuration.clear();
     }

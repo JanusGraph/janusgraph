@@ -1,8 +1,6 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
-import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
@@ -11,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class FaunusPathElement extends FaunusElement implements WritableComparable<FaunusElement>, Configurable {
@@ -19,7 +18,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     protected MicroElement microVersion = null;
     protected boolean trackPaths = false;
     protected long pathCounter = 0;
-    protected Configuration configuration = new EmptyConfiguration();
+    protected Configuration configuration = FaunusElement.EMPTY_CONFIGURATION;
 
     public FaunusPathElement(final long id) {
         super(id);
@@ -34,7 +33,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        this.enablePath(configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false));
+        this.trackPaths(configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false));
     }
 
     public Configuration getConf() {
@@ -45,8 +44,8 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     // Path Handling
     //##################################
 
-    private void enablePath(final boolean enablePath) {
-        this.trackPaths = enablePath;
+    private void trackPaths(final boolean trackPaths) {
+        this.trackPaths = trackPaths;
         if (this.trackPaths) {
             if (null == this.microVersion)
                 this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);

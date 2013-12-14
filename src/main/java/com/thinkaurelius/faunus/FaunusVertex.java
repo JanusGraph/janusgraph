@@ -57,14 +57,6 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         this.readFields(in);
     }
 
-
-    /*public FaunusVertex reuse(final long id) {
-        super.reuse(id);
-        this.outEdges.clear();
-        this.inEdges.clear();
-        return this;
-    }*/
-
     public void addAll(final FaunusVertex vertex) {
         this.id = vertex.getIdAsLong();
         this.properties = vertex.properties;
@@ -220,19 +212,20 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
     }
 
     public Edge addEdge(final String label, final Vertex inVertex) {
-        return this.addEdge(Direction.OUT, new FaunusEdge(this.getConf(), this.getIdAsLong(), ((FaunusVertex) inVertex).getIdAsLong(), label));
+        return this.addEdge(Direction.OUT, new FaunusEdge(this.configuration, this.getIdAsLong(), ((FaunusVertex) inVertex).getIdAsLong(), label));
     }
 
     public Edge addEdge(final Direction direction, final String label, final long otherVertexId) {
         if (direction == OUT)
-            return this.addEdge(OUT, new FaunusEdge(this.getConf(), this.id, otherVertexId, label));
+            return this.addEdge(OUT, new FaunusEdge(this.configuration, this.id, otherVertexId, label));
         else if (direction == Direction.IN)
-            return this.addEdge(Direction.IN, new FaunusEdge(this.getConf(), otherVertexId, this.id, label));
+            return this.addEdge(Direction.IN, new FaunusEdge(this.configuration, otherVertexId, this.id, label));
         else
             throw ExceptionFactory.bothIsNotSupported();
     }
 
     public FaunusEdge addEdge(final Direction direction, final FaunusEdge edge) {
+        edge.setConf(this.getConf());
         getAdjacency(direction).put(edge.getType(), edge);
         return edge;
     }

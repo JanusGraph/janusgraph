@@ -5,6 +5,26 @@ Faunus: Graph Analytics Engine
 
 h2. Faunus 0.x.y
 
+h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
+
+```xml
+<dependency>
+  <groupId>com.thinkaurelius.faunus</groupId>
+  <artifactId>faunus</artifactId>
+  <version>0.5.0-SNAPSHOT</version>
+</dependency>
+```
+
+* Isolated @FaunusElement@ serializer into @FaunusSerializer@
+* All @FaunusVertex@ and @FaunusEdge@ construction via @Configuration@
+* Removed @pathEnabled@ boolean from element serialization (now part of @Configuration@)
+* Added state tracking for loaded, new, and deleted elements/properties
+* @FaunusCompiler@ updates @FaunusGraph@ configurations with global pipeline requirements
+* Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
+* Removed @FaunusVertex.reuse()@ in support of short-lived @FaunusVertex@ objects
+
+==<hr/>==
+
 h3. Version 0.4.1 (Nov 24, 2013)
 
 ```xml

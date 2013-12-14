@@ -43,6 +43,7 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
+    private static final String MAPRED_JAR = "mapred.jar";
 
     public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
     public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
@@ -93,8 +94,10 @@ public class FaunusCompiler extends Configured implements Tool {
 
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
-            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue()))
+            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue())) {
                 this.trackPaths = true;
+                this.graph.setTrackPaths(this.trackPaths);
+            }
             this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
             this.getConf().set(entry.getKey(), entry.getValue());
         }
@@ -207,7 +210,7 @@ public class FaunusCompiler extends Configured implements Tool {
             return;
         }
 
-        String hadoopFileJar = graph.getConf().get("mapred.jar", null);
+        String hadoopFileJar = graph.getConf().get(MAPRED_JAR, null);
         if (null == hadoopFileJar) {
             if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
                 hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
@@ -248,8 +251,7 @@ public class FaunusCompiler extends Configured implements Tool {
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, this.trackPaths);
-            job.getConfiguration().set("mapred.jar", hadoopFileJar);
-
+            job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 
             // configure job inputs

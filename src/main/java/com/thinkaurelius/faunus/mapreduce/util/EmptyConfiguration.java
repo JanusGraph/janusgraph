@@ -8,7 +8,6 @@ import org.apache.hadoop.conf.Configuration;
 public class EmptyConfiguration extends Configuration {
 
     public EmptyConfiguration() {
-        super();
-        this.clear();
+        super(false);
     }
 }

@@ -14,8 +14,6 @@ public class FaunusType {
 
     private enum TypeVisibility {NORMAL, HIDDEN, IMPLICIT}
 
-    ;
-
     public static final FaunusType COUNT = new FaunusType(Tokens._COUNT, TypeVisibility.IMPLICIT);
     public static final FaunusType LINK = new FaunusType(Tokens._LINK, TypeVisibility.NORMAL);
 
@@ -37,12 +35,12 @@ public class FaunusType {
         this.visibility = visibility;
     }
 
-    private static final String checkName(String name) {
+    private static String checkName(String name) {
         //Preconditions.checkArgument(!name.startsWith("_"),"Cannot use reserved name as type: " + name);
         return name;
     }
 
-    private static final String getHiddenName(String name) {
+    private static String getHiddenName(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         return "_" + name;
     }
