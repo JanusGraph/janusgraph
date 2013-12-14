@@ -163,6 +163,13 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         };
     }
 
+    public Iterable<FaunusEdge> getEdgesWithState(final Direction direction) {
+        if (direction.equals(Direction.OUT))
+            return this.outEdges.values();
+        else
+            return this.inEdges.values();
+    }
+
     @Override
     public Iterable<Edge> getEdges(final Direction direction, String... labels) {
         if (labels == null) labels = new String[0];

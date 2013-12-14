@@ -201,6 +201,10 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         for (final FaunusProperty p : properties) addProperty(p);
     }
 
+    public Collection<FaunusProperty> getPropertiesWithState() {
+        return this.properties.values();
+    }
+
     //##################################
     // General Utility
     //##################################

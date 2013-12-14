@@ -24,6 +24,8 @@ h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
 * Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
 * @PropertyMapMap@ now includes @Edge.getLabel()@ in the returned property map (via @_label@)
 * Moved all distributed properties files from @bin/@ to a new @conf/@ to be consistent with Titan
+* Added @TitanGraphOutputMapReduce@ to support Titan-specific features (e.g. multi-propertites on vertices)
+* @TitanGraphOutputMapReduce@ respects state tracking and get/create/delete in output @TitanGraph@
 
 ==<hr/>==
 

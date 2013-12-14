@@ -50,7 +50,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropAllVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.DROP);
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -63,7 +63,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testKeepProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -85,7 +85,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);

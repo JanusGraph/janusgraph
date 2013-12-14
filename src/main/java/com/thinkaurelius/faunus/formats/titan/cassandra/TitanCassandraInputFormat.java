@@ -53,7 +53,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         ConfigHelper.setInputSlicePredicate(config, predicate);
         ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
-        config.set("storage.read-only", "true");
+        // TODO config.set("storage.read-only", "true");
         config.set("autotype", "none");
 
         this.config = config;

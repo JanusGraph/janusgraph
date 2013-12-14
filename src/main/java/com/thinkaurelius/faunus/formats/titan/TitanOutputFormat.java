@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.formats.titan;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
-import com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.faunus.formats.MapReduceFormat;
 import com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat;
 import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
@@ -29,44 +28,17 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                     FaunusVertex.class,
                     SchemaInferencerMapReduce.createConfiguration());
         }
-        compiler.addMapReduce(BlueprintsGraphOutputMapReduce.VertexMap.class,
+        compiler.addMapReduce(TitanGraphOutputMapReduce.VertexMap.class,
                 null,
-                BlueprintsGraphOutputMapReduce.Reduce.class,
+                TitanGraphOutputMapReduce.Reduce.class,
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                BlueprintsGraphOutputMapReduce.createConfiguration());
-        compiler.addMap(BlueprintsGraphOutputMapReduce.EdgeMap.class,
+                TitanGraphOutputMapReduce.createConfiguration());
+        compiler.addMap(TitanGraphOutputMapReduce.EdgeMap.class,
                 NullWritable.class,
                 FaunusVertex.class,
-                BlueprintsGraphOutputMapReduce.createConfiguration());
+                TitanGraphOutputMapReduce.createConfiguration());
     }
-
-    /*@Override
-    public void updateJob(final Job job) throws InterruptedException, IOException {
-        try {
-            final Configuration configuration = job.getConfiguration();
-            if (FileInputFormat.class.isAssignableFrom(job.getInputFormatClass())) {
-                final Long splitSize = configuration.getLong("mapred.max.split.size", -1);
-                if (splitSize == -1)
-                    throw new InterruptedException("Can not determine the number of reduce tasks if mapred.max.split.size is not set");
-                final Path[] paths = FileInputFormat.getInputPaths(job);
-                final PathFilter filter = FileInputFormat.getInputPathFilter(job);
-                final FileSystem fs = FileSystem.get(configuration);
-                Long totalSize = 0l;
-                for (final Path path : paths) {
-                    totalSize = totalSize + HDFSTools.getFileSize(fs, path, filter);
-                }
-                final int reduceTasks = (int) (totalSize.doubleValue() / splitSize.doubleValue());
-                job.setNumReduceTasks((reduceTasks == 0) ? 1 : reduceTasks);
-            } else {
-                if (-1 == configuration.getInt("mapred.reduce.tasks", -1)) {
-                    throw new InterruptedException("The input to Titan is not in HDFS and source size can not be determined -- set mapred.reduce.tasks");
-                }
-            }
-        } catch (final ClassNotFoundException e) {
-            throw new InterruptedException(e.getMessage());
-        }
-    }*/
 }

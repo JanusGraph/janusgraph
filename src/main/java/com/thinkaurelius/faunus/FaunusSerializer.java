@@ -219,7 +219,7 @@ public class FaunusSerializer {
         Map<FaunusType, Integer> counts = Maps.newHashMap();
         int typeCount = 0;
         for (FaunusType type : edges.keySet()) {
-            int count = IterablesUtil.size(filterDeleted(edges.get(type)));
+            int count = this.trackState ? IterablesUtil.size(edges.get(type)) : IterablesUtil.size(filterDeleted(edges.get(type)));
             counts.put(type, count);
             if (count > 0) typeCount++;
         }
@@ -227,7 +227,7 @@ public class FaunusSerializer {
         WritableUtils.writeVInt(out, typeCount);
         for (FaunusType type : edges.keySet()) {
             if (counts.get(type) == 0) continue;
-            Iterable<FaunusEdge> subset = filterDeleted(edges.get(type));
+            Iterable<FaunusEdge> subset = this.trackState ? edges.get(type) : filterDeleted(edges.get(type));
             WritableUtils.writeVLong(out, schema.getTypeId(type));
             WritableUtils.writeVInt(out, counts.get(type));
             for (final FaunusEdge edge : subset) {

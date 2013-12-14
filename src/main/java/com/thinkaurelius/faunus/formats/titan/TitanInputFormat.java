@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
+ * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
 
@@ -35,10 +36,10 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
         this.vertexQuery = VertexQueryFilter.create(config);
         this.trackPaths = config.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
 
-        String titanVersion = config.get(FAUNUS_GRAPH_INPUT_TITAN_VERION, FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT);
-        String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
+        final String titanVersion = config.get(FAUNUS_GRAPH_INPUT_TITAN_VERION, FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT);
+        final String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
 
-        titanSetup = ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
+        this.titanSetup = ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
     }
 
 

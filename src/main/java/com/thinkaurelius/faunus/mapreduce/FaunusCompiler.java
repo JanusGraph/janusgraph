@@ -66,6 +66,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
 
     private boolean trackPaths = false;
+    private boolean trackState = false;
 
     public FaunusCompiler(final FaunusGraph graph) {
         this.graph = graph;
@@ -95,8 +96,10 @@ public class FaunusCompiler extends Configured implements Tool {
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
             if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue())) {
-                this.trackPaths = true;
-                this.graph.setTrackPaths(this.trackPaths);
+                this.graph.setTrackPaths(this.trackPaths = true);
+            }
+            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_STATE) & Boolean.valueOf(entry.getValue())) {
+                this.graph.setTrackState(this.trackState = true);
             }
             this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
             this.getConf().set(entry.getKey(), entry.getValue());
@@ -240,7 +243,9 @@ public class FaunusCompiler extends Configured implements Tool {
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
 
         if (this.trackPaths)
-            logger.warn("Path calculations are enabled for this Faunus job (space and time expensive)");
+            logger.warn("Path tracking are enabled for this Faunus job (space and time expensive)");
+        if (this.trackState)
+            logger.warn("State tracking is enabled for this Faunus job (explicit deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
         final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
@@ -251,6 +256,7 @@ public class FaunusCompiler extends Configured implements Tool {
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
             job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, this.trackPaths);
+            job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, this.trackState);
             job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 

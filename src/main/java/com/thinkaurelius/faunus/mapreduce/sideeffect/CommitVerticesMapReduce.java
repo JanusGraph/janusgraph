@@ -173,7 +173,9 @@ public class CommitVerticesMapReduce {
                 if (ids.size() > 0)
                     vertex.removeEdgesToFrom(ids);
 
-                if (!vertex.isDeleted() && this.trackState)
+                if (this.trackState)
+                    context.write(NullWritable.get(), vertex);
+                else if (!vertex.isDeleted())
                     context.write(NullWritable.get(), vertex);
 
                 context.getCounter(Counters.OUT_EDGES_KEPT).increment(((List) vertex.getEdges(OUT)).size());

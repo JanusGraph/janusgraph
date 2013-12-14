@@ -56,7 +56,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         config.set(HConstants.ZOOKEEPER_QUORUM, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
         if (config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
             config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
-        config.set("storage.read-only", "true");
+        // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();
         scanner.addFamily(Backend.EDGESTORE_NAME.getBytes());
