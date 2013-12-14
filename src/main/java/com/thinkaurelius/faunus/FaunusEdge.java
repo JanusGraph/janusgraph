@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -25,7 +26,7 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     private FaunusType label;
 
     public FaunusEdge() {
-        this(EMPTY_CONFIGURATION);
+        this(EmptyConfiguration.immutable());
     }
 
     public FaunusEdge(final Configuration configuration) {

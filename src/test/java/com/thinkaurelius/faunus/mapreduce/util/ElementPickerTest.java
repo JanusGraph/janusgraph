@@ -12,7 +12,7 @@ import junit.framework.TestCase;
 public class ElementPickerTest extends TestCase {
 
     public void testPathCount() {
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens._COUNT), 0l);
         assertEquals(ElementPicker.getPropertyAsString(vertex, Tokens._COUNT), "0");
         vertex.incrPath(199);
@@ -23,7 +23,7 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testId() {
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens._ID), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens.ID), 10l);
         assertEquals(ElementPicker.getPropertyAsString(vertex, Tokens._ID), "10");
@@ -31,12 +31,12 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testLabel() {
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), null);
         vertex.setProperty(Tokens.LABEL, "aType");
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), "aType");
 
-        FaunusEdge edge = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1l, 10l, 10l, "knows");
+        FaunusEdge edge = new FaunusEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         try {
             edge.setProperty(Tokens.LABEL, "self");

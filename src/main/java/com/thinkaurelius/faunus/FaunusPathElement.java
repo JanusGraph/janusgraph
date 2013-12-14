@@ -1,6 +1,7 @@
 package com.thinkaurelius.faunus;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
@@ -18,7 +19,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     protected MicroElement microVersion = null;
     protected boolean trackPaths = false;
     protected long pathCounter = 0;
-    protected Configuration configuration = FaunusElement.EMPTY_CONFIGURATION;
+    protected Configuration configuration = EmptyConfiguration.immutable();
 
     public FaunusPathElement(final long id) {
         super(id);

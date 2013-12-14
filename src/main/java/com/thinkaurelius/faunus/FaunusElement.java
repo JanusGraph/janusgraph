@@ -24,8 +24,6 @@ import java.util.Set;
  */
 public abstract class FaunusElement implements Element, Comparable<FaunusElement> {
 
-    public static final Configuration EMPTY_CONFIGURATION = new EmptyConfiguration();
-
     static final Multimap<FaunusType, FaunusProperty> NO_PROPERTIES = ImmutableListMultimap.of();
 
     protected static final Predicate<FaunusProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusProperty>() {

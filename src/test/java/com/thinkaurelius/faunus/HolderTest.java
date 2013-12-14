@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus;
 
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import junit.framework.TestCase;
 import org.apache.hadoop.io.WritableComparator;
 
@@ -15,8 +16,8 @@ import java.io.IOException;
 public class HolderTest extends TestCase {
 
     public void testRawComparison() throws IOException {
-        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10));
-        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>('b', new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 11));
+        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', new FaunusVertex(EmptyConfiguration.immutable(), 10));
+        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>('b', new FaunusVertex(EmptyConfiguration.immutable(), 11));
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         holder1.write(new DataOutputStream(bytes1));
@@ -29,7 +30,7 @@ public class HolderTest extends TestCase {
     }
 
     public void testSerialization1() throws IOException {
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', vertex);
         assertEquals(holder1.get(), vertex);
         assertEquals(holder1.getTag(), 'a');

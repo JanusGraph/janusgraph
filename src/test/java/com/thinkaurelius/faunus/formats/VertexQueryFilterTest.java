@@ -3,6 +3,7 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import org.apache.hadoop.conf.Configuration;
@@ -23,7 +24,7 @@ public class VertexQueryFilterTest extends BaseTest {
         assertEquals(query.hasContainers.size(), 0);
         assertEquals(query.direction, Direction.BOTH);
         assertEquals(query.labels.length, 0);
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1);
         vertex.setProperty("name", "marko");
         vertex.addEdge("knows", vertex).setProperty("time", 1);
         query.defaultFilter(vertex);

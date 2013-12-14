@@ -22,8 +22,8 @@ import java.util.List;
 public class FaunusElementTest extends TestCase {
 
     public void testBasicSerialization() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        FaunusVertex vertex2 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, Long.MAX_VALUE);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
@@ -45,10 +45,10 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testElementComparator() throws IOException {
-        FaunusVertex a = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        FaunusVertex b = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, Long.MAX_VALUE);
-        FaunusVertex c = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        FaunusVertex d = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 12);
+        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex b = new FaunusVertex(EmptyConfiguration.immutable(), Long.MAX_VALUE);
+        FaunusVertex c = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex d = new FaunusVertex(EmptyConfiguration.immutable(), 12);
 
         assertEquals(a.compareTo(a), 0);
         assertEquals(a.compareTo(b), -1);
@@ -105,7 +105,7 @@ public class FaunusElementTest extends TestCase {
     }
 
     public void testSettingIdPropertyException() {
-        FaunusVertex a = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
+        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
         try {
             a.setProperty(Tokens.ID, 11l);
             assertFalse(true);
@@ -113,7 +113,7 @@ public class FaunusElementTest extends TestCase {
             assertTrue(true);
         }
 
-        FaunusEdge b = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1l, 2l, 13l, "self");
+        FaunusEdge b = new FaunusEdge(EmptyConfiguration.immutable(), 1l, 2l, 13l, "self");
         try {
             b.setProperty(Tokens.ID, 10);
             assertFalse(true);

@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -27,9 +28,9 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testSimpleElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1, 2, "knows"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 2);
         assertEquals(results.get(1l).getIdAsLong(), 1);
@@ -41,12 +42,12 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testMultiVertexElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1, 2, "knows"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(EmptyConfiguration.immutable(), 1, 2, "knows"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 2);
         assertEquals(results.get(1l).getIdAsLong(), 1);
@@ -58,14 +59,14 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testMultiVertexMultiEdgeElementList() throws IOException {
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 3));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 3));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 1, 2, "likes"));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 2, 3, "hates"));
-        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 3, 1, "likes"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 1));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 3));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 2));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusVertex(EmptyConfiguration.immutable(), 3));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(EmptyConfiguration.immutable(), 1, 2, "likes"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(EmptyConfiguration.immutable(), 2, 3, "hates"));
+        mapReduceDriver.addInput(NullWritable.get(), new FaunusEdge(EmptyConfiguration.immutable(), 3, 1, "likes"));
         Map<Long, FaunusVertex> results = BaseTest.run(mapReduceDriver);
         assertEquals(results.size(), 3);
         assertEquals(results.get(1l).getIdAsLong(), 1);
@@ -101,18 +102,18 @@ public class EdgeListInputMapReduceTest extends BaseTest {
     }
 
     public void testElementProperties() throws IOException {
-        FaunusVertex a = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1);
+        FaunusVertex a = new FaunusVertex(EmptyConfiguration.immutable(), 1);
         a.setProperty("name", "marko");
         a.setProperty("age", 33);
 
-        FaunusVertex b = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2);
+        FaunusVertex b = new FaunusVertex(EmptyConfiguration.immutable(), 2);
         b.setProperty("name", "josh");
 
-        FaunusVertex c = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1);
+        FaunusVertex c = new FaunusVertex(EmptyConfiguration.immutable(), 1);
         c.setProperty("name", "marko");
         c.setProperty("ssn", "12345");
 
-        FaunusEdge e = new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, a.getIdAsLong(), b.getIdAsLong(), "knows");
+        FaunusEdge e = new FaunusEdge(EmptyConfiguration.immutable(), a.getIdAsLong(), b.getIdAsLong(), "knows");
         e.setProperty("weight", 1.2f);
 
         mapReduceDriver.addInput(NullWritable.get(), a);

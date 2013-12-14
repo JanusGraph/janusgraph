@@ -27,8 +27,8 @@ import static com.tinkerpop.blueprints.Direction.*;
 public class FaunusVertexTest extends BaseTest {
 
     public void testRawComparator() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        FaunusVertex vertex2 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 11);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), 11);
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes1));
@@ -44,7 +44,7 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testSimpleSerialization() throws IOException {
 
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10l);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(bytes);
@@ -79,9 +79,9 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerialization() throws IOException {
 
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
-        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 3, "knows"));
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
+        vertex1.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 3, "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -139,10 +139,10 @@ public class FaunusVertexTest extends BaseTest {
         Configuration configuration = new EmptyConfiguration();
         configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
 
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 10);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 10);
         vertex1.setConf(configuration);
-        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), 2, "knows"));
-        vertex1.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, 3, vertex1.getIdAsLong(), "knows"));
+        vertex1.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), 2, "knows"));
+        vertex1.addEdge(IN, new FaunusEdge(EmptyConfiguration.immutable(), 3, vertex1.getIdAsLong(), "knows"));
         vertex1.setProperty("name", "marko");
         vertex1.setProperty("age", 32);
         vertex1.setProperty("longitude", 10.01d);
@@ -202,8 +202,8 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testVertexSerializationNoProperties() throws IOException {
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
-        vertex1.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
+        vertex1.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex1.getIdAsLong(), vertex1.getIdAsLong(), "knows"));
 
         assertNull(vertex1.getProperty("name"));
         assertNull(vertex1.removeProperty("name"));
@@ -238,33 +238,33 @@ public class FaunusVertexTest extends BaseTest {
     }
 
     public void testRemovingEdges() {
-        FaunusVertex vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, OUT, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(IN, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.DROP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(BOTH)).size(), 2);
         assertEquals(vertex.getEdges(OUT).iterator().next().getLabel(), "created");
         assertEquals(vertex.getProperty("name"), "marko");
 
-        vertex = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex.setProperty("name", "marko");
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
-        vertex.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
-        vertex.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "knows"));
+        vertex.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
+        vertex.addEdge(IN, new FaunusEdge(EmptyConfiguration.immutable(), vertex.getIdAsLong(), vertex.getIdAsLong(), "created"));
         assertEquals(asList(vertex.getEdges(OUT)).size(), 2);
         vertex.removeEdges(Tokens.Action.KEEP, BOTH, "knows");
         assertEquals(asList(vertex.getEdges(OUT)).size(), 1);
@@ -365,7 +365,7 @@ public class FaunusVertexTest extends BaseTest {
         // a 2.6 million length string == ~5 books worth of data
         assertEquals(value.length(), 2621440);
 
-        FaunusVertex vertex1 = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        FaunusVertex vertex1 = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         vertex1.setProperty("name", value);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));

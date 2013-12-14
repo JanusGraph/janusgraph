@@ -4,6 +4,7 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import junit.framework.TestCase;
 import org.codehaus.jettison.json.JSONObject;
@@ -20,13 +21,13 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 public class FaunusGraphSONUtilityTest extends TestCase {
 
     public void testParser1() throws IOException {
-        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(FaunusElement.EMPTY_CONFIGURATION, "{\"_id\":1}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
     }
 
     public void testParser2() throws IOException {
-        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(FaunusElement.EMPTY_CONFIGURATION, "{\"_id\":1, \"name\":\"marko\",\"age\":32}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32}");
         assertEquals(vertex.getId(), 1l);
         assertFalse(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -36,7 +37,7 @@ public class FaunusGraphSONUtilityTest extends TestCase {
     }
 
     public void testParser3() throws IOException {
-        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(FaunusElement.EMPTY_CONFIGURATION, "{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":1, \"name\":\"marko\",\"age\":32, \"_outE\":[{\"_inV\":2, \"_label\":\"knows\"}, {\"_inV\":3, \"_label\":\"created\"}]}");
         assertEquals(vertex.getId(), 1l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertFalse(vertex.getEdges(IN).iterator().hasNext());
@@ -51,7 +52,7 @@ public class FaunusGraphSONUtilityTest extends TestCase {
     }
 
     public void testParser4() throws IOException {
-        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(FaunusElement.EMPTY_CONFIGURATION, "{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
+        FaunusVertex vertex = FaunusGraphSONUtility.fromJSON(EmptyConfiguration.immutable(), "{\"_id\":4, \"name\":\"josh\", \"age\":32, \"_outE\":[{\"_inV\":3, \"_label\":\"created\", \"weight\":0.4}, {\"_inV\":5, \"_label\":\"created\", \"weight\":1.0}], \"_inE\":[{\"_outV\":1, \"_label\":\"knows\", \"weight\":1.0}]}");
         assertEquals(vertex.getId(), 4l);
         assertTrue(vertex.getEdges(OUT).iterator().hasNext());
         assertTrue(vertex.getEdges(IN).iterator().hasNext());
@@ -72,15 +73,15 @@ public class FaunusGraphSONUtilityTest extends TestCase {
     }
 
     public void testWriter1() throws Exception {
-        FaunusVertex marko = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 1l);
+        FaunusVertex marko = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
         marko.setProperty("name", "marko");
-        FaunusVertex stephen = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 2l);
+        FaunusVertex stephen = new FaunusVertex(EmptyConfiguration.immutable(), 2l);
         stephen.setProperty("name", "stephen");
-        FaunusVertex vadas = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, 3l);
+        FaunusVertex vadas = new FaunusVertex(EmptyConfiguration.immutable(), 3l);
         vadas.setProperty("name", "vadas");
 
-        marko.addEdge(OUT, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
-        marko.addEdge(IN, new FaunusEdge(FaunusElement.EMPTY_CONFIGURATION, vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
+        marko.addEdge(OUT, new FaunusEdge(EmptyConfiguration.immutable(), marko.getIdAsLong(), stephen.getIdAsLong(), "knows")).setProperty("weight", 2);
+        marko.addEdge(IN, new FaunusEdge(EmptyConfiguration.immutable(), vadas.getIdAsLong(), marko.getIdAsLong(), "knows")).setProperty("weight", 1);
 
         JSONObject m = FaunusGraphSONUtility.toJSON(marko);
         JSONObject s = FaunusGraphSONUtility.toJSON(stephen);

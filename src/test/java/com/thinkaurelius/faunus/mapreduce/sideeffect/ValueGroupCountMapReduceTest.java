@@ -1,8 +1,8 @@
 package com.thinkaurelius.faunus.mapreduce.sideeffect;
 
 import com.thinkaurelius.faunus.BaseTest;
-import com.thinkaurelius.faunus.FaunusElement;
 import com.thinkaurelius.faunus.FaunusVertex;
+import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.apache.hadoop.conf.Configuration;
@@ -165,7 +165,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
 
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
-            FaunusVertex v = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, i);
+            FaunusVertex v = new FaunusVertex(EmptyConfiguration.immutable(), i);
             v.setProperty("age", i);
             vertices.put(i, v);
             v.startPath();
@@ -183,7 +183,7 @@ public class ValueGroupCountMapReduceTest extends BaseTest {
 
         Map<Long, FaunusVertex> vertices = new HashMap<Long, FaunusVertex>();
         for (long i = 0; i < 15; i++) {
-            FaunusVertex v = new FaunusVertex(FaunusElement.EMPTY_CONFIGURATION, i);
+            FaunusVertex v = new FaunusVertex(EmptyConfiguration.immutable(), i);
             v.setProperty("age", i);
             vertices.put(i, v);
             v.startPath();
