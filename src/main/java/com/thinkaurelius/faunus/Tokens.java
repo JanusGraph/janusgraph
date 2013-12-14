@@ -48,6 +48,7 @@ public class Tokens {
     public static final String _COUNT = "_count";
     public static final String _LINK = "_link";
     public static final String LABEL = "label";
+    public static final String _LABEL = "_label";
     public static final String NULL = "null";
     public static final String TAB = "\t";
     public static final String NEWLINE = "\n";

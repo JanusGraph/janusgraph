@@ -24,6 +24,9 @@ public class ElementPicker {
                 properties.put(property.getType().getName(), property.getValue());
             }
             properties.put(Tokens._ID, element.getId());
+            if (element instanceof FaunusEdge)
+                properties.put(Tokens._LABEL, ((FaunusEdge) element).getLabel());
+
             return properties.toString();
         } else if (key.equals(Tokens.LABEL) && element instanceof FaunusEdge) {
             return ((FaunusEdge) element).getLabel();

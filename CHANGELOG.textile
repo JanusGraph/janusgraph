@@ -15,13 +15,14 @@ h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
 </dependency>
 ```
 
-* Isolated @FaunusElement@ serializer into @FaunusSerializer@
-* All @FaunusVertex@ and @FaunusEdge@ construction via @Configuration@
-* Removed @pathEnabled@ boolean from element serialization (now part of @Configuration@)
-* Added state tracking for loaded, new, and deleted elements/properties
+* Isolated @FaunusElement@ serialization into @FaunusSerializer@
+* All @FaunusVertex@ and @FaunusEdge@ construction is via global Hadoop @Configuration@
+* Removed @pathEnabled@ boolean from element serialization (now part of @Configuration@ as @trackPaths@)
+* Added state tracking for loaded, new, and deleted elements/properties (in @Configuration@ via @trackState@)
 * @FaunusCompiler@ updates @FaunusGraph@ configurations with global pipeline requirements
-* Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
 * Removed @FaunusVertex.reuse()@ in support of short-lived @FaunusVertex@ objects
+* Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
+* @PropertyMapMap@ now includes @Edge.getLabel()@ in the returned property map (via @_label@)
 
 ==<hr/>==
 
