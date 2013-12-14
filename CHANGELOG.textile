@@ -23,6 +23,7 @@ h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
 * Removed @FaunusVertex.reuse()@ in support of short-lived @FaunusVertex@ objects
 * Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
 * @PropertyMapMap@ now includes @Edge.getLabel()@ in the returned property map (via @_label@)
+* Moved all distributed properties files from @bin/@ to a new @conf/@ to be consistent with Titan
 
 ==<hr/>==
 
