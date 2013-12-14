@@ -515,6 +515,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public TitanProperty setProperty(TitanVertex vertex, final TitanKey key, Object value) {
+        verifyWriteAccess(vertex);
         Preconditions.checkNotNull(key);
         Preconditions.checkArgument(key.isUnique(Direction.OUT), "Not an out-unique key: %s", key.getName());
 
