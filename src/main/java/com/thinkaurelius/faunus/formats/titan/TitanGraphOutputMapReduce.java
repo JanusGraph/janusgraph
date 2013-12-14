@@ -196,10 +196,7 @@ public class TitanGraphOutputMapReduce {
                 if (holder.getTag() == 's') {
                     faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
-                    final FaunusVertex toClone = holder.get();
-                    faunusVertex = new FaunusVertex(context.getConfiguration(), toClone.getIdAsLong());
-                    faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
-                    faunusVertex.addEdges(OUT, toClone);
+                    faunusVertex = holder.get();
                 }
             }
             if (null != faunusVertex) {
@@ -229,7 +226,6 @@ public class TitanGraphOutputMapReduce {
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
             try {
                 for (Edge edge : value.getEdgesWithState(OUT)) {
-                    context.getCounter(Counters.EDGES_SEARCHED).increment(1l);
                     this.getCreateOrDeleteEdge(value, (FaunusEdge) edge, context);
                 }
             } catch (final Exception e) {
@@ -263,7 +259,7 @@ public class TitanGraphOutputMapReduce {
             if (this.trackState) {
                 if (faunusEdge.isDeleted()) {
                     for (final Edge edge : titanVertex.getEdges(OUT)) {
-                        if (edge.getId().equals(faunusEdge.getId())) {
+                        if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
                             edge.remove();
                             context.getCounter(Counters.EDGES_DELETED).increment(1l);
                         }
@@ -272,7 +268,7 @@ public class TitanGraphOutputMapReduce {
                 } else if (faunusEdge.isLoaded()) {
                     TitanEdge titanEdge;
                     for (final Edge edge : titanVertex.getEdges(OUT)) {
-                        if (edge.getId().equals(faunusEdge.getId())) {
+                        if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
                             titanEdge = (TitanEdge) edge;
                             for (final FaunusProperty property : faunusEdge.getPropertiesWithState()) {
                                 if (property.isNew()) {

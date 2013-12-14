@@ -47,11 +47,13 @@ public class FaunusSerializer {
     private final FaunusType.Manager types;
     private final boolean trackState;
     private final boolean trackPaths;
+    private final Configuration configuration;
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
         this.serializer = new KryoSerializer(true);
         this.types = FaunusType.DEFAULT_MANAGER;
+        this.configuration = configuration;
         this.trackState = configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
         this.trackPaths = configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
     }
@@ -193,7 +195,7 @@ public class FaunusSerializer {
             FaunusType type = schema.getType(WritableUtils.readVLong(in));
             final int size = WritableUtils.readVInt(in);
             for (int j = 0; j < size; j++) {
-                final FaunusEdge edge = new FaunusEdge();
+                final FaunusEdge edge = new FaunusEdge(this.configuration);
                 readPathElement(edge, schema, in);
                 edge.setLabel(type);
                 long vertexId = WritableUtils.readVLong(in);
@@ -219,7 +221,7 @@ public class FaunusSerializer {
         Map<FaunusType, Integer> counts = Maps.newHashMap();
         int typeCount = 0;
         for (FaunusType type : edges.keySet()) {
-            int count = this.trackState ? IterablesUtil.size(edges.get(type)) : IterablesUtil.size(filterDeleted(edges.get(type)));
+            int count = IterablesUtil.size(filterDeleted(edges.get(type)));
             counts.put(type, count);
             if (count > 0) typeCount++;
         }
@@ -227,7 +229,7 @@ public class FaunusSerializer {
         WritableUtils.writeVInt(out, typeCount);
         for (FaunusType type : edges.keySet()) {
             if (counts.get(type) == 0) continue;
-            Iterable<FaunusEdge> subset = this.trackState ? edges.get(type) : filterDeleted(edges.get(type));
+            Iterable<FaunusEdge> subset = filterDeleted(edges.get(type));
             WritableUtils.writeVLong(out, schema.getTypeId(type));
             WritableUtils.writeVInt(out, counts.get(type));
             for (final FaunusEdge edge : subset) {
