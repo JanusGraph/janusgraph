@@ -59,7 +59,7 @@ import static com.tinkerpop.blueprints.Direction.*;
 
 
 /**
- * A FaunusPipeline defines a breadth-first traversal through a property graph represented.
+ * A FaunusPipeline defines a breadth-first traversal through a property graph representation.
  * Gremlin/Faunus compiles down to a FaunusPipeline which is ultimately a series of MapReduce jobs.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)

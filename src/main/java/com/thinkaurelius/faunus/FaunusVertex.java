@@ -61,6 +61,7 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
         this.id = vertex.getIdAsLong();
         this.properties = vertex.properties;
         this.getPaths(vertex, false);
+        this.state = vertex.getState();
         this.addEdges(BOTH, vertex);
     }
 

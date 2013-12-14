@@ -61,9 +61,9 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     @Override
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
-            return new FaunusVertex(EMPTY_CONFIGURATION, this.outVertex);
+            return new FaunusVertex(this.configuration, this.outVertex);
         } else if (IN.equals(direction)) {
-            return new FaunusVertex(EMPTY_CONFIGURATION, this.inVertex);
+            return new FaunusVertex(this.configuration, this.inVertex);
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }

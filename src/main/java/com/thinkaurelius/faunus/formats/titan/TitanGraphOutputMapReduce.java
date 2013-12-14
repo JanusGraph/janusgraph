@@ -47,9 +47,9 @@ public class TitanGraphOutputMapReduce {
         EDGE_PROPERTIES_DELETED,
         NULL_VERTEX_EDGES_IGNORED,
         NULL_VERTICES_IGNORED,
+        NULL_EDGES_IGNORED,
         SUCCESSFUL_TRANSACTIONS,
-        FAILED_TRANSACTIONS,
-        EDGES_SEARCHED
+        FAILED_TRANSACTIONS
     }
 
     public static final Logger LOGGER = Logger.getLogger(TitanGraphOutputMapReduce.class);
@@ -113,7 +113,7 @@ public class TitanGraphOutputMapReduce {
 
                     this.longWritable.set(value.getIdAsLong());
                     value.getPropertiesWithState().clear();  // no longer needed in reduce phase
-                    value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId()); // need this for id resolution in reduce phase
+                    value.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId()); // need this for id resolution in edge-map phase
                     value.removeEdges(Tokens.Action.DROP, IN); // no longer needed in reduce phase
                     context.write(this.longWritable, this.vertexHolder.set('v', value));
                 }
@@ -144,40 +144,32 @@ public class TitanGraphOutputMapReduce {
         }
 
         public Vertex getCreateOrDeleteVertex(final FaunusVertex faunusVertex, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws InterruptedException {
-            if (this.trackState) {
-                if (faunusVertex.isDeleted()) {
-                    this.graph.getVertex(faunusVertex.getId()).remove();
-                    context.getCounter(Counters.VERTICES_DELETED).increment(1l);
-                    context.getCounter(Counters.EDGES_DELETED).increment(faunusVertex.query().direction(OUT).count());
-                    return null;
-                } else if (faunusVertex.isLoaded()) {
-                    final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getId());
-                    for (final FaunusProperty property : faunusVertex.getPropertiesWithState()) {
-                        if (property.isNew()) {
-                            // TODO is this right?
-                            titanVertex.addProperty(property.getName(), property.getValue());
-                            context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(1l);
-                        } else if (property.isDeleted()) {
-                            // TODO: what if there are multiple properties of the same key?
-                            titanVertex.removeProperty(property.getName());
-                            context.getCounter(Counters.VERTEX_PROPERTIES_DELETED).increment(1l);
-                        }
-                    }
-                    return titanVertex;
-                } else {   // state == new
-                    final TitanVertex titanVertex = (TitanVertex) this.graph.addVertex(faunusVertex.getId());
-                    context.getCounter(Counters.VERTICES_CREATED).increment(1l);
-                    for (final FaunusProperty property : faunusVertex.getProperties()) {
+            if (this.trackState && faunusVertex.isDeleted()) {
+                final Vertex titanVertex = this.graph.getVertex(faunusVertex.getId());
+                // TODO: this is expensive just for reporting purposes
+                context.getCounter(Counters.EDGES_DELETED).increment(faunusVertex.query().direction(OUT).count());
+                titanVertex.remove();
+                context.getCounter(Counters.VERTICES_DELETED).increment(1l);
+                return null;
+            } else if (this.trackState && faunusVertex.isLoaded()) {
+                final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getId());
+                for (final FaunusProperty property : faunusVertex.getPropertiesWithState()) {
+                    if (property.isNew()) {
+                        // TODO is this right?
                         titanVertex.addProperty(property.getName(), property.getValue());
                         context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(1l);
+                    } else if (property.isDeleted()) {
+                        // TODO: what if there are multiple properties of the same key?
+                        titanVertex.removeProperty(property.getName());
+                        context.getCounter(Counters.VERTEX_PROPERTIES_DELETED).increment(1l);
                     }
-                    return titanVertex;
                 }
-            } else {
+                return titanVertex;
+            } else {   // state == new || !trackState
                 final TitanVertex titanVertex = (TitanVertex) this.graph.addVertex(faunusVertex.getId());
                 context.getCounter(Counters.VERTICES_CREATED).increment(1l);
                 for (final FaunusProperty property : faunusVertex.getProperties()) {
-                    titanVertex.setProperty(property.getName(), property.getValue());
+                    titanVertex.addProperty(property.getName(), property.getValue());
                     context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(1l);
                 }
                 return titanVertex;
@@ -256,49 +248,49 @@ public class TitanGraphOutputMapReduce {
         public Edge getCreateOrDeleteEdge(final FaunusVertex faunusVertex, final FaunusEdge faunusEdge, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws InterruptedException {
             final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(BLUEPRINTS_ID));
             final java.util.Map<Long, Object> idMap = faunusVertex.getProperty(ID_MAP_KEY);
-            if (this.trackState) {
-                if (faunusEdge.isDeleted()) {
-                    for (final Edge edge : titanVertex.getEdges(OUT)) {
-                        if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
-                            edge.remove();
-                            context.getCounter(Counters.EDGES_DELETED).increment(1l);
-                        }
-                    }
-                    return null;
-                } else if (faunusEdge.isLoaded()) {
-                    TitanEdge titanEdge;
-                    for (final Edge edge : titanVertex.getEdges(OUT)) {
-                        if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
-                            titanEdge = (TitanEdge) edge;
-                            for (final FaunusProperty property : faunusEdge.getPropertiesWithState()) {
-                                if (property.isNew()) {
-                                    titanEdge.setProperty(property.getName(), property.getValue());
-                                    context.getCounter(Counters.EDGE_PROPERTIES_CREATED).increment(1l);
-                                } else if (property.isDeleted()) {
-                                    titanEdge.removeProperty(property.getName());
-                                    context.getCounter(Counters.EDGE_PROPERTIES_DELETED).increment(1l);
-                                }
-                            }
-                            return titanEdge;
-                        }
-                    }
-                } else {   // state == new
-                    final TitanEdge titanEdge = (TitanEdge) titanVertex.addEdge(faunusEdge.getLabel(), this.graph.getVertex(idMap.get(faunusEdge.getVertexId(IN))));
-                    context.getCounter(Counters.EDGES_CREATED).increment(1l);
-                    for (final FaunusProperty property : faunusEdge.getProperties()) {
-                        titanEdge.setProperty(property.getName(), property.getValue());
-                        context.getCounter(Counters.EDGE_PROPERTIES_CREATED).increment(1l);
-                    }
-                    return titanEdge;
+
+            if (this.trackState && faunusEdge.isDeleted()) {
+                final TitanEdge titanEdge = this.getIncident(titanVertex, faunusEdge, idMap.get(faunusEdge.getVertexId(IN)));
+                if (null == titanEdge)
+                    context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
+                else {
+                    titanEdge.remove();
+                    context.getCounter(Counters.EDGES_DELETED).increment(1l);
                 }
-            } else {
+                return null;
+            } else if (this.trackState && faunusEdge.isLoaded()) {
+                final TitanEdge titanEdge = this.getIncident(titanVertex, faunusEdge, idMap.get(faunusEdge.getVertexId(IN)));
+                if (null == titanEdge)
+                    context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
+                else {
+                    for (final FaunusProperty faunusProperty : faunusEdge.getPropertiesWithState()) {
+                        if (faunusProperty.isNew()) {
+                            titanEdge.setProperty(faunusProperty.getName(), faunusProperty.getValue());
+                            context.getCounter(Counters.EDGE_PROPERTIES_CREATED).increment(1l);
+                        } else if (faunusProperty.isDeleted()) {
+                            titanEdge.removeProperty(faunusProperty.getName());
+                            context.getCounter(Counters.EDGE_PROPERTIES_DELETED).increment(1l);
+                        }
+                    }
+                }
+                return titanEdge;
+            } else {   // state == new || !trackStates
                 final TitanEdge titanEdge = (TitanEdge) titanVertex.addEdge(faunusEdge.getLabel(), this.graph.getVertex(idMap.get(faunusEdge.getVertexId(IN))));
                 context.getCounter(Counters.EDGES_CREATED).increment(1l);
-                for (final FaunusProperty property : faunusEdge.getProperties()) {
-                    titanEdge.setProperty(property.getName(), property.getValue());
+                for (final FaunusProperty faunusProperty : faunusEdge.getProperties()) {
+                    titanEdge.setProperty(faunusProperty.getName(), faunusProperty.getValue());
                     context.getCounter(Counters.EDGE_PROPERTIES_CREATED).increment(1l);
                 }
                 return titanEdge;
+            }
+        }
+
+        private TitanEdge getIncident(final TitanVertex titanVertex, FaunusEdge faunusEdge, final Object otherVertexId) {
+            // titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).adjacentVertex((TitanVertex) this.graph.getVertex(otherVertexId)).edges(
+            for (final Edge edge : titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).edges()) {
+                if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
+                    return (TitanEdge) edge;
+                }
             }
             return null;
         }

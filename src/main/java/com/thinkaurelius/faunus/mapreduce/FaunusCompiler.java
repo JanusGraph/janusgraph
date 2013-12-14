@@ -245,7 +245,7 @@ public class FaunusCompiler extends Configured implements Tool {
         if (this.trackPaths)
             logger.warn("Path tracking is enabled for this Faunus job (space and time expensive)");
         if (this.trackState)
-            logger.warn("State tracking is enabled for this Faunus job (explicit deletes not possible)");
+            logger.warn("State tracking is enabled for this Faunus job (full deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
         final String outputJobPrefix = this.graph.getOutputLocation().toString() + "/" + Tokens.JOB;
