@@ -243,7 +243,7 @@ public class FaunusCompiler extends Configured implements Tool {
             throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
 
         if (this.trackPaths)
-            logger.warn("Path tracking are enabled for this Faunus job (space and time expensive)");
+            logger.warn("Path tracking is enabled for this Faunus job (space and time expensive)");
         if (this.trackState)
             logger.warn("State tracking is enabled for this Faunus job (explicit deletes not possible)");
 
