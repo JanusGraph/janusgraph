@@ -1,20 +1,12 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusGraph;
-import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.gremlin.java.GremlinPipeline;
-import com.tinkerpop.pipes.PipeFunction;
-import com.tinkerpop.pipes.util.PipeHelper;
 import org.apache.commons.configuration.BaseConfiguration;
-
-import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -31,11 +23,6 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         return TitanFactory.open(configuration);
     }
 
-    private void bulkLoadGraphOfTheGods() throws Exception {
-        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
-        new FaunusPipeline(f)._().submit();
-    }
-
 
     public void testInGremlinImports() {
         assertTrue(Imports.getImports().contains(TitanCassandraOutputFormat.class.getPackage().getName() + ".*"));
@@ -43,109 +30,44 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
     public void testBulkLoading() throws Exception {
         TitanGraph g = generateTitanGraph();
-        bulkLoadGraphOfTheGods();
-
-        assertEquals(12, new GremlinPipeline(g).V().count());
-        assertEquals(17, new GremlinPipeline(g).E().count());
-        new GremlinPipeline(g).V().sideEffect(new PipeFunction<Vertex, Vertex>() {
-            @Override
-            public Vertex compute(Vertex vertex) {
-                assertEquals(2, vertex.getPropertyKeys().size());
-                assertNotNull(vertex.getProperty("name"));
-                return vertex;
-            }
-        }).iterate();
-        assertEquals("saturn", new GremlinPipeline(g).V("name", "hercules").out("father").out("father").property("name").next());
-        List names = new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
-            @Override
-            public Edge compute(Edge edge) {
-                assertNotNull(edge.getProperty("time"));
-                return edge;
-            }
-        }).inV().property("name").toList();
-        assertTrue(names.contains("nemean"));
-        assertTrue(names.contains("hydra"));
-        assertTrue(names.contains("cerberus"));
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        super.testBulkLoading(g, f1);
     }
 
     public void testBulkElementDeletions() throws Exception {
         TitanGraph g = generateTitanGraph();
-        bulkLoadGraphOfTheGods();
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testBulkElementDeletions(g, f1, f2);
 
-        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        new FaunusPipeline(f).V().drop().submit();
-
-        assertEquals(0, new GremlinPipeline(g).V().count());
-        assertEquals(0, new GremlinPipeline(g).E().count());
-
-        bulkLoadGraphOfTheGods();
-        f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        new FaunusPipeline(f).E().drop().submit();
-
-        assertEquals(12, new GremlinPipeline(g).V().count());
-        assertEquals(0, new GremlinPipeline(g).E().count());
     }
 
-    public void testBulkPropertyDeletions() throws Exception {
+    public void testBulkVertexPropertyDeletions() throws Exception {
         TitanGraph g = generateTitanGraph();
-        bulkLoadGraphOfTheGods();
-
-        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        new FaunusPipeline(f).V().sideEffect("{it.removeProperty('name')}").submit();
-
-        assertEquals(12, new GremlinPipeline(g).V().count());
-        assertEquals(17, new GremlinPipeline(g).E().count());
-
-        for (Vertex v : g.getVertices()) {
-            assertNull(v.getProperty("name"));
-            assertEquals(1, v.getPropertyKeys().size());
-        }
-        new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
-            @Override
-            public Edge compute(Edge edge) {
-                assertNotNull(edge.getProperty("time"));
-                return edge;
-            }
-        }).iterate();
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testBulkVertexPropertyDeletions(g, f1, f2);
     }
 
-    /*public void testBulkPropertyUpdates() throws Exception {
+    public void testBulkVertexPropertyUpdates() throws Exception {
         TitanGraph g = generateTitanGraph();
-        bulkLoadGraphOfTheGods();
-
-        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        new FaunusPipeline(f).V().sideEffect("{it.setProperty('name', 'marko' + it.getProperty('name'))}").submit();
-
-        assertEquals(12, new GremlinPipeline(g).V().count());
-        assertEquals(17, new GremlinPipeline(g).E().count());
-
-        for (Vertex v : g.getVertices()) {
-            System.out.println(v.getProperty("name"));
-            assertTrue(v.<String>getProperty("name").startsWith("marko"));
-            assertEquals(2, v.getPropertyKeys().size());
-        }
-        new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
-            @Override
-            public Edge compute(Edge edge) {
-                assertNotNull(edge.getProperty("time"));
-                return edge;
-            }
-        }).iterate();
-    }*/
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testBulkVertexPropertyUpdates(g, f1, f2);
+    }
 
     public void testBulkEdgeDerivations() throws Exception {
         TitanGraph g = generateTitanGraph();
-        bulkLoadGraphOfTheGods();
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testBulkEdgeDerivations(g, f1, f2);
+    }
 
-        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        new FaunusPipeline(f).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
-
-        assertEquals(12, new GremlinPipeline(g).V().count());
-        assertEquals(18, new GremlinPipeline(g).E().count());
-
-        assertTrue(PipeHelper.areEqual(
-                new GremlinPipeline(g).V("name", "hercules").out("father").out("father"),
-                new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
+    public void testBulkEdgePropertyUpdates() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testBulkEdgePropertyUpdates(g, f1, f2);
     }
 
 }

@@ -16,16 +16,18 @@ h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
 ```
 
 * Isolated @FaunusElement@ serialization into @FaunusSerializer@
-* All @FaunusVertex@ and @FaunusEdge@ construction is via global Hadoop @Configuration@
+* All @FaunusVertex@ and @FaunusEdge@ construction leverages Hadoop @Configuration@ for deserialization rules
 * Removed @pathEnabled@ boolean from element serialization (now part of @Configuration@ as @trackPaths@)
 * Added state tracking for loaded, new, and deleted elements/properties (in @Configuration@ via @trackState@)
 * @FaunusCompiler@ updates @FaunusGraph@ configurations with global pipeline requirements
 * Removed @FaunusVertex.reuse()@ in support of short-lived @FaunusVertex@ objects
 * Updated @ScriptInputFormat@ to use @FaunusVertex.setId(long)@ to "reuse" vertices
 * @PropertyMapMap@ now includes @Edge.getLabel()@ in the returned property map (via @_label@)
-* Moved all distributed properties files from @bin/@ to a new @conf/@ to be consistent with Titan
-* Added @TitanGraphOutputMapReduce@ to support Titan-specific features (e.g. multi-propertites on vertices)
-* @TitanGraphOutputMapReduce@ respects state tracking and get/create/delete in output @TitanGraph@
+* Moved all default properties files from @bin/@ to @conf/@ to be consistent with Titan's distribution
+* Added @TitanGraphOutputMapReduce@ to support Titan-specific features (e.g. multi-properties on vertices)
+* @TitanGraphOutputMapReduce@ respects state tracking and get/create/delete in outputting @TitanGraph@
+* Added JUnit test support for executing local (non-pseudo-cluster) MapReduce jobs
+* Provided MapReduce-based integration testing between Titan and Faunus
 
 ==<hr/>==
 

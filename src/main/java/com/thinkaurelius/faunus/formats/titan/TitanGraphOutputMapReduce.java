@@ -10,6 +10,7 @@ import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -153,15 +154,17 @@ public class TitanGraphOutputMapReduce {
                 return null;
             } else if (this.trackState && faunusVertex.isLoaded()) {
                 final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getId());
-                for (final FaunusProperty property : faunusVertex.getPropertiesWithState()) {
-                    if (property.isNew()) {
-                        // TODO is this right?
-                        titanVertex.addProperty(property.getName(), property.getValue());
+                for (final FaunusProperty faunusProperty : faunusVertex.getPropertiesWithState()) {
+                    if (faunusProperty.isNew()) {
+                        titanVertex.addProperty(faunusProperty.getName(), faunusProperty.getValue());
                         context.getCounter(Counters.VERTEX_PROPERTIES_CREATED).increment(1l);
-                    } else if (property.isDeleted()) {
-                        // TODO: what if there are multiple properties of the same key?
-                        titanVertex.removeProperty(property.getName());
-                        context.getCounter(Counters.VERTEX_PROPERTIES_DELETED).increment(1l);
+                    } else if (faunusProperty.isDeleted()) {
+                        for (final TitanProperty titanProperty : titanVertex.getProperties(faunusProperty.getName())) {
+                            if (titanProperty.getID() == faunusProperty.getIdAsLong()) {
+                                titanProperty.remove();
+                                context.getCounter(Counters.VERTEX_PROPERTIES_DELETED).increment(1l);
+                            }
+                        }
                     }
                 }
                 return titanVertex;
@@ -263,13 +266,17 @@ public class TitanGraphOutputMapReduce {
                 if (null == titanEdge)
                     context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
                 else {
+                    // do all property deletions, then do all property additions (ensures proper order of operations)
+                    for (final FaunusProperty faunusProperty : faunusEdge.getPropertiesWithState()) {
+                        if (faunusProperty.isDeleted()) {
+                            titanEdge.removeProperty(faunusProperty.getName());
+                            context.getCounter(Counters.EDGE_PROPERTIES_DELETED).increment(1l);
+                        }
+                    }
                     for (final FaunusProperty faunusProperty : faunusEdge.getPropertiesWithState()) {
                         if (faunusProperty.isNew()) {
                             titanEdge.setProperty(faunusProperty.getName(), faunusProperty.getValue());
                             context.getCounter(Counters.EDGE_PROPERTIES_CREATED).increment(1l);
-                        } else if (faunusProperty.isDeleted()) {
-                            titanEdge.removeProperty(faunusProperty.getName());
-                            context.getCounter(Counters.EDGE_PROPERTIES_DELETED).increment(1l);
                         }
                     }
                 }
@@ -286,6 +293,7 @@ public class TitanGraphOutputMapReduce {
         }
 
         private TitanEdge getIncident(final TitanVertex titanVertex, FaunusEdge faunusEdge, final Object otherVertexId) {
+            // TODO: Why no happy long time?
             // titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).adjacentVertex((TitanVertex) this.graph.getVertex(otherVertexId)).edges(
             for (final Edge edge : titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).edges()) {
                 if (((TitanEdge) edge).getID() == faunusEdge.getIdAsLong()) {
