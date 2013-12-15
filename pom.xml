@@ -21,6 +21,7 @@
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <titan.version>0.5.0-SNAPSHOT</titan.version>
         <slf4j.version>1.7.5</slf4j.version>
+        <skipLongTests>true</skipLongTests>
     </properties>
     <developers>
         <developer>
@@ -230,12 +231,6 @@
                     <target>1.7</target>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.4.2</version>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -337,9 +332,50 @@
                     <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.4.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.16</version>
+                <executions>
+                    <execution>
+                        <id>integration-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/TitanCassandraOutputFormatTest.java</include>
+                            </includes>
+                            <skipTests>${skipLongTests}</skipTests>
+                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <skipTests>${skipLongTests}</skipTests>
+                            <summaryFiles>
+                                <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                            </summaryFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
     <profiles>
         <profile>
             <id>aurelius-release</id>
