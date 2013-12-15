@@ -6,9 +6,13 @@ import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
+import com.tinkerpop.pipes.PipeFunction;
 import org.apache.commons.configuration.BaseConfiguration;
+
+import java.util.List;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -40,6 +44,16 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
             assertEquals(v.getPropertyKeys().size(), 2);
         }
         assertEquals("saturn", new GremlinPipeline(g).V("name", "hercules").out("father").out("father").property("name").next());
+        List names = new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
+            @Override
+            public Edge compute(Edge edge) {
+                assertNotNull(edge.getProperty("time"));
+                return edge;
+            }
+        }).inV().property("name").toList();
+        assertTrue(names.contains("nemean"));
+        assertTrue(names.contains("hydra"));
+        assertTrue(names.contains("cerberus"));
 
         g.shutdown();
     }
