@@ -21,8 +21,9 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     protected long pathCounter = 0;
     protected Configuration configuration = EmptyConfiguration.immutable();
 
-    public FaunusPathElement(final long id) {
+    public FaunusPathElement(final Configuration configuration, final long id) {
         super(id);
+        this.setConf(configuration);
     }
 
     @Override

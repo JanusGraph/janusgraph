@@ -8,10 +8,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import org.apache.hadoop.conf.Configuration;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -20,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
+ * @author Matthias Broecheler (me@matthiasb.com)
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class FaunusElement implements Element, Comparable<FaunusElement> {
@@ -167,7 +166,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         if (type.isImplicit()) return getImplicitProperty(type);
 
         Object result = null;
-        for (FaunusProperty p : properties.get(type)) {
+        for (final FaunusProperty p : properties.get(type)) {
             if (p.isDeleted()) continue;
             if (result != null)
                 throw new IllegalStateException("Use getProperties(String) method for multi-valued properties");

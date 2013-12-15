@@ -30,14 +30,13 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     }
 
     public FaunusEdge(final Configuration configuration) {
-        super(-1l);
+        super(configuration, -1l);
         this.label = FaunusType.LINK;
-        this.setConf(configuration);
+
     }
 
     public FaunusEdge(final Configuration configuration, final DataInput in) throws IOException {
-        super(-1l);
-        this.setConf(configuration);
+        super(configuration, -1l);
         this.readFields(in);
     }
 
@@ -46,11 +45,10 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     }
 
     public FaunusEdge(final Configuration configuration, final long id, final long outVertex, final long inVertex, final String label) {
-        super(id);
+        super(configuration, id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
         setLabel(label);
-        this.setConf(configuration);
     }
 
     @Override

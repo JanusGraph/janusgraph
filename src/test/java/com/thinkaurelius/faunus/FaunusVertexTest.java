@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.faunus.mapreduce.FaunusCompiler;
 import com.thinkaurelius.faunus.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -15,9 +14,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.tinkerpop.blueprints.Direction.*;
 
@@ -212,7 +213,7 @@ public class FaunusVertexTest extends BaseTest {
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         vertex1.write(new DataOutputStream(bytes));
-        FaunusVertex vertex2 = new FaunusVertex(new EmptyConfiguration(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        FaunusVertex vertex2 = new FaunusVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         System.out.println("Vertex with 0 properties and 1 outgoing edge has a byte size of: " + bytes.toByteArray().length);
 
@@ -338,6 +339,62 @@ public class FaunusVertexTest extends BaseTest {
     public void testNoPathsOnConstruction() throws Exception {
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Vertex.class);
         noPaths(generateGraph(ExampleGraph.TINKERGRAPH, new Configuration()), Edge.class);
+    }
+
+    public void testPropertyHandling() throws Exception {
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        assertEquals(vertex.getIdAsLong(), 10l);
+        assertEquals(vertex.getPropertyKeys().size(), 0);
+        vertex.setProperty("name", "marko");
+        assertEquals(vertex.getProperties("name").iterator().next(), "marko");
+        vertex.addProperty("name", "marko a. rodriguez");
+        assertEquals(vertex.getPropertyKeys().size(), 1);
+        Set<String> names = new HashSet<String>();
+        Iterables.addAll(names, (Iterable) vertex.getProperties("name"));
+        assertEquals(names.size(), 2);
+        assertTrue(names.contains("marko"));
+        assertTrue(names.contains("marko a. rodriguez"));
+        try {
+            vertex.getProperty("name");
+            fail();
+        } catch (IllegalStateException e) {
+        }
+        int counter = 0;
+        for (FaunusProperty property : vertex.getProperties()) {
+            assertEquals(property.getName(), "name");
+            assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
+            counter++;
+        }
+        assertEquals(counter, 2);
+
+        ///////// BEGIN SERIALIZE
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        vertex.write(new DataOutputStream(bytes));
+        vertex = new FaunusVertex(EmptyConfiguration.immutable(), new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+
+        ///////// END SERIALIZE
+
+        assertEquals(vertex.getIdAsLong(), 10l);
+        assertEquals(vertex.getPropertyKeys().size(), 1);
+        names = new HashSet<String>();
+        Iterables.addAll(names, (Iterable) vertex.getProperties("name"));
+        assertEquals(names.size(), 2);
+        assertTrue(names.contains("marko"));
+        assertTrue(names.contains("marko a. rodriguez"));
+        try {
+            vertex.getProperty("name");
+            fail();
+        } catch (IllegalStateException e) {
+        }
+        counter = 0;
+        for (FaunusProperty property : vertex.getProperties()) {
+            assertEquals(property.getName(), "name");
+            assertTrue(property.getValue().equals("marko") || property.getValue().equals("marko a. rodriguez"));
+            counter++;
+        }
+        assertEquals(counter, 2);
+
     }
 
     // TODO: REGENERATE SEQUENCE FILE

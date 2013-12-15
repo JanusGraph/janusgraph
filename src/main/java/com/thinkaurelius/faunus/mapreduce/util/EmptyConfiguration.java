@@ -9,7 +9,7 @@ public class EmptyConfiguration extends Configuration {
 
     private static final EmptyConfiguration immutable = new EmptyConfiguration() {
         @Override
-        public void set(String key, String value) {
+        public void set(final String key, final String value) {
             throw new IllegalStateException("This empty configuration is immutable");
         }
     };
