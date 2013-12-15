@@ -14,35 +14,6 @@ import org.apache.hadoop.io.Text;
  */
 public class WritableHandlerTest extends TestCase {
 
-    public void testUnsupportedType() {
-        new WritableHandler(Text.class);
-        new WritableHandler(DoubleWritable.class);
-        new WritableHandler(LongWritable.class);
-        new WritableHandler(IntWritable.class);
-        new WritableHandler(FloatWritable.class);
-
-        try {
-            new WritableHandler(BooleanWritable.class);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
-
-        try {
-            new WritableHandler(FaunusVertex.class);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
-
-        try {
-            new WritableHandler(FaunusEdge.class);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
-    }
-
     public void testTextTypeConversion() {
         WritableHandler handler = new WritableHandler(Text.class);
         Text text = (Text) handler.set("marko");
@@ -55,12 +26,8 @@ public class WritableHandlerTest extends TestCase {
         assertEquals(text.toString(), "1");
         text = (Text) handler.set(1);
         assertEquals(text.toString(), "1");
-        try {
-            text = (Text) handler.set(true);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-        }
+        text = (Text) handler.set(true);
+        assertEquals(text.toString(), "true");
     }
 
     public void testLongTypeConversion() {

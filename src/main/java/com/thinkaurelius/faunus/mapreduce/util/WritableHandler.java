@@ -28,17 +28,14 @@ public class WritableHandler {
 
     public WritableHandler(final Class<? extends WritableComparable> type) {
         this.type = type;
-        if (!type.equals(Text.class) && !type.equals(LongWritable.class) && !type.equals(IntWritable.class) && !type.equals(FloatWritable.class) && !type.equals(DoubleWritable.class))
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+        // if (!type.equals(Text.class) && !type.equals(LongWritable.class) && !type.equals(IntWritable.class) && !type.equals(FloatWritable.class) && !type.equals(DoubleWritable.class))
+        //    throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
     }
 
     public WritableComparable set(final String s) {
         if (null == s) return NULL_TEXT;
 
-        if (type.equals(Text.class)) {
-            text.set(s);
-            return text;
-        } else if (type.equals(LongWritable.class)) {
+        if (type.equals(LongWritable.class)) {
             longWritable.set(Long.valueOf(s));
             return longWritable;
         } else if (type.equals(IntWritable.class)) {
@@ -51,17 +48,15 @@ public class WritableHandler {
             floatWritable.set(Float.valueOf(s));
             return floatWritable;
         } else {
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+            text.set(s);
+            return text;
         }
     }
 
     public WritableComparable set(final Long l) {
         if (null == l) return NULL_LONG;
 
-        if (type.equals(Text.class)) {
-            text.set(String.valueOf(l));
-            return text;
-        } else if (type.equals(LongWritable.class)) {
+        if (type.equals(LongWritable.class)) {
             longWritable.set(l);
             return longWritable;
         } else if (type.equals(IntWritable.class)) {
@@ -74,17 +69,15 @@ public class WritableHandler {
             floatWritable.set(l.floatValue());
             return floatWritable;
         } else {
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+            text.set(String.valueOf(l));
+            return text;
         }
     }
 
     public WritableComparable set(final Integer i) {
         if (null == i) return NULL_INT;
 
-        if (type.equals(Text.class)) {
-            text.set(String.valueOf(i));
-            return text;
-        } else if (type.equals(LongWritable.class)) {
+        if (type.equals(LongWritable.class)) {
             longWritable.set(i.longValue());
             return longWritable;
         } else if (type.equals(IntWritable.class)) {
@@ -97,17 +90,15 @@ public class WritableHandler {
             floatWritable.set(i.floatValue());
             return floatWritable;
         } else {
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+            text.set(String.valueOf(i));
+            return text;
         }
     }
 
     public WritableComparable set(final Double d) {
         if (null == d) return NULL_DOUBLE;
 
-        if (type.equals(Text.class)) {
-            text.set(String.valueOf(d));
-            return text;
-        } else if (type.equals(LongWritable.class)) {
+        if (type.equals(LongWritable.class)) {
             longWritable.set(d.longValue());
             return longWritable;
         } else if (type.equals(IntWritable.class)) {
@@ -120,17 +111,15 @@ public class WritableHandler {
             floatWritable.set(d.floatValue());
             return floatWritable;
         } else {
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+            text.set(String.valueOf(d));
+            return text;
         }
     }
 
     public WritableComparable set(final Float f) {
         if (null == f) return NULL_FLOAT;
 
-        if (type.equals(Text.class)) {
-            text.set(String.valueOf(f));
-            return text;
-        } else if (type.equals(LongWritable.class)) {
+        if (type.equals(LongWritable.class)) {
             longWritable.set(f.longValue());
             return longWritable;
         } else if (type.equals(IntWritable.class)) {
@@ -143,7 +132,8 @@ public class WritableHandler {
             floatWritable.set(f);
             return floatWritable;
         } else {
-            throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+            text.set(String.valueOf(f));
+            return text;
         }
     }
 
@@ -160,11 +150,9 @@ public class WritableHandler {
             else if (type.equals(FloatWritable.class))
                 return NULL_FLOAT;
             else
-                throw new IllegalArgumentException("The provided type is not supported: " + type.getName());
+                return NULL_TEXT;
         } else {
-            if (object instanceof String)
-                return set((String) object);
-            else if (object instanceof Long)
+            if (object instanceof Long)
                 return set((Long) object);
             else if (object instanceof Integer)
                 return set((Integer) object);
@@ -173,7 +161,7 @@ public class WritableHandler {
             else if (object instanceof Float)
                 return set((Float) object);
             else
-                throw new IllegalArgumentException("The provided object class is not supported: " + object.getClass());
+                return set(object.toString());
         }
     }
 }

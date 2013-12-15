@@ -24,6 +24,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -89,7 +90,7 @@ public class FaunusVertex extends FaunusPathElement implements Vertex {
 
     public <T> Iterable<T> getProperties(final String key) {
         FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        if (type.isImplicit()) return getImplicitProperty(type);
+        if (type.isImplicit()) return Arrays.<T>asList((T)this.getImplicitProperty(type)); // TODO: is this okay?
         return Iterables.transform(Iterables.filter(properties.get(type), FILTER_DELETED_PROPERTIES), new Function<FaunusProperty, T>() {
             @Nullable
             @Override

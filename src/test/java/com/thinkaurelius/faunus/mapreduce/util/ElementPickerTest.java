@@ -6,6 +6,8 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Tokens;
 import junit.framework.TestCase;
 
+import java.util.Collection;
+
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -47,5 +49,14 @@ public class ElementPickerTest extends TestCase {
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         assertEquals(ElementPicker.getPropertyAsString(edge, Tokens.LABEL), "knows");
 
+    }
+
+    public void testMultiProperties() {
+        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        vertex.addProperty("name","marko1");
+        vertex.addProperty("name","marko2");
+        assertEquals(vertex.getPropertyKeys().size(), 1);
+        assertTrue(((Collection) ElementPicker.getProperty(vertex, "name")).contains("marko1"));
+        assertTrue(((Collection) ElementPicker.getProperty(vertex, "name")).contains("marko2"));
     }
 }
