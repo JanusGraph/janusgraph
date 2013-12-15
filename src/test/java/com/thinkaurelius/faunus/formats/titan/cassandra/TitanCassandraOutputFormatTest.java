@@ -6,6 +6,7 @@ import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -20,11 +21,12 @@ import java.util.List;
 public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
     private static TitanGraph generateTitanGraph() throws Exception {
-        deleteDirectory("target/cassandra");
         BaseConfiguration configuration = new BaseConfiguration();
         configuration.setProperty("storage.backend", "embeddedcassandra");
         configuration.setProperty("storage.hostname", "localhost");
         configuration.setProperty("storage.cassandra-config-dir", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
+        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(configuration);
+        graphconfig.getBackend().clearStorage();
         return TitanFactory.open(configuration);
     }
 
@@ -65,7 +67,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         assertTrue(names.contains("cerberus"));
     }
 
-    public void testBulkDeletions() throws Exception {
+    public void testBulkElementDeletions() throws Exception {
         TitanGraph g = generateTitanGraph();
         bulkLoadGraphOfTheGods();
 
@@ -81,6 +83,29 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
+    }
+
+    public void testBulkPropertyDeletions() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        bulkLoadGraphOfTheGods();
+
+        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        new FaunusPipeline(f).V().sideEffect("{it.removeProperty('name')}").submit();
+
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+
+        for (Vertex v : g.getVertices()) {
+            assertNull(v.getProperty("name"));
+            assertEquals(1, v.getPropertyKeys().size());
+        }
+        new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
+            @Override
+            public Edge compute(Edge edge) {
+                assertNotNull(edge.getProperty("time"));
+                return edge;
+            }
+        }).iterate();
     }
 
 }

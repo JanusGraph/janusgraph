@@ -17,12 +17,6 @@ import org.apache.hadoop.mrunit.types.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -229,6 +223,8 @@ public abstract class BaseTest extends TestCase {
             assertNotNull(otherVertices.get(id));
             FaunusVertex v1 = vertices.get(id);
             FaunusVertex v2 = otherVertices.get(id);
+            ElementHelper.areEqual(v1,v2);
+
             assertEquals(v1.getProperties().size(), v2.getProperties().size());
             for (final String key : v1.getPropertyKeys()) {
                 assertEquals(v1.getProperty(key), v2.getProperty(key));
@@ -294,32 +290,5 @@ public abstract class BaseTest extends TestCase {
             counter++;
         }
         return counter;
-    }
-
-    public static void deleteDirectory(final String directory) throws Exception {
-        Files.walkFileTree(FileSystems.getDefault().getPath(directory), new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        Files.deleteIfExists(FileSystems.getDefault().getPath(directory));
     }
 }
