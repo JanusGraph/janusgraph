@@ -4,6 +4,8 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -116,6 +118,30 @@ public class TitanOutputFormatTest extends BaseTest {
                 return edge;
             }
         }).iterate();
+
+        new FaunusPipeline(f2).V().drop().submit();
+        assertEquals(0, new GremlinPipeline(g).V().count());
+        assertEquals(0, new GremlinPipeline(g).E().count());
+        bulkLoadGraphOfTheGods(f1);
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+
+        /*int counter = 0;
+        TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
+        new FaunusPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
+        for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanProperty>>() {
+            @Override
+            public Iterable<TitanProperty> compute(TitanVertex vertex) {
+                return vertex.getProperties("name");
+            }
+        }).toList()) {
+            String value = (String) ((TitanProperty) property).getValue();
+            assertTrue(value.equals("saturn") || value.equals("chronos"));
+            counter++;
+        }
+        assertEquals(counter, 2);*/
+
+
     }
 
     public void testBulkEdgeDerivations(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
@@ -150,6 +176,11 @@ public class TitanOutputFormatTest extends BaseTest {
         }
         assertEquals(counter, 3);
         assertEquals(3, new GremlinPipeline(g).V("name", "hercules").outE("battled").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "hercules").outE("father").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "hercules").outE("mother").count());
+        assertEquals(3, new GremlinPipeline(g).V("name", "hercules").out("battled").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("father").count());
+        assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("mother").count());
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
     }
 }
