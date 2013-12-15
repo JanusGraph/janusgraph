@@ -320,5 +320,6 @@ public abstract class BaseTest extends TestCase {
                 return FileVisitResult.CONTINUE;
             }
         });
+        Files.deleteIfExists(FileSystems.getDefault().getPath(directory));
     }
 }

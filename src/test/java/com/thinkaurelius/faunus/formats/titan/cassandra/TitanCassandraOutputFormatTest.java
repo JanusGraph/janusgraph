@@ -37,8 +37,8 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         new FaunusPipeline(f)._().submit();
 
-        assertEquals(12, count(g.getVertices()));
-        assertEquals(17, count(g.getEdges()));
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
         for (Vertex v : g.getVertices()) {
             assertNotNull(v.getProperty("name"));
             assertEquals(v.getPropertyKeys().size(), 2);
@@ -54,7 +54,25 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         assertTrue(names.contains("nemean"));
         assertTrue(names.contains("hydra"));
         assertTrue(names.contains("cerberus"));
-
-        g.shutdown();
     }
+
+    public void testBulkDeletions() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        new FaunusPipeline(f)._().submit();
+        f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        new FaunusPipeline(f).V().drop().submit();
+
+        assertEquals(0, new GremlinPipeline(g).V().count());
+        assertEquals(0, new GremlinPipeline(g).E().count());
+
+        f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        new FaunusPipeline(f)._().submit();
+        f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        new FaunusPipeline(f).E().drop().submit();
+
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(0, new GremlinPipeline(g).E().count());
+    }
+
 }
