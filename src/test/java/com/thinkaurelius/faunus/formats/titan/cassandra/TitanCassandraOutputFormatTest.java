@@ -11,6 +11,7 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.PipeFunction;
+import com.tinkerpop.pipes.util.PipeHelper;
 import org.apache.commons.configuration.BaseConfiguration;
 
 import java.util.List;
@@ -106,6 +107,45 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
                 return edge;
             }
         }).iterate();
+    }
+
+    /*public void testBulkPropertyUpdates() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        bulkLoadGraphOfTheGods();
+
+        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        new FaunusPipeline(f).V().sideEffect("{it.setProperty('name', 'marko' + it.getProperty('name'))}").submit();
+
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+
+        for (Vertex v : g.getVertices()) {
+            System.out.println(v.getProperty("name"));
+            assertTrue(v.<String>getProperty("name").startsWith("marko"));
+            assertEquals(2, v.getPropertyKeys().size());
+        }
+        new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
+            @Override
+            public Edge compute(Edge edge) {
+                assertNotNull(edge.getProperty("time"));
+                return edge;
+            }
+        }).iterate();
+    }*/
+
+    public void testBulkEdgeDerivations() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        bulkLoadGraphOfTheGods();
+
+        FaunusGraph f = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        new FaunusPipeline(f).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
+
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(18, new GremlinPipeline(g).E().count());
+
+        assertTrue(PipeHelper.areEqual(
+                new GremlinPipeline(g).V("name", "hercules").out("father").out("father"),
+                new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
     }
 
 }
