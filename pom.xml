@@ -21,7 +21,8 @@
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <titan.version>0.5.0-SNAPSHOT</titan.version>
         <slf4j.version>1.7.5</slf4j.version>
-        <skipLongTests>true</skipLongTests>
+        <skipCassandra>true</skipCassandra>
+        <skipHBase>true</skipHBase>
     </properties>
     <developers>
         <developer>
@@ -339,6 +340,7 @@
                 <configuration>
                     <excludes>
                         <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                        <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>
@@ -348,7 +350,7 @@
                 <version>2.16</version>
                 <executions>
                     <execution>
-                        <id>integration-test</id>
+                        <id>titan-cassandra-test</id>
                         <goals>
                             <goal>integration-test</goal>
                         </goals>
@@ -356,11 +358,24 @@
                             <includes>
                                 <include>**/TitanCassandraOutputFormatTest.java</include>
                             </includes>
-                            <skipTests>${skipLongTests}</skipTests>
+                            <skipTests>${skipCassandra}</skipTests>
                             <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
                         </configuration>
                     </execution>
                     <execution>
+                        <id>titan-hbase-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/TitanHBaseOutputFormatTest.java</include>
+                            </includes>
+                            <skipTests>${skipHBase}</skipTests>
+                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                        </configuration>
+                    </execution>
+                    <!--<execution>
                         <id>verify</id>
                         <goals>
                             <goal>verify</goal>
@@ -371,7 +386,7 @@
                                 <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
                             </summaryFiles>
                         </configuration>
-                    </execution>
+                    </execution>-->
                 </executions>
             </plugin>
         </plugins>

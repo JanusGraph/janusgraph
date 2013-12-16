@@ -4,8 +4,6 @@ import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -66,21 +64,41 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(names.contains("cerberus"));
     }
 
-    public void testBulkElementDeletions(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
+    public void testBulkElementDeletions(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).V().drop().submit();
-
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).E().drop().submit();
-
         assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(0, new GremlinPipeline(g).E().count());
+
+        new FaunusPipeline(f2).V().drop().submit();
+        assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
     }
 
-    public void testBulkVertexPropertyDeletions(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
+    public void testFewElementDeletions(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+        bulkLoadGraphOfTheGods(f1);
+
+        new FaunusPipeline(f2).E().has("label", "battled").drop().submit();
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(14, new GremlinPipeline(g).E().count());
+        assertEquals(0, new GremlinPipeline(g).E().has("label", "battled").count());
+        assertEquals(1, new GremlinPipeline(g).E().has("label", "mother").count());
+        assertEquals(2, new GremlinPipeline(g).E().has("label", "father").count());
+
+        new FaunusPipeline(f2).V().has("name", "hercules").drop().submit();
+        assertEquals(11, new GremlinPipeline(g).V().count());
+        assertEquals(12, new GremlinPipeline(g).E().count());
+        assertEquals(0, new GremlinPipeline(g).E().has("label", "battled").count());
+        assertEquals(0, new GremlinPipeline(g).E().has("label", "mother").count());
+        assertEquals(1, new GremlinPipeline(g).E().has("label", "father").count());
+    }
+
+    public void testBulkVertexPropertyDeletions(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).V().sideEffect("{it.removeProperty('name')}").submit();
 
@@ -100,7 +118,7 @@ public class TitanOutputFormatTest extends BaseTest {
         }).iterate();
     }
 
-    public void testBulkVertexPropertyUpdates(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
+    public void testBulkVertexPropertyUpdates(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
 
@@ -144,7 +162,7 @@ public class TitanOutputFormatTest extends BaseTest {
 
     }
 
-    public void testBulkEdgeDerivations(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
+    public void testBulkEdgeDerivations(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
 
@@ -156,7 +174,7 @@ public class TitanOutputFormatTest extends BaseTest {
                 new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
     }
 
-    public void testBulkEdgePropertyUpdates(final TitanGraph g, final FaunusGraph f1, FaunusGraph f2) throws Exception {
+    public void testBulkEdgePropertyUpdates(final TitanGraph g, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).E().has("label", "battled").sideEffect("{it.time = it.time+1}").submit();
 

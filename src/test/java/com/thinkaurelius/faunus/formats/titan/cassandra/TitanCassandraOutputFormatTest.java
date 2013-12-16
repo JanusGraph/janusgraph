@@ -18,6 +18,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         configuration.setProperty("storage.backend", "embeddedcassandra");
         configuration.setProperty("storage.hostname", "localhost");
         configuration.setProperty("storage.cassandra-config-dir", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
+        configuration.setProperty("storage.db-cache", "false");
         GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(configuration);
         graphconfig.getBackend().clearStorage();
         return TitanFactory.open(configuration);
@@ -39,7 +40,13 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
         super.testBulkElementDeletions(g, f1, f2);
+    }
 
+    public void testFewElementDeletions() throws Exception {
+        TitanGraph g = generateTitanGraph();
+        FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testFewElementDeletions(g, f1, f2);
     }
 
     public void testBulkVertexPropertyDeletions() throws Exception {
