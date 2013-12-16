@@ -64,12 +64,14 @@ public class HBaseStorageSetup {
     public static Configuration getHBaseStorageConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "hbase");
+        config.addProperty(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, 60000L);
         return config;
     }
 
     public static Configuration getHBaseGraphConfiguration() {
         BaseConfiguration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "hbase");
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, 60000L);
         return config;
     }
 

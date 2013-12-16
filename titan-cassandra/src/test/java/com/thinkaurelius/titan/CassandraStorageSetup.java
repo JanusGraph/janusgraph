@@ -31,6 +31,7 @@ public class CassandraStorageSetup {
     public static Configuration getGenericCassandraStorageConfiguration(String ks) {
         BaseConfiguration config = new BaseConfiguration();
         config.addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
+        config.addProperty(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, 60000L);
         return config;
         
     }
@@ -93,6 +94,7 @@ public class CassandraStorageSetup {
         Configuration config = new BaseConfiguration();
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
         config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, backend);
+        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, 60000L);
         return config;
     }
     
