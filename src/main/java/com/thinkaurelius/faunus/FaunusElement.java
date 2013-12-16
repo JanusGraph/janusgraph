@@ -92,6 +92,14 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         return this.state == ElementState.LOADED;
     }
 
+    public boolean isModified() {
+        for (final FaunusProperty property : this.getPropertiesWithState()) {
+            if (property.isDeleted() || property.isNew())
+                return true;
+        }
+        return false;
+    }
+
     //##################################
     // Property Handling
     //##################################

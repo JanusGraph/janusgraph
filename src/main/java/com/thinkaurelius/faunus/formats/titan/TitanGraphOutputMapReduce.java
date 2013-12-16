@@ -250,8 +250,8 @@ public class TitanGraphOutputMapReduce {
         public Edge getCreateOrDeleteEdge(final FaunusVertex faunusVertex, final FaunusEdge faunusEdge, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws InterruptedException {
             final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(TITAN_ID));
             final java.util.Map<Long, Object> idMap = faunusVertex.getProperty(ID_MAP_KEY);
-
-            if (this.trackState && faunusEdge.isDeleted()) {
+            final boolean isModified = faunusEdge.isModified();
+            if (this.trackState && (isModified || faunusEdge.isDeleted())) {
                 final TitanEdge titanEdge = this.getIncident(titanVertex, faunusEdge, idMap.get(faunusEdge.getVertexId(IN)));
                 if (null == titanEdge)
                     context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
@@ -259,28 +259,8 @@ public class TitanGraphOutputMapReduce {
                     titanEdge.remove();
                     context.getCounter(Counters.EDGES_REMOVED).increment(1l);
                 }
-                return null;
-            } else if (this.trackState && faunusEdge.isLoaded()) {
-                final TitanEdge titanEdge = this.getIncident(titanVertex, faunusEdge, idMap.get(faunusEdge.getVertexId(IN)));
-                if (null == titanEdge)
-                    context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
-                else {
-                    // do all property deletions, then do all property additions (ensures proper order of operations)
-                    for (final FaunusProperty faunusProperty : faunusEdge.getPropertiesWithState()) {
-                        if (faunusProperty.isDeleted()) {
-                            titanEdge.removeProperty(faunusProperty.getName());
-                            context.getCounter(Counters.EDGE_PROPERTIES_REMOVED).increment(1l);
-                        }
-                    }
-                    for (final FaunusProperty faunusProperty : faunusEdge.getPropertiesWithState()) {
-                        if (faunusProperty.isNew()) {
-                            titanEdge.setProperty(faunusProperty.getName(), faunusProperty.getValue());
-                            context.getCounter(Counters.EDGE_PROPERTIES_ADDED).increment(1l);
-                        }
-                    }
-                }
-                return titanEdge;
-            } else {   // state == new || !trackStates
+            }
+            if (isModified || faunusEdge.isNew()) {
                 final TitanEdge titanEdge = (TitanEdge) titanVertex.addEdge(faunusEdge.getLabel(), this.graph.getVertex(idMap.get(faunusEdge.getVertexId(IN))));
                 context.getCounter(Counters.EDGES_ADDED).increment(1l);
                 for (final FaunusProperty faunusProperty : faunusEdge.getProperties()) {
@@ -288,6 +268,8 @@ public class TitanGraphOutputMapReduce {
                     context.getCounter(Counters.EDGE_PROPERTIES_ADDED).increment(1l);
                 }
                 return titanEdge;
+            } else {
+                return null;
             }
         }
 
