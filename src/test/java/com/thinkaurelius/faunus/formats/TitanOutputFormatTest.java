@@ -5,18 +5,16 @@ import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
 import com.tinkerpop.pipes.PipeFunction;
 import com.tinkerpop.pipes.util.PipeHelper;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.hadoop.conf.Configuration;
 
-import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -125,14 +123,19 @@ public class TitanOutputFormatTest extends BaseTest {
     }
 
     public void testBulkVertexPropertyUpdates(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+        TitanGraph g = TitanFactory.open(configuration);
+        g.makeKey("name").dataType(String.class).list().make();
+        g.commit();
+
         bulkLoadGraphOfTheGods(f1);
         new FaunusPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
-        TitanGraph g = TitanFactory.open(configuration);
+        g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
         for (Vertex v : g.getVertices()) {
-            assertTrue(v.<String>getProperty("name").startsWith("marko"));
+            assertTrue(v.<List<String>>getProperty("name").get(0).startsWith("marko"));
+            assertEquals(v.<List<String>>getProperty("name").size(), 1);
             assertEquals(2, v.getPropertyKeys().size());
         }
         new GremlinPipeline(g).V("name", "hercules").outE("battled").sideEffect(new PipeFunction<Edge, Edge>() {
@@ -153,22 +156,21 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
-        /*int counter = 0;
-        TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
+        int counter = 0;
+        g = TitanFactory.open(configuration);
         new FaunusPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
+        TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
         for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanProperty>>() {
             @Override
             public Iterable<TitanProperty> compute(TitanVertex vertex) {
                 return vertex.getProperties("name");
             }
-        }).toList()) {
+        }).scatter().toList()) {
             String value = (String) ((TitanProperty) property).getValue();
             assertTrue(value.equals("saturn") || value.equals("chronos"));
             counter++;
         }
-        assertEquals(counter, 2);*/
-
-
+        assertEquals(counter, 2);
     }
 
     public void testBulkEdgeDerivations(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
@@ -212,4 +214,7 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(1, new GremlinPipeline(g).V("name", "hercules").out("mother").count());
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
     }
+
+    // TODO: Unidirectional edges test cases
+    // TODO: Multi-properties
 }

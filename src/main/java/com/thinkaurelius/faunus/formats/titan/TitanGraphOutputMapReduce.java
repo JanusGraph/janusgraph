@@ -292,6 +292,7 @@ public class TitanGraphOutputMapReduce {
         }
 
         private TitanEdge getIncident(final TitanVertex titanVertex, FaunusEdge faunusEdge, final Object otherVertexId) {
+            // TODO: add has() chains.
             final Iterable<Edge> edges = (null == otherVertexId) ?   // the shell wasn't propagated because the vertex was deleted -- should we propagate shell?
                     titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).edges() :
                     titanVertex.query().direction(OUT).labels(faunusEdge.getLabel()).adjacentVertex((TitanVertex) this.graph.getVertex(otherVertexId)).edges();

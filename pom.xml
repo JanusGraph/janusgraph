@@ -361,7 +361,7 @@
                                 <include>**/*PipelineTest.java</include>
                             </includes>
                             <skipTests>${skipPipeline}</skipTests>
-                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                            <summaryFile>target/failsafe-reports/failsafe-faunus-pipeline.xml</summaryFile>
                         </configuration>
                     </execution>
                     <execution>
@@ -374,7 +374,7 @@
                                 <include>**/TitanCassandraOutputFormatTest.java</include>
                             </includes>
                             <skipTests>${skipCassandra}</skipTests>
-                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                            <summaryFile>target/failsafe-reports/failsafe-titan-cassandra.xml</summaryFile>
                         </configuration>
                     </execution>
                     <execution>
@@ -387,21 +387,48 @@
                                 <include>**/TitanHBaseOutputFormatTest.java</include>
                             </includes>
                             <skipTests>${skipHBase}</skipTests>
-                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                            <summaryFile>target/failsafe-reports/failsafe-titan-hbase.xml</summaryFile>
                         </configuration>
                     </execution>
-                    <!--<execution>
-                        <id>verify</id>
+                    <!-- ************ -->
+                    <!-- VERIFICATION -->
+                    <!-- ************ -->
+                    <execution>
+                        <id>verify-faunus-pipeline-test</id>
                         <goals>
                             <goal>verify</goal>
                         </goals>
                         <configuration>
-                            <skipTests>${skipLongTests}</skipTests>
+                            <skipTests>${skipPipeline}</skipTests>
                             <summaryFiles>
-                                <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                                <summaryFile>target/failsafe-reports/failsafe-faunus-pipeline.xml</summaryFile>
                             </summaryFiles>
                         </configuration>
-                    </execution>-->
+                    </execution>
+                    <execution>
+                        <id>verify-titan-cassandra-test</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <skipTests>${skipCassandra}</skipTests>
+                            <summaryFiles>
+                                <summaryFile>target/failsafe-reports/failsafe-titan-cassandra.xml</summaryFile>
+                            </summaryFiles>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>verify-hbase-test</id>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                        <configuration>
+                            <skipTests>${skipHBase}</skipTests>
+                            <summaryFiles>
+                                <summaryFile>target/failsafe-reports/failsafe-titan-hbase.xml</summaryFile>
+                            </summaryFiles>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>
