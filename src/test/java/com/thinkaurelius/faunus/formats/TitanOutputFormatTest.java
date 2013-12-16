@@ -27,16 +27,6 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(true);
     }
 
-    public FaunusGraph generateFaunusGraph(final InputStream inputStream) throws Exception {
-        Configuration configuration = new Configuration();
-        Properties properties = new Properties();
-        properties.load(inputStream);
-        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
-            configuration.set(entry.getKey().toString(), entry.getValue().toString());
-        }
-        return new FaunusGraph(configuration);
-    }
-
     public void bulkLoadGraphOfTheGods(final FaunusGraph f) throws Exception {
         new FaunusPipeline(f)._().submit();
     }

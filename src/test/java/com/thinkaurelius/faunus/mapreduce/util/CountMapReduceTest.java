@@ -1,6 +1,8 @@
 package com.thinkaurelius.faunus.mapreduce.util;
 
 import com.thinkaurelius.faunus.BaseTest;
+import com.thinkaurelius.faunus.FaunusGraph;
+import com.thinkaurelius.faunus.FaunusPipeline;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;

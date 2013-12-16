@@ -23,6 +23,7 @@
         <slf4j.version>1.7.5</slf4j.version>
         <skipCassandra>true</skipCassandra>
         <skipHBase>true</skipHBase>
+        <skipPipeline>false</skipPipeline>
     </properties>
     <developers>
         <developer>
@@ -339,6 +340,7 @@
                 <version>2.4.2</version>
                 <configuration>
                     <excludes>
+                        <exclude>**/*PipelineTest.java</exclude>
                         <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
                         <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
                     </excludes>
@@ -349,6 +351,19 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>2.16</version>
                 <executions>
+                    <execution>
+                        <id>faunus-pipeline-test</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/*PipelineTest.java</include>
+                            </includes>
+                            <skipTests>${skipPipeline}</skipTests>
+                            <summaryFile>target/failsafe-reports/failsafe-integration.xml</summaryFile>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>titan-cassandra-test</id>
                         <goals>

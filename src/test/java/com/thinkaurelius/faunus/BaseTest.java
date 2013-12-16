@@ -14,20 +14,25 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mrunit.mapreduce.MapReduceDriver;
 import org.apache.hadoop.mrunit.types.Pair;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public abstract class BaseTest extends TestCase {
 
+    public static final String TEST_DATA_OUTPUT_PATH = "target/test-data/output";
     public static enum ExampleGraph {GRAPH_OF_THE_GODS, GRAPH_OF_THE_GODS_2, TINKERGRAPH}
 
     public static <T> List<T> asList(final Iterable<T> iterable) {
@@ -42,6 +47,16 @@ public abstract class BaseTest extends TestCase {
         Configuration configuration = new Configuration();
         configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
         return generateGraph(example, configuration);
+    }
+
+    public FaunusGraph createFaunusGraph(final InputStream inputStream) throws Exception {
+        Configuration configuration = new Configuration();
+        Properties properties = new Properties();
+        properties.load(inputStream);
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            configuration.set(entry.getKey().toString(), entry.getValue().toString());
+        }
+        return new FaunusGraph(configuration);
     }
 
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
@@ -223,7 +238,7 @@ public abstract class BaseTest extends TestCase {
             assertNotNull(otherVertices.get(id));
             FaunusVertex v1 = vertices.get(id);
             FaunusVertex v2 = otherVertices.get(id);
-            ElementHelper.areEqual(v1,v2);
+            ElementHelper.areEqual(v1, v2);
 
             assertEquals(v1.getProperties().size(), v2.getProperties().size());
             for (final String key : v1.getPropertyKeys()) {
@@ -290,5 +305,17 @@ public abstract class BaseTest extends TestCase {
             counter++;
         }
         return counter;
+    }
+
+    public List<String> getSideEffect(final String file) throws Exception {
+        List<String> lines = new ArrayList<String>();
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line = br.readLine();
+        while (line != null) {
+            lines.add(line);
+            line = br.readLine();
+        }
+        br.close();
+        return lines;
     }
 }
