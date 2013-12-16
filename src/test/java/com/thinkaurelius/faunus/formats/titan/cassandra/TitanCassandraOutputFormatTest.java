@@ -13,7 +13,7 @@ import org.apache.commons.configuration.BaseConfiguration;
  */
 public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
-    private static TitanGraph generateTitanGraph() throws Exception {
+    private static TitanGraph startUpCassandra() throws Exception {
         BaseConfiguration configuration = new BaseConfiguration();
         configuration.setProperty("storage.backend", "embeddedcassandra");
         configuration.setProperty("storage.hostname", "localhost");
@@ -24,57 +24,65 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         return TitanFactory.open(configuration);
     }
 
+    private static BaseConfiguration getConfiguration() throws Exception {
+        BaseConfiguration configuration = new BaseConfiguration();
+        configuration.setProperty("storage.backend", "cassandrathrift");
+        configuration.setProperty("storage.hostname", "localhost");
+        configuration.setProperty("storage.db-cache", "false");
+        return configuration;
+    }
+
 
     public void testInGremlinImports() {
         assertTrue(Imports.getImports().contains(TitanCassandraOutputFormat.class.getPackage().getName() + ".*"));
     }
 
     public void testBulkLoading() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
-        super.testBulkLoading(g, f1);
+        super.testBulkLoading(getConfiguration(), f1);
     }
 
     public void testBulkElementDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkElementDeletions(g, f1, f2);
+        super.testBulkElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testFewElementDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testFewElementDeletions(g, f1, f2);
+        super.testFewElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkVertexPropertyDeletions(g, f1, f2);
+        super.testBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyUpdates() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkVertexPropertyUpdates(g, f1, f2);
+        super.testBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgeDerivations() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkEdgeDerivations(g, f1, f2);
+        super.testBulkEdgeDerivations(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgePropertyUpdates() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpCassandra();
         FaunusGraph f1 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
-        super.testBulkEdgePropertyUpdates(g, f1, f2);
+        super.testBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
     }
 
 }

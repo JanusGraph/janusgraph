@@ -2,7 +2,6 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
-import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
@@ -14,15 +13,24 @@ import org.apache.commons.configuration.BaseConfiguration;
  */
 public class TitanHBaseOutputFormatTest extends TitanOutputFormatTest {
 
-    private static TitanGraph generateTitanGraph() throws Exception {
+    private static TitanGraph startUpHBase() throws Exception {
         BaseConfiguration configuration = new BaseConfiguration();
         configuration.setProperty("storage.backend", "hbase");
         configuration.setProperty("storage.hostname", "localhost");
         configuration.setProperty("storage.port", "2181");
-        configuration.setProperty("storage.db-cache","false");
+        configuration.setProperty("storage.db-cache", "false");
         GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(configuration);
         graphconfig.getBackend().clearStorage();
         return TitanFactory.open(configuration);
+    }
+
+    private static BaseConfiguration getConfiguration() throws Exception {
+        BaseConfiguration configuration = new BaseConfiguration();
+        configuration.setProperty("storage.backend", "hbase");
+        configuration.setProperty("storage.hostname", "localhost");
+        configuration.setProperty("storage.port", "2181");
+        configuration.setProperty("storage.db-cache", "false");
+        return configuration;
     }
 
 
@@ -30,51 +38,51 @@ public class TitanHBaseOutputFormatTest extends TitanOutputFormatTest {
         assertTrue(Imports.getImports().contains(TitanHBaseOutputFormat.class.getPackage().getName() + ".*"));
     }
 
-    public void testBulkLoading() throws Exception {
-        TitanGraph g = generateTitanGraph();
+    /*public void testBulkLoading() throws Exception {
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
-        super.testBulkLoading(g, f1);
-    }
+        super.testBulkLoading(getConfiguration(), f1);
+    }*/
 
     public void testBulkElementDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkElementDeletions(g, f1, f2);
+        super.testBulkElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testFewElementDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testFewElementDeletions(g, f1, f2);
+        super.testFewElementDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyDeletions() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkVertexPropertyDeletions(g, f1, f2);
+        super.testBulkVertexPropertyDeletions(getConfiguration(), f1, f2);
     }
 
     public void testBulkVertexPropertyUpdates() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkVertexPropertyUpdates(g, f1, f2);
+        super.testBulkVertexPropertyUpdates(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgeDerivations() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkEdgeDerivations(g, f1, f2);
+        super.testBulkEdgeDerivations(getConfiguration(), f1, f2);
     }
 
     public void testBulkEdgePropertyUpdates() throws Exception {
-        TitanGraph g = generateTitanGraph();
+        startUpHBase();
         FaunusGraph f1 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("graphson-hbase.properties"));
         FaunusGraph f2 = generateFaunusGraph(TitanHBaseOutputFormat.class.getResourceAsStream("hbase-hbase.properties"));
-        super.testBulkEdgePropertyUpdates(g, f1, f2);
+        super.testBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
     }
 }
