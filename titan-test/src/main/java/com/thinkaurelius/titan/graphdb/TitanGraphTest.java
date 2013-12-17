@@ -644,6 +644,22 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
+    public void testRepeatingIterationOverAllVertices() {
+        if (graph.getFeatures().supportsVertexIteration) {
+            TitanVertex vertex = tx.addVertex();
+            vertex.setProperty("key", "value");
+            tx.commit();
+            for (int i = 0; i < 100; i++) {
+                tx = graph.newTransaction();
+                Iterable<Vertex> vertices = tx.getVertices();
+                assertEquals(1, Iterables.size(vertices));
+                assertEquals("value", Iterables.getOnlyElement(vertices).getProperty("key"));
+                tx.commit();
+            }
+        }
+    }
+
+    @Test
     public void testVertexDeletionWithIndex() {
         TitanKey name = makeStringPropertyKey("name");
         Vertex v1 = tx.addVertex(null);
