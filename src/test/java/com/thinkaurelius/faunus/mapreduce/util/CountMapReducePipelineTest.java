@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class CounterMapPipelineTest extends BaseTest {
+public class CountMapReducePipelineTest extends BaseTest {
 
     public void testWithPipeline() throws Exception {
         FaunusGraph g = createFaunusGraph(BaseTest.class.getResourceAsStream("graphson-noop.properties"));
