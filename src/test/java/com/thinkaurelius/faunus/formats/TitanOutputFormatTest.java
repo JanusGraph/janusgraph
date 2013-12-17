@@ -215,6 +215,19 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
     }
 
+    public void testUnidirectionEdges(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+        TitanGraph g = TitanFactory.open(configuration);
+        g.makeLabel("father").unidirected().make();
+        g.commit();
+
+        bulkLoadGraphOfTheGods(f1);
+        g = TitanFactory.open(configuration);
+        assertEquals(12, new GremlinPipeline(g).V().count());
+        assertEquals(17, new GremlinPipeline(g).E().count());
+        assertEquals(new GremlinPipeline(g).V("name", "hercules").out("father").count(), 1);
+        assertEquals(new GremlinPipeline(g).V("name", "jupiter").in("father").count(), 0);
+    }
+
     // TODO: Unidirectional edges test cases
     // TODO: Multi-properties
 }

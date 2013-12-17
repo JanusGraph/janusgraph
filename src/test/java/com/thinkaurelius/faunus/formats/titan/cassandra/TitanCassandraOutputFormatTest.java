@@ -85,4 +85,11 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
         super.testBulkEdgePropertyUpdates(getConfiguration(), f1, f2);
     }
 
+    public void testUnidirectionEdges() throws Exception {
+        startUpCassandra();
+        FaunusGraph f1 = createFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("graphson-cassandra.properties"));
+        FaunusGraph f2 = createFaunusGraph(TitanCassandraOutputFormat.class.getResourceAsStream("cassandra-cassandra.properties"));
+        super.testUnidirectionEdges(getConfiguration(), f1, f2);
+    }
+
 }

@@ -29,6 +29,7 @@ public class SideEffectMap {
 
     public enum Counters {
         VERTICES_PROCESSED,
+        IN_EDGES_PROCESSED,
         OUT_EDGES_PROCESSED
     }
 
@@ -65,6 +66,18 @@ public class SideEffectMap {
                 }
             } else {
                 long edgesProcessed = 0;
+                for (final Edge e : value.getEdges(Direction.IN)) {
+                    final FaunusEdge edge = (FaunusEdge) e;
+                    if (edge.hasPaths()) {
+                        edgesProcessed++;
+                        //for (int i = 0; i < edge.pathCount(); i++) {
+                        this.closure.call(edge);
+                        //}
+                    }
+                }
+                context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
+
+                edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
                     final FaunusEdge edge = (FaunusEdge) e;
                     if (edge.hasPaths()) {

@@ -28,6 +28,8 @@ h3. Version 0.5.0 (NOT OFFICIALLY RELEASED YET)
 * @TitanGraphOutputMapReduce@ respects state tracking and get/create/delete in outputting @TitanGraph@
 * Added JUnit test support for executing local (non-pseudo-cluster) MapReduce jobs
 * Provided MapReduce-based integration testing between Titan and Faunus
+* Provided MapReduce-based integration testing around @FaunusPipeline@
+* Fixed a @SideEffectMap@ bug around edge processing (only out edges were being processed)
 
 ==<hr/>==
 
