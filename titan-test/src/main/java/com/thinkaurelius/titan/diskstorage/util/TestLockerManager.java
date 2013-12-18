@@ -32,7 +32,8 @@ public class TestLockerManager {
 
         @Override
         public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
-            if (errorOnLock) throw new UnsupportedOperationException();
+            if (errorOnLock)
+                throw new UnsupportedOperationException();
         }
 
         @Override
