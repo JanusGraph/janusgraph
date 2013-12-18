@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import static org.junit.Assert.*;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
+@Category({ SerialTests.class })
 public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanEventualGraphTest.class);
@@ -192,7 +194,6 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ SerialTests.class })
     public void testCacheConcurrency() throws InterruptedException {
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
                 option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
@@ -283,7 +284,6 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     @Test
-    @Category({ SerialTests.class })
     public void testCachePerformance() {
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
                               option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
@@ -354,13 +354,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    @Category({ SerialTests.class })
     public void testCacheExpirationTimeOut() throws InterruptedException {
         testCacheExpiration(4000,6000);
     }
 
     @Test
-    @Category({ SerialTests.class })
     public void testCacheExpirationNoTimeOut() throws InterruptedException {
         testCacheExpiration(0,5000);
     }
