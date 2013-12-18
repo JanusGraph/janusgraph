@@ -33,11 +33,12 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     public static final Configuration getLocalESTestConfig() {
+        final String index = "es";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
-        config.set(LOCAL_MODE, true);
-        config.set(CLIENT_ONLY, false);
-        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"));
-        return config;
+        config.set(LOCAL_MODE, true, index);
+        config.set(CLIENT_ONLY, false, index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        return config.restrictTo(index);
     }
 
 

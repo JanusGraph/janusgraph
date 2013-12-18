@@ -118,9 +118,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         // Copy a subset of our commons config into a Hadoop config
-        Preconditions.checkArgument(config instanceof MixedConfiguration);
         int keysLoaded=0;
-        Map<String,Object> configSub = ((MixedConfiguration)config).getSubset(HBASE_CONFIGURATION_NAMESPACE);
+        Map<String,Object> configSub = config.getSubset(HBASE_CONFIGURATION_NAMESPACE);
         for (Map.Entry<String,Object> entry : configSub.entrySet()) {
             logger.debug("HBase configuration: setting {}={}", entry.getKey(), entry.getValue());
             if (entry.getValue()==null) continue;

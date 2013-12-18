@@ -1306,10 +1306,10 @@ public class GraphDatabaseConfiguration {
 
     public String getBackendDescription() {
         String clazzname = configuration.get(STORAGE_BACKEND);
-        if (configuration.has(STORAGE_HOSTS)) {
-            return clazzname + ":" + Arrays.toString(configuration.get(STORAGE_HOSTS));
-        } else {
+        if (clazzname.equalsIgnoreCase("berkeleyje") || clazzname.equalsIgnoreCase("persistit")) {
             return clazzname + ":" + configuration.get(STORAGE_DIRECTORY);
+        } else {
+            return clazzname + ":" + Arrays.toString(configuration.get(STORAGE_HOSTS));
         }
     }
 

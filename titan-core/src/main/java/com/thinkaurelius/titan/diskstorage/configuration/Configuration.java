@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,6 +16,8 @@ public interface Configuration {
     public<O> O get(ConfigOption<O> option, String... umbrellaElements);
 
     public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements);
+
+    public Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements);
 
     public Configuration restrictTo(final String... umbrellaElements);
 
@@ -34,6 +38,11 @@ public interface Configuration {
         @Override
         public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements) {
             return Sets.newHashSet();
+        }
+
+        @Override
+        public Map<String, Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
+            return Maps.newHashMap();
         }
 
         @Override

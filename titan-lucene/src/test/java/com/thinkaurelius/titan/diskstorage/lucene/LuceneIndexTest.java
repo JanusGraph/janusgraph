@@ -32,9 +32,10 @@ public class LuceneIndexTest extends IndexProviderTest {
     }
 
     public static final Configuration getLocalLuceneTestConfig() {
+        final String index = "lucene";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
-        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("lucene"));
-        return config;
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("lucene"),index);
+        return config.restrictTo(index);
     }
 
     @Test

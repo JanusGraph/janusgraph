@@ -3,8 +3,11 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
@@ -19,7 +22,7 @@ public class RidGenerationTest {
         Configuration c = Configuration.EMPTY;
         int n = 8;
         Preconditions.checkArgument(1 < n); // n <= 1 is useless
-        Collection<byte[]> rids = new ConcurrentSkipListSet<byte[]>();
+        Collection<byte[]> rids = Collections.synchronizedSet(new HashSet<byte[]>());
         RidThread[] threads = new RidThread[n];
         
         for (int i = 0; i < n; i++) {

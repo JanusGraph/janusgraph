@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.blueprints;
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
@@ -17,6 +18,11 @@ import com.tinkerpop.blueprints.Graph;
  */
 
 public class InternalCassandraBlueprintsTest extends BasicBlueprintsTest {
+
+    @Override
+    public void startUp() {
+        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+    }
 
     @Override
     protected WriteConfiguration getGraphConfig() {

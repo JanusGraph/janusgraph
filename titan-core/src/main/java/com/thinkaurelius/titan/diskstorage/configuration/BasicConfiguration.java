@@ -65,6 +65,11 @@ public class BasicConfiguration extends AbstractConfiguration {
     }
 
     @Override
+    public Map<String, Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
+        return super.getSubset(config,umbrella,umbrellaElements);
+    }
+
+    @Override
     public Configuration restrictTo(String... umbrellaElements) {
         return restrictTo(this,umbrellaElements);
     }
