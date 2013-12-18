@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 
@@ -120,11 +121,14 @@ public class ConfigurationTest {
 
         mixed.close();
 
-        System.out.println(ConfigElement.toString(root));
+        //System.out.println(ConfigElement.toString(root));
 
     }
 
-
+    @Test
+    public void printTitanNS() {
+        System.out.println(ConfigElement.toString(GraphDatabaseConfiguration.TITAN_NS));
+    }
 
 
 }

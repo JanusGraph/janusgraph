@@ -5,8 +5,10 @@ import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import org.junit.After;
@@ -33,6 +35,11 @@ public abstract class TitanGraphBaseTest {
     public void setUp() throws Exception {
         this.config = getConfiguration();
         Preconditions.checkNotNull(config);
+        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.clone(), BasicConfiguration.Restriction.NONE);
+        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        Backend backend = new Backend(configuration);
+        backend.initialize(configuration);
+        backend.clearStorage();
         open(config);
     }
 
@@ -45,9 +52,6 @@ public abstract class TitanGraphBaseTest {
     @After
     public void tearDown() throws Exception {
         close();
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
-        graphconfig.getBackend().clearStorage();
-
     }
 
     public void close() {
