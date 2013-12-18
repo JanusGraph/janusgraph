@@ -12,7 +12,6 @@ public class PersistitKeyValueTest extends KeyValueStoreTest {
 
     @Override
     public OrderedKeyValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
-        return new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
+        return new PersistitStoreManager(PersistitStorageSetup.getPersistitConfig());
     }
 }

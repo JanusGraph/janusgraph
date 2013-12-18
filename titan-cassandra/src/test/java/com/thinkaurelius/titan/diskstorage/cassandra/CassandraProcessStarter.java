@@ -199,8 +199,8 @@ public class CassandraProcessStarter {
 
     public void waitForClusterSize(int minSize) throws InterruptedException, StorageException {
         CTConnectionFactory f = new CTConnectionFactory(address, port,
-                GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT,
-                AbstractCassandraStoreManager.THRIFT_DEFAULT_FRAME_SIZE);
+                GraphDatabaseConfiguration.CONNECTION_TIMEOUT.getDefaultValue(),
+                AbstractCassandraStoreManager.CASSANDRA_THRIFT_FRAME_SIZE.getDefaultValue());
         CTConnection conn = null;
         try {
             conn = f.makeRawConnection();

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
@@ -17,8 +18,8 @@ public class InternalCassandraThriftKeyColumnValueTest extends AbstractCassandra
     }
 
     @Override
-    public Configuration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
+    public ModifiableConfiguration getBaseStorageConfiguration() {
+        return CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName());
     }
 
     @Override

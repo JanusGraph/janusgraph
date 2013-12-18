@@ -1,13 +1,17 @@
 package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -18,11 +22,13 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import org.apache.commons.lang.StringUtils;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
@@ -32,13 +38,13 @@ import java.util.concurrent.ExecutionException;
 public class KCVSConfiguration implements WriteConfiguration {
 
     private static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
+    private static final List<Entry> NO_ADDITIONS = ImmutableList.of();
 
     private final KeyColumnValueStoreManager manager;
     private final KeyColumnValueStore store;
     private final String identifier;
     private final StaticBuffer rowKey;
 
-    private final Cache<String,Holder> cache;
     private final KryoSerializer serializer;
 
     private long maxOperationWaitTime = 10000;
@@ -55,7 +61,6 @@ public class KCVSConfiguration implements WriteConfiguration {
         this.rowKey = string2StaticBuffer(this.identifier);
 
         this.serializer = new KryoSerializer(true);
-        this.cache = CacheBuilder.newBuilder().concurrencyLevel(1).initialCapacity(96).maximumSize(2048).build();
     }
 
     public void setMaxOperationWaitTime(long waitTimeMS) {
@@ -74,37 +79,27 @@ public class KCVSConfiguration implements WriteConfiguration {
     public <O> O get(final String key, final Class<O> datatype) {
         StaticBuffer column = string2StaticBuffer(key);
         final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column),false);
-
-        try {
-            return (O)cache.get(key,new Callable<Holder>() {
-                @Override
-                public Holder call() throws Exception {
-                    StaticBuffer result = BackendOperation.execute(new Callable<StaticBuffer>() {
-                        @Override
-                        public StaticBuffer call() throws Exception {
-                            StoreTransaction txh = null;
-                            try {
-                                txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
-                                List<Entry> entries = store.getSlice(query,txh);
-                                if (entries.isEmpty()) return null;
-                                return entries.get(0).getValue();
-                            } finally {
-                                if (txh != null) txh.commit();
-                            }
-                        }
-
-                        @Override
-                        public String toString() {
-                            return "getConfiguration";
-                        }
-                    }, maxOperationWaitTime);
-                    if (result==null) return new Holder(null);
-                    return new Holder(staticBuffer2Object(result, datatype));
+        StaticBuffer result = BackendOperation.execute(new Callable<StaticBuffer>() {
+            @Override
+            public StaticBuffer call() throws Exception {
+                StoreTransaction txh = null;
+                try {
+                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    List<Entry> entries = store.getSlice(query,txh);
+                    if (entries.isEmpty()) return null;
+                    return entries.get(0).getValue();
+                } finally {
+                    if (txh != null) txh.commit();
                 }
-            }).get();
-        } catch (ExecutionException e) {
-            throw new TitanException(e);
-        }
+            }
+
+            @Override
+            public String toString() {
+                return "getConfiguration";
+            }
+        }, maxOperationWaitTime);
+        if (result==null) return null;
+        return staticBuffer2Object(result, datatype);
     }
 
     /**
@@ -124,13 +119,13 @@ public class KCVSConfiguration implements WriteConfiguration {
         BackendOperation.execute(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                StoreTransaction txh=null;
+                StoreTransaction txh = null;
                 try {
-                    txh= manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
-                    store.mutate(rowKey, additions, NO_DELETIONS,txh);
+                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    store.mutate(rowKey, additions, NO_DELETIONS, txh);
                     return true;
                 } finally {
-                    if (txh!=null) txh.commit();
+                    if (txh != null) txh.commit();
                 }
             }
 
@@ -138,14 +133,43 @@ public class KCVSConfiguration implements WriteConfiguration {
             public String toString() {
                 return "setConfiguration";
             }
-        },maxOperationWaitTime);
-        cache.put(key,new Holder(value));
+        }, maxOperationWaitTime);
     }
 
+    @Override
+    public void remove(String key) {
+        if (get(key,Object.class)!=null) {
+            StaticBuffer column = string2StaticBuffer(key);
+            final List<StaticBuffer> deletions = Lists.newArrayList(column);
+
+            BackendOperation.execute(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    StoreTransaction txh = null;
+                    try {
+                        txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                        store.mutate(rowKey, NO_ADDITIONS, deletions, txh);
+                        return true;
+                    } finally {
+                        if (txh != null) txh.commit();
+                    }
+                }
+
+                @Override
+                public String toString() {
+                    return "setConfiguration";
+                }
+            }, maxOperationWaitTime);
+        }
+    }
 
     @Override
-    public Iterable<String> getKeys(String prefix) {
+    public WriteConfiguration clone() {
+        throw new UnsupportedOperationException();
+    }
 
+    private Map<String,Object> toMap() {
+        Map<String,Object> entries = Maps.newHashMap();
         List<Entry> result = BackendOperation.execute(new Callable<List<Entry>>() {
             @Override
             public List<Entry> call() throws Exception {
@@ -164,12 +188,44 @@ public class KCVSConfiguration implements WriteConfiguration {
             }
         },maxOperationWaitTime);
 
-        List<String> keys = Lists.newArrayList();
         for (Entry entry : result) {
-            String value = staticBuffer2String(entry.getColumn());
-            if (value.startsWith(prefix)) keys.add(value);
+            String key = staticBuffer2String(entry.getColumn());
+            Object value = staticBuffer2Object(entry.getValue(), Object.class);
+            entries.put(key,value);
         }
-        return keys;
+        return entries;
+    }
+
+    public ReadConfiguration asReadConfiguration() {
+        final Map<String,Object> entries = toMap();
+        return new ReadConfiguration() {
+            @Override
+            public <O> O get(String key, Class<O> datatype) {
+                Preconditions.checkArgument(!entries.containsKey(key) || datatype.isAssignableFrom(entries.get(key).getClass()));
+                return (O)entries.get(key);
+            }
+
+            @Override
+            public Iterable<String> getKeys(final String prefix) {
+                return Lists.newArrayList(Iterables.filter(entries.keySet(),new Predicate<String>() {
+                    @Override
+                    public boolean apply(@Nullable String s) {
+                        assert s!=null;
+                        return StringUtils.isBlank(prefix) || s.startsWith(prefix);
+                    }
+                }));
+            }
+
+            @Override
+            public void close() {
+                //Do nothing
+            }
+        };
+    }
+
+    @Override
+    public Iterable<String> getKeys(String prefix) {
+        return asReadConfiguration().getKeys(prefix);
     }
 
 
@@ -177,7 +233,6 @@ public class KCVSConfiguration implements WriteConfiguration {
     public void close() {
         try {
             store.close();
-            cache.invalidateAll();
         } catch (StorageException e) {
             throw new TitanException("Could not close configuration store",e);
         }
@@ -202,20 +257,6 @@ public class KCVSConfiguration implements WriteConfiguration {
         Object value = serializer.readClassAndObject(s.asReadBuffer());
         Preconditions.checkArgument(datatype.isInstance(value),"Could not deserialize to [%s], got: %s",datatype,value);
         return (O)value;
-    }
-
-    private static class Holder {
-
-        final Object value;
-
-        private Holder(Object value) {
-            this.value = value;
-        }
-
-        public Object get() {
-            return value;
-        }
-
     }
 
 

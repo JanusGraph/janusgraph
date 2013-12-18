@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.thrift;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
 import org.apache.commons.configuration.Configuration;
@@ -15,7 +16,8 @@ public class InternalCassandraGraphMetricsTest extends TitanNonTransactionalGrap
     }
 
     @Override
-    public Configuration getConfiguration() {
-        return CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphMetricsTest.class.getSimpleName());
+    public WriteConfiguration getBaseConfiguration() {
+        return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
+
 }

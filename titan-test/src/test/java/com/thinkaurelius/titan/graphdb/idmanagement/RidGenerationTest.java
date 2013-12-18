@@ -1,12 +1,12 @@
-package com.thinkaurelius.titan.graphdb;
+package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import static org.junit.Assert.assertEquals;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentSkipListSet;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import com.google.common.base.Preconditions;
@@ -16,7 +16,7 @@ public class RidGenerationTest {
 
     @Test
     public void testThreadBasedRidGeneration() throws InterruptedException {
-        Configuration c = new BaseConfiguration();
+        Configuration c = Configuration.EMPTY;
         int n = 8;
         Preconditions.checkArgument(1 < n); // n <= 1 is useless
         Collection<byte[]> rids = new ConcurrentSkipListSet<byte[]>();

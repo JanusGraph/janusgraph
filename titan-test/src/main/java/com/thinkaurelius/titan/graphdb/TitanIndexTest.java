@@ -32,8 +32,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     public final boolean supportsNumeric;
     public final boolean supportsText;
 
-    protected TitanIndexTest(Configuration config, boolean supportsGeoPoint, boolean supportsNumeric, boolean supportsText) {
-        super(config);
+    protected TitanIndexTest(boolean supportsGeoPoint, boolean supportsNumeric, boolean supportsText) {
         this.supportsGeoPoint = supportsGeoPoint;
         this.supportsNumeric = supportsNumeric;
         this.supportsText = supportsText;

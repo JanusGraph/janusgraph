@@ -10,13 +10,15 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.ElasticSearchInterruptedException;
 import org.elasticsearch.Version;
@@ -67,24 +69,42 @@ public class ElasticSearchIndex implements IndexProvider {
 
     private static final String[] DATA_SUBDIRS = {"data", "work", "logs"};
 
-    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
-    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
+    public static final ConfigOption<Integer> MAX_RESULT_SET_SIZE = new ConfigOption<Integer>(INDEX_NS,"max-result-set-size",
+            "Maxium number of results to return if no limit is specified",
+            ConfigOption.Type.MASKABLE, 100000);
+    public static final ConfigOption<Boolean> CLIENT_ONLY = new ConfigOption<Boolean>(INDEX_NS,"client-only",
+            "Whether Titan connects to the indexing backend as a client",
+            ConfigOption.Type.GLOBAL_OFFLINE, true);
+    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(INDEX_NS,"cluster-name",
+            "The name of the indexing backend cluster",
+            ConfigOption.Type.GLOBAL_OFFLINE, "elasticsearch");
+    public static final ConfigOption<Boolean> LOCAL_MODE = new ConfigOption<Boolean>(INDEX_NS,"local-mode",
+            "Whether a full indexing instances is started embedded",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+    public static final ConfigOption<Boolean> CLIENT_SNIFF = new ConfigOption<Boolean>(INDEX_NS,"sniff",
+            "Whether to enable cluster sniffing",
+            ConfigOption.Type.MASKABLE, true);
 
-    public static final String CLIENT_ONLY_KEY = "client-only";
-    public static final boolean CLIENT_ONLY_DEFAULT = true;
-    public static final String CLUSTER_NAME_KEY = "cluster-name";
-    public static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
-    public static final String INDEX_NAME_KEY = "index-name";
-    public static final String INDEX_NAME_DEFAULT = "titan";
-    public static final String LOCAL_MODE_KEY = "local-mode";
-    public static final boolean LOCAL_MODE_DEFAULT = false;
-    public static final String CLIENT_SNIFF_KEY = "sniff";
-    public static final boolean CLIENT_SNIFF_DEFAULT = true;
+//
+//    public static final String MAX_RESULT_SET_SIZE_KEY = "max-result-set-size";
+//    public static final int MAX_RESULT_SET_SIZE_DEFAULT = 100000;
+
+//    public static final String CLIENT_ONLY_KEY = "client-only";
+//    public static final boolean CLIENT_ONLY_DEFAULT = true;
+//    public static final String CLUSTER_NAME_KEY = "cluster-name";
+//    public static final String CLUSTER_NAME_DEFAULT = "elasticsearch";
+//    public static final String INDEX_NAME_KEY = "index-name";
+//    public static final String INDEX_NAME_DEFAULT = "titan";
+
+//    public static final String LOCAL_MODE_KEY = "local-mode";
+//    public static final boolean LOCAL_MODE_DEFAULT = false;
+//    public static final String CLIENT_SNIFF_KEY = "sniff";
+//    public static final boolean CLIENT_SNIFF_DEFAULT = true;
 
     //    public static final String HOST_NAMES_KEY = "hosts";
     public static final int HOST_PORT_DEFAULT = 9300;
 
-    public static final String ES_YML_KEY = "config-file";
+//    public static final String ES_YML_KEY = "config-file";
 
 
     private final Node node;
@@ -93,24 +113,24 @@ public class ElasticSearchIndex implements IndexProvider {
     private final int maxResultsSize;
 
     public ElasticSearchIndex(Configuration config) {
-        indexName = config.getString(INDEX_NAME_KEY, INDEX_NAME_DEFAULT);
+        indexName = config.get(INDEX_NAME);
 
         checkExpectedClientVersion();
 
-        if (!config.containsKey(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
-            boolean clientOnly = config.getBoolean(CLIENT_ONLY_KEY, CLIENT_ONLY_DEFAULT);
-            boolean local = config.getBoolean(LOCAL_MODE_KEY, LOCAL_MODE_DEFAULT);
+        if (!config.has(INDEX_HOSTS)) {
+            boolean clientOnly = config.get(CLIENT_ONLY);
+            boolean local = config.get(LOCAL_MODE);
 
             NodeBuilder builder = NodeBuilder.nodeBuilder();
-            Preconditions.checkArgument(config.containsKey(ES_YML_KEY) || config.containsKey(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY),
+            Preconditions.checkArgument(config.has(INDEX_CONF_FILE) || config.has(INDEX_DIRECTORY),
                     "Must either configure configuration file or base directory");
-            if (config.containsKey(ES_YML_KEY)) {
-                String configFile = config.getString(ES_YML_KEY);
+            if (config.has(INDEX_CONF_FILE)) {
+                String configFile = config.get(INDEX_CONF_FILE);
                 log.debug("Configuring ES from YML file [{}]", configFile);
                 Settings settings = ImmutableSettings.settingsBuilder().loadFromSource(configFile).build();
                 builder.settings(settings);
             } else {
-                String dataDirectory = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
+                String dataDirectory = config.get(INDEX_DIRECTORY);
                 log.debug("Configuring ES with data directory [{}]", dataDirectory);
                 File f = new File(dataDirectory);
                 if (!f.exists()) f.mkdirs();
@@ -123,7 +143,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
                 builder.settings(b.build());
 
-                String clustername = config.getString(CLUSTER_NAME_KEY, CLUSTER_NAME_DEFAULT);
+                String clustername = config.get(CLUSTER_NAME);
                 Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
                 builder.clusterName(clustername);
             }
@@ -133,20 +153,21 @@ public class ElasticSearchIndex implements IndexProvider {
 
         } else {
             ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
-            if (config.containsKey(CLUSTER_NAME_KEY)) {
-                String clustername = config.getString(CLUSTER_NAME_KEY, CLUSTER_NAME_DEFAULT);
+            if (config.has(CLUSTER_NAME)) {
+                String clustername = config.get(CLUSTER_NAME);
                 Preconditions.checkArgument(StringUtils.isNotBlank(clustername), "Invalid cluster name: %s", clustername);
                 settings.put("cluster.name", clustername);
             } else {
                 settings.put("client.transport.ignore_cluster_name", true);
             }
-            log.debug("Transport sniffing enabled: {}", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
-            settings.put("client.transport.sniff", config.getBoolean(CLIENT_SNIFF_KEY, CLIENT_SNIFF_DEFAULT));
+            log.debug("Transport sniffing enabled: {}", config.get(CLIENT_SNIFF));
+            settings.put("client.transport.sniff", config.get(CLIENT_SNIFF));
             TransportClient tc = new TransportClient(settings.build());
-            for (String host : config.getStringArray(GraphDatabaseConfiguration.HOSTNAME_KEY)) {
+            int defaultPort = config.has(INDEX_PORT)?config.get(INDEX_PORT):HOST_PORT_DEFAULT;
+            for (String host : config.get(INDEX_HOSTS)) {
                 String[] hostparts = host.split(":");
                 String hostname = hostparts[0];
-                int hostport = HOST_PORT_DEFAULT;
+                int hostport = defaultPort;
                 if (hostparts.length == 2) hostport = Integer.parseInt(hostparts[1]);
                 log.info("Configured remote host: {} : {}", hostname, hostport);
                 tc.addTransportAddress(new InetSocketTransportAddress(hostname, hostport));
@@ -155,7 +176,7 @@ public class ElasticSearchIndex implements IndexProvider {
             node = null;
         }
 
-        maxResultsSize = config.getInt(MAX_RESULT_SET_SIZE_KEY, MAX_RESULT_SET_SIZE_DEFAULT);
+        maxResultsSize = config.get(MAX_RESULT_SET_SIZE);
         log.debug("Configured ES query result set max size to {}", maxResultsSize);
 
         client.admin().cluster().prepareHealth()

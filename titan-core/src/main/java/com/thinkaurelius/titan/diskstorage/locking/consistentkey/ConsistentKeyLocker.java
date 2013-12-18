@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -18,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,8 +134,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         public Builder(KeyColumnValueStore store) {
             this.store = store;
-            this.lockWaitNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT, MILLISECONDS);
-            this.lockRetryCount = GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT;
+            this.lockWaitNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_WAIT.getDefaultValue(), MILLISECONDS);
+            this.lockRetryCount = GraphDatabaseConfiguration.LOCK_RETRY.getDefaultValue();
         }
 
         public Builder lockWaitNS(long wait, TimeUnit unit) {
@@ -148,27 +148,18 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             return self();
         }
 
-        public Builder fromCommonsConfig(Configuration config) {
+        public Builder fromConfig(Configuration config) {
             rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
 
-            final String llmPrefix = config.getString(
-                    ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY);
+            final String llmPrefix = config.get(
+                    ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX);
+            mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix));
 
-            if (null != llmPrefix) {
-                mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix));
-            }
+            lockRetryCount(config.get(GraphDatabaseConfiguration.LOCK_RETRY));
 
-            lockRetryCount(config.getInt(
-                    GraphDatabaseConfiguration.LOCK_RETRY_COUNT,
-                    GraphDatabaseConfiguration.LOCK_RETRY_COUNT_DEFAULT));
+            lockWaitNS(config.get(GraphDatabaseConfiguration.LOCK_WAIT), TimeUnit.MILLISECONDS);
 
-            lockWaitNS(config.getLong(
-                    GraphDatabaseConfiguration.LOCK_WAIT_MS,
-                    GraphDatabaseConfiguration.LOCK_WAIT_MS_DEFAULT), TimeUnit.MILLISECONDS);
-
-            lockExpireNS(config.getLong(
-                    GraphDatabaseConfiguration.LOCK_EXPIRE_MS,
-                    GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT), TimeUnit.MILLISECONDS);
+            lockExpireNS(config.get(GraphDatabaseConfiguration.LOCK_EXPIRE), TimeUnit.MILLISECONDS);
 
             return this;
         }
@@ -192,7 +183,6 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     /**
      * Create a new locker.
      *
-     * @param conf locker configuration
      */
     private ConsistentKeyLocker(KeyColumnValueStore store, StaticBuffer rid,
                                 TimestampProvider times, ConsistentKeyLockerSerializer serializer,

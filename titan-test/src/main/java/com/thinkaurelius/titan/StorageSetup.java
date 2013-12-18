@@ -3,7 +3,13 @@ package com.thinkaurelius.titan;
 
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
@@ -52,17 +58,21 @@ public class StorageSetup {
     }
 
     public static TitanGraph getInMemoryGraph() {
-        BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "inmemory");
-        return TitanFactory.open(config);
+        return TitanFactory.open(buildConfiguration().set(STORAGE_BACKEND,"inmemory"));
     }
 
+    public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
+        conf.set(DB_CACHE,true);
+        conf.set(DB_CACHE_TIME,0l);
+        return conf.getConfiguration();
+    }
 
-    public static Configuration addPermanentCache(Configuration conf) {
-        Configuration cacheconf = conf.subset(GraphDatabaseConfiguration.CACHE_NAMESPACE);
-        cacheconf.addProperty(GraphDatabaseConfiguration.DB_CACHE_KEY,true);
-        cacheconf.addProperty(GraphDatabaseConfiguration.DB_CACHE_TIME_KEY,0);
-        return conf;
+    public static ModifiableConfiguration getConfig(WriteConfiguration config) {
+        return new ModifiableConfiguration(TITAN_NS,config, BasicConfiguration.Restriction.NONE);
+    }
+
+    public static BasicConfiguration getConfig(ReadConfiguration config) {
+        return new BasicConfiguration(TITAN_NS,config, BasicConfiguration.Restriction.NONE);
     }
 
 }

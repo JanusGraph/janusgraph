@@ -5,20 +5,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-
-import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -29,30 +21,28 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.*;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class TitanEventualGraphTest extends TitanGraphTestCommon {
+public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanEventualGraphTest.class);
 
-    public TitanEventualGraphTest(Configuration config) {
-        super(config);
-    }
-
-    public void clopen(Map<String, ? extends Object> settings) {
-        super.close();
-
-        BaseConfiguration newConfig = new BaseConfiguration();
-        newConfig.copy(config);
-        for (Map.Entry<String,? extends Object> entry : settings.entrySet())
-            newConfig.addProperty(entry.getKey(),entry.getValue());
-
-        graph = (StandardTitanGraph) TitanFactory.open(newConfig);
-        tx = graph.newTransaction();
-
-    }
+//    public void clopen(Map<String, ? extends Object> settings) {
+//        super.close();
+//
+//        BaseConfiguration newConfig = new BaseConfiguration();
+//        newConfig.copy(config);
+//        for (Map.Entry<String,? extends Object> entry : settings.entrySet())
+//            newConfig.addProperty(entry.getKey(),entry.getValue());
+//
+//        graph = (StandardTitanGraph) TitanFactory.open(newConfig);
+//        tx = graph.newTransaction();
+//
+//    }
 
     @Test
     public void concurrentIndexTest() {
@@ -181,7 +171,8 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         newTx();
 
         TestLockerManager.ERROR_ON_LOCKING=true;
-        clopen(ImmutableMap.of("storage.batch-loading", batchloading, "storage.lock-backend", "test"));
+        clopen(option(GraphDatabaseConfiguration.STORAGE_BATCH),batchloading,
+                option(GraphDatabaseConfiguration.LOCK_BACKEND),"test");
 
 
         int numV = 10000;
@@ -203,7 +194,10 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
     @Test
     @Category({ SerialTests.class })
     public void testCacheConcurrency() throws InterruptedException {
-        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",0,"cache.db-cache-clean-wait",0,"cache.db-cache-size",0.25);
+        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
+                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
+                option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
+                option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25};
         clopen(newConfig);
         final String prop = "property";
         graph.makeKey(prop).dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
@@ -291,8 +285,8 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
     @Test
     @Category({ SerialTests.class })
     public void testCachePerformance() {
-//        Map<String,? extends Object> newConfig = ImmutableMap.of();
-        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",0);
+        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
+                              option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
         clopen(newConfig);
 
         int numV = 1000;
@@ -377,7 +371,9 @@ public class TitanEventualGraphTest extends TitanGraphTestCommon {
         final int cleanTime = 400;
         final int numV = 10;
         final int edgePerV = 10;
-        Map<String,? extends Object> newConfig = ImmutableMap.of("cache.db-cache",true,"cache.db-cache-time",timeOutTime,"cache.db-cache-clean-wait",cleanTime);
+        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
+                              option(GraphDatabaseConfiguration.DB_CACHE_TIME),timeOutTime,
+                              option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),cleanTime};
         clopen(newConfig);
         long[] vs = new long[numV];
         for (int i=0;i<numV;i++) {

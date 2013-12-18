@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.graphdb
 
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+
 import static com.tinkerpop.blueprints.Direction.IN;
 import static org.junit.Assert.*
 
-import org.apache.commons.configuration.Configuration
 import org.junit.FixMethodOrder;
 import org.junit.Rule
 import org.junit.Test
@@ -49,7 +50,7 @@ public abstract class TitanGraphSerialSpeedTest extends GroovyTestSupport {
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get()
 
-    TitanGraphSerialSpeedTest(Configuration conf) throws StorageException {
+    TitanGraphSerialSpeedTest(WriteConfiguration conf) throws StorageException {
         super(conf)
     }
 

@@ -5,6 +5,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
@@ -18,8 +22,6 @@ import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,52 +36,57 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @Category({ SerialTests.class })
-public abstract class TitanNonTransactionalGraphMetricsTest {
+public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBaseTest {
 
-    public StandardTitanGraph graph;
+//    public StandardTitanGraph graph;
+//    public StoreFeatures features;
+
+
     public MetricManager metric;
-    public StoreFeatures features;
-
     public final String SYSTEM_METRICS  = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 
-    public abstract Configuration getConfiguration();
+    public abstract WriteConfiguration getBaseConfiguration();
 
-    public Configuration getMetricsConfiguration() {
-        Configuration config = getConfiguration();
-        Configuration storeconfig = config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        storeconfig.setProperty(GraphDatabaseConfiguration.BASIC_METRICS,true);
-        storeconfig.setProperty(GraphDatabaseConfiguration.MERGE_BASIC_METRICS_KEY,false);
-        config.setProperty(GraphDatabaseConfiguration.PROPERTY_PREFETCHING_KEY,false);
+    @Override
+    public WriteConfiguration getConfiguration() {
+        WriteConfiguration config = getConfiguration();
+        ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.NONE);
+        mconf.set(GraphDatabaseConfiguration.BASIC_METRICS,true);
+        mconf.set(GraphDatabaseConfiguration.MERGE_BASIC_METRICS,false);
+        mconf.set(GraphDatabaseConfiguration.PROPERTY_PREFETCHING,false);
         return config;
     }
 
-    @Before
-    public void before() throws StorageException {
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(getConfiguration());
-        graphconfig.getBackend().clearStorage();
-        features = graphconfig.getStoreFeatures();
-        open(getMetricsConfiguration());
-    }
-
-    public void open(Configuration config) {
-        graph = (StandardTitanGraph)TitanFactory.open(config);
+    @Override
+    public void open(WriteConfiguration config) {
         metric = MetricManager.INSTANCE;
         CachedKeyColumnValueStore.resetGlobalMetrics();
+        super.open(config);
     }
 
-    @After
-    public void close() {
-        graph.shutdown();
-    }
+//    @Before
+//    public void before() throws StorageException {
+//        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(getConfiguration());
+//        graphconfig.getBackend().clearStorage();
+//        features = graphconfig.getStoreFeatures();
+//        open(getMetricsConfiguration());
+//    }
 
-    public void clopen(Map<String,? extends Object> settings) {
-        close();
-        Configuration config = getMetricsConfiguration();
-        for (Map.Entry<String,? extends Object> entry : settings.entrySet()) {
-            config.setProperty(entry.getKey(),entry.getValue());
-        }
-        open(config);
-    }
+
+
+//    @After
+//    public void close() {
+//        graph.shutdown();
+//    }
+//
+//    public void clopen(Map<String,? extends Object> settings) {
+//        close();
+//        Configuration config = getMetricsConfiguration();
+//        for (Map.Entry<String,? extends Object> entry : settings.entrySet()) {
+//            config.setProperty(entry.getKey(),entry.getValue());
+//        }
+//        open(config);
+//    }
 
     public static final List<String> STORE_NAMES =
             ImmutableList.of("edgeStore", "vertexIndexStore", "edgeIndexStore", "idStore");
@@ -230,7 +237,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest {
 
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
-        clopen(ImmutableMap.of("fast-property",fastProperty));
+        clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING),fastProperty);
         CachedKeyColumnValueStore.resetGlobalMetrics();
         METRICS = "metrics3"+fastProperty;
 

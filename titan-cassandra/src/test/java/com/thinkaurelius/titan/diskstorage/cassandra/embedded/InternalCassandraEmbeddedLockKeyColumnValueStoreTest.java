@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import org.apache.commons.configuration.Configuration;
-import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
@@ -12,7 +11,6 @@ public class InternalCassandraEmbeddedLockKeyColumnValueStoreTest extends LockKe
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName());
-        return new CassandraEmbeddedStoreManager(sc);
+        return new CassandraEmbeddedStoreManager(CassandraStorageSetup.getEmbeddedConfiguration(getClass().getSimpleName()));
     }
 }

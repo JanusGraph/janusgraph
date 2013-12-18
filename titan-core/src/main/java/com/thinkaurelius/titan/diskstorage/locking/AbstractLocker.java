@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
@@ -100,12 +101,12 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         protected Logger log;
 
         public Builder() {
-            this.rid = new StaticByteBuffer(DistributedStoreManager.getRid(new BaseConfiguration()));
+            this.rid = new StaticByteBuffer(DistributedStoreManager.getRid(Configuration.EMPTY));
             this.times = TimeUtility.INSTANCE;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockState = new LockerState<S>();
-            this.lockExpireNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_EXPIRE_MS_DEFAULT, MILLISECONDS);
+            this.lockExpireNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue(), MILLISECONDS);
             this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }
 

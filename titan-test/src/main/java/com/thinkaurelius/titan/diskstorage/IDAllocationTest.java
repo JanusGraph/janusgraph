@@ -2,6 +2,11 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -9,8 +14,6 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,25 +45,27 @@ public abstract class IDAllocationTest {
     public static Collection<Object[]> configs() {
         List<Object[]> configurations = new ArrayList<Object[]>();
 
-        BaseConfiguration c = new BaseConfiguration();
-        c.addProperty(IDAUTHORITY_RETRY_COUNT_KEY, 50);
-        c.addProperty(IDAUTHORITY_WAIT_MS_KEY, 100);
-        configurations.add(new Object[]{c});
+        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
+        c.set(IDAUTHORITY_RETRY_COUNT,50);
+        c.set(IDAUTHORITY_WAIT_MS,100);
+        c.set(IDS_BLOCK_SIZE,400);
+        configurations.add(new Object[]{c.getConfiguration()});
 
+        c = GraphDatabaseConfiguration.buildConfiguration();
+        c.set(IDAUTHORITY_RETRY_COUNT,50);
+        c.set(IDAUTHORITY_WAIT_MS,100);
+        c.set(IDAUTHORITY_UNIQUE_ID_BITS,9);
+        c.set(IDAUTHORITY_UNIQUE_ID,511);
+        c.set(IDS_BLOCK_SIZE,400);
+        configurations.add(new Object[]{c.getConfiguration()});
 
-        c = new BaseConfiguration();
-        c.addProperty(IDAUTHORITY_RETRY_COUNT_KEY, 50);
-        c.addProperty(IDAUTHORITY_WAIT_MS_KEY, 100);
-        c.addProperty(IDAUTHORITY_UNIQUE_ID_BITS_KEY,9);
-        c.addProperty(IDAUTHORITY_UNIQUE_ID_KEY,511);
-        configurations.add(new Object[]{c});
-
-        c = new BaseConfiguration();
-        c.addProperty(IDAUTHORITY_RETRY_COUNT_KEY, 10);
-        c.addProperty(IDAUTHORITY_WAIT_MS_KEY, 10);
-        c.addProperty(IDAUTHORITY_UNIQUE_ID_BITS_KEY,7);
-        c.addProperty(IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY,true);
-        configurations.add(new Object[]{c});
+        c = GraphDatabaseConfiguration.buildConfiguration();
+        c.set(IDAUTHORITY_RETRY_COUNT,10);
+        c.set(IDAUTHORITY_WAIT_MS,10);
+        c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
+        c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
+        c.set(IDS_BLOCK_SIZE,400);
+        configurations.add(new Object[]{c.getConfiguration()});
 
         return configurations;
     }
@@ -68,7 +73,7 @@ public abstract class IDAllocationTest {
     public KeyColumnValueStoreManager[] manager;
     public IDAuthority[] idAuthorities;
 
-    public Configuration baseStoreConfiguration;
+    public WriteConfiguration baseStoreConfiguration;
 
     public final int uidBitWidth;
     public final boolean hasFixedUid;
@@ -76,12 +81,13 @@ public abstract class IDAllocationTest {
     public final long idUpperBoundBitWidth;
     public final long idUpperBound;
 
-    public IDAllocationTest(Configuration baseConfig) {
+    public IDAllocationTest(WriteConfiguration baseConfig) {
         Preconditions.checkNotNull(baseConfig);
         this.baseStoreConfiguration = baseConfig;
-        hasFixedUid = !baseConfig.getBoolean(IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY,false);
-        uidBitWidth = baseConfig.getInt(IDAUTHORITY_UNIQUE_ID_BITS_KEY,IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT);
-        blockSize = baseConfig.getLong(IDS_BLOCK_SIZE_KEY, 400);
+        Configuration config = StorageSetup.getConfig(baseConfig);
+        hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID);
+        uidBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
+        blockSize = config.get(IDS_BLOCK_SIZE);
         idUpperBoundBitWidth = 30;
         idUpperBound = 1l<<idUpperBoundBitWidth;
     }
@@ -102,10 +108,8 @@ public abstract class IDAllocationTest {
             manager[i] = openStorageManager(i);
             StoreFeatures storeFeatures = manager[i].getFeatures();
 
-            BaseConfiguration sc = new BaseConfiguration();
-            sc.copy(baseStoreConfiguration);
-            sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
-
+            ModifiableConfiguration sc = StorageSetup.getConfig(baseStoreConfiguration.clone());
+            sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
             if (storeFeatures.supportsTransactions())

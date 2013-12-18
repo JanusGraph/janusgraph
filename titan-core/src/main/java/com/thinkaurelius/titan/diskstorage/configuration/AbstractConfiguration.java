@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -51,6 +53,56 @@ public abstract class AbstractConfiguration implements Configuration {
             }
         }
         return result;
+    }
+
+    protected Map<String,Object> getSubset(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
+        verifyElement(umbrella);
+
+        String prefix = ConfigElement.getPath(umbrella,umbrellaElements);
+        Map<String,Object> result = Maps.newHashMap();
+
+        for (String key : config.getKeys(prefix)) {
+            Preconditions.checkArgument(key.startsWith(prefix));
+            String sub = key.substring(prefix.length()+1).trim();
+            if (!sub.isEmpty()) {
+                result.put(sub,config.get(key,Object.class));
+            }
+        }
+        return result;
+    }
+
+    protected static Configuration restrictTo(final Configuration config, final String... fixedUmbrella) {
+        Preconditions.checkArgument(fixedUmbrella!=null && fixedUmbrella.length>0);
+        return new Configuration() {
+
+            private String[] concat(String... others) {
+                if (others==null || others.length==0) return fixedUmbrella;
+                String[] join = new String[fixedUmbrella.length+others.length];
+                System.arraycopy(fixedUmbrella,0,join,0,fixedUmbrella.length);
+                System.arraycopy(others,0,join,fixedUmbrella.length,others.length);
+                return join;
+            }
+
+            @Override
+            public boolean has(ConfigOption option, String... umbrellaElements) {
+                return config.has(option,concat(umbrellaElements));
+            }
+
+            @Override
+            public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
+                return config.get(option,concat(umbrellaElements));
+            }
+
+            @Override
+            public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements) {
+                return config.getContainedNamespaces(umbrella,concat(umbrellaElements));
+            }
+
+            @Override
+            public Configuration restrictTo(String... umbrellaElements) {
+                return config.restrictTo(concat(umbrellaElements));
+            }
+        };
     }
 
     public abstract void close();

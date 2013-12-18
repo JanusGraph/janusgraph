@@ -20,6 +20,8 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -28,7 +30,6 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.utils.FBUtilities;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 
 public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
@@ -49,34 +51,40 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     /**
      * Default name for the Cassandra cluster
      * <p/>
-     * Value = {@value}
      */
-    public static final String CLUSTER_DEFAULT = "Titan Cluster";
-    public static final String CLUSTER_KEY = "cluster-name";
+    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(STORAGE_NS,"cluster-name",
+            "Default name for the Cassandra cluster",
+            ConfigOption.Type.MASKABLE, "Titan Cluster");
 
     /**
      * Maximum pooled connections per host.
      * <p/>
-     * Value = {@value}
      */
-    public static final int MAX_CONNECTIONS_PER_HOST_DEFAULT = 32;
-    public static final String MAX_CONNECTIONS_PER_HOST_KEY = "max-connections-per-host";
+    public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS,"max-connections-per-host",
+            "Maximum pooled connections per host",
+            ConfigOption.Type.MASKABLE, 32);
+//    public static final int MAX_CONNECTIONS_PER_HOST_DEFAULT = 32;
+//    public static final String MAX_CONNECTIONS_PER_HOST_KEY = "max-connections-per-host";
 
     /**
      * Maximum open connections allowed in the pool (counting all hosts).
      * <p/>
-     * Value = {@value}
      */
-    public static final int MAX_CONNECTIONS_DEFAULT = -1;
-    public static final String MAX_CONNECTIONS_KEY = "max-connections";
+    public static final ConfigOption<Integer> MAX_CONNECTIONS = new ConfigOption<Integer>(STORAGE_NS,"max-connections",
+            "Maximum open connections allowed in the pool (counting all hosts)",
+            ConfigOption.Type.MASKABLE, -1);
+//    public static final int MAX_CONNECTIONS_DEFAULT = -1;
+//    public static final String MAX_CONNECTIONS_KEY = "max-connections";
 
     /**
      * Maximum number of operations allowed per connection before the connection is closed.
      * <p/>
-     * Value = {@value}
      */
-    public static final int MAX_OPERATIONS_PER_CONNECTION_DEFAULT = 100 * 1000;
-    public static final String MAX_OPERATIONS_PER_CONNECTION_KEY = "max-operations-per-connection";
+    public static final ConfigOption<Integer> MAX_OPERATIONS_PER_CONNECTION = new ConfigOption<Integer>(STORAGE_NS,"max-operations-per-connection",
+            "Maximum number of operations allowed per connection before the connection is closed",
+            ConfigOption.Type.MASKABLE, 100*1000);
+//    public static final int MAX_OPERATIONS_PER_CONNECTION_DEFAULT = 100 * 1000;
+//    public static final String MAX_OPERATIONS_PER_CONNECTION_KEY = "max-operations-per-connection";
 
     /**
      * Maximum pooled "cluster" connections per host.
@@ -85,26 +93,33 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * (like creating keyspaces).  Titan doesn't need many of these connections
      * in ordinary operation.
      */
-    public static final int MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT = 3;
-    public static final String MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY = "max-cluster-connections-per-host";
+    public static final ConfigOption<Integer> MAX_CLUSTER_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS,"max-cluster-connections-per-host",
+            "Maximum pooled \"cluster\" connections per host",
+            ConfigOption.Type.MASKABLE, 3);
+//    public static final int MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT = 3;
+//    public static final String MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY = "max-cluster-connections-per-host";
 
     /**
      * How Astyanax discovers Cassandra cluster nodes. This must be one of the
      * values of the Astyanax NodeDiscoveryType enum.
      * <p/>
-     * Value = {@value}
      */
-    public static final String NODE_DISCOVERY_TYPE_DEFAULT = "RING_DESCRIBE";
-    public static final String NODE_DISCOVERY_TYPE_KEY = "node-discovery-type";
+    public static final ConfigOption<String> NODE_DISCOVERY_TYPE = new ConfigOption<String>(STORAGE_NS,"node-discovery-type",
+            "How Astyanax discovers Cassandra cluster nodes",
+            ConfigOption.Type.MASKABLE, "RING_DESCRIBE");
+//    public static final String NODE_DISCOVERY_TYPE_DEFAULT = "RING_DESCRIBE";
+//    public static final String NODE_DISCOVERY_TYPE_KEY = "node-discovery-type";
 
     /**
      * Astyanax's connection pooler implementation. This must be one of the
      * values of the Astyanax ConnectionPoolType enum.
      * <p/>
-     * Value = {@value}
      */
-    public static final String CONNECTION_POOL_TYPE_DEFAULT = "TOKEN_AWARE";
-    public static final String CONNECTION_POOL_TYPE_KEY = "connection-pool-type";
+    public static final ConfigOption<String> CONNECTION_POOL_TYPE = new ConfigOption<String>(STORAGE_NS,"connection-pool-type",
+            "Astyanax's connection pooler implementation",
+            ConfigOption.Type.MASKABLE, "TOKEN_AWARE");
+//    public static final String CONNECTION_POOL_TYPE_DEFAULT = "TOKEN_AWARE";
+//    public static final String CONNECTION_POOL_TYPE_KEY = "connection-pool-type";
 
     /**
      * This must be the fully-qualified classname (i.e. the complete package
@@ -114,10 +129,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * commas; in this case, the integers are cast to native Java ints and
      * passed to the class constructor as arguments.
      * <p/>
-     * Value = {@value}
      */
-    public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
-    public static final String RETRY_POLICY_KEY = "retry-policy";
+    public static final ConfigOption<String> RETRY_POLICY = new ConfigOption<String>(STORAGE_NS,"retry-policy",
+            "Astyanax's retry policy implementation with configuration parameters",
+            ConfigOption.Type.MASKABLE, "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8");
+//    public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
+//    public static final String RETRY_POLICY_KEY = "retry-policy";
 
     private final String clusterName;
 
@@ -134,22 +151,16 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because there is nothing we can do in Astyanax to apply those, warning is good enough here
         // otherwise it would make bad user experience if we don't warn at all or crash on this.
-        if (config.containsKey(THRIFT_FRAME_SIZE_MB))
+        if (config.has(CASSANDRA_THRIFT_FRAME_SIZE))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
-        this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
+        this.clusterName = config.get(CLUSTER_NAME);
 
-        this.retryPolicy = getRetryPolicy(config.getString(RETRY_POLICY_KEY, RETRY_POLICY_DEFAULT));
+        this.retryPolicy = getRetryPolicy(config.get(RETRY_POLICY));
 
-        final int maxConnsPerHost =
-                config.getInt(
-                        MAX_CONNECTIONS_PER_HOST_KEY,
-                        MAX_CONNECTIONS_PER_HOST_DEFAULT);
+        final int maxConnsPerHost = config.get(MAX_CONNECTIONS_PER_HOST);
 
-        final int maxClusterConnsPerHost =
-                config.getInt(
-                        MAX_CLUSTER_CONNECTIONS_PER_HOST_KEY,
-                        MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT);
+        final int maxClusterConnsPerHost = config.get(MAX_CLUSTER_CONNECTIONS_PER_HOST);
 
         this.clusterContext = createCluster(getContextBuilder(config, maxClusterConnsPerHost, "Cluster"));
 
@@ -325,25 +336,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private AstyanaxContext.Builder getContextBuilder(Configuration config, int maxConnsPerHost, String usedFor) {
 
-        final ConnectionPoolType poolType = ConnectionPoolType.valueOf(
-                config.getString(
-                        CONNECTION_POOL_TYPE_KEY,
-                        CONNECTION_POOL_TYPE_DEFAULT));
+        final ConnectionPoolType poolType = ConnectionPoolType.valueOf(config.get(CONNECTION_POOL_TYPE));
 
-        final NodeDiscoveryType discType = NodeDiscoveryType.valueOf(
-                config.getString(
-                        NODE_DISCOVERY_TYPE_KEY,
-                        NODE_DISCOVERY_TYPE_DEFAULT));
+        final NodeDiscoveryType discType = NodeDiscoveryType.valueOf(config.get(NODE_DISCOVERY_TYPE));
 
-        final int maxConnections =
-                config.getInt(
-                        MAX_CONNECTIONS_KEY,
-                        MAX_CONNECTIONS_DEFAULT);
+        final int maxConnections = config.get(MAX_CONNECTIONS);
 
-        final int maxOperationsPerConnection =
-                config.getInt(
-                        MAX_OPERATIONS_PER_CONNECTION_KEY,
-                        MAX_OPERATIONS_PER_CONNECTION_DEFAULT);
+        final int maxOperationsPerConnection = config.get(MAX_OPERATIONS_PER_CONNECTION);
 
 
         ConnectionPoolConfigurationImpl cpool =

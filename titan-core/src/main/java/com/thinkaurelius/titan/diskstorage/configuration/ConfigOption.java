@@ -87,7 +87,7 @@ public class ConfigOption<O> extends ConfigElement {
             input=defaultValue;
         }
         if (input==null) {
-            Preconditions.checkState(verificationFct.apply((O)input),"Need to set configuration value: %s",this.toString());
+            Preconditions.checkState(verificationFct.apply((O) input), "Need to set configuration value: %s", this.toString());
             return null;
         } else {
             return verify(input);
@@ -105,15 +105,6 @@ public class ConfigOption<O> extends ConfigElement {
 
     //########### HELPER METHODS ##################
 
-    public static final<O> Predicate<O> allowEmpty(Class<O> clazz) {
-        return new Predicate<O>() {
-            @Override
-            public boolean apply(@Nullable O o) {
-                return true;
-            }
-        };
-    }
-
     public static final<O> Predicate<O> disallowEmpty(Class<O> clazz) {
         return new Predicate<O>() {
             @Override
@@ -122,6 +113,24 @@ public class ConfigOption<O> extends ConfigElement {
                 if (o.getClass().isArray() && (Array.getLength(o)==0 || Array.get(o,0)==null)) return false;
                 if (o instanceof Collection && (((Collection)o).isEmpty() || ((Collection)o).iterator().next()==null)) return false;
                 return true;
+            }
+        };
+    }
+
+    public static final Predicate<Integer> positiveInt() {
+        return new Predicate<Integer>() {
+            @Override
+            public boolean apply(@Nullable Integer num) {
+                return num!=null && num>0;
+            }
+        };
+    }
+
+    public static final Predicate<Long> positiveLong() {
+        return new Predicate<Long>() {
+            @Override
+            public boolean apply(@Nullable Long num) {
+                return num!=null && num>0;
             }
         };
     }

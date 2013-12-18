@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -19,13 +21,11 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +69,6 @@ public class Backend {
     public static final String MERGED_METRICS = "stores";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
-    public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
     public static final String SYSTEM_PROPERTIES_IDENTIFIER = "general";
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
@@ -104,33 +103,30 @@ public class Backend {
     private final ConcurrentHashMap<String, Locker> lockers =
             new ConcurrentHashMap<String, Locker>();
 
-    private final Configuration storageConfig;
+    private final Configuration configuration;
 
-    public Backend(Configuration storageConfig) {
-        this.storageConfig = storageConfig;
+    public Backend(Configuration configuration) {
+        this.configuration = configuration;
 
-        storeManager = getStorageManager(storageConfig);
-        indexes = getIndexes(storageConfig);
+        storeManager = getStorageManager(configuration);
+        indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
-        basicMetrics = storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT);
-        mergeBasicMetrics = storageConfig.getBoolean(MERGE_BASIC_METRICS_KEY, MERGE_BASIC_METRICS_DEFAULT);
+        basicMetrics = configuration.get(BASIC_METRICS);
+        mergeBasicMetrics = configuration.get(MERGE_BASIC_METRICS);
 
-        int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
+        int bufferSizeTmp = configuration.get(BUFFER_SIZE);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
         if (!storeFeatures.supportsBatchMutation()) {
             bufferSize = 0;
             log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize = bufferSizeTmp;
 
-        writeAttempts = storageConfig.getInt(WRITE_ATTEMPTS_KEY, WRITE_ATTEMPTS_DEFAULT);
-        Preconditions.checkArgument(writeAttempts > 0, "Write attempts must be positive");
-        readAttempts = storageConfig.getInt(READ_ATTEMPTS_KEY, READ_ATTEMPTS_DEFAULT);
-        Preconditions.checkArgument(readAttempts > 0, "Read attempts must be positive");
-        persistAttemptWaittime = storageConfig.getInt(STORAGE_ATTEMPT_WAITTIME_KEY, STORAGE_ATTEMPT_WAITTIME_DEFAULT);
-        Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
+        writeAttempts = configuration.get(WRITE_ATTEMPTS);
+        readAttempts = configuration.get(READ_ATTEMPTS);
+        persistAttemptWaittime = configuration.get(STORAGE_ATTEMPT_WAITTIME);
 
-        if (storageConfig.getBoolean(PARALLEL_BACKEND_OPS_KEY, PARALLEL_BACKEND_OPS_DEFAULT)) {
+        if (configuration.get(PARALLEL_BACKEND_OPS)) {
             int poolsize = Math.min(1, Runtime.getRuntime().availableProcessors()) * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolsize);
             log.info("Initiated backend operations thread pool of size {}", poolsize);
@@ -138,13 +134,7 @@ public class Backend {
             threadPool = null;
         }
 
-        // If lock prefix is unspecified, specify it now
-        storageConfig.setProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY,
-                storageConfig.getString(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, storeManager.getName()));
-
-        final String lockBackendName =
-                storageConfig.getString(GraphDatabaseConfiguration.LOCK_BACKEND,
-                        GraphDatabaseConfiguration.LOCK_BACKEND_DEFAULT);
+        final String lockBackendName = configuration.get(LOCK_BACKEND);
         if (REGISTERED_LOCKERS.containsKey(lockBackendName)) {
             lockerCreator = REGISTERED_LOCKERS.get(lockBackendName);
         } else {
@@ -165,6 +155,9 @@ public class Backend {
         }
     }
 
+    public KeyColumnValueStoreManager getStoreManager() {
+        return storeManager;
+    }
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store) throws StorageException {
         return getLockStore(store, true);
@@ -261,7 +254,7 @@ public class Backend {
             KCVSConfiguration systemConfig = new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
                                                         SYSTEM_PROPERTIES_IDENTIFIER);
             try {
-                systemConfig.setMaxOperationWaitTime(config.getLong(SETUP_WAITTIME_KEY, SETUP_WAITTIME_DEFAULT));
+                systemConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
                 version = systemConfig.get(TITAN_BACKEND_VERSION,String.class);
                 if (version == null) {
                     systemConfig.set(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
@@ -295,9 +288,8 @@ public class Backend {
         return mergeBasicMetrics ? MERGED_METRICS : storeName;
     }
 
-    private final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
-        StoreManager manager = getImplementationClass(storageConfig, GraphDatabaseConfiguration.STORAGE_BACKEND_KEY,
-                GraphDatabaseConfiguration.STORAGE_BACKEND_DEFAULT,
+    public final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
+        StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 REGISTERED_STORAGE_MANAGERS);
         if (manager instanceof OrderedKeyValueStoreManager) {
             manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager, STATIC_KEY_LENGTHS);
@@ -308,16 +300,12 @@ public class Backend {
         return (KeyColumnValueStoreManager) manager;
     }
 
-    private final static Map<String, IndexProvider> getIndexes(Configuration storageConfig) {
-        Configuration indexConfig = storageConfig.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE);
-        List<String> indexes = ConfigurationUtil.getUnqiuePrefixes(indexConfig);
+    private final static Map<String, IndexProvider> getIndexes(Configuration config) {
         ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
-        for (String index : indexes) {
+        for (String index : config.getContainedNamespaces(INDEX_NS)) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
-            Configuration config = indexConfig.subset(index);
-            log.info("Configuring index [{}] based on: \n {}", index, GraphDatabaseConfiguration.toString(config));
-            IndexProvider provider = getImplementationClass(config,
-                    GraphDatabaseConfiguration.INDEX_BACKEND_KEY, GraphDatabaseConfiguration.INDEX_BACKEND_DEFAULT,
+            log.info("Configuring index [{}]", index);
+            IndexProvider provider = getImplementationClass(config.restrictTo(index), config.get(INDEX_BACKEND,index),
                     REGISTERED_INDEX_PROVIDERS);
             Preconditions.checkNotNull(provider);
             builder.put(index, provider);
@@ -325,8 +313,7 @@ public class Backend {
         return builder.build();
     }
 
-    public final static <T> T getImplementationClass(Configuration config, String key, String defaultValue, Map<String, String> registeredImpls) {
-        String clazzname = config.getString(key, defaultValue);
+    public final static <T> T getImplementationClass(Configuration config, String clazzname, Map<String, String> registeredImpls) {
         if (registeredImpls.containsKey(clazzname.toLowerCase())) {
             clazzname = registeredImpls.get(clazzname.toLowerCase());
         }
@@ -435,7 +422,6 @@ public class Backend {
     //############ Registered Storage Managers ##############
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
-        put("local", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
         put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
@@ -447,6 +433,20 @@ public class Backend {
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
         put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
         put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");
+    }};
+
+    public static final Map<String, ConfigOption> REGISTERED_STORAGE_MANAGERS_SHORTHAND = new HashMap<String, ConfigOption>() {{
+        put("berkeleyje", STORAGE_DIRECTORY);
+        put("persistit", STORAGE_DIRECTORY);
+        put("hazelcast", STORAGE_DIRECTORY);
+        put("hazelcastcache", STORAGE_DIRECTORY);
+        put("infinispan", STORAGE_DIRECTORY);
+        put("cassandra", STORAGE_HOSTS);
+        put("cassandrathrift", STORAGE_HOSTS);
+        put("astyanax", STORAGE_HOSTS);
+        put("hbase", STORAGE_HOSTS);
+        put("embeddedcassandra", STORAGE_CONF_FILE);
+        put("inmemory", null);
     }};
 
     private static final Map<String, String> REGISTERED_INDEX_PROVIDERS = new HashMap<String, String>() {{
@@ -464,7 +464,7 @@ public class Backend {
             } catch (StorageException e) {
                 throw new TitanConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
             }
-            return new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(storageConfig).build();
+            return new ConsistentKeyLocker.Builder(lockerStore).fromConfig(configuration).build();
         }
     };
 

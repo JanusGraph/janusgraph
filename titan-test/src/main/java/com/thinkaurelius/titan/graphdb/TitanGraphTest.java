@@ -7,6 +7,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
@@ -32,10 +33,6 @@ import static org.junit.Assert.*;
 public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
-
-    public TitanGraphTest(Configuration config) {
-        super(config);
-    }
 
     @Test
     public void testOpenClose() {
@@ -67,13 +64,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testTypes() {
-
-        config.subset(GraphDatabaseConfiguration.ATTRIBUTE_NAMESPACE)
-                .setProperty("attribute10", SpecialInt.class.getCanonicalName());
-        config.subset(GraphDatabaseConfiguration.ATTRIBUTE_NAMESPACE)
-                .setProperty("serializer10", SpecialIntSerializer.class.getCanonicalName());
-
-        clopen();
+        clopen(option(GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
+                option(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
 
         TitanLabel friend = tx.makeLabel("friend").directed().manyToMany().make();
 

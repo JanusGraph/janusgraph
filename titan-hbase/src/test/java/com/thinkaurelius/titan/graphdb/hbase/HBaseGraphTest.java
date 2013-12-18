@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import org.junit.BeforeClass;
 
@@ -12,7 +13,9 @@ public class HBaseGraphTest extends TitanGraphTest {
         HBaseStorageSetup.startHBase();
     }
 
-    public HBaseGraphTest() {
-        super(HBaseStorageSetup.getHBaseGraphConfiguration());
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
+
 }

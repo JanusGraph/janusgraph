@@ -4,17 +4,12 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND_KEY;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
 
 
 /**
@@ -29,17 +24,14 @@ public class GraphOfTheGodsFactory {
 
 
     public static TitanGraph create(final String directory) {
-        BaseConfiguration config = new BaseConfiguration();
-        Configuration storage = config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        // configuring local backend
-        storage.setProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "local");
-        storage.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, directory);
-        // configuring elastic search index
-        Configuration index = storage.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE).subset(INDEX_NAME);
-        index.setProperty(INDEX_BACKEND_KEY, "elasticsearch");
-        index.setProperty("local-mode", true);
-        index.setProperty("client-only", false);
-        index.setProperty(STORAGE_DIRECTORY_KEY, directory + File.separator + "es");
+        UserModifiableConfiguration config = TitanFactory.buildConfiguration();
+        config.set("storage.backend","berkeleyje");
+        config.set("storage.directory",directory);
+        config.set("index."+INDEX_NAME+".backend","elasticsearch");
+        config.set("index."+INDEX_NAME+".local-mode",true);
+        config.set("index."+INDEX_NAME+".client-only",false);
+        config.set("index."+INDEX_NAME+".directory",directory + File.separator + "es");
+        config.close();
 
         TitanGraph graph = TitanFactory.open(config);
         GraphOfTheGodsFactory.load(graph);

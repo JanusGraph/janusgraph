@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -22,13 +24,21 @@ public class MixedConfiguration extends AbstractConfiguration {
     }
 
     @Override
+    public boolean has(ConfigOption option, String... umbrellaElements) {
+        String key = super.getPath(option,umbrellaElements);
+        if (option.isLocal() && local.get(key,option.getDatatype())!=null) return true;
+        if (option.isGlobal() && global.get(key,option.getDatatype())!=null) return true;
+        return false;
+    }
+
+    @Override
     public<O> O get(ConfigOption<O> option, String... umbrellaElements) {
         String key = super.getPath(option,umbrellaElements);
         Object result = null;
         if (option.isLocal()) {
             result = local.get(key,option.getDatatype());
         }
-        if (result==null && option.getType()!=ConfigOption.Type.LOCAL) {
+        if (result==null && option.isGlobal()) {
             result = global.get(key,option.getDatatype());
         }
         return option.get(result);
@@ -41,6 +51,19 @@ public class MixedConfiguration extends AbstractConfiguration {
             result.addAll(super.getContainedNamespaces(config,umbrella,umbrellaElements));
         }
         return result;
+    }
+
+    public Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
+        Map<String,Object> result = Maps.newHashMap();
+        for (ReadConfiguration config : new ReadConfiguration[]{global,local}) {
+            result.putAll(super.getSubset(config,umbrella,umbrellaElements));
+        }
+        return result;
+    }
+
+    @Override
+    public Configuration restrictTo(String... umbrellaElements) {
+        return restrictTo(this,umbrellaElements);
     }
 
     @Override

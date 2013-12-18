@@ -14,7 +14,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
 
     @Override
     public WriteConfiguration getConfig() {
-        KeyColumnValueStoreManager manager = new InMemoryStoreManager(new BaseConfiguration());
+        KeyColumnValueStoreManager manager = new InMemoryStoreManager(Configuration.EMPTY);
         try {
             return new KCVSConfiguration(manager,"titan","general");
         } catch (StorageException e) {

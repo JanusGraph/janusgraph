@@ -2,9 +2,11 @@ package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,8 +28,8 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     private static final Logger log =
             LoggerFactory.getLogger(SimpleBulkPlacementStrategy.class);
 
-    public static final String CONCURRENT_PARTITIONS_KEY = "num-partitions";
-    public static final int CONCURRENT_PARTITIONS_DEFAULT = 10;
+    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<Integer>(GraphDatabaseConfiguration.IDS_NS,
+            "num-partitions","Number of partitions to allocate for placement", ConfigOption.Type.MASKABLE,10);
 
     private final Random random = new Random();
 
@@ -40,7 +42,7 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     }
 
     public SimpleBulkPlacementStrategy(Configuration config) {
-        this(config.getInt(CONCURRENT_PARTITIONS_KEY, CONCURRENT_PARTITIONS_DEFAULT));
+        this(config.get(CONCURRENT_PARTITIONS));
     }
 
     private final int nextPartitionID() {

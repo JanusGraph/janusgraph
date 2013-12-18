@@ -12,8 +12,7 @@ import org.apache.commons.configuration.Configuration;
 public class PersistitKeyColumnValueVariableTest extends KeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
-        PersistitStoreManager sm = new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
+        PersistitStoreManager sm = new PersistitStoreManager(PersistitStorageSetup.getPersistitConfig());
         return new OrderedKeyValueStoreManagerAdapter(sm);
     }
 }

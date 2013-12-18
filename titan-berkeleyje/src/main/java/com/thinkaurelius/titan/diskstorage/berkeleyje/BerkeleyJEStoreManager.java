@@ -6,14 +6,16 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +26,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
-    public static final String CACHE_KEY = "cache-percentage";
-    public static final int CACHE_DEFAULT = 65;
+    public static final ConfigOption<Integer> JVM_CACHE = new ConfigOption<Integer>(GraphDatabaseConfiguration.STORAGE_NS,"cache-percentage",
+            "Percentage of JVM heap reserved for BerkeleyJE's cache",
+            ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
+//    public static final String CACHE_KEY = "cache-percentage";
+//    public static final int CACHE_DEFAULT = 65;
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
@@ -38,7 +43,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         if (!transactional)
             log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
 
-        int cachePercentage = configuration.getInt(CACHE_KEY, CACHE_DEFAULT);
+        int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);
 
         features = new StoreFeatures();

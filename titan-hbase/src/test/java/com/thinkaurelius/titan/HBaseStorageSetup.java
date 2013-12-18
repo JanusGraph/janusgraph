@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan;
 
 import com.google.common.base.Joiner;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,16 +61,14 @@ public class HBaseStorageSetup {
         });
     }
 
-    public static Configuration getHBaseStorageConfiguration() {
-        BaseConfiguration config = new BaseConfiguration();
-        config.addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "hbase");
+    public static ModifiableConfiguration getHBaseConfiguration() {
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
         return config;
     }
 
-    public static Configuration getHBaseGraphConfiguration() {
-        BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "hbase");
-        return config;
+    public static WriteConfiguration getHBaseGraphConfiguration() {
+        return getHBaseConfiguration().getConfiguration();
     }
 
     public static void startHBase() throws IOException {

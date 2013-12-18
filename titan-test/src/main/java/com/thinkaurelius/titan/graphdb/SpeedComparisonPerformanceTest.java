@@ -25,10 +25,6 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
     private static final int numVertices = 2000;
     private static final int edgesPerVertex = 400;
 
-    public SpeedComparisonPerformanceTest(Configuration config) {
-        super(config);
-    }
-
     @Test
     public void compare() {
         graph.createKeyIndex("uid", Vertex.class);

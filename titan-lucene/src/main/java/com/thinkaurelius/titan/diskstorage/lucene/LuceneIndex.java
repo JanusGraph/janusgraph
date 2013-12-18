@@ -13,12 +13,12 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -74,8 +74,7 @@ public class LuceneIndex implements IndexProvider {
     private final String basePath;
 
     public LuceneIndex(Configuration config) {
-        String dir = config.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, "");
-        Preconditions.checkArgument(StringUtils.isNotBlank(dir), "Need to configure directory for lucene");
+        String dir = config.get(GraphDatabaseConfiguration.INDEX_DIRECTORY);
         File directory = new File(dir);
         if (!directory.exists()) directory.mkdirs();
         if (!directory.exists() || !directory.isDirectory() || !directory.canWrite())

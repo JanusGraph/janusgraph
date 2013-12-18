@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.embedded;
 
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
@@ -12,8 +13,9 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
 
 public class InternalCassandraEmbeddedGraphMemoryPerformanceTest extends TitanGraphPerformanceMemoryTest {
 
-    public InternalCassandraEmbeddedGraphMemoryPerformanceTest() {
-        super(CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(InternalCassandraEmbeddedGraphMemoryPerformanceTest.class.getSimpleName()));
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(getClass().getSimpleName());
     }
 
 }

@@ -8,7 +8,9 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -33,7 +35,6 @@ import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.thrift.ColumnPath;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +74,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * Value = {@value}
      */
     public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "./config/cassandra.yaml";
-    public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
+//    public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
 
     private final Map<String, CassandraEmbeddedKeyColumnValueStore> openStores;
 
@@ -85,10 +86,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because embedded doesn't use Thrift, warning is good enough here otherwise it would
         // make bad user experience if we don't warn at all or crash on this.
-        if (config.containsKey(THRIFT_FRAME_SIZE_MB))
+        if (config.has(CASSANDRA_THRIFT_FRAME_SIZE))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
-        String cassandraConfigDir = config.getString(CASSANDRA_CONFIG_DIR_KEY, CASSANDRA_CONFIG_DIR_DEFAULT);
+        String cassandraConfigDir = CASSANDRA_CONFIG_DIR_DEFAULT;
+        if (config.has(GraphDatabaseConfiguration.STORAGE_CONF_FILE)) {
+            cassandraConfigDir = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);
+        }
 
         assert cassandraConfigDir != null && !cassandraConfigDir.isEmpty();
 

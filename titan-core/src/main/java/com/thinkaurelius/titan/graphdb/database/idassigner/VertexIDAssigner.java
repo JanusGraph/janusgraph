@@ -14,6 +14,8 @@ import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -23,7 +25,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,8 +49,8 @@ public class VertexIDAssigner {
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
     private static final int DEFAULT_PARTITION = 0;
 
-    public static final String PLACEMENT_STRATEGY_KEY = "placement";
-    public static final String PLACEMENT_STRATEGY_DEFAULT = "simplebulk";
+    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<String>(IDS_NS,"placement",
+            "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simplebulk");
 
     private static final Map<String,String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of(
             "simplebulk", SimpleBulkPlacementStrategy.class.getName()
@@ -75,14 +76,14 @@ public class VertexIDAssigner {
         this.idAuthority = idAuthority;
 
         long partitionBits;
-        boolean partitionIDs = config.getBoolean(IDS_PARTITION_KEY, IDS_PARTITION_DEFAULT);
+        boolean partitionIDs = config.get(IDS_PARTITION);
         if (partitionIDs) {
             //Use a placement strategy that balances partitions
             partitionBits = DEFAULT_PARTITION_BITS;
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
 
-            placementStrategy = Backend.getImplementationClass(config, PLACEMENT_STRATEGY_KEY,
-                    PLACEMENT_STRATEGY_DEFAULT, REGISTERED_PLACEMENT_STRATEGIES);
+            placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY),
+                    REGISTERED_PLACEMENT_STRATEGIES);
         } else {
             if (idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed())
                 log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
@@ -96,11 +97,11 @@ public class VertexIDAssigner {
         Preconditions.checkArgument(idManager.getMaxPartitionCount() < Integer.MAX_VALUE);
         this.maxPartitionID = (int) idManager.getMaxPartitionCount();
 
-        long baseBlockSize = config.getLong(IDS_BLOCK_SIZE_KEY, IDS_BLOCK_SIZE_DEFAULT);
+        long baseBlockSize = config.get(IDS_BLOCK_SIZE);
         idAuthority.setIDBlockSizer(new SimpleVertexIDBlockSizer(baseBlockSize));
 
-        renewTimeoutMS = config.getLong(IDS_RENEW_TIMEOUT_KEY,IDS_RENEW_TIMEOUT_DEFAULT);
-        renewBufferPercentage = config.getDouble(IDS_RENEW_BUFFER_PERCENTAGE_KEY,IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT);
+        renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
+        renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
         idPools = new OpenIntObjectHashMap();
         idPoolsLock = new ReentrantReadWriteLock();

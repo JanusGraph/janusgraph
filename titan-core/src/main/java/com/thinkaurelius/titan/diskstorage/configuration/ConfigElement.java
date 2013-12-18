@@ -81,6 +81,53 @@ public abstract class ConfigElement {
         return StringUtils.split(path,SEPARATOR);
     }
 
+    public static String toStringSingle(ConfigElement element) {
+        return toStringSingle(element,"");
+    }
+
+    private static String toStringSingle(ConfigElement element, String indent) {
+        String result = element.getName();
+        if (element.isNamespace()) {
+            result = "+ " + result;
+            if (((ConfigNamespace)element).isUmbrella())
+                result += " [*]";
+        } else {
+            result = "- " + result;
+            ConfigOption option = (ConfigOption)element;
+            result+= " [";
+            switch (option.getType()) {
+                case FIXED: result+="f"; break;
+                case GLOBAL_OFFLINE: result+="g!"; break;
+                case GLOBAL: result+="g"; break;
+                case MASKABLE: result+="m"; break;
+                case LOCAL: result+="l"; break;
+            }
+            result+=","+option.getDatatype().getSimpleName();
+            result+=","+option.getDefaultValue();
+            result+="]";
+        }
+        result = indent + result + "\n" + indent;
+        String desc = element.getDescription();
+        result+="\t"+'"'+desc.substring(0, Math.min(desc.length(), 50))+'"';
+        return result;
+    }
+
+    public static String toString(ConfigElement element) {
+        return toStringRecursive(element,"");
+    }
+
+    private static String toStringRecursive(ConfigElement element, String indent) {
+        String result = toStringSingle(element, indent) + "\n";
+        if (element.isNamespace()) {
+            ConfigNamespace ns = (ConfigNamespace)element;
+            indent += "\t";
+            for (ConfigElement child : ns.getChildren()) {
+                result += toStringRecursive(child,indent);
+            }
+        }
+        return result;
+    }
+
     public static String getPath(ConfigElement element, String... umbrellaElements) {
         Preconditions.checkNotNull(element);
         if (umbrellaElements==null) umbrellaElements = new String[0];
@@ -100,9 +147,9 @@ public abstract class ConfigElement {
         return path;
     }
 
-    public static PathParse parse(ConfigNamespace root, String path) {
+    public static PathIdentifier parse(ConfigNamespace root, String path) {
         Preconditions.checkNotNull(root);
-        if (StringUtils.isBlank(path)) return new PathParse(root,new String[]{},false);
+        if (StringUtils.isBlank(path)) return new PathIdentifier(root,new String[]{},false);
         String[] components = getComponents(path);
         Preconditions.checkArgument(components.length>0,"Empty path provided: %s",path);
         List<String> umbrellaElements = Lists.newArrayList();
@@ -123,16 +170,16 @@ public abstract class ConfigElement {
                 lastIsUmbrella = false;
             }
         }
-        return new PathParse(last,umbrellaElements.toArray(new String[umbrellaElements.size()]), lastIsUmbrella);
+        return new PathIdentifier(last,umbrellaElements.toArray(new String[umbrellaElements.size()]), lastIsUmbrella);
     }
 
-    public static class PathParse {
+    public static class PathIdentifier {
 
         public final ConfigElement element;
         public final String[] umbrellaElements;
         public final boolean lastIsUmbrella;
 
-        private PathParse(ConfigElement element, String[] umbrellaElements, boolean lastIsUmbrella) {
+        private PathIdentifier(ConfigElement element, String[] umbrellaElements, boolean lastIsUmbrella) {
             this.lastIsUmbrella = lastIsUmbrella;
             Preconditions.checkNotNull(element);
             Preconditions.checkNotNull(umbrellaElements);

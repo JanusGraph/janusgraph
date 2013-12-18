@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.*;
@@ -11,7 +12,6 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,25 +60,24 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         this.manager = manager;
         this.idStore = idStore;
 
-        uniqueIdBitWidth = config.getInt(IDAUTHORITY_UNIQUE_ID_BITS_KEY,IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT);
-        Preconditions.checkArgument(uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16,"Invalid unique id bit width defined [%s]. Must be in [0,16]",uniqueIdBitWidth);
+        uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
-        if (config.getBoolean(IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY,IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT)) {
-            Preconditions.checkArgument(!config.containsKey(IDAUTHORITY_UNIQUE_ID_KEY),"Conflicting configuration: a unique id and randomization have been set");
-            Preconditions.checkArgument(!config.getBoolean(IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY, IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT),
+        if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_USE_LOCAL_CONSISTENCY),
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
             uniqueId = -1;
             consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
         } else {
             randomizeUniqueId = false;
-            if (config.getBoolean(IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY,IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT)) {
-                Preconditions.checkArgument(config.containsKey(IDAUTHORITY_UNIQUE_ID_KEY),"Need to configure a unique id in order to use local consistency");
+            if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
+                Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
                 consistencLevel = ConsistencyLevel.LOCAL_KEY_CONSISTENT;
             } else {
                 consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
             }
-            uniqueId = config.getInt(IDAUTHORITY_UNIQUE_ID_KEY,IDAUTHORITY_UNIQUE_ID_DEFAULT);
+            uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
             Preconditions.checkArgument(uniqueId<uniqueIDUpperBound,"Unique id is too large for bit width [%s]: %s",uniqueIdBitWidth,uniqueId);
         }

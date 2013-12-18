@@ -11,6 +11,9 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.MixedConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -44,6 +47,7 @@ import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.EDGEINDEX_STORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.VERTEXINDEX_STORE_NAME;
 import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 
 /**
  * Storage Manager for HBase
@@ -54,24 +58,25 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);
 
-    public static final String TABLE_NAME_KEY = "tablename";
-    public static final String TABLE_NAME_DEFAULT = "titan";
+    public static final ConfigOption<String> HBASE_TABLE = new ConfigOption<String>(STORAGE_NS,"tablename",
+            "The name of the table to store Titan's data in",
+            ConfigOption.Type.LOCAL, "titan");
 
-    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
-    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
+    public static final ConfigOption<Boolean> SHORT_CF_NAMES = new ConfigOption<Boolean>(STORAGE_NS,"short-cf-names",
+            "Whether to automatically shorten the names of frequently used column families to preserve space",
+            ConfigOption.Type.FIXED, false);
+
+//    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
+//    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
 
     public static final int PORT_DEFAULT = 9160;
 
-    public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
+    public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
-    public static final ImmutableMap<String, String> HBASE_CONFIGURATION;
-
-    static {
-        HBASE_CONFIGURATION = new ImmutableMap.Builder<String, String>()
-                .put(GraphDatabaseConfiguration.HOSTNAME_KEY, "hbase.zookeeper.quorum")
-                .put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort")
-                .build();
-    }
+    public static final ImmutableMap<ConfigOption, String> HBASE_CONFIGURATION = ImmutableMap.of(
+            (ConfigOption)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
+            GraphDatabaseConfiguration.PORT, "hbase.zookeeper.property.clientPort"
+    );
 
     private final String tableName;
     private final org.apache.hadoop.conf.Configuration hconf;
@@ -100,30 +105,26 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
     }
 
-    public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
+    public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
 
-        this.tableName = config.getString(TABLE_NAME_KEY, TABLE_NAME_DEFAULT);
+        this.tableName = config.get(HBASE_TABLE);
 
         this.hconf = HBaseConfiguration.create();
-        for (Map.Entry<String, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
-            if (config.containsKey(confEntry.getKey())) {
-                hconf.set(confEntry.getValue(), config.getString(confEntry.getKey()));
+        for (Map.Entry<ConfigOption, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
+            if (config.has(confEntry.getKey())) {
+                hconf.set(confEntry.getValue(), config.get(confEntry.getKey()).toString());
             }
         }
 
         // Copy a subset of our commons config into a Hadoop config
-        org.apache.commons.configuration.Configuration hbCommons = config.subset(HBASE_CONFIGURATION_NAMESPACE);
-
-        @SuppressWarnings("unchecked") // I hope commons-config eventually fixes this
-                Iterator<String> keys = hbCommons.getKeys();
-        int keysLoaded = 0;
-
-        while (keys.hasNext()) {
-            String key = keys.next();
-            String value = hbCommons.getString(key);
-            logger.debug("HBase configuration: setting {}={}", key, value);
-            hconf.set(key, value);
+        Preconditions.checkArgument(config instanceof MixedConfiguration);
+        int keysLoaded=0;
+        Map<String,Object> configSub = ((MixedConfiguration)config).getSubset(HBASE_CONFIGURATION_NAMESPACE);
+        for (Map.Entry<String,Object> entry : configSub.entrySet()) {
+            logger.debug("HBase configuration: setting {}={}", entry.getKey(), entry.getValue());
+            if (entry.getValue()==null) continue;
+            hconf.set(entry.getKey(), entry.getValue().toString());
             keysLoaded++;
         }
 
@@ -131,7 +132,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         connectionPool = new HTablePool(hconf, connectionPoolSize);
 
-        this.shortCfNames = config.getBoolean(SHORT_CF_NAMES_KEY, SHORT_CF_NAMES_DEFAULT);
+        this.shortCfNames = config.get(SHORT_CF_NAMES);
 
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
     }
@@ -294,7 +295,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } else {
             if (shortCfNameMap.containsValue(longName)) {
                 String fmt = "Must use CF long-form name \"%s\" instead of the short-form name \"%s\" when configured with %s=true";
-                String msg = String.format(fmt, shortCfNameMap.inverse().get(longName), longName, SHORT_CF_NAMES_KEY);
+                String msg = String.format(fmt, shortCfNameMap.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
                 throw new PermanentStorageException(msg);
             }
             s = longName;

@@ -19,7 +19,6 @@ public class InternalAstyanaxMultiWriteKeyColumnValueTest extends MultiWriteKeyC
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
-        return new AstyanaxStoreManager(config);
+        return new AstyanaxStoreManager(CassandraStorageSetup.getAstyanaxConfiguration(getClass().getSimpleName()));
     }
 }

@@ -29,10 +29,7 @@ public class PersistitBlueprintsTest extends TitanBlueprintsTest {
     @Override
     public Graph generateGraph(final String subdir) {
         String dir = PersistitStorageSetup.getHomeDir() + "/" + subdir;
-        Configuration config= new BaseConfiguration();
-        config.subset(STORAGE_NAMESPACE).addProperty(STORAGE_DIRECTORY_KEY, dir);
-        config.subset(STORAGE_NAMESPACE).addProperty(STORAGE_BACKEND_KEY, "persistit");
-        Graph g = TitanFactory.open(config);
+        Graph g = TitanFactory.open(PersistitStorageSetup.getPersistitConfig(dir));
         synchronized (openGraphs) {
             openGraphs.put(dir, g);
         }

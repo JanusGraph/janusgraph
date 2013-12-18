@@ -19,7 +19,6 @@ public class InternalAstyanaxLockKeyColumnValueStoreTest extends LockKeyColumnVa
 
     @Override
     public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
-        Configuration sc = CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
-        return new AstyanaxStoreManager(sc);
+        return new AstyanaxStoreManager(CassandraStorageSetup.getAstyanaxConfiguration(getClass().getSimpleName()));
     }
 }

@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.CompositeConfiguration;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
     private static final String TEST_CF_NAME = "testcf";
     private static final String DEFAULT_COMPRESSOR_PACKAGE = "org.apache.cassandra.io.compress";
 
-    public abstract Configuration getBaseStorageConfiguration();
+    public abstract ModifiableConfiguration getBaseStorageConfiguration();
     
     public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws StorageException;
     
@@ -89,15 +89,14 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
     public void testCustomCFCompressor() throws StorageException {
         
         final String cname = "DeflateCompressor";
-        final String ckb = "128";
+        final int ckb = 128;
         final String cf = TEST_CF_NAME + "_gzip";
         
-        Configuration gzipCompressorCfg = new BaseConfiguration();
-        gzipCompressorCfg.setProperty(AbstractCassandraStoreManager.COMPRESSION_KEY, cname);
-        gzipCompressorCfg.setProperty(AbstractCassandraStoreManager.COMPRESSION_CHUNKS_SIZE_KEY, ckb);
-        gzipCompressorCfg = new CompositeConfiguration(Arrays.asList(gzipCompressorCfg, getBaseStorageConfiguration()));
-        
-        AbstractCassandraStoreManager mgr = openStorageManager(gzipCompressorCfg);
+        ModifiableConfiguration config = getBaseStorageConfiguration();
+        config.set(AbstractCassandraStoreManager.CASSANDRA_COMPRESSION_TYPE,cname);
+        config.set(GraphDatabaseConfiguration.STORAGE_COMPRESSION_SIZE,ckb);
+
+        AbstractCassandraStoreManager mgr = openStorageManager(config);
         
         // N.B.: clearStorage() truncates CFs but does not delete them
         mgr.openDatabase(cf);
@@ -106,7 +105,7 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
                 .<String, String> builder()
                 .put("sstable_compression",
                         DEFAULT_COMPRESSOR_PACKAGE + "." + cname)
-                .put("chunk_length_kb", ckb).build();
+                .put("chunk_length_kb", String.valueOf(ckb)).build();
         
         assertEquals(expected, mgr.getCompressionOptions(cf));
     }
@@ -115,12 +114,10 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
     public void testDisableCFCompressor() throws StorageException {
         
         final String cf = TEST_CF_NAME + "_nocompress";
-        
-        Configuration noCompressorCfg = new BaseConfiguration();
-        noCompressorCfg.setProperty(AbstractCassandraStoreManager.ENABLE_COMPRESSION_KEY, "false");
-        noCompressorCfg = new CompositeConfiguration(Arrays.asList(noCompressorCfg, getBaseStorageConfiguration()));
-        
-        AbstractCassandraStoreManager mgr = openStorageManager(noCompressorCfg);
+
+        ModifiableConfiguration config = getBaseStorageConfiguration();
+        config.set(GraphDatabaseConfiguration.STORAGE_COMPRESSION,false);
+        AbstractCassandraStoreManager mgr = openStorageManager(config);
         
         // N.B.: clearStorage() truncates CFs but does not delete them
         mgr.openDatabase(cf);

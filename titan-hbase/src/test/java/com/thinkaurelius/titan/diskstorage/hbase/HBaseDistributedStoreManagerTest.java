@@ -19,7 +19,7 @@ public class HBaseDistributedStoreManagerTest extends DistributedStoreManagerTes
     
     @Before
     public void setUp() throws StorageException {
-        manager = new HBaseStoreManager(HBaseStorageSetup.getHBaseStorageConfiguration());
+        manager = new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
         store = manager.openDatabase("distributedStoreTest");
     }
     

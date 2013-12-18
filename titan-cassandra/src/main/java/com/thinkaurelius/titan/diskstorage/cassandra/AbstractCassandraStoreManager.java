@@ -5,12 +5,13 @@ import java.util.Map;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -35,10 +36,18 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     }
 
     //################### CASSANDRA SPECIFIC CONFIGURATION OPTIONS ######################
-    public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
-    public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
+    public static final ConfigOption<String> CASSANDRA_READ_CONSISTENCY = new ConfigOption<String>(STORAGE_NS,"read-consistency-level",
+            "The consistency level of read operations against Cassandra",
+            ConfigOption.Type.MASKABLE, "QUORUM");
 
-    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
+//    public static final String READ_CONSISTENCY_LEVEL_KEY = "read-consistency-level";
+//    public static final String READ_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
+
+    public static final ConfigOption<String> CASSANDRA_WRITE_CONSISTENCY = new ConfigOption<String>(STORAGE_NS,"write-consistency-level",
+            "The consistency level of write operations against Cassandra",
+            ConfigOption.Type.MASKABLE, "QUORUM");
+
+//    public static final String WRITE_CONSISTENCY_LEVEL_KEY = "write-consistency-level";
 
     /**
      * THRIFT_FRAME_SIZE_IN_MB should be appropriately set when server-side Thrift counterpart was changed,
@@ -49,22 +58,26 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * <p/>
      * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
      */
-    public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
+    public static final ConfigOption<Integer> CASSANDRA_THRIFT_FRAME_SIZE = new ConfigOption<Integer>(STORAGE_NS,"thrift-frame-size",
+            "The thrift frame size in mega byte",
+            ConfigOption.Type.MASKABLE, 15);
 
-    /**
-     * This flag would be checked on first Titan run when Keyspace and CFs required
-     * for operation are created. If this flag is set to "true" Snappy
-     * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
-     */
-    public static final String ENABLE_COMPRESSION_KEY = "compression.enabled";
-    public static final boolean DEFAULT_COMPRESSION_FLAG = true;
+//    public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
 
-    /**
-     * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
-     * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
-     */
-    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "compression.chunk_length_kb";
-    public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
+//    /**
+//     * This flag would be checked on first Titan run when Keyspace and CFs required
+//     * for operation are created. If this flag is set to "true" Snappy
+//     * compression mechanism would be used.  Default is "true" (see DEFAULT_COMPRESSION_FLAG).
+//     */
+//    public static final String ENABLE_COMPRESSION_KEY = "compression.enabled";
+//    public static final boolean DEFAULT_COMPRESSION_FLAG = true;
+//
+//    /**
+//     * This property allows to set appropriate initial compression chunk_size (in kilobytes) when compression is enabled,
+//     * Default: 64 (see DEFAULT_COMPRESSION_CHUNK_SIZE), should be positive 2^n.
+//     */
+//    public static final String COMPRESSION_CHUNKS_SIZE_KEY = "compression.chunk_length_kb";
+//    public static final int DEFAULT_COMPRESSION_CHUNK_SIZE = 64;
 
     /**
      * Controls the Cassandra sstable_compression for CFs created by Titan.
@@ -75,11 +88,15 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * <p/>
      * Default: {@literal #DEFAULT_COMPRESSOR}
      */
-    public static final String COMPRESSION_KEY = "compression.sstable_compression";
-    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
+    public static final ConfigOption<String> CASSANDRA_COMPRESSION_TYPE = new ConfigOption<String>(STORAGE_NS,"compression-type",
+            "The particular compression type to use for Cassandra sstable compression",
+            ConfigOption.Type.FIXED, "SnappyCompressor");
 
-
-    public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
+//    public static final String COMPRESSION_KEY = "compression.sstable_compression";
+//    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
+//
+//
+//    public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
 
     /*
      * Any operation attempted with ConsistencyLevel.TWO
@@ -90,14 +107,18 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * if only one node has ever been a member of the
      * cluster in question.
      */
-    public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
+//    public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
     /**
      * Default name for the Cassandra keyspace
      * <p/>
      * Value = {@value}
      */
-    public static final String KEYSPACE_DEFAULT = "titan";
-    public static final String KEYSPACE_KEY = "keyspace";
+    public static final ConfigOption<String> CASSANDRA_KEYSPACE = new ConfigOption<String>(STORAGE_NS,"keyspace",
+            "The name of the keyspace to store Titan's data in",
+            ConfigOption.Type.LOCAL, "titan");
+
+//    public static final String KEYSPACE_DEFAULT = "titan";
+//    public static final String KEYSPACE_KEY = "keyspace";
 
     /**
      * Default port at which to attempt Cassandra Thrift connection.
@@ -107,8 +128,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public static final int PORT_DEFAULT = 9160;
 
 
-    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
-    public static final int REPLICATION_FACTOR_DEFAULT = 1;
+
+//    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
+//    public static final int REPLICATION_FACTOR_DEFAULT = 1;
 
 
     protected final String keySpaceName;
@@ -128,24 +150,22 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final String compressionClass;
 
 
-    public AbstractCassandraStoreManager(Configuration storageConfig) {
-        super(storageConfig, PORT_DEFAULT);
+    public AbstractCassandraStoreManager(Configuration config) {
+        super(config, PORT_DEFAULT);
 
-        this.keySpaceName = storageConfig.getString(KEYSPACE_KEY, KEYSPACE_DEFAULT);
+        this.keySpaceName = config.get(CASSANDRA_KEYSPACE);
 
-        this.replicationFactor = storageConfig.getInt(REPLICATION_FACTOR_KEY, REPLICATION_FACTOR_DEFAULT);
+        this.replicationFactor = config.get(REPLICATION_FACTOR);
 
-        this.readConsistencyLevel = CassandraTransaction.Consistency.parse(storageConfig.getString(
-                READ_CONSISTENCY_LEVEL_KEY, READ_CONSISTENCY_LEVEL_DEFAULT));
+        this.readConsistencyLevel = CassandraTransaction.Consistency.parse(config.get(CASSANDRA_READ_CONSISTENCY));
 
-        this.writeConsistencyLevel = CassandraTransaction.Consistency.parse(storageConfig.getString(
-                WRITE_CONSISTENCY_LEVEL_KEY, WRITE_CONSISTENCY_LEVEL_DEFAULT));
+        this.writeConsistencyLevel = CassandraTransaction.Consistency.parse(config.get(CASSANDRA_WRITE_CONSISTENCY));
 
-        this.thriftFrameSize = storageConfig.getInt(THRIFT_FRAME_SIZE_MB, THRIFT_DEFAULT_FRAME_SIZE) * 1024 * 1024;
+        this.thriftFrameSize = config.get(CASSANDRA_THRIFT_FRAME_SIZE) * 1024 * 1024;
 
-        this.compressionEnabled = storageConfig.getBoolean(ENABLE_COMPRESSION_KEY, DEFAULT_COMPRESSION_FLAG);
-        this.compressionChunkSizeKB = storageConfig.getInt(COMPRESSION_CHUNKS_SIZE_KEY, DEFAULT_COMPRESSION_CHUNK_SIZE);
-        this.compressionClass = storageConfig.getString(COMPRESSION_KEY, DEFAULT_COMPRESSION);
+        this.compressionEnabled = config.get(STORAGE_COMPRESSION);
+        this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
+        this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
     }
 
     public final Partitioner getPartitioner() {

@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -168,6 +168,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public GraphDatabaseConfiguration getConfiguration() {
         return config;
+    }
+
+    @Override
+    public UserModifiableConfiguration getGlobalConfiguration() {
+        return GraphDatabaseConfiguration.getGlobalUserConfig(backend.getStoreManager());
     }
 
     // ################### READ #########################

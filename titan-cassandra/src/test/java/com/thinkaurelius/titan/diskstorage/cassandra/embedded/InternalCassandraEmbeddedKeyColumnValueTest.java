@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import static org.junit.Assert.assertTrue;
 
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -23,8 +24,8 @@ public class InternalCassandraEmbeddedKeyColumnValueTest extends AbstractCassand
     }
 
     @Override
-    public Configuration getBaseStorageConfiguration() {
-        return CassandraStorageSetup.getEmbeddedCassandraStorageConfiguration(getClass().getSimpleName());
+    public ModifiableConfiguration getBaseStorageConfiguration() {
+        return CassandraStorageSetup.getEmbeddedConfiguration(getClass().getSimpleName());
     }
     
     @Override

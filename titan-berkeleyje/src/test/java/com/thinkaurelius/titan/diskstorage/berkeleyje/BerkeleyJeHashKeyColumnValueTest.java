@@ -12,8 +12,7 @@ import org.junit.Test;
 public class BerkeleyJeHashKeyColumnValueTest extends HashKeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration();
-        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(config);
+        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration());
 
         // prefixed store doesn't support scan, because prefix is hash of a key which makes it un-ordered
         sm.features.supportsUnorderedScan = false;

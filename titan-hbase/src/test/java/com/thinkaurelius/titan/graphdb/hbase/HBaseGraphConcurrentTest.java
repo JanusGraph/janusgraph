@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 import org.junit.BeforeClass;
 
@@ -12,7 +13,8 @@ public class HBaseGraphConcurrentTest extends TitanGraphConcurrentTest {
         HBaseStorageSetup.startHBase();
     }
 
-    public HBaseGraphConcurrentTest() {
-        super(HBaseStorageSetup.getHBaseGraphConfiguration());
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return HBaseStorageSetup.getHBaseGraphConfiguration();
     }
 }

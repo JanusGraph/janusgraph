@@ -3,10 +3,12 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,9 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     /**
      * Configuration setting key for the local lock mediator prefix
      */
-    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
+    public static final ConfigOption<String> LOCAL_LOCK_MEDIATOR_PREFIX = new ConfigOption<String>(GraphDatabaseConfiguration.STORAGE_NS,
+            "local-lock-mediator-prefix","Local prefix to disambiguate multiple local titan instances",
+            ConfigOption.Type.LOCAL,String.class);
 
     private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 

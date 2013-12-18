@@ -5,8 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.apache.commons.configuration.Configuration;
-
 import com.persistit.Exchange;
 import com.persistit.Persistit;
 import com.persistit.Volume;
@@ -14,6 +12,8 @@ import com.persistit.exception.PersistitException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
@@ -30,8 +30,13 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
     private final Map<String, PersistitKeyValueStore> stores;
 
     final static String VOLUME_NAME = "titan";
-    final static String BUFFER_COUNT_KEY = "buffercount";
-    final static Integer BUFFER_COUNT_DEFAULT = 5000;
+
+    public static final ConfigOption<Integer> BUFFER_COUNT = new ConfigOption<Integer>(GraphDatabaseConfiguration.STORAGE_NS,"buffercount",
+            "Buffer size for Persistit",
+            ConfigOption.Type.MASKABLE, 5000, ConfigOption.positiveInt());
+
+//    final static String BUFFER_COUNT_KEY = "buffercount";
+//    final static Integer BUFFER_COUNT_DEFAULT = 5000;
 
     private final Persistit db;
     private final Properties properties;
@@ -44,8 +49,8 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
         stores = new HashMap<String, PersistitKeyValueStore>();
 
         // read config and setup
-        String datapath = configuration.getString(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY);
-        Integer bufferCount = configuration.getInt(BUFFER_COUNT_KEY, BUFFER_COUNT_DEFAULT);
+        String datapath = configuration.get(GraphDatabaseConfiguration.STORAGE_DIRECTORY);
+        Integer bufferCount = configuration.get(BUFFER_COUNT);
 
         properties = new Properties();
         properties.put("datapath", datapath);

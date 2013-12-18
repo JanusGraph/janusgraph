@@ -13,8 +13,7 @@ import org.apache.commons.configuration.Configuration;
 public class PersistitKeyColumnValueTest extends KeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = PersistitStorageSetup.getPersistitGraphConfig();
-        PersistitStoreManager sm = new PersistitStoreManager(config.subset(STORAGE_NAMESPACE));
+        PersistitStoreManager sm = new PersistitStoreManager(PersistitStorageSetup.getPersistitConfig());
         OrderedKeyValueStoreManagerAdapter smadapter = new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
         return smadapter;
     }

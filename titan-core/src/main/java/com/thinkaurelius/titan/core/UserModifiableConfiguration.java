@@ -1,14 +1,13 @@
-package com.thinkaurelius.titan.diskstorage.configuration;
+package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.diskstorage.configuration.*;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /**
+ * Helper class for inspecting and modifying a configuration for Titan.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class UserModifiableConfiguration {
@@ -19,12 +18,26 @@ public class UserModifiableConfiguration {
         this.config = config;
     }
 
+    /**
+     * Returns the backing configuration as a {@link ReadConfiguration} that can be used
+     * to create and configure a Titan graph.
+     *
+     * @return
+     */
     public ReadConfiguration getConfiguration() {
-        return config.getBackingConfiguration();
+        return config.getConfiguration();
     }
 
+    /**
+     * Returns a string representation of the provided configuration option or namespace for inspection.
+     * <p />
+     * An exception is thrown if the path is invalid.
+     *
+     * @param path
+     * @return
+     */
     public String get(String path) {
-        ConfigElement.PathParse pp = ConfigElement.parse(config.getRootNamespace(),path);
+        ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
         if (pp.element.isNamespace()) {
             ConfigNamespace ns = (ConfigNamespace)pp.element;
             StringBuilder s = new StringBuilder();
@@ -34,18 +47,18 @@ public class UserModifiableConfiguration {
                 }
             } else {
                 for (ConfigElement element : ns.getChildren()) {
-                    s.append(toString(element,"")).append("\n");
+                    s.append(ConfigElement.toStringSingle(element)).append("\n");
                 }
             }
             return s.toString();
         } else {
             Object value;
-            try {
+            if (config.has((ConfigOption)pp.element,pp.umbrellaElements)) {
                 value = config.get((ConfigOption)pp.element,pp.umbrellaElements);
-            } catch (IllegalStateException e) {
-                return "value missing";
+            } else {
+                return "null";
             }
-            if (value==null) return "null";
+            Preconditions.checkNotNull(value);
             if (value.getClass().isArray()) {
                 StringBuilder s = new StringBuilder();
                 s.append("[");
@@ -59,55 +72,25 @@ public class UserModifiableConfiguration {
         }
     }
 
-    private static String toString(ConfigElement element,String indent) {
-        String result = element.getName();
-        if (element.isNamespace()) {
-            result = "+ " + result;
-            if (((ConfigNamespace)element).isUmbrella())
-                result += " [*]";
-        } else {
-            result = "- " + result;
-            ConfigOption option = (ConfigOption)element;
-            result+= " [";
-            switch (option.getType()) {
-                case FIXED: result+="f"; break;
-                case GLOBAL_OFFLINE: result+="g!"; break;
-                case GLOBAL: result+="g"; break;
-                case MASKABLE: result+="m"; break;
-                case LOCAL: result+="l"; break;
-            }
-            result+=","+option.getDatatype().getSimpleName();
-            result+=","+option.getDefaultValue();
-            result+="]";
-        }
-        result = indent + result + "\n" + indent;
-        String desc = element.getDescription();
-        result+="\t"+'"'+desc.substring(0, Math.min(desc.length(), 30))+'"';
-        return result;
-    }
 
-    public static String toString(ConfigElement element) {
-        return toStringRecursive(element,"");
-    }
-
-    private static String toStringRecursive(ConfigElement element, String indent) {
-        String result = toString(element,indent) + "\n";
-        if (element.isNamespace()) {
-            ConfigNamespace ns = (ConfigNamespace)element;
-            indent += "\t";
-            for (ConfigElement child : ns.getChildren()) {
-                result += toStringRecursive(child,indent);
-            }
-        }
-        return result;
-    }
-
+    /**
+     * Sets the configuration option identified by the provided path to the given value.
+     * <p />
+     * Setting some configuration options requires that additional parameters may be set.
+     * For instance, when setting a global configuration value that requires a complete cluster restart, one
+     * has to pass in the additional parameter "force" to force the configuration update.
+     *
+     * @param path
+     * @param value
+     * @param paras
+     */
     public void set(String path, Object value, String... paras) {
-        ConfigElement.PathParse pp = ConfigElement.parse(config.getRootNamespace(),path);
+        ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
         Preconditions.checkArgument(pp.element.isOption(),"Need to provide configuration option - not namespace: %s",path);
         ConfigOption option = (ConfigOption)pp.element;
-        if (option.getType()== ConfigOption.Type.GLOBAL_OFFLINE && config.isFrozenConfiguration()) {
-            Preconditions.checkArgument(paras != null && paras.length > 0 && paras[0].trim().equalsIgnoreCase("force"), "Need to force global parameter update for: %s", option);
+        if (option.getType()== ConfigOption.Type.GLOBAL_OFFLINE && config.isFrozen()) {
+            Preconditions.checkArgument(paras != null && paras.length > 0 && paras[0].trim().equalsIgnoreCase("force"),
+                    "Changing this option requires a complete cluster restart! Need to force global parameter update for: %s", option);
         }
         if (option.getDatatype().isArray()) {
             Class arrayType = option.getDatatype().getComponentType();
@@ -129,6 +112,9 @@ public class UserModifiableConfiguration {
         config.set(option,value,pp.umbrellaElements);
     }
 
+    /**
+     * Closes this configuration handler
+     */
     public void close() {
         config.close();
     }

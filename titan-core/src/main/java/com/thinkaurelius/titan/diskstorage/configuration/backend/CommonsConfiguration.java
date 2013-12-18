@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Iterator;
 import java.util.List;
@@ -40,13 +42,17 @@ public class CommonsConfiguration implements WriteConfiguration {
             return (O)config.getString(key);
         } else if (datatype==Boolean.class) {
             return (O)new Boolean(config.getBoolean(key));
+        } else if (datatype==Object.class) {
+            return (O)config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 
     @Override
     public Iterable<String> getKeys(String prefix) {
         List<String> result = Lists.newArrayList();
-        Iterator<String> keys = config.getKeys(prefix);
+        Iterator<String> keys;
+        if (StringUtils.isNotBlank(prefix)) keys = config.getKeys(prefix);
+        else keys = config.getKeys();
         while (keys.hasNext()) result.add(keys.next());
         return result;
     }
@@ -60,4 +66,17 @@ public class CommonsConfiguration implements WriteConfiguration {
     public <O> void set(String key, O value) {
         config.setProperty(key,value);
     }
+
+    @Override
+    public void remove(String key) {
+        config.clearProperty(key);
+    }
+
+    @Override
+    public WriteConfiguration clone() {
+        BaseConfiguration copy = new BaseConfiguration();
+        copy.copy(config);
+        return new CommonsConfiguration(copy);
+    }
+
 }

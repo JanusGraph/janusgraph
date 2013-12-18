@@ -19,7 +19,7 @@ public class InternalCassandraDistributedStoreManagerTest extends DistributedSto
     @Before
     public void setUp() throws StorageException {
         manager = new CassandraThriftStoreManager(
-                CassandraStorageSetup.getGenericCassandraStorageConfiguration(this.getClass().getSimpleName()));
+                CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
         store = manager.openDatabase("distributedcf");
     }
     

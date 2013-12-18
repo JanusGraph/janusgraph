@@ -4,9 +4,9 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +25,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     private final Map<String, String> storeConfig;
 
     public InMemoryStoreManager() {
-        this(new BaseConfiguration());
+        this(Configuration.EMPTY);
     }
 
     public InMemoryStoreManager(final Configuration configuration) {

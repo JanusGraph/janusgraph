@@ -37,10 +37,6 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
 
-    public TitanGraphPerformanceMemoryTest(Configuration config) {
-        super(config);
-    }
-
     @Test
     public void testMemoryLeakage() {
         long memoryBaseline = 0;

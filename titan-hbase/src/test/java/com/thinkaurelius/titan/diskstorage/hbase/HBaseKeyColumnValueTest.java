@@ -3,7 +3,10 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,14 +20,12 @@ public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
     }
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new HBaseStoreManager(getConfig());
-    }
-
-    private Configuration getConfig() {
-        Configuration c = HBaseStorageSetup.getHBaseStorageConfiguration();
-        c.setProperty("hbase-config.hbase.zookeeper.quorum", "localhost");
-        c.setProperty("hbase-config.hbase.zookeeper.property.clientPort", "2181");
-        return c;
+        WriteConfiguration config = HBaseStorageSetup.getHBaseGraphConfiguration();
+        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+                    ".hbase.zookeeper.quorum","localhost");
+        config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
+                "hbase.zookeeper.property.clientPort",2181);
+        return new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.NONE));
     }
 
     @Test

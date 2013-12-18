@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.graphdb
 
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
+
 import static org.junit.Assert.*
 
-import org.apache.commons.configuration.Configuration
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule;
@@ -52,13 +53,13 @@ abstract class GroovyTestSupport {
     protected GraphGenerator gen
     protected Schema schema
     protected TitanGraph graph
-    protected Configuration conf
+    protected WriteConfiguration conf
 
     static {
         Gremlin.load()
     }
 
-    GroovyTestSupport(Configuration conf) throws StorageException {
+    GroovyTestSupport(WriteConfiguration conf) throws StorageException {
         this.conf = conf
     }
 

@@ -16,6 +16,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
@@ -32,7 +33,6 @@ import org.apache.cassandra.thrift.NotFoundException;
 import org.apache.cassandra.thrift.SchemaDisagreementException;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.utils.FBUtilities;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
 import org.cliffc.high_scale_lib.NonBlockingHashMap;
@@ -78,13 +78,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         String randomInitialHostname = getSingleHostname();
 
-        int thriftTimeoutMS = config.getInt(
-                GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY,
-                GraphDatabaseConfiguration.CONNECTION_TIMEOUT_DEFAULT);
+        int thriftTimeoutMS = config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT);
 
-        int maxTotalConnections = config.getInt(
-                GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_KEY,
-                GraphDatabaseConfiguration.CONNECTION_POOL_SIZE_DEFAULT);
+        int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
 
         factory = new CTConnectionFactory(randomInitialHostname, port, username, password, thriftTimeoutMS, thriftFrameSize);
 

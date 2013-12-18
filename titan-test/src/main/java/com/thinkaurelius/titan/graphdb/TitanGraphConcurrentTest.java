@@ -51,10 +51,6 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
     private ExecutorService executor;
 
-    public TitanGraphConcurrentTest(Configuration config) {
-        super(config);
-    }
-
     @Override
     @Before
     public void setUp() throws Exception {

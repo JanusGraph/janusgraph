@@ -2,11 +2,11 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,21 +61,23 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
-        if (storageConfig.containsKey(HOSTNAME_KEY)) {
-            this.hostnames = storageConfig.getStringArray(HOSTNAME_KEY);
-        } else {
-            this.hostnames = new String[]{HOSTNAME_DEFAULT};
-        }
+        this.hostnames = storageConfig.get(STORAGE_HOSTS);
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
-        this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
+        if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
+        else this.port = portDefault;
         this.rid = getRid(storageConfig);
-        this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
-        this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
-        this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+        this.connectionTimeout = storageConfig.get(CONNECTION_TIMEOUT);
+        this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
+        this.pageSize = storageConfig.get(PAGE_SIZE);
 
 
-        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY,null);
-        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY,null);
+        if (storageConfig.has(AUTH_USERNAME)) {
+            this.username = storageConfig.get(AUTH_USERNAME);
+            this.password = storageConfig.get(AUTH_PASSWORD);
+        } else {
+            this.username=null;
+            this.password=null;
+        }
     }
 
     /**
@@ -142,9 +144,9 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
         byte tentativeRid[] = null;
 
-        if (config.containsKey(GraphDatabaseConfiguration.INSTANCE_RID_RAW_KEY)) {
+        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
             String ridText =
-                    config.getString(GraphDatabaseConfiguration.INSTANCE_RID_RAW_KEY);
+                    config.get(GraphDatabaseConfiguration.INSTANCE_RID_RAW);
             try {
                 tentativeRid = Hex.decodeHex(ridText.toCharArray());
             } catch (DecoderException e) {
@@ -155,10 +157,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         } else {
             final byte[] endBytes;
 
-            if (config.containsKey(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY)) {
+            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
 
-                short s = config.getShort(
-                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY);
+                short s = config.get(
+                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT);
 
                 endBytes = new byte[2];
 

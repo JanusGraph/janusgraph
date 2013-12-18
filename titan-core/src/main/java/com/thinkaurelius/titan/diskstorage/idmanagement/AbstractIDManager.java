@@ -4,10 +4,11 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
-import org.apache.commons.configuration.Configuration;
+
 
 /**
  * Base Class for {@link IDAuthority} implementations.
@@ -41,14 +42,10 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.isActive = false;
 
         this.idApplicationWaitMS =
-                config.getLong(
-                        GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY,
-                        GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_DEFAULT);
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS);
 
         this.idApplicationRetryCount =
-                config.getInt(
-                        GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,
-                        GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT);
 
         this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
     }

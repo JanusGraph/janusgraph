@@ -16,10 +16,6 @@ public class HBaseMultiWriteKeyColumnValueStoreTest extends MultiWriteKeyColumnV
     }
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        return new HBaseStoreManager(getConfig());
-    }
-
-    private Configuration getConfig() {
-        return HBaseStorageSetup.getHBaseStorageConfiguration();
+        return new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
     }
 }

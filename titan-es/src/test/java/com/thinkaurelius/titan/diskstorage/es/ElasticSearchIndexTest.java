@@ -4,16 +4,15 @@ import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY_KEY;
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MODE_KEY;
+import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -34,10 +33,10 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     public static final Configuration getLocalESTestConfig() {
-        Configuration config = new BaseConfiguration();
-        config.setProperty(LOCAL_MODE_KEY, true);
-        config.setProperty(CLIENT_ONLY_KEY, false);
-        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("es"));
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, true);
+        config.set(CLIENT_ONLY, false);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"));
         return config;
     }
 

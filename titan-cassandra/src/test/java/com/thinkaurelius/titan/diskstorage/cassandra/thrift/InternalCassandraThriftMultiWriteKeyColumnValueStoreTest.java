@@ -19,7 +19,6 @@ public class InternalCassandraThriftMultiWriteKeyColumnValueStoreTest extends Mu
 
     @Override
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        Configuration config = CassandraStorageSetup.getGenericCassandraStorageConfiguration(getClass().getSimpleName());
-        return new CassandraThriftStoreManager(config);
+        return new CassandraThriftStoreManager(CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
     }
 }

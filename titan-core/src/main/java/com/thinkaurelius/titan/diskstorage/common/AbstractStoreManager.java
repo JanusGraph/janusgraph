@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
-import org.apache.commons.configuration.Configuration;
+
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -18,9 +19,9 @@ public abstract class AbstractStoreManager {
     protected final boolean batchLoading;
 
     public AbstractStoreManager(Configuration storageConfig) {
-        isReadOnly = storageConfig.getBoolean(STORAGE_READONLY_KEY, STORAGE_READONLY_DEFAULT);
-        batchLoading = storageConfig.getBoolean(STORAGE_BATCH_KEY, STORAGE_BATCH_DEFAULT);
-        boolean transactional = storageConfig.getBoolean(STORAGE_TRANSACTIONAL_KEY, STORAGE_TRANSACTIONAL_DEFAULT);
+        isReadOnly = storageConfig.get(STORAGE_READONLY);
+        batchLoading = storageConfig.get(STORAGE_BATCH);
+        boolean transactional = storageConfig.get(STORAGE_TRANSACTIONAL);
         if (batchLoading) {
             transactional = false;
         }

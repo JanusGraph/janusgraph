@@ -35,9 +35,7 @@ public class HBaseBlueprintsTest extends TitanBlueprintsTest {
 
     @Override
     public void cleanUp() throws StorageException {
-        HBaseStoreManager s = new HBaseStoreManager(HBaseStorageSetup
-                                                        .getHBaseGraphConfiguration()
-                                                                .subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE));
+        HBaseStoreManager s = new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
         s.clearStorage();
     }
 

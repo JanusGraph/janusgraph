@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.inmemory;
 
 import com.thinkaurelius.titan.diskstorage.IDAllocationTest;
-import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -13,7 +12,7 @@ import org.apache.commons.configuration.Configuration;
 
 public class InMemoryIDAllocationTest extends IDAllocationTest {
 
-    public InMemoryIDAllocationTest(Configuration baseConfig) {
+    public InMemoryIDAllocationTest(WriteConfiguration baseConfig) {
         super(baseConfig);
     }
 

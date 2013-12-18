@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableSet;
+import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -34,7 +33,7 @@ public class ConfigurationTest {
         ConfigOption<Double> bar = new ConfigOption<Double>(special,"bar","bar",
                 ConfigOption.Type.GLOBAL, 1.5d);
         ConfigOption<Integer> bim = new ConfigOption<Integer>(special,"bim","bim",
-                ConfigOption.Type.MASKABLE, Integer.class, ConfigOption.allowEmpty(Integer.class));
+                ConfigOption.Type.MASKABLE, Integer.class);
 
         ConfigOption<String> indexback = new ConfigOption<String>(indexes,"name","index name",
                 ConfigOption.Type.MASKABLE, String.class);
@@ -44,17 +43,17 @@ public class ConfigurationTest {
                 ConfigOption.Type.LOCAL, false);
 
         //Local configuration
-        ModifiableConfiguration config = new ModifiableConfiguration(root,new CommonsConfiguration(new BaseConfiguration()),false);
+        ModifiableConfiguration config = new ModifiableConfiguration(root,new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.LOCAL);
         UserModifiableConfiguration userconfig = new UserModifiableConfiguration(config);
         assertFalse(config.get(partition));
         assertEquals("false", userconfig.get("storage.partition"));
-        userconfig.set("storage.partition",true);
+        userconfig.set("storage.partition", true);
         assertEquals("true", userconfig.get("storage.partition"));
         userconfig.set("storage.hostname", new String[]{"localhost", "some.where.org"});
         assertEquals("[localhost,some.where.org]", userconfig.get("storage.hostname"));
         userconfig.set("storage.hostname", "localhost");
         assertEquals("[localhost]", userconfig.get("storage.hostname"));
-        assertEquals("null",userconfig.get("storage.special.bim"));
+        assertEquals("null", userconfig.get("storage.special.bim"));
         assertEquals("", userconfig.get("indexes"));
         userconfig.set("indexes.search.name", "foo");
         assertEquals("+ search", userconfig.get("indexes").trim());
@@ -62,7 +61,7 @@ public class ConfigurationTest {
         assertEquals("100", userconfig.get("indexes.search.ping"));
         userconfig.set("indexes.search.ping", 400l);
         assertEquals("400",userconfig.get("indexes.search.ping"));
-        assertFalse(config.isFrozenConfiguration());
+        assertFalse(config.isFrozen());
         try {
             userconfig.set("storage.locktime",500);
             fail();
@@ -75,7 +74,7 @@ public class ConfigurationTest {
         userconfig.close();
         ReadConfiguration localConfig = userconfig.getConfiguration();
 
-        config = new ModifiableConfiguration(root,new CommonsConfiguration(new BaseConfiguration()),true);
+        config = new ModifiableConfiguration(root,new CommonsConfiguration(new BaseConfiguration()), BasicConfiguration.Restriction.GLOBAL);
         userconfig = new UserModifiableConfiguration(config);
 
         userconfig.set("storage.locktime",1111);
@@ -108,7 +107,9 @@ public class ConfigurationTest {
         assertEquals(false,mixed.get(presort,"find").booleanValue());
         assertEquals(400,mixed.get(ping,"search").intValue());
         assertEquals(false,mixed.get(presort,"search").booleanValue());
-        assertNull(mixed.get(bim));
+        assertFalse(mixed.has(bim));
+        assertTrue(mixed.has(bits));
+        assertEquals(7,mixed.getSubset(storage));
 
         assertEquals(1.5d,mixed.get(bar).doubleValue(),0.0);
         assertEquals("localhost",mixed.get(hostnames)[0]);
@@ -116,7 +117,7 @@ public class ConfigurationTest {
 
         mixed.close();
 
-        System.out.println(UserModifiableConfiguration.toString(root));
+        System.out.println(ConfigElement.toString(root));
 
     }
 

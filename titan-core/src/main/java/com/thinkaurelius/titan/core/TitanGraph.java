@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.ThreadedTransactionalGraph;
@@ -132,6 +131,14 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      */
     public TitanType getType(String name);
 
+
+    /**
+     * Returns the global configuration behind this Titan graph. This allows to inspect global configuration
+     * options as well as modify some of those settings if allowed.
+     *
+     * @return
+     */
+    public UserModifiableConfiguration getGlobalConfiguration();
 
     /**
      * Checks whether the graph is still open.
