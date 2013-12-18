@@ -33,20 +33,21 @@ public abstract class TitanGraphBaseTest {
     public void setUp() throws Exception {
         this.config = getConfiguration();
         Preconditions.checkNotNull(config);
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
-        graphconfig.getBackend().clearStorage();
-        features = graphconfig.getStoreFeatures();
         open(config);
     }
 
     public void open(WriteConfiguration config) {
         graph = (StandardTitanGraph) TitanFactory.open(config);
+        features = graph.getConfiguration().getStoreFeatures();
         tx = graph.newTransaction();
     }
 
     @After
     public void tearDown() throws Exception {
         close();
+        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(config);
+        graphconfig.getBackend().clearStorage();
+
     }
 
     public void close() {
@@ -84,6 +85,7 @@ public abstract class TitanGraphBaseTest {
                     gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue(),"force");
                 }
             }
+            gconf.close();
             lconf.close();
         }
         close();

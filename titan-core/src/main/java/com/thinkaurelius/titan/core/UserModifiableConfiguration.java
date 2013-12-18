@@ -7,6 +7,7 @@ import java.lang.reflect.Array;
 
 /**
  * Helper class for inspecting and modifying a configuration for Titan.
+ * It is important to {@link #close()} the configuration when all changes have been made.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -53,7 +54,7 @@ public class UserModifiableConfiguration {
             return s.toString();
         } else {
             Object value;
-            if (config.has((ConfigOption)pp.element,pp.umbrellaElements)) {
+            if (config.has((ConfigOption)pp.element,pp.umbrellaElements) || ((ConfigOption) pp.element).getDefaultValue()!=null) {
                 value = config.get((ConfigOption)pp.element,pp.umbrellaElements);
             } else {
                 return "null";

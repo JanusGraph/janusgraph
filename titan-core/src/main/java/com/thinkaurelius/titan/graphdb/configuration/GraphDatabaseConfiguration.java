@@ -1139,12 +1139,10 @@ public class GraphDatabaseConfiguration {
     }
 
     private void configureMetricsConsoleReporter() {
-        Long ms = configuration.get(METRICS_CONSOLE_INTERVAL);
-        if (null != ms) {
+        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
+            Long ms = configuration.get(METRICS_CONSOLE_INTERVAL);
             System.err.println("Console metrics on");
             MetricManager.INSTANCE.addConsoleReporter(ms);
-        } else {
-            System.err.println("Console metrics off");
         }
     }
 

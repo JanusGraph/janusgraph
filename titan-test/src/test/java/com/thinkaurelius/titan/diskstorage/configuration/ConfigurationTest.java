@@ -103,13 +103,16 @@ public class ConfigurationTest {
 
         MixedConfiguration mixed = new MixedConfiguration(root,globalConfig,localConfig);
         assertEquals(ImmutableSet.of("search","find"),mixed.getContainedNamespaces(indexes));
+        Configuration search = mixed.restrictTo("search");
+        assertEquals("foo",search.get(indexback));
+        assertEquals(400,search.get(ping).intValue());
         assertEquals(100,mixed.get(ping,"find").intValue());
         assertEquals(false,mixed.get(presort,"find").booleanValue());
         assertEquals(400,mixed.get(ping,"search").intValue());
         assertEquals(false,mixed.get(presort,"search").booleanValue());
         assertFalse(mixed.has(bim));
         assertTrue(mixed.has(bits));
-        assertEquals(7,mixed.getSubset(storage));
+        assertEquals(5,mixed.getSubset(storage).size());
 
         assertEquals(1.5d,mixed.get(bar).doubleValue(),0.0);
         assertEquals("localhost",mixed.get(hostnames)[0]);

@@ -14,6 +14,7 @@ import java.util.List;
 public abstract class BaseKeyColumnValueAdapter implements KeyColumnValueStore {
 
     private final KeyValueStore store;
+    private boolean isClosed = false;
 
     public BaseKeyColumnValueAdapter(KeyValueStore store) {
         Preconditions.checkNotNull(store);
@@ -38,6 +39,11 @@ public abstract class BaseKeyColumnValueAdapter implements KeyColumnValueStore {
     @Override
     public void close() throws StorageException {
         store.close();
+        isClosed=true;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
     }
 
 

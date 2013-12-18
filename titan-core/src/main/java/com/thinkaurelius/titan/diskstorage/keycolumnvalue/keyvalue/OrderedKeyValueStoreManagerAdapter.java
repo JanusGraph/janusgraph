@@ -62,7 +62,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     @Override
     public synchronized OrderedKeyValueStoreAdapter openDatabase(String name)
             throws StorageException {
-        if (!stores.containsKey(name)) {
+        if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);
             stores.put(name, store);
         }
