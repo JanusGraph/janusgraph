@@ -269,8 +269,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (cf == null) {
             try {
                 adm.disableTable(tableName);
-                desc.addFamily(new HColumnDescriptor(columnFamily).setCompressionType(Compression.Algorithm.GZ));
-                adm.modifyTable(tableName.getBytes(), desc);
+                cf = new HColumnDescriptor(columnFamily);
+                adm.addColumn(tableName, cf);
 
                 try {
                     logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
