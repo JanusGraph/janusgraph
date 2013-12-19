@@ -47,6 +47,11 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
 
 
     @Override
+    public String toString() {
+        return getName();
+    }
+
+    @Override
     public boolean isUnique(Direction direction) {
         return getDefinition().getValue(TypeAttributeType.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
     }

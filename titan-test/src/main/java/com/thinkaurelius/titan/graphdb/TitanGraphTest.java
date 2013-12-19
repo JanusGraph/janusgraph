@@ -99,6 +99,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(spouse.isUnique(IN));
         assertTrue(spouse.isUnique(OUT));
 
+        assertEquals("weight",weight.toString());
+
 
         try {
             tx.makeKey("pint").dataType(int.class).make();
