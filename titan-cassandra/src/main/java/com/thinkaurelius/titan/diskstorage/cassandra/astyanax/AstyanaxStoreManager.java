@@ -514,9 +514,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-            Map<String, String> stratops = new HashMap<String, String>() {{
-                put("replication_factor", String.valueOf(replicationFactor));
-            }};
+
+            Map<String, String> stratops = ImmutableMap.of(
+                "replication_factor", String.valueOf(replicationFactor));
 
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
