@@ -94,6 +94,10 @@ public class GraphDatabaseConfiguration {
     public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
     public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 
+    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
+    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
+    public static final String UKNOWN_FIELD_NAME = "unknown_key";
+
     // ################ CACHE #######################
     // ################################################
 
@@ -699,6 +703,7 @@ public class GraphDatabaseConfiguration {
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
     private String metricsPrefix;
+    private String unknownIndexKeydName;
 
     private StoreFeatures storeFeatures = null;
 
@@ -848,6 +853,8 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.getBoolean(PROPERTY_PREFETCHING_KEY);
         else propertyPrefetching = null;
         allowVertexIdSetting = configuration.getBoolean(ALLOW_SETTING_VERTEX_ID_KEY, ALLOW_SETTING_VERTEX_ID_DEFAULT);
+
+        unknownIndexKeydName = configuration.getBoolean(IGNORE_UNKNOWN_INDEX_FIELD_KEY,IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT)?UKNOWN_FIELD_NAME:null;
 
         configureMetrics();
     }
@@ -1022,6 +1029,10 @@ public class GraphDatabaseConfiguration {
         } else {
             return propertyPrefetching;
         }
+    }
+
+    public String getUnknownIndexKeydName() {
+        return unknownIndexKeydName;
     }
 
     public int getWriteAttempts() {
