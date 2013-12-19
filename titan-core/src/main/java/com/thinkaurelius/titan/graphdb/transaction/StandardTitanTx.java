@@ -570,13 +570,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         }
         graph.assignID(type);
-        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
+        Preconditions.checkArgument(type.getID() > 0);
         addProperty(type, SystemKey.TypeName, name);
+        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
         addProperty(type, SystemKey.TypeClass, typeClass);
         for (TypeAttribute attribute : definition.getAttributes()) {
             addProperty(type, SystemKey.TypeDefinition, attribute);
         }
-        Preconditions.checkArgument(type.getID() > 0);
         vertexCache.add(type, type.getID());
         typeCache.put(name, type.getID());
         return type;

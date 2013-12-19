@@ -7,6 +7,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
@@ -81,7 +82,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanKey weight = tx.makeKey("weight").single().dataType(Double.class).make();
 
         TitanKey someid = tx.makeKey("someid").single().dataType(Object.class).indexed(Vertex.class).make();
-
 
         TitanKey boolval = tx.makeKey("boolval").dataType(Boolean.class).single().make();
 
@@ -180,8 +180,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
-        tx.makeLabel("link2").unidirected().
-                sortKey(id, weight).make();
+        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(id, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();
@@ -279,6 +278,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
         assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
+
+        assertEquals(5, Iterables.size(tx.getVertices()));
+
+        assertEquals(1, Iterables.size(tx.query().has("someid", Cmp.GREATER_THAN, 150).vertices()));
+        assertEquals(2, Iterables.size(tx.query().has("someid", Cmp.GREATER_THAN, 50).vertices()));
 
         clopen();
 
