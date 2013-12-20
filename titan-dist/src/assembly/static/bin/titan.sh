@@ -3,6 +3,7 @@
 BIN="`dirname $0`"
 REXSTER_CONFIG_TAG=cassandra-es
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
+: ${REXSTER_SHUTDOWN_TIMEOUT_S:=60}
 VERBOSE=
 COMMAND=
 
@@ -42,6 +43,24 @@ wait_for_cassandra() {
     return 1
 }
 
+wait_for_rexster_shutdown() {
+    local now_s=`date '+%s'`
+    local stop_s=$(( $now_s + $REXSTER_SHUTDOWN_TIMEOUT_S ))
+
+    while [ $now_s -le $stop_s ]; do
+        status_class 'Titan + Rexster' com.tinkerpop.rexster.Application >/dev/null
+        if [ $? -eq 1 ]; then
+            # Rexster/Titan not found in the jps output.  Assume that it stopped.
+            return 0
+        fi
+        sleep 2
+        now_s=`date '+%s'`
+    done
+
+    echo "Rexster shutdown timeout exceeded ($REXSTER_SHUTDOWN_TIMEOUT_S seconds)" >&2
+    return 1
+}
+
 start() {
     echo "Starting Cassandra..." >&2
     if [ -n "$VERBOSE" ]; then
@@ -68,6 +87,7 @@ start() {
 
 stop() {
     kill_class 'Titan + Rexster' com.tinkerpop.rexster.Application 
+    wait_for_rexster_shutdown
     kill_class Cassandra org.apache.cassandra.service.CassandraDaemon
 }
 
