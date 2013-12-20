@@ -282,10 +282,6 @@ public class EdgeSerializer {
         }
     }
 
-    public Entry writeRelation(InternalRelation relation, int pos, StandardTitanTx tx) {
-        return writeRelation(relation, pos, true, tx);
-    }
-
     private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, StandardTitanTx tx) {
         for (long typeid : typeids) {
             TitanType t = tx.getExistingType(typeid);
@@ -293,7 +289,7 @@ public class EdgeSerializer {
         }
     }
 
-    public Entry writeRelation(InternalRelation relation, int position, boolean writeValue, StandardTitanTx tx) {
+    public Entry writeRelation(InternalRelation relation, int position, StandardTitanTx tx) {
         Preconditions.checkArgument(position < relation.getLen());
         TitanType type = relation.getType();
         long typeid = type.getID();
@@ -319,7 +315,6 @@ public class EdgeSerializer {
             vertexIdDiff = relation.getVertex((position + 1) % 2).getID() - relation.getVertex(position).getID();
 
         if (type.isUnique(dir)) {
-            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(), null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
             if (relation.isEdge()) VariableLong.write(writer, vertexIdDiff);
             VariableLong.write(writer, relationIdDiff);
@@ -329,7 +324,6 @@ public class EdgeSerializer {
         }
 
         if (!type.isUnique(dir)) {
-            if (!writeValue) return new StaticBufferEntry(colOut.getStaticBuffer(), null);
             writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
         }
 

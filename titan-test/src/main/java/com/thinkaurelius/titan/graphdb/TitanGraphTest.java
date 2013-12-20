@@ -558,49 +558,56 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     //Add more removal operations, different transaction contexts
     @Test
     public void testCreateDelete() {
-        TitanKey weight = makeWeightPropertyKey("weight");
-        TitanKey id = makeIntegerUIDPropertyKey("uid");
-        TitanLabel knows = makeKeyedEdgeLabel("knows", id, weight);
+        TitanKey weight = graph.makeKey("weight").single().dataType(Double.class).make();
+        TitanKey id = graph.makeKey("uid").single().unique().indexed(Vertex.class).dataType(Integer.class).make();
+        TitanLabel knows = graph.makeLabel("knows").sortKey(id).sortOrder(Order.DESC).directed().make();
 
-        TitanVertex n1 = tx.addVertex(), n3 = tx.addVertex();
+        TitanVertex n1 = graph.addVertex(null), n3 = graph.addVertex(null);
         TitanEdge e = n3.addEdge(knows, n1);
         e.setProperty(id, 111);
         n3.addProperty(id, 445);
         assertEquals(111, e.getProperty(id));
-        clopen();
-        Object eid = e.getId();
-        long nid = n3.getID();
+        graph.commit();
 
-        n3 = tx.getVertex(nid);
+        n3 = tx.getVertex(n3.getID());
         assertEquals(445, n3.getProperty("uid"));
         e = Iterables.getOnlyElement(n3.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals(111, e.getProperty("uid"));
-        assertEquals(e, tx.getEdge(eid));
-        assertEquals(e, tx.getEdge(eid.toString()));
+        assertEquals(e, tx.getEdge(e.getId()));
+        assertEquals(e, tx.getEdge(e.getId().toString()));
         TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
         p.remove();
         n3.addProperty("uid", 353);
 
+        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
+        e.setProperty(id,222);
 
         clopen();
 
-        n3 = tx.getVertex(nid);
+        n3 = tx.getVertex(n3.getID());
         assertEquals(353, n3.getProperty("uid"));
-        TitanEdge e2 = n3.addEdge("knows", tx.addVertex());
+
+        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
+        assertEquals(222,e.getProperty(id));
     }
 
     @Test
-    public void testSelfLoop() {
-        Vertex v = tx.addVertex(null);
-        tx.addEdge(null, v, v, "self");
-        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
-        clopen();
-        v = tx.getVertex(v.getId());
-        assertNotNull(v);
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+    public void testIssue498() {
+        TitanKey activity = graph.makeKey("activity").dataType(Long.class).make();
+        TitanLabel follows = graph.makeLabel("follows").sortKey(activity).sortOrder(Order.DESC).make();
+
+        Vertex user1 = graph.addVertex(null);
+        Vertex user2 = graph.addVertex(null);
+
+        Edge edge = user1.addEdge("follows",user2);
+        edge.setProperty("activity",0L);
+        graph.commit();
+
+        assertEquals(1,user1.query().direction(BOTH).count());
+
+        edge.setProperty("activity", 5L);
+        graph.commit();
+        assertEquals(1,user1.query().direction(BOTH).count());
     }
 
     @Test

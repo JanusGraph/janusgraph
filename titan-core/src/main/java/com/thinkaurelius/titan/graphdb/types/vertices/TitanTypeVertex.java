@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanProperty;
@@ -24,10 +25,10 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public String getName() {
         if (name == null) {
-            name = Iterables.getOnlyElement(query().
-                    includeHidden().
-                    type(SystemKey.TypeName).
-                    properties(), null).getValue(String.class);
+            TitanProperty p = Iterables.getOnlyElement(query().
+                    includeHidden().type(SystemKey.TypeName).properties(), null);
+            Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
+            name = p.getValue(String.class);
         }
         assert name != null;
         return name;

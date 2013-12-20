@@ -283,7 +283,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             Direction dir = EdgeDirection.fromPosition(pos);
                             if (acquireLocks && relation.getType().isUnique(dir) && !vertex.isNew()
                                     && ((InternalType) relation.getType()).uniqueLock(dir)) {
-                                Entry entry = edgeSerializer.writeRelation(relation, pos, false, tx);
+                                Entry entry = edgeSerializer.writeRelation(relation, pos, tx);
                                 mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), null);
                             }
                         }
@@ -339,7 +339,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 for (int pos = 0; pos < edge.getLen(); pos++) {
                     if (edge.getVertex(pos).equals(vertex)) {
                         if (edge.isRemoved()) {
-                            deletions.add(edgeSerializer.writeRelation(edge, pos, false, tx).getColumn());
+                            deletions.add(edgeSerializer.writeRelation(edge, pos, tx).getColumn());
                         } else {
                             Preconditions.checkArgument(edge.isNew());
                             additions.add(edgeSerializer.writeRelation(edge, pos, tx));
