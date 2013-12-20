@@ -571,12 +571,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(111, e.getProperty(id));
         graph.commit();
 
-        n3 = tx.getVertex(n3.getID());
+        n3 = graph.getVertex(n3.getID());
         assertEquals(445, n3.getProperty("uid"));
-        e = Iterables.getOnlyElement(n3.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
+        e = (TitanEdge) Iterables.getOnlyElement(n3.getEdges(OUT, "knows"));
         assertEquals(111, e.getProperty("uid"));
-        assertEquals(e, tx.getEdge(e.getId()));
-        assertEquals(e, tx.getEdge(e.getId().toString()));
+        assertEquals(e, graph.getEdge(e.getId()));
+        assertEquals(e, graph.getEdge(e.getId().toString()));
         TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
         p.remove();
         n3.addProperty("uid", 353);
@@ -594,7 +594,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         clopen();
 
-        n3 = tx.getVertex(n3.getID());
+        n3 = graph.getVertex(n3.getID());
         assertEquals(353, n3.getProperty("uid"));
 
         e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
@@ -1351,7 +1351,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getID());
         qvs2[qvs2.length-1]=tx.addVertex();
         qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
-        qvs2[qvs2.length-1].addEdge("connect",qvs2[0]);
+        qvs2[qvs2.length-1].addEdge("connect", qvs2[0]);
         results = tx.multiQuery(qvs2).direction(IN).labels("connect").titanEdges();
         for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
 
