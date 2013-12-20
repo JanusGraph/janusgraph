@@ -158,9 +158,9 @@ if [ "$JVM_VENDOR" != "OpenJDK" -o "$JVM_VERSION" \> "1.6.0" ] \
       || [ "$JVM_VERSION" = "1.6.0" -a "$JVM_PATCH_VERSION" -ge 23 ]
 then
     agentpath="$CASSANDRA_HOME/lib/jamm-0.2.5.jar"
-    if [ "`uname -o`" = 'Cygwin' ]; then
-        agentpath="`echo $agentpath | cygpath --windows --path -f -`"
-    fi
+    case "`uname`" in
+        CYGWIN*) agentpath="`echo $agentpath | cygpath --windows --path -f -`";;
+    esac
     JVM_OPTS="$JVM_OPTS -javaagent:$agentpath"
 fi
 

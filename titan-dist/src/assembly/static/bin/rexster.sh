@@ -33,7 +33,9 @@ convert_unix_paths_to_win_paths() {
 }
 
 set_unix_paths
-[ "`uname -o`" = 'Cygwin' ] && convert_unix_paths_to_win_paths
+case "`uname`" in
+    CYGWIN*) convert_unix_paths_to_win_paths ;;
+esac
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then

@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
+import com.netflix.astyanax.connectionpool.RetryBackoffStrategy;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.impl.*;
 import com.netflix.astyanax.ddl.ColumnFamilyDefinition;
@@ -114,10 +115,104 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * commas; in this case, the integers are cast to native Java ints and
      * passed to the class constructor as arguments.
      * <p/>
+     * In Astyanax, RetryPolicy and RetryBackoffStrategy sound and look similar
+     * but are used for distinct purposes. RetryPolicy is for retrying failed
+     * operations. RetryBackoffStrategy is for retrying attempts to talk to
+     * uncommunicative hosts. This config option controls RetryPolicy.
+     * <p/>
      * Value = {@value}
      */
     public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
     public static final String RETRY_POLICY_KEY = "retry-policy";
+
+    /**
+     * If non-null, this must be the fully-qualified classname (i.e. the
+     * complete package name, a dot, and then the class name) of an
+     * implementation of Astyanax's RetryBackoffStrategy interface. This string
+     * may be followed by a sequence of integers, separated from the full
+     * classname and from each other by commas; in this case, the integers are
+     * cast to native Java ints and passed to the class constructor as
+     * arguments. Here's an example setting that would instantiate an Astyanax
+     * FixedRetryBackoffStrategy with an delay interval of 1s and suspend time
+     * of 5s:
+     * <p/>
+     * <code>
+     * com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy,1000,5000
+     * </code>
+     * <p/>
+     * If null, then Astyanax uses its default strategy, which is an
+     * ExponentialRetryBackoffStrategy instance. The instance parameters take
+     * Astyanax's built-in default values, which can be overridden via the
+     * following config keys:
+     * <ul>
+     * <li>{@value #RETRY_DELAY_SLICE_KEY}</li>
+     * <li>{@value #RETRY_MAX_DELAY_SLICE_KEY}</li>
+     * <li>{@value #RETRY_SUSPEND_WINDOW_KEY}</li>
+     * </ul>
+     * <p/>
+     * In Astyanax, RetryPolicy and RetryBackoffStrategy sound and look similar
+     * but are used for distinct purposes. RetryPolicy is for retrying failed
+     * operations. RetryBackoffStrategy is for retrying attempts to talk to
+     * uncommunicative hosts. This config option controls RetryBackoffStrategy.
+     * <p/>
+     * TODO port to ConfigOption for 0.5.
+     * <p/>
+     * Value = {@value}
+     */
+    public static final String RETRY_BACKOFF_STRATEGY_DEFAULT = "com.netflix.astyanax.connectionpool.impl.FixedRetryBackoffStrategy,1000,5000";
+    //public static final String RETRY_BACKOFF_STRATEGY_DEFAULT = null;
+    public static final String RETRY_BACKOFF_STRATEGY_KEY = "retry-backoff-strategy";
+
+    /**
+     * Controls the retryDelaySlice parameter on Astyanax
+     * ConnectionPoolConfigurationImpl objects, which is in turn used by
+     * ExponentialRetryBackoffStrategy. See the code for
+     * {@link ConnectionPoolConfigurationImpl},
+     * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
+     * {@link #RETRY_BACKOFF_STRATEGY_KEY} for more information.
+     * <p/>
+     * This parameter is not meaningful for and has no effect on
+     * FixedRetryBackoffStrategy.
+     * <p/>
+     * TODO port to ConfigOption for 0.5.
+     * <p/>
+     * Value = {@value}
+     */
+    public static final String RETRY_DELAY_SLICE_KEY = "retry-delay-slice";
+
+    /**
+     * Controls the retryMaxDelaySlice parameter on Astyanax
+     * ConnectionPoolConfigurationImpl objects, which is in turn used by
+     * ExponentialRetryBackoffStrategy. See the code for
+     * {@link ConnectionPoolConfigurationImpl},
+     * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
+     * {@link #RETRY_BACKOFF_STRATEGY_KEY} for more information.
+     * <p/>
+     * This parameter is not meaningful for and has no effect on
+     * FixedRetryBackoffStrategy.
+     * <p/>
+     * TODO port to ConfigOption for 0.5.
+     * <p/>
+     * Value = {@value}
+     */
+    public static final String RETRY_MAX_DELAY_SLICE_KEY = "retry-max-delay-slice";
+
+    /**
+     * Controls the retrySuspendWindow parameter on Astyanax
+     * ConnectionPoolConfigurationImpl objects, which is in turn used by
+     * ExponentialRetryBackoffStrategy. See the code for
+     * {@link ConnectionPoolConfigurationImpl},
+     * {@link ExponentialRetryBackoffStrategy}, and the javadoc for
+     * {@link #RETRY_BACKOFF_STRATEGY_KEY} for more information.
+     * <p/>
+     * This parameter is not meaningful for and has no effect on
+     * FixedRetryBackoffStrategy.
+     * <p/>
+     * TODO port to ConfigOption for 0.5.
+     * <p/>
+     * Value = {@value}
+     */
+    public static final String RETRY_SUSPEND_WINDOW_KEY = "retry-suspend-window";
 
     private final String clusterName;
 
@@ -126,16 +221,32 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private final RetryPolicy retryPolicy;
 
+    private final int retryDelaySlice;
+    private final int retryMaxDelaySlice;
+    private final int retrySuspendWindow;
+    private final RetryBackoffStrategy retryBackoffStrategy;
+
     private final Map<String, AstyanaxOrderedKeyColumnValueStore> openStores;
 
     public AstyanaxStoreManager(Configuration config) throws StorageException {
         super(config);
+
 
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because there is nothing we can do in Astyanax to apply those, warning is good enough here
         // otherwise it would make bad user experience if we don't warn at all or crash on this.
         if (config.containsKey(THRIFT_FRAME_SIZE_MB))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
+
+        retryDelaySlice = config.getInt(RETRY_DELAY_SLICE_KEY,
+                ConnectionPoolConfigurationImpl.DEFAULT_RETRY_DELAY_SLICE);
+        retryMaxDelaySlice = config.getInt(RETRY_MAX_DELAY_SLICE_KEY,
+                ConnectionPoolConfigurationImpl.DEFAULT_RETRY_MAX_DELAY_SLICE);
+        retrySuspendWindow = config.getInt(RETRY_SUSPEND_WINDOW_KEY,
+                ConnectionPoolConfigurationImpl.DEFAULT_RETRY_SUSPEND_WINDOW);
+
+        retryBackoffStrategy = getRetryBackoffStrategy(
+                config.getString(RETRY_BACKOFF_STRATEGY_KEY, RETRY_BACKOFF_STRATEGY_DEFAULT));
 
         this.clusterName = config.getString(CLUSTER_KEY, CLUSTER_DEFAULT);
 
@@ -351,10 +462,19 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         .setPort(port)
                         .setMaxOperationsPerConnection(maxOperationsPerConnection)
                         .setMaxConnsPerHost(maxConnsPerHost)
-                        .setRetryBackoffStrategy(new FixedRetryBackoffStrategy(1000, 5000)) // TODO configuration
+                        .setRetryDelaySlice(retryDelaySlice)
+                        .setRetryMaxDelaySlice(retryMaxDelaySlice)
+                        .setRetrySuspendWindow(retrySuspendWindow)
                         .setSocketTimeout(connectionTimeout)
                         .setConnectTimeout(connectionTimeout)
                         .setSeeds(StringUtils.join(hostnames, ","));
+
+        if (null != retryBackoffStrategy) {
+            cpool.setRetryBackoffStrategy(retryBackoffStrategy);
+            log.debug("Custom RetryBackoffStrategy {}", cpool.getRetryBackoffStrategy());
+        } else {
+            log.debug("Default RetryBackoffStrategy {}", cpool.getRetryBackoffStrategy());
+        }
 
         AstyanaxConfigurationImpl aconf =
                 new AstyanaxConfigurationImpl()
@@ -394,9 +514,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-            Map<String, String> stratops = new HashMap<String, String>() {{
-                put("replication_factor", String.valueOf(replicationFactor));
-            }};
+
+            Map<String, String> stratops = ImmutableMap.of(
+                "replication_factor", String.valueOf(replicationFactor));
 
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
@@ -411,6 +531,28 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
+    private static RetryBackoffStrategy getRetryBackoffStrategy(String desc) throws PermanentStorageException {
+
+        if (null == desc)
+            return null;
+
+        String[] tokens = desc.split(",");
+        String policyClassName = tokens[0];
+        int argCount = tokens.length - 1;
+        Object[] args = new Object[argCount];
+        for (int i = 1; i < tokens.length; i++) {
+            args[i - 1] = Integer.valueOf(tokens[i]);
+        }
+
+        try {
+            RetryBackoffStrategy rbs = instantiate(policyClassName, args, desc);
+            log.debug("Instantiated RetryBackoffStrategy object {} from config string \"{}\"", rbs, desc);
+            return rbs;
+        } catch (Exception e) {
+            throw new PermanentStorageException("Failed to instantiate Astyanax RetryBackoffStrategy implementation", e);
+        }
+    }
+
     private static RetryPolicy getRetryPolicy(String serializedRetryPolicy) throws StorageException {
         String[] tokens = serializedRetryPolicy.split(",");
         String policyClassName = tokens[0];
@@ -421,7 +563,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
 
         try {
-            RetryPolicy rp = instantiateRetryPolicy(policyClassName, args, serializedRetryPolicy);
+            RetryPolicy rp = instantiate(policyClassName, args, serializedRetryPolicy);
             log.debug("Instantiated RetryPolicy object {} from config string \"{}\"", rp, serializedRetryPolicy);
             return rp;
         } catch (Exception e) {
@@ -429,8 +571,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private static RetryPolicy instantiateRetryPolicy(String policyClassName,
-                                                      Object[] args, String raw) throws Exception {
+    @SuppressWarnings("unchecked")
+    private static <V> V instantiate(String policyClassName,
+                                     Object[] args, String raw) throws Exception {
 
         Class<?> policyClass = Class.forName(policyClassName);
 
@@ -451,7 +594,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 log.debug("About to instantiate class {} with {} arguments", con.toString(), args.length);
 
-                return (RetryPolicy) con.newInstance(args);
+                return (V) con.newInstance(args);
             }
         }
 

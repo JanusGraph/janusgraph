@@ -62,11 +62,10 @@ kill_class() {
         return
     fi
     echo "Killing $1 (pid $p)..." >&2
-    if [ "`uname -o`" = 'Cygwin' ]; then
-        taskkill /F /PID "$p"
-    else
-        kill "$p"
-    fi
+    case "`uname`" in
+        CYGWIN*) taskkill /F /PID "$p" ;;
+        *)       kill "$p" ;;
+    esac
 }
 
 status_class() {
