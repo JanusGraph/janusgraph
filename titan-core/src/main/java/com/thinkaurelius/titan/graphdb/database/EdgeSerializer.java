@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database;
 
+import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
@@ -30,6 +31,8 @@ import com.tinkerpop.blueprints.Direction;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
 
@@ -354,10 +357,19 @@ public class EdgeSerializer {
             for (long id : sortKey) writtenTypes.add(id);
             for (long id : signature) writtenTypes.add(id);
         }
+        LongArrayList remainingTypes = new LongArrayList(8);
         for (TitanType t : relation.getPropertyKeysDirect()) {
             if (!writtenTypes.contains(t.getID())) {
-                writeInline(writer, t, relation.getProperty(t), true);
+                remainingTypes.add(t.getID());
+
             }
+        }
+        //Sort types before writing to ensure that value is always written the same way
+        long[] remaining = remainingTypes.toArray();
+        Arrays.sort(remaining);
+        for (long tid : remaining) {
+            TitanType t = tx.getExistingType(tid);
+            writeInline(writer, t, relation.getProperty(t), true);
         }
 
         StaticBuffer column = ((InternalType)type).getSortOrder()==Order.DESC?

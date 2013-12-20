@@ -561,9 +561,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         TitanKey weight = graph.makeKey("weight").single().dataType(Double.class).make();
         TitanKey id = graph.makeKey("uid").single().unique().indexed(Vertex.class).dataType(Integer.class).make();
         TitanLabel knows = graph.makeLabel("knows").sortKey(id).sortOrder(Order.DESC).directed().make();
+        TitanLabel father = graph.makeLabel("father").manyToOne().make();
 
         TitanVertex n1 = graph.addVertex(null), n3 = graph.addVertex(null);
         TitanEdge e = n3.addEdge(knows, n1);
+        Edge e2 = n1.addEdge("friend",n3);
         e.setProperty(id, 111);
         n3.addProperty(id, 445);
         assertEquals(111, e.getProperty(id));
@@ -581,6 +583,14 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
         e.setProperty(id,222);
+
+        e2 = Iterables.getOnlyElement(n1.getEdges(OUT,"friend"));
+        e2.setProperty("uid",1);
+        e2.setProperty("weight",2.0);
+
+        assertEquals(1,e2.getProperty("uid"));
+        assertEquals(2.0,e2.getProperty("weight"));
+
 
         clopen();
 
