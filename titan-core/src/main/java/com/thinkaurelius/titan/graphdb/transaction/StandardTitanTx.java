@@ -696,7 +696,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
             List<List<Entry>> results = graph.edgeMultiQuery(vids, sq, txHandle);
             int pos = 0;
             for (TitanVertex v : vertices) {
-                if (vids.get(pos) == v.getID()) {
+                if (pos<vids.size() && vids.get(pos) == v.getID()) {
                     final List<Entry> vresults = results.get(pos);
                     ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
                         @Override
@@ -704,8 +704,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
                             return vresults;
                         }
                     });
+                    pos++;
                 }
-                pos++;
             }
         }
     }

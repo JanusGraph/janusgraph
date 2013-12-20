@@ -1330,6 +1330,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNotNull(v);
         assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
         assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).count());
+
+
+        newTx();
+        //Test partially new vertex queries
+        TitanVertex[] qvs2 = new TitanVertex[qvs.length+2];
+        qvs2[0]=tx.addVertex();
+        for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getID());
+        qvs2[qvs2.length-1]=tx.addVertex();
+        qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
+        qvs2[qvs2.length-1].addEdge("connect",qvs2[0]);
+        results = tx.multiQuery(qvs2).direction(IN).labels("connect").titanEdges();
+        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+
     }
 
     //Merge above
