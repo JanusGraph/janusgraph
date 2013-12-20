@@ -6,6 +6,22 @@ REXSTER_CONFIG_TAG=cassandra-es
 VERBOSE=
 COMMAND=
 
+# Locate the jps command.  Check $PATH, then check $JAVA_HOME/bin.
+# This does not need to by cygpath'd.
+JPS=
+for maybejps in jps "${JAVA_HOME}/bin/jps"; do
+    type "$maybejps" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        JPS="$maybejps"
+        break
+    fi
+done
+
+if [ -z "$JPS" ]; then
+    echo "jps command not found.  Put the JDK's jps binary on the command path." >&2
+    exit 1
+fi
+
 wait_for_cassandra() {
     local now_s=`date '+%s'`
     local stop_s=$(( $now_s + $CASSANDRA_STARTUP_TIMEOUT_S ))
@@ -56,7 +72,7 @@ stop() {
 }
 
 kill_class() {
-    local p=`jps -l | grep "$2" | awk '{print $1}'`
+    local p=`$JPS -l | grep "$2" | awk '{print $1}'`
     if [ -z "$p" ]; then
         echo "$1 ($2) not found in the java process table"
         return
@@ -69,7 +85,7 @@ kill_class() {
 }
 
 status_class() {
-    local p=`jps -l | grep "$2" | awk '{print $1}'`
+    local p=`$JPS -l | grep "$2" | awk '{print $1}'`
     if [ -n "$p" ]; then
         echo "$1 ($2) is running with pid $p"
         return 0
