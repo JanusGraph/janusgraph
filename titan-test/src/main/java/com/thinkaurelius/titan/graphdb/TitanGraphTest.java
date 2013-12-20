@@ -592,22 +592,17 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     }
 
     @Test
-    public void testIssue498() {
-        TitanKey activity = graph.makeKey("activity").dataType(Long.class).make();
-        TitanLabel follows = graph.makeLabel("follows").sortKey(activity).sortOrder(Order.DESC).make();
-
-        Vertex user1 = graph.addVertex(null);
-        Vertex user2 = graph.addVertex(null);
-
-        Edge edge = user1.addEdge("follows",user2);
-        edge.setProperty("activity",0L);
-        graph.commit();
-
-        assertEquals(1,user1.query().direction(BOTH).count());
-
-        edge.setProperty("activity", 5L);
-        graph.commit();
-        assertEquals(1,user1.query().direction(BOTH).count());
+    public void testSelfLoop() {
+        Vertex v = tx.addVertex(null);
+        tx.addEdge(null, v, v, "self");
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+        clopen();
+        v = tx.getVertex(v.getId());
+        assertNotNull(v);
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
     }
 
     @Test
