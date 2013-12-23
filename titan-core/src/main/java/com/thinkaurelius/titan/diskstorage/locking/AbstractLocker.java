@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -13,6 +14,8 @@ import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.stats.MetricManager;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +79,13 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     protected final long lockExpireNS;
 
     protected final Logger log;
+
+    private static final String M_LOCKS = "locks";
+    private static final String M_WRITE = "write";
+    private static final String M_CHECK = "check";
+    private static final String M_DELETE = "delete";
+    private static final String M_CALLS = "calls";
+    private static final String M_EXCEPTIONS = "exceptions";
 
     /**
      * Abstract builder for this Locker implementation. See
@@ -260,6 +270,10 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     @Override
     public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
+        if (null != tx.getConfiguration().getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_WRITE, M_CALLS).inc();
+        }
+
         if (lockState.has(tx, lockID)) {
             log.debug("Transaction {} already wrote lock on {}", tx, lockID);
             return;
@@ -284,6 +298,9 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 if (!ok) {
                     // lockState.release(tx, lockID); // has no effect
                     unlockLocally(lockID, tx);
+                    if (null != tx.getConfiguration().getMetricsPrefix()) {
+                        MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_WRITE, M_EXCEPTIONS).inc();
+                    }
                 }
             }
         } else {
@@ -294,6 +311,11 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
 
     @Override
     public void checkLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+
+        if (null != tx.getConfiguration().getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_CHECK, M_CALLS).inc();
+        }
+
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
 
         if (m.isEmpty()) {
@@ -304,10 +326,12 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         // during Thread.sleep(), and in that case it probably means the entire
         // Titan process is shutting down; for this reason, we return ASAP on an
         // interrupt
+        boolean ok = false;
         try {
             for (KeyColumn kc : m.keySet()) {
                 checkSingleLock(kc, m.get(kc), tx);
             }
+            ok = true;
         } catch (InterruptedException e) {
             throw new TemporaryLockingException(e);
         } catch (TemporaryStorageException tse) {
@@ -316,11 +340,19 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             throw ae; // Concession to ease testing with mocks & behavior verification
         } catch (Throwable t) {
             throw new PermanentLockingException(t);
+        } finally {
+            if (!ok && null != tx.getConfiguration().getMetricsPrefix()) {
+                MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_CHECK, M_CALLS).inc();
+            }
         }
     }
 
     @Override
     public void deleteLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
+        if (null != tx.getConfiguration().getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_DELETE, M_CALLS).inc();
+        }
+
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
 
         Iterator<KeyColumn> iter = m.keySet().iterator();
@@ -333,6 +365,9 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 throw ae; // Concession to ease testing with mocks & behavior verification
             } catch (Throwable t) {
                 log.error("Exception while deleting lock on " + kc, t);
+                if (null != tx.getConfiguration().getMetricsPrefix()) {
+                    MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_DELETE, M_CALLS).inc();
+                }
             }
             // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator
             llm.unlock(kc, tx);
