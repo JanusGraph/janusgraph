@@ -164,7 +164,7 @@ public class GraphDatabaseConfiguration {
      * require/support an a separate config file
      */
     public static final String STORAGE_CONF_FILE_KEY = "conffile";
-    
+
     /**
      * Define the storage backed to use for persistence
      */
@@ -471,12 +471,19 @@ public class GraphDatabaseConfiguration {
     public static final String METRICS_NAMESPACE = "metrics";
 
     /**
+     * Whether to enable Titan metrics.
+     */
+    public static final String METRICS_ENABLED = "enabled";
+    public static final boolean METRICS_ENABLED_DEFAULT = false;
+
+    /**
      * Whether to enable basic timing and operation count monitoring on backend
      * methods using the {@code com.codahale.metrics} package.
+     *
+     * @deprecated use {@value #METRICS_ENABLED} instead
      */
     public static final String BASIC_METRICS = "enable-basic-metrics";
-    public static final boolean BASIC_METRICS_DEFAULT = false;
-
+    public static final boolean BASIC_METRICS_DEFAULT = METRICS_ENABLED_DEFAULT;
 
     /**
      * The default name prefix for Metrics reported by Titan. All metric names
@@ -746,7 +753,7 @@ public class GraphDatabaseConfiguration {
      * <li>Set the key STORAGE_DIRECTORY_KEY in namespace STORAGE_NAMESPACE to
      * the absolute path of the argument</li>
      * <li>Return the {@code BaseConfiguration}</li>
-     * 
+     *
      * @param dirOrFile
      *            A properties file to load or directory in which to read and
      *            write data
@@ -775,7 +782,7 @@ public class GraphDatabaseConfiguration {
                 } else {
                     configParent = tmpParent;
                 }
-                
+
                 Preconditions.checkNotNull(configParent);
                 Preconditions.checkArgument(configParent.isDirectory());
 
@@ -862,18 +869,12 @@ public class GraphDatabaseConfiguration {
     private void configureMetrics() {
         Preconditions.checkNotNull(configuration);
 
+        final boolean enableMetrics = isMetricsEnabledInGraphConfig(configuration);
 
-        Configuration metricsConf = configuration.subset(METRICS_NAMESPACE);
-
-        if (null != metricsConf && !metricsConf.isEmpty()) {
-
+        if (enableMetrics) {
+            Configuration metricsConf = configuration.subset(METRICS_NAMESPACE);
             metricsPrefix = metricsConf.getString(METRICS_PREFIX_KEY, METRICS_PREFIX_DEFAULT);
-
-            if (!metricsConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT)) {
-                metricsPrefix = null;
-            } else {
-                Preconditions.checkNotNull(metricsPrefix);
-            }
+            Preconditions.checkNotNull(metricsPrefix);
 
             configureMetricsConsoleReporter(metricsConf);
             configureMetricsCsvReporter(metricsConf);
@@ -881,7 +882,49 @@ public class GraphDatabaseConfiguration {
             configureMetricsSlf4jReporter(metricsConf);
             configureMetricsGangliaReporter(metricsConf);
             configureMetricsGraphiteReporter(metricsConf);
+        } else {
+            metricsPrefix = null;
         }
+    }
+
+    private static boolean isMetricsEnabledInGraphConfig(Configuration graphConf) {
+
+        Preconditions.checkNotNull(graphConf);
+
+        Configuration metricsConf = graphConf.subset(METRICS_NAMESPACE);
+        Configuration storageConf = graphConf.subset(STORAGE_NAMESPACE);
+
+        return isMetricsEnabled(storageConf, metricsConf);
+    }
+
+    public static boolean isMetricsEnabled(Configuration storageConf, Configuration metricsConf) {
+        // Even if the subset key is not present, commons config should return an object
+        Preconditions.checkNotNull(metricsConf);
+        Preconditions.checkNotNull(storageConf);
+
+        // The config option "metrics.enabled" is preferred, but the legacy
+        // options "metrics.enable-basic-metrics" and
+        // "storage.enable-basic-metrics" are also recognized
+        //
+        // Logical disjunction is the intuitive choice because the default value
+        // is false
+        return metricsConf.getBoolean(METRICS_ENABLED, METRICS_ENABLED_DEFAULT) ||
+               metricsConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT) ||
+               storageConf.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT);
+    }
+
+    public static boolean isMetricsMergingEnabled(Configuration storageConf, Configuration metricsConf) {
+        // Even if the subset key is not present, commons config should return an object
+        Preconditions.checkNotNull(metricsConf);
+        Preconditions.checkNotNull(storageConf);
+
+        // Recognize either "metrics.merge-basic-metrics" or
+        // "storage.merge-basic-metrics".
+        //
+        // Logical conjunction is the intuitive choice because the default value
+        // is true
+        return metricsConf.getBoolean(MERGE_BASIC_METRICS_KEY, MERGE_BASIC_METRICS_DEFAULT) &&
+               storageConf.getBoolean(MERGE_BASIC_METRICS_KEY, MERGE_BASIC_METRICS_DEFAULT);
     }
 
     private void configureMetricsConsoleReporter(Configuration conf) {
@@ -1116,7 +1159,8 @@ public class GraphDatabaseConfiguration {
 
     public Backend getBackend() {
         Configuration storageconfig = configuration.subset(STORAGE_NAMESPACE);
-        Backend backend = new Backend(storageconfig);
+        Configuration metricsconfig = configuration.subset(METRICS_NAMESPACE);
+        Backend backend = new Backend(storageconfig, metricsconfig);
         backend.initialize(storageconfig);
         storeFeatures = backend.getStoreFeatures();
         return backend;
@@ -1176,7 +1220,7 @@ public class GraphDatabaseConfiguration {
         return namespace + "." + key;
     }
 
-    
+
 	/* ----------------------------------------
      Methods for writing/reading config files
 	-------------------------------------------*/

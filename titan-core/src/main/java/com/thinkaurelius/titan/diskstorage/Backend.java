@@ -25,6 +25,8 @@ import com.thinkaurelius.titan.graphdb.configuration.KCVSConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
+
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -110,14 +112,21 @@ public class Backend {
     private final Configuration storageConfig;
 
     public Backend(Configuration storageConfig) {
+        this(storageConfig, null);
+    }
+
+    public Backend(Configuration storageConfig, Configuration metricsConfig) {
         this.storageConfig = storageConfig;
 
         storeManager = getStorageManager(storageConfig);
         indexes = getIndexes(storageConfig);
         storeFeatures = storeManager.getFeatures();
 
-        basicMetrics = storageConfig.getBoolean(BASIC_METRICS, BASIC_METRICS_DEFAULT);
-        mergeBasicMetrics = storageConfig.getBoolean(MERGE_BASIC_METRICS_KEY, MERGE_BASIC_METRICS_DEFAULT);
+        if (null == metricsConfig) {
+            metricsConfig = new BaseConfiguration();
+        }
+        basicMetrics = GraphDatabaseConfiguration.isMetricsEnabled(storageConfig, metricsConfig);
+        mergeBasicMetrics = GraphDatabaseConfiguration.isMetricsMergingEnabled(storageConfig, metricsConfig);
 
         int bufferSizeTmp = storageConfig.getInt(BUFFER_SIZE_KEY, BUFFER_SIZE_DEFAULT);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
