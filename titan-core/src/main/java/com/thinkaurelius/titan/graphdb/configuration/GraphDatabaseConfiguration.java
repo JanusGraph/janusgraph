@@ -930,10 +930,10 @@ public class GraphDatabaseConfiguration {
     private void configureMetricsConsoleReporter(Configuration conf) {
         Long ms = conf.getLong(METRICS_CONSOLE_INTERVAL_KEY, METRICS_CONSOLE_INTERVAL_DEFAULT);
         if (null != ms) {
-            System.err.println("Console metrics on");
+            log.debug("Console metrics on");
             MetricManager.INSTANCE.addConsoleReporter(ms);
         } else {
-            System.err.println("Console metrics off");
+            log.debug("Console metrics off");
         }
     }
 
