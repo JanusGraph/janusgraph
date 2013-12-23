@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -7,6 +8,9 @@ import com.google.common.cache.Weigher;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.stats.MetricManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Wraps a {@link KeyColumnValueStore} and caches KeySliceQuery results which are marked <i>static</i> and hence do not change.
@@ -29,8 +32,10 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final Logger log = LoggerFactory.getLogger(CachedKeyColumnValueStore.class);
 
-    private static final AtomicLong CACHE_RETRIEVAL = new AtomicLong(0);
-    private static final AtomicLong CACHE_MISS = new AtomicLong(0);
+    private static final String METRICS_PREFIX = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT
+            + "." + CachedKeyColumnValueStore.class.getSimpleName();
+    private static final Counter CACHE_RETRIEVAL = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "retrievals");
+    private static final Counter CACHE_MISS = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "misses");
 
     private static final long DEFAULT_CACHE_SIZE = 2*1000; //1000 types
 
@@ -54,16 +59,17 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public static long getGlobalCacheHits() {
-        return CACHE_RETRIEVAL.get() - CACHE_MISS.get();
+        return CACHE_RETRIEVAL.getCount() - CACHE_MISS.getCount();
     }
 
     public static long getGlobalCacheMisses() {
-        return CACHE_MISS.get();
+        return CACHE_MISS.getCount();
     }
 
     public static void resetGlobalMetrics() {
-        CACHE_MISS.set(0);
-        CACHE_RETRIEVAL.set(0);
+        // This is at best approximate (especially in the presence of concurrent updates)
+        CACHE_MISS.dec(CACHE_MISS.getCount());
+        CACHE_RETRIEVAL.dec(CACHE_RETRIEVAL.getCount());
     }
 
     @Override
@@ -76,12 +82,12 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
         if (query.isStatic()) {
             try {
                 if (log.isDebugEnabled())
-                    log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", CACHE_RETRIEVAL.get(), CACHE_MISS.get());
-                CACHE_RETRIEVAL.incrementAndGet();
+                    log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", CACHE_RETRIEVAL.getCount(), CACHE_MISS.getCount());
+                CACHE_RETRIEVAL.inc();
                 List<Entry> result = cache.get(query, new Callable<List<Entry>>() {
                     @Override
                     public List<Entry> call() throws StorageException {
-                        CACHE_MISS.incrementAndGet();
+                        CACHE_MISS.inc();
                         return store.getSlice(query, txh);
                     }
                 });
