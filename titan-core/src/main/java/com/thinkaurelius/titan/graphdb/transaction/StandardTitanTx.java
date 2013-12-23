@@ -275,6 +275,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction {
         if (vertexid <= 0 || !(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid)))
             return null;
 
+        if (null != config.getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "db", "getVertexByID").inc();
+        }
+
         InternalVertex v = vertexCache.get(vertexid, externalVertexRetriever);
         return (v.isRemoved()) ? null : v;
     }
