@@ -91,7 +91,7 @@ public class StandardIDPool implements IDPool {
         nextID = bufferNextID;
         currentMaxID = bufferMaxID;
 
-        log.debug("[{}] Next/Max ID: {}", partitionID, new long[]{nextID, currentMaxID});
+        log.debug("[ID Partition {}] Acquired range: [{},{}]", new Object[]{ partitionID, nextID, currentMaxID });
 
         assert nextID > 0 && currentMaxID > nextID;
 
