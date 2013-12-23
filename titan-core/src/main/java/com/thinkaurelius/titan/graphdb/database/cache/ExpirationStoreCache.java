@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 import static com.thinkaurelius.titan.util.datastructures.ByteSize.*;
@@ -39,7 +40,8 @@ public class ExpirationStoreCache implements StoreCache {
     private static final int INVALIDATE_KEY_FRACTION_PENALTY = 1000;
     private static final int PENALTY_THRESHOLD = 5;
 
-    private static final String METRICS_PREFIX = ExpirationStoreCache.class.getSimpleName();
+    private static final String METRICS_PREFIX = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT
+            + "." + ExpirationStoreCache.class.getSimpleName();
     private static final Counter GLOBAL_CACHE_MISSES = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "misses");
     private static final Counter GLOBAL_CACHE_RETRIEVALS = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "retrievals");
 
