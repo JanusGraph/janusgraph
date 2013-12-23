@@ -58,7 +58,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
     private static final Logger log =
             LoggerFactory.getLogger(MetricInstrumentedStore.class);
-    
+
     public static final String M_CONTAINS_KEY = "containsKey";
     public static final String M_GET_SLICE = "getSlice";
     public static final String M_MUTATE = "mutate";
@@ -80,7 +80,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             ImmutableList.of(M_CALLS,M_TIME,M_EXCEPTIONS,M_ENTRIES_COUNT,M_ENTRIES_HISTO);
 
     public static final String M_ITERATOR = "iterator";
-    
+
     private final String metricsStoreName;
 
     public MetricInstrumentedStore(KeyColumnValueStore backend, String metricsStoreName) {
@@ -123,7 +123,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             new StorageCallable<List<List<Entry>>>() {
                 public List<List<Entry>> call() throws StorageException {
                     List<List<Entry>> results = backend.getSlice(keys, query, txh);
-    
+
                     for (List<Entry> result : results) {
                         recordSliceMetrics(p, result);
                     }
@@ -171,7 +171,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (null != p) {
-                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
+                        return MetricInstrumentedIterator.of(ki, p + "." + metricsStoreName + "." + M_GET_KEYS + "." + M_ITERATOR);
                     } else {
                         return ki;
                     }
@@ -188,7 +188,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (null != p) {
-                        return MetricInstrumentedIterator.of(ki, p + "." + M_GET_KEYS + "." + M_ITERATOR);
+                        return MetricInstrumentedIterator.of(ki, p + "." + metricsStoreName + "." + M_GET_KEYS + "." + M_ITERATOR);
                     } else {
                         return ki;
                     }
@@ -213,20 +213,23 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     private void recordSliceMetrics(String p, List<Entry> row) {
+        if (null == p)
+            return;
+
         final MetricManager mgr = MetricManager.INSTANCE;
         mgr.getCounter(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_COUNT).inc(row.size());
         mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
     }
 
     static <T> T runWithMetrics(String prefix, String storeName, String name, StorageCallable<T> impl) throws StorageException {
-        
+
         if (null == prefix) {
             return impl.call();
         }
-        
+
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
-        
+
         final MetricManager mgr = MetricManager.INSTANCE;
         mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
         final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
@@ -238,21 +241,21 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             throw e;
         } catch (RuntimeException e) {
             mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
-            throw e;            
+            throw e;
         } finally {
             tc.stop();
         }
     }
-    
+
     static <T> T runWithMetrics(String prefix, String storeName, String name, IOCallable<T> impl) throws IOException {
-        
+
         if (null == prefix) {
             return impl.call();
         }
-        
+
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
-        
+
         final MetricManager mgr = MetricManager.INSTANCE;
         mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
         final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
@@ -261,25 +264,25 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             return impl.call();
         } catch (IOException e) {
             mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
-            throw e;         
+            throw e;
         } finally {
             tc.stop();
         }
     }
-    
+
     static <T> T runWithMetrics(String prefix, String storeName, String name, UncheckedCallable<T> impl) {
-        
+
         if (null == prefix) {
             return impl.call();
         }
-        
+
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
-        
+
         final MetricManager mgr = MetricManager.INSTANCE;
 
         mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
-        
+
         final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
 
         try {
