@@ -58,7 +58,7 @@
         <tag>HEAD</tag>
     </scm>
     <properties>
-        <titan.compatible.versions>0.4.0</titan.compatible.versions>
+        <titan.compatible.versions>0.4.0,0.4.1</titan.compatible.versions>
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
         <cassandra.version>1.2.2</cassandra.version>
