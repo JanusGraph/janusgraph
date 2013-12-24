@@ -5,13 +5,48 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.2 (December 30, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.2</version>
+</dependency>
+```
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Finer-grained Thrift connection pooling that gracefully handles failure to close result iterators
+* Optionally silently ignore unrecognized fields on index queries instead of throwing an exception
+* Configurable Astyanax RetryBackoffStrategy
+* Allow comparison of heterogeneous numeric types
+* Added Codahale-Metrics coverage for query, locker, and get-vertex-by-id activity
+
+*Bugfixes:*
+
+* Deleting edges with multiple properties
+* Deleting edges labeled with a reverse-ordered sort key
+* Avoid NullPointerException during graph shutdown when running without a Backend threadpool
+* Shell portability improvement and shutdown race condition fix in titan.sh
+
 h3. Version 0.4.1 (November 24, 2013)
 
 ```xml
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
-   <version>0.4.1-SNAPSHOT</version>
+   <version>0.4.1</version>
 </dependency>
 ```
 
