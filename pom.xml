@@ -800,6 +800,7 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
+                                    <useAgent>true</useAgent>
                                     <skip>${gpg.skip}</skip>
                                 </configuration>
                             </execution>
