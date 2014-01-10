@@ -5,9 +5,9 @@
 #
 # Usage: gh-pages-update.sh release.properties
 #
-# Clones the repo specified by scm.url in release.properties.
-# 
-# Checks out the gh-pages branch.
+# Clones the repo whose root is the directory containing
+# release.properties.  Checks out the gh-pages branch in
+# the clone.
 #
 # Copies javadoc and wikidoc into (java|wiki)doc/scm.tag from
 # release.properties}/.
@@ -23,27 +23,40 @@
 # Does not commit or push anything.
 #
 
-[ -z "$1" ] && { echo "Usage: $0 path/to/release.properties"; exit -1; }
-
 set -e
 set -u
 
-echo Reading settings from $1
-declare -r SCM_URL=`sed -rn 's|\\\\||g; s|^scm\.url=scm:git:||p' $1`
-declare -r SCM_TAG=`sed -rn 's|\\\\||g; s|^scm\.tag=||p' $1`
-echo Read SCM_URL: $SCM_URL
-echo Read SCM_TAG: $SCM_TAG
-
+# Set some path constants
 declare -r PAGE_BRANCH=gh-pages
-declare -r CLONE_DIR=$MAVEN{project.build.directory}/pages
-declare -r HTDOC_ZIP=$MAVEN{project.build.directory}/titan-site-"$SCM_TAG"-htdocs.zip
-#declare -r JAVADOC_DIR=$MAVEN{project.build.directory}/apidocs
-#declare -r WIKIDOC_DIR=$MAVEN{project.basedir}/doc/html
 declare -r WIKI_INDEX=$MAVEN{project.build.directory}/site-resources/wikidoc-index.html
 declare -r MAIN_INDEX=$MAVEN{project.build.directory}/site-resources/index.html
+declare -r CLONE_DIR=/tmp/titanpages
 
+if [ -z "${1:-}" ]; then
+    echo "Usage: $0 path/to/release.properties"
+    exit -1
+fi
+
+# Change directory to the folder containing release.properties,
+# store the full path to that directory, then clone it to $CLONE_DIR.
+pushd "`dirname $1`" >/dev/null
+declare -r SCM_URL="`pwd`"
+popd >/dev/null
 echo Cloning $SCM_URL
 git clone "$SCM_URL" "$CLONE_DIR"
+
+# If the gh-pages branch doesn't already exist, then create it.
+# The branch must exist for the sake of the clone we're about to make.
+if [ ! -e .git/refs/heads/"$PAGE_BRANCH" ]; then
+    git branch "$PAGE_BRANCH" origin/"$PAGE_BRANCH"
+fi
+
+# Search release.properties for the current release tag.
+declare -r SCM_TAG=`sed -rn 's|\\\\||g; s|^scm\.tag=||p' $1`
+echo Set SCM_TAG from $1: $SCM_TAG
+declare -r HTDOC_ZIP=$MAVEN{project.build.directory}/titan-site-"$SCM_TAG"-htdocs.zip
+
+# Change directory to the clone and check out gh-pages.
 cd "$CLONE_DIR"
 echo Checking out $PAGE_BRANCH
 git checkout "$PAGE_BRANCH"
@@ -86,29 +99,17 @@ cp "$MAIN_INDEX" index.html
 echo Adding new gh-pages index.html file to the git index
 git add index.html
 
-cat <<EOF
+git commit -m "Page updates for $SCM_TAG"
+git push origin "$PAGE_BRANCH"
 
-Locally staged new javadoc, wikidoc, and index.html reflecting release
+cat <<EOF
+Locally committed new javadoc, wikidoc, and index.html reflecting release
 version $SCM_TAG into gh-pages.
 
   Clone directory = $CLONE_DIR
-  Remote repo     = $SCM_URL
+  Parent repo     = $SCM_URL
   Branch modified = $PAGE_BRANCH
   Release version = $SCM_TAG
 
-All changes have been added to the git index in this clone.  The
-working directory should be clean.  No changes have been committed or
-pushed.
-
-Check changes with the following commands:
-
-  cd "$CLONE_DIR"
-  git status
-  git ls-files --cached --stage # shows filemodes
-  git diff --cached # voluminous output
-
-If all looks well, commit and push:
-
-  git commit -m "Page updates for $SCM_TAG"
-  git push origin $PAGE_BRANCH
+These changes have been pushed to the parent repository.
 EOF
