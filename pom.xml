@@ -802,6 +802,9 @@
                                 <configuration>
                                     <useAgent>true</useAgent>
                                     <skip>${gpg.skip}</skip>
+                                    <excludes>
+                                        <exclude>*.asc</exclude>
+                                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>
