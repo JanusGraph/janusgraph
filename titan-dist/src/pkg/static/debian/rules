@@ -22,8 +22,7 @@ build-arch:
 
 build-indep: changes
 	dh_testdir
-	cd titan-dist/titan-dist-all && \
-	$(MVN) $(MVN_OPTS) clean package -Paurelius-release -Dgpg.skip=true
+	$(MVN) $(MVN_OPTS) clean install -pl titan-dist/titan-dist-all -am -Paurelius-release -Dgpg.skip=true -DskipTests=true
 
 build: build-indep build-arch
 # No-op
