@@ -3,17 +3,18 @@
 set -e
 set -u
 
-TITAN_VERSION=0.4.0
 TOPDIR=~/rpmbuild
+cd "`dirname $0`/.."
+REPO_ROOT="`pwd`"
+cd - >/dev/null
 
 cd "`dirname $0`"/.. 
 . pkgcommon/etc/config.sh
 . pkgcommon/etc/version.sh
-rsync --archive --delete --stats --exclude=.git --exclude=target \
-	. "$TOPDIR"/BUILD/titan-$TITAN_VERSION
-cd "`dirname $0`"
+[ ! -h "$TOPDIR/BUILD/titan-$RPM_VERSION" ] && ln -s "$REPO_ROOT" "$TOPDIR"/BUILD/titan-$RPM_VERSION
 
 # Prepend version and release macro definitions to specfile
+cd "`dirname $0`"
 cat > titan.spec <<EOF
 %define titan_version $RPM_VERSION
 %define titan_release $RPM_RELEASE
