@@ -85,7 +85,7 @@ Lucene indexing module for Titan
 cd %{name}-%{version}
 mvn clean install -DskipTests=true
 cd titan-dist/titan-dist-all/
-mvn clean package -Dgpg.skip=true -Ptitan-release -DskipTests=true
+mvn clean package -Dgpg.skip=true -Paurelius-release -DskipTests=true
 cd - >/dev/null
 pkgcommon/bin/partition-jars.sh
 
