@@ -210,6 +210,27 @@
                         </plugin>
     		        
                         <plugin>
+                            <artifactId>maven-install-plugin</artifactId>
+                            <executions>
+                                <execution>
+                                    <id>install-assembly-tests</id>
+                                    <phase>install</phase>
+                                    <goals>
+                                        <goal>install-file</goal>
+                                    </goals>
+                                    <configuration>
+                                        <file>${project.build.directory}/${project.artifactId}-${project.version}-tests.jar</file>
+                                        <artifactId>${project.artifactId}</artifactId>
+                                        <version>${project.version}</version>
+                                        <groupId>${project.groupId}</groupId>
+                                        <packaging>jar</packaging>
+                                        <classifier>tests</classifier>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
+
+                        <plugin>
                             <groupId>org.codehaus.mojo</groupId>
                             <artifactId>wagon-maven-plugin</artifactId>
                             <executions>
