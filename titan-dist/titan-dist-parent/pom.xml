@@ -197,6 +197,9 @@
                                     <!-- This property is intended to be set in submodules -->
                                     <descriptor>${distribution.assembly.descriptor}</descriptor>
                                 </descriptors>
+                                <formats>
+                                    <format>zip</format>
+                                </formats>
                             </configuration>
                         </plugin>
     		        
