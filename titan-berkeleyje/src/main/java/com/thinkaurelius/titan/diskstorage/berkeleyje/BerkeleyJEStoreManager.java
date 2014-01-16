@@ -40,8 +40,6 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
-        if (!transactional)
-            log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
 
         int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);
@@ -50,8 +48,8 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         features.supportsOrderedScan = true;
         features.supportsUnorderedScan = false;
         features.supportsBatchMutation = false;
-        features.supportsTransactions = true;
-        features.supportsConsistentKeyOperations = false;
+        features.supportsTxIsolation = transactional;
+        features.supportsConsistentKeyOperations = true;
         features.supportsLocking = true;
         features.isKeyOrdered = true;
         features.isDistributed = false;

@@ -17,7 +17,7 @@ public class StoreFeatures {
     public Boolean supportsBatchMutation;
     public Boolean supportsMultiQuery;
 
-    public Boolean supportsTransactions;
+    public Boolean supportsTxIsolation;
     public Boolean supportsConsistentKeyOperations;
     public Boolean supportsLocking;
 
@@ -107,13 +107,14 @@ public class StoreFeatures {
     }
 
     /**
-     * Whether this storage backend is transactional.
+     * Whether this storage backend supports transactions that provide transactional isolation. In
+     * other words, the backend transactions are isolated from each other.
      *
      * @return
      */
-    public boolean supportsTransactions() {
+    public boolean supportsTxIsolation() {
         assert verify();
-        return supportsTransactions;
+        return supportsTxIsolation;
     }
 
     /**

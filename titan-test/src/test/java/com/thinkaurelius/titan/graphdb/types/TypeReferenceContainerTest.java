@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.inmemory.InMemoryStorageAdapter;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;

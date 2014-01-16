@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -112,9 +111,7 @@ public abstract class IDAllocationTest {
             sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
-            if (storeFeatures.supportsTransactions())
-                idAuthorities[i] = new TransactionalIDManager(idStore, manager[i], sc);
-            else if (storeFeatures.supportsConsistentKeyOperations())
+            if (storeFeatures.supportsConsistentKeyOperations())
                 idAuthorities[i] = new ConsistentKeyIDManager(idStore, manager[i], sc);
             else throw new IllegalArgumentException("Cannot open id store");
         }

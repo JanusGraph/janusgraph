@@ -98,7 +98,7 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, EXPIRE_MS);
 
             if (!storeFeatures.supportsLocking()) {
-                if (storeFeatures.supportsTransactions()) {
+                if (storeFeatures.supportsTxIsolation()) {
                     store[i] = new TransactionalLockStore(store[i]);
                 } else if (storeFeatures.supportsConsistentKeyOperations()) {
 

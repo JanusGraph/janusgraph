@@ -32,7 +32,7 @@ public class StorageFeaturesTest {
         features.supportsOrderedScan = false;
         features.supportsUnorderedScan = false;
         features.supportsBatchMutation = true;
-        features.supportsTransactions = false;
+        features.supportsTxIsolation = false;
         features.supportsMultiQuery = false;
         features.supportsConsistentKeyOperations = true;
         features.supportsLocking = false;
@@ -41,7 +41,7 @@ public class StorageFeaturesTest {
         features.hasLocalKeyPartition = false;
         assertNotNull(features);
         assertFalse(features.supportsScan());
-        assertFalse(features.supportsTransactions());
+        assertFalse(features.supportsTxIsolation());
         assertTrue(features.isDistributed());
     }
 

@@ -170,14 +170,14 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
     private StoreFeatures getDefaultFeatures() {
         StoreFeatures features = new StoreFeatures();
 
-        features.supportsTransactions = true;
+        features.supportsTxIsolation = true;
         features.isDistributed = false;
 
         //@todo: figure out what these do, Copied from Berkeley for now
         features.supportsOrderedScan = true;
         features.supportsUnorderedScan = false;
         features.supportsBatchMutation = false;
-        features.supportsConsistentKeyOperations = false;
+        features.supportsConsistentKeyOperations = true;
         features.supportsLocking = true;
         features.isKeyOrdered = true;
         features.hasLocalKeyPartition = false;
