@@ -8,6 +8,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -991,16 +993,12 @@ public class ConsistentKeyLockerTest {
     }
 
     private void recordLockGetSlice(List<Entry> returnedEntries) throws StorageException {
-        final StaticBuffer lower = ByteBufferUtil.zeroBuffer(9);
-        final StaticBuffer upper = ByteBufferUtil.oneBuffer(9);
-        final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, lower, upper);
+        final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, LOCK_COL_START, LOCK_COL_END);
         expect(store.getSlice(eq(ksq), eq(defaultTx))).andReturn(returnedEntries);
     }
 
     private void recordExceptionalLockGetSlice(Throwable t) throws StorageException {
-        final StaticBuffer lower = ByteBufferUtil.zeroBuffer(9);
-        final StaticBuffer upper = ByteBufferUtil.oneBuffer(9);
-        final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, lower, upper);
+        final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, LOCK_COL_START, LOCK_COL_END);
         expect(store.getSlice(eq(ksq), eq(defaultTx))).andThrow(t);
     }
 

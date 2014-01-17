@@ -122,6 +122,9 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
 
+    public static final StaticBuffer LOCK_COL_START = ByteBufferUtil.zeroBuffer(9);
+    public static final StaticBuffer LOCK_COL_END   = ByteBufferUtil.oneBuffer(9);
+
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
 
     public static class Builder extends AbstractLocker.Builder<ConsistentKeyLockStatus, Builder> {
@@ -319,7 +322,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         final long nowNS = times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + getLockWait(TimeUnit.NANOSECONDS));
 
         // Slice the store
-        KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), ByteBufferUtil.zeroBuffer(9), ByteBufferUtil.oneBuffer(9));
+        KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START, LOCK_COL_END);
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
@@ -390,7 +393,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
          * Both exceptions below shouldn't happen under normal operation with a
          * sane configuration. When they are thrown, they have one of two likely
          * root causes:
-         * 
+         *
          * 1. Due to a problem with this locker's store configuration or the
          * store itself, this locker's store "lost" a write. Specifically, a
          * column previously added to the store by writeLock(...) was not
@@ -398,10 +401,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
          * cause is store-specific. With Cassandra, for instance, this problem
          * could arise if the locker is configured to talk to Cassandra at a
          * consistency level below QUORUM.
-         * 
+         *
          * 2. One of our previously written locks has already expired by the
          * time we tried to read it.
-         * 
+         *
          * There might be additional causes that haven't occurred to me, but
          * these two seem most likely.
          */
@@ -435,7 +438,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
         }
     }
-    
+
     private static StoreTransaction overrideTimestamp(final StoreTransaction tx, final long nanoTimestamp) {
         tx.getConfiguration().setTimestamp(nanoTimestamp);
         return tx;

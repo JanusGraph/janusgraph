@@ -19,8 +19,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpiredLockDeleter;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpiredLockCleaner;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 import static org.easymock.EasyMock.*;
@@ -28,9 +29,11 @@ import static org.easymock.EasyMock.*;
 public class ExpiredLockCleanerTest {
 
     private IMocksControl ctrl;
-    private ExpiredLockDeleter del;
+    private IMocksControl relaxedCtrl;;
+    private ExpiredLockCleaner del;
     private KeyColumnValueStore store;
     private TimestampProvider times;
+    private StoreTransaction tx;
     private final KeyColumn kc = new KeyColumn(
             new StaticArrayBuffer(new byte[]{(byte) 1}),
             new StaticArrayBuffer(new byte[]{(byte) 2}));
@@ -40,10 +43,14 @@ public class ExpiredLockCleanerTest {
 
     @Before
     public void setupMocks() {
+        relaxedCtrl = EasyMock.createControl();
+        tx = relaxedCtrl.createMock(StoreTransaction.class);
+        expect(tx.getConfiguration()).andReturn(new StoreTxConfig()).anyTimes();
+
         ctrl = EasyMock.createStrictControl();
         times = ctrl.createMock(TimestampProvider.class);
         store = ctrl.createMock(KeyColumnValueStore.class);
-        del = new ExpiredLockDeleter(store, kc, times);
+        del = new ExpiredLockCleaner(store, kc, times, tx, codec, Long.MAX_VALUE);
     }
 
     @After
