@@ -34,7 +34,7 @@ pkgcommon/bin/clean.sh
 mvn_deps() {
     local outfile="$1"
     mvn dependency:list $MVN_OPTS \
-        -Ptitan-release \
+        -Paurelius-release \
         -DexcludeGroupIds=com.thinkaurelius.titan \
         -DoutputFile=$outfile -DincludeScope=runtime \
         -DoutputAbsoluteArtifactFilename=true

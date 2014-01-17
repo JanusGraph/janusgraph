@@ -41,6 +41,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     private final List<Parameter> parameters;
 
     private String prefix;
+    private final String unkownKeyName;
 
 
     public IndexQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
@@ -50,6 +51,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         this.serializer = serializer;
 
         parameters = Lists.newArrayList();
+        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeydName();
     }
 
     //################################################
@@ -70,6 +72,10 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
 
     public String getPrefix() {
         return prefix;
+    }
+
+    public String getUnknownKeyName() {
+        return unkownKeyName;
     }
 
 

@@ -3,9 +3,7 @@ package com.thinkaurelius.titan.graphdb.thrift;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
-import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
 public class InternalCassandraGraphMetricsTest extends TitanNonTransactionalGraphMetricsTest {

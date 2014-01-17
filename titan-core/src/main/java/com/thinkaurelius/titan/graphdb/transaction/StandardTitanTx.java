@@ -195,6 +195,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         this.isOpen = true;
         if (null != config.getMetricsPrefix()) {
             MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin").inc();
+            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>(config.getMetricsPrefix(), "graph", elementProcessorImpl);
+            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>(config.getMetricsPrefix(), "vertex", edgeProcessorImpl);
+        } else {
+            elementProcessor = elementProcessorImpl;
+            edgeProcessor    = edgeProcessorImpl;
         }
     }
 
@@ -266,6 +271,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         if (vertexid <= 0 || !(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid)))
             return null;
+
+        if (null != config.getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "db", "getVertexByID").inc();
+        }
 
         InternalVertex v = vertexCache.get(vertexid, externalVertexRetriever);
         return (v.isRemoved()) ? null : v;
@@ -568,13 +577,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         }
         graph.assignID(type);
-        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
+        Preconditions.checkArgument(type.getID() > 0);
         addProperty(type, SystemKey.TypeName, name);
+        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
         addProperty(type, SystemKey.TypeClass, typeClass);
         for (TypeAttribute attribute : definition.getAttributes()) {
             addProperty(type, SystemKey.TypeDefinition, attribute);
         }
-        Preconditions.checkArgument(type.getID() > 0);
         vertexCache.add(type, type.getID());
         typeCache.put(name, type.getID());
         return type;
@@ -695,7 +704,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             List<List<Entry>> results = graph.edgeMultiQuery(vids, sq, txHandle);
             int pos = 0;
             for (TitanVertex v : vertices) {
-                if (vids.get(pos) == v.getID()) {
+                if (pos<vids.size() && vids.get(pos) == v.getID()) {
                     final List<Entry> vresults = results.get(pos);
                     ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
                         @Override
@@ -703,13 +712,15 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             return vresults;
                         }
                     });
+                    pos++;
                 }
-                pos++;
             }
         }
     }
 
-    public final QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
+    public final QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery> edgeProcessor;
+
+    public final QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery> edgeProcessorImpl = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
         @Override
         public Iterator<TitanRelation> getNew(final VertexCentricQuery query) {
             InternalVertex vertex = query.getVertex();
@@ -771,8 +782,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
     };
 
+    public final QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery> elementProcessor;
 
-    public final QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery> elementProcessor = new QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>() {
+    public final QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery> elementProcessorImpl = new QueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>() {
 
         private PredicateCondition<TitanKey, TitanElement> getEqualityCondition(Condition<TitanElement> condition) {
             if (condition instanceof PredicateCondition) {
@@ -996,12 +1008,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
+        boolean success = false;
+        if (null != config.getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
+        }
         try {
             if (hasModifications()) {
                 graph.commit(addedRelations.getAll(), deletedRelations.values(), this);
             } else {
                 txHandle.commit();
             }
+            success = true;
         } catch (Exception e) {
             try {
                 txHandle.rollback();
@@ -1011,8 +1028,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix()) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
+            if (null != config.getMetricsPrefix() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit.exceptions").inc();
             }
         }
     }
@@ -1020,14 +1037,19 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
+        boolean success = false;
+        if (null != config.getMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
+        }
         try {
             txHandle.rollback();
+            success = true;
         } catch (Exception e) {
             throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix()) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
+            if (null != config.getMetricsPrefix() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback.exceptions").inc();
             }
         }
     }

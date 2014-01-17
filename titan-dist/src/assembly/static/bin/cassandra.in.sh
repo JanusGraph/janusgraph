@@ -39,5 +39,10 @@ done
 
 # This system property is referenced in log4j-server.properties
 logdir="$CASSANDRA_HOME/log"
-[ "`uname -o`" = 'Cygwin' ] && logdir="$(echo $logdir | cygpath --windows --path -f -)"
+
+# Special-case path variables.
+case "`uname`" in
+    CYGWIN*) logdir="`echo $logdir | cygpath --windows --path -f -`" ;;
+esac
+
 export JVM_OPTS="$JVM_OPTS -Dtitan.logdir=$logdir"

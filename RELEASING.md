@@ -9,7 +9,7 @@ tools must be installed.
 
 * [expect](http://expect.sourceforge.net/)
 * [gollum-site](https://github.com/dreverri/gollum-site)
-* [gpg](http://www.gnupg.org/)
+* [gpg](http://www.gnupg.org/) with a running agent
 
 ~/.m2/settings.xml will need the following entries.
 
@@ -86,6 +86,11 @@ mvn release:prepare -Prelease-plugin-hack
 # script deletes the tag and creates it with a pattern-conformant name.
 titan-dist/target/util-scripts/rewrite-tag.sh release.properties
 
+# For the rest of this document, $RELEASE_VERSION is the version we're
+# in the process of releasing, e.g. 0.4.1
+RELEASE_VERSION=`sed -nr 's/^scm\.tag=//p' release.properties`
+echo RELEASE_VERSION: $RELEASE_VERSION
+
 # Proceeding beyond this comment commits you to either complete the
 # rest of the release steps or, if you must abort, to cleanup
 # afterward.  The next command is world-visible in that it deploys
@@ -95,8 +100,11 @@ titan-dist/target/util-scripts/rewrite-tag.sh release.properties
 # no links pointing people to the artifacts in S3 -- but it's still
 # technically world-visible.  In contrast, commands above this comment
 # were limited to local effects invisible to the wider Internet.
+git checkout refs/tags/$RELEASE_VERSION
 mvn clean javadoc:jar verify deploy -Paurelius-release
 # You can append -DskipTests=true above if you've already run the tests
+#
+# Delete titan-dist folder from Sonatype OSS if it exists
 ```
 
 ### Checking Artifacts & Archives
@@ -123,6 +131,7 @@ If you decide to abort at this stage, then:
 # Only copy and paste this code segment if you want to abort a
 # partially-completed release.  Replace $RELEASE_VERSION by the
 # version just attempted.
+git checkout master
 git reset --hard origin/master
 git tag -d $RELEASE_VERSION
 git clean -fd
@@ -135,24 +144,27 @@ to updating gh-pages locally.
 
 ```bash
 
-# This clones the repo to titan-site/target/pages.  It checks out the
+# This clones the repo to /tmp/titanpages.  It checks out the
 # gh-pages branch, then populates wikidoc/$RELEASE_VERSION/ and
 # javadoc/$RELEASE_VERSION/ with a copy of the wiki exported using
 # gollum-site and a copy of the current javadoc (respectively).  It
 # also replaces the wikidoc/current/ and javadoc/current/ directories
 # with copies of files for $RELEASE_VERSION.  Finally, it generates a
-# new index.html.
+# new index.html.  It commits these changes and pushes them to the
+# local parent repo (but not github).
 #
-# It commits none of this.  The script will prompt you to check its
-# work and remind you to commit as it exits.
+# Why clone to /tmp/titanpages?  We need to modify the gh-pages branch,
+# but we don't want to risk file conflicts between the doc subfolder
+# of the gh-pages branch and the doc submodule of the titan master
+# branch.  Cloning the repo before checking out gh-pages guarantees a
+# clean working copy and thereby precludes conflicts on doc (or anything
+# else that might become conflict-prone in the future).
 titan-site/target/site-scripts/gh-pages-update.sh release.properties
-# Check output in titan-site/target/pages...
-cd titan-site/target/pages
-git diff --cached index.html
-git status
-# Commit gh-pages updates and return to the repo root
-git commit
-cd -
+
+# If you want to check this script's work, then consider running
+# the following:
+git diff --name-status origin/gh-pages..gh-pages
+git diff origin/gh-pages..gh-pages | less # lots of text
 ```
 
 ### Release to Maven Central and Push to Github
@@ -163,10 +175,9 @@ earlier.  It will appear on Maven Central in an hour or two.
 Finally, push your local changes to Github:
 
 ```bash 
-# Replace $RELEASE_VERSION by the actual version
+# cd to the titan repository root if not already there
 git push origin master
 git push origin refs/tags/$RELEASE_VERSION
-cd titan-site/target/pages
 git push origin gh-pages
 ```
 

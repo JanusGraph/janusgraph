@@ -2,35 +2,45 @@ Please follow these instructions when upgrading from an older Titan release.
 
 h2. Titan 0.y.z
 
+h3. Version 0.4.2 (December 30, 2013)
+
+h4. From 0.4.1
+
+Titan 0.4.2 is compatible with 0.4.1 and no special upgrade is necessary.
+
+h4. From 0.4.0
+
+Titan 0.4.2 can read and write databases created by 0.4.0, but 0.4.0 can't necessarily read new types created by 0.4.2.  When carrying out a rolling upgrade from 0.4.0 to 0.4.2, the 0.4.2 instances must not create new types.
+
 h3. Version 0.4.1 (November 24, 2013)
 
-*From 0.4.0*
+h4. From 0.4.0
 
-h4. Data Upgrade
+h5. Data Upgrade
 
 Titan 0.4.1 is fully backwards compatible to Titan 0.4.0 on the data layer. No need to reload or upgrade the data. However, once
 new types are added to the database through Titan 0.4.1, older versions of Titan cannot read those newly added types.
 Hence, ensure that all instances of Titan that are accessing the same storage backend are updated before adding new types. Note,
 that you can have mixed Titan 0.4.0 and 0.4.1 instances reading from the cluster as long as the latter don't add new types.
 
-h4. API Text Search Changes
+h5. API Text Search Changes
 
-Titan 0.4.1 provides some new features that have extended the API, however, those do not break the existing API. There is one change to
-the API that requires updating. We changed the Text.PREFIX/REGEX to Text.CONTAINS_PREFIX/REGEX to make is obvious what the semantics
-of those predicates is.
+Titan 0.4.1 provides some new features that have extended the API, however, those do not break the existing API. There is one change to the API that requires updating. We changed the Text.PREFIX/REGEX to Text.CONTAINS_PREFIX/REGEX to make is obvious what the semantics of those predicates is.
 
 If you are using either of those predicate, rename:
 
 * Text.PREFIX -> Text.CONTAINS_PREFIX
 * Text.REGEX -> Text.CONTAINS_REGEX
 
-h4. Version compatibility check
+h5. Version compatibility check
 
-In Titan 0.4.1 we are storing all Titan flag in the storage backend (i.e. no more local properties files in the data directory).
+In Titan 0.4.1 we are storing all Titan flags in the storage backend (i.e. no more local properties file in the data directory).
 This means, that Titan 0.4.1 will rewrite this flag and ignore its current value. This disables the version compatibility check.
-Hence, make sure that you are running Titan 0.4.1 against a 0.4.0 or newer database. Running it against older versions of Titan
-will not cause an immediate exception but undetermined behavior down the road.
+Hence, make sure that you are running Titan 0.4.1 against a 0.4.0 or newer database. Running it against older versions of Titan will not cause an immediate exception but undetermined behavior down the road.
 
+h5. HBase Bugfix Version Increment
+
+Titan's tested version of HBase has been updated from 0.94.7 in Titan 0.4.0 to 0.94.12 in Titan 0.4.1.  "These HBase versions are binary compatible":http://hbase.apache.org/book.html#hbase.binary.compatibility.  According to HBase's versioning policy, code and data using .7 should interoperate seamlessly with .12.  Furthermore, HBase supports rolling upgrades between these versions.  HBase's changelog lists all of the intervening releases as "bugfix releases":https://issues.apache.org/jira/browse/HBASE?report=com.atlassian.jira.plugin.system.project:changelog-panel.
 
 h3. Version 0.4.0 (October 16, 2013)
 
@@ -46,13 +56,13 @@ Use 'makeKey' and 'makeLabel' to define keys and labels respectively instead of 
 of the type as the argument. Furthermore, primaryKey() has been renamed to sortKey() and uniqueness has been renamed:
 
 * For Titan keys:
-** unique() replaces unique(Direction.IN)
-** single() replaces unique(Direction.OUT)
-** use list() to allow multiple properties for the key
+** @unique()@ replaces @unique(Direction.IN)@
+** @single()@ replaces @unique(Direction.OUT)@
+** use @list()@ to allow multiple properties for the key
 * For Titan labels:
-** oneToMany() replaces unique(Direction.IN)
-** manyToOne() replaces unique(Direction.OUT)
-** oneToOne() replaces unique(Direction.IN).unique(Direction.OUT)
+** @oneToMany()@ replaces @unique(Direction.IN)@
+** @manyToOne()@ replaces @unique(Direction.OUT)@
+** @oneToOne()@ replaces @unique(Direction.IN).unique(Direction.OUT)@
 
 h4. Rexster Server
 
@@ -67,9 +77,23 @@ h4. Type Groups
 
 Type Groups have been removed. Use sortKey instead to group under one label or key.
 
+h3. Version 0.3.2 (July 29, 2013)
+
+h4. From 0.3.1
+
+Titan 0.3.2 is compatible with 0.3.1 and no special upgrade is necessary.
+
+h4. From 0.3.0
+
+Titan 0.3.2 is compatible with 0.3.0 and no special upgrade is necessary unless Elasticsearch is used.  If you are using Elasticsearch, please see the notes on upgrading to 0.3.1 from 0.3.0 below.
+
+h4. From prior versions
+
+Titan 0.3.2 is incompatible with earlier versions of Titan.  Read below for more information.
+
 h3. Version 0.3.1 (May 14, 2013)
 
-*From 0.3.0*
+h4. From 0.3.0
 
 Titan 0.3.1 is compatible with 0.3.0 and no special upgrade is necessary unless Elasticsearch is used as a storage backend. Titan 0.3.1 uses Elasticsearch 0.90.0 whereas Titan 0.3.0 uses Elasticsearch 0.20.6. 
 
@@ -80,15 +104,15 @@ If you are using Elasticsearch, please follow the "upgrade instructions for Elas
 
 Note, that these instructions apply to the Elasticsearch cluster only and not the Titan cluster or the Titan storage cluster.
 
-*From prior versions*
+h4. From prior versions
 
 Titan 0.3.1 is incompatible with earlier versions of Titan. Read below for more information.
 
 h3. Version 0.3.0 (March 29, 2013)
 
-*From prior versions*
+h4. From prior versions
 
-Titan 0.3.0 is incompatible with prior version of Titan. The upgrade process is in development and not yet available.
+Titan 0.3.0 is incompatible with prior versions of Titan. The upgrade process is in development and not yet available.
 
 When upgrading to Titan 0.3.0, please note the following interface changes:
 
@@ -101,17 +125,17 @@ When upgrading to Titan 0.3.0, please note the following interface changes:
 
 h3. Version 0.2.1 (March 22, 2013)
 
-*From Version 0.2.0*
+h4. From Version 0.2.0
 
 No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, @Graph.startTransaction()@ has been renamed to @Graph.newTransaction()@. Please refer to the "Blueprints documentation":https://github.com/tinkerpop/blueprints/wiki for more information.
 
-*From prior versions*
+h4. From prior versions
 
 Upgrade to 0.2.0 first as described below.
 
 h3. Version 0.2.0 (December 27, 2012)
 
-*From Version 0.1.0*
+h4. From Version 0.1.0
 
 # Shut down all running instances of Titan. If the storage backend is Cassandra or HBase, do not shut down the respective storage backend but leave it running. So, only terminate the Titan processes.
 # Create a backup of the storage backend. For BerkeleyDB, simply archive the contents of the storage directory. For "Cassandra":http://www.datastax.com/docs/1.0/operations/backup_restore and "HBase":http://hbase.apache.org/book/ops.backup.html, follow the directions for the respective backup functionalities. Store the backup in a secure place.
@@ -121,7 +145,7 @@ h3. Version 0.2.0 (December 27, 2012)
 
 h3. Version 0.1.0 (September 7, 2012)
 
-*From Version 0.1-SNAPSHOT*
+h4. From Version 0.1-SNAPSHOT
 
 # Shut down all running instances of Titan prior to upgrading ALL instances to the current release to avoid data corruption.
 

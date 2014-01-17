@@ -111,6 +111,16 @@ public class GraphDatabaseConfiguration {
 //    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
 
 
+    /**
+     * When true, Titan will ignore unknown index key fields in queries.
+     */
+    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(TITAN_NS, "ignore-unknown-index-key",
+            "Whether to ignore unknown external index fields when querying",
+            ConfigOption.Type.MASKABLE, false);
+//    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
+//    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
+
+    public static final String UKNOWN_FIELD_NAME = "unknown_key";
 
     // ################ CACHE #######################
     // ################################################
@@ -202,7 +212,6 @@ public class GraphDatabaseConfiguration {
             "Path to a configuration file for those storage backends that require/support a separate config file",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_CONF_FILE_KEY = "conffile";
-
 
     /**
      * Define the storage backed to use for persistence
@@ -686,10 +695,16 @@ public class GraphDatabaseConfiguration {
 
 
     /**
+     * Whether to enable Titan metrics.
+     */
+    public static final String METRICS_ENABLED = "enabled";
+    public static final boolean METRICS_ENABLED_DEFAULT = false;
+
+    /**
      * Whether to enable basic timing and operation count monitoring on backend
      * methods using the {@code com.codahale.metrics} package.
      */
-    public static final ConfigOption<Boolean> BASIC_METRICS = new ConfigOption<Boolean>(METRICS_NS,"enable-basic-metrics",
+    public static final ConfigOption<Boolean> BASIC_METRICS = new ConfigOption<Boolean>(METRICS_NS,"enabled",
             "Whether to enable basic timing and operation count monitoring on backend",
             ConfigOption.Type.MASKABLE, false);
 //    public static final String BASIC_METRICS = "enable-basic-metrics";
@@ -718,9 +733,6 @@ public class GraphDatabaseConfiguration {
             "The default name prefix for Metrics reported by Titan",
             ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
 //    public static final String METRICS_PREFIX_KEY = "prefix";
-
-
-
 
     /**
      * Whether to aggregate measurements for the edge store, vertex index, edge
@@ -1023,6 +1035,7 @@ public class GraphDatabaseConfiguration {
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
     private String metricsPrefix;
+    private String unknownIndexKeydName;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1115,6 +1128,8 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
+
+        unknownIndexKeydName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UKNOWN_FIELD_NAME : null;
 
         configureMetrics();
     }
@@ -1240,6 +1255,10 @@ public class GraphDatabaseConfiguration {
         } else {
             return propertyPrefetching;
         }
+    }
+
+    public String getUnknownIndexKeydName() {
+        return unknownIndexKeydName;
     }
 
     public int getWriteAttempts() {
@@ -1370,7 +1389,7 @@ public class GraphDatabaseConfiguration {
     }
 
 
-    
+
 	/* ----------------------------------------
      Methods for writing/reading config files
 	-------------------------------------------*/

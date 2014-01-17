@@ -3,8 +3,25 @@
 BIN="`dirname $0`"
 REXSTER_CONFIG_TAG=cassandra-es
 : ${CASSANDRA_STARTUP_TIMEOUT_S:=60}
+: ${REXSTER_SHUTDOWN_TIMEOUT_S:=60}
 VERBOSE=
 COMMAND=
+
+# Locate the jps command.  Check $PATH, then check $JAVA_HOME/bin.
+# This does not need to by cygpath'd.
+JPS=
+for maybejps in jps "${JAVA_HOME}/bin/jps"; do
+    type "$maybejps" >/dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        JPS="$maybejps"
+        break
+    fi
+done
+
+if [ -z "$JPS" ]; then
+    echo "jps command not found.  Put the JDK's jps binary on the command path." >&2
+    exit 1
+fi
 
 wait_for_cassandra() {
     local now_s=`date '+%s'`
@@ -23,6 +40,24 @@ wait_for_cassandra() {
     done
 
     echo "Cassandra startup timeout exceeded ($CASSANDRA_STARTUP_TIMEOUT_S seconds)" >&2
+    return 1
+}
+
+wait_for_rexster_shutdown() {
+    local now_s=`date '+%s'`
+    local stop_s=$(( $now_s + $REXSTER_SHUTDOWN_TIMEOUT_S ))
+
+    while [ $now_s -le $stop_s ]; do
+        status_class 'Titan + Rexster' com.tinkerpop.rexster.Application >/dev/null
+        if [ $? -eq 1 ]; then
+            # Rexster/Titan not found in the jps output.  Assume that it stopped.
+            return 0
+        fi
+        sleep 2
+        now_s=`date '+%s'`
+    done
+
+    echo "Rexster shutdown timeout exceeded ($REXSTER_SHUTDOWN_TIMEOUT_S seconds)" >&2
     return 1
 }
 
@@ -52,25 +87,25 @@ start() {
 
 stop() {
     kill_class 'Titan + Rexster' com.tinkerpop.rexster.Application 
+    wait_for_rexster_shutdown
     kill_class Cassandra org.apache.cassandra.service.CassandraDaemon
 }
 
 kill_class() {
-    local p=`jps -l | grep "$2" | awk '{print $1}'`
+    local p=`$JPS -l | grep "$2" | awk '{print $1}'`
     if [ -z "$p" ]; then
         echo "$1 ($2) not found in the java process table"
         return
     fi
     echo "Killing $1 (pid $p)..." >&2
-    if [ "`uname -o`" = 'Cygwin' ]; then
-        taskkill /F /PID "$p"
-    else
-        kill "$p"
-    fi
+    case "`uname`" in
+        CYGWIN*) taskkill /F /PID "$p" ;;
+        *)       kill "$p" ;;
+    esac
 }
 
 status_class() {
-    local p=`jps -l | grep "$2" | awk '{print $1}'`
+    local p=`$JPS -l | grep "$2" | awk '{print $1}'`
     if [ -n "$p" ]; then
         echo "$1 ($2) is running with pid $p"
         return 0

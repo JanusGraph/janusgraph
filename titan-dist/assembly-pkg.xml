@@ -15,7 +15,7 @@
         <fileSet>
             <directory>src/pkg/resources</directory>
             <filtered>true</filtered>
-            <outputDirectory>/pkgcommon/etc/</outputDirectory>
+            <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>

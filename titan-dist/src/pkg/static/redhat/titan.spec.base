@@ -83,10 +83,7 @@ Lucene indexing module for Titan
 
 %build
 cd %{name}-%{version}
-mvn clean install -DskipTests=true
-cd titan-dist/titan-dist-all/
-mvn clean package -Dgpg.skip=true -Ptitan-release -DskipTests=true
-cd - >/dev/null
+mvn clean install -U -Dgpg.skip=true -Paurelius-release -DskipTests=true
 pkgcommon/bin/partition-jars.sh
 
 
@@ -156,8 +153,8 @@ pkgcommon/bin/install-jars.sh "$RPM_BUILD_ROOT"/usr/share/titan/lib'${m:+/$m}'
 ## TODO: NEWS.txt ?
 #mv NOTICE.txt "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/
 #mv README.txt "$RPM_BUILD_ROOT"/usr/share/doc/titan-%{version}/README.txt
-for x in CHANGELOG.textile LICENSE.txt NOTICE.txt README.txt UPGRADE.textile; do
-    cp titan-dist/titan-dist-all/target/titan-all-*/titan-all-*/$x  "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}/
+for x in CHANGELOG.textile LICENSE.txt NOTICE.txt README.textile UPGRADE.textile; do
+    cp $x  "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}/
 done
 
 
@@ -171,7 +168,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc /usr/share/doc/%{name}-%{version}/CHANGELOG.textile
 %doc /usr/share/doc/%{name}-%{version}/LICENSE.txt
 %doc /usr/share/doc/%{name}-%{version}/NOTICE.txt
-%doc /usr/share/doc/%{name}-%{version}/README.txt
+%doc /usr/share/doc/%{name}-%{version}/README.textile
 %doc /usr/share/doc/%{name}-%{version}/UPGRADE.textile
 %attr(0644, root, root) %config /etc/titan/config.properties
 %attr(0644, root, root) %config /etc/titan/rexster.xml

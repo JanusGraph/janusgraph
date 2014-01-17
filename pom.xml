@@ -218,6 +218,10 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-scm-plugin</artifactId>
+                    <version>1.9</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <version>2.7</version>
                 </plugin>
@@ -800,7 +804,11 @@
                                     <goal>sign</goal>
                                 </goals>
                                 <configuration>
+                                    <useAgent>true</useAgent>
                                     <skip>${gpg.skip}</skip>
+                                    <excludes>
+                                        <exclude>*.asc</exclude>
+                                    </excludes>
                                 </configuration>
                             </execution>
                         </executions>

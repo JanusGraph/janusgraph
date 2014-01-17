@@ -139,6 +139,38 @@ public class SerializerTest {
     }
 
     @Test
+    public void testDecimalSerializers() {
+        float[] fvalues = { 1.031f, 0.031f, 0.333f, 3423424.771f};
+        FloatSerializer fs = new FloatSerializer();
+        for (float f : fvalues) {
+            fs.verifyAttribute(f);
+            assertEquals(f,FloatSerializer.convert(FloatSerializer.convert(f)),DoubleSerializer.EPSILON);
+        }
+        fvalues = new float[]{ 1e16f, -1e16f, FloatSerializer.MIN_VALUE*10, FloatSerializer.MAX_VALUE*10};
+        for (float f : fvalues) {
+            try {
+                fs.verifyAttribute(f);
+                fail();
+            } catch (IllegalArgumentException e) {}
+        }
+
+        double[] dvalues = { 0.12574, 2342332.12574, 35.123456, 24321.692953};
+        DoubleSerializer ds = new DoubleSerializer();
+        for (double d : dvalues) {
+            ds.verifyAttribute(d);
+            assertEquals(d,DoubleSerializer.convert(DoubleSerializer.convert(d)),DoubleSerializer.EPSILON);
+        }
+
+        dvalues = new double[]{ 1e13, -1e13, DoubleSerializer.MIN_VALUE*10, DoubleSerializer.MAX_VALUE*10};
+        for (double d : dvalues) {
+            try {
+                ds.verifyAttribute(d);
+                fail();
+            } catch (IllegalArgumentException e) {}
+        }
+    }
+
+    @Test
     public void primitiveSerialization() {
         DataOutput out = serialize.getDataOutput(128, true);
         out.writeObjectNotNull(Boolean.FALSE);
