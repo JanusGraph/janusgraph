@@ -31,6 +31,7 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public ReadBuffer asReadBuffer();
 
+    //remove, use factory instead
     public ByteBuffer asByteBuffer();
 
     public<T> T as(Factory<T> factory);
@@ -48,6 +49,13 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
             else return Arrays.copyOfRange(array,offset,limit);
         }
 
+    };
+
+    public static final Factory<ByteBuffer> BB_FACTORY = new Factory<ByteBuffer>() {
+        @Override
+        public ByteBuffer get(byte[] array, int offset, int limit) {
+            return ByteBuffer.wrap(array, offset, limit - offset);
+        }
     };
 
 }

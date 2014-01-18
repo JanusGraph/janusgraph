@@ -45,9 +45,8 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
-    public void movePosition(int delta) {
-        int newPosition = position + delta;
-        assert newPosition >= 0 && newPosition <= length();
+    public void movePositionTo(int newPosition) {
+        assert newPosition >= -1 && newPosition <= length();
         position = newPosition;
     }
 
@@ -87,13 +86,6 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
-    public ByteBuffer asRelativeByteBuffer() {
-        ByteBuffer rb = super.asByteBuffer();
-        rb.position(rb.position()+position);
-        return rb;
-    }
-
-    @Override
     public<T> T asRelative(final Factory<T> factory) {
         if (position==0) return super.as(factory);
         else {
@@ -111,7 +103,7 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
         byte[] newvalues = new byte[super.length()];
         for (int i=0;i<newvalues.length;i++) newvalues[i]=(byte)~super.getByte(i);
         ReadArrayBuffer newread = new ReadArrayBuffer(newvalues);
-        newread.movePosition(this.position);
+        newread.movePositionTo(this.position);
         return newread;
     }
 

@@ -99,7 +99,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         Object value = getKryo().readClassAndObject(i);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
@@ -108,7 +108,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         T value = getKryo().readObjectOrNull(i, type);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
@@ -116,7 +116,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         T value = getKryo().readObject(i, type);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 

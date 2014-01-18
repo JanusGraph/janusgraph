@@ -124,7 +124,7 @@ public class EdgeSerializer implements RelationReader {
             relationIdDiff = VariableLong.read(value);
         } else {
             //Move position to end to read backwards
-            column.movePosition(column.length() - column.getPosition() - 1);
+            column.movePositionTo(column.length() - 1);
 
             relationIdDiff = VariableLong.readBackward(column);
             if (rtype == RelationType.EDGE)
