@@ -1,13 +1,19 @@
 package com.thinkaurelius.titan.pkgtest;
 
 import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import java.io.File;
+
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager;
+
+import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
 
 public class CassandraThriftAssemblyIT extends AssemblyITSupport {
 
@@ -20,8 +26,7 @@ public class CassandraThriftAssemblyIT extends AssemblyITSupport {
     
     @After
     public void clearData() throws Exception {
-        Configuration c = new BaseConfiguration();
-        c.setProperty("hostname", "127.0.0.1");
+        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
         CassandraThriftStoreManager m = new CassandraThriftStoreManager(c);
         m.clearStorage();
     }
