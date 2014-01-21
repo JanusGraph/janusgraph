@@ -167,7 +167,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
-        storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
+        storeManager.mutateMany(ImmutableMap.of(storeName, mutations), txh);
     }
 
     @Override
