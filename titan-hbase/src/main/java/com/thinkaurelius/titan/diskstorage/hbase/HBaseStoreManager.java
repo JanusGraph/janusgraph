@@ -64,7 +64,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigOption<Boolean> SHORT_CF_NAMES = new ConfigOption<Boolean>(STORAGE_NS,"short-cf-names",
             "Whether to automatically shorten the names of frequently used column families to preserve space",
-            ConfigOption.Type.FIXED, false);
+            ConfigOption.Type.FIXED, true);
 
 //    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
 //    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
