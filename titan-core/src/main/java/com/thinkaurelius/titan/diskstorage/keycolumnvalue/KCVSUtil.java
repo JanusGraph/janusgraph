@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -8,7 +9,9 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains static utility methods for operating on {@link KeyColumnValueStore}.
@@ -39,7 +42,7 @@ public class KCVSUtil {
                     key, column});
 
         if (result.isEmpty()) return null;
-        else return result.get(0).getValue();
+        else return result.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
     }
 
     /**
@@ -98,4 +101,11 @@ public class KCVSUtil {
     }
 
 
+    public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
+        Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
+        for (StaticBuffer key : keys) {
+            result.put(key,EntryList.EMPTY_LIST);
+        }
+        return result;
+    }
 }

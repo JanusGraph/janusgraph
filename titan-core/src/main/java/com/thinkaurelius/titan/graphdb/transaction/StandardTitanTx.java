@@ -11,9 +11,10 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
@@ -692,7 +693,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         if (!vids.isEmpty()) {
-            List<List<Entry>> results = graph.edgeMultiQuery(vids, sq, txHandle);
+            List<EntryList> results = graph.edgeMultiQuery(vids, sq, txHandle);
             int pos = 0;
             for (TitanVertex v : vertices) {
                 if (vids.get(pos) == v.getID()) {

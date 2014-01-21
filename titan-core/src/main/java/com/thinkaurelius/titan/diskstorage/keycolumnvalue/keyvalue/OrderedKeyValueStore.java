@@ -2,10 +2,9 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-
-import java.util.List;
 
 /**
  * A {@link KeyValueStore} where the keys are ordered such that keys can be retrieved in order.
@@ -38,7 +37,6 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @return
      * @throws StorageException
      */
-    //public List<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
     public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
 
 }

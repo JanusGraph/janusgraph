@@ -6,8 +6,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import static com.thinkaurelius.titan.util.datastructures.ByteSize.*;
@@ -41,7 +42,7 @@ public class ExpirationStoreCache implements StoreCache {
 
     private volatile CountDownLatch penaltyCountdown;
 
-    private final Cache<KeySliceQuery,List<Entry>> cache;
+    private final Cache<KeySliceQuery,EntryList> cache;
     private final ConcurrentHashMap<StaticBuffer,Long> expiredKeys;
 
     private final long cacheTimeMS;
@@ -55,17 +56,15 @@ public class ExpirationStoreCache implements StoreCache {
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
         Preconditions.checkArgument(expirationGracePeriodMS>=0,"Invalid expiration grace peiod: %s",expirationGracePeriodMS);
         this.expirationGracePeriodMS = expirationGracePeriodMS;
-        CacheBuilder<KeySliceQuery,List<Entry>> cachebuilder = CacheBuilder.newBuilder()
+        CacheBuilder<KeySliceQuery,EntryList> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)
                 .concurrencyLevel(concurrencyLevel)
                 .initialCapacity(1000)
                 .expireAfterWrite(cacheTimeMS, TimeUnit.MILLISECONDS)
-                .weigher(new Weigher<KeySliceQuery, List<Entry>>() {
+                .weigher(new Weigher<KeySliceQuery, EntryList>() {
                     @Override
-                    public int weigh(KeySliceQuery keySliceQuery, List<Entry> entries) {
-                        int size = GUAVA_CACHE_ENTRY_SIZE + KEY_QUERY_SIZE + ARRAYLIST_SIZE;
-                        for (Entry e : entries) size+=e.getByteSize();
-                        return size;
+                    public int weigh(KeySliceQuery keySliceQuery, EntryList entries) {
+                        return GUAVA_CACHE_ENTRY_SIZE + KEY_QUERY_SIZE + entries.getByteSize();
                     }
                 });
 
@@ -108,14 +107,14 @@ public class ExpirationStoreCache implements StoreCache {
     }
 
     @Override
-    public List<Entry> query(final KeySliceQuery query, final BackendTransaction tx) {
+    public EntryList query(final KeySliceQuery query, final BackendTransaction tx) {
         if (isExpired(query)) return tx.edgeStoreQuery(query);
 
         try {
             globalCacheRetrievals.incrementAndGet();
-            return cache.get(query,new Callable<List<Entry>>() {
+            return cache.get(query,new Callable<EntryList>() {
                 @Override
-                public List<Entry> call() throws Exception {
+                public EntryList call() throws Exception {
                     globalCacheMisses.incrementAndGet();
                     return tx.edgeStoreQuery(query);
                 }
@@ -128,32 +127,31 @@ public class ExpirationStoreCache implements StoreCache {
     }
 
     @Override
-    public List<List<Entry>> multiQuery(List<StaticBuffer> keys, SliceQuery query, BackendTransaction tx) {
-        List<Entry>[] results = (List<Entry>[])new List[keys.size()];
+    public Map<StaticBuffer,EntryList> multiQuery(List<StaticBuffer> keys, SliceQuery query, BackendTransaction tx) {
+        Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer, EntryList>(keys.size());
         List<StaticBuffer> remainingKeys = new ArrayList<StaticBuffer>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
+        //Find all cached queries
         for (int i=0;i<keys.size();i++) {
             StaticBuffer key = keys.get(i);
             ksqs[i] = new KeySliceQuery(key,query);
-            List<Entry> result = null;
+            EntryList result = null;
             if (!isExpired(ksqs[i])) result = cache.getIfPresent(ksqs[i]);
             else ksqs[i]=null;
-            if (result!=null) results[i]=result;
+            if (result!=null) results.put(key,result);
             else remainingKeys.add(key);
         }
-        List<List<Entry>> subresults = tx.edgeStoreMultiQuery(remainingKeys,query);
-        int pos = 0;
-        for (int i=0;i<results.length;i++) {
-            if (results[i]!=null) continue;
-            assert pos<subresults.size();
-            List<Entry> subresult = subresults.get(pos);
-            assert subresult!=null;
-            results[i]=subresult;
-            if (ksqs[i]!=null) cache.put(ksqs[i],subresult);
-            pos++;
+        //Request remaining ones from backend
+        Map<StaticBuffer,EntryList> subresults = tx.edgeStoreMultiQuery(remainingKeys,query);
+        for (int i=0;i<keys.size();i++) {
+            StaticBuffer key = keys.get(i);
+            EntryList subresult = subresults.get(key);
+            if (subresult!=null) {
+                results.put(key,subresult);
+                if (ksqs[i]!=null) cache.put(ksqs[i],subresult);
+            }
         }
-        assert pos==subresults.size();
-        return Arrays.asList(results);
+        return results;
     }
 
     private final long getExpirationTime() {

@@ -5,10 +5,7 @@ import com.esotericsoftware.kryo.io.Output;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-
-import java.nio.ByteBuffer;
 
 public class KryoDataOutput implements DataOutput {
 

@@ -2,13 +2,11 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
@@ -16,29 +14,24 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class KCVSConfiguration implements WriteConfiguration {
-
-    private static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
-    private static final List<Entry> NO_ADDITIONS = ImmutableList.of();
 
     private final KeyColumnValueStoreManager manager;
     private final KeyColumnValueStore store;
@@ -87,7 +80,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                     txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
                     List<Entry> entries = store.getSlice(query,txh);
                     if (entries.isEmpty()) return null;
-                    return entries.get(0).getValue();
+                    return entries.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
                 } finally {
                     if (txh != null) txh.commit();
                 }
@@ -114,7 +107,7 @@ public class KCVSConfiguration implements WriteConfiguration {
         StaticBuffer column = string2StaticBuffer(key);
         StaticBuffer val = object2StaticBuffer(value);
         final List<Entry> additions = new ArrayList<Entry>(1);
-        additions.add(new StaticBufferEntry(column,val));
+        additions.add(StaticArrayEntry.of(column, val));
 
         BackendOperation.execute(new Callable<Boolean>() {
             @Override
@@ -122,7 +115,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                 StoreTransaction txh = null;
                 try {
                     txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
-                    store.mutate(rowKey, additions, NO_DELETIONS, txh);
+                    store.mutate(rowKey, additions, KeyColumnValueStore.NO_DELETIONS, txh);
                     return true;
                 } finally {
                     if (txh != null) txh.commit();
@@ -148,7 +141,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                     StoreTransaction txh = null;
                     try {
                         txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
-                        store.mutate(rowKey, NO_ADDITIONS, deletions, txh);
+                        store.mutate(rowKey, KeyColumnValueStore.NO_ADDITIONS, deletions, txh);
                         return true;
                     } finally {
                         if (txh != null) txh.commit();
@@ -189,8 +182,8 @@ public class KCVSConfiguration implements WriteConfiguration {
         },maxOperationWaitTime);
 
         for (Entry entry : result) {
-            String key = staticBuffer2String(entry.getColumn());
-            Object value = staticBuffer2Object(entry.getValue(), Object.class);
+            String key = staticBuffer2String(entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
+            Object value = staticBuffer2Object(entry.getValueAs(StaticBuffer.STATIC_FACTORY), Object.class);
             entries.put(key,value);
         }
         return entries;
@@ -240,7 +233,7 @@ public class KCVSConfiguration implements WriteConfiguration {
 
     private StaticBuffer string2StaticBuffer(final String s) {
         ByteBuffer out = ByteBuffer.wrap(s.getBytes(Charset.forName("UTF-8")));
-        return new StaticByteBuffer(out);
+        return StaticArrayBuffer.of(out);
     }
 
     private String staticBuffer2String(final StaticBuffer s) {

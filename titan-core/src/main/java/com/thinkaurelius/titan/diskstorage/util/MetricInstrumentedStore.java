@@ -2,7 +2,10 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.google.common.collect.ImmutableList;
 import org.slf4j.Logger;
@@ -93,12 +96,12 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         final String p = txh.getConfiguration().getMetricsPrefix();
         return runWithMetrics(p, metricsStoreName, M_GET_SLICE,
-            new StorageCallable<List<Entry>>() {
-                public List<Entry> call() throws StorageException {
-                    List<Entry> result = backend.getSlice(query, txh);
+            new StorageCallable<EntryList>() {
+                public EntryList call() throws StorageException {
+                    EntryList result = backend.getSlice(query, txh);
                     recordSliceMetrics(p, result);
                     return result;
                 }
@@ -107,16 +110,16 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<List<Entry>> getSlice(final List<StaticBuffer> keys,
+    public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys,
                                       final SliceQuery query,
                                       final StoreTransaction txh) throws StorageException {
         final String p = txh.getConfiguration().getMetricsPrefix();
         return runWithMetrics(p, metricsStoreName, M_GET_SLICE,
-            new StorageCallable<List<List<Entry>>>() {
-                public List<List<Entry>> call() throws StorageException {
-                    List<List<Entry>> results = backend.getSlice(keys, query, txh);
+            new StorageCallable<Map<StaticBuffer,EntryList>>() {
+                public Map<StaticBuffer,EntryList> call() throws StorageException {
+                    Map<StaticBuffer,EntryList> results = backend.getSlice(keys, query, txh);
     
-                    for (List<Entry> result : results) {
+                    for (EntryList result : results.values()) {
                         recordSliceMetrics(p, result);
                     }
                     return results;

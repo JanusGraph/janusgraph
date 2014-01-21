@@ -1,24 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HTableInterface;
-import org.apache.hadoop.hbase.client.HTablePool;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Row;
-import org.apache.hadoop.hbase.client.Scan;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
+import com.thinkaurelius.titan.util.system.IOUtils;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -26,27 +20,9 @@ import org.apache.hadoop.hbase.filter.FilterList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.util.system.IOUtils;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Here are some areas that might need work:
@@ -116,13 +92,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        List<List<Entry>> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
-        return (result.isEmpty()) ? Collections.<Entry>emptyList() : result.get(0);
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        Map<StaticBuffer, EntryList> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
+        return Iterables.getOnlyElement(result.values(), EntryList.EMPTY_LIST);
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         return getHelper(keys, getFilter(query));
     }
 
@@ -141,7 +117,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return filter;
     }
 
-    private List<List<Entry>> getHelper(List<StaticBuffer> keys, Filter getFilter) throws StorageException {
+    private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws StorageException {
         List<Get> requests = new ArrayList<Get>(keys.size());
         {
             for (StaticBuffer key : keys) {
@@ -149,36 +125,34 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             }
         }
 
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
+        Map<StaticBuffer,EntryList> resultMap = new HashMap<StaticBuffer,EntryList>(keys.size());
 
         try {
             HTableInterface table = null;
-            Result[] r = null;
+            Result[] results = null;
 
             try {
                 table = pool.getTable(tableName);
-                r = table.get(requests);
+                results = table.get(requests);
             } finally {
                 IOUtils.closeQuietly(table);
             }
 
-            if (r == null)
-                return Collections.emptyList();
+            if (results == null)
+                return KCVSUtil.emptyResults(keys);
 
-            for (Result result : r) {
-                List<Entry> entries = new ArrayList<Entry>(result.size());
+            assert results.length==keys.size();
+
+            for (int i=0; i<results.length; i++) {
+                Result result = results[i];
                 Map<byte[], byte[]> fmap = result.getFamilyMap(columnFamilyBytes);
-
-                if (null != fmap) {
-                    for (Map.Entry<byte[], byte[]> ent : fmap.entrySet()) {
-                        entries.add(StaticBufferEntry.of(new StaticArrayBuffer(ent.getKey()), new StaticArrayBuffer(ent.getValue())));
-                    }
-                }
-
-                results.add(entries);
+                EntryList entries;
+                if (fmap == null) entries = EntryList.EMPTY_LIST;
+                else entries = StaticArrayEntryList.ofBytes(fmap.entrySet(),MapEntryGetter.INSTANCE);
+                resultMap.put(keys.get(i), entries);
             }
 
-            return results;
+            return resultMap;
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
         }
@@ -284,7 +258,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         Put putCommand = new Put(key);
         for (Entry e : modifications) {
-            putCommand.add(cfName, e.getArrayColumn(), e.getArrayValue());
+            putCommand.add(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY),
+                    e.getValueAs(StaticBuffer.ARRAY_FACTORY));
         }
         return putCommand;
     }
@@ -320,7 +295,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                         return false;
 
                     try {
-                        StaticBuffer id = new StaticArrayBuffer(result.getRow());
+                        StaticBuffer id = StaticArrayBuffer.of(result.getRow());
                         id.getLong(0);
                     } catch (NumberFormatException e) {
                         return false;
@@ -348,7 +323,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 public Entry next() {
                     ensureOpen();
                     Map.Entry<byte[], byte[]> column = kv.next();
-                    return StaticBufferEntry.of(new StaticArrayBuffer(column.getKey()), new StaticArrayBuffer(column.getValue()));
+                    return StaticArrayEntry.ofBytes(column, MapEntryGetter.INSTANCE);
                 }
 
                 @Override
@@ -374,7 +349,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             currentRow = rows.next();
-            return new StaticArrayBuffer(currentRow.getRow());
+            return StaticArrayBuffer.of(currentRow.getRow());
         }
 
         @Override
@@ -390,6 +365,20 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         private void ensureOpen() {
             if (isClosed)
                 throw new IllegalStateException("Iterator has been closed.");
+        }
+    }
+
+    private static enum MapEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<byte[],byte[]>,byte[]> {
+        INSTANCE;
+
+        @Override
+        public byte[] getColumn(Map.Entry<byte[], byte[]> element) {
+            return element.getKey();
+        }
+
+        @Override
+        public byte[] getValue(Map.Entry<byte[], byte[]> element) {
+            return element.getValue();
         }
     }
 }

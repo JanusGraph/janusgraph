@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static org.apache.cassandra.db.Table.SYSTEM_KS;
 
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,7 +50,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnect
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory.Config;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -163,13 +162,12 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> keyMutation : mutations.entrySet()) {
             String columnFamily = keyMutation.getKey();
             for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
-                StaticBuffer key = mutEntry.getKey();
-                ByteBuffer keyBB = key.asByteBuffer();
+                ByteBuffer keyBB = mutEntry.getKey().asByteBuffer();
 
                 // Get or create the single Cassandra Mutation object responsible for this key 
                 Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(keyBB);
                 if (cfmutation == null) {
-                    cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // TODO where did the magic number 3 come from?
+                    cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // Most mutations only modify the edgeStore and indexStore
                     batch.put(keyBB, cfmutation);
                 }
 
@@ -181,7 +179,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                     for (StaticBuffer buf : mutation.getDeletions()) {
                         Deletion d = new Deletion();
                         SlicePredicate sp = new SlicePredicate();
-                        sp.addToColumn_names(buf.asByteBuffer());
+                        sp.addToColumn_names(buf.as(StaticBuffer.BB_FACTORY));
                         d.setPredicate(sp);
                         d.setTimestamp(timestamp.deletionTime);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
@@ -193,8 +191,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 if (mutation.hasAdditions()) {
                     for (Entry ent : mutation.getAdditions()) {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
-                        Column column = new Column(ent.getColumn().asByteBuffer());
-                        column.setValue(ent.getValue().asByteBuffer());
+                        Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
+                        column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
                         column.setTimestamp(timestamp.additionTime);
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();

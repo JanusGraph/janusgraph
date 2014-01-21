@@ -27,7 +27,7 @@ public class ByteBufferUtil {
         buffer.putInt(id);
         byte[] arr = buffer.array();
         Preconditions.checkArgument(arr.length == intSize);
-        return new StaticArrayBuffer(arr);
+        return StaticArrayBuffer.of(arr);
     }
 
     public static final StaticBuffer getIntBuffer(int[] ids) {
@@ -36,7 +36,7 @@ public class ByteBufferUtil {
             buffer.putInt(ids[i]);
         byte[] arr = buffer.array();
         Preconditions.checkArgument(arr.length == intSize * ids.length);
-        return new StaticArrayBuffer(arr);
+        return StaticArrayBuffer.of(arr);
     }
 
     public static final StaticBuffer getLongBuffer(long id) {
@@ -44,7 +44,7 @@ public class ByteBufferUtil {
         buffer.putLong(id);
         byte[] arr = buffer.array();
         Preconditions.checkArgument(arr.length == longSize);
-        return new StaticArrayBuffer(arr);
+        return StaticArrayBuffer.of(arr);
     }
 
     public static final ByteBuffer getLongByteBuffer(long id) {
@@ -109,7 +109,7 @@ public class ByteBufferUtil {
             next[i]=b;
         }
         Preconditions.checkArgument(!carry, "Buffer overflow");
-        return new StaticArrayBuffer(next);
+        return StaticArrayBuffer.of(next);
     }
 
     public static final ByteBuffer zeroByteBuffer(int len) {
@@ -129,7 +129,7 @@ public class ByteBufferUtil {
     public static final StaticBuffer fillBuffer(int len, byte value) {
         byte[] res = new byte[len];
         for (int i = 0; i < len; i++) res[i]=value;
-        return new StaticArrayBuffer(res);
+        return StaticArrayBuffer.of(res);
     }
 
     public static final StaticBuffer oneBuffer(int len) {
@@ -256,20 +256,6 @@ public class ByteBufferUtil {
         return result;
     }
 
-    /**
-     * Thread-safe hashcode method for StaticBuffer written according to
-     * Effective Java 2e by Josh Bloch.
-     * 
-     * @param b ByteBuffer
-     * @return hashcode for given StaticBuffer
-     */
-    public static final int hashcode(StaticBuffer b) {
-        int result = 17;
-        for (int i = 0; i < b.length(); i++) {
-            result = 31 * result + (int)b.getByte(i);
-        }
-        return result;
-    }
 
     /**
      * Thread safe equals method for ByteBuffers
@@ -290,16 +276,17 @@ public class ByteBufferUtil {
     }
 
     /**
-     * Thread safe equals method for StaticBuffers
+     * Thread safe equals method for StaticBuffer - ByteBuffer equality comparison
      *
      * @param b1
      * @param b2
      * @return
      */
-    public static final boolean equals(StaticBuffer b1, StaticBuffer b2) {
-        if (b1.length()!=b2.length()) return false;
+    public static final boolean equals(StaticBuffer b1, ByteBuffer b2) {
+        if (b1.length()!=b2.remaining()) return false;
+        int p2 = b2.position();
         for (int i=0;i<b1.length();i++) {
-            if (b1.getByte(i)!=b2.getByte(i)) return false;
+            if (b1.getByte(i)!=b2.get(p2+i)) return false;
         }
         return true;
     }
@@ -309,17 +296,6 @@ public class ByteBufferUtil {
         for (int i=b.position();i<b.limit();i++) {
             if (i>b.position()) s.append(separator);
             byte c = b.get(i);
-            if (c>=0) s.append(c);
-            else s.append(256+c);
-        }
-        return s.toString();
-    }
-
-    public static final String toString(StaticBuffer b, String separator) {
-        StringBuilder s = new StringBuilder();
-        for (int i=0;i<b.length();i++) {
-            if (i>0) s.append(separator);
-            byte c = b.getByte(i);
             if (c>=0) s.append(c);
             else s.append(256+c);
         }
@@ -370,5 +346,17 @@ public class ByteBufferUtil {
             Preconditions.checkArgument(pos == length);
             return bytes;
         }
+    }
+
+    public static String toString(byte b) {
+        return String.valueOf((b>=0)?b:256+b);
+    }
+
+    public static String toFixedWidthString(byte b) {
+        String s = toString(b);
+        assert s.length()<=3 && s.length()>0;
+        if (s.length()==1) s = "  "+s;
+        else if (s.length()==2) s = " " + s;
+        return s;
     }
 }

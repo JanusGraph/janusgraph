@@ -22,7 +22,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManag
 import com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking.AstyanaxRecipeLocker;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
@@ -245,21 +245,22 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 // Astyanax's operation timestamp cannot be set on a per-delete
                 // or per-addition basis.
                 KCVMutation titanMutation = ent.getValue();
+                ByteBuffer key = ent.getKey().asByteBuffer();
 
                 if (titanMutation.hasDeletions()) {
-                    ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, ent.getKey().asByteBuffer());
+                    ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
                     dels.setTimestamp(timestamp.deletionTime);
 
                     for (StaticBuffer b : titanMutation.getDeletions())
-                        dels.deleteColumn(b.asByteBuffer());
+                        dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
                 }
 
                 if (titanMutation.hasAdditions()) {
-                    ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, ent.getKey().asByteBuffer());
+                    ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
                     upds.setTimestamp(timestamp.additionTime);
 
                     for (Entry e : titanMutation.getAdditions())
-                        upds.putColumn(e.getColumn().asByteBuffer(), e.getValue().asByteBuffer());
+                        upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
                 }
             }
         }

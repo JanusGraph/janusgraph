@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -31,10 +33,10 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public ReadBuffer asReadBuffer();
 
-    //remove, use factory instead
-    public ByteBuffer asByteBuffer();
-
     public<T> T as(Factory<T> factory);
+
+    //Convenience method
+    public ByteBuffer asByteBuffer();
 
     public interface Factory<T> {
 
@@ -55,6 +57,13 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
         @Override
         public ByteBuffer get(byte[] array, int offset, int limit) {
             return ByteBuffer.wrap(array, offset, limit - offset);
+        }
+    };
+
+    public static final Factory<StaticBuffer> STATIC_FACTORY = new Factory<StaticBuffer>() {
+        @Override
+        public StaticBuffer get(byte[] array, int offset, int limit) {
+            return new StaticArrayBuffer(array, offset, limit);
         }
     };
 

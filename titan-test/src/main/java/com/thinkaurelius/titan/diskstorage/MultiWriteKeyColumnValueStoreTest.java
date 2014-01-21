@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
 
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -83,7 +84,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         Assert.assertNull(KCVSUtil.get(store1, b1, b1, tx));
 
-        List<Entry> additions = Arrays.<Entry>asList(new StaticBufferEntry(b1, b1));
+        List<Entry> additions = Arrays.<Entry>asList(StaticArrayEntry.of(b1, b1));
 
         List<StaticBuffer> deletions = Arrays.asList(b1);
 
@@ -145,7 +146,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         final StoreTransaction directTx = manager.beginTransaction(new StoreTxConfig());
 
         KCVMutation km = new KCVMutation(
-                ImmutableList.<Entry>of(new StaticBufferEntry(col, val)),
+                ImmutableList.<Entry>of(StaticArrayEntry.of(col, val)),
                 ImmutableList.<StaticBuffer>of());
 
         Map<StaticBuffer, KCVMutation> keyColumnAndValue = ImmutableMap.of(key, km);
@@ -161,7 +162,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         KeySliceQuery query = new KeySliceQuery(key, col, nextCol);
         List<Entry> expected =
-                ImmutableList.<Entry>of(new StaticBufferEntry(col, val));
+                ImmutableList.<Entry>of(StaticArrayEntry.of(col, val));
 
         Assert.assertEquals(expected, store1.getSlice(query, tx));
         Assert.assertEquals(expected, store2.getSlice(query, tx));
@@ -236,7 +237,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
             for (StaticBuffer col : deletions) {
 
-                if (null != additions && additions.contains(new StaticBufferEntry(col, col))) {
+                if (null != additions && additions.contains(StaticArrayEntry.of(col, col))) {
                     skipped++;
                     continue;
                 }
@@ -342,7 +343,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                 result.put(key, m);
             }
 
-            result.get(key).addition(new StaticBufferEntry(col, col));
+            result.get(key).addition(StaticArrayEntry.of(col, col));
 
         }
 
@@ -402,7 +403,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
                     colRand.nextBytes(colBuf);
                     StaticBuffer col = new StaticArrayBuffer(colBuf);
 
-                    additions.add(new StaticBufferEntry(col, col));
+                    additions.add(StaticArrayEntry.of(col, col));
                 }
 
             }

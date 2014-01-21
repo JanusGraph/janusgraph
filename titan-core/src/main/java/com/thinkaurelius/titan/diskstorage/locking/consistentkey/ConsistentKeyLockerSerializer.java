@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
@@ -38,7 +38,7 @@ public class ConsistentKeyLockerSerializer {
         for (int i = 0; r.hasRemaining(); i++) {
             curRid[i] = r.getByte();
         }
-        StaticBuffer rid = new StaticByteBuffer(curRid);
+        StaticBuffer rid = new StaticArrayBuffer(curRid);
         return new TimestampRid(tsNS, rid);
     }
 }

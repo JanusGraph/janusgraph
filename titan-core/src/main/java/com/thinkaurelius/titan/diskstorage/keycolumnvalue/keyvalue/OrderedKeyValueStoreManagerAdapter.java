@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -82,13 +83,13 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
                 KCVMutation mutation = entry.getValue();
                 if (mutation.hasAdditions()) {
                     for (Entry addition : mutation.getAdditions()) {
-                        mut.addition(new KeyValueEntry(store.concatenate(key, addition.getColumn()), addition.getValue()));
+                        mut.addition(store.concatenate(key,addition));
                     }
                 }
 
                 if (mutation.hasDeletions()) {
-                    for (StaticBuffer column : mutation.getDeletions()) {
-                        mut.deletion(store.concatenate(key, column));
+                    for (StaticBuffer del : mutation.getDeletions()) {
+                        mut.deletion(store.concatenate(key, del));
                     }
                 }
             }

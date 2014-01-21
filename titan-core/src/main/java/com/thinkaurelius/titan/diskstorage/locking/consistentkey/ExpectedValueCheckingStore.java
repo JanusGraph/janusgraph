@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -13,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link KeyColumnValueStore} wrapper intended for nontransactional stores
@@ -77,12 +80,12 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getSlice(query, getBaseTx(txh));
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getSlice(keys, query, getBaseTx(txh));
     }
 

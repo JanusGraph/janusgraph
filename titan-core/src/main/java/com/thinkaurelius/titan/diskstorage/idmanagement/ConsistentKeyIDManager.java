@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
@@ -110,7 +110,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         long latest = BASE_ID;
 
         for (Entry e : blocks) {
-            long counterVal = getBlockValue(e.getReadColumn());
+            long counterVal = getBlockValue(e);
             if (latest < counterVal) {
                 latest = counterVal;
             }
@@ -177,7 +177,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
                         public Boolean call(StoreTransaction txh) throws StorageException {
-                            idStore.mutate(partitionKey, Arrays.asList(StaticBufferEntry.of(target, ByteBufferUtil.emptyBuffer())), KeyColumnValueStore.NO_DELETIONS, txh);
+                            idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(target)), KeyColumnValueStore.NO_DELETIONS, txh);
                             return true;
                         }
                     },this);
@@ -212,7 +212,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                         /* If our claim is the lexicographically first one, then our claim
                          * is the most senior one and we own this id block
                          */
-                        if (target.equals(blocks.get(0).getColumn())) {
+                        if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
 
                             long result[] = new long[2];
                             result[0] = nextStart;
@@ -290,8 +290,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return bb.getStaticBuffer();
     }
 
-    private final long getBlockValue(ReadBuffer column) {
-        return -column.getLong();
+    private final long getBlockValue(Entry column) {
+        return -column.getLong(0);
     }
 
 }

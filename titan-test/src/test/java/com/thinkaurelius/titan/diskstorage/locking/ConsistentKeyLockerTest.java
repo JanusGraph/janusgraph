@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
@@ -23,23 +26,13 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 
 public class ConsistentKeyLockerTest {
@@ -325,7 +318,7 @@ public class ConsistentKeyLockerTest {
         expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
         // Expect a store getSlice() and return the fake lock's column and value
         recordLockGetSliceAndReturnSingleEntry(
-                new StaticBufferEntry(
+                StaticArrayEntry.of(
                         codec.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
                         defaultLockVal));
         ctrl.replay();
@@ -353,7 +346,7 @@ public class ConsistentKeyLockerTest {
 
         // Checker must slice the store; we return the single expired lock column
         recordLockGetSliceAndReturnSingleEntry(
-                new StaticBufferEntry(
+                StaticArrayEntry.of(
                         codec.toLockCol(expired.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
                         defaultLockVal));
 
@@ -384,7 +377,7 @@ public class ConsistentKeyLockerTest {
 
         expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
         final StaticBuffer lc = codec.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
-        recordLockGetSliceAndReturnSingleEntry(new StaticBufferEntry(lc, defaultLockVal));
+        recordLockGetSliceAndReturnSingleEntry(StaticArrayEntry.of(lc, defaultLockVal));
         ctrl.replay();
 
         locker.checkLocks(defaultTx);
@@ -426,9 +419,9 @@ public class ConsistentKeyLockerTest {
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
-        recordLockGetSlice(ImmutableList.<Entry>of(
-                new StaticBufferEntry(otherSeniorLockCol, defaultLockVal),
-                new StaticBufferEntry(ownJuniorLockCol, defaultLockVal)));
+        recordLockGetSlice(StaticArrayEntryList.of(
+                StaticArrayEntry.of(otherSeniorLockCol, defaultLockVal),
+                StaticArrayEntry.of(ownJuniorLockCol, defaultLockVal)));
 
         ctrl.replay();
 
@@ -466,9 +459,9 @@ public class ConsistentKeyLockerTest {
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
-        recordLockGetSlice(ImmutableList.<Entry>of(
-                new StaticBufferEntry(ownSeniorLockCol, defaultLockVal),
-                new StaticBufferEntry(otherJuniorLockCol, defaultLockVal)));
+        recordLockGetSlice(StaticArrayEntryList.of(
+                StaticArrayEntry.of(ownSeniorLockCol, defaultLockVal),
+                StaticArrayEntry.of(otherJuniorLockCol, defaultLockVal)));
 
         ctrl.replay();
 
@@ -507,10 +500,10 @@ public class ConsistentKeyLockerTest {
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
-        recordLockGetSlice(ImmutableList.<Entry>of(
-                new StaticBufferEntry(myFirstLockCol, defaultLockVal),
-                new StaticBufferEntry(mySecondLockCol, defaultLockVal),
-                new StaticBufferEntry(myThirdLockCol, defaultLockVal)));
+        recordLockGetSlice(StaticArrayEntryList.of(
+                StaticArrayEntry.of(myFirstLockCol, defaultLockVal),
+                StaticArrayEntry.of(mySecondLockCol, defaultLockVal),
+                StaticArrayEntry.of(myThirdLockCol, defaultLockVal)));
 
         ctrl.replay();
 
@@ -542,7 +535,7 @@ public class ConsistentKeyLockerTest {
         recordExceptionalLockGetSlice(tse);
 
         // Second getSlice will succeed
-        recordLockGetSliceAndReturnSingleEntry(new StaticBufferEntry(lockCol, defaultLockVal));
+        recordLockGetSliceAndReturnSingleEntry(StaticArrayEntry.of(lockCol, defaultLockVal));
 
         ctrl.replay();
 
@@ -889,7 +882,7 @@ public class ConsistentKeyLockerTest {
         final long lockNS = currentTimeNS;
 
         StaticBuffer lockCol = codec.toLockCol(lockNS, defaultLockRid);
-        Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
+        Entry add = StaticArrayEntry.of(lockCol, defaultLockVal);
         
         expect(tx.getConfiguration()).andReturn(new StoreTxConfig());
         
@@ -920,7 +913,7 @@ public class ConsistentKeyLockerTest {
         expect(times.getApproxNSSinceEpoch()).andReturn(++currentTimeNS);
 
         StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
-        Entry add = new StaticBufferEntry(lockCol, defaultLockVal);
+        Entry add = StaticArrayEntry.of(lockCol, defaultLockVal);
         
         expect(defaultTx.getConfiguration()).andReturn(new StoreTxConfig());
 
@@ -984,7 +977,7 @@ public class ConsistentKeyLockerTest {
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
     }
 
-    private void recordLockGetSlice(List<Entry> returnedEntries) throws StorageException {
+    private void recordLockGetSlice(EntryList returnedEntries) throws StorageException {
         final StaticBuffer lower = ByteBufferUtil.zeroBuffer(9);
         final StaticBuffer upper = ByteBufferUtil.oneBuffer(9);
         final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, lower, upper);
@@ -999,6 +992,6 @@ public class ConsistentKeyLockerTest {
     }
 
     private void recordLockGetSliceAndReturnSingleEntry(Entry returnSingleEntry) throws StorageException {
-        recordLockGetSlice(ImmutableList.<Entry>of(returnSingleEntry));
+        recordLockGetSlice(StaticArrayEntryList.of(returnSingleEntry));
     }
 }

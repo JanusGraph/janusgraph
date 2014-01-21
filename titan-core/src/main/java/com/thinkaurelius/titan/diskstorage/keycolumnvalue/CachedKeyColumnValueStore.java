@@ -4,14 +4,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,7 +35,7 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     private static final long DEFAULT_CACHE_SIZE = 2*1000; //1000 types
 
     private final KeyColumnValueStore store;
-    private final Cache<KeySliceQuery, List<Entry>> cache;
+    private final Cache<KeySliceQuery, EntryList> cache;
 
     public CachedKeyColumnValueStore(final KeyColumnValueStore store) {
         this(store, DEFAULT_CACHE_SIZE);
@@ -72,15 +72,15 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         if (query.isStatic()) {
             try {
                 if (log.isDebugEnabled())
                     log.debug("Cache Retrieval on " + store.getName() + ". Attempts: {} | Misses: {}", CACHE_RETRIEVAL.get(), CACHE_MISS.get());
                 CACHE_RETRIEVAL.incrementAndGet();
-                List<Entry> result = cache.get(query, new Callable<List<Entry>>() {
+                EntryList result = cache.get(query, new Callable<EntryList>() {
                     @Override
-                    public List<Entry> call() throws StorageException {
+                    public EntryList call() throws StorageException {
                         CACHE_MISS.incrementAndGet();
                         return store.getSlice(query, txh);
                     }
@@ -101,11 +101,11 @@ public class CachedKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         if (query.isStatic() && !query.hasLimit()) {
-            List<List<Entry>> results = new ArrayList<List<Entry>>(keys.size());
+            Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer,EntryList>(keys.size());
             for (StaticBuffer key : keys) {
-                results.add(getSlice(new KeySliceQuery(key, query), txh));
+                results.put(key,getSlice(new KeySliceQuery(key, query), txh));
             }
             return results;
         } else {

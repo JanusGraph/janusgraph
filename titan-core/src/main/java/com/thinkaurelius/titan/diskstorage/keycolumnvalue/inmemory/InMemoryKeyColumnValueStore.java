@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -43,14 +45,14 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(query.getKey());
-        if (cvs == null) return Lists.newArrayList();
+        if (cvs == null) return EntryList.EMPTY_LIST;
         else return cvs.getSlice(query, txh);
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 

@@ -9,10 +9,10 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -27,7 +27,6 @@ import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.IndexDefinition;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
@@ -150,7 +149,7 @@ public class IndexSerializer {
         for (String index : key.getIndexes(Vertex.class)) {
             if (index.equals(Titan.Token.STANDARD_INDEX)) {
                 tx.mutateVertexIndex(getIndexKey(prop.getValue()),
-                        Lists.newArrayList(StaticBufferEntry.of(getIndexColumn(key, prop), getIndexValue(prop))), NO_DELETIONS);
+                        Lists.newArrayList(StaticArrayEntry.of(getIndexColumn(key, prop), getIndexValue(prop))), NO_DELETIONS);
             } else {
                 addKeyValue(prop.getVertex(), key, prop.getValue(), index, tx);
             }
@@ -187,8 +186,8 @@ public class IndexSerializer {
                     Object value = relation.getPropertyDirect(key);
                     if (index.equals(Titan.Token.STANDARD_INDEX)) {
                         tx.mutateEdgeIndex(getIndexKey(value),
-                                Lists.newArrayList(StaticBufferEntry.of(getIDIndexColumn(key, relation.getID()),
-                                        relationID2ByteBuffer((RelationIdentifier) relation.getId()))), NO_DELETIONS);
+                                Lists.newArrayList(StaticArrayEntry.of(getIDIndexColumn(key, relation.getID()),
+                                        relationID2Buffer((RelationIdentifier) relation.getId()))), NO_DELETIONS);
                     } else {
                         addKeyValue(relation, key, value, index, tx);
                     }
@@ -292,7 +291,8 @@ public class IndexSerializer {
         }
         List<Object> results = new ArrayList<Object>(r.size());
         for (Entry entry : r) {
-            ReadBuffer entryValue = entry.getReadValue();
+            ReadBuffer entryValue = entry.asReadBuffer();
+            entryValue.movePositionTo(entry.getValuePosition());
             if (resultType == ElementType.VERTEX) {
                 results.add(VariableLong.readPositive(entryValue));
             } else {
@@ -393,7 +393,7 @@ public class IndexSerializer {
         return index.equals(Titan.Token.STANDARD_INDEX);
     }
 
-    private static final StaticBuffer relationID2ByteBuffer(RelationIdentifier rid) {
+    private static final StaticBuffer relationID2Buffer(RelationIdentifier rid) {
         long[] longs = rid.getLongRepresentation();
         Preconditions.checkArgument(longs.length == 3);
         WriteBuffer buffer = new WriteByteBuffer(24);

@@ -193,7 +193,7 @@ public abstract class KeyValueStoreTest {
 
 
     public void checkSlice(String[] values, Set<Integer> removed, int start, int end, int limit) throws StorageException {
-        List<KeyValueEntry> entries;
+        EntryList entries;
         if (limit <= 0)
             entries = KVUtil.getSlice(store, KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end), tx);
         else
@@ -203,9 +203,9 @@ public abstract class KeyValueStoreTest {
         for (int i = start; i < end; i++) {
             if (removed.contains(i)) continue;
             if (pos < limit) {
-                KeyValueEntry entry = entries.get(pos);
-                int id = KeyValueStoreUtil.getID(entry.getKey());
-                String str = KeyValueStoreUtil.getString(entry.getValue());
+                Entry entry = entries.get(pos);
+                int id = KeyValueStoreUtil.getID(entry.getColumn());
+                String str = KeyValueStoreUtil.getString(entry.getValueAs(StaticBuffer.STATIC_FACTORY));
                 Assert.assertEquals(i, id);
                 Assert.assertEquals(values[i], str);
             }

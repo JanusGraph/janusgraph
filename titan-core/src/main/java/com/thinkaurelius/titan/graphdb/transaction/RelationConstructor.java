@@ -3,14 +3,13 @@ package com.thinkaurelius.titan.graphdb.transaction;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
-import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.tinkerpop.blueprints.Direction;
 
 /**

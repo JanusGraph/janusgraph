@@ -4,10 +4,7 @@ import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.Weigher;
 import com.google.common.collect.HashMultimap;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 
 import java.util.*;
 import java.util.concurrent.*;

@@ -1,10 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Interface to a data store that has a BigTable like representation of its data. In other words, the data store is comprised of a set of rows
@@ -25,6 +28,7 @@ public interface KeyColumnValueStore {
     public static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
+     * TODO:remove (make sure there is a util method for it)
      * Returns true if the specified key exists in the store, i.e. there is at least one column-value
      * pair for the key.
      *
@@ -43,7 +47,7 @@ public interface KeyColumnValueStore {
      * @throws StorageException when columnEnd < columnStart
      * @see KeySliceQuery
      */
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
@@ -52,11 +56,10 @@ public interface KeyColumnValueStore {
      * @param keys  List of keys
      * @param query Slicequery specifying matching entries
      * @param txh   Transaction
-     * @return The result of the query for each of the given keys in the order of the keys. That means, nth entry in the returned list
-     *         is a list that contains the entries that match the given query for the nth key (which may be empty).
+     * @return The result of the query for each of the given keys as a map from the key to the list of result entries.
      * @throws StorageException
      */
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
 
     /**
      * Verifies acquisition of locks {@code txh} from previous calls to
@@ -79,7 +82,7 @@ public interface KeyColumnValueStore {
      * @param deletions the list of columns to delete from {@code key}, or null to
      *                  delete no columns
      * @param txh       the transaction to use
-     * @throws LockingException if locking is supported by the implementation and at least
+     * @throws com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException if locking is supported by the implementation and at least
      *                          one lock acquisition attempted by
      *                          {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      *                          has failed
@@ -93,7 +96,8 @@ public interface KeyColumnValueStore {
      * <p/>
      * <p/>
      * If locking fails, implementations of this method may, but are not
-     * required to, throw {@link LockingException}. This method is not required
+     * required to, throw {@link com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException}.
+     * This method is not required
      * to determine whether locking actually succeeded and may return without
      * throwing an exception even when the lock can't be acquired. Lock
      * acquisition is only only guaranteed to be verified by the first call to
@@ -133,7 +137,7 @@ public interface KeyColumnValueStore {
      *            to lock (null means the pair must have no value)
      * @param txh
      *            the transaction to use
-     * @throws LockingException
+     * @throws com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException
      *             the lock could not be acquired due to contention with other
      *             transactions or a locking-specific storage problem
      */

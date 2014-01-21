@@ -8,9 +8,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -142,7 +142,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void singleLockAndUnlock() throws StorageException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -154,7 +154,7 @@ public abstract class LockKeyColumnValueStoreTest {
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -164,7 +164,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test(expected = PermanentLockingException.class)
     public void expectedValueMismatchCausesMutateFailure() throws StorageException {
         store[0].acquireLock(k, c1, v1, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
     }
 
     @Test
@@ -212,14 +212,14 @@ public abstract class LockKeyColumnValueStoreTest {
 
         try {
             // This must fail since "host1" took the lock first
-            store[1].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v2)), NO_DELETIONS, tx[1][0]);
+            store[1].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
         } catch (StorageException e) {
             Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         // This should succeed
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
 
         tx[0][0].commit();
         tx[0][0] = newTransaction(manager[0]);
@@ -343,8 +343,8 @@ public abstract class LockKeyColumnValueStoreTest {
         store1.acquireLock(k, c1, null, tx1);
         store2.acquireLock(k, c2, null, tx2);
 
-        store1.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx1);
-        store2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
+        store1.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx1);
+        store2.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c2, v2)), NO_DELETIONS, tx2);
 
         tx1.commit();
         if (tx2 != tx1)
@@ -380,7 +380,7 @@ public abstract class LockKeyColumnValueStoreTest {
         s2.acquireLock(k, k, null, tx2);
 
         // Mutate to check for remote contention
-        s2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
+        s2.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c2, v2)), NO_DELETIONS, tx2);
 
     }
 

@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.hash.HashCode;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -110,11 +111,11 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
         assert otherQuery.subsumes(this);
         List<Entry> result = new ArrayList<Entry>();
-        int pos = Collections.binarySearch(otherResult, StaticBufferEntry.of(sliceStart));
+        int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
             Entry e = otherResult.get(pos);
-            if (e.getColumn().compareTo(sliceEnd) < 0) result.add(e);
+            if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);
             else break;
         }
         return result;
