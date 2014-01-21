@@ -697,10 +697,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             int pos = 0;
             for (TitanVertex v : vertices) {
                 if (vids.get(pos) == v.getID()) {
-                    final List<Entry> vresults = results.get(pos);
-                    ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+                    final EntryList vresults = results.get(pos);
+                    ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                         @Override
-                        public List<Entry> get(SliceQuery query) {
+                        public EntryList get(SliceQuery query) {
                             return vresults;
                         }
                     });
@@ -756,9 +756,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
             final InternalVertex v = query.getVertex();
 
-            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                 @Override
-                public List<Entry> get(SliceQuery query) {
+                public EntryList get(SliceQuery query) {
                     return graph.edgeQuery(v.getID(), query, txHandle);
                 }
             });

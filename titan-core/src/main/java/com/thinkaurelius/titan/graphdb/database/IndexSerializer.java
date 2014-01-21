@@ -283,14 +283,15 @@ public class IndexSerializer {
         Object value = pc.getValue();
         StaticBuffer column = getUniqueIndexColumn(key);
         KeySliceQuery sq = new KeySliceQuery(getIndexKey(value), column, SliceQuery.pointRange(column), ((InternalType) key).isStatic(Direction.IN)).setLimit(limit);
-        List<Entry> r;
+        EntryList r;
         if (resultType == ElementType.VERTEX) {
             r = tx.vertexIndexQuery(sq);
         } else {
             r = tx.edgeIndexQuery(sq);
         }
         List<Object> results = new ArrayList<Object>(r.size());
-        for (Entry entry : r) {
+        for (java.util.Iterator<Entry> iterator = r.reuseIterator(); iterator.hasNext(); ) {
+            Entry entry = iterator.next();
             ReadBuffer entryValue = entry.asReadBuffer();
             entryValue.movePositionTo(entry.getValuePosition());
             if (resultType == ElementType.VERTEX) {

@@ -8,6 +8,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.RelationQueryCache;
@@ -174,12 +175,12 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     private Iterator<Entry> getBasicIterator() {
-        return vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, List<Entry>>() {
+        return vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, EntryList>() {
             @Override
-            public List<Entry> get(SliceQuery query) {
+            public EntryList get(SliceQuery query) {
                 return tx.getGraph().edgeQuery(vertex.getID(), query, tx.getTxHandle());
             }
-        }).iterator();
+        }).reuseIterator();
     }
 
 

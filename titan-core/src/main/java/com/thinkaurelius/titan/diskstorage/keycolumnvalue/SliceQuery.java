@@ -2,15 +2,18 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -108,17 +111,19 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             return sliceStart.compareTo(oth.sliceStart) == 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
     }
 
-    public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
+    //TODO: make this more efficient by using reuseIterator() on otherResult
+    public EntryList getSubset(final SliceQuery otherQuery, final EntryList otherResult) {
         assert otherQuery.subsumes(this);
-        List<Entry> result = new ArrayList<Entry>();
         int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
+
+        List<Entry> result = new ArrayList<Entry>();
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
             Entry e = otherResult.get(pos);
             if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);
             else break;
         }
-        return result;
+        return StaticArrayEntryList.of(result);
     }
 
     public static StaticBuffer pointRange(StaticBuffer point) {
