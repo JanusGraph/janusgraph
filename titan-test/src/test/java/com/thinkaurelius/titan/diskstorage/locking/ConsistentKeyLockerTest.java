@@ -1,15 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import static org.easymock.EasyMock.createStrictControl;
+import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
 import static org.easymock.EasyMock.eq;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
-import static com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +37,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockCleanerService;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -106,13 +105,7 @@ public class ConsistentKeyLockerTest {
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
         lockState = ctrl.createMock(LockerState.class);
-        locker = new ConsistentKeyLocker.Builder(store)
-                .times(times)
-                .mediator(mediator)
-                .internalState(lockState)
-                .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
-                .lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS)
-                .rid(defaultLockRid).build();
+        locker = getDefaultBuilder().build();
     }
 
     @After
@@ -861,8 +854,43 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
 
+    /**
+     * Checking locks when the expired lock cleaner is enabled should trigger
+     * one call to the LockCleanerService.
+     *
+     * @throws StorageException shouldn't happen
+     */
+    @Test
+    public void testCleanExpiredLock() throws StorageException, InterruptedException {
+        LockCleanerService mockCleaner = ctrl.createMock(LockCleanerService.class);
+        Locker altLocker = getDefaultBuilder().customCleaner(mockCleaner).build();
 
+        final ConsistentKeyLockStatus expired = makeStatusNow();
+        expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, expired));
+        currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // pretend a huge multiple of the expiration time has passed
 
+        // Checker should compare the fake lock's timestamp to the current time
+        expect(times.sleepUntil(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS)).andReturn(currentTimeNS);
+
+        // Checker must slice the store; we return the single expired lock column
+        recordLockGetSliceAndReturnSingleEntry(
+                new StaticBufferEntry(
+                        codec.toLockCol(expired.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid),
+                        defaultLockVal));
+
+        // Checker must attempt to cleanup expired lock
+        mockCleaner.clean(eq(defaultLockID), eq(currentTimeNS - defaultExpireNS), eq(defaultTx));
+        expectLastCall().once();
+
+        ctrl.replay();
+        TemporaryLockingException ple = null;
+        try {
+            altLocker.checkLocks(defaultTx);
+        } catch (TemporaryLockingException e) {
+            ple = e;
+        }
+        assertNotNull(ple);
+    }
 
     /*
      * Helpers
@@ -1004,5 +1032,15 @@ public class ConsistentKeyLockerTest {
 
     private void recordLockGetSliceAndReturnSingleEntry(Entry returnSingleEntry) throws StorageException {
         recordLockGetSlice(ImmutableList.<Entry>of(returnSingleEntry));
+    }
+
+    private ConsistentKeyLocker.Builder getDefaultBuilder() {
+        return new ConsistentKeyLocker.Builder(store)
+            .times(times)
+            .mediator(mediator)
+            .internalState(lockState)
+            .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
+            .lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS)
+            .rid(defaultLockRid);
     }
 }

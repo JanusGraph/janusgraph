@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -120,6 +121,11 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     private final int lockRetryCount;
 
+    /**
+     * Expired lock cleaner in charge of {@link #store}.
+     */
+    private final LockCleanerService cleanerService;
+
     private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
 
     public static final StaticBuffer LOCK_COL_START = ByteBufferUtil.zeroBuffer(9);
@@ -134,6 +140,15 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         // Optional (has default)
         private long lockWaitNS;
         private int lockRetryCount;
+
+        private enum CleanerConfig {
+            NONE,
+            STANDARD,
+            CUSTOM
+        };
+
+        private CleanerConfig cleanerConfig = CleanerConfig.NONE;
+        private LockCleanerService customCleanerService;
 
         public Builder(KeyColumnValueStore store) {
             this.store = store;
@@ -151,6 +166,19 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             return self();
         }
 
+        public Builder standardCleaner() {
+            this.cleanerConfig = CleanerConfig.STANDARD;
+            this.customCleanerService = null;
+            return self();
+        }
+
+        public Builder customCleaner(LockCleanerService s) {
+            this.cleanerConfig = CleanerConfig.CUSTOM;
+            this.customCleanerService = s;
+            Preconditions.checkNotNull(this.customCleanerService);
+            return self();
+        }
+
         public Builder fromConfig(Configuration config) {
             rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
 
@@ -164,12 +192,32 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
             lockExpireNS(config.get(GraphDatabaseConfiguration.LOCK_EXPIRE), TimeUnit.MILLISECONDS);
 
+            if (config.get(GraphDatabaseConfiguration.LOCK_CLEAN_EXPIRED)) {
+                standardCleaner();
+            }
+
             return this;
         }
 
         public ConsistentKeyLocker build() {
             preBuild();
-            return new ConsistentKeyLocker(store, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState);
+
+            final LockCleanerService cleaner;
+
+            switch (cleanerConfig) {
+            case STANDARD:
+                Preconditions.checkArgument(null == customCleanerService);
+                cleaner = new StandardLockCleanerService(store, serializer);
+                break;
+            case CUSTOM:
+                Preconditions.checkArgument(null != customCleanerService);
+                cleaner = customCleanerService;
+                break;
+            default:
+                cleaner = null;
+            }
+
+            return new ConsistentKeyLocker(store, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState, cleaner);
         }
 
         @Override
@@ -191,11 +239,13 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                                 TimestampProvider times, ConsistentKeyLockerSerializer serializer,
                                 LocalLockMediator<StoreTransaction> llm, long lockWaitNS,
                                 int lockRetryCount, long lockExpireNS,
-                                LockerState<ConsistentKeyLockStatus> lockState) {
+                                LockerState<ConsistentKeyLockStatus> lockState,
+                                LockCleanerService cleanerService) {
         super(rid, times, serializer, llm, lockState, lockExpireNS, log);
         this.store = store;
         this.lockWaitNS = lockWaitNS;
         this.lockRetryCount = lockRetryCount;
+        this.cleanerService = cleanerService;
     }
 
     private long getLockWait(TimeUnit tu) {
@@ -336,8 +386,11 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         iter = Iterables.filter(iter, new Predicate<TimestampRid>() {
             @Override
             public boolean apply(TimestampRid tr) {
-                if (tr.getTimestamp() < nowNS - lockExpireNS) {
+                final long cutoff = nowNS - lockExpireNS;
+                if (tr.getTimestamp() < cutoff) {
                     log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
+                    if (null != cleanerService)
+                        cleanerService.clean(kc, cutoff, tx);
                     return false;
                 }
                 return true;

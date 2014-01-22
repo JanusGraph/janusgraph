@@ -357,6 +357,18 @@ public class GraphDatabaseConfiguration {
 //    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
     /**
+     * Whether to attempt to delete expired locks from the storage backend. True
+     * will attempt to delete expired locks in a background daemon thread. False
+     * will never attempt to delete expired locks. This option is only
+     * meaningful for the default lock backend.
+     *
+     * @see #LOCK_BACKEND
+     */
+    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
+            "Whether to delete expired locks from the storage backend",
+            ConfigOption.Type.MASKABLE, false);
+
+    /**
      * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
      */
     public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
