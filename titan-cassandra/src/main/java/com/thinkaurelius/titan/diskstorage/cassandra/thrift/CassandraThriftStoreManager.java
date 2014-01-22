@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
+
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
@@ -56,6 +58,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.Hex;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -166,7 +169,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 StaticBuffer key = mutEntry.getKey();
                 ByteBuffer keyBB = key.asByteBuffer();
 
-                // Get or create the single Cassandra Mutation object responsible for this key 
+                // Get or create the single Cassandra Mutation object responsible for this key
                 Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(keyBB);
                 if (cfmutation == null) {
                     cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // TODO where did the magic number 3 come from?
@@ -290,7 +293,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 client.truncate(cfDef.name);
                 log.info(lp + "Truncated CF {} in keyspace {}", cfDef.name, keySpaceName);
             }
-                
+
             /*
              * Clearing the CTConnectionPool is unnecessary. This method
              * removes no keyspaces. All open Cassandra connections will
@@ -339,6 +342,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 client.set_keyspace(SYSTEM_KS);
                 try {
                     client.system_add_keyspace(ksdef);
+                    retrySetKeyspace(keyspaceName, client);
                     log.debug("Created keyspace {}", keyspaceName);
                 } catch (InvalidRequestException ire) {
                     log.error("system_add_keyspace failed for keyspace=" + keyspaceName, ire);
@@ -353,6 +357,26 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } finally {
             pool.returnObjectUnsafe(SYSTEM_KS, connection);
         }
+    }
+
+    private void retrySetKeyspace(String ksName, Cassandra.Client client) throws StorageException {
+        final long end = System.currentTimeMillis() + (60L * 1000L);
+
+        while (System.currentTimeMillis() <= end) {
+            try {
+                client.set_keyspace(ksName);
+                return;
+            } catch (Exception e) {
+                log.warn("Exception when changing to keyspace {} after creating it", ksName, e);
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException ie) {
+                    throw new PermanentStorageException("Unexpected interrupt (shutting down?)", ie);
+                }
+            }
+        }
+
+        throw new PermanentStorageException("Could change to keyspace " + ksName + " after creating it");
     }
 
     private void ensureColumnFamilyExists(String ksName, String cfName) throws StorageException {
@@ -576,7 +600,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         ByteBuffer hottestEndToken = null;
         double hottestEndTokenValue = 0D;
-        
+
         /*
          * Count the number of iterations over countsByEndToken.entrySet()'s
          * members and store the result in perceivedEntrySetSize. We do this
@@ -645,7 +669,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private void closePool() {
         /*
          * pool.close() does not affect borrowed connections.
-         * 
+         *
          * Connections currently borrowed by some thread which are
          * talking to the old host will eventually be destroyed by
          * CTConnectionFactory#validateObject() returning false when
