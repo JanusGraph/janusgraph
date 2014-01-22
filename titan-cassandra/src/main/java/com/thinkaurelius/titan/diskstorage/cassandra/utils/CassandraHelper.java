@@ -47,9 +47,12 @@ public class CassandraHelper {
     public static<E> EntryList makeEntryList(final Iterable<E> entries,
                                              final StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
                                              final StaticBuffer lastColumn, final int limit) {
-        return StaticArrayEntryList.ofByteBuffer(
-                Iterables.filter(entries,new FilterResultColumns<E>(lastColumn,limit,getter)),
-                getter);
+        return StaticArrayEntryList.ofByteBuffer(new Iterable<E>() {
+            @Override
+            public Iterator<E> iterator() {
+                return Iterators.filter(entries.iterator(),new FilterResultColumns<E>(lastColumn,limit,getter));
+            }
+        },getter);
     }
 
     private static class FilterResultColumns<E> implements Predicate<E> {

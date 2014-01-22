@@ -7,6 +7,8 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
+import com.tinkerpop.blueprints.Direction;
 import org.junit.Test;
 
 import javax.annotation.Nullable;
@@ -22,6 +24,8 @@ import static org.junit.Assert.*;
  */
 public class StaticArrayEntryTest {
 
+    private static final RelationCache cache = new RelationCache(Direction.OUT,5,105,"Hello");
+
     @Test
     public void testArrayBuffer() {
         WriteBuffer wb = new WriteByteBuffer(128);
@@ -36,6 +40,10 @@ public class StaticArrayEntryTest {
         ReadBuffer rb = entry.asReadBuffer();
         for (int i=1;i<=6;i++) assertEquals(i,rb.getInt());
         assertFalse(rb.hasRemaining());
+
+        assertNull(entry.getCache());
+        entry.setCache(cache);
+        assertEquals(cache,entry.getCache());
 
         rb = entry.getColumnAs(StaticBuffer.STATIC_FACTORY).asReadBuffer();
         for (int i=1;i<=4;i++) assertEquals(i,rb.getInt());
@@ -53,9 +61,9 @@ public class StaticArrayEntryTest {
         ReadBuffer rb = entry.asReadBuffer();
         assertEquals(1,rb.getInt());
         rb.invert();
-        assertEquals(2,rb.getInt());
+        assertEquals(2, rb.getInt());
         rb.invert();
-        assertEquals(3,rb.getInt());
+        assertEquals(3, rb.getInt());
         assertEquals(4,rb.getInt());
         rb.movePositionTo(entry.getValuePosition());
         assertEquals(4,rb.getInt());
@@ -98,18 +106,41 @@ public class StaticArrayEntryTest {
             int num=0;
             for (Entry e : el[i]) {
                 checkEntry(e,entries);
+                assertNull(e.getCache());
+                e.setCache(cache);
                 num++;
             }
             assertEquals(entries.size(),num);
             Iterator<Entry> iter = el[i].reuseIterator();
             num=0;
             while (iter.hasNext()) {
-                checkEntry(iter.next(), entries);
+                Entry e = iter.next();
+                checkEntry(e, entries);
+                assertEquals(cache,e.getCache());
                 num++;
             }
             assertEquals(entries.size(),num);
         }
+    }
 
+
+
+    private static void checkEntry(Entry e, Map<Integer,Long> entries) {
+        ReadBuffer rb = e.asReadBuffer();
+        int key = rb.getInt();
+        assertEquals(e.getValuePosition(),rb.getPosition());
+        assertTrue(e.hasValue());
+        long value = rb.getLong();
+        assertFalse(rb.hasRemaining());
+        assertEquals((long)entries.get(key),value);
+
+        rb = e.getColumnAs(StaticBuffer.STATIC_FACTORY).asReadBuffer();
+        assertEquals(key,rb.getInt());
+        assertFalse(rb.hasRemaining());
+
+        rb = e.getValueAs(StaticBuffer.STATIC_FACTORY).asReadBuffer();
+        assertEquals(value,rb.getLong());
+        assertFalse(rb.hasRemaining());
 
     }
 
@@ -170,24 +201,5 @@ public class StaticArrayEntryTest {
         }
     }
 
-
-    private static void checkEntry(Entry e, Map<Integer,Long> entries) {
-        ReadBuffer rb = e.asReadBuffer();
-        int key = rb.getInt();
-        assertEquals(e.getValuePosition(),rb.getPosition());
-        assertTrue(e.hasValue());
-        long value = rb.getLong();
-        assertFalse(rb.hasRemaining());
-        assertEquals((long)entries.get(key),value);
-
-        rb = e.getColumnAs(StaticBuffer.STATIC_FACTORY).asReadBuffer();
-        assertEquals(key,rb.getInt());
-        assertFalse(rb.hasRemaining());
-
-        rb = e.getValueAs(StaticBuffer.STATIC_FACTORY).asReadBuffer();
-        assertEquals(value,rb.getLong());
-        assertFalse(rb.hasRemaining());
-
-    }
 
 }

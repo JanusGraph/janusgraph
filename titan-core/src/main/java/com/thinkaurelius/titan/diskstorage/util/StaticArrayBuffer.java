@@ -217,7 +217,7 @@ public class StaticArrayBuffer implements StaticBuffer {
     public final String toString(String separator) {
         StringBuilder s = new StringBuilder();
         for (int i=offset;i<limit;i++) {
-            if (i>0) s.append(separator);
+            if (i>offset) s.append(separator);
             s.append(ByteBufferUtil.toFixedWidthString(array[i]));
         }
         return s.toString();
@@ -240,7 +240,7 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     protected int compareTo(int length, StaticArrayBuffer buffer, int bufferLen) {
         assert buffer!=null;
-        Preconditions.checkArgument(length<length() && bufferLen<=buffer.length());
+        Preconditions.checkArgument(length<=length() && bufferLen<=buffer.length());
         return compareTo(array, offset, offset+length, buffer.array, buffer.offset, buffer.offset+bufferLen);
     }
 

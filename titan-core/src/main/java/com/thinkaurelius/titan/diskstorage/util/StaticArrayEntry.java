@@ -11,104 +11,46 @@ import java.nio.ByteBuffer;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StaticArrayEntry extends StaticArrayBuffer implements Entry {
-
-    private final int valuePosition;
+public class StaticArrayEntry extends BaseStaticArrayEntry {
 
     public StaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
-        super(array,offset,limit);
-        Preconditions.checkArgument(valuePosition>0);
-        Preconditions.checkArgument(valuePosition<=length());
-        this.valuePosition=valuePosition;
+        super(array, offset, limit, valuePosition);
     }
 
     public StaticArrayEntry(byte[] array, int limit, int valuePosition) {
-        this(array, 0, limit, valuePosition);
+        super(array, limit, valuePosition);
     }
 
     public StaticArrayEntry(byte[] array, int valuePosition) {
-        this(array, 0, array.length, valuePosition);
+        super(array, valuePosition);
     }
 
     public StaticArrayEntry(StaticBuffer buffer, int valuePosition) {
-        super(buffer);
-        Preconditions.checkArgument(valuePosition>0);
-        Preconditions.checkArgument(valuePosition<=length());
-        this.valuePosition=valuePosition;
+        super(buffer, valuePosition);
     }
 
-    public static Entry of(StaticBuffer buffer) {
-        return new StaticArrayEntry(buffer,buffer.length());
-    }
+    /**
+     * ############# IDENTICAL CODE ###############
+     */
 
-    @Override
-    public int getValuePosition() {
-        return valuePosition;
-    }
-
-    @Override
-    public boolean hasValue() {
-        return valuePosition<length();
-    }
-
-    @Override
-    public StaticBuffer getColumn() {
-        return getColumnAs(StaticBuffer.STATIC_FACTORY);
-    }
-
-    @Override
-    public <T> T getColumnAs(Factory<T> factory) {
-        return super.as(factory,0,valuePosition);
-    }
-
-    @Override
-    public <T> T getValueAs(Factory<T> factory) {
-        return super.as(factory,valuePosition,super.length()-valuePosition);
-    }
-
-    //Override from StaticArrayBuffer to restrict to column
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        if (!(o instanceof StaticBuffer)) return false;
-        Entry b = (Entry)o;
-        if (getValuePosition()!=b.getValuePosition()) return false;
-        return compareTo(getValuePosition(),b,getValuePosition())==0;
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode(getValuePosition());
-    }
-
-    @Override
-    public int compareTo(StaticBuffer other) {
-        int otherLen = (other instanceof Entry)?((Entry) other).getValuePosition():other.length();
-        return compareTo(getValuePosition(),other, otherLen);
-    }
-
-    @Override
-    public String toString() {
-        String s = super.toString();
-        int pos = getValuePosition()*4;
-        return s.substring(0,pos-1) + "->" + s.substring(pos);
-    }
-
-    //########## CACHE ############
+    private volatile transient RelationCache cache;
 
     @Override
     public RelationCache getCache() {
-        throw new UnsupportedOperationException();
+        return cache;
     }
 
     @Override
     public void setCache(RelationCache cache) {
-        throw new UnsupportedOperationException();
+        Preconditions.checkNotNull(cache);
+        this.cache = cache;
     }
 
     //########### CONSTRUCTORS AND UTILITIES ###########
+
+    public static Entry of(StaticBuffer buffer) {
+        return new StaticArrayEntry(buffer,buffer.length());
+    }
 
     public static final<E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(element, getter, ByteArrayHandler.INSTANCE);
@@ -208,4 +150,101 @@ public class StaticArrayEntry extends StaticArrayBuffer implements Entry {
             } else throw new IllegalArgumentException("Expected StaticArrayBuffer but got: " + data.getClass());
         }
     }
+
+}
+
+class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
+
+    private final int valuePosition;
+
+    public BaseStaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
+        super(array,offset,limit);
+        Preconditions.checkArgument(valuePosition>0);
+        Preconditions.checkArgument(valuePosition<=length());
+        this.valuePosition=valuePosition;
+    }
+
+    public BaseStaticArrayEntry(byte[] array, int limit, int valuePosition) {
+        this(array, 0, limit, valuePosition);
+    }
+
+    public BaseStaticArrayEntry(byte[] array, int valuePosition) {
+        this(array, 0, array.length, valuePosition);
+    }
+
+    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition) {
+        super(buffer);
+        Preconditions.checkArgument(valuePosition>0);
+        Preconditions.checkArgument(valuePosition<=length());
+        this.valuePosition=valuePosition;
+    }
+
+
+    @Override
+    public int getValuePosition() {
+        return valuePosition;
+    }
+
+    @Override
+    public boolean hasValue() {
+        return valuePosition<length();
+    }
+
+    @Override
+    public StaticBuffer getColumn() {
+        return getColumnAs(StaticBuffer.STATIC_FACTORY);
+    }
+
+    @Override
+    public <T> T getColumnAs(Factory<T> factory) {
+        return super.as(factory,0,valuePosition);
+    }
+
+    @Override
+    public <T> T getValueAs(Factory<T> factory) {
+        return super.as(factory,valuePosition,super.length()-valuePosition);
+    }
+
+    //Override from StaticArrayBuffer to restrict to column
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        if (!(o instanceof StaticBuffer)) return false;
+        Entry b = (Entry)o;
+        if (getValuePosition()!=b.getValuePosition()) return false;
+        return compareTo(getValuePosition(),b,getValuePosition())==0;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode(getValuePosition());
+    }
+
+    @Override
+    public int compareTo(StaticBuffer other) {
+        int otherLen = (other instanceof Entry)?((Entry) other).getValuePosition():other.length();
+        return compareTo(getValuePosition(),other, otherLen);
+    }
+
+    @Override
+    public String toString() {
+        String s = super.toString();
+        int pos = getValuePosition()*4;
+        return s.substring(0,pos-1) + "->" + s.substring(pos);
+    }
+
+    //########## CACHE ############
+
+    @Override
+    public RelationCache getCache() {
+        return null;
+    }
+
+    @Override
+    public void setCache(RelationCache cache) {
+        throw new UnsupportedOperationException();
+    }
+
 }

@@ -24,21 +24,6 @@ public class StaticArrayEntryCache extends StaticArrayEntry {
         super(buffer, valuePosition);
     }
 
-    /**
-     * ############# IDENTICAL CODE ###############
-     */
 
-    private volatile transient RelationCache cache;
-
-    @Override
-    public RelationCache getCache() {
-        return cache;
-    }
-
-    @Override
-    public void setCache(RelationCache cache) {
-        Preconditions.checkNotNull(cache);
-        this.cache = cache;
-    }
 
 }

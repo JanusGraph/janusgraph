@@ -29,11 +29,16 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     }
 
     private static int getLimit(long limitAndValuePos) {
-        return (int)(limitAndValuePos>>>32);
+        return (int)(limitAndValuePos>>>32l);
     }
 
     private static int getValuePos(long limitAndValuePos) {
         return (int)(limitAndValuePos&Integer.MAX_VALUE);
+    }
+
+    private static long getOffsetandValue(long offset, long valuePos) {
+        assert valuePos>0;
+        return (offset<<32l) + valuePos;
     }
 
     @Override
@@ -55,7 +60,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
                 + caches.length*(40) + 16; // caches
     }
 
-    private class StaticEntry extends StaticArrayEntry {
+    private class StaticEntry extends BaseStaticArrayEntry {
 
         private final int index;
 
@@ -174,7 +179,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
         @Override
         public boolean hasNext() {
-            return (currentIndex+1<size());
+            return (currentIndex+1)<size();
         }
 
         @Override
@@ -216,7 +221,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         CopyFactory cpf = new CopyFactory(data);
         for (Entry entry : entries) {
             entry.as(cpf);
-            limitAndValuePos[pos]= ((long)cpf.dataOffset)<<32 + entry.getValuePosition();
+            limitAndValuePos[pos]= getOffsetandValue(cpf.dataOffset,entry.getValuePosition());
             pos++;
         }
         assert cpf.dataOffset==data.length;
@@ -290,7 +295,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             datahandler.copy(val,data,offset);
             offset+=datahandler.getSize(val);
 
-            limitAndValuePos[pos]= ((long)offset)<<32 + valuePos;
+            limitAndValuePos[pos]= getOffsetandValue(offset,valuePos);
             pos++;
         }
         assert offset==data.length;
@@ -312,6 +317,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             D col = getter.getColumn(element);
             D val = getter.getValue(element);
             int colSize = datahandler.getSize(col);
+            assert colSize>0;
             int valsize = datahandler.getSize(val);
 
             data = ensureSpace(data,offset,colSize+valsize);
@@ -322,10 +328,23 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             offset+=valsize;
 
             limitAndValuePos = ensureSpace(limitAndValuePos,pos,1);
-            limitAndValuePos[pos]= ((long)offset)<<32 + colSize; //valuePosition = colSize
+            limitAndValuePos[pos]= getOffsetandValue(offset,colSize); //valuePosition = colSize
             pos++;
         }
-        assert offset==data.length;
+        assert offset<=data.length;
+        if (data.length>offset*3/2) {
+            //Resize to preserve memory
+            byte[] newdata = new byte[offset];
+            System.arraycopy(data,0,newdata,0,offset);
+            data=newdata;
+        }
+        if (pos<limitAndValuePos.length) {
+            //Resize so that the the array fits exactly
+            long[] newPos = new long[pos];
+            System.arraycopy(limitAndValuePos,0,newPos,0,pos);
+            limitAndValuePos=newPos;
+        }
+        assert offset<=data.length;
         assert pos==limitAndValuePos.length;
         return new StaticArrayEntryList(data,limitAndValuePos);
     }

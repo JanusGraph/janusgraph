@@ -31,6 +31,11 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
         this.properties = (properties == null || properties.size() > 0) ? properties : EMPTY;
     }
 
+    public RelationCache(final Direction direction, final long typeId, final long relationId,
+                         final Object other) {
+        this(direction,typeId,relationId,other,null);
+    }
+
     @SuppressWarnings("unchecked")
     public <O> O get(long key) {
         return (O) properties.get(key);

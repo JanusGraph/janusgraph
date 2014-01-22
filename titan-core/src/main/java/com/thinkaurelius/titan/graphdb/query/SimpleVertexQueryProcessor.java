@@ -150,6 +150,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         return (Iterable) relations();
     }
 
+    //TODO: use reuseIterator() when querying for vertices and only read ids
     public Iterable<Vertex> vertices() {
         return Iterables.transform(this,new Function<Entry, Vertex>() {
             @Nullable
@@ -180,7 +181,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
             public EntryList get(SliceQuery query) {
                 return tx.getGraph().edgeQuery(vertex.getID(), query, tx.getTxHandle());
             }
-        }).reuseIterator();
+        }).iterator();
     }
 
 
