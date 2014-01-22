@@ -4,10 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
@@ -128,9 +125,8 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         Iterable<StaticBuffer> avList = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
             @Override
             public StaticBuffer apply(Entry e) {
-                assert null != e.getColumn();
-                assert e.getColumn().equals(kc.getColumn());
-                return e.getValue();
+                assert e.getColumnAs(StaticBuffer.STATIC_FACTORY).equals(kc.getColumn());
+                return e.getValueAs(StaticBuffer.STATIC_FACTORY);
             }
         });
 

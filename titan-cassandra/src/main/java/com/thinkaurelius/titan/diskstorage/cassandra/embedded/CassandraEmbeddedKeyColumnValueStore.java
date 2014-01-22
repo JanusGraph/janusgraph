@@ -2,16 +2,14 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
@@ -59,53 +57,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
     @Override
     public void close() throws StorageException {
-    }
-
-    static ByteBuffer getInternal(String keyspace,
-                                  String columnFamily,
-                                  ByteBuffer key,
-                                  ByteBuffer column,
-                                  org.apache.cassandra.db.ConsistencyLevel cl) throws StorageException {
-
-        QueryPath slicePath = new QueryPath(columnFamily);
-
-        SliceByNamesReadCommand namesCmd = new SliceByNamesReadCommand(
-                keyspace, key.duplicate(), slicePath, Arrays.asList(column.duplicate()));
-
-        List<Row> rows = read(namesCmd, cl);
-
-        if (null == rows || 0 == rows.size())
-            return null;
-
-        if (1 < rows.size())
-            throw new PermanentStorageException("Received " + rows.size()
-                    + " rows from a single-key-column cassandra read");
-
-        assert 1 == rows.size();
-
-        Row r = rows.get(0);
-
-        if (null == r) {
-            log.warn("Null Row object retrieved from Cassandra StorageProxy");
-            return null;
-        }
-
-        ColumnFamily cf = r.cf;
-        if (null == cf)
-            return null;
-
-        if (cf.isMarkedForDelete())
-            return null;
-
-        IColumn c = cf.getColumn(column.duplicate());
-        if (null == c)
-            return null;
-
-        // These came up during testing
-        if (c.isMarkedForDelete())
-            return null;
-
-        return org.apache.cassandra.utils.ByteBufferUtil.clone(c.value());
     }
 
     @Override
@@ -181,6 +132,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return columnFamily;
     }
 
+    //TODO: remove
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
 
@@ -224,7 +176,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
         QueryPath slicePath = new QueryPath(columnFamily);
         ReadCommand sliceCmd = new SliceFromReadCommand(
@@ -234,12 +186,12 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 query.getSliceStart().asByteBuffer(),  // Start column name (empty means begin at first result)
                 query.getSliceEnd().asByteBuffer(),   // End column name (empty means max out the count)
                 false,                         // Reverse results? (false=no)
-                query.getLimit());             // Max count of Columns to return
+                query.getLimit() + (query.hasLimit()?1:0));             // Max count of Columns to return, add 1 in case of limit since we might have to filter one out at the end
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
 
         if (null == slice || 0 == slice.size())
-            return new ArrayList<Entry>(0);
+            return EntryList.EMPTY_LIST;
 
         int sliceSize = slice.size();
         if (1 < sliceSize)
@@ -249,24 +201,39 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         if (null == r) {
             log.warn("Null Row object retrieved from Cassandra StorageProxy");
-            return new ArrayList<Entry>(0);
+            return EntryList.EMPTY_LIST;
         }
 
         ColumnFamily cf = r.cf;
 
         if (null == cf) {
             log.debug("null ColumnFamily (\"{}\")", columnFamily);
-            return new ArrayList<Entry>(0);
+            return EntryList.EMPTY_LIST;
         }
 
         if (cf.isMarkedForDelete())
-            return new ArrayList<Entry>(0);
+            return EntryList.EMPTY_LIST;
 
-        return cfToEntries(cf, query.getSliceEnd());
+        return CassandraHelper.makeEntryList(
+                Iterables.filter(cf.getSortedColumns(),FilterDeletedColumns.INSTANCE),
+                CassandraEmbeddedGetter.INSTANCE,
+                query.getSliceEnd(),
+                query.getLimit());
+
+    }
+
+    private enum FilterDeletedColumns implements Predicate<IColumn> {
+
+        INSTANCE;
+
+        @Override
+        public boolean apply(@Nullable IColumn iColumn) {
+            return !iColumn.isMarkedForDelete();
+        }
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException();
     }
 
@@ -304,43 +271,18 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
     }
 
+    private static enum CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<IColumn,ByteBuffer> {
+        INSTANCE;
 
-    private List<Entry> cfToEntries(ColumnFamily cf,
-                                    StaticBuffer columnEnd) throws StorageException {
-
-        assert !cf.isMarkedForDelete();
-
-        Collection<IColumn> columns = cf.getSortedColumns();
-        List<Entry> result = new ArrayList<Entry>(columns.size());
-
-        /*
-         * We want to call columnEnd.equals() on column name ByteBuffers in the
-         * loop below. But columnEnd is a StaticBuffer, and it doesn't have an
-         * equals() method that accepts ByteBuffer. We create a ByteBuffer copy
-         * of columnEnd just for equals() comparisons in the for loop below.
-         * 
-         * TODO remove this if StaticBuffer's equals() accepts ByteBuffer
-         */
-        ByteBuffer columnEndBB = columnEnd.asByteBuffer();
-
-        // Populate Entries into return collection
-        for (IColumn icol : columns) {
-            if (null == icol)
-                throw new PermanentStorageException("Unexpected null IColumn");
-
-            if (icol.isMarkedForDelete())
-                continue;
-
-            ByteBuffer name = org.apache.cassandra.utils.ByteBufferUtil.clone(icol.name());
-            ByteBuffer value = org.apache.cassandra.utils.ByteBufferUtil.clone(icol.value());
-
-            if (columnEndBB.equals(name))
-                continue;
-
-            result.add(new ByteBufferEntry(name, value));
+        @Override
+        public ByteBuffer getColumn(IColumn element) {
+            return org.apache.cassandra.utils.ByteBufferUtil.clone(element.name());
         }
 
-        return result;
+        @Override
+        public ByteBuffer getValue(IColumn element) {
+            return org.apache.cassandra.utils.ByteBufferUtil.clone(element.value());
+        }
     }
 
     private class RowIterator implements KeyIterator {
@@ -388,7 +330,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             ByteBuffer currentKey = currentRow.key.key.duplicate();
 
             try {
-                return new StaticByteBuffer(currentKey);
+                return StaticArrayBuffer.of(currentKey);
             } finally {
                 lastSeenKey = currentKey;
             }
@@ -411,35 +353,38 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (sliceQuery == null)
                 throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
 
-            try {
-                return new RecordIterator<Entry>() {
-                    final Iterator<Entry> columns = cfToEntries(currentRow.cf, sliceQuery.getSliceEnd()).iterator();
+            return new RecordIterator<Entry>() {
+                final Iterator<Entry> columns = CassandraHelper.makeEntryIterator(
+                        Iterables.filter(currentRow.cf.getSortedColumns(),FilterDeletedColumns.INSTANCE),
+                CassandraEmbeddedGetter.INSTANCE,
+                        sliceQuery.getSliceEnd(),
+                        sliceQuery.getLimit());
 
-                    @Override
-                    public boolean hasNext() {
-                        ensureOpen();
-                        return columns.hasNext();
-                    }
+                 //cfToEntries(currentRow.cf, sliceQuery).iterator();
 
-                    @Override
-                    public Entry next() {
-                        ensureOpen();
-                        return columns.next();
-                    }
+                @Override
+                public boolean hasNext() {
+                    ensureOpen();
+                    return columns.hasNext();
+                }
 
-                    @Override
-                    public void close() {
-                        isClosed = true;
-                    }
+                @Override
+                public Entry next() {
+                    ensureOpen();
+                    return columns.next();
+                }
 
-                    @Override
-                    public void remove() {
-                        throw new UnsupportedOperationException();
-                    }
-                };
-            } catch (StorageException e) {
-                throw new IllegalStateException(e);
-            }
+                @Override
+                public void close() {
+                    isClosed = true;
+                }
+
+                @Override
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+
         }
 
         private final boolean hasNextInternal() throws StorageException {

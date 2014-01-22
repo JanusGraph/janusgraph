@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.carrotsearch.junitbenchmarks.BenchmarkRule;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 
 import org.junit.After;
@@ -77,7 +77,7 @@ public abstract class KeyColumnValueStorePerformance {
             int numCols = 10;
             List<Entry> entries = new ArrayList<Entry>();
             for (int c = 0; c < numCols; c++) {
-                entries.add(new StaticBufferEntry(KeyValueStoreUtil.getBuffer(c + 1), KeyValueStoreUtil.getBuffer(c + r + 2)));
+                entries.add(StaticArrayEntry.of(KeyValueStoreUtil.getBuffer(c + 1), KeyValueStoreUtil.getBuffer(c + r + 2)));
             }
             store.mutate(KeyValueStoreUtil.getBuffer(r + 1), entries, KeyColumnValueStore.NO_DELETIONS, tx);
         }

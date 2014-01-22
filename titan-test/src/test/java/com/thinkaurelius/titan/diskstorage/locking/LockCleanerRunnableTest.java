@@ -18,18 +18,20 @@ import org.junit.Test;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 
 public class LockCleanerRunnableTest {
 
@@ -68,9 +70,9 @@ public class LockCleanerRunnableTest {
     public void testDeleteSingleLock() throws StorageException {
         long now = 1L;
 
-        Entry expiredLockCol = new StaticBufferEntry(codec.toLockCol(now,
+        Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
                 defaultLockRid), ByteBufferUtil.getIntBuffer(0));
-        List<Entry> expiredSingleton = ImmutableList.<Entry> of(expiredLockCol);
+        EntryList expiredSingleton = StaticArrayEntryList.of(expiredLockCol);
 
         now += 1;
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, now);
@@ -108,7 +110,7 @@ public class LockCleanerRunnableTest {
 
         for (int i = 0; i < lockCount; i++) {
             final long ts = timeStart + (timeIncr * i);
-            Entry lock = new StaticBufferEntry(
+            Entry lock = StaticArrayEntry.of(
                     codec.toLockCol(ts, defaultLockRid),
                     ByteBufferUtil.getIntBuffer(0));
 
@@ -119,14 +121,13 @@ public class LockCleanerRunnableTest {
             locksBuilder.add(lock);
         }
 
-        List<Entry> locks = locksBuilder.build();
-        List<Entry> dels  = delsBuilder.build();
+        EntryList locks = StaticArrayEntryList.of(locksBuilder.build());
+        EntryList dels  = StaticArrayEntryList.of(delsBuilder.build());
         assertTrue(expiredCount == dels.size());
 
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, timeCutoff);
 
-        expect(store.getSlice(eq(ksq), eq(tx)))
-                .andReturn(locks);
+        expect(store.getSlice(eq(ksq), eq(tx))).andReturn(locks);
 
         store.mutate(
                 eq(key),
@@ -147,17 +148,16 @@ public class LockCleanerRunnableTest {
     public void testPreservesLocksAtOrAfterCutoff() throws StorageException {
         final long cutoff = 10L;
 
-        Entry currentLock = new StaticBufferEntry(codec.toLockCol(cutoff,
+        Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,
                 defaultLockRid), ByteBufferUtil.getIntBuffer(0));
-        Entry futureLock = new StaticBufferEntry(codec.toLockCol(cutoff + 1,
+        Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff + 1,
                 defaultLockRid), ByteBufferUtil.getIntBuffer(0));
-        List<Entry> locks = ImmutableList.<Entry> of(currentLock, futureLock);
+        EntryList locks = StaticArrayEntryList.of(currentLock, futureLock);
 
         // Don't increment cutoff: lockCol is exactly at the cutoff timestamp
         del = new StandardLockCleanerRunnable(store, kc, tx, codec, cutoff);
 
-        expect(store.getSlice(eq(ksq), eq(tx)))
-                .andReturn(locks);
+        expect(store.getSlice(eq(ksq), eq(tx))).andReturn(locks);
 
         ctrl.replay();
         del.run();

@@ -77,6 +77,6 @@ public class WriteByteBuffer implements WriteBuffer {
         Preconditions.checkArgument(from>=0 && from<=to);
         Preconditions.checkArgument(to<=b.limit());
         for (int i=from;i<to;i++) b.put(i,(byte)~b.get(i));
-        return new StaticByteBuffer(b);
+        return StaticArrayBuffer.of(b);
     }
 }

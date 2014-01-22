@@ -235,7 +235,7 @@ public class VariableLong {
             value = value << 7 | b & BIT_MASK;
             position--;
         } while (b >= 0);
-        in.movePosition(position-in.getPosition());
+        in.movePositionTo(position);
         return value;
     }
 

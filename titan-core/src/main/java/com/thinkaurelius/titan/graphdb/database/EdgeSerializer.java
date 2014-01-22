@@ -4,15 +4,14 @@ import com.carrotsearch.hppc.LongArrayList;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -44,7 +43,7 @@ public class EdgeSerializer implements RelationReader {
 
 
     private static final int DEFAULT_COLUMN_CAPACITY = 60;
-    private static final int DEFAULT_VALUE_CAPACITY = 128;
+    private static final int DEFAULT_CAPACITY = 128;
 
     private final Serializer serializer;
 
@@ -65,7 +64,7 @@ public class EdgeSerializer implements RelationReader {
         RelationCache map = data.getCache();
         if (map != null) return map.direction;
 
-        long[] typeAndDir = IDHandler.readEdgeType(data.getReadColumn());
+        long[] typeAndDir = IDHandler.readEdgeType(data.asReadBuffer());
         switch ((int) typeAndDir[1]) {
             case PROPERTY_DIR:
             case EDGE_OUT_DIR:
@@ -78,14 +77,13 @@ public class EdgeSerializer implements RelationReader {
     }
 
     @Override
-    public RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx) {
+    public RelationCache parseRelation(long vertexid, Entry data, boolean excludeProperties, TypeInspector tx) {
         assert vertexid > 0;
 
-        ReadBuffer column = data.getReadColumn();
-        ReadBuffer value = data.getReadValue();
+        ReadBuffer in = data.asReadBuffer();
 
-        LongObjectOpenHashMap properties = parseHeaderOnly ? null : new LongObjectOpenHashMap(4);
-        long[] typeAndDir = IDHandler.readEdgeType(column);
+        LongObjectOpenHashMap properties = excludeProperties ? null : new LongObjectOpenHashMap(4);
+        long[] typeAndDir = IDHandler.readEdgeType(in);
         int dirID = (int) typeAndDir[1];
         long typeId = typeAndDir[0];
 
@@ -114,24 +112,28 @@ public class EdgeSerializer implements RelationReader {
         TitanType titanType = tx.getExistingType(typeId);
 
         InternalType def = (InternalType) titanType;
+        boolean invert = def.getSortOrder()==Order.DESC;
         long[] keysig = def.getSortKey();
-        if (!parseHeaderOnly && !titanType.isUnique(dir)) {
-            ReadBuffer sortKeyReader = def.getSortOrder()==Order.DESC?column.invert():column;
-            readInlineTypes(keysig, properties, sortKeyReader, tx);
+        if (!excludeProperties && !titanType.isUnique(dir)) {
+            if (invert) in.invert();
+            readInlineTypes(keysig, properties, in, tx);
+            if (invert) in.invert();
         }
 
         long relationIdDiff, vertexIdDiff = 0;
         if (titanType.isUnique(dir)) {
+            assert data.getValuePosition()==in.getPosition();
             if (rtype == RelationType.EDGE)
-                vertexIdDiff = VariableLong.read(value);
-            relationIdDiff = VariableLong.read(value);
+                vertexIdDiff = VariableLong.read(in);
+            relationIdDiff = VariableLong.read(in);
         } else {
             //Move position to end to read backwards
-            column.movePosition(column.length() - column.getPosition() - 1);
+            in.movePositionTo(data.getValuePosition() - 1);
 
-            relationIdDiff = VariableLong.readBackward(column);
+            relationIdDiff = VariableLong.readBackward(in);
             if (rtype == RelationType.EDGE)
-                vertexIdDiff = VariableLong.readBackward(column);
+                vertexIdDiff = VariableLong.readBackward(in);
+            in.movePositionTo(data.getValuePosition());
         }
 
         assert relationIdDiff + vertexid > 0;
@@ -148,8 +150,8 @@ public class EdgeSerializer implements RelationReader {
                 Preconditions.checkArgument(titanType.isPropertyKey());
                 TitanKey key = ((TitanKey) titanType);
                 other = hasGenericDataType(key)
-                        ? serializer.readClassAndObject(value)
-                        : serializer.readObjectNotNull(value, key.getDataType());
+                        ? serializer.readClassAndObject(in)
+                        : serializer.readObjectNotNull(in, key.getDataType());
                 break;
 
             default:
@@ -157,18 +159,18 @@ public class EdgeSerializer implements RelationReader {
         }
         assert other != null;
 
-        if (!parseHeaderOnly) {
+        if (!excludeProperties) {
             //value signature & sort key if unique
             if (titanType.isUnique(dir)) {
-                readInlineTypes(keysig, properties, value, tx);
+                readInlineTypes(keysig, properties, in, tx);
             }
 
-            readInlineTypes(def.getSignature(), properties, value, tx);
+            readInlineTypes(def.getSignature(), properties, in, tx);
 
             //Third: read rest
-            while (value.hasRemaining()) {
-                TitanType type = tx.getExistingType(IDHandler.readInlineEdgeType(value));
-                Object pvalue = readInline(value, type);
+            while (in.hasRemaining()) {
+                TitanType type = tx.getExistingType(IDHandler.readInlineEdgeType(in));
+                Object pvalue = readInline(in, type);
                 assert pvalue != null;
                 properties.put(type.getID(), pvalue);
             }
@@ -243,82 +245,84 @@ public class EdgeSerializer implements RelationReader {
         Direction dir = EdgeDirection.fromPosition(position);
         int dirID = getDirID(dir, relation.isProperty() ? RelationType.PROPERTY : RelationType.EDGE);
 
-        DataOutput colOut = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
-        IDHandler.writeEdgeType(colOut, typeid, dirID);
+        DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY, true);
+        int valuePosition;
+        IDHandler.writeEdgeType(out, typeid, dirID);
 
         InternalType definition = (InternalType) type;
         long[] sortKey = definition.getSortKey();
-        int startPosition = colOut.getPosition();
+        int keyStartPos = out.getPosition();
         if (!type.isUnique(dir)) {
-            writeInlineTypes(sortKey, relation, colOut, tx);
+            writeInlineTypes(sortKey, relation, out, tx);
         }
-        int endPosition = colOut.getPosition();
+        int keyEndPos = out.getPosition();
 
-        DataOutput writer = colOut;
         long vertexIdDiff = 0;
         long relationIdDiff = relation.getID() - relation.getVertex(position).getID();
         if (relation.isEdge())
             vertexIdDiff = relation.getVertex((position + 1) % 2).getID() - relation.getVertex(position).getID();
 
         if (type.isUnique(dir)) {
-            writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
-            if (relation.isEdge()) VariableLong.write(writer, vertexIdDiff);
-            VariableLong.write(writer, relationIdDiff);
+            valuePosition = out.getPosition();
+            if (writeValue) {
+                if (relation.isEdge()) VariableLong.write(out, vertexIdDiff);
+                VariableLong.write(out, relationIdDiff);
+            }
         } else {
-            if (relation.isEdge()) VariableLong.writeBackward(writer, vertexIdDiff);
-            VariableLong.writeBackward(writer, relationIdDiff);
+            if (relation.isEdge()) VariableLong.writeBackward(out, vertexIdDiff);
+            VariableLong.writeBackward(out, relationIdDiff);
+            valuePosition = out.getPosition();
         }
 
-        if (!type.isUnique(dir)) {
-            writer = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
-        }
+        if (writeValue) {
+            if (relation.isProperty()) {
+                Preconditions.checkArgument(relation.isProperty());
+                Object value = ((TitanProperty) relation).getValue();
+                Preconditions.checkNotNull(value);
+                TitanKey key = (TitanKey) type;
+                assert key.getDataType().isInstance(value);
+                if (hasGenericDataType(key)) {
+                    out.writeClassAndObject(value);
+                } else {
+                    out.writeObjectNotNull(value);
+                }
+            }
 
-        if (relation.isProperty()) {
-            Preconditions.checkArgument(relation.isProperty());
-            Object value = ((TitanProperty) relation).getValue();
-            Preconditions.checkNotNull(value);
-            TitanKey key = (TitanKey) type;
-            assert key.getDataType().isInstance(value);
-            if (hasGenericDataType(key)) {
-                writer.writeClassAndObject(value);
-            } else {
-                writer.writeObjectNotNull(value);
+            //Write signature & sort key if unique
+            if (type.isUnique(dir)) {
+                writeInlineTypes(sortKey, relation, out, tx);
+            }
+            long[] signature = definition.getSignature();
+            writeInlineTypes(signature, relation, out, tx);
+
+            //Write remaining properties
+            LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
+            if (sortKey.length > 0 || signature.length > 0) {
+                for (long id : sortKey) writtenTypes.add(id);
+                for (long id : signature) writtenTypes.add(id);
+            }
+            LongArrayList remainingTypes = new LongArrayList(8);
+            for (TitanType t : relation.getPropertyKeysDirect()) {
+                if (!writtenTypes.contains(t.getID())) {
+                    remainingTypes.add(t.getID());
+
+                }
+            }
+            //Sort types before writing to ensure that value is always written the same way
+            long[] remaining = remainingTypes.toArray();
+            Arrays.sort(remaining);
+            for (long tid : remaining) {
+                TitanType t = tx.getExistingType(tid);
+                writeInline(out, t, relation.getProperty(t), true);
             }
         }
 
-        //Write signature & sort key if unique
-        if (type.isUnique(dir)) {
-            writeInlineTypes(sortKey, relation, writer, tx);
-        }
-        long[] signature = definition.getSignature();
-        writeInlineTypes(signature, relation, writer, tx);
+        assert valuePosition>0;
+        assert writeValue || valuePosition==out.getPosition();
 
-
-        //Write remaining properties
-        LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
-        if (sortKey.length > 0 || signature.length > 0) {
-            for (long id : sortKey) writtenTypes.add(id);
-            for (long id : signature) writtenTypes.add(id);
-        }
-        LongArrayList remainingTypes = new LongArrayList(8);
-        for (TitanType t : relation.getPropertyKeysDirect()) {
-            if (!writtenTypes.contains(t.getID())) {
-                remainingTypes.add(t.getID());
-
-            }
-        }
-        //Sort types before writing to ensure that value is always written the same way
-        long[] remaining = remainingTypes.toArray();
-        Arrays.sort(remaining);
-        for (long tid : remaining) {
-            TitanType t = tx.getExistingType(tid);
-            writeInline(writer, t, relation.getProperty(t), true);
-        }
-
-        StaticBuffer column = ((InternalType)type).getSortOrder()==Order.DESC?
-                                    colOut.getStaticBufferFlipBytes(startPosition,endPosition):
-                                    colOut.getStaticBuffer();
-        return new StaticBufferEntry(column, writer.getStaticBuffer());
+        return new StaticArrayEntry(((InternalType)type).getSortOrder()==Order.DESC?
+                                    out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
+                                    out.getStaticBuffer(),valuePosition);
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {

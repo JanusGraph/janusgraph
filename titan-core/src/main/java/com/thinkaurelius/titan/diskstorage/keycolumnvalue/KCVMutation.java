@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.Mutation;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 

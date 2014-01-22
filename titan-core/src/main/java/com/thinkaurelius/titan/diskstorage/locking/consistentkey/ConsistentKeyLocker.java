@@ -6,18 +6,12 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.slf4j.Logger;
@@ -253,8 +247,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     /**
-     * Try to write a lock record remotely up to
-     * {@link conf#getLockRetryCount()} times. If the store produces
+     * Try to write a lock record remotely up to the configured number of
+     *  times. If the store produces
      * {@link TemporaryLockingException}, then we'll call mutate again to add a
      * new column with an updated timestamp and to delete the column that tried
      * to write when the store threw an exception. We continue like that up to
@@ -295,8 +289,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     /**
      * Log a message and/or throw an exception in response to a lock write
      * mutation that failed. "Failed" means that the mutation either succeeded
-     * but took longer to complete than
-     * {@link ConsistentKeyLockerConfiguration#getLockWait(TimeUnit)}, or that
+     * but took longer to complete than configured lock wait time, or that
      * the call to mutate threw something.
      *
      * @param lockID  coordinates identifying the lock we tried but failed to
@@ -338,9 +331,9 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Throwable t = null;
         final long before = times.getApproxNSSinceEpoch();
         StaticBuffer newLockCol = serializer.toLockCol(before, rid);
-        Entry newLockEntry = new StaticBufferEntry(newLockCol, zeroBuf);
+        Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
         try {
-            store.mutate(key, Arrays.asList(newLockEntry), null == del ? ImmutableList.<StaticBuffer>of() : Arrays.asList(del), overrideTimestamp(txh, before));
+            store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), overrideTimestamp(txh, before));
         } catch (StorageException e) {
             t = e;
         }
@@ -379,7 +372,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Iterable<TimestampRid> iter = Iterables.transform(claimEntries, new Function<Entry, TimestampRid>() {
             @Override
             public TimestampRid apply(Entry e) {
-                return serializer.fromLockColumn(e.getColumn());
+                return serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY));
             }
         });
         // ...and then filter out the TimestampRid objects with expired timestamps

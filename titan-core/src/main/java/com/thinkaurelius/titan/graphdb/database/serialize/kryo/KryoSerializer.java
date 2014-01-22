@@ -34,6 +34,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         @Override
         public Input get(byte[] array, int offset, int limit) {
             //Needs to copy array - otherwise we see BufferUnderflow exceptions from concurrent access
+            //See https://github.com/EsotericSoftware/kryo#threading
             return new Input(Arrays.copyOfRange(array,offset,limit));
         }
     };
@@ -99,7 +100,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         Object value = getKryo().readClassAndObject(i);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
@@ -108,7 +109,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         T value = getKryo().readObjectOrNull(i, type);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
@@ -116,7 +117,7 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         T value = getKryo().readObject(i, type);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 

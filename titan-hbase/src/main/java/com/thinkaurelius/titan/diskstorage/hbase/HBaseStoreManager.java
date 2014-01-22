@@ -6,30 +6,17 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.MixedConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
-
-import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.MasterNotRunningException;
-import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.TableNotFoundException;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Pair;
@@ -42,11 +29,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.thinkaurelius.titan.diskstorage.Backend.EDGESTORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.ID_STORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.EDGEINDEX_STORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.VERTEXINDEX_STORE_NAME;
-import static com.thinkaurelius.titan.diskstorage.Backend.LOCK_STORE_SUFFIX;
+import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 
 /**
@@ -252,10 +235,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     byte startKey[] = regionInfo.getStartKey();
                     byte endKey[]   = regionInfo.getEndKey();
                     
-                    StaticBuffer startBuf =
-                            new StaticArrayBuffer(startKey);
-                    StaticBuffer endBuf = 
-                            new StaticByteBuffer(ByteBufferUtil.nextBiggerBufferAllowOverflow(ByteBuffer.wrap(endKey)));
+                    StaticBuffer startBuf = StaticArrayBuffer.of(startKey);
+                    StaticBuffer endBuf =
+                            StaticArrayBuffer.of(ByteBufferUtil.nextBiggerBufferAllowOverflow(ByteBuffer.wrap(endKey)));
                     
                     KeyRange kr = new KeyRange(startBuf, endBuf);
                     
@@ -452,19 +434,19 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             byte[] cfName = cfString.getBytes();
 
             for (Map.Entry<StaticBuffer, KCVMutation> m : entry.getValue().entrySet()) {
-                StaticBuffer key = m.getKey();
+                byte[] key = m.getKey().as(StaticBuffer.ARRAY_FACTORY);
                 KCVMutation mutation = m.getValue();
 
                 Pair<Put, Delete> commands = commandsPerKey.get(key);
 
                 if (commands == null) {
                     commands = new Pair<Put, Delete>();
-                    commandsPerKey.put(key, commands);
+                    commandsPerKey.put(m.getKey(), commands);
                 }
 
                 if (mutation.hasDeletions()) {
                     if (commands.getSecond() == null)
-                        commands.setSecond(new Delete(key.as(StaticBuffer.ARRAY_FACTORY), delTimestamp, null));
+                        commands.setSecond(new Delete(key, delTimestamp, null));
 
                     for (StaticBuffer b : mutation.getDeletions()) {
                         commands.getSecond().deleteColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
@@ -473,13 +455,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 if (mutation.hasAdditions()) {
                     if (commands.getFirst() == null)
-                        commands.setFirst(new Put(key.as(StaticBuffer.ARRAY_FACTORY), putTimestamp));
+                        commands.setFirst(new Put(key, putTimestamp));
 
                     for (Entry e : mutation.getAdditions()) {
                         commands.getFirst().add(cfName,
-                                e.getArrayColumn(),
+                                e.getColumnAs(StaticBuffer.ARRAY_FACTORY),
                                 putTimestamp,
-                                e.getArrayValue());
+                                e.getValueAs(StaticBuffer.ARRAY_FACTORY));
                     }
                 }
             }

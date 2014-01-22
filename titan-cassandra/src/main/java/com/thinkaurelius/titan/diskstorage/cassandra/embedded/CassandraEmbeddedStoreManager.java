@@ -1,12 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
 
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -17,13 +16,10 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamilyType;
-import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
-import org.apache.cassandra.db.marshal.UTF8Type;
-import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
@@ -34,20 +30,13 @@ import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ColumnPath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 
@@ -185,15 +174,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        // TODO are these asByteBuffer() calls too expensive?
-                        QueryPath path = new QueryPath(columnFamily, null, e.getColumn().asByteBuffer());
-                        rm.add(path, e.getValue().asByteBuffer(), timestamp.additionTime);
+                        QueryPath path = new QueryPath(columnFamily, null, e.getColumnAs(StaticBuffer.BB_FACTORY));
+                        rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime);
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, col.asByteBuffer());
+                        QueryPath path = new QueryPath(columnFamily, null, col.as(StaticBuffer.BB_FACTORY));
                         rm.delete(path, timestamp.deletionTime);
                     }
                 }

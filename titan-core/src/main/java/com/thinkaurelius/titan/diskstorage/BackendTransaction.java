@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -13,10 +12,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -151,6 +147,10 @@ public class BackendTransaction implements TransactionHandle {
         edgeStore.acquireLock(key, column, expectedValue, storeTx);
     }
 
+    public void acquireEdgeLock(StaticBuffer key, Entry entry) throws StorageException {
+        edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
+    }
+
     /**
      * Acquires a lock for the key-column pair on the property index which ensures that nobody else can take a lock on that
      * respective entry for the duration of this lock (but somebody could potentially still overwrite
@@ -170,14 +170,18 @@ public class BackendTransaction implements TransactionHandle {
         vertexIndexStore.acquireLock(key, column, expectedValue, storeTx);
     }
 
+    public void acquireVertexIndexLock(StaticBuffer key, Entry entry) throws StorageException {
+        edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
+    }
+
     /* ###################################################
             Convenience Read Methods
      */
 
-    public List<Entry> edgeStoreQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
+    public EntryList edgeStoreQuery(final KeySliceQuery query) {
+        return executeRead(new Callable<EntryList>() {
             @Override
-            public List<Entry> call() throws Exception {
+            public EntryList call() throws Exception {
                 return edgeStore.getSlice(query, storeTx);
             }
 
@@ -188,11 +192,11 @@ public class BackendTransaction implements TransactionHandle {
         });
     }
 
-    public List<List<Entry>> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
+    public Map<StaticBuffer,EntryList> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
         if (storeFeatures.supportsMultiQuery()) {
-            return executeRead(new Callable<List<List<Entry>>>() {
+            return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
-                public List<List<Entry>> call() throws Exception {
+                public Map<StaticBuffer,EntryList> call() throws Exception {
                     return edgeStore.getSlice(keys, query, storeTx);
                 }
 
@@ -202,16 +206,15 @@ public class BackendTransaction implements TransactionHandle {
                 }
             });
         } else {
-            final List<List<Entry>> results;
+            final Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer,EntryList>(keys.size());
             if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
-                results = new ArrayList<List<Entry>>(keys.size());
                 for (StaticBuffer key : keys) {
-                    results.add(edgeStoreQuery(new KeySliceQuery(key, query)));
+                    results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));
                 }
             } else {
                 final CountDownLatch doneSignal = new CountDownLatch(keys.size());
                 final AtomicInteger failureCount = new AtomicInteger(0);
-                List<Entry>[] resultArray = new List[keys.size()];
+                EntryList[] resultArray = new EntryList[keys.size()];
                 for (int i = 0; i < keys.size(); i++) {
                     threadPool.execute(new SliceQueryRunner(new KeySliceQuery(keys.get(i), query),
                             doneSignal, failureCount, resultArray, i));
@@ -224,9 +227,10 @@ public class BackendTransaction implements TransactionHandle {
                 if (failureCount.get() > 0) {
                     throw new TitanException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
                 }
-                results = Arrays.asList(resultArray);
-                assert keys.size() == results.size();
-                for (List l : results) assert l != null;
+                for (int i=0;i<keys.size();i++) {
+                    assert resultArray[i]!=null;
+                    results.put(keys.get(i),resultArray[i]);
+                }
             }
             return results;
         }
@@ -267,6 +271,7 @@ public class BackendTransaction implements TransactionHandle {
         }
     }
 
+    //TODO: remove and also KeyColumnValueStore.containsKey
     public boolean edgeStoreContainsKey(final StaticBuffer key) {
         return executeRead(new Callable<Boolean>() {
             @Override
@@ -316,10 +321,10 @@ public class BackendTransaction implements TransactionHandle {
         });
     }
 
-    public List<Entry> vertexIndexQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
+    public EntryList vertexIndexQuery(final KeySliceQuery query) {
+        return executeRead(new Callable<EntryList>() {
             @Override
-            public List<Entry> call() throws Exception {
+            public EntryList call() throws Exception {
                 return vertexIndexStore.getSlice(query, storeTx);
             }
 
@@ -331,10 +336,10 @@ public class BackendTransaction implements TransactionHandle {
 
     }
 
-    public List<Entry> edgeIndexQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
+    public EntryList edgeIndexQuery(final KeySliceQuery query) {
+        return executeRead(new Callable<EntryList>() {
             @Override
-            public List<Entry> call() throws Exception {
+            public EntryList call() throws Exception {
                 return edgeIndexStore.getSlice(query, storeTx);
             }
 

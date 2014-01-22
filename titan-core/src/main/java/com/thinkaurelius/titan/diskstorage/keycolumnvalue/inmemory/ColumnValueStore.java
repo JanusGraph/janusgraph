@@ -2,10 +2,13 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.NoLock;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +44,7 @@ class ColumnValueStore {
         }
     }
 
-    List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) {
+    EntryList getSlice(KeySliceQuery query, StoreTransaction txh) {
         Lock lock = getLock(txh);
         lock.lock();
         try {
@@ -51,17 +54,38 @@ class ColumnValueStore {
             int end = datacp.getIndex(query.getSliceEnd());
             if (end < 0) end = (-end - 1);
             if (start < end) {
-                List<Entry> result = new ArrayList<Entry>(end - start);
+                MemoryEntryList result = new MemoryEntryList(end - start);
                 for (int i = start; i < end; i++) {
                     if (query.hasLimit() && result.size() >= query.getLimit()) break;
                     result.add(datacp.get(i));
                 }
                 return result;
             } else {
-                return ImmutableList.of();
+                return EntryList.EMPTY_LIST;
             }
         } finally {
             lock.unlock();
+        }
+    }
+
+    private static class MemoryEntryList extends ArrayList<Entry> implements EntryList {
+
+        public MemoryEntryList(int size) {
+            super(size);
+        }
+
+        @Override
+        public Iterator<Entry> reuseIterator() {
+            return iterator();
+        }
+
+        @Override
+        public int getByteSize() {
+            int size = 48;
+            for (Entry e : this) {
+                size += 8 + 16 + 8 + 8 + e.length();
+            }
+            return size;
         }
     }
 
@@ -80,17 +104,18 @@ class ColumnValueStore {
         } else add = new Entry[0];
 
         //Filter out deletions that are also added
-        StaticBuffer[] del;
+        Entry[] del;
         if (!deletions.isEmpty()) {
-            Iterator<StaticBuffer> iter = deletions.iterator();
-            while (iter.hasNext()) {
-                if (Arrays.binarySearch(add, new StaticBufferEntry(iter.next(), null)) >= 0) {
-                    iter.remove();
-                }
+            del = new Entry[deletions.size()];
+            int pos=0;
+            for (StaticBuffer deletion : deletions) {
+                Entry delEntry = StaticArrayEntry.of(deletion);
+                if (Arrays.binarySearch(add,delEntry) >= 0) continue;
+                del[pos++]=delEntry;
             }
-            del = deletions.toArray(new StaticBuffer[deletions.size()]);
+            if (pos<deletions.size()) del = Arrays.copyOf(del,pos);
             Arrays.sort(del);
-        } else del = new StaticBuffer[0];
+        } else del = new Entry[0];
 
         Lock lock = getLock(txh);
         lock.lock();
@@ -117,7 +142,7 @@ class ColumnValueStore {
                 }
                 //Compare with deletions
                 if (idel < del.length) {
-                    int compare = ByteBufferUtil.compare(e.getColumn(), del[idel]);
+                    int compare = e.compareTo(del[idel]);
                     if (compare == 0) e = null;
                     if (compare >= 0) idel++;
                 }
@@ -176,7 +201,7 @@ class ColumnValueStore {
         }
 
         int getIndex(StaticBuffer column) {
-            return Arrays.binarySearch(array, 0, size, new StaticBufferEntry(column, null));
+            return Arrays.binarySearch(array, 0, size, StaticArrayEntry.of(column));
         }
 
         Entry get(int index) {

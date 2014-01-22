@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -11,13 +10,11 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-
-import org.apache.commons.configuration.BaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,7 +108,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         protected Logger log;
 
         public Builder() {
-            this.rid = new StaticByteBuffer(DistributedStoreManager.getRid(Configuration.EMPTY));
+            this.rid = new StaticArrayBuffer(DistributedStoreManager.getRid(Configuration.EMPTY));
             this.times = TimeUtility.INSTANCE;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern

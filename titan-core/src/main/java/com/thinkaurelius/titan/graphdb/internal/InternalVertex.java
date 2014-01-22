@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -58,7 +59,7 @@ public interface InternalVertex extends TitanVertex, InternalElement {
      * @param lookup
      * @return
      */
-    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery,List<Entry>> lookup);
+    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery,EntryList> lookup);
 
     /**
      * Returns true if the results for the given query have already been loaded for this vertex and are locally cached.

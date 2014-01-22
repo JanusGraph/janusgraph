@@ -1,13 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +55,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),
                 new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
@@ -68,16 +64,16 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         if (!deletions.isEmpty()) {
-            for (StaticBuffer column : deletions) {
-                StaticBuffer del = concatenate(key, column);
+            for (StaticBuffer deletion : deletions) {
+                StaticBuffer del = concatenate(key, deletion.as(StaticBuffer.STATIC_FACTORY));
                 store.delete(del, txh);
             }
 
         }
         if (!additions.isEmpty()) {
             for (Entry entry : additions) {
-                StaticBuffer newkey = concatenate(key, entry.getColumn());
-                store.insert(newkey, entry.getValue(), txh);
+                StaticBuffer newkey = concatenate(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY));
+                store.insert(newkey, entry.getValueAs(StaticBuffer.STATIC_FACTORY), txh);
             }
         }
     }
@@ -103,27 +99,38 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         store.acquireLock(concatenate(key, column), expectedValue, txh);
     }
 
-    private List<Entry> convert(RecordIterator<KeyValueEntry> entries) throws StorageException {
-        List<Entry> newentries = new ArrayList<Entry>(entries.hasNext() ? 20 : 0);
-        while (entries.hasNext()) {
-            KeyValueEntry entry = entries.next();
-            newentries.add(getEntry(entry));
-        }
+    private EntryList convert(RecordIterator<KeyValueEntry> entries) throws StorageException {
         try {
-            entries.close();
-        } catch (IOException e) {
+            return StaticArrayEntryList.ofStaticBuffer(entries,kvEntryGetter);
+        } finally {
+            try {
+                entries.close();
+            } catch (IOException e) {
             /*
              * IOException could be permanent or temporary. Choosing temporary
              * allows useful retries of transient failures but also allows
              * futile retries of permanent failures.
              */
-            throw new TemporaryStorageException(e);
+                throw new TemporaryStorageException(e);
+            }
         }
-        return newentries;
     }
 
+    private final StaticArrayEntry.GetColVal<KeyValueEntry,StaticBuffer> kvEntryGetter = new StaticArrayEntry.GetColVal<KeyValueEntry,StaticBuffer>() {
+
+        @Override
+        public StaticBuffer getColumn(KeyValueEntry element) {
+            return getColumnFromKey(element.getKey());
+        }
+
+        @Override
+        public StaticBuffer getValue(KeyValueEntry element) {
+            return element.getValue();
+        }
+    };
+
     private Entry getEntry(KeyValueEntry entry) {
-        return new StaticBufferEntry(getColumn(entry.getKey()), entry.getValue());
+        return StaticArrayEntry.ofStaticBuffer(entry,kvEntryGetter);
     }
 
     private boolean hasFixedKeyLength() {
@@ -139,6 +146,11 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             Preconditions.checkArgument(length < maxVariableKeyLength);
         }
         return length;
+    }
+
+    final KeyValueEntry concatenate(StaticBuffer front, Entry entry) {
+        return new KeyValueEntry(concatenate(front, entry.getColumnAs(StaticBuffer.STATIC_FACTORY)),
+                entry.getValueAs(StaticBuffer.STATIC_FACTORY));
     }
 
     final StaticBuffer concatenate(StaticBuffer front, StaticBuffer end) {
@@ -162,10 +174,10 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             result[position++] = (byte) (length >>> 8);
             result[position++] = (byte) length;
         }
-        return new StaticArrayBuffer(result);
+        return StaticArrayBuffer.of(result);
     }
 
-    private StaticBuffer getColumn(StaticBuffer concat) {
+    private StaticBuffer getColumnFromKey(StaticBuffer concat) {
         int offset = getKeyLength(concat);
         int length = concat.length() - offset;
         if (!hasFixedKeyLength()) { //variable key length => remove length at end
@@ -193,7 +205,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     private boolean columnInRange(StaticBuffer concat, StaticBuffer columnStart, StaticBuffer columnEnd) {
-        StaticBuffer column = getColumn(concat);
+        StaticBuffer column = getColumnFromKey(concat);
         return column.compareTo(columnStart) >= 0 && column.compareTo(columnEnd) < 0;
     }
 

@@ -4,20 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.*;
 
 import org.junit.*;
 import org.junit.experimental.categories.Category;
@@ -26,11 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -121,14 +108,14 @@ public abstract class KeyColumnValueStoreTest {
                     }
                     bb.put(KeyValueStoreUtil.getBuffer(j + 1).asByteBuffer());
                     bb.flip();
-                    col = new StaticByteBuffer(bb);
+                    col = StaticArrayBuffer.of(bb);
 
                     // col = KeyValueStoreUtil.getBuffer(j + values[i].length +
                     // 100);
                 } else {
                     col = KeyValueStoreUtil.getBuffer(j);
                 }
-                entries.add(new StaticBufferEntry(col, KeyValueStoreUtil
+                entries.add(StaticArrayEntry.of(col, KeyValueStoreUtil
                         .getBuffer(values[i][j])));
             }
             store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
@@ -158,7 +145,7 @@ public abstract class KeyColumnValueStoreTest {
         Preconditions.checkArgument(0 < dimension);
         ByteBuffer val = ByteBuffer.allocate(1);
         val.put((byte) -1);
-        StaticBuffer staticVal = new StaticByteBuffer(val);
+        StaticBuffer staticVal = StaticArrayBuffer.of(val);
 
         List<Entry> rowAdditions = new ArrayList<Entry>(dimension);
 
@@ -170,14 +157,14 @@ public abstract class KeyColumnValueStoreTest {
             key.putInt(0);
             key.putInt(k + offset);
             key.flip();
-            StaticBuffer staticKey = new StaticByteBuffer(key);
+            StaticBuffer staticKey = StaticArrayBuffer.of(key);
 
             for (int c = 0; c <= k; c++) {
                 ByteBuffer col = ByteBuffer.allocate(4);
                 col.putInt(c + offset);
                 col.flip();
-                StaticBuffer staticCol = new StaticByteBuffer(col);
-                rowAdditions.add(new StaticBufferEntry(staticCol, staticVal));
+                StaticBuffer staticCol = StaticArrayBuffer.of(col);
+                rowAdditions.add(StaticArrayEntry.of(staticCol, staticVal));
             }
 
             store.mutate(staticKey, rowAdditions, Collections.<StaticBuffer>emptyList(), tx);
@@ -583,7 +570,7 @@ public abstract class KeyColumnValueStoreTest {
                 Assert.assertTrue(entries.size() > pos);
                 Entry entry = entries.get(pos);
                 int col = KeyValueStoreUtil.getID(entry.getColumn());
-                String str = KeyValueStoreUtil.getString(entry.getValue());
+                String str = KeyValueStoreUtil.getString(entry.getValueAs(StaticBuffer.STATIC_FACTORY));
                 Assert.assertEquals(i, col);
                 Assert.assertEquals(values[key][i], str);
             }
@@ -664,7 +651,7 @@ public abstract class KeyColumnValueStoreTest {
         List<Entry> entries = new LinkedList<Entry>();
         for (int i = 0; i < cols; i++) {
             StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
-            entries.add(new StaticBufferEntry(col, col));
+            entries.add(StaticArrayEntry.of(col, col));
         }
         store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, tx);
         tx.commit();
@@ -718,10 +705,10 @@ public abstract class KeyColumnValueStoreTest {
 
         // First insert four test Entries
         List<Entry> entries = Arrays.asList(
-                (Entry) new StaticBufferEntry(columnBeforeStart, columnBeforeStart),
-                new StaticBufferEntry(columnStart, columnStart),
-                new StaticBufferEntry(columnEnd, columnEnd),
-                new StaticBufferEntry(columnAfterEnd, columnAfterEnd));
+                StaticArrayEntry.of(columnBeforeStart, columnBeforeStart),
+                StaticArrayEntry.of(columnStart, columnStart),
+                StaticArrayEntry.of(columnEnd, columnEnd),
+                StaticArrayEntry.of(columnAfterEnd, columnAfterEnd));
         store.mutate(key, entries, KeyColumnValueStore.NO_DELETIONS, tx);
         tx.commit();
 
@@ -786,11 +773,11 @@ public abstract class KeyColumnValueStoreTest {
         StaticBuffer start = KeyColumnValueStoreUtil.stringToByteBuffer("a");
         StaticBuffer end = KeyColumnValueStoreUtil.stringToByteBuffer("d");
 
-        List<List<Entry>> results = store.getSlice(keys, new SliceQuery(start, end), tx);
+        Map<StaticBuffer,EntryList> results = store.getSlice(keys, new SliceQuery(start, end), tx);
 
         Assert.assertEquals(100, results.size());
 
-        for (List<Entry> entries : results) {
+        for (List<Entry> entries : results.values()) {
             Assert.assertEquals(3, entries.size());
         }
     }

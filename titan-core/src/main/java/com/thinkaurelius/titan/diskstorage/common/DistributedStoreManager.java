@@ -89,10 +89,20 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         return hostnames[random.nextInt(hostnames.length)];
     }
 
+    /**
+     * Whether authentication is enabled for this storage backend
+     *
+     * @return
+     */
     public boolean hasAuthentication() {
         return username!=null;
     }
 
+    /**
+     * Returns the default configured page size for this storage backend. The page size is used to determine
+     * the number of records to request at a time when streaming result data.
+     * @return
+     */
     public int getPageSize() {
         return pageSize;
     }
@@ -194,17 +204,27 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         return tentativeRid;
     }
 
+    /**
+     * Returns the {@link Timestamp} for a particular transaction
+     * @param txh
+     * @return
+     */
     protected Timestamp getTimestamp(StoreTransaction txh) {
         long time = txh.getConfiguration().getTimestamp();
         time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
         return new Timestamp(time | 1L, time);
     }
 
+    /**
+     * Helper class to create the deletion and addition timestamps for a particular transaction.
+     * It needs to be ensured that the deletion time is prior to the addition time since
+     * some storage backends use the time to resolve conflicts.
+     */
     public static class Timestamp {
         public final long additionTime;
         public final long deletionTime;
 
-        public Timestamp(long additionTime, long deletionTime) {
+        private Timestamp(long additionTime, long deletionTime) {
             Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
             Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
             this.additionTime = additionTime;

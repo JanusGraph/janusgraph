@@ -1,45 +1,97 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.utils;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 
-public class CassandraHelper {
-    /**
-     * Orders first argument according to key positions in second argument.
-     *
-     * We need this to ensure that ordering of entries in the result would match ordering of keys,
-     * as keys are token sorted in Cassandra.
-     *
-     * @param toOrder Result of the "multiget_slice" call key => entry(column,value); (potentially ordered differently).
-     * @param orderedKeys Keys in the correct order.
-     *
-     *
-     * @return Ordered list of entries.
-     */
-    public static List<List<Entry>> order(Map<ByteBuffer, List<Entry>> toOrder, List<StaticBuffer> orderedKeys) {
-        List<List<Entry>> results = new ArrayList<List<Entry>>();
+import javax.annotation.Nullable;
 
-        // We need this to ensure that ordering of entries in the result would match ordering of keys,
-        // as keys are token sorted in Cassandra.
-        for (StaticBuffer key : orderedKeys) {
-            results.add(toOrder.get(key.asByteBuffer()));
+public class CassandraHelper {
+
+    public static List<ByteBuffer> convert(List<StaticBuffer> keys) {
+        List<ByteBuffer> requestKeys = new ArrayList<ByteBuffer>(keys.size());
+        for (int i = 0; i < keys.size(); i++) {
+            requestKeys.add(keys.get(i).asByteBuffer());
+        }
+        return requestKeys;
+    }
+
+    /**
+     * Constructs an {@link EntryList} from the Iterable of entries while excluding the end slice
+     * (since the method contract states that the end slice is exclusive, yet Cassandra treats it as
+     * inclusive) and respecting the limit.
+     *
+     * @param entries
+     * @param getter
+     * @param lastColumn TODO: make this StaticBuffer so we can avoid the conversion and provide equals method
+     * @param limit
+     * @param <E>
+     * @return
+     */
+    public static<E> EntryList makeEntryList(final Iterable<E> entries,
+                                             final StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
+                                             final StaticBuffer lastColumn, final int limit) {
+        return StaticArrayEntryList.ofByteBuffer(new Iterable<E>() {
+            @Override
+            public Iterator<E> iterator() {
+                return Iterators.filter(entries.iterator(),new FilterResultColumns<E>(lastColumn,limit,getter));
+            }
+        },getter);
+    }
+
+    private static class FilterResultColumns<E> implements Predicate<E> {
+
+        private int count = 0;
+
+        private final int limit;
+        private final StaticBuffer lastColumn;
+        private final StaticArrayEntry.GetColVal<E,ByteBuffer> getter;
+
+        private FilterResultColumns(StaticBuffer lastColumn, int limit, StaticArrayEntry.GetColVal<E, ByteBuffer> getter) {
+            this.limit = limit;
+            this.lastColumn = lastColumn;
+            this.getter = getter;
         }
 
-        return results;
+        @Override
+        public boolean apply(@Nullable E e) {
+            assert e!=null;
+            if (count>=limit || ByteBufferUtil.equals(lastColumn, getter.getColumn(e))) return false;
+            count++;
+            return true;
+        }
+
     }
+
+    public static<E> Iterator<Entry> makeEntryIterator(final Iterable<E> entries,
+                                             final StaticArrayEntry.GetColVal<E,ByteBuffer> getter,
+                                             final StaticBuffer lastColumn, final int limit) {
+        return Iterators.transform(Iterators.filter(entries.iterator(),
+                new FilterResultColumns<E>(lastColumn, limit, getter)), new Function<E, Entry>() {
+            @Nullable
+            @Override
+            public Entry apply(@Nullable E e) {
+                return StaticArrayEntry.ofByteBuffer(e,getter);
+            }
+        });
+    }
+
 
     public static KeyRange transformRange(Range<Token> range) {
         return transformRange(range.left, range.right);
@@ -75,8 +127,8 @@ public class CassandraHelper {
             }
         }
 
-        StaticBuffer lb = new StaticArrayBuffer(plusOne[0]);
-        StaticBuffer rb = new StaticArrayBuffer(plusOne[1]);
+        StaticBuffer lb = StaticArrayBuffer.of(plusOne[0]);
+        StaticBuffer rb = StaticArrayBuffer.of(plusOne[1]);
         Preconditions.checkArgument(lb.length() == tokenLength, lb.length());
         Preconditions.checkArgument(rb.length() == tokenLength, rb.length());
 

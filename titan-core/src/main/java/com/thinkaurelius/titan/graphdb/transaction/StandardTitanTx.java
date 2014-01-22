@@ -11,9 +11,10 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
@@ -701,14 +702,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         if (!vids.isEmpty()) {
-            List<List<Entry>> results = graph.edgeMultiQuery(vids, sq, txHandle);
+            List<EntryList> results = graph.edgeMultiQuery(vids, sq, txHandle);
             int pos = 0;
             for (TitanVertex v : vertices) {
                 if (pos<vids.size() && vids.get(pos) == v.getID()) {
-                    final List<Entry> vresults = results.get(pos);
-                    ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+                    final EntryList vresults = results.get(pos);
+                    ((CacheVertex) v).loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                         @Override
-                        public List<Entry> get(SliceQuery query) {
+                        public EntryList get(SliceQuery query) {
                             return vresults;
                         }
                     });
@@ -766,9 +767,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
             final InternalVertex v = query.getVertex();
 
-            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, List<Entry>>() {
+            Iterable<Entry> iter = v.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
                 @Override
-                public List<Entry> get(SliceQuery query) {
+                public EntryList get(SliceQuery query) {
                     return graph.edgeQuery(v.getID(), query, txHandle);
                 }
             });

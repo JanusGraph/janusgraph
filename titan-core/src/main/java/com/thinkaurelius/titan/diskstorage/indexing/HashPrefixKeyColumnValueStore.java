@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -12,6 +14,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Adds a hash prefix of configurable length to the wrapped {@link KeyColumnValueStore} to randomize the
@@ -47,7 +50,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
             for (int i = 0; i < key.length(); i++) {
                 newKey[numPrefixBytes + i] = key.getByte(i);
             }
-            return new StaticArrayBuffer(newKey);
+            return StaticArrayBuffer.of(newKey);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
@@ -63,13 +66,13 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         KeySliceQuery prefixQuery = new KeySliceQuery(prefixKey(query.getKey()), query);
         return store.getSlice(prefixQuery, txh);
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         List<StaticBuffer> prefixedKeys = new ArrayList<StaticBuffer>(keys.size());
 
         for (StaticBuffer key : keys) {

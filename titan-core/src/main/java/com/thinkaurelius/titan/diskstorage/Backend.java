@@ -290,10 +290,8 @@ public class Backend {
                 REGISTERED_STORAGE_MANAGERS);
         if (manager instanceof OrderedKeyValueStoreManager) {
             manager = new OrderedKeyValueStoreManagerAdapter((OrderedKeyValueStoreManager) manager, STATIC_KEY_LENGTHS);
-        } else if (manager instanceof CacheStoreManager) {
-            manager = new CacheStoreManagerAdapter((CacheStoreManager) manager);
         }
-        Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager);
+        Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager,"Invalid storage manager: %s",manager.getClass());
         return (KeyColumnValueStoreManager) manager;
     }
 

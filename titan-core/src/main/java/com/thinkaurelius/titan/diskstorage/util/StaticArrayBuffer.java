@@ -18,8 +18,8 @@ import java.nio.ByteBuffer;
 public class StaticArrayBuffer implements StaticBuffer {
 
     private final byte[] array;
-    private final int offset;
-    private final int limit;
+    private int offset;
+    private int limit;
 
     public StaticArrayBuffer(byte[] array, int offset, int limit) {
         assert array != null;
@@ -31,17 +31,39 @@ public class StaticArrayBuffer implements StaticBuffer {
         this.limit = limit;
     }
 
+    public StaticArrayBuffer(byte[] array) {
+        this(array, 0, array.length);
+    }
+
     public StaticArrayBuffer(byte[] array, int limit) {
         this(array, 0, limit);
     }
 
-    public StaticArrayBuffer(byte[] array) {
-        this(array, 0, array.length);
+    public StaticArrayBuffer(StaticBuffer buffer) {
+        this((StaticArrayBuffer)buffer);
     }
 
     public StaticArrayBuffer(StaticArrayBuffer buffer) {
         this(buffer.array, buffer.offset, buffer.limit);
     }
+
+    public static StaticArrayBuffer of(byte[] array) {
+        return new StaticArrayBuffer(array);
+    }
+
+    public static StaticArrayBuffer of(ByteBuffer b) {
+        if (b.hasArray()) {
+            return new StaticArrayBuffer(b.array(),b.arrayOffset()+b.position(),b.arrayOffset()+b.limit());
+        } else {
+            byte[] array = new byte[b.remaining()];
+            b.mark();
+            b.get(array);
+            b.reset();
+            return StaticArrayBuffer.of(array);
+        }
+    }
+
+    //-------------------
 
 
     private int require(int position, int size) {
@@ -50,8 +72,12 @@ public class StaticArrayBuffer implements StaticBuffer {
         return base;
     }
 
-    private byte getByteDirect(int position) {
-        return array[position];
+    byte getByteDirect(int index) {
+        return array[index];
+    }
+
+    void copyTo(byte[] dest, int destOffset) {
+        System.arraycopy(array,offset,dest,destOffset,length());
     }
 
     @Override
@@ -74,12 +100,25 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public ByteBuffer asByteBuffer() {
-        return ByteBuffer.wrap(array, offset, limit - offset);
+        return as(StaticBuffer.BB_FACTORY);
     }
 
     @Override
     public <T> T as(Factory<T> factory) {
         return factory.get(array, offset, limit);
+    }
+
+    protected <T> T as(Factory<T> factory, int position, int length) {
+        Preconditions.checkArgument(position >= 0 && length >=0);
+        Preconditions.checkArgument(offset + position + length <= limit);
+        return factory.get(array,offset+position,offset+position+length);
+    }
+
+    protected void reset(int newOffset, int newLimit) {
+        assert newOffset >= 0 && newOffset <= newLimit;
+        assert newLimit <= array.length;
+        this.offset=newOffset;
+        this.limit=newLimit;
     }
 
     /*
@@ -142,30 +181,67 @@ public class StaticArrayBuffer implements StaticBuffer {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        else if (o == null) return false;
-        else if (!(o instanceof StaticBuffer)) return false;
-        return ByteBufferUtil.equals(this, (StaticBuffer) o);
+        if (o == null) return false;
+        if (!(o instanceof StaticBuffer)) return false;
+        StaticBuffer b = (StaticBuffer)o;
+        if (length()!=b.length()) return false;
+        return compareTo(b)==0;
     }
 
+    /**
+     * Thread-safe hashcode method for StaticBuffer written according to
+     * Effective Java 2e by Josh Bloch.
+     *
+     * @return hashcode for given StaticBuffer
+     */
     @Override
     public int hashCode() {
-        return ByteBufferUtil.hashcode(this);
+        return hashCode(length());
     }
+
+    protected int hashCode(int length) {
+        Preconditions.checkArgument(length<=length());
+        int result = 17;
+        for (int i = offset; i < offset+length; i++) {
+            result = 31 * result + (int)array[i];
+        }
+        return result;
+    }
+
 
     @Override
     public String toString() {
-        return ByteBufferUtil.toString(this, "-");
+        return toString("-");
+    }
+
+    public final String toString(String separator) {
+        StringBuilder s = new StringBuilder();
+        for (int i=offset;i<limit;i++) {
+            if (i>offset) s.append(separator);
+            s.append(ByteBufferUtil.toFixedWidthString(array[i]));
+        }
+        return s.toString();
     }
 
     @Override
     public int compareTo(StaticBuffer other) {
-        return (other instanceof StaticArrayBuffer)
-                ? compareTo((StaticArrayBuffer) other)
-                : ByteBufferUtil.compare(this, other);
+        assert other instanceof StaticArrayBuffer;
+        return compareTo((StaticArrayBuffer) other);
     }
 
     public int compareTo(StaticArrayBuffer other) {
         return compareTo(array, offset, limit, other.array, other.offset, other.limit);
+    }
+
+    protected int compareTo(int length, StaticBuffer buffer, int bufferLen) {
+        assert buffer instanceof StaticArrayBuffer;
+        return compareTo(length, (StaticArrayBuffer)buffer, bufferLen);
+    }
+
+    protected int compareTo(int length, StaticArrayBuffer buffer, int bufferLen) {
+        assert buffer!=null;
+        Preconditions.checkArgument(length<=length() && bufferLen<=buffer.length());
+        return compareTo(array, offset, offset+length, buffer.array, buffer.offset, buffer.offset+bufferLen);
     }
 
     private static int compareTo(byte[] buffer1, int offset1, int end1,

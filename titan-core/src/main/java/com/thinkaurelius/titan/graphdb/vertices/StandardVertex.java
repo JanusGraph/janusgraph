@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -67,8 +67,8 @@ public class StandardVertex extends AbstractVertex {
     }
 
     @Override
-    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
-        return (isNew()) ? Collections.EMPTY_LIST : lookup.get(query);
+    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
+        return (isNew()) ? EntryList.EMPTY_LIST : lookup.get(query);
     }
 
     @Override

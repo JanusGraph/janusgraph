@@ -12,12 +12,14 @@ public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
     public int getPosition();
 
-    public void movePosition(int delta);
-
-    public ByteBuffer asRelativeByteBuffer();
+    public void movePositionTo(int position);
 
     public<T> T asRelative(Factory<T> factory);
 
-    public ReadBuffer invert();
+    /**
+     * Inverts the bytes on relative and absolute read operations.
+     * This method does not have any impact on static bulk reads.
+     */
+    public void invert();
 
 }

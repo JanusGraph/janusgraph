@@ -5,10 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.BackendTransaction;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -44,6 +41,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
@@ -209,19 +207,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         };
     }
 
-    public List<Entry> edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
+    public EntryList edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid > 0);
         return edgeStoreCache.query(new KeySliceQuery(IDHandler.getKey(vid), query),tx);
     }
 
-    public List<List<Entry>> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
+    public List<EntryList> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vids != null && !vids.isEmpty());
         List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
         for (int i = 0; i < vids.size(); i++) {
             Preconditions.checkArgument(vids.get(i) > 0);
             vertexIds.add(IDHandler.getKey(vids.get(i)));
         }
-        return edgeStoreCache.multiQuery(vertexIds, query, tx);
+        Map<StaticBuffer,EntryList> result = edgeStoreCache.multiQuery(vertexIds, query, tx);
+        List<EntryList> resultList = new ArrayList<EntryList>(result.size());
+        for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
+        return resultList;
     }
 
 
@@ -258,7 +259,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             if (acquireLocks && del.getType().isUnique(dir) &&
                                     ((InternalType) del.getType()).uniqueLock(dir)) {
                                 Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), entry.getValue());
+                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry);
                             }
                         }
                         //Update Indexes

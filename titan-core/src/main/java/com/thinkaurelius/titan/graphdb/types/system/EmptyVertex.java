@@ -4,7 +4,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -41,7 +42,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
+    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 

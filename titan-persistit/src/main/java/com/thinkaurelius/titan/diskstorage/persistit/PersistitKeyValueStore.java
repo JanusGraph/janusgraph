@@ -38,15 +38,11 @@ import static com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManage
 public class PersistitKeyValueStore implements OrderedKeyValueStore {
 
     private static StaticBuffer getBuffer(byte[] bytes) {
-        return new StaticArrayBuffer(bytes, 0, bytes.length);
+        return StaticArrayBuffer.of(bytes);
     }
 
     private static byte[] getArray(StaticBuffer staticBuffer) {
-        ByteBuffer buffer = staticBuffer.asByteBuffer();
-        int offset = buffer.arrayOffset();
-        byte[] bytes = new byte[buffer.remaining() - offset];
-        System.arraycopy(buffer.array(), offset, bytes, offset, bytes.length);
-        return bytes;
+        return staticBuffer.as(StaticBuffer.ARRAY_FACTORY);
     }
 
     private final String name;
