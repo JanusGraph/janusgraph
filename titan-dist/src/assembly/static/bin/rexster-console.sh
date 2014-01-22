@@ -11,10 +11,12 @@ convert_unix_paths_to_win_paths() {
 }
 
 set_unix_paths
-if [ "`uname -o`" = 'Cygwin' ]; then
-    echo "WARNING: rexster-console.sh is unsupported on Cygwin."
-    echo "Use rexster-console.bat from the Windows Command Prompt instead."
-fi
+case "`uname`" in
+    CYGWIN*)
+        echo "WARNING: rexster-console.sh is unsupported on Cygwin."
+        echo "Use rexster-console.bat from the Windows Command Prompt instead."
+    ;;
+esac
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then

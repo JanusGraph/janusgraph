@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.cache;
 
+import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -11,7 +12,11 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.stats.MetricManager;
+
 import static com.thinkaurelius.titan.util.datastructures.ByteSize.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +25,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,8 +41,10 @@ public class ExpirationStoreCache implements StoreCache {
     private static final int INVALIDATE_KEY_FRACTION_PENALTY = 1000;
     private static final int PENALTY_THRESHOLD = 5;
 
-    private static final AtomicLong globalCacheRetrievals = new AtomicLong(0);
-    private static final AtomicLong globalCacheMisses = new AtomicLong(0);
+    private static final String METRICS_PREFIX = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT
+            + "." + ExpirationStoreCache.class.getSimpleName();
+    private static final Counter GLOBAL_CACHE_MISSES = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "misses");
+    private static final Counter GLOBAL_CACHE_RETRIEVALS = MetricManager.INSTANCE.getCounter(METRICS_PREFIX, "retrievals");
 
     private volatile CountDownLatch penaltyCountdown;
 
@@ -74,20 +80,20 @@ public class ExpirationStoreCache implements StoreCache {
 
         cleanupThread = new CleanupThread();
         cleanupThread.start();
-
     }
 
     public static void resetGlobablCounts() {
-        globalCacheRetrievals.set(0);
-        globalCacheMisses.set(0);
+        // Approximate (inexact)
+        GLOBAL_CACHE_MISSES.dec(GLOBAL_CACHE_MISSES.getCount());
+        GLOBAL_CACHE_RETRIEVALS.dec(GLOBAL_CACHE_RETRIEVALS.getCount());
     }
 
     public static long getGlobalCacheRetrievals() {
-        return globalCacheRetrievals.get();
+        return GLOBAL_CACHE_RETRIEVALS.getCount();
     }
 
     public static long getGlobalCacheMisses() {
-        return globalCacheMisses.get();
+        return GLOBAL_CACHE_MISSES.getCount();
     }
 
     public static long getGlobalCacheHits() {
@@ -111,11 +117,11 @@ public class ExpirationStoreCache implements StoreCache {
         if (isExpired(query)) return tx.edgeStoreQuery(query);
 
         try {
-            globalCacheRetrievals.incrementAndGet();
-            return cache.get(query,new Callable<EntryList>() {
+            GLOBAL_CACHE_RETRIEVALS.inc();
+                    return cache.get(query,new Callable<EntryList>() {
                 @Override
                 public EntryList call() throws Exception {
-                    globalCacheMisses.incrementAndGet();
+                    GLOBAL_CACHE_MISSES.inc();
                     return tx.edgeStoreQuery(query);
                 }
             });

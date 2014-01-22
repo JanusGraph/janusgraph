@@ -157,7 +157,8 @@ public class QueryUtil {
             assert predicate.isValidCondition(value);
 
             if (type.isPropertyKey()) {
-                Preconditions.checkArgument(predicate.isValidValueType(((TitanKey) type).getDataType()), "Data type of key is not compatible with condition");
+                TitanKey key = (TitanKey) type;
+                Preconditions.checkArgument(key.getDataType()==Object.class || predicate.isValidValueType(key.getDataType()), "Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((TitanLabel) type).isUnidirected());
                 Preconditions.checkArgument(predicate.isValidValueType(TitanVertex.class), "Data type of key is not compatible with condition");

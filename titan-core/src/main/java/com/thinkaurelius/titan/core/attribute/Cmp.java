@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core.attribute;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,13 +93,8 @@ public enum Cmp implements TitanPredicate {
 
         @Override
         public boolean evaluate(Object value, Object condition) {
-            if (value==null) return false;
-            try {
-                return ((Comparable)value).compareTo(condition)<0;
-            } catch (Throwable e) {
-                log.warn("Could not compare element: {} - {}",value,condition);
-                return false;
-            }
+            Integer cmp = AttributeUtil.compare(value,condition);
+            return cmp!=null?cmp<0:false;
         }
 
         @Override
@@ -127,13 +123,8 @@ public enum Cmp implements TitanPredicate {
 
         @Override
         public boolean evaluate(Object value, Object condition) {
-            if (value==null) return false;
-            try {
-                return ((Comparable)value).compareTo(condition)<=0;
-            } catch (Throwable e) {
-                log.warn("Could not compare element: {} - {}",value,condition);
-                return false;
-            }
+            Integer cmp = AttributeUtil.compare(value,condition);
+            return cmp!=null?cmp<=0:false;
         }
 
         @Override
@@ -162,13 +153,8 @@ public enum Cmp implements TitanPredicate {
 
         @Override
         public boolean evaluate(Object value, Object condition) {
-            if (value==null) return false;
-            try {
-                return ((Comparable)value).compareTo(condition)>0;
-            } catch (Throwable e) {
-                log.warn("Could not compare element: {} - {}",value,condition);
-                return false;
-            }
+            Integer cmp = AttributeUtil.compare(value,condition);
+            return cmp!=null?cmp>0:false;
         }
 
         @Override
@@ -197,13 +183,8 @@ public enum Cmp implements TitanPredicate {
 
         @Override
         public boolean evaluate(Object value, Object condition) {
-            if (value==null) return false;
-            try {
-                return ((Comparable)value).compareTo(condition)>=0;
-            } catch (Throwable e) {
-                log.warn("Could not compare element: {} - {}",value,condition);
-                return false;
-            }
+            Integer cmp = AttributeUtil.compare(value,condition);
+            return cmp!=null?cmp>=0:false;
         }
 
         @Override
@@ -227,7 +208,5 @@ public enum Cmp implements TitanPredicate {
     public boolean isQNF() {
         return true;
     }
-
-    private static final Logger log = LoggerFactory.getLogger(Cmp.class);
 
 }

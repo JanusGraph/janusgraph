@@ -14,8 +14,9 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
 
     private static final long serialVersionUID = -1719511496523862718L;
 
+    public static final double EPSILON = 0.00000001;
     public static final int DECIMALS = 6;
-    private static int MULTIPLIER = 0;
+    private static long MULTIPLIER = 0;
 
     static {
         MULTIPLIER = 1;
@@ -43,7 +44,7 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
     }
 
     public static final long convert(Double object) {
-        return (long) (object.doubleValue() * MULTIPLIER);
+        return Math.round(object.doubleValue() * MULTIPLIER);
     }
 
     public static final double convert(long value) {
@@ -62,7 +63,7 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
     public void verifyAttribute(Double value) {
         Preconditions.checkArgument(!Double.isNaN(value),"Value may not be NaN");
         Preconditions.checkArgument(withinRange(value),"Value out of range [%s,%s]: %s. Use FullDouble instead.",MIN_VALUE,MAX_VALUE,value);
-        if (convert(convert(value))!=value) log.warn("Truncated decimals of double value: {}. Use FullDouble for full precision.",value);
+        if (Math.abs(convert(convert(value))-value)>EPSILON) log.warn("Truncated decimals of double value: {}. Use FullDouble for full precision.",value);
     }
 
     @Override

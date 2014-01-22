@@ -1,9 +1,44 @@
 Titan: Distributed Graph Database
 "http://titan.thinkaurelius.com":http://titan.thinkaurelius.com
 
-[[https://raw.github.com/thinkaurelius/titan/master/doc/images/titan-globe.png|width=100px]]
+[[images/titan-globe.png|width=100px]]
 
 h2. Titan 0.y.z
+
+h3. Version 0.4.2 (December 30, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.2</version>
+</dependency>
+```
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Finer-grained Thrift connection pooling that gracefully handles failure to close result iterators
+* Optionally silently ignore unrecognized fields on index queries instead of throwing an exception
+* Configurable Astyanax RetryBackoffStrategy
+* Allow comparison of heterogeneous numeric types
+* Added Codahale-Metrics coverage for query, locker, and get-vertex-by-id activity
+
+*Bugfixes:*
+
+* Deleting edges with multiple properties
+* Deleting edges labeled with a reverse-ordered sort key
+* Avoid NullPointerException during graph shutdown when running without a Backend threadpool
+* Shell portability improvement and shutdown race condition fix in titan.sh
 
 h3. Version 0.4.1 (November 24, 2013)
 
@@ -11,37 +46,35 @@ h3. Version 0.4.1 (November 24, 2013)
 <dependency>
    <groupId>com.thinkaurelius.titan</groupId>
    <artifactId>titan-core</artifactId>
-   <version>0.4.1-SNAPSHOT</version>
+   <version>0.4.1</version>
 </dependency>
 ```
 
 *Tested Compatibility:*
 
 * Cassandra 1.2.2
-* HBase 0.94.7
+* HBase 0.94.12
 * BerkeleyJE 5.0.73
 * Elasticsearch 0.90.5
 * Lucene 4.4.0
 * Persistit 3.3.0
-* Hazelcast 3.0.2
 * Java 1.7+ (partially compatible with Java 1.6)
 
 *Features:*
 
-* Property pre-fetching to speed up multiple property lookups per vertex. Configurable through "fast-property"
+* Property pre-fetching to speed up multiple property lookups per vertex. Configurable through @fast-property@ option.
 * Shortened HBase column-family names to reduce the HBase storage footprint. This feature is disabled by default for backwards-compatibility. Enable it via @storage.short-cf-names@
-* Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through graph.buildTransaction()
+* Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through @graph.buildTransaction().setMetricsPrefix(String)@
 * Metrics Ganglia and Graphite support
 * Improvements to the internal memory structures and algorithms of a Titan transaction which lead to much improved traversal times (a lot of credit goes to Pavel for these optimizations!!)
-* Added database level cache for lower latency query answering against warm data (disabled by default)
-* Better caching implementation for relations (RelationCache) to provide better de-serialization performance
+* Added database level cache for lower latency query answering against warm data. Enable via @cache.db-cache@. Learn more about [[Database Cache]].
+* Better caching implementation for relations (RelationCache) to provide faster de-serialization performance
 * Addition of a new query optimizer that can significantly speed up a subset of traversals
 * Support for reverse ordering in vertex centric queries by defining: makeLabel(..).sortKey(..).sortOrder(Order.DESC).make()
 * Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
-* Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter
-* Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching
-* Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options
-* Support for secure access to storage backend through username/password authentication in Cassandra
+* Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter. Learn more about [[Full Text and String Search]]
+* Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching. See [[Indexing Backend Overview]]
+* Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options. See [[Bulk Loading]].
 
 *Bugfixes:*
 
@@ -116,6 +149,40 @@ Check the issue tracker for a full list of fixed issues.
 * "gwhitehawk":https://github.com/gwhitehawk
 * "mamccr":https://github.com/mamccr
 * "akeffalas":https://github.com/akeffalas
+
+h3. Version 0.3.2 (July 29, 2013)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.2</version>
+</dependency>
+```
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.1
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.0
+* Lucene 4.1.0
+* Java 1.6+
+
+*Features:*
+
+* Support for multiple standard index conditions in queries
+
+*Bugfixes:*
+
+* Fixed potential transaction leak when using thread-bound transactions
+* Let vertex.removeProperty(...) kill multivalued properties as the javadoc says
+* Avoided two spurious cases of "timestamp mismatch" exception
+* Removed unchecked cast in AbstractElement.equals(...)
+* Adjusted default Astyanax exponential backoff settings to avoid integer overflow against a dead peer
+* Fixed Astyanax config regression that caused node discovery and connection pool type to be ignored
+* Fixed double-checked locking on StandardVertex's added relations
+
+Check the issue tracker for a full list of fixed issues.
 
 h3. Version 0.3.1 (May 14, 2013)
 

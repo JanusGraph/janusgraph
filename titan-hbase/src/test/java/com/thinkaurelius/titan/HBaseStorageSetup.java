@@ -18,7 +18,7 @@ import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 
 public class HBaseStorageSetup {
-    
+
     private static Process HBASE = null;
     // amount of seconds to wait before assuming that HBase shutdown
     private static final int SHUTDOWN_TIMEOUT_SEC = 20;
@@ -28,7 +28,7 @@ public class HBaseStorageSetup {
 
     // default pid file location
     private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
-    
+
     private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
 
     static {
@@ -79,7 +79,7 @@ public class HBaseStorageSetup {
 
         try {
             log.info("Starting HBase");
-            
+
             // start HBase instance with environment set
             String cmd = String.format("./bin/hbase-daemon.sh --config %s start master", HBASE_CONFIG_DIR);
             log.info("Executing {}", cmd);
@@ -101,7 +101,7 @@ public class HBaseStorageSetup {
     private static void shutdownHBase() throws IOException {
         if (HBASE == null)
             return; // HBase hasn't been started yet
-        
+
         // First try graceful shutdown through the script...
         String cmdParts[] = new String[]{ "./bin/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master" };
         log.info("Executing {}", Joiner.on(" ").join(cmdParts));
@@ -111,7 +111,7 @@ public class HBaseStorageSetup {
         StreamLogger sl = new StreamLogger(stopMaster.getInputStream());
         sl.setDaemon(true);
         sl.start();
-        
+
         // ...but send SIGKILL if that times out
         HBaseKiller killer = new HBaseKiller();
         killer.start();
@@ -127,7 +127,7 @@ public class HBaseStorageSetup {
         } catch (InterruptedException e) {
             log.warn("Failed to join HBase process killer thread", e);
         }
-        
+
         // StreamLogger is a daemon thread, so failing to stop it isn't so bad
         try {
             sl.join(1000L);
@@ -135,11 +135,11 @@ public class HBaseStorageSetup {
             log.warn("Failed to stop HBase output logger thread", e);
         }
     }
-    
+
     private static class HBaseKiller extends Thread {
-        
+
         private volatile boolean proceed = true;
-        
+
         @Override
         public void run() {
             try {
@@ -148,7 +148,7 @@ public class HBaseStorageSetup {
             } catch (InterruptedException e) {
                 log.info("HBase killer thread interrupted");
             }
-            
+
             if (proceed) {
                 try {
                     readPidfileAndKill();
@@ -159,11 +159,11 @@ public class HBaseStorageSetup {
                 log.info("HBase shutdown cleanly, not attempting to kill its process");
             }
         }
-        
+
         public void abort() {
             proceed = false;
         }
-        
+
         private void readPidfileAndKill() throws IOException, InterruptedException {
             File pid = new File(HBASE_PID_FILE);
 
@@ -187,21 +187,21 @@ public class HBaseStorageSetup {
             }
         }
     }
-    
+
     /*
      * This could be retired in favor of ProcessBuilder.Redirect when we move to
      * source level 1.7.
      */
     private static class StreamLogger extends Thread {
-        
+
         private final BufferedReader reader;
         private static final Logger log =
                 LoggerFactory.getLogger(StreamLogger.class);
-        
+
         private StreamLogger(InputStream is) {
             this.reader = new BufferedReader(new InputStreamReader(is));
         }
-        
+
         @Override
         public void run() {
             String line;
@@ -212,7 +212,7 @@ public class HBaseStorageSetup {
                         break;
                     }
                 }
-                    
+
                 log.info("End of stream.");
             } catch (IOException e) {
                 log.error("Unexpected IOException while reading stream {}", reader, e);
