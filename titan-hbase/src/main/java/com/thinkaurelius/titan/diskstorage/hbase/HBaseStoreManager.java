@@ -218,31 +218,31 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         return store;
     }
-    
+
     List<KeyRange> getLocalKeyPartition() {
-        
+
         List<KeyRange> result = new LinkedList<KeyRange>();
-        
+
         HTable table = null;
         try {
             table = new HTable(hconf, tableName);
             NavigableMap<HRegionInfo, ServerName> regionLocs =
                     table.getRegionLocations();
-            
+
             for (Map.Entry<HRegionInfo, ServerName> e : regionLocs.entrySet()) {
                 if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
                     HRegionInfo regionInfo = e.getKey();
                     byte startKey[] = regionInfo.getStartKey();
                     byte endKey[]   = regionInfo.getEndKey();
-                    
+
                     StaticBuffer startBuf = StaticArrayBuffer.of(startKey);
                     StaticBuffer endBuf =
                             StaticArrayBuffer.of(ByteBufferUtil.nextBiggerBufferAllowOverflow(ByteBuffer.wrap(endKey)));
-                    
+
                     KeyRange kr = new KeyRange(startBuf, endBuf);
-                    
+
                     result.add(kr);
-                    
+
                     logger.debug("Found local key/row partition {} on host {}", kr, e.getValue());
                 } else {
                     logger.debug("Discarding remote {}", e.getValue());
@@ -263,7 +263,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
             }
         }
-        
+
         return result;
     }
 
@@ -437,7 +437,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 byte[] key = m.getKey().as(StaticBuffer.ARRAY_FACTORY);
                 KCVMutation mutation = m.getValue();
 
-                Pair<Put, Delete> commands = commandsPerKey.get(key);
+                Pair<Put, Delete> commands = commandsPerKey.get(m.getKey());
 
                 if (commands == null) {
                     commands = new Pair<Put, Delete>();
