@@ -110,15 +110,8 @@ public class EdgeSerializer implements RelationReader {
         }
 
         TitanType titanType = tx.getExistingType(typeId);
-
         InternalType def = (InternalType) titanType;
-        boolean invert = def.getSortOrder()==Order.DESC;
         long[] keysig = def.getSortKey();
-        if (!excludeProperties && !titanType.isUnique(dir)) {
-            if (invert) in.invert();
-            readInlineTypes(keysig, properties, in, tx);
-            if (invert) in.invert();
-        }
 
         long relationIdDiff, vertexIdDiff = 0;
         if (titanType.isUnique(dir)) {
@@ -127,12 +120,21 @@ public class EdgeSerializer implements RelationReader {
                 vertexIdDiff = VariableLong.read(in);
             relationIdDiff = VariableLong.read(in);
         } else {
-            //Move position to end to read backwards
+            int startKeyPos = in.getPosition();
+            //Move position to end to read ids backwards
             in.movePositionTo(data.getValuePosition() - 1);
-
             relationIdDiff = VariableLong.readBackward(in);
             if (rtype == RelationType.EDGE)
                 vertexIdDiff = VariableLong.readBackward(in);
+
+            if (!excludeProperties && keysig.length>0) { //Read sort key which only exists if type is not unique in this direction
+                int keyLength = in.getPosition()+1-startKeyPos; //after reading the ids, we are on the last byte of the key
+                in.movePositionTo(startKeyPos);
+                ReadBuffer inkey = in;
+                if (def.getSortOrder()==Order.DESC) inkey = in.subrange(keyLength,true);
+                readInlineTypes(keysig, properties, inkey, tx);
+            }
+
             in.movePositionTo(data.getValuePosition());
         }
 

@@ -65,19 +65,18 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     //-------------------
 
+    void reset(int newOffset, int newLimit) {
+        assert newOffset >= 0 && newOffset <= newLimit;
+        assert newLimit <= array.length;
+        this.offset=newOffset;
+        this.limit=newLimit;
+    }
 
     private int require(int position, int size) {
         int base = position + offset;
+        if (position<0 || base+size>limit) throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or size ["+size+"] out of bounds");
         assert base + size <= limit;
         return base;
-    }
-
-    byte getByteDirect(int index) {
-        return array[index];
-    }
-
-    void copyTo(byte[] dest, int destOffset) {
-        System.arraycopy(array,offset,dest,destOffset,length());
     }
 
     @Override
@@ -85,12 +84,33 @@ public class StaticArrayBuffer implements StaticBuffer {
         return limit - offset;
     }
 
+    /*
+    ############## BULK READING ################
+     */
+
+    void copyTo(byte[] dest, int destOffset) {
+        System.arraycopy(array,offset,dest,destOffset,length());
+    }
+
     @Override
     public StaticBuffer subrange(int position, int length) {
-        Preconditions.checkArgument(position >= 0);
-        Preconditions.checkArgument(length >= 0);
-        Preconditions.checkArgument(offset + position + length <= limit);
-        return new StaticArrayBuffer(array, offset + position, offset + position + length);
+        return subrange(position, length, false);
+    }
+
+    @Override
+    public StaticBuffer subrange(int position, int length, boolean invert) {
+        if (position<0 || length<0 || (offset + position + length)>limit)
+            throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or length ["+length+"] out of bounds");
+        if (!invert) {
+            return new StaticArrayBuffer(array, offset + position, offset + position + length);
+        } else {
+            byte[] inverted = new byte[length];
+            System.arraycopy(array,offset+position,inverted,0,length);
+            for (int i = 0; i < inverted.length; i++) {
+                inverted[i]=(byte)~inverted[i];
+            }
+            return new StaticArrayBuffer(inverted);
+        }
     }
 
     @Override
@@ -109,59 +129,53 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     protected <T> T as(Factory<T> factory, int position, int length) {
-        Preconditions.checkArgument(position >= 0 && length >=0);
-        Preconditions.checkArgument(offset + position + length <= limit);
+        if (position<0 || length<0 || (offset + position + length)>limit)
+            throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or length ["+length+"] out of bounds");
         return factory.get(array,offset+position,offset+position+length);
     }
 
-    protected void reset(int newOffset, int newLimit) {
-        assert newOffset >= 0 && newOffset <= newLimit;
-        assert newLimit <= array.length;
-        this.offset=newOffset;
-        this.limit=newLimit;
-    }
 
     /*
-    ############## IDENTICAL CODE ################
+    ############## READING PRIMITIVES ################
      */
 
     @Override
     public byte getByte(int position) {
-        return getByteDirect(require(position, 1));
+        return array[require(position, 1)];
     }
 
     @Override
     public short getShort(int position) {
         int base = require(position, 2);
-        return (short) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        return (short) (((array[base++] & 0xFF) << 8) | (array[base++] & 0xFF));
     }
 
     @Override
     public int getInt(int position) {
         int base = require(position, 4);
-        return (getByteDirect(base) & 0xFF) << 24 //
-                | (getByteDirect(base + 1) & 0xFF) << 16 //
-                | (getByteDirect(base + 2) & 0xFF) << 8 //
-                | getByteDirect(base + 3) & 0xFF;
+        return (array[base++] & 0xFF) << 24 //
+                | (array[base++] & 0xFF) << 16 //
+                | (array[base++] & 0xFF) << 8 //
+                | array[base++] & 0xFF;
     }
 
     @Override
     public long getLong(int position) {
         int base = require(position, 8);
-        return (long) getByteDirect(base++) << 56 //
-                | (long) (getByteDirect(base++) & 0xFF) << 48 //
-                | (long) (getByteDirect(base++) & 0xFF) << 40 //
-                | (long) (getByteDirect(base++) & 0xFF) << 32 //
-                | (long) (getByteDirect(base++) & 0xFF) << 24 //
-                | (getByteDirect(base++) & 0xFF) << 16 //
-                | (getByteDirect(base++) & 0xFF) << 8 //
-                | getByteDirect(base++) & 0xFF;
+        return (long) array[base++] << 56 //
+                | (long) (array[base++] & 0xFF) << 48 //
+                | (long) (array[base++] & 0xFF) << 40 //
+                | (long) (array[base++] & 0xFF) << 32 //
+                | (long) (array[base++] & 0xFF) << 24 //
+                | (array[base++] & 0xFF) << 16 //
+                | (array[base++] & 0xFF) << 8 //
+                | array[base++] & 0xFF;
     }
 
     @Override
     public char getChar(int position) {
         int base = require(position, 2);
-        return (char) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        return (char) (((array[base++] & 0xFF) << 8) | (array[base++] & 0xFF));
     }
 
     @Override
@@ -175,7 +189,7 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     /*
-    ############## IDENTICAL CODE ################
+    ############## EQUALS, HASHCODE & COMPARE ################
      */
 
     @Override

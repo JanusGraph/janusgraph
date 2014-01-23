@@ -28,8 +28,7 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
-    protected void reset(int newOffset, int newLimit) {
-        invertFlag=false;
+    void reset(int newOffset, int newLimit) {
         position=0;
         super.reset(newOffset,newLimit);
     }
@@ -38,12 +37,6 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     ############ IDENTICAL CODE #############
      */
 
-    @Override
-    byte getByteDirect(int index) {
-        return invertFlag?(byte)~(super.getByteDirect(index)):super.getByteDirect(index);
-    }
-
-    private boolean invertFlag = false;
 
     private transient int position=0;
 
@@ -106,27 +99,20 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
 
     @Override
     public<T> T asRelative(final Factory<T> factory) {
-        if (!invertFlag) {
-            if (position==0) return as(factory);
-            else {
-                return as(new Factory<T>() {
-                    @Override
-                    public T get(byte[] array, int offset, int limit) {
-                        return factory.get(array,offset+position,limit);
-                    }
-                });
-            }
-        } else {
-            byte[] invertArray = new byte[length()-position];
-            int pos=0;
-            for (int i=position;i<length();i++) invertArray[pos++]=getByteDirect(i);
-            return factory.get(invertArray,0,invertArray.length);
+        if (position==0) return as(factory);
+        else {
+            return as(new Factory<T>() {
+                @Override
+                public T get(byte[] array, int offset, int limit) {
+                    return factory.get(array,offset+position,limit);
+                }
+            });
         }
     }
 
     @Override
-    public void invert() {
-        invertFlag = !invertFlag;
+    public ReadBuffer subrange(int length, boolean invert) {
+        return super.subrange(position,length,invert).asReadBuffer();
     }
 
 

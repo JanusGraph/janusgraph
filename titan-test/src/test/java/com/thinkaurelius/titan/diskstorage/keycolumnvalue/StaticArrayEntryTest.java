@@ -60,9 +60,8 @@ public class StaticArrayEntryTest {
         Entry entry = new StaticArrayEntry(wb.getStaticBufferFlipBytes(4,2*4),3*4);
         ReadBuffer rb = entry.asReadBuffer();
         assertEquals(1,rb.getInt());
-        rb.invert();
-        assertEquals(2, rb.getInt());
-        rb.invert();
+        assertEquals(2,rb.subrange(4,true).getInt());
+        assertEquals(~2, rb.getInt());
         assertEquals(3, rb.getInt());
         assertEquals(4,rb.getInt());
         rb.movePositionTo(entry.getValuePosition());

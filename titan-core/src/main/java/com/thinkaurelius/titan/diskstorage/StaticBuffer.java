@@ -31,6 +31,8 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public StaticBuffer subrange(int position, int length);
 
+    public StaticBuffer subrange(int position, int length, boolean invert);
+
     public ReadBuffer asReadBuffer();
 
     public<T> T as(Factory<T> factory);
