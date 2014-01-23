@@ -4,10 +4,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
 import java.util.Iterator;
 import java.util.List;
 
@@ -19,6 +23,9 @@ import java.util.List;
 public class CommonsConfiguration implements WriteConfiguration {
 
     private final Configuration config;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(CommonsConfiguration.class);
 
     public CommonsConfiguration(Configuration config) {
         Preconditions.checkArgument(config!=null);
@@ -37,7 +44,18 @@ public class CommonsConfiguration implements WriteConfiguration {
             Preconditions.checkArgument(datatype.getComponentType()==String.class,"Only string arrays are supported: %s",datatype);
             return (O)config.getStringArray(key);
         } else if (Number.class.isAssignableFrom(datatype)) {
-            return (O)config.getProperty(key);
+            // A properties file configuration returns Strings even for numeric
+            // values small enough to fit inside Integer (e.g. 5000). In-memory
+            // configuration impls seem to be able to store and return actual
+            // numeric types rather than String
+            //
+            // We try to handle either case here
+            Object o = config.getProperty(key);
+            if (datatype.isInstance(o)) {
+                return (O)o;
+            } else {
+                return constructFromStringArgument(datatype, o.toString());
+            }
         } else if (datatype==String.class) {
             return (O)config.getString(key);
         } else if (datatype==Boolean.class) {
@@ -45,6 +63,16 @@ public class CommonsConfiguration implements WriteConfiguration {
         } else if (datatype==Object.class) {
             return (O)config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
+    }
+
+    private <O> O constructFromStringArgument(Class<O> datatype, String arg) {
+        try {
+            Constructor<O> ctor = datatype.getConstructor(String.class);
+            return ctor.newInstance(arg);
+        } catch (ReflectiveOperationException e) {
+            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, datatype, e);
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
