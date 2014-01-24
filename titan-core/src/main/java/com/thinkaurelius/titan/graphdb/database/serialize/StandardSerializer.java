@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
-import com.thinkaurelius.titan.graphdb.query.condition.PredicateCondition;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -29,7 +28,7 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     }
 
     private boolean supportsNullSerialization(Class type) {
-        return getSerializer(type) instanceof SupportsNullSerialization;
+        return getSerializer(type) instanceof SupportsNullSerializer;
     }
 
     @Override

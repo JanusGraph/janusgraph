@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -86,7 +88,7 @@ public class IDManagementTest {
         int trails = 1000000;
         assertEquals(eid.getMaxPartitionCount(), (1 << partitionBits) - 1);
 
-        KryoSerializer serializer = new KryoSerializer(true);
+        Serializer serializer = new StandardSerializer();
         for (int t = 0; t < trails; t++) {
             long count = RandomGenerator.randomLong(1, eid.getMaxTitanTypeCount());
             long id;
@@ -125,7 +127,7 @@ public class IDManagementTest {
             assertEquals(id,newId);
 
             //Compare to Kryo
-            DataOutput out = serializer.getDataOutput(10, true);
+            DataOutput out = serializer.getDataOutput(10);
             IDHandler.writeEdgeType(out, id, dirID);
             assertEquals(b, out.getStaticBuffer());
 

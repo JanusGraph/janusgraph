@@ -4,10 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.core.attribute.FullDouble;
-import com.thinkaurelius.titan.core.attribute.FullFloat;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.StringX;
+import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 
 import java.util.Date;
@@ -23,10 +20,6 @@ public class StandardAttributeHandling implements AttributeHandling {
 
     private final Map<Class,AttributeHandler> handlers;
 
-    private final Set<Class> sortKeyDataTypes = ImmutableSet.of((Class)
-            Byte.class,Short.class,Integer.class,Long.class,Float.class,Double.class,Character.class,
-            Boolean.class, String.class, Date.class);
-
     public StandardAttributeHandling() {
         handlers = new HashMap<Class, AttributeHandler>(60);
 
@@ -35,17 +28,17 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(Short.class, new ShortSerializer());
         registerClass(Integer.class, new IntegerSerializer());
         registerClass(Long.class, new LongSerializer());
-        registerClass(Float.class, new FloatSerializer());
-        registerClass(Double.class, new DoubleSerializer());
+        registerClass(Decimal.class, new Decimal.DecimalSerializer());
+        registerClass(Precision.class, new Precision.PrecisionSerializer());
         registerClass(Character.class, new CharacterSerializer());
         registerClass(Boolean.class, new BooleanSerializer());
         registerClass(String.class, new StringSerializer());
         registerClass(Date.class, new DateSerializer());
 
-        registerClass(Geoshape.class, new GeoshapeHandler());
-        registerClass(FullFloat.class, new FullFloatSerializer());
-        registerClass(FullDouble.class, new FullDoubleSerializer());
+        registerClass(Geoshape.class, new Geoshape.GeoshapeSerializer());
         registerClass(StringX.class, new StringXSerializer()); //supports null serialization
+        registerClass(Float.class, new FloatSerializer());
+        registerClass(Double.class, new DoubleSerializer());
 
 
         //Arrays (support null serialization)
@@ -87,8 +80,8 @@ public class StandardAttributeHandling implements AttributeHandling {
     }
 
     @Override
-    public boolean isSupportedSortKeyDatatype(Class<?> datatype) {
-        return sortKeyDataTypes.contains(datatype);
+    public boolean isOrderPreservingDatatype(Class<?> datatype) {
+        return (getSerializer(datatype) instanceof OrderPreservingSerializer);
     }
 
     protected <V> AttributeSerializer<V> getSerializer(Class<V> datatype) {

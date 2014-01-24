@@ -41,7 +41,7 @@ public class KryoSerializer {
                     IndexParameters.class, IndexParameters[].class, Order.class
             );
 
-    public static final int KRYO_ID_OFFSET = 10;
+    public static final int KRYO_ID_OFFSET = 50;
 
     private final boolean registerRequired;
     private final ThreadLocal<Kryo> kryos;

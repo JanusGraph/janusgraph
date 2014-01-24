@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -24,6 +25,7 @@ abstract class StandardTypeMaker implements TypeMaker {
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
+    protected final AttributeHandling attributeHandler;
 
     private String name;
     private boolean[] isUnique;
@@ -35,11 +37,14 @@ abstract class StandardTypeMaker implements TypeMaker {
     private Order sortOrder;
     private List<TitanType> signature;
 
-    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
+    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
+                             final AttributeHandling attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
+        Preconditions.checkNotNull(attributeHandler);
         this.tx = tx;
         this.indexSerializer = indexSerializer;
+        this.attributeHandler = attributeHandler;
 
         //Default assignments
         name = null;
@@ -74,11 +79,11 @@ abstract class StandardTypeMaker implements TypeMaker {
             throw new IllegalArgumentException("Cannot define a sort key on a both-unique type");
     }
 
-    private static long[] checkSortKey(List<TitanType> sig) {
+    private long[] checkSortKey(List<TitanType> sig) {
         for (TitanType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
-                    || Comparable.class.isAssignableFrom(((TitanKey) t).getDataType()),
-                    "Key must have comparable data type to be used as sort key: " + t);
+                    || attributeHandler.isOrderPreservingDatatype(((TitanKey) t).getDataType()),
+                    "Key must have an order-preserving data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
     }

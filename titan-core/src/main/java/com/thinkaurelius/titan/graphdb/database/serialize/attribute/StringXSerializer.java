@@ -5,26 +5,24 @@ import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.attribute.StringX;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerialization;
+import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.compression.Smaz;
 import com.thinkaurelius.titan.util.encoding.StringEncoding;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StringXSerializer implements AttributeSerializer<StringX>, SupportsNullSerialization {
+public class StringXSerializer implements AttributeSerializer<StringX>, SupportsNullSerializer {
 
     public static final int MAX_LENGTH = 128 * 1024 * 1024; //128 MB
 
     public static final int LONG_COMPRESSION_THRESHOLD = 16000;
-    public static final int TEXT_COMRPESSION_THRESHOLD = 64;
+    public static final int TEXT_COMRPESSION_THRESHOLD = 48;
 
     private static final long COMPRESSOR_BIT_LEN = 3;
     private static final int MAX_NUM_COMPRESSORS = (1<<COMPRESSOR_BIT_LEN);
@@ -63,7 +61,7 @@ public class StringXSerializer implements AttributeSerializer<StringX>, Supports
                     while (true) {
                         int c = 0xFF & buffer.getByte();
                         sb.append((char)(c & 0x7F));
-                        if ((c & 0x80) == 1) break;
+                        if ((c & 0x80) > 0) break;
                     }
                     value = sb.toString();
                 } else throw new IllegalArgumentException("Invalid ASCII encoding offset: " + length);

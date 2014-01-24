@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
@@ -17,8 +18,9 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
 
     private boolean isUnidirectional;
 
-    public StandardLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer) {
-        super(tx, indexSerializer);
+    public StandardLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+                              final AttributeHandling attributeHandler) {
+        super(tx, indexSerializer, attributeHandler);
         isUnidirectional = false;
 
     }

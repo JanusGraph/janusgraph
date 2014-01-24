@@ -223,10 +223,10 @@ public class ElasticSearchIndex implements IndexProvider {
                 mapping.field("type", "string");
                 if (map==Mapping.STRING)
                     mapping.field("index","not_analyzed");
-            } else if (dataType == Float.class || dataType == FullFloat.class) {
+            } else if (dataType == Float.class) {
                 log.debug("Registering float type for {}", key);
                 mapping.field("type", "float");
-            } else if (dataType == Double.class || dataType == FullDouble.class) {
+            } else if (dataType == Double.class || dataType == Decimal.class || dataType == Precision.class) {
                 log.debug("Registering double type for {}", key);
                 mapping.field("type", "double");
             } else if (dataType == Byte.class) {

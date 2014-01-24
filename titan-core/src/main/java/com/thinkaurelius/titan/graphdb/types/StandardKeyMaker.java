@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.indexing.StandardKeyInformation;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -30,8 +31,9 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
     private Set<IndexDefinition> indexes;
     private Parameter[] indexParas;
 
-    public StandardKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer) {
-        super(tx, indexSerializer);
+    public StandardKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+                            final AttributeHandling attributeHandler) {
+        super(tx, indexSerializer, attributeHandler);
         indexes = new HashSet<IndexDefinition>(4);
         dataType = null;
         super.unique(Direction.OUT, UniquenessConsistency.NO_LOCK);

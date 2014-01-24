@@ -4,14 +4,14 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerialization;
+import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
 
 import java.lang.reflect.Array;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class ArraySerializer implements SupportsNullSerialization {
+public abstract class ArraySerializer implements SupportsNullSerializer {
 
     protected abstract Object getArray(int length);
 

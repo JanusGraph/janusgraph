@@ -24,6 +24,6 @@ public interface AttributeHandling {
      */
     public<V> V convert(Class<V> datatype, Object value);
 
-    public boolean isSupportedSortKeyDatatype(Class<?> datatype);
+    public boolean isOrderPreservingDatatype(Class<?> datatype);
 
 }

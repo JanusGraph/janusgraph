@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
+package com.thinkaurelius.titan.graphdb.database.serialize.compression;
 
 /*
    Copyright 2011 icedrake

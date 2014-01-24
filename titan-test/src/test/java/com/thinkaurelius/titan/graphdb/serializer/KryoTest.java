@@ -28,6 +28,10 @@ public class KryoTest {
     public void setUp() throws Exception {
     }
 
+    private Input getInput(Output out) {
+        return new Input(out.getBuffer(),0,out.position());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void kryoUnregisteredErrorTest1() {
         Kryo serial = new Kryo();
@@ -43,6 +47,14 @@ public class KryoTest {
     }
 
     @Test
+    public void testClassSerialization() {
+        Kryo kryo = new Kryo();
+        Output o = new Output(100);
+        kryo.writeObject(o,Boolean.class);
+        assertEquals(Boolean.class,kryo.readObject(getInput(o),Class.class));
+    }
+
+    @Test
     public void kryoUnregisteredTest() {
         Kryo serial = new Kryo();
         serial.setRegistrationRequired(false);
@@ -50,7 +62,7 @@ public class KryoTest {
         serial.writeObject(b1, a);
         serial.writeObject(b2, b);
 
-        Input i1 = new Input(b1.getBuffer(),0,b1.position()), i2 = new Input(b2.getBuffer(),0,b2.position());
+        Input i1 = getInput(b1), i2 = getInput(b2);
         Kryo serial2 = new Kryo();
         serial2.setRegistrationRequired(false);
         assertTrue(Arrays.equals(b, serial2.readObject(i2, b.getClass())));
@@ -88,7 +100,7 @@ public class KryoTest {
         kryo.register(E.class);
         Output b = new Output(100);
         kryo.writeObject(b, E.E1);
-        Input i = new Input(b.getBuffer(),0,b.position());
+        Input i = getInput(b);
         E instance = kryo.readObject(i, E.class);
     }
 

@@ -31,7 +31,7 @@ public class WriteByteBuffer implements WriteBuffer {
     private void require(int size) {
         if (buffer.capacity()-buffer.position()<size) {
             //Need to resize
-            int newcapacity = buffer.capacity()*2;
+            int newcapacity = buffer.position() + size + buffer.capacity(); //extra capacity as buffer
             Preconditions.checkArgument(newcapacity<=MAX_BUFFER_CAPACITY,"Capacity exceeds max buffer capacity: %s",MAX_BUFFER_CAPACITY);
             ByteBuffer newBuffer = ByteBuffer.allocate(newcapacity);
             buffer.flip();

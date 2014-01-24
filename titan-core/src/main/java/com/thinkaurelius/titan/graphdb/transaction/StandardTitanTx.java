@@ -661,14 +661,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public KeyMaker makeKey(String name) {
-        StandardKeyMaker maker = new StandardKeyMaker(this, indexSerializer);
+        StandardKeyMaker maker = new StandardKeyMaker(this, indexSerializer, attributeHandler);
         maker.name(name);
         return maker;
     }
 
     @Override
     public LabelMaker makeLabel(String name) {
-        StandardLabelMaker maker = new StandardLabelMaker(this, indexSerializer);
+        StandardLabelMaker maker = new StandardLabelMaker(this, indexSerializer, attributeHandler);
         maker.name(name);
         return maker;
     }
