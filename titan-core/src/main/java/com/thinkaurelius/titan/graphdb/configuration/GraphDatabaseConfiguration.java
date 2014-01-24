@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
 import com.thinkaurelius.titan.graphdb.database.cache.PassThroughStoreCache;
@@ -1293,20 +1294,20 @@ public class GraphDatabaseConfiguration {
             }
             Preconditions.checkNotNull(clazz);
 
-            if (configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId)) {
-                String serializername = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
-                try {
-                    Class sclass = Class.forName(serializername);
-                    serializer = (AttributeHandler) sclass.newInstance();
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException("Could not find serializer class" + serializername);
-                } catch (InstantiationException e) {
-                    throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
-                }
+            Preconditions.checkArgument(configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId));
+            String serializername = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
+            try {
+                Class sclass = Class.forName(serializername);
+                serializer = (AttributeHandler) sclass.newInstance();
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException("Could not find serializer class" + serializername);
+            } catch (InstantiationException e) {
+                throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
             }
-            RegisteredAttributeClass reg = new RegisteredAttributeClass(clazz, serializer, position);
+            Preconditions.checkNotNull(serializer);
+            RegisteredAttributeClass reg = new RegisteredAttributeClass(clazz, serializer);
             for (int i = 0; i < all.size(); i++) {
                 if (all.get(i).equals(reg)) {
                     throw new IllegalArgumentException("Duplicate attribute registration: " + all.get(i) + " and " + reg);
@@ -1315,7 +1316,6 @@ public class GraphDatabaseConfiguration {
             all.add(reg);
 
         }
-        Collections.sort(all);
         return all;
     }
 
@@ -1377,7 +1377,7 @@ public class GraphDatabaseConfiguration {
 
 
     public static Serializer getSerializer(Configuration configuration) {
-        Serializer serializer = new KryoSerializer(configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE));
+        Serializer serializer = new StandardSerializer(configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE));
         for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(configuration)) {
             clazz.registerWith(serializer);
         }

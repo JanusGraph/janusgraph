@@ -247,7 +247,7 @@ public class EdgeSerializer implements RelationReader {
         Direction dir = EdgeDirection.fromPosition(position);
         int dirID = getDirID(dir, relation.isProperty() ? RelationType.PROPERTY : RelationType.EDGE);
 
-        DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY, true);
+        DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
         int valuePosition;
         IDHandler.writeEdgeType(out, typeid, dirID);
 
@@ -374,8 +374,8 @@ public class EdgeSerializer implements RelationReader {
             isStatic = type.isStatic(dir);
             int dirID = getDirID(dir, rt);
 
-            DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
-            DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY, true);
+            DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
+            DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
             IDHandler.writeEdgeType(colStart, type.getID(), dirID);
             IDHandler.writeEdgeType(colEnd, type.getID(), dirID);
 

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Calendar;
 
-import static com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization.RESERVED_ID_OFFSET;
+import static com.thinkaurelius.titan.graphdb.database.serialize.kryo.SerializerInitialization.RESERVED_ID_OFFSET;
 import static org.junit.Assert.*;
 
 public class SerializerTest {

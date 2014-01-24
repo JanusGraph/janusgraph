@@ -461,7 +461,7 @@ public class IndexSerializer {
     }
 
     private final StaticBuffer getIndexKey(Object att) {
-        DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
+        DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY);
         out.writeObjectNotNull(att);
         return out.getStaticBuffer();
     }

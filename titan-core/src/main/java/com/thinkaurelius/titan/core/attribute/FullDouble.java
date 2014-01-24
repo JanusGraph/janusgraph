@@ -14,10 +14,7 @@ package com.thinkaurelius.titan.core.attribute;
 
 public class FullDouble extends Number {
 
-    private double value;
-
-    private FullDouble() {
-    }
+    private final double value;
 
     public FullDouble(final double value) {
         this.value = value;

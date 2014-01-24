@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.idhandling;
 
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
@@ -20,7 +21,7 @@ public class VariableLong {
     private static final byte BIT_MASK = 127;
     private static final byte STOP_MASK = -128;
 
-    private static long readUnsigned(ReadBuffer in) {
+    private static long readUnsigned(ScanBuffer in) {
         long value = 0;
         byte b;
         do {
@@ -69,7 +70,7 @@ public class VariableLong {
        ################################## */
 
 
-    public static long readPositive(ReadBuffer in) {
+    public static long readPositive(ScanBuffer in) {
         long value = readUnsigned(in);
         assert value >= 0;
         return value;

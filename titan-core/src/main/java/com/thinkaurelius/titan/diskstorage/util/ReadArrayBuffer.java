@@ -97,6 +97,50 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
         return getDouble(updatePos(8));
     }
 
+    //------
+
+    public byte[] getBytes(int length) {
+        byte[] result = super.getBytes(position,length);
+        position += length*BYTE_LEN;
+        return result;
+    }
+
+    public short[] getShorts(int length) {
+        short[] result = super.getShorts(position,length);
+        position += length*SHORT_LEN;
+        return result;
+    }
+
+    public int[] getInts(int length) {
+        int[] result = super.getInts(position,length);
+        position += length*INT_LEN;
+        return result;
+    }
+
+    public long[] getLongs(int length) {
+        long[] result = super.getLongs(position,length);
+        position += length*LONG_LEN;
+        return result;
+    }
+
+    public char[] getChars(int length) {
+        char[] result = super.getChars(position,length);
+        position += length*CHAR_LEN;
+        return result;
+    }
+
+    public float[] getFloats(int length) {
+        float[] result = super.getFloats(position,length);
+        position += length*FLOAT_LEN;
+        return result;
+    }
+
+    public double[] getDoubles(int length) {
+        double[] result = super.getDoubles(position,length);
+        position += length*DOUBLE_LEN;
+        return result;
+    }
+
     @Override
     public<T> T asRelative(final Factory<T> factory) {
         if (position==0) return as(factory);

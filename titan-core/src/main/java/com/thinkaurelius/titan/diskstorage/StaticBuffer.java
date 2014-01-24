@@ -29,6 +29,20 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public double getDouble(int position);
 
+    public byte[] getBytes(int position, int length);
+
+    public short[] getShorts(int position, int length);
+
+    public int[] getInts(int position, int length);
+
+    public long[] getLongs(int position, int length);
+
+    public char[] getChars(int position, int length);
+
+    public float[] getFloats(int position, int length);
+
+    public double[] getDoubles(int position, int length);
+
     public StaticBuffer subrange(int position, int length);
 
     public StaticBuffer subrange(int position, int length, boolean invert);

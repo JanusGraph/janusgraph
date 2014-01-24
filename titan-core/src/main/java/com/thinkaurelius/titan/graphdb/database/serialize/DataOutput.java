@@ -17,6 +17,9 @@ public interface DataOutput extends WriteBuffer {
     public DataOutput putByte(byte val);
 
     @Override
+    public DataOutput putBytes(byte[] val);
+
+    @Override
     public DataOutput putChar(char val);
 
     @Override

@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -54,12 +55,44 @@ public class StaticArrayEntryTest {
     }
 
     @Test
+    public void testReadWrite() {
+        WriteBuffer b = new WriteByteBuffer(10);
+        for (int i=1;i<4;i++) b.putByte((byte) i);
+        for (int i=1;i<4;i++) b.putShort((short) i);
+        for (int i=1;i<4;i++) b.putInt(i);
+        for (int i=1;i<4;i++) b.putLong(i);
+        for (int i=1;i<4;i++) b.putFloat(i);
+        for (int i=1;i<4;i++) b.putDouble(i);
+        for (int i=101;i<104;i++) b.putChar((char) i);
+
+        ReadBuffer r = b.getStaticBuffer().asReadBuffer();
+        assertEquals(1,r.getByte());
+        assertTrue(Arrays.equals(new byte[]{2,3},r.getBytes(2)));
+        assertEquals(1,r.getShort());
+        assertTrue(Arrays.equals(new short[]{2,3},r.getShorts(2)));
+        assertEquals(1,r.getInt());
+        assertEquals(2,r.getInt());
+        assertTrue(Arrays.equals(new int[]{3},r.getInts(1)));
+        assertEquals(1,r.getLong());
+        assertTrue(Arrays.equals(new long[]{2,3},r.getLongs(2)));
+        assertEquals(1.0,r.getFloat(),0.00001);
+        assertTrue(Arrays.equals(new float[]{2.0f,3.0f},r.getFloats(2)));
+        assertEquals(1,r.getDouble(),0.0001);
+        assertTrue(Arrays.equals(new double[]{2.0,3.0},r.getDoubles(2)));
+        assertEquals((char)101,r.getChar());
+        assertEquals((char)102,r.getChar());
+        assertTrue(Arrays.equals(new char[]{(char)103},r.getChars(1)));
+
+    }
+
+
+    @Test
     public void testInversion() {
         WriteBuffer wb = new WriteByteBuffer(20);
         wb.putInt(1).putInt(2).putInt(3).putInt(4);
         Entry entry = new StaticArrayEntry(wb.getStaticBufferFlipBytes(4,2*4),3*4);
         ReadBuffer rb = entry.asReadBuffer();
-        assertEquals(1,rb.getInt());
+        assertEquals(1, rb.getInt());
         assertEquals(2,rb.subrange(4,true).getInt());
         assertEquals(~2, rb.getInt());
         assertEquals(3, rb.getInt());

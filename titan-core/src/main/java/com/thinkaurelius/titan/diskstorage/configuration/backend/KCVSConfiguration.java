@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import org.apache.commons.lang.StringUtils;
 
@@ -38,7 +39,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     private final String identifier;
     private final StaticBuffer rowKey;
 
-    private final KryoSerializer serializer;
+    private final StandardSerializer serializer;
 
     private long maxOperationWaitTime = 10000;
 
@@ -53,7 +54,7 @@ public class KCVSConfiguration implements WriteConfiguration {
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
 
-        this.serializer = new KryoSerializer(true);
+        this.serializer = new StandardSerializer();
     }
 
     public void setMaxOperationWaitTime(long waitTimeMS) {
@@ -241,7 +242,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     }
 
     private<O> StaticBuffer object2StaticBuffer(final O value) {
-        DataOutput out = serializer.getDataOutput(128, true);
+        DataOutput out = serializer.getDataOutput(128);
         out.writeClassAndObject(value);
         return out.getStaticBuffer();
     }

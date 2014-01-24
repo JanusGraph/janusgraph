@@ -14,10 +14,7 @@ package com.thinkaurelius.titan.core.attribute;
 
 public class FullFloat extends Number {
 
-    private float value;
-
-    private FullFloat() {
-    }
+    private final float value;
 
     public FullFloat(final float value) {
         this.value = value;
