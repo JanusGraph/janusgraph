@@ -163,7 +163,7 @@ public abstract class AbstractDecimal extends Number implements Comparable<Abstr
                 if (AttributeUtil.isWholeNumber(n)) {
                     long l = n.longValue();
                     long multiplier = multiplier(decimals);
-                    Preconditions.checkArgument(Long.MIN_VALUE/multiplier>l || Long.MAX_VALUE/multiplier<l,"Number out of range: %s",l);
+                    Preconditions.checkArgument(Long.MIN_VALUE/multiplier<l && Long.MAX_VALUE/multiplier>l,"Number out of range: %s",l);
                     return construct(l*multiplier,decimals);
                 } else {
                     return construct(AbstractDecimal.convert(n.doubleValue(), decimals),decimals);

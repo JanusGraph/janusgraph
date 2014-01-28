@@ -62,7 +62,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             Object o = prop.getValue();
         }
         n1.query().relations();
-        assertEquals(10.5, n1.getProperty(weight));
+        assertTrue(n1.getProperty(weight).equals(10.5));
     }
 
     @Test
@@ -147,7 +147,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(link.isUnique(Direction.OUT));
 
         weight = tx.getPropertyKey("weight");
-        assertEquals(Double.class, weight.getDataType());
+        assertEquals(Decimal.class, weight.getDataType());
 
         boolval = tx.getPropertyKey("boolval");
         assertEquals(Boolean.class, boolval.getDataType());
@@ -1027,7 +1027,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(e, Iterables.getOnlyElement(n1.getTitanEdges(BOTH, connect)));
 
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
-        assertEquals(3.0, e.getProperty(weight));
+        assertTrue(e.getProperty(weight).equals(3.0));
         assertEquals("HasProperties TitanRelation", e.getProperty(name));
         n3 = e.getVertex(IN);
 
@@ -1055,7 +1055,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n2 = tx.getVertex("name", "Node2");
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name")));
-        assertEquals(111.5, e.getProperty("weight"));
+        assertTrue(e.getProperty("weight").equals(111.5));
 
     }
 

@@ -19,7 +19,7 @@ public class FloatSerializer implements AttributeSerializer<Float> {
     public Float convert(Object value) {
         if (value instanceof Number) {
             double d = ((Number)value).doubleValue();
-            if (d<Float.MIN_VALUE || d>Float.MAX_VALUE) throw new IllegalArgumentException("Value too large for float: " + value);
+            if (d<-Float.MAX_VALUE || d>Float.MAX_VALUE) throw new IllegalArgumentException("Value too large for float: " + value);
             return Float.valueOf((float)d);
         } else if (value instanceof String) {
             return Float.valueOf(Float.parseFloat((String) value));

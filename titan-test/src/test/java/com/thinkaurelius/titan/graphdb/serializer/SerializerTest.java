@@ -527,7 +527,7 @@ public class SerializerTest {
         put(Decimal.class, new Factory<Decimal>() {
             @Override
             public Decimal newInstance() {
-                return new Decimal(random.nextInt()*1.0f/1000f);
+                return new Decimal(random.nextInt()*1.0/1000);
             }
         });
         put(Precision.class, new Factory<Precision>() {
@@ -551,13 +551,13 @@ public class SerializerTest {
         put(Float.class, new Factory<Float>() {
             @Override
             public Float newInstance() {
-                return random.nextFloat();
+                return random.nextFloat()*10000 - 10000/2.0f;
             }
         });
         put(Double.class, new Factory<Double>() {
             @Override
             public Double newInstance() {
-                return random.nextDouble();
+                return random.nextDouble()*10000000 - 10000000/2.0;
             }
         });
         put(Geoshape.class, new Factory<Geoshape>() {
