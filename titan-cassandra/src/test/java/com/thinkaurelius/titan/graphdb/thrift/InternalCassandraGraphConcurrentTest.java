@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.thrift;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
@@ -20,6 +19,6 @@ public class InternalCassandraGraphConcurrentTest extends TitanGraphConcurrentTe
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 }

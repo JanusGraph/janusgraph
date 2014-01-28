@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -10,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
 import org.apache.cassandra.config.DatabaseDescriptor;
@@ -62,8 +64,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * <p/>
      * Value = {@value}
      */
-    public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "./config/cassandra.yaml";
-//    public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
+    public static final String CASSANDRA_YAML_DEFAULT = "./conf/cassandra.yaml";
 
     private final Map<String, CassandraEmbeddedKeyColumnValueStore> openStores;
 
@@ -78,14 +79,21 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         if (config.has(CASSANDRA_THRIFT_FRAME_SIZE))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
-        String cassandraConfigDir = CASSANDRA_CONFIG_DIR_DEFAULT;
+        String cassandraConfig = CASSANDRA_YAML_DEFAULT;
         if (config.has(GraphDatabaseConfiguration.STORAGE_CONF_FILE)) {
-            cassandraConfigDir = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);
+            cassandraConfig = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);
         }
 
-        assert cassandraConfigDir != null && !cassandraConfigDir.isEmpty();
+        assert cassandraConfig != null && !cassandraConfig.isEmpty();
 
-        CassandraDaemonWrapper.start(cassandraConfigDir);
+        File ccf = new File(cassandraConfig);
+
+        if (ccf.exists() && ccf.isAbsolute()) {
+            cassandraConfig = "file://" + cassandraConfig;
+            log.debug("Set cassandra config string \"{}\"", cassandraConfig);
+        }
+
+        CassandraDaemonWrapper.start(cassandraConfig);
 
         this.openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();

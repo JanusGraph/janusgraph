@@ -7,22 +7,21 @@ import org.junit.BeforeClass;
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.DistributedStoreManagerTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 
 public class InternalCassandraDistributedStoreManagerTest extends DistributedStoreManagerTest<CassandraThriftStoreManager> {
-    
+
     @BeforeClass
     public static void startCassandra() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
-    
+
     @Before
     public void setUp() throws StorageException {
         manager = new CassandraThriftStoreManager(
                 CassandraStorageSetup.getCassandraThriftConfiguration(this.getClass().getSimpleName()));
         store = manager.openDatabase("distributedcf");
     }
-    
+
     @After
     public void tearDown() throws StorageException {
         if (null != manager)

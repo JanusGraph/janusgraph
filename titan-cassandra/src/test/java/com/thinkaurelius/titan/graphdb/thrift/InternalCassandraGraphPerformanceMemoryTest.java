@@ -5,7 +5,6 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
 
 public class InternalCassandraGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
@@ -18,6 +17,6 @@ public class InternalCassandraGraphPerformanceMemoryTest extends TitanGraphPerfo
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 }

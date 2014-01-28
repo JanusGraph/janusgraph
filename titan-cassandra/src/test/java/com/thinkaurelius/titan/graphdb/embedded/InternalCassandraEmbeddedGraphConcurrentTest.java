@@ -4,7 +4,6 @@ import org.junit.BeforeClass;
 import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphConcurrentTest;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
@@ -18,12 +17,12 @@ public class InternalCassandraEmbeddedGraphConcurrentTest extends TitanGraphConc
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
-    
+
     @Override
     public WriteConfiguration getConfiguration() {
         return CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(getClass().getSimpleName());
     }
-    
+
 }

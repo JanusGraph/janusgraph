@@ -3,14 +3,19 @@ package com.thinkaurelius.titan;
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.CASSANDRA_KEYSPACE;
 
 import java.io.File;
+import java.io.IOException;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 public class CassandraStorageSetup {
@@ -97,13 +102,17 @@ public class CassandraStorageSetup {
         }
     }
 
-//    private static Configuration getGraphBaseConfiguration(String ks, String backend) {
-//        Configuration config = new BaseConfiguration();
-//        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(KEYSPACE_KEY, cleanKeyspaceName(ks));
-//        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, backend);
-//        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_KEY, 60000L);
-//        return config;
-//    }
+    public static synchronized void startCleanEmbedded(String cassandraYamlPath) {
+        if (!CassandraDaemonWrapper.isStarted()) {
+            try {
+                FileUtils.deleteDirectory(new File(CassandraStorageSetup.DATA_PATH));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        CassandraDaemonWrapper.start(cassandraYamlPath);
+    }
 
     private static String loadAbsoluteDirectoryPath(String name, String prop, boolean mustExistAndBeAbsolute) {
         String s = System.getProperty(prop);

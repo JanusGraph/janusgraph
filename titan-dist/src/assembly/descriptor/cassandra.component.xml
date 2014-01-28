@@ -3,14 +3,14 @@
 
     <fileSets>
         <fileSet>
-            <directory>../src/assembly/static/bin</directory>
+            <directory>src/assembly/static/bin</directory>
             <outputDirectory>/bin</outputDirectory>
             <includes>
                 <include>*cassandra*</include>
             </includes>
         </fileSet>
         <fileSet>
-            <directory>../src/assembly/static/conf</directory>
+            <directory>src/assembly/static/conf</directory>
             <outputDirectory>/conf</outputDirectory>
             <includes>
                 <include>*cassandra*</include>
@@ -20,7 +20,7 @@
 
     <files>
         <file>
-            <source>../src/assembly/static/log/cassandra.log</source>
+            <source>src/assembly/static/log/cassandra.log</source>
             <outputDirectory>/log</outputDirectory>
         </file>
     </files>
