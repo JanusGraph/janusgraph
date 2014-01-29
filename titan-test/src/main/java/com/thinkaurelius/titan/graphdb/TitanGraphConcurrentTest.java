@@ -177,7 +177,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
                 new FixedRelationshipMaker(tx, id,
                         makeSimpleEdgeLabel("dummyRelationship"));
 
-        newTx();
+        //newTx();
 
         Future<?> propFuture = executor.submit(propMaker);
         Future<?> relFuture = executor.submit(relMaker);

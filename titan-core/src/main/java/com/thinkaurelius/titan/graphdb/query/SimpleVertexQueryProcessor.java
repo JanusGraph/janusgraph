@@ -53,7 +53,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private boolean filterHiddenProperties;
 
     private SimpleVertexQueryProcessor(InternalVertex vertex) {
-        Preconditions.checkArgument(vertex.isLoaded(),"SimpleVertexQuery only applies to unmodified vertices");
+        //Preconditions.checkArgument(vertex.isLoaded()); -> don't check since concurrent parallel modification may have taken place and should be ignored. This is verified in VertexCentricQueryBuilder
         this.vertex = vertex;
         this.tx = vertex.tx();
         this.edgeSerializer = this.tx.getEdgeSerializer();

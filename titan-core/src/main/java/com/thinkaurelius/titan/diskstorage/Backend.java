@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
@@ -409,6 +410,10 @@ public class Backend {
                         storeManager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, txConfig)),
                         readAttempts);
             }
+        }
+
+        if (cacheEnabled) {
+            tx = new CacheTransaction(tx);
         }
 
         //Index transactions

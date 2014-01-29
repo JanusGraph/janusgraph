@@ -271,7 +271,7 @@ public abstract class KeyColumnValueStoreTest {
         checkValues(values);
     }
 
-    @Test
+    //@Test
     public void compareStores() throws StorageException {
         int keys = 1000, columns = 2000; boolean normalMode=true;
         String[][] values = new String[keys*2][];
@@ -319,7 +319,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     public void storeAndRetrievePerformance() throws StorageException {
         int multiplier = 4;
-        int keys = 500*4 * multiplier, columns = 200;
+        int keys = 50 * multiplier, columns = 200;
         String[][] values = KeyValueStoreUtil.generateData(keys, columns);
         log.debug("Loading values: " + keys + "x" + columns);
         long time = System.currentTimeMillis();

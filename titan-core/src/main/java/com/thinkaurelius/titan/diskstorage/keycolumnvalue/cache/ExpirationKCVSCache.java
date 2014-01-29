@@ -7,7 +7,7 @@ import com.google.common.cache.Weigher;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.util.stats.MetricManager;
+import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,18 +77,18 @@ public class ExpirationKCVSCache extends KCVSCache {
 
     @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
-        incActionBy(1,Action.RETRIEVAL,txh);
+        incActionBy(1, CacheMetricsAction.RETRIEVAL,txh);
         if (isExpired(query)) {
-            incActionBy(1,Action.MISS,txh);
-            return store.getSlice(query, txh);
+            incActionBy(1, CacheMetricsAction.MISS,txh);
+            return store.getSlice(query, getTx(txh));
         }
 
         try {
             return cache.get(query,new Callable<EntryList>() {
                 @Override
                 public EntryList call() throws Exception {
-                    incActionBy(1,Action.MISS,txh);
-                    return store.getSlice(query, txh);
+                    incActionBy(1, CacheMetricsAction.MISS,txh);
+                    return store.getSlice(query, getTx(txh));
                 }
             });
         } catch (Exception e) {
@@ -103,7 +103,7 @@ public class ExpirationKCVSCache extends KCVSCache {
         Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer, EntryList>(keys.size());
         List<StaticBuffer> remainingKeys = new ArrayList<StaticBuffer>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
-        incActionBy(keys.size(),Action.RETRIEVAL,txh);
+        incActionBy(keys.size(), CacheMetricsAction.RETRIEVAL,txh);
         //Find all cached queries
         for (int i=0;i<keys.size();i++) {
             StaticBuffer key = keys.get(i);
@@ -115,8 +115,8 @@ public class ExpirationKCVSCache extends KCVSCache {
             else remainingKeys.add(key);
         }
         //Request remaining ones from backend
-        incActionBy(remainingKeys.size(),Action.MISS,txh);
-        Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, txh);
+        incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
+        Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, getTx(txh));
         for (int i=0;i<keys.size();i++) {
             StaticBuffer key = keys.get(i);
             EntryList subresult = subresults.get(key);

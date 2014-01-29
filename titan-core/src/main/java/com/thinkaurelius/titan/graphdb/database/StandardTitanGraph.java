@@ -88,7 +88,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.edgeSerializer = new EdgeSerializer(this.serializer);
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
-        this.typeCache = new StandardTypeCache(typeCacheRetrieval);
+        this.typeCache = configuration.getTypeCache(typeCacheRetrieval);
         isOpen = true;
     }
 

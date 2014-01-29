@@ -107,12 +107,12 @@ public class StandardTypeCache implements TypeCache {
         assert IDManager.isEdgeLabelID(typeid) || IDManager.isPropertyKeyID(typeid);
         assert IDManager.IDType.EdgeLabel.offset()==TYPE_ID_BACKSHIFT && IDManager.IDType.PropertyKey.offset()==TYPE_ID_BACKSHIFT;
         assert SystemTypeManager.SYSTEM_TYPE_OFFSET <= (1<<TYPE_ID_BITSHIFT);
-        assert type.getID()<SystemTypeManager.SYSTEM_TYPE_OFFSET;
+        assert IDManager.getTypeCount(type.getID())<SystemTypeManager.SYSTEM_TYPE_OFFSET;
         Preconditions.checkArgument((Long.MAX_VALUE>>>(TYPE_ID_BITSHIFT-TYPE_ID_BACKSHIFT))>=typeid);
         int edgeDir = EdgeDirection.position(dir);
         assert edgeDir==0 || edgeDir==1;
 
-        final long typePlusRelation = ((((typeid >>> TYPE_ID_BACKSHIFT) << 1) + edgeDir) << TYPE_ID_BITSHIFT) + type.getID();
+        final long typePlusRelation = ((((typeid >>> TYPE_ID_BACKSHIFT) << 1) + edgeDir) << TYPE_ID_BITSHIFT) + IDManager.getTypeCount(type.getID());
         ConcurrentMap<Long,EntryList> types = typeRelations;
         EntryList entries;
         if (types==null) {

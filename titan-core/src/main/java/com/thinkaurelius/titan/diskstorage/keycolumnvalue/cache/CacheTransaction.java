@@ -16,17 +16,17 @@ import java.util.List;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ExpirationTransaction implements StoreTransaction {
+public class CacheTransaction implements StoreTransaction {
 
     private static final Logger log =
-            LoggerFactory.getLogger(ExpirationTransaction.class);
+            LoggerFactory.getLogger(CacheTransaction.class);
 
     private final StoreTransaction tx;
     private final boolean validateKeysOnly;
     private final List<InvalidationEntry> invalidations;
 
 
-    public ExpirationTransaction(StoreTransaction tx) {
+    public CacheTransaction(StoreTransaction tx) {
         Preconditions.checkNotNull(tx);
         this.tx = tx;
         this.validateKeysOnly = true;

@@ -11,6 +11,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedTypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
@@ -34,7 +37,6 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
@@ -688,13 +690,6 @@ public class GraphDatabaseConfiguration {
      */
 //    public static final String METRICS_NAMESPACE = "metrics";
     public static final ConfigNamespace METRICS_NS = new ConfigNamespace(TITAN_NS,"metrics","Configuration options for metrics reporting");
-
-
-    /**
-     * Whether to enable Titan metrics.
-     */
-    public static final String METRICS_ENABLED = "enabled";
-    public static final boolean METRICS_ENABLED_DEFAULT = false;
 
     /**
      * Whether to enable basic timing and operation count monitoring on backend
@@ -1354,6 +1349,11 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasSerializeAll() {
         return configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE);
+    }
+
+    public TypeCache getTypeCache(TypeCache.StoreRetrieval retriever) {
+        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedTypeCache(retriever);
+        else return new StandardTypeCache(retriever);
     }
 
 

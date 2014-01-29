@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 import java.util.List;
@@ -14,24 +15,8 @@ import java.util.List;
  */
 public abstract class KCVSCache implements KeyColumnValueStore {
 
-    public enum Action {
-        RETRIEVAL("retrievals"), MISS("misses");
-
-        private final String name;
-
-        private Action(String name) {
-            this.name = name;
-        }
-
-        public String getName() { return name; }
-    }
-
-    private static final String METRICS_RETRIEVAL = "retrievals";
-    private static final String METRICS_MISS = "misses";
-
     private final String metricsName;
     private final boolean validateKeysOnly = true;
-
 
     protected final KeyColumnValueStore store;
 
@@ -45,9 +30,11 @@ public abstract class KCVSCache implements KeyColumnValueStore {
         return validateKeysOnly;
     }
 
-    protected void incActionBy(int by, Action action, StoreTransaction txh) {
+    protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
         assert by>=1;
-        if (metricsName!=null) MetricManager.INSTANCE.getCounter(txh.getConfiguration().getMetricsPrefix(), metricsName, action.getName()).inc(by);
+        if (metricsName!=null && txh.getConfiguration().hasMetricsPrefix()) {
+            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getMetricsPrefix(), metricsName, action.getName()).inc(by);
+        }
     }
 
     public abstract void clearCache();
@@ -56,17 +43,17 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        assert txh instanceof ExpirationTransaction;
-        ((ExpirationTransaction) txh).expireMutations(this, key, additions, deletions);
+        assert txh instanceof CacheTransaction;
+        ((CacheTransaction) txh).expireMutations(this, key, additions, deletions);
         store.mutate(key, additions, deletions, getTx(txh));
     }
 
 
     //############### SIMPLE PROXY ###########
 
-    private final StoreTransaction getTx(StoreTransaction txh) {
-        assert txh instanceof ExpirationTransaction;
-        return ((ExpirationTransaction) txh).getWrappedTransactionHandle();
+    protected final StoreTransaction getTx(StoreTransaction txh) {
+        assert txh instanceof CacheTransaction;
+        return ((CacheTransaction) txh).getWrappedTransactionHandle();
     }
 
     @Override
