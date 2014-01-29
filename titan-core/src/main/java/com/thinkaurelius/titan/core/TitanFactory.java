@@ -7,17 +7,30 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
+import org.reflections.ReflectionUtils;
+import org.reflections.Reflections;
+import org.reflections.scanners.FieldAnnotationsScanner;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.scanners.TypeAnnotationsScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.regex.Pattern;
 
@@ -67,7 +80,56 @@ public class TitanFactory {
     }
 
     public static TitanGraph open(ReadConfiguration configuration) {
+        preloadConfigOptions();
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
+    }
+
+    private static void preloadConfigOptions() {
+        org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
+            .setUrls(ClasspathHelper.forJavaClassPath())
+            .setScanners(new TypeAnnotationsScanner());
+//      .setScanners(new SubTypesScanner(), new TypeAnnotationsScanner(), new FieldAnnotationsScanner());
+        Reflections reflections = new Reflections(rc);
+
+//        for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
+        for (Class<?> c : reflections.getTypesAnnotatedWith(PreInitializeConfigOptions.class)) {
+            log.trace("Looking for ConfigOption public static fields on class {}", c);
+            for (Field f : c.getDeclaredFields()) {
+                final boolean pub = Modifier.isPublic(f.getModifiers());
+                final boolean stat = Modifier.isStatic(f.getModifiers());
+                final boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
+
+                log.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
+                if (pub && stat && typeMatch) {
+                    try {
+                        Object o = f.get(null);
+                        Preconditions.checkNotNull(o);
+                        log.debug("Initialized {}={}", f, o);
+                    } catch (IllegalArgumentException e) {
+                        log.warn("ConfigOption initialization error", e);
+                    } catch (IllegalAccessException e) {
+                        log.warn("ConfigOption initialization error", e);
+                    }
+                }
+            }
+        }
+
+//        //for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withAnnotation(PreInitialize.class))) {
+//        for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withTypeAssignableTo(ConfigOption.class))) {
+//            log.warn("Field {}", f);
+//            if (f.isAccessible() && Modifier.isStatic(f.getModifiers()) && ConfigOption.class.isAssignableFrom(f.getType())) {
+//                try {
+//                    Preconditions.checkNotNull(f.get(null));
+//                    log.warn("Loaded {}", f);
+//                } catch (IllegalArgumentException e) {
+//                    log.warn("Configuration preloading error", e);
+//                } catch (IllegalAccessException e) {
+//                    log.warn("Configuration preloading error", e);
+//                }
+//            }
+//        }
+
+        log.debug("ConfigOption initialization complete");
     }
 
 

@@ -14,7 +14,10 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -63,6 +66,7 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
+@PreInitializeConfigOptions
 public class ElasticSearchIndex implements IndexProvider {
 
     private Logger log = LoggerFactory.getLogger(ElasticSearchIndex.class);
