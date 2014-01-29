@@ -95,7 +95,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(new StoreTxConfig(consistencLevel, metricsPrefix));
+        return manager.beginTransaction(new StoreTxConfig(consistencLevel, new StandardTransactionConfig(metricsPrefix)));
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
@@ -248,7 +248,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
                                     public StoreTransaction openTx() throws StorageException {
-                                        return manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.DEFAULT,metricsPrefix));
+                                        return manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.DEFAULT,new StandardTransactionConfig(metricsPrefix)));
                                     }
                                 });
 

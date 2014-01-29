@@ -365,13 +365,11 @@ public class EdgeSerializer implements RelationReader {
         boolean isStatic;
         RelationType rt = type.isPropertyKey() ? RelationType.PROPERTY : RelationType.EDGE;
         if (dir == Direction.BOTH) {
-            isStatic = type.isStatic(Direction.OUT) && type.isStatic(Direction.IN);
             sliceStart = IDHandler.getEdgeType(type.getID(), getDirID(Direction.OUT, rt));
             sliceEnd = IDHandler.getEdgeType(type.getID(), getDirID(Direction.IN, rt));
             assert ByteBufferUtil.isSmallerThan(sliceStart, sliceEnd);
             sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
-            isStatic = type.isStatic(dir);
             int dirID = getDirID(dir, rt);
 
             DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
@@ -457,7 +455,7 @@ public class EdgeSerializer implements RelationReader {
                 sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceStart);
             }
         }
-        return new SliceQuery(sliceStart, sliceEnd, isStatic);
+        return new SliceQuery(sliceStart, sliceEnd);
     }
 
     public static class VertexConstraint {

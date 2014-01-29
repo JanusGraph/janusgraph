@@ -54,7 +54,7 @@ public class SystemKey extends SystemType implements TitanKey {
     }
 
     private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean[] uniqueness, boolean modifiable) {
-        super(name, id, RelationType.PROPERTY, uniqueness, new boolean[]{!modifiable, uniqueness[1] && index}, modifiable);
+        super(name, id, RelationType.PROPERTY, uniqueness, modifiable);
         this.dataType = dataType;
         this.index = index;
     }

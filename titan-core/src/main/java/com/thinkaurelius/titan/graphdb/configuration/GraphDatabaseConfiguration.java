@@ -13,9 +13,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
-import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
-import com.thinkaurelius.titan.graphdb.database.cache.PassThroughStoreCache;
-import com.thinkaurelius.titan.graphdb.database.cache.StoreCache;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -174,8 +171,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
             "Default expiration time for cached elements. Set to 0 to cache until change.",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
-
-    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
 
     /**
      * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
@@ -1343,33 +1338,6 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkArgument(storeFeatures != null, "Cannot retrieve store features before the storage backend has been initialized");
         return storeFeatures;
     }
-
-    public StoreCache getEdgeStoreCache() {
-        if (this.batchLoading || !configuration.get(DB_CACHE))
-            return new PassThroughStoreCache();
-
-        long expirationTime = configuration.get(DB_CACHE_TIME);
-        Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
-        if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
-
-        long cacheSizeBytes;
-        double cachesize = configuration.get(DB_CACHE_SIZE);
-        Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
-        if (cachesize<1.0) {
-            //Its a percentage
-            Runtime runtime = Runtime.getRuntime();
-            cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
-        } else {
-            Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
-            cacheSizeBytes = (long)cachesize;
-        }
-        log.info("Configuring edge store cache size: {}",cacheSizeBytes);
-
-        return new ExpirationStoreCache(expirationTime,
-                configuration.get(DB_CACHE_CLEAN_WAIT),
-                cacheSizeBytes);
-    }
-
 
     public Serializer getSerializer() {
         return getSerializer(configuration);

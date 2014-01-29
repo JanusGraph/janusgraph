@@ -38,6 +38,7 @@ public class BackendTransaction implements TransactionHandle {
     public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
 
     private final StoreTransaction storeTx;
+    private final TransactionHandleConfig txConfig;
     private final StoreFeatures storeFeatures;
 
     private final KeyColumnValueStore edgeStore;
@@ -51,12 +52,13 @@ public class BackendTransaction implements TransactionHandle {
 
     private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(StoreTransaction storeTx, StoreFeatures features,
-                              KeyColumnValueStore edgeStore,
+    public BackendTransaction(StoreTransaction storeTx, TransactionHandleConfig txConfig,
+                              StoreFeatures features, KeyColumnValueStore edgeStore,
                               KeyColumnValueStore vertexIndexStore, KeyColumnValueStore edgeIndexStore,
                               int maxReadRetryAttempts, int retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
+        this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.vertexIndexStore = vertexIndexStore;
@@ -69,6 +71,10 @@ public class BackendTransaction implements TransactionHandle {
 
     public StoreTransaction getStoreTransactionHandle() {
         return storeTx;
+    }
+
+    public TransactionHandleConfig getConfiguration() {
+        return txConfig;
     }
 
     public IndexTransaction getIndexTransactionHandle(String index) {

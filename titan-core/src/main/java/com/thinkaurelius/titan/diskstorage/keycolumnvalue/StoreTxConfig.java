@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -8,56 +10,52 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StoreTxConfig {
+public class StoreTxConfig implements TransactionHandleConfig {
 
     private final ConsistencyLevel consistency;
-    
-    private final String metricsPrefix;
-
-    private Long timestamp = null;
+    private final StandardTransactionConfig txconfig;
 
     public StoreTxConfig() {
-        this(ConsistencyLevel.DEFAULT,
-             GraphDatabaseConfiguration.getSystemMetricsPrefix());
+        this(new StandardTransactionConfig());
     }
-    
+
     public StoreTxConfig(ConsistencyLevel consistency) {
-        this(consistency,
-             GraphDatabaseConfiguration.getSystemMetricsPrefix());
-    }
-    
-    public StoreTxConfig(String metricsPrefix) {
-        this(ConsistencyLevel.DEFAULT, metricsPrefix);
+        this(consistency,new StandardTransactionConfig());
     }
 
-    public StoreTxConfig(ConsistencyLevel consistency, String metricsPrefix) {
+    public StoreTxConfig(TransactionHandleConfig txhc) {
+        this(ConsistencyLevel.DEFAULT,txhc);
+    }
+
+    public StoreTxConfig(ConsistencyLevel consistency, TransactionHandleConfig txhc) {
         Preconditions.checkNotNull(consistency);
+        Preconditions.checkNotNull(txhc);
         this.consistency = consistency;
-        this.metricsPrefix = metricsPrefix;
-    }
-
-    public StoreTxConfig setTimestamp() {
-        this.timestamp = TimeUtility.INSTANCE.getApproxNSSinceEpoch();
-        return this;
-    }
-
-    public StoreTxConfig setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-        return this;
+        this.txconfig = (StandardTransactionConfig)txhc;
     }
 
     public ConsistencyLevel getConsistency() {
         return consistency;
     }
 
-    public long getTimestamp() {
-        if (timestamp==null) setTimestamp();
-        assert timestamp!=null;
-        return timestamp;
+    //TODO: remove once removed in ConsistentKeyLocker
+    public void setTimestamp(long timestamp) {
+        txconfig.setTimestamp(timestamp);
     }
-    
+
+    @Override
+    public long getTimestamp() {
+        return txconfig.getTimestamp();
+    }
+
+    @Override
+    public boolean hasMetricsPrefix() {
+        return txconfig.hasMetricsPrefix();
+    }
+
+    @Override
     public String getMetricsPrefix() {
-        return metricsPrefix;
+        return txconfig.getMetricsPrefix();
     }
 
 }

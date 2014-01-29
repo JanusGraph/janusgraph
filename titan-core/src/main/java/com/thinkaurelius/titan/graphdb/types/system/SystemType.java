@@ -15,18 +15,15 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     private final String name;
     private final long id;
     private final boolean[] isUnique;
-    private final boolean[] isStatic;
     private final boolean isModifiable;
 
 
-    SystemType(String name, long id, RelationType type, boolean[] isUnique, boolean[] isStatic, boolean isModifiable) {
+    SystemType(String name, long id, RelationType type, boolean[] isUnique, boolean isModifiable) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         Preconditions.checkArgument(isUnique != null && isUnique.length == 2);
-        Preconditions.checkArgument(isStatic != null && isStatic.length == 2);
         this.name = SystemTypeManager.systemETprefix + name;
         this.id = getSystemTypeId(id, type);
         this.isUnique = isUnique;
-        this.isStatic = isStatic;
         this.isModifiable = isModifiable;
     }
 
@@ -53,11 +50,6 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     @Override
     public boolean isUnique(Direction direction) {
         return isUnique[EdgeDirection.position(direction)];
-    }
-
-    @Override
-    public boolean isStatic(Direction dir) {
-        return isStatic[EdgeDirection.position(dir)];
     }
 
     @Override

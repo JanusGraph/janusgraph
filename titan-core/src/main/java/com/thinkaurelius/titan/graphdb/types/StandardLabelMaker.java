@@ -107,16 +107,10 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
     }
 
     @Override
-    public StandardLabelMaker makeStatic(Direction direction) {
-        super.makeStatic(direction);
-        return this;
-    }
-
-    @Override
     public TitanLabel make() {
         Preconditions.checkArgument(!isUnidirectional ||
-                (!isUnique(IN) && !isStatic(IN)),
-                "Unidirectional labels cannot be unique or static");
+                (!isUnique(IN)),
+                "Unidirectional labels cannot be unique");
 
         TypeAttribute.Map definition = makeDefinition();
         definition.setValue(UNIDIRECTIONAL, isUnidirectional);

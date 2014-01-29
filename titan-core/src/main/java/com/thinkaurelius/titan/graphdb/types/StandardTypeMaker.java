@@ -30,7 +30,6 @@ abstract class StandardTypeMaker implements TypeMaker {
     private String name;
     private boolean[] isUnique;
     private boolean[] hasUniqueLock;
-    private boolean[] isStatic;
     private boolean isHidden;
     private boolean isModifiable;
     private List<TitanType> sortKey;
@@ -50,7 +49,6 @@ abstract class StandardTypeMaker implements TypeMaker {
         name = null;
         isUnique = new boolean[2]; //false
         hasUniqueLock = new boolean[2]; //false
-        isStatic = new boolean[2]; //false
         isHidden = false;
         isModifiable = true;
         sortKey = new ArrayList<TitanType>(4);
@@ -110,7 +108,6 @@ abstract class StandardTypeMaker implements TypeMaker {
         TypeAttribute.Map def = new TypeAttribute.Map();
         def.setValue(UNIQUENESS, new boolean[]{isUnique[0], isUnique[1]});
         def.setValue(UNIQUENESS_LOCK, hasUniqueLock);
-        def.setValue(STATIC, isStatic);
         def.setValue(HIDDEN, isHidden);
         def.setValue(MODIFIABLE, isModifiable);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
@@ -169,21 +166,6 @@ abstract class StandardTypeMaker implements TypeMaker {
     public StandardTypeMaker unModifiable() {
         this.isModifiable = false;
         return this;
-    }
-
-    public StandardTypeMaker makeStatic(Direction direction) {
-        if (direction == Direction.BOTH) {
-            makeStatic(Direction.IN);
-            makeStatic(Direction.OUT);
-        } else {
-            isStatic[EdgeDirection.position(direction)] = true;
-        }
-        return this;
-    }
-
-    protected boolean isStatic(Direction direction) {
-        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
-        return isStatic[EdgeDirection.position(direction)];
     }
 
 

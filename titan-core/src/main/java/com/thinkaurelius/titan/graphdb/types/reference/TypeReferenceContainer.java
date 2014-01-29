@@ -164,7 +164,6 @@ public class TypeReferenceContainer implements TypeInspector {
                     break;
                 case UNIQUENESS:
                 case UNIQUENESS_LOCK:
-                case STATIC:
                     JsonArray arr = input.getJsonArray(key);
                     boolean[] bools = new boolean[arr.size()];
                     for (int i=0;i<bools.length;i++) bools[i]=arr.getBoolean(i);
@@ -259,7 +258,6 @@ public class TypeReferenceContainer implements TypeInspector {
                     break;
                 case UNIQUENESS:
                 case UNIQUENESS_LOCK:
-                case STATIC:
                     boolean[] bools = (boolean[])value;
                     assert bools.length==2;
                     JsonArrayBuilder arr = Json.createArrayBuilder();

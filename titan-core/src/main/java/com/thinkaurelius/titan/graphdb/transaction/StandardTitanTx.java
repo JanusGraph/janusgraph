@@ -132,7 +132,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * Caches Titan types by name so that they can be quickly retrieved once they are loaded in the transaction.
      * Since type retrieval by name is common and there are only a few types, since cache is a simple map (i.e. no release)
      */
-    private final Map<String, Long> typeCache;
+    private final Map<String, Long> newTypeCache;
 
     /**
      * Used to assign temporary ids to new vertices and relations added in this transaction.
@@ -170,12 +170,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (config.isSingleThreaded()) {
             addedRelations = new SimpleBufferAddedRelations();
             concurrencyLevel = 1;
-            typeCache = new HashMap<String, Long>();
+            newTypeCache = new HashMap<String, Long>();
             newVertexIndexEntries = new SimpleIndexCache();
         } else {
             addedRelations = new ConcurrentBufferAddedRelations();
             concurrencyLevel = 1; //TODO: should we increase this?
-            typeCache = new NonBlockingHashMap<String, Long>();
+            newTypeCache = new NonBlockingHashMap<String, Long>();
             newVertexIndexEntries = new ConcurrentIndexCache();
         }
 
@@ -314,9 +314,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     Preconditions.checkArgument(idInspector.isEdgeLabelID(vertexid));
                     vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
                 }
-                //If its a newly created type, add to type cache
-                if (lifecycle == ElementLifeCycle.Loaded)
-                    typeCache.put(((TitanType) vertex).getName(), vertexid);
             } else if (idInspector.isVertexID(vertexid)) {
                 vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
@@ -586,7 +583,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             addProperty(type, SystemKey.TypeDefinition, attribute);
         }
         vertexCache.add(type, type.getID());
-        typeCache.put(name, type.getID());
+        newTypeCache.put(name, type.getID());
         return type;
 
     }
@@ -602,24 +599,23 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public boolean containsType(String name) {
         verifyOpen();
-        return (typeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || !Iterables.isEmpty(getVertices(SystemKey.TypeName, name)));
+        return (newTypeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || graph.getTypeCache().getTypeId(name,this)!=null);
     }
 
     @Override
     public TitanType getType(String name) {
         verifyOpen();
 
-        Long typeId = typeCache.get(name);
+        TitanType type = SystemKey.KEY_MAP.get(name);
+        if (type!=null) return type;
+
+        Long typeId = newTypeCache.get(name);
+        if (typeId==null) typeId=graph.getTypeCache().getTypeId(name,this);
         if (typeId != null) {
             InternalVertex typeVertex = vertexCache.get(typeId, existingVertexRetriever);
-            if (typeVertex != null)
-                return (TitanType) typeVertex;
-        }
-
-        TitanType type = SystemKey.KEY_MAP.get(name);
-        return (type != null)
-                ? type
-                : (TitanType) Iterables.getOnlyElement(getVertices(SystemKey.TypeName, name), null);
+            assert typeVertex!=null;
+            return (TitanType) typeVertex;
+        } else return null;
     }
 
     // this is critical path we can't allow anything heavier then assertion in here
@@ -774,12 +770,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 }
             });
 
-            return Iterables.transform(iter, new Function<Entry, TitanRelation>() {
-                @Override
-                public TitanRelation apply(@Nullable Entry entry) {
-                    return RelationConstructor.readRelation(v, entry,edgeSerializer);
-                }
-            }).iterator();
+            return RelationConstructor.readRelation(v, iter, StandardTitanTx.this).iterator();
         }
     };
 

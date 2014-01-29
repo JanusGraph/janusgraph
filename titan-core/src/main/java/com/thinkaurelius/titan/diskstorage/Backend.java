@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
@@ -21,6 +22,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
@@ -65,8 +67,16 @@ public class Backend {
     public static final String ID_STORE_NAME = "titan_ids";
 
     public static final String TITAN_BACKEND_VERSION = "titan-version";
-    public static final String MERGED_METRICS = "stores";
+    public static final String METRICS_MERGED_STORE = "stores";
+    public static final String METRICS_MERGED_CACHE = "caches";
+    public static final String METRICS_CACHE_SUFFIX = ".cache";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
+
+    public static final double EDGESTORE_CACHE_PERCENT = 0.8;
+    public static final double VERTEXINDEX_CACHE_PERCENT = 0.15;
+    public static final double EDGEINDEX_CACHE_PERCENT = 0.05;
+
+    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
 
     public static final String SYSTEM_PROPERTIES_IDENTIFIER = "general";
 
@@ -89,14 +99,12 @@ public class Backend {
     private final Map<String, IndexProvider> indexes;
 
     private final int bufferSize;
-    private final boolean hashPrefixIndex;
-    private final boolean basicMetrics;
-    private final boolean mergeBasicMetrics;
-
     private final int writeAttempts;
     private final int readAttempts;
     private final int persistAttemptWaittime;
+    private final boolean cacheEnabled;
     private final ExecutorService threadPool;
+
 
     private final Function<String, Locker> lockerCreator;
     private final ConcurrentHashMap<String, Locker> lockers =
@@ -111,8 +119,7 @@ public class Backend {
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
-        basicMetrics = configuration.get(BASIC_METRICS);
-        mergeBasicMetrics = configuration.get(MERGE_BASIC_METRICS);
+        cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
         int bufferSizeTmp = configuration.get(BUFFER_SIZE);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
@@ -146,12 +153,7 @@ public class Backend {
         // to connsistentkey impl if none is specified
         Preconditions.checkNotNull(lockerCreator);
 
-        if (storeFeatures.isDistributed() && storeFeatures.isKeyOrdered()) {
-            log.debug("Wrapping index store with HashPrefix");
-            hashPrefixIndex = true;
-        } else {
-            hashPrefixIndex = false;
-        }
+
     }
 
     public KeyColumnValueStoreManager getStoreManager() {
@@ -202,8 +204,6 @@ public class Backend {
         if (bufferSize > 1) {
             store = new BufferedKeyColumnValueStore(store, true);
         }
-        //Enable cache
-        store = new CachedKeyColumnValueStore(store);
         return store;
     }
 
@@ -219,9 +219,11 @@ public class Backend {
      */
     public void initialize(Configuration config) {
         try {
+            boolean reportMetrics = configuration.get(BASIC_METRICS);
+
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = getStore(ID_STORE_NAME);
-            if (basicMetrics) {
+            if (reportMetrics) {
                 idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName("idStore"));
             }
             idAuthority = null;
@@ -236,15 +238,46 @@ public class Backend {
             edgeIndexStore = getLockStore(getBufferStore(EDGEINDEX_STORE_NAME), false);
 
 
+            boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
             if (hashPrefixIndex) {
+                log.info("Wrapping index store with HashPrefix");
                 vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, 4);
                 edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
             }
 
-            if (basicMetrics) {
+            if (reportMetrics) {
                 edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsStoreName("edgeStore"));
                 vertexIndexStore = new MetricInstrumentedStore(vertexIndexStore, getMetricsStoreName("vertexIndexStore"));
                 edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore, getMetricsStoreName("edgeIndexStore"));
+            }
+
+            //Configure caches
+            if (cacheEnabled) {
+                long expirationTime = configuration.get(DB_CACHE_TIME);
+                Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
+                if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
+
+                long cacheSizeBytes;
+                double cachesize = configuration.get(DB_CACHE_SIZE);
+                Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
+                if (cachesize<1.0) {
+                    //Its a percentage
+                    Runtime runtime = Runtime.getRuntime();
+                    cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
+                } else {
+                    Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
+                    cacheSizeBytes = (long)cachesize;
+                }
+                log.info("Configuring total store cache size: {}",cacheSizeBytes);
+                long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
+                Preconditions.checkArgument(EDGESTORE_CACHE_PERCENT + VERTEXINDEX_CACHE_PERCENT + EDGEINDEX_CACHE_PERCENT == 1.0,"Cache percentages don't add up!");
+                long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
+                long vertexIndexCacheSize = Math.round(cacheSizeBytes * VERTEXINDEX_CACHE_PERCENT);
+                long edgeIndexCacheSize = Math.round(cacheSizeBytes * EDGEINDEX_CACHE_PERCENT);
+
+                edgeStore = new ExpirationKCVSCache(edgeStore,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                vertexIndexStore = new ExpirationKCVSCache(vertexIndexStore,getMetricsCacheName("vertexIndexStore",reportMetrics),expirationTime,cleanWaitTime,vertexIndexCacheSize);
+                edgeIndexStore = new ExpirationKCVSCache(edgeIndexStore,getMetricsCacheName("edgeIndexStore",reportMetrics),expirationTime,cleanWaitTime,edgeIndexCacheSize);
             }
 
             String version = null;
@@ -282,7 +315,12 @@ public class Backend {
     }
 
     private String getMetricsStoreName(String storeName) {
-        return mergeBasicMetrics ? MERGED_METRICS : storeName;
+        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_STORE : storeName;
+    }
+
+    private String getMetricsCacheName(String storeName, boolean reportMetrics) {
+        if (!reportMetrics) return null;
+        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
     public final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
@@ -356,9 +394,9 @@ public class Backend {
      * @throws StorageException
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws StorageException {
-        StoreTxConfig txConfig = new StoreTxConfig(configuration.getMetricsPrefix());
+        StandardTransactionConfig txConfig = new StandardTransactionConfig(configuration.getMetricsPrefix());
         if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
-        StoreTransaction tx = storeManager.beginTransaction(txConfig);
+        StoreTransaction tx = storeManager.beginTransaction(new StoreTxConfig(txConfig));
         if (bufferSize > 1) {
             Preconditions.checkArgument(storeManager.getFeatures().supportsBatchMutation());
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
@@ -367,10 +405,8 @@ public class Backend {
             if (storeFeatures.supportsTxIsolation()) {
                 //No transaction wrapping needed
             } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                txConfig = new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, configuration.getMetricsPrefix());
-                if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
                 tx = new ExpectedValueCheckingTransaction(tx,
-                        storeManager.beginTransaction(txConfig),
+                        storeManager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, txConfig)),
                         readAttempts);
             }
         }
@@ -381,7 +417,7 @@ public class Backend {
             indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey())));
         }
 
-        return new BackendTransaction(tx, storeManager.getFeatures(),
+        return new BackendTransaction(tx, txConfig, storeManager.getFeatures(),
                 edgeStore, vertexIndexStore, edgeIndexStore,
                 readAttempts, persistAttemptWaittime, indexTx, threadPool);
     }

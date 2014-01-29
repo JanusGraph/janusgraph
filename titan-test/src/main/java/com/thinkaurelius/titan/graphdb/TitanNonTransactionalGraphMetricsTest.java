@@ -4,26 +4,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.CachedKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import static com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore.*;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -64,29 +57,6 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         super.open(config);
     }
 
-//    @Before
-//    public void before() throws StorageException {
-//        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(getConfiguration());
-//        graphconfig.getBackend().clearStorage();
-//        features = graphconfig.getStoreFeatures();
-//        open(getMetricsConfiguration());
-//    }
-
-
-
-//    @After
-//    public void close() {
-//        graph.shutdown();
-//    }
-//
-//    public void clopen(Map<String,? extends Object> settings) {
-//        close();
-//        Configuration config = getMetricsConfiguration();
-//        for (Map.Entry<String,? extends Object> entry : settings.entrySet()) {
-//            config.setProperty(entry.getKey(),entry.getValue());
-//        }
-//        open(config);
-//    }
 
     public static final List<String> STORE_NAMES =
             ImmutableList.of("edgeStore", "vertexIndexStore", "edgeIndexStore", "idStore");

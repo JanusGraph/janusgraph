@@ -91,10 +91,19 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public void loadValues(String[][] values) throws StorageException {
-        loadValues(values, -1, -1);
+        loadValues(store,values);
+    }
+
+    public void loadValues(KeyColumnValueStore store, String[][] values) throws StorageException {
+        loadValues(store, values, -1, -1);
     }
 
     public void loadValues(String[][] values, int shiftEveryNthRow,
+                           int shiftSliceLength) throws StorageException {
+        loadValues(store,values,shiftEveryNthRow,shiftSliceLength);
+    }
+
+    public void loadValues(KeyColumnValueStore store, String[][] values, int shiftEveryNthRow,
                            int shiftSliceLength) throws StorageException {
         for (int i = 0; i < values.length; i++) {
 
@@ -118,8 +127,10 @@ public abstract class KeyColumnValueStoreTest {
                 entries.add(StaticArrayEntry.of(col, KeyValueStoreUtil
                         .getBuffer(values[i][j])));
             }
-            store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
-                    KeyColumnValueStore.NO_DELETIONS, tx);
+            if (!entries.isEmpty()) {
+                store.mutate(KeyValueStoreUtil.getBuffer(i), entries,
+                        KeyColumnValueStore.NO_DELETIONS, tx);
+            }
         }
     }
 
@@ -261,26 +272,79 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     @Test
+    public void compareStores() throws StorageException {
+        int keys = 1000, columns = 2000; boolean normalMode=true;
+        String[][] values = new String[keys*2][];
+        for (int i = 0; i < keys*2; i++) {
+            if(i%2==0) {
+                if (normalMode) {
+                    values[i]=new String[columns + 4];
+                } else {
+                    values[i]=new String[4];
+                }
+            } else {
+                if (normalMode) {
+                    values[i]=new String[0];
+                } else {
+                    values[i]=new String[columns];
+                }
+            }
+            for (int j = 0; j < values[i].length; j++) {
+                values[i][j] = RandomGenerator.randomString(30,35);
+            }
+        }
+        log.debug("Loading values: " + keys + "x" + columns);
+        long time = System.currentTimeMillis();
+        loadValues(values);
+        clopen();
+        System.out.println("Loading time (ms): " + (System.currentTimeMillis() - time));
+        //print(values);
+        Random r = new Random();
+        int trials = 500;
+        log.debug("Reading values: " + trials + " trials");
+        for (int i=0; i<10;i++) {
+            time = System.currentTimeMillis();
+            for (int t = 0; t < trials; t++) {
+                int key = r.nextInt(keys)*2;
+                assertEquals(2,store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(2002), KeyValueStoreUtil.getBuffer(2004)), tx).size());
+            }
+
+            System.out.println("Reading time (ms): " + (System.currentTimeMillis() - time));
+        }
+    }
+
+
+
+
+    @Test
     public void storeAndRetrievePerformance() throws StorageException {
         int multiplier = 4;
-        int keys = 50 * multiplier, columns = 2000;
+        int keys = 500*4 * multiplier, columns = 200;
         String[][] values = KeyValueStoreUtil.generateData(keys, columns);
         log.debug("Loading values: " + keys + "x" + columns);
         long time = System.currentTimeMillis();
         loadValues(values);
+        clopen();
         System.out.println("Loading time (ms): " + (System.currentTimeMillis() - time));
         //print(values);
         Random r = new Random();
         int trials = 500 * multiplier;
         int delta = 10;
         log.debug("Reading values: " + trials + " trials");
-        time = System.currentTimeMillis();
-        for (int t = 0; t < trials; t++) {
-            int key = r.nextInt(keys);
-            int start = r.nextInt(columns - delta);
-            store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
+        for (int i=0; i<1;i++) {
+            time = System.currentTimeMillis();
+            for (int t = 0; t < trials; t++) {
+                int key = r.nextInt(keys);
+                int start = r.nextInt(columns - delta);
+                store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
+            }
+            //multiQuery version
+//            List<StaticBuffer> keylist = new ArrayList<StaticBuffer>();
+//            for (int t = 0; t < trials; t++) keylist.add(KeyValueStoreUtil.getBuffer(r.nextInt(keys)));
+//            int start = r.nextInt(columns - delta);
+//            store.getSlice(keylist, new SliceQuery(KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(start + delta)), tx);
+            System.out.println("Reading time (ms): " + (System.currentTimeMillis() - time));
         }
-        System.out.println("Reading time (ms): " + (System.currentTimeMillis() - time));
     }
 
     @Test

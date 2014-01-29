@@ -72,7 +72,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
         StaticBuffer column = string2StaticBuffer(key);
-        final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column),false);
+        final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new Callable<StaticBuffer>() {
             @Override
             public StaticBuffer call() throws Exception {

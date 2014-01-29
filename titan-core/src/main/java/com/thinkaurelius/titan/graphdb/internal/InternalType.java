@@ -14,8 +14,6 @@ public interface InternalType extends TitanType, InternalVertex {
 
     public boolean isHidden();
 
-    public boolean isStatic(Direction dir);
-
     public boolean uniqueLock(Direction direction);
 
     public long[] getSignature();

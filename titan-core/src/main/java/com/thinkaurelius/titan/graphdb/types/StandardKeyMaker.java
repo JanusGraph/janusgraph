@@ -112,12 +112,6 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
     }
 
     @Override
-    public StandardKeyMaker makeStatic(Direction direction) {
-        super.makeStatic(direction);
-        return this;
-    }
-
-    @Override
     public StandardKeyMaker signature(TitanType... types) {
         throw new UnsupportedOperationException();
     }
