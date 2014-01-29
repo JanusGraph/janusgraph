@@ -115,14 +115,16 @@ public class ExpirationKCVSCache extends KCVSCache {
             else remainingKeys.add(key);
         }
         //Request remaining ones from backend
-        incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
-        Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, getTx(txh));
-        for (int i=0;i<keys.size();i++) {
-            StaticBuffer key = keys.get(i);
-            EntryList subresult = subresults.get(key);
-            if (subresult!=null) {
-                results.put(key,subresult);
-                if (ksqs[i]!=null) cache.put(ksqs[i],subresult);
+        if (!remainingKeys.isEmpty()) {
+            incActionBy(remainingKeys.size(), CacheMetricsAction.MISS,txh);
+            Map<StaticBuffer,EntryList> subresults = store.getSlice(remainingKeys, query, getTx(txh));
+            for (int i=0;i<keys.size();i++) {
+                StaticBuffer key = keys.get(i);
+                EntryList subresult = subresults.get(key);
+                if (subresult!=null) {
+                    results.put(key,subresult);
+                    if (ksqs[i]!=null) cache.put(ksqs[i],subresult);
+                }
             }
         }
         return results;
