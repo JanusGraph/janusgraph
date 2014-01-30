@@ -56,12 +56,12 @@ public class StandardTypeCache implements TypeCache {
         maxCachedRelations = maxCachedTypes *CACHE_RELATION_MULTIPLIER;
         this.retriever=retriever;
 
-        typeNamesBackup = CacheBuilder.<String,Long>newBuilder()
+        typeNamesBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE)
                 .maximumSize(maxCachedTypes).build();
         typeNames = new ConcurrentHashMap<String, Long>(INITIAL_CAPACITY,0.75f,CONCURRENCY_LEVEL);
 
-        typeRelationsBackup = CacheBuilder.<Long,EntryList>newBuilder()
+        typeRelationsBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE *CACHE_RELATION_MULTIPLIER)
                 .maximumSize(maxCachedRelations).build();
 //        typeRelations = new ConcurrentHashMap<Long, EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER,0.75f,CONCURRENCY_LEVEL);

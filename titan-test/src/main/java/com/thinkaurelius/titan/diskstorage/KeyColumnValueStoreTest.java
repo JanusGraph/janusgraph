@@ -53,7 +53,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public StoreTransaction startTx() throws StorageException {
-        return manager.beginTransaction(new StoreTxConfig());
+        return manager.beginTransaction(StandardTransactionConfig.of());
     }
 
     public StoreFeatures storeFeatures() {
@@ -412,7 +412,7 @@ public abstract class KeyColumnValueStoreTest {
      */
     @Test
     public void scanTest() throws StorageException {
-        if (manager.getFeatures().supportsScan()) {
+        if (manager.getFeatures().hasScan()) {
             String[][] values = generateValues();
             loadValues(values);
             RecordIterator<StaticBuffer> iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
@@ -442,7 +442,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     @Category({OrderedKeyStoreTests.class})
     public void testOrderedGetKeysRespectsKeyLimit() throws StorageException {
-        if (!manager.getFeatures().supportsOrderedScan()) {
+        if (!manager.getFeatures().hasOrderedScan()) {
             log.warn("Can't test key-ordered features on incompatible store.  "
                     + "This warning could indicate reduced test coverage and "
                     + "a broken JUnit configuration.  Skipping test {}.",
@@ -488,7 +488,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     public void testGetKeysColumnSlicesSimple()
             throws StorageException {
-        if (manager.getFeatures().supportsScan()) {
+        if (manager.getFeatures().hasScan()) {
 
             final int shiftEveryNthRows = 10;
             final int expectedKeyCount = numKeys / shiftEveryNthRows * (shiftEveryNthRows - 1);
@@ -527,7 +527,7 @@ public abstract class KeyColumnValueStoreTest {
      */
     @Test
     public void testGetKeysColumnSlicesOnLowerTriangular() throws StorageException, IOException {
-        if (manager.getFeatures().supportsScan()) {
+        if (manager.getFeatures().hasScan()) {
             final int offset = 10;
             final int size = 10;
             final int midpoint = size / 2 + offset;
@@ -542,7 +542,7 @@ public abstract class KeyColumnValueStoreTest {
 
             boolean executed = false;
 
-            if (manager.getFeatures().supportsUnorderedScan()) {
+            if (manager.getFeatures().hasUnorderedScan()) {
 
                 Collection<StaticBuffer> expected = new HashSet<StaticBuffer>(size);
 
@@ -574,7 +574,7 @@ public abstract class KeyColumnValueStoreTest {
                     }
                 }
 
-            } else if (manager.getFeatures().supportsOrderedScan()) {
+            } else if (manager.getFeatures().hasOrderedScan()) {
 
                 Collection<StaticBuffer> expected = new ArrayList<StaticBuffer>(size);
 
@@ -821,7 +821,7 @@ public abstract class KeyColumnValueStoreTest {
 
     @Test
     public void testGetSlices() throws Exception {
-        if (!manager.getFeatures().supportsMultiQuery()) return;
+        if (!manager.getFeatures().hasMultiQuery()) return;
 
         populateDBWith100Keys();
 
@@ -849,7 +849,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     @Category({UnorderedKeyStoreTests.class})
     public void testGetKeysWithSliceQuery() throws Exception {
-        if (!manager.getFeatures().supportsUnorderedScan()) {
+        if (!manager.getFeatures().hasUnorderedScan()) {
             log.warn("Can't test key-unordered features on incompatible store.  "
                     + "This warning could indicate reduced test coverage and "
                     + "a broken JUnit configuration.  Skipping test {}.",
@@ -872,7 +872,7 @@ public abstract class KeyColumnValueStoreTest {
     @Test
     @Category({OrderedKeyStoreTests.class})
     public void testGetKeysWithKeyRange() throws Exception {
-        if (!manager.getFeatures().supportsOrderedScan()) {
+        if (!manager.getFeatures().hasOrderedScan()) {
             log.warn("Can't test ordered scans on incompatible store.  "
                     + "This warning could indicate reduced test coverage and "
                     + "shouldn't happen in an ideal JUnit configuration.  "

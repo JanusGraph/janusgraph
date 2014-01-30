@@ -5,8 +5,9 @@ import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +78,7 @@ public class CacheTransaction implements StoreTransaction {
     }
 
     @Override
-    public StoreTxConfig getConfiguration() {
+    public TransactionHandleConfig getConfiguration() {
         return tx.getConfiguration();
     }
 

@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -28,6 +29,7 @@ import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,7 +126,7 @@ public class Backend {
 
         int bufferSizeTmp = configuration.get(BUFFER_SIZE);
         Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
-        if (!storeFeatures.supportsBatchMutation()) {
+        if (!storeFeatures.hasBatchMutation()) {
             bufferSize = 0;
             log.debug("Buffering disabled because backend does not support batch mutations");
         } else bufferSize = bufferSizeTmp;
@@ -166,10 +168,10 @@ public class Backend {
     }
 
     private KeyColumnValueStore getLockStore(KeyColumnValueStore store, boolean lockEnabled) throws StorageException {
-        if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.supportsTxIsolation()) {
+        if (!storeFeatures.hasLocking()) {
+            if (storeFeatures.hasTxIsolation()) {
                 store = new TransactionalLockStore(store);
-            } else if (storeFeatures.supportsConsistentKeyOperations()) {
+            } else if (storeFeatures.isKeyConsistent()) {
                 if (lockEnabled) {
                     final String lockerName = store.getName() + LOCK_STORE_SUFFIX;
                     store = new ExpectedValueCheckingStore(store, getLocker(lockerName));
@@ -199,7 +201,7 @@ public class Backend {
     }
 
     private KeyColumnValueStore getBufferStore(String name) throws StorageException {
-        Preconditions.checkArgument(bufferSize <= 1 || storeManager.getFeatures().supportsBatchMutation());
+        Preconditions.checkArgument(bufferSize <= 1 || storeManager.getFeatures().hasBatchMutation());
         KeyColumnValueStore store = null;
         store = storeManager.openDatabase(name);
         if (bufferSize > 1) {
@@ -228,7 +230,7 @@ public class Backend {
                 idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName("idStore"));
             }
             idAuthority = null;
-            if (storeFeatures.supportsConsistentKeyOperations()) {
+            if (storeFeatures.isKeyConsistent()) {
                 idAuthority = new ConsistentKeyIDManager(idStore, storeManager, config);
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
@@ -395,34 +397,41 @@ public class Backend {
      * @throws StorageException
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws StorageException {
-        StandardTransactionConfig txConfig = new StandardTransactionConfig(configuration.getMetricsPrefix());
-        if (configuration.hasTimestamp()) txConfig.setTimestamp(configuration.getTimestamp());
-        StoreTransaction tx = storeManager.beginTransaction(new StoreTxConfig(txConfig));
+
+        StoreTransaction tx = storeManager.beginTransaction(configuration);
+
+        // Wrap with write buffer
         if (bufferSize > 1) {
-            Preconditions.checkArgument(storeManager.getFeatures().supportsBatchMutation());
+            Preconditions.checkArgument(storeManager.getFeatures().hasBatchMutation());
             tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
         }
-        if (!storeFeatures.supportsLocking()) {
-            if (storeFeatures.supportsTxIsolation()) {
-                //No transaction wrapping needed
-            } else if (storeFeatures.supportsConsistentKeyOperations()) {
-                tx = new ExpectedValueCheckingTransaction(tx,
-                        storeManager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT, txConfig)),
-                        readAttempts);
-            }
+
+        // Use ExpectedValueCheckingTransaction?
+        final boolean evcEnabled =
+            !storeFeatures.hasLocking() &&
+            !storeFeatures.hasTxIsolation() &&
+             storeFeatures.isKeyConsistent();
+
+        if (evcEnabled) {
+//            StoreTransaction consistentTx = storeManager.beginTransaction(storeFeatures.getKeyConsistentTxConfig()); // TODO merge with txConfig defaults
+            Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
+            TransactionHandleConfig consistentTxCfg = StandardTransactionConfig.of(configuration.getMetricsPrefix(), customOptions);
+            StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
+            tx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);
         }
 
+        // Cache
         if (cacheEnabled) {
             tx = new CacheTransaction(tx);
         }
 
-        //Index transactions
+        // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
             indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey())));
         }
 
-        return new BackendTransaction(tx, txConfig, storeManager.getFeatures(),
+        return new BackendTransaction(tx, configuration, storeManager.getFeatures(),
                 edgeStore, vertexIndexStore, edgeIndexStore,
                 readAttempts, persistAttemptWaittime, indexTx, threadPool);
     }
@@ -502,7 +511,7 @@ public class Backend {
             } catch (StorageException e) {
                 throw new TitanConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
             }
-            return new ConsistentKeyLocker.Builder(lockerStore).fromConfig(configuration).build();
+            return new ConsistentKeyLocker.Builder(lockerStore, storeManager).fromConfig(configuration).build();
         }
     };
 

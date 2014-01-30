@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
 
 /**
@@ -22,7 +23,7 @@ public interface StoreTransaction extends TransactionHandleConfigurable {
      * @return
      */
     @Override
-    public StoreTxConfig getConfiguration();
+    public TransactionHandleConfig getConfiguration();
 
 
 }

@@ -9,19 +9,22 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -38,7 +41,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     private final KeyColumnValueStore store;
     private final String identifier;
     private final StaticBuffer rowKey;
-
+    private final TransactionHandleConfig txCfg;
     private final StandardSerializer serializer;
 
     private long maxOperationWaitTime = 10000;
@@ -53,7 +56,7 @@ public class KCVSConfiguration implements WriteConfiguration {
         this.store = manager.openDatabase(configurationName);
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
-
+        this.txCfg = StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig());
         this.serializer = new StandardSerializer();
     }
 
@@ -78,7 +81,7 @@ public class KCVSConfiguration implements WriteConfiguration {
             public StaticBuffer call() throws Exception {
                 StoreTransaction txh = null;
                 try {
-                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh = manager.beginTransaction(txCfg);
                     List<Entry> entries = store.getSlice(query,txh);
                     if (entries.isEmpty()) return null;
                     return entries.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
@@ -115,7 +118,7 @@ public class KCVSConfiguration implements WriteConfiguration {
             public Boolean call() throws Exception {
                 StoreTransaction txh = null;
                 try {
-                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh = manager.beginTransaction(txCfg);
                     store.mutate(rowKey, additions, KeyColumnValueStore.NO_DELETIONS, txh);
                     return true;
                 } finally {
@@ -141,7 +144,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                 public Boolean call() throws Exception {
                     StoreTransaction txh = null;
                     try {
-                        txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                        txh = manager.beginTransaction(txCfg);
                         store.mutate(rowKey, KeyColumnValueStore.NO_ADDITIONS, deletions, txh);
                         return true;
                     } finally {
@@ -169,7 +172,7 @@ public class KCVSConfiguration implements WriteConfiguration {
             public List<Entry> call() throws Exception {
                 StoreTransaction txh=null;
                 try {
-                    txh= manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh= manager.beginTransaction(txCfg);
                     return store.getSlice(new KeySliceQuery(rowKey,ByteBufferUtil.zeroBuffer(128),ByteBufferUtil.oneBuffer(128)),txh);
                 } finally {
                     if (txh!=null) txh.commit();

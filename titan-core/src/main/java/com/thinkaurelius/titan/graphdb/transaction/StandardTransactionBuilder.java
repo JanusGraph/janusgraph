@@ -1,11 +1,24 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
+import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+
 
 /**
  * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -43,11 +56,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String metricsPrefix;
 
-    /**
-     * Used to keep state information: Once the transaction is openend, the config
-     * has to be closed to ensure its immutability
-     */
-    private boolean isOpen = true;
+    private TimestampProvider timestampProvider = TimeUtility.INSTANCE;
+
+    private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
 
@@ -62,17 +73,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
+        this.storageConfiguration = TitanFactory.buildConfiguration();
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();
     }
 
-    private void verifyOpen() {
-        Preconditions.checkState(isOpen, "Transaction has been started which renders this configuration immutable");
-    }
-
     public StandardTransactionBuilder threadBound() {
-        verifyOpen();
         this.threadBound = true;
         this.singleThreaded = true;
         return this;
@@ -80,14 +87,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder readOnly() {
-        verifyOpen();
         this.isReadOnly = true;
         return this;
     }
 
     @Override
     public StandardTransactionBuilder enableBatchLoading() {
-        verifyOpen();
         verifyUniqueness = false;
         verifyExternalVertexExistence = false;
         acquireLocks = false;
@@ -96,7 +101,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setCacheSize(int size) {
-        verifyOpen();
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
         this.indexCacheWeight = size / 2;
@@ -105,32 +109,41 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder checkInternalVertexExistence() {
-        verifyOpen();
         this.verifyInternalVertexExistence = true;
         return this;
     }
 
     @Override
     public StandardTransactionBuilder setTimestamp(long timestamp) {
-        verifyOpen();
         this.timestamp = timestamp;
         return this;
     }
 
     @Override
     public StandardTransactionBuilder setMetricsPrefix(String p) {
-        verifyOpen();
         this.metricsPrefix = p;
         return this;
     }
 
     @Override
-    public TitanTransaction start() {
-        verifyOpen();
-        isOpen = false;
-        return graph.newTransaction(this);
+    public TransactionBuilder setCustomOption(String k, Object v) {
+        storageConfiguration.set(k, v);
+        return this;
     }
 
+    @Override
+    public TitanTransaction start() {
+        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly,
+                assignIDsImmediately, verifyExternalVertexExistence,
+                verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
+                propertyPrefetching, singleThreaded, threadBound,
+                hasTimestamp(), timestamp, timestampProvider,
+                indexCacheWeight, vertexCacheSize, metricsPrefix,
+                defaultTypeMaker, new BasicConfiguration(TITAN_NS,
+                        storageConfiguration.getConfiguration(),
+                        Restriction.NONE));
+        return graph.newTransaction(immutable);
+    }
 
     /* ##############################################
                     TransactionConfig
@@ -202,13 +215,175 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TimestampProvider getTimestampProvider() {
+        return timestampProvider;
+    }
+
+    @Override
     public String getMetricsPrefix() {
         return metricsPrefix;
+    }
+
+    @Override
+    public boolean hasMetricsPrefix() {
+        return null != metricsPrefix;
     }
 
     @Override
     public long getTimestamp() {
         Preconditions.checkState(timestamp != null, "A timestamp has not been configured");
         return timestamp;
+    }
+
+    @Override
+    public <V> V getCustomOption(ConfigOption<V> opt) {
+        return getCustomOptions().get(opt);
+    }
+
+    @Override
+    public Configuration getCustomOptions() {
+        return new BasicConfiguration(TITAN_NS,
+                storageConfiguration.getConfiguration(), Restriction.NONE);
+    }
+
+    private static class ImmutableTxCfg implements TransactionConfiguration {
+
+        private final boolean isReadOnly;
+        private final boolean hasAssignIDsImmediately;
+        private final boolean hasVerifyExternalVertexExistence;
+        private final boolean hasVerifyInternalVertexExistence;
+        private final boolean hasAcquireLocks;
+        private final boolean hasVerifyUniqueness;
+        private final boolean hasPropertyPrefetching;
+        private final boolean isSingleThreaded;
+        private final boolean isThreadBound;
+        private final long indexCacheWeight;
+        private final int vertexCacheSize;
+        private final DefaultTypeMaker defaultTypeMaker;
+
+        private final TransactionHandleConfig handleConfig;
+
+        public ImmutableTxCfg(boolean isReadOnly,
+                boolean hasAssignIDsImmediately,
+                boolean hasVerifyExternalVertexExistence,
+                boolean hasVerifyInternalVertexExistence,
+                boolean hasAcquireLocks, boolean hasVerifyUniqueness,
+                boolean hasPropertyPrefetching, boolean isSingleThreaded,
+                boolean isThreadBound, boolean hasTimestamp, Long timestamp, TimestampProvider timestampProvider,
+                long indexCacheWeight, int vertexCacheSize,
+                String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
+                Configuration storageConfiguration) {
+            this.isReadOnly = isReadOnly;
+            this.hasAssignIDsImmediately = hasAssignIDsImmediately;
+            this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
+            this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
+            this.hasAcquireLocks = hasAcquireLocks;
+            this.hasVerifyUniqueness = hasVerifyUniqueness;
+            this.hasPropertyPrefetching = hasPropertyPrefetching;
+            this.isSingleThreaded = isSingleThreaded;
+            this.isThreadBound = isThreadBound;
+            this.indexCacheWeight = indexCacheWeight;
+            this.vertexCacheSize = vertexCacheSize;
+            this.defaultTypeMaker = defaultTypeMaker;
+            this.handleConfig = new StandardTransactionConfig.Builder()
+                    .timestampProvider(timestampProvider).timestamp(timestamp)
+                    .metricsPrefix(metricsPrefix)
+                    .customOptions(storageConfiguration).build();
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return isReadOnly;
+        }
+
+        @Override
+        public boolean hasAssignIDsImmediately() {
+            return hasAssignIDsImmediately;
+        }
+
+        @Override
+        public boolean hasVerifyExternalVertexExistence() {
+            return hasVerifyExternalVertexExistence;
+        }
+
+        @Override
+        public boolean hasVerifyInternalVertexExistence() {
+            return hasVerifyInternalVertexExistence;
+        }
+
+        @Override
+        public boolean hasAcquireLocks() {
+            return hasAcquireLocks;
+        }
+
+        @Override
+        public DefaultTypeMaker getAutoEdgeTypeMaker() {
+            return defaultTypeMaker;
+        }
+
+        @Override
+        public boolean hasVerifyUniqueness() {
+            return hasVerifyUniqueness;
+        }
+
+        @Override
+        public boolean hasPropertyPrefetching() {
+            return hasPropertyPrefetching;
+        }
+
+        @Override
+        public boolean isSingleThreaded() {
+            return isSingleThreaded;
+        }
+
+        @Override
+        public boolean isThreadBound() {
+            return isThreadBound;
+        }
+
+        @Override
+        public int getVertexCacheSize() {
+            return vertexCacheSize;
+        }
+
+        @Override
+        public long getIndexCacheWeight() {
+            return indexCacheWeight;
+        }
+
+        @Override
+        public boolean hasTimestamp() {
+            return handleConfig.hasTimestamp();
+        }
+
+        @Override
+        public long getTimestamp() {
+            return handleConfig.getTimestamp();
+        }
+
+        @Override
+        public TimestampProvider getTimestampProvider() {
+            return handleConfig.getTimestampProvider();
+        }
+
+        @Override
+        public String getMetricsPrefix() {
+            return handleConfig.getMetricsPrefix();
+        }
+
+        @Override
+        public boolean hasMetricsPrefix() {
+            return handleConfig.hasMetricsPrefix();
+        }
+
+        @Override
+        public <V> V getCustomOption(ConfigOption<V> opt) {
+            return handleConfig.getCustomOption(opt);
+        }
+
+        @Override
+        public Configuration getCustomOptions() {
+            return handleConfig.getCustomOptions();
+        }
     }
 }

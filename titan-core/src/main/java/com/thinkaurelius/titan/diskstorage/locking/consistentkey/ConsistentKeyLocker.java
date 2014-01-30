@@ -110,6 +110,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      */
     private final KeyColumnValueStore store;
 
+    private final StoreManager manager;
+
     private final long lockWaitNS;
 
     private final int lockRetryCount;
@@ -121,13 +123,15 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     public static class Builder extends AbstractLocker.Builder<ConsistentKeyLockStatus, Builder> {
         // Required (no default)
         private final KeyColumnValueStore store;
+        private final StoreManager manager;
 
         // Optional (has default)
         private long lockWaitNS;
         private int lockRetryCount;
 
-        public Builder(KeyColumnValueStore store) {
+        public Builder(KeyColumnValueStore store, StoreManager manager) {
             this.store = store;
+            this.manager = manager;
             this.lockWaitNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_WAIT.getDefaultValue(), MILLISECONDS);
             this.lockRetryCount = GraphDatabaseConfiguration.LOCK_RETRY.getDefaultValue();
         }
@@ -160,7 +164,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         public ConsistentKeyLocker build() {
             preBuild();
-            return new ConsistentKeyLocker(store, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState);
+            return new ConsistentKeyLocker(store, manager, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState);
         }
 
         @Override
@@ -178,13 +182,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * Create a new locker.
      *
      */
-    private ConsistentKeyLocker(KeyColumnValueStore store, StaticBuffer rid,
+    private ConsistentKeyLocker(KeyColumnValueStore store, StoreManager manager, StaticBuffer rid,
                                 TimestampProvider times, ConsistentKeyLockerSerializer serializer,
                                 LocalLockMediator<StoreTransaction> llm, long lockWaitNS,
                                 int lockRetryCount, long lockExpireNS,
                                 LockerState<ConsistentKeyLockStatus> lockState) {
         super(rid, times, serializer, llm, lockState, lockExpireNS, log);
         this.store = store;
+        this.manager = manager;
         this.lockWaitNS = lockWaitNS;
         this.lockRetryCount = lockRetryCount;
     }
@@ -280,7 +285,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         StaticBuffer newLockCol = serializer.toLockCol(before, rid);
         Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
         try {
-            store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), overrideTimestamp(txh, before));
+            StoreTransaction newTx = overrideTimestamp(txh, before);
+            store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), newTx);
         } catch (StorageException e) {
             t = e;
         }
@@ -293,7 +299,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         Throwable t = null;
         final long before = times.getApproxNSSinceEpoch();
         try {
-            store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), overrideTimestamp(txh, before));
+            StoreTransaction newTx = overrideTimestamp(txh, before);
+            store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), newTx);
         } catch (StorageException e) {
             t = e;
         }
@@ -383,7 +390,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
          * Both exceptions below shouldn't happen under normal operation with a
          * sane configuration. When they are thrown, they have one of two likely
          * root causes:
-         * 
+         *
          * 1. Due to a problem with this locker's store configuration or the
          * store itself, this locker's store "lost" a write. Specifically, a
          * column previously added to the store by writeLock(...) was not
@@ -391,10 +398,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
          * cause is store-specific. With Cassandra, for instance, this problem
          * could arise if the locker is configured to talk to Cassandra at a
          * consistency level below QUORUM.
-         * 
+         *
          * 2. One of our previously written locks has already expired by the
          * time we tried to read it.
-         * 
+         *
          * There might be additional causes that haven't occurred to me, but
          * these two seem most likely.
          */
@@ -416,8 +423,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), rid));
         for (int i = 0; i < lockRetryCount; i++) {
             try {
-                long before = times.getApproxNSSinceEpoch();
-                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, overrideTimestamp(tx, before));
+                StoreTransaction newTx = overrideTimestamp(tx, times.getApproxNSSinceEpoch());
+                store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, newTx);
                 return;
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
@@ -428,11 +435,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
         }
     }
-    
-    private static StoreTransaction overrideTimestamp(final StoreTransaction tx, final long nanoTimestamp) {
-        //TODO: need to figure out how to do this with separate transactions!
-        tx.getConfiguration().setTimestamp(nanoTimestamp);
-        return tx;
+
+    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final long ts) throws StorageException {
+        StandardTransactionConfig newCfg = new StandardTransactionConfig.Builder(tx.getConfiguration(), ts).build();
+        return manager.beginTransaction(newCfg);
     }
 
     private static class WriteResult {

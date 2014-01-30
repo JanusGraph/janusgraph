@@ -11,6 +11,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
+    private final TransactionHandleConfig storeTxConfig;
 
     private final int rollbackAttempts = 5;
     private final int rollbackWaitTime = 200;
@@ -50,32 +52,40 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final int uniqueIDUpperBound;
     private final int uniqueId;
     private final boolean randomizeUniqueId;
-    private final ConsistencyLevel consistencLevel;
+    //private final ConsistencyLevel consistencLevel;
 
     private final Random random = new Random();
 
     public ConsistentKeyIDManager(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
         super(config);
-        Preconditions.checkArgument(manager.getFeatures().supportsConsistentKeyOperations());
+        Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;
         this.idStore = idStore;
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
+
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");
             Preconditions.checkArgument(!config.has(IDAUTHORITY_USE_LOCAL_CONSISTENCY),
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
             uniqueId = -1;
-            consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+//            consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+            storeTxConfig = StandardTransactionConfig.of(metricsPrefix, manager.getFeatures().getKeyConsistentTxConfig());
         } else {
             randomizeUniqueId = false;
+//            if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
+//                Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
+//                consistencLevel = ConsistencyLevel.LOCAL_KEY_CONSISTENT;
+//            } else {
+//                consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+//            }
             if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
                 Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
-                consistencLevel = ConsistencyLevel.LOCAL_KEY_CONSISTENT;
+                storeTxConfig = StandardTransactionConfig.of(metricsPrefix, manager.getFeatures().getLocalKeyConsistentTxConfig());
             } else {
-                consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+                storeTxConfig = StandardTransactionConfig.of(metricsPrefix, manager.getFeatures().getKeyConsistentTxConfig());
             }
             uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
@@ -95,7 +105,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(new StoreTxConfig(consistencLevel, new StandardTransactionConfig(metricsPrefix)));
+        return manager.beginTransaction(storeTxConfig);
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
@@ -248,7 +258,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
                                     public StoreTransaction openTx() throws StorageException {
-                                        return manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.DEFAULT,new StandardTransactionConfig(metricsPrefix)));
+                                        return manager.beginTransaction(storeTxConfig);
                                     }
                                 });
 

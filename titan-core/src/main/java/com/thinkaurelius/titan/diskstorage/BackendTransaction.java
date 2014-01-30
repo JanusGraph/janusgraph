@@ -199,7 +199,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public Map<StaticBuffer,EntryList> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
-        if (storeFeatures.supportsMultiQuery()) {
+        if (storeFeatures.hasMultiQuery()) {
             return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
                 public Map<StaticBuffer,EntryList> call() throws Exception {
@@ -293,7 +293,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
-        if (!storeFeatures.supportsScan())
+        if (!storeFeatures.hasScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
         return executeRead(new Callable<KeyIterator>() {
@@ -312,7 +312,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
-        Preconditions.checkArgument(storeFeatures.supportsOrderedScan(), "The configured storage backend does not support ordered scans");
+        Preconditions.checkArgument(storeFeatures.hasOrderedScan(), "The configured storage backend does not support ordered scans");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override

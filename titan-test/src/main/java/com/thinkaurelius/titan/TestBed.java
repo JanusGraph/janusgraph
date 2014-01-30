@@ -49,7 +49,7 @@ public class TestBed {
         ConcurrentHashMap<Long,String> id2 = new ConcurrentHashMap<Long, String>(128,0.75f,2);
 
 
-        Cache<String,Long> cache = CacheBuilder.<String,Long>newBuilder().maximumSize(1000).initialCapacity(128).concurrencyLevel(2).build();
+        Cache<String,Long> cache = CacheBuilder.newBuilder().maximumSize(1000).initialCapacity(128).concurrencyLevel(2).build();
         Map<String,Long> map = new ConcurrentHashMap<String, Long>(128,0.75f,2);
         Map<String,Long> map2 = new HashMap<String, Long>(128,0.75f);
         String[] values = RandomGenerator.randomStrings(100,12,13);

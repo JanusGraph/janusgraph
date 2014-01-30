@@ -55,7 +55,7 @@ public class KCVSUtil {
      * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}. The
      * key and columns slice bounds are the same as those described above. The
      * column limit is 1.
-     * 
+     *
      * @param store the store to query
      * @param features the store's features
      * @param keyLength length of the zero/one buffers that form the key limits
@@ -66,9 +66,9 @@ public class KCVSUtil {
      */
     public static RecordIterator<StaticBuffer> getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
         SliceQuery slice = new SliceQuery(ByteBufferUtil.zeroBuffer(sliceLength), ByteBufferUtil.oneBuffer(sliceLength)).setLimit(1);
-        if (features.supportsUnorderedScan()) {
+        if (features.hasUnorderedScan()) {
             return store.getKeys(slice, txh);
-        } else if (features.supportsOrderedScan()) {
+        } else if (features.hasOrderedScan()) {
             return store.getKeys(new KeyRangeQuery(ByteBufferUtil.zeroBuffer(keyLength), ByteBufferUtil.oneBuffer(keyLength), slice), txh);
         } else throw new UnsupportedOperationException("Scan not supported by this store");
     }

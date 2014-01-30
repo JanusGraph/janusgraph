@@ -200,12 +200,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     };
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
-        Preconditions.checkArgument(backend.getStoreFeatures().supportsOrderedScan() ||
-                backend.getStoreFeatures().supportsUnorderedScan(),
+        Preconditions.checkArgument(backend.getStoreFeatures().hasOrderedScan() ||
+                backend.getStoreFeatures().hasUnorderedScan(),
                 "The configured storage backend does not support global graph operations - use Faunus instead");
 
         final KeyIterator keyiter;
-        if (backend.getStoreFeatures().supportsUnorderedScan()) {
+        if (backend.getStoreFeatures().hasUnorderedScan()) {
             keyiter = tx.edgeStoreKeys(vertexExistenceQuery);
         } else {
             keyiter = tx.edgeStoreKeys(new KeyRangeQuery(IDHandler.MIN_KEY, IDHandler.MAX_KEY, vertexExistenceQuery));

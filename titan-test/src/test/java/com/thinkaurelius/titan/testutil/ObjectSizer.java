@@ -115,7 +115,7 @@ public final class ObjectSizer {
         @Override
         public Object newInstance() {
             int size = 10000;
-            Cache<String,Long> cache = CacheBuilder.<String,Long>newBuilder()
+            Cache<String,Long> cache = CacheBuilder.newBuilder()
                     .concurrencyLevel(2).initialCapacity(16*3)
                     .maximumSize(10000).build();
 //            for (int i=0;i<size;i++) {
@@ -219,4 +219,4 @@ public final class ObjectSizer {
             ex.printStackTrace();
         }
     }
-} 
+}
