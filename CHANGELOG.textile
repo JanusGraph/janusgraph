@@ -5,6 +5,38 @@ Titan: Distributed Graph Database
 
 h2. Titan 0.y.z
 
+h3. Version 0.5.0 (March X, 2014)
+
+```xml
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.5.0</version>
+</dependency>
+```
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Better internal memory representation for sequential memory access and smaller memory footprint
+* Replaced Kryo with a custom serializer for better performance, using Kryo only for complex objects
+* Introduced a compressed String attribute called StringX which has a much smaller storage footprint than String.
+* Introduced native serialization for primitive arrays
+* Removed FullDouble and FullFloat: Double and Float are now serialized as full precision floating points. Introduced Decimal and Precision with a fixed number of decimals and order preserving binary representation
+
+*Bugfixes:*
+
+* Changed serialization order for Date.class - the byte serialization now matches Comparable
+
 h3. Version 0.4.2 (December 30, 2013)
 
 ```xml

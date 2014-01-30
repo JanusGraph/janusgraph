@@ -10,7 +10,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -43,7 +45,7 @@ public abstract class LockKeyColumnValueStoreTest {
      * now. There are multiple concrete subclasses of this abstract class. If
      * the subclasses run in separate threads and were to concurrently mutate
      * static state on this common superclass, then thread safety fails.
-     * 
+     *
      * Anything final and deeply immutable is of course fair game for static,
      * but these are mutable.
      */
@@ -87,7 +89,7 @@ public abstract class LockKeyColumnValueStoreTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
-                tx[i][j] = manager[i].beginTransaction(new StoreTxConfig());
+                tx[i][j] = manager[i].beginTransaction(StandardTransactionConfig.of());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
@@ -97,25 +99,25 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
             sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, EXPIRE_MS);
 
-            if (!storeFeatures.supportsLocking()) {
-                if (storeFeatures.supportsTxIsolation()) {
+            if (!storeFeatures.hasLocking()) {
+                if (storeFeatures.hasTxIsolation()) {
                     store[i] = new TransactionalLockStore(store[i]);
-                } else if (storeFeatures.supportsConsistentKeyOperations()) {
+                } else if (storeFeatures.isKeyConsistent()) {
 
                     KeyColumnValueStore lockerStore = manager[i].openDatabase(DB_NAME + "_lock_");
-                    ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore).fromConfig(sc).mediatorName(concreteClassName + i).build();
+                    ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore, manager[i]).fromConfig(sc).mediatorName(concreteClassName + i).build();
                     store[i] = new ExpectedValueCheckingStore(store[i], c);
                     for (int j = 0; j < NUM_TX; j++)
-                        tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
+                        tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(StandardTransactionConfig.of(manager[i].getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
                 } else throw new IllegalArgumentException("Store needs to support some form of locking");
             }
         }
     }
 
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
-        StoreTransaction transaction = manager.beginTransaction(new StoreTxConfig());
-        if (!manager.getFeatures().supportsLocking() && manager.getFeatures().supportsConsistentKeyOperations()) {
-            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
+        StoreTransaction transaction = manager.beginTransaction(StandardTransactionConfig.of());
+        if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
         }
         return transaction;
     }

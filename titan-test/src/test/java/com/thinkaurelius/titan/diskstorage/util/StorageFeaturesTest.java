@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -14,35 +16,28 @@ public class StorageFeaturesTest {
     @Test
     public void testFeaturesImplementation() {
         StoreFeatures features;
-        try {
-            features = new StoreFeatures();
-            features.supportsBatchMutation();
-            fail();
-        } catch (AssertionError e) {
-        }
 
-        try {
-            features = new StoreFeatures();
-            features.hasLocalKeyPartition = true;
-            features.hasLocalKeyPartition();
-            fail();
-        } catch (AssertionError e) {
-        }
-        features = new StoreFeatures();
-        features.supportsOrderedScan = false;
-        features.supportsUnorderedScan = false;
-        features.supportsBatchMutation = true;
-        features.supportsTxIsolation = false;
-        features.supportsMultiQuery = false;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = false;
-        features.isKeyOrdered = false;
-        features.isDistributed = true;
-        features.hasLocalKeyPartition = false;
-        assertNotNull(features);
-        assertFalse(features.supportsScan());
-        assertFalse(features.supportsTxIsolation());
-        assertTrue(features.isDistributed());
+        features = new StandardStoreFeatures.Builder().build();
+
+        assertFalse(features.hasBatchMutation());
+        assertFalse(features.hasLocking());
+        assertFalse(features.isDistributed());
+        assertFalse(features.hasScan());
+
+        features = new StandardStoreFeatures.Builder().locking(true).build();
+
+        assertFalse(features.hasBatchMutation());
+        assertTrue(features.hasLocking());
+        assertFalse(features.isDistributed());
+
+        features = new StandardStoreFeatures.Builder().batchMutation(true).unorderedScan(true).build();
+
+        assertTrue(features.hasBatchMutation());
+        assertTrue(features.hasUnorderedScan());
+        assertFalse(features.hasOrderedScan());
+        assertTrue(features.hasScan());
+        assertFalse(features.isDistributed());
+        assertFalse(features.hasLocking());
     }
 
 

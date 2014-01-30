@@ -10,12 +10,14 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
+
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.hfile.Compression;
@@ -138,24 +140,38 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public StoreFeatures getFeatures() {
-        // TODO: allowing publicly mutate fields is bad, should be fixed
-        StoreFeatures features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = true;
-        features.supportsBatchMutation = true;
-        features.supportsTxIsolation = false;
-        features.supportsMultiQuery = true;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = false;
-        features.isKeyOrdered = true;
-        features.isDistributed = true;
-        features.hasLocalKeyPartition = false;
+        // StoreFeatures features = new StoreFeatures();
+        // features.supportsOrderedScan = true;
+        // features.supportsUnorderedScan = true;
+        // features.supportsBatchMutation = true;
+        // features.supportsTxIsolation = false;
+        // features.supportsMultiQuery = true;
+        // features.supportsConsistentKeyOperations = true;
+        // features.supportsLocking = false;
+        // features.isKeyOrdered = true;
+        // features.isDistributed = true;
+        // features.hasLocalKeyPartition = false;
+        // try {
+        // features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+        // } catch (Exception e) {
+        // logger.warn("Unexpected exception during getDeployment()", e);
+        // }
+        // return features;
+
+        Configuration c = GraphDatabaseConfiguration.buildConfiguration();
+
+        StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
+                .orderedScan(true).unorderedScan(true).batchMutation(true)
+                .multiQuery(true).distributed(true).keyOrdered(true)
+                .keyConsistent(c);
+
         try {
-            features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+            fb.localKeyPartition(getDeployment() == Deployment.LOCAL);
         } catch (Exception e) {
             logger.warn("Unexpected exception during getDeployment()", e);
         }
-        return features;
+
+        return fb.build();
     }
 
     @Override
@@ -351,7 +367,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         return new HBaseTransaction(config);
     }
 

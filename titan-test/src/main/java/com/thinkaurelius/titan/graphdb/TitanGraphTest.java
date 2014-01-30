@@ -7,6 +7,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -52,7 +54,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(tx.containsVertex(weight.getID() + 64));
         assertTrue(tx.containsType("weight"));
         weight = tx.getPropertyKey("weight");
-        assertEquals(weight.getDataType(), Double.class);
+        assertEquals(weight.getDataType(), Decimal.class);
         assertEquals(weight.getName(), "weight");
         n1 = tx.getVertex(nid);
 
@@ -60,7 +62,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             Object o = prop.getValue();
         }
         n1.query().relations();
-        assertEquals(10.5, n1.getProperty(weight));
+        assertTrue(n1.getProperty(weight).equals(10.5));
     }
 
     @Test
@@ -72,7 +74,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         TitanKey id = tx.makeKey("uid").single().unique().indexed(Vertex.class).dataType(String.class).make();
 
-        TitanKey weight = tx.makeKey("weight").single().dataType(Double.class).make();
+        TitanKey weight = tx.makeKey("weight").single().dataType(Decimal.class).make();
 
         TitanKey someid = tx.makeKey("someid").single().dataType(Object.class).indexed(Vertex.class).make();
 
@@ -145,7 +147,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(link.isUnique(Direction.OUT));
 
         weight = tx.getPropertyKey("weight");
-        assertEquals(Double.class, weight.getDataType());
+        assertEquals(Decimal.class, weight.getDataType());
 
         boolval = tx.getPropertyKey("boolval");
         assertEquals(Boolean.class, boolval.getDataType());
@@ -587,8 +589,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         e.setProperty(id,222);
 
         e2 = Iterables.getOnlyElement(n1.getEdges(OUT,"friend"));
-        e2.setProperty("uid",1);
-        e2.setProperty("weight",2.0);
+        e2.setProperty("uid", 1);
+        e2.setProperty("weight", 2.0);
 
         assertEquals(1,e2.getProperty("uid"));
         assertEquals(2.0,e2.getProperty("weight"));
@@ -1025,7 +1027,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(e, Iterables.getOnlyElement(n1.getTitanEdges(BOTH, connect)));
 
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
-        assertEquals(3.0, e.getProperty(weight));
+        assertTrue(e.getProperty(weight).equals(3.0));
         assertEquals("HasProperties TitanRelation", e.getProperty(name));
         n3 = e.getVertex(IN);
 
@@ -1053,7 +1055,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n2 = tx.getVertex("name", "Node2");
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name")));
-        assertEquals(111.5, ((Double) e.getProperty("weight")).doubleValue(), 0.01);
+        assertTrue(e.getProperty("weight").equals(111.5));
 
     }
 
@@ -1061,7 +1063,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     public void testQuery() {
         TitanKey name = tx.makeKey("name").dataType(String.class).single().indexed(Vertex.class).unique().make();
         TitanKey time = tx.makeKey("time").dataType(Integer.class).single().make();
-        TitanKey weight = tx.makeKey("weight").dataType(Double.class).single().make();
+        TitanKey weight = tx.makeKey("weight").dataType(Precision.class).single().make();
 
         TitanLabel author = tx.makeLabel("author").manyToOne().unidirected().make();
 

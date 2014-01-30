@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * This class is used by {@code MetricInstrumentedStore} to measure wallclock
@@ -39,13 +40,13 @@ public class MetricInstrumentedIterator implements KeyIterator {
      * @return a wrapper around {@code keyIterator} or null if
      *         {@code keyIterator} is null
      */
-    public static MetricInstrumentedIterator of(KeyIterator keyIterator, String prefix) {
+    public static MetricInstrumentedIterator of(KeyIterator keyIterator, String... prefix) {
         if (keyIterator == null) {
             return null;
         }
 
         Preconditions.checkNotNull(prefix);
-        return new MetricInstrumentedIterator(keyIterator, prefix);
+        return new MetricInstrumentedIterator(keyIterator, StringUtils.join(prefix,"."));
     }
     
     private MetricInstrumentedIterator(KeyIterator i, String p) {

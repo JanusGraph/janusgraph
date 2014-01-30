@@ -51,7 +51,7 @@ public class TitanFeatures {
         Features features = TitanFeatures.getBaselineTitanFeatures();
         features.supportsSerializableObjectProperty = config.hasSerializeAll();
         if (storageFeatures != null) {
-            if (storageFeatures.supportsScan()) {
+            if (storageFeatures.hasScan()) {
                 features.supportsVertexIteration = true;
                 features.supportsEdgeIteration = true;
             }

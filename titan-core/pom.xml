@@ -107,8 +107,8 @@
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
-            <version>2.21</version>
-            <classifier>shaded</classifier>
+            <version>2.22</version>
+            <!--<classifier>shaded</classifier>-->
             
             <!--
             http://code.google.com/p/kryo/wiki/MavenShadedJAR

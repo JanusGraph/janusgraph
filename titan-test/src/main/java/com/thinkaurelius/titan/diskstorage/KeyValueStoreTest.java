@@ -5,8 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 
 public abstract class KeyValueStoreTest {
 
@@ -44,7 +43,7 @@ public abstract class KeyValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        tx = manager.beginTransaction(new StoreTxConfig());
+        tx = manager.beginTransaction(StandardTransactionConfig.of());
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;
@@ -168,7 +167,7 @@ public abstract class KeyValueStoreTest {
 
     @Test
     public void scanTest() throws StorageException {
-        if (manager.getFeatures().supportsScan()) {
+        if (manager.getFeatures().hasScan()) {
             String[] values = generateValues();
             loadValues(values);
             RecordIterator<KeyValueEntry> iterator0 = getAllData(tx);
@@ -186,7 +185,7 @@ public abstract class KeyValueStoreTest {
             Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
         }
     }
-    
+
     private RecordIterator<KeyValueEntry> getAllData(StoreTransaction tx) throws StorageException {
         return store.getSlice(BackendTransaction.EDGESTORE_MIN_KEY, BackendTransaction.EDGESTORE_MAX_KEY, KeySelector.SelectAll, tx);
     }
@@ -237,4 +236,3 @@ public abstract class KeyValueStoreTest {
 
 
 }
- 

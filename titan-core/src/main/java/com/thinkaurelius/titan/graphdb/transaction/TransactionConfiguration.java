@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**
  * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -8,7 +9,7 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see com.thinkaurelius.titan.core.TitanTransaction
  */
-public interface TransactionConfiguration {
+public interface TransactionConfiguration extends TransactionHandleConfig {
 
     /**
      * Checks whether the graph transaction is configured as read-only.
@@ -106,26 +107,4 @@ public interface TransactionConfiguration {
      */
     public long getIndexCacheWeight();
 
-
-    /**
-     * Whether a timestamp has been configured for this transaction
-     *
-     * @return
-     */
-    public boolean hasTimestamp();
-
-    /**
-     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception
-     *
-     * @return
-     * @see #hasTimestamp()
-     */
-    public long getTimestamp();
-
-    /**
-     * Returns the (possibly null) metrics prefix for this transaction.
-     *
-     * @return metrics name prefix string or null
-     */
-    public String getMetricsPrefix();
 }

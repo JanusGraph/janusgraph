@@ -2,6 +2,14 @@ Please follow these instructions when upgrading from an older Titan release.
 
 h2. Titan 0.y.z
 
+h3. Version 0.5.0 (March X, 2014)
+
+h4. Data Modeling
+
+FullDouble and FullFloat do no longer exist. Use Double and Float instead. In places where Double or Float
+was used in sort keys (i.e. as the data type of the property in a sort key), use Decimal and Precision instead, respectively.
+
+
 h3. Version 0.4.2 (December 30, 2013)
 
 h4. From 0.4.1

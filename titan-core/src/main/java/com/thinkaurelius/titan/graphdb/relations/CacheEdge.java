@@ -91,7 +91,7 @@ public class CacheEdge extends AbstractEdge {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = RelationConstructor.readRelation(getVertex(position), data, tx());
+            map = RelationConstructor.readRelationCache(getVertex(position), data, tx());
         }
         return map;
     }

@@ -11,14 +11,16 @@ import com.persistit.Volume;
 import com.persistit.exception.PersistitException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
@@ -83,7 +85,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
             return stores.get(name);
         }
 
-        PersistitTransaction tx = new PersistitTransaction(db, new StoreTxConfig());
+        PersistitTransaction tx = new PersistitTransaction(db, StandardTransactionConfig.of());
         PersistitKeyValueStore store = new PersistitKeyValueStore(name, this, db);
         tx.commit();
         stores.put(name, store);
@@ -122,7 +124,7 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
      * @return New Transaction Handle
      */
     @Override
-    public PersistitTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public PersistitTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         //all Exchanges created by a thread share the same transaction context
         return new PersistitTransaction(db, config);
     }
@@ -168,21 +170,31 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
     }
 
     private StoreFeatures getDefaultFeatures() {
-        StoreFeatures features = new StoreFeatures();
+        Configuration c = GraphDatabaseConfiguration.buildConfiguration();
 
-        features.supportsTxIsolation = true;
-        features.isDistributed = false;
+        return new StandardStoreFeatures.Builder()
+            .transactional(true)
+            .orderedScan(true)
+            .locking(true)
+            .keyOrdered(true)
+            .keyConsistent(c)
+            .build();
 
-        //@todo: figure out what these do, Copied from Berkeley for now
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = false;
-        features.supportsBatchMutation = false;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = true;
-        features.isKeyOrdered = true;
-        features.hasLocalKeyPartition = false;
-        features.supportsMultiQuery = false;
-
-        return features;
+//        StoreFeatures features = new StoreFeatures();
+//
+//        features.supportsTxIsolation = true;
+//        features.isDistributed = false;
+//
+//        //@todo: figure out what these do, Copied from Berkeley for now
+//        features.supportsOrderedScan = true;
+//        features.supportsUnorderedScan = false;
+//        features.supportsBatchMutation = false;
+//        features.supportsConsistentKeyOperations = true;
+//        features.supportsLocking = true;
+//        features.isKeyOrdered = true;
+//        features.hasLocalKeyPartition = false;
+//        features.supportsMultiQuery = false;
+//
+//        return features;
     }
 }

@@ -3,8 +3,9 @@ package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class ByteSerializer implements AttributeSerializer<Byte> {
+public class ByteSerializer implements AttributeSerializer<Byte>, OrderPreservingSerializer {
 
     private static final long serialVersionUID = 117423419883604186L;
 

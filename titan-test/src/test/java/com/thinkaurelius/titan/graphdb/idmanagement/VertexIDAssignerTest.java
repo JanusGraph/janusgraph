@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
-import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -48,11 +48,14 @@ public class VertexIDAssignerTest {
     public VertexIDAssignerTest(boolean partition, int partitionMax, int[] localPartition) {
         MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
 
-        StoreFeatures features = StoreFeatures.defaultFeature(false);
-        if (localPartition != null) {
-            features.hasLocalKeyPartition = true;
+        StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
+
+        if (null != localPartition) {
+            fb.localKeyPartition(true);
             idAuthority.setLocalPartition(localPartition);
         }
+        StoreFeatures features = fb.build();
+
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.IDS_PARTITION,partition);
         idAssigner = new VertexIDAssigner(config, idAuthority, features);

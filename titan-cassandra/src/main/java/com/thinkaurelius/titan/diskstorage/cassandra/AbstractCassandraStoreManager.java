@@ -4,12 +4,18 @@ import java.util.Map;
 
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
 
@@ -136,13 +142,10 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final String keySpaceName;
     protected final int replicationFactor;
 
-    private final CassandraTransaction.Consistency readConsistencyLevel;
-    private final CassandraTransaction.Consistency writeConsistencyLevel;
-
     // see description for THRIFT_FRAME_SIZE and THRIFT_MAX_MESSAGE_SIZE for details
     protected final int thriftFrameSize;
 
-    private StoreFeatures features = null;
+    private volatile StoreFeatures features = null;
     private Partitioner partitioner = null;
 
     protected final boolean compressionEnabled;
@@ -154,15 +157,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         super(config, PORT_DEFAULT);
 
         this.keySpaceName = config.get(CASSANDRA_KEYSPACE);
-
         this.replicationFactor = config.get(REPLICATION_FACTOR);
-
-        this.readConsistencyLevel = CassandraTransaction.Consistency.parse(config.get(CASSANDRA_READ_CONSISTENCY));
-
-        this.writeConsistencyLevel = CassandraTransaction.Consistency.parse(config.get(CASSANDRA_WRITE_CONSISTENCY));
-
         this.thriftFrameSize = config.get(CASSANDRA_THRIFT_FRAME_SIZE) * 1024 * 1024;
-
         this.compressionEnabled = config.get(STORAGE_COMPRESSION);
         this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
         this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
@@ -183,8 +179,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) {
-        return new CassandraTransaction(config, readConsistencyLevel, writeConsistencyLevel);
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) {
+        return new CassandraTransaction(config);
     }
 
     @Override
@@ -194,25 +190,35 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     @Override
     public StoreFeatures getFeatures() {
+
         if (features == null) {
-            features = new StoreFeatures();
-            features.supportsBatchMutation = true;
-            features.supportsTxIsolation = false;
-            features.supportsConsistentKeyOperations = true;
-            features.supportsLocking = false;
-            features.isDistributed = true;
+
+            Configuration global = GraphDatabaseConfiguration.buildConfiguration()
+                    .set(CASSANDRA_READ_CONSISTENCY, "QUORUM")
+                    .set(CASSANDRA_WRITE_CONSISTENCY, "QUORUM")
+                    .set(METRICS_PREFIX, GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT);
+
+            Configuration local = GraphDatabaseConfiguration.buildConfiguration()
+                    .set(CASSANDRA_READ_CONSISTENCY, "LOCAL_QUORUM")
+                    .set(CASSANDRA_WRITE_CONSISTENCY, "LOCAL_QUORUM")
+                    .set(METRICS_PREFIX, GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT);
+
+            StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
+
+            fb.batchMutation(true).distributed(true);
+            fb.keyConsistent(global, local);
+
+            boolean keyOrdered;
 
             switch (getPartitioner()) {
                 case RANDOM:
-                    features.isKeyOrdered = false;
-                    features.supportsOrderedScan = false;
-                    features.supportsUnorderedScan = true;
+                    keyOrdered = false;
+                    fb.keyOrdered(keyOrdered).orderedScan(false).unorderedScan(true);
                     break;
 
                 case BYTEORDER:
-                    features.isKeyOrdered = true;
-                    features.supportsOrderedScan = true;
-                    features.supportsUnorderedScan = false;
+                    keyOrdered = true;
+                    fb.keyOrdered(keyOrdered).orderedScan(true).unorderedScan(false);
                     break;
 
                 default:
@@ -221,24 +227,24 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
             switch (getDeployment()) {
                 case REMOTE:
-                    features.supportsMultiQuery = true;
-                    features.hasLocalKeyPartition = false;
+                    fb.multiQuery(true);
                     break;
 
                 case LOCAL:
-                    features.supportsMultiQuery = true;
-                    features.hasLocalKeyPartition = features.isKeyOrdered;
+                    fb.multiQuery(true).localKeyPartition(keyOrdered);
                     break;
 
                 case EMBEDDED:
-                    features.supportsMultiQuery = false;
-                    features.hasLocalKeyPartition = features.isKeyOrdered;
+                    fb.multiQuery(false).localKeyPartition(keyOrdered);
                     break;
 
                 default:
                     throw new IllegalArgumentException("Unrecognized deployment mode: " + getDeployment());
             }
+
+            features = fb.build();
         }
+
         return features;
     }
 

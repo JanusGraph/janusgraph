@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
@@ -25,8 +26,16 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public String getName() {
         if (name == null) {
-            TitanProperty p = Iterables.getOnlyElement(query().
-                    includeHidden().type(SystemKey.TypeName).properties(), null);
+            TitanProperty p;
+            if (isLoaded()) {
+                StandardTitanTx tx = tx();
+                p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
+                                            tx.getGraph().getTypeCache().getTypeRelations(getID(), SystemKey.TypeName, Direction.OUT, tx()),
+                                            tx), null);
+            } else {
+                p = Iterables.getOnlyElement(query().
+                        includeHidden().type(SystemKey.TypeName).properties(), null);
+            }
             Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
             name = p.getValue(String.class);
         }
@@ -37,8 +46,16 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     public TypeAttribute.Map getDefinition() {
         if (definition == null) {
             TypeAttribute.Map def = new TypeAttribute.Map();
-            for (TitanProperty p : query().includeHidden().
-                    type(SystemKey.TypeDefinition).properties()) {
+            Iterable<TitanProperty> ps;
+            if (isLoaded()) {
+                StandardTitanTx tx = tx();
+                ps = (Iterable)RelationConstructor.readRelation(this,
+                        tx.getGraph().getTypeCache().getTypeRelations(getID(), SystemKey.TypeDefinition, Direction.OUT, tx()),
+                        tx);
+            } else {
+                ps = query().includeHidden().type(SystemKey.TypeDefinition).properties();
+            }
+            for (TitanProperty p : ps) {
                 def.add(p.getValue(TypeAttribute.class));
             }
             definition = def;
@@ -61,11 +78,6 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     @Override
     public boolean uniqueLock(Direction direction) {
         return isUnique(direction) && getDefinition().getValue(TypeAttributeType.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
-    }
-
-    @Override
-    public boolean isStatic(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.STATIC, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override

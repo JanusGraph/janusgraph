@@ -72,7 +72,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             @SuppressWarnings("rawtypes")
             RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
                     .withRetryPolicy(retryPolicy.duplicate())
-                    .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                    .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanax())
                     .getKey(key.asByteBuffer());
             @SuppressWarnings("unchecked")
             OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
@@ -117,7 +117,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
          *
          */
         RowSliceQuery rq = keyspace.prepareQuery(columnFamily)
-                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate())
                 .getKeySlice(CassandraHelper.convert(keys));
 
@@ -228,7 +228,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         ByteBuffer start = query.getKeyStart().asByteBuffer(), end = query.getKeyEnd().asByteBuffer();
 
         RowSliceQuery rowSlice = keyspace.prepareQuery(columnFamily)
-                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanaxConsistency())
+                .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate())
                 .getKeyRange(start, end, null, null, Integer.MAX_VALUE);
 

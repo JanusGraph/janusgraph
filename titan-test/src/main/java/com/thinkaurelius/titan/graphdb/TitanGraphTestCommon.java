@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -70,7 +71,7 @@ public abstract class TitanGraphTestCommon extends TitanGraphBaseTest {
 
     public TitanKey makeWeightPropertyKey(String name) {
         return tx.makeKey(name).single().
-                dataType(Double.class).
+                dataType(Decimal.class).
                 make();
     }
 

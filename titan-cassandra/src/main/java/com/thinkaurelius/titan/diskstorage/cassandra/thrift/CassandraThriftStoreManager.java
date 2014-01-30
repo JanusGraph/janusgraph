@@ -152,7 +152,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         final Timestamp timestamp = getTimestamp(txh);
 
-        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
+        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThrift();
 
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation

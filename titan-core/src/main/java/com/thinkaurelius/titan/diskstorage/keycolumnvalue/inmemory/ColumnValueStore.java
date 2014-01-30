@@ -1,12 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.NoLock;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
@@ -16,6 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 
 /**
  * Implements a row in the in-memory implementation {@link InMemoryKeyColumnValueStore} which is comprised of
@@ -172,7 +172,8 @@ class ColumnValueStore {
     private ReentrantLock lock = null;
 
     private Lock getLock(StoreTransaction txh) {
-        if (txh.getConfiguration().getConsistency().isKeyConsistent()) {
+        Boolean txOn = txh.getConfiguration().getCustomOption(STORAGE_TRANSACTIONAL);
+        if (null != txOn && txOn) {
             if (lock == null) {
                 synchronized (this) {
                     if (lock == null) {

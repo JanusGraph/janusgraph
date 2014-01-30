@@ -3,8 +3,9 @@ package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class CharacterSerializer implements AttributeSerializer<Character> {
+public class CharacterSerializer implements AttributeSerializer<Character>, OrderPreservingSerializer {
 
     private final ShortSerializer ss = new ShortSerializer();
 

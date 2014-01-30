@@ -65,19 +65,18 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     //-------------------
 
+    void reset(int newOffset, int newLimit) {
+        assert newOffset >= 0 && newOffset <= newLimit;
+        assert newLimit <= array.length;
+        this.offset=newOffset;
+        this.limit=newLimit;
+    }
 
     private int require(int position, int size) {
         int base = position + offset;
+        if (position<0 || base+size>limit) throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or size ["+size+"] out of bounds");
         assert base + size <= limit;
         return base;
-    }
-
-    byte getByteDirect(int index) {
-        return array[index];
-    }
-
-    void copyTo(byte[] dest, int destOffset) {
-        System.arraycopy(array,offset,dest,destOffset,length());
     }
 
     @Override
@@ -85,12 +84,33 @@ public class StaticArrayBuffer implements StaticBuffer {
         return limit - offset;
     }
 
+    /*
+    ############## BULK READING ################
+     */
+
+    void copyTo(byte[] dest, int destOffset) {
+        System.arraycopy(array,offset,dest,destOffset,length());
+    }
+
     @Override
     public StaticBuffer subrange(int position, int length) {
-        Preconditions.checkArgument(position >= 0);
-        Preconditions.checkArgument(length >= 0);
-        Preconditions.checkArgument(offset + position + length <= limit);
-        return new StaticArrayBuffer(array, offset + position, offset + position + length);
+        return subrange(position, length, false);
+    }
+
+    @Override
+    public StaticBuffer subrange(int position, int length, boolean invert) {
+        if (position<0 || length<0 || (offset + position + length)>limit)
+            throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or length ["+length+"] out of bounds");
+        if (!invert) {
+            return new StaticArrayBuffer(array, offset + position, offset + position + length);
+        } else {
+            byte[] inverted = new byte[length];
+            System.arraycopy(array,offset+position,inverted,0,length);
+            for (int i = 0; i < inverted.length; i++) {
+                inverted[i]=(byte)~inverted[i];
+            }
+            return new StaticArrayBuffer(inverted);
+        }
     }
 
     @Override
@@ -109,59 +129,60 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     protected <T> T as(Factory<T> factory, int position, int length) {
-        Preconditions.checkArgument(position >= 0 && length >=0);
-        Preconditions.checkArgument(offset + position + length <= limit);
+        if (position<0 || length<0 || (offset + position + length)>limit)
+            throw new ArrayIndexOutOfBoundsException("Position ["+position+"] and or length ["+length+"] out of bounds");
         return factory.get(array,offset+position,offset+position+length);
     }
 
-    protected void reset(int newOffset, int newLimit) {
-        assert newOffset >= 0 && newOffset <= newLimit;
-        assert newLimit <= array.length;
-        this.offset=newOffset;
-        this.limit=newLimit;
-    }
 
     /*
-    ############## IDENTICAL CODE ################
+    ############## READING PRIMITIVES ################
      */
+
+    public static final int BYTE_LEN = 1;
+    public static final int SHORT_LEN = 2;
+    public static final int INT_LEN = 4;
+    public static final int LONG_LEN = 8;
+    public static final int CHAR_LEN = 2;
+    public static final int FLOAT_LEN = 4;
+    public static final int DOUBLE_LEN = 8;
 
     @Override
     public byte getByte(int position) {
-        return getByteDirect(require(position, 1));
+        return array[require(position, BYTE_LEN)];
     }
 
     @Override
     public short getShort(int position) {
-        int base = require(position, 2);
-        return (short) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        int base = require(position, SHORT_LEN);
+        return (short) (((array[base++] & 0xFF) << 8) | (array[base++] & 0xFF));
     }
 
     @Override
     public int getInt(int position) {
-        int base = require(position, 4);
-        return (getByteDirect(base) & 0xFF) << 24 //
-                | (getByteDirect(base + 1) & 0xFF) << 16 //
-                | (getByteDirect(base + 2) & 0xFF) << 8 //
-                | getByteDirect(base + 3) & 0xFF;
+        int base = require(position, INT_LEN);
+        return (array[base++] & 0xFF) << 24 //
+                | (array[base++] & 0xFF) << 16 //
+                | (array[base++] & 0xFF) << 8 //
+                | array[base++] & 0xFF;
     }
 
     @Override
     public long getLong(int position) {
-        int base = require(position, 8);
-        return (long) getByteDirect(base++) << 56 //
-                | (long) (getByteDirect(base++) & 0xFF) << 48 //
-                | (long) (getByteDirect(base++) & 0xFF) << 40 //
-                | (long) (getByteDirect(base++) & 0xFF) << 32 //
-                | (long) (getByteDirect(base++) & 0xFF) << 24 //
-                | (getByteDirect(base++) & 0xFF) << 16 //
-                | (getByteDirect(base++) & 0xFF) << 8 //
-                | getByteDirect(base++) & 0xFF;
+        int base = require(position, LONG_LEN);
+        return (long) array[base++] << 56 //
+                | (long) (array[base++] & 0xFF) << 48 //
+                | (long) (array[base++] & 0xFF) << 40 //
+                | (long) (array[base++] & 0xFF) << 32 //
+                | (long) (array[base++] & 0xFF) << 24 //
+                | (array[base++] & 0xFF) << 16 //
+                | (array[base++] & 0xFF) << 8 //
+                | array[base++] & 0xFF;
     }
 
     @Override
     public char getChar(int position) {
-        int base = require(position, 2);
-        return (char) (((getByteDirect(base++) & 0xFF) << 8) | (getByteDirect(base++) & 0xFF));
+        return (char) getShort(position);
     }
 
     @Override
@@ -174,8 +195,74 @@ public class StaticArrayBuffer implements StaticBuffer {
         return Double.longBitsToDouble(getLong(position));
     }
 
+    //-------- ARRAY METHODS
+
+    @Override
+    public byte[] getBytes(int position, int length) {
+        byte[] result = new byte[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getByte(position);
+            position += BYTE_LEN;
+        }
+        return result;
+    }
+
+    public short[] getShorts(int position, int length) {
+        short[] result = new short[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getShort(position);
+            position += SHORT_LEN;
+        }
+        return result;
+    }
+
+    public int[] getInts(int position, int length) {
+        int[] result = new int[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getInt(position);
+            position += INT_LEN;
+        }
+        return result;
+    }
+
+    public long[] getLongs(int position, int length) {
+        long[] result = new long[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getLong(position);
+            position += LONG_LEN;
+        }
+        return result;
+    }
+
+    public char[] getChars(int position, int length) {
+        char[] result = new char[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getChar(position);
+            position += CHAR_LEN;
+        }
+        return result;
+    }
+
+    public float[] getFloats(int position, int length) {
+        float[] result = new float[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getFloat(position);
+            position += FLOAT_LEN;
+        }
+        return result;
+    }
+
+    public double[] getDoubles(int position, int length) {
+        double[] result = new double[length];
+        for (int i = 0; i < length; i++) {
+            result[i]=getDouble(position);
+            position += DOUBLE_LEN;
+        }
+        return result;
+    }
+
     /*
-    ############## IDENTICAL CODE ################
+    ############## EQUALS, HASHCODE & COMPARE ################
      */
 
     @Override

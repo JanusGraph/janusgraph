@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixStoreManager;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -11,8 +10,8 @@ public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTes
 
     @Override
     public void open() throws StorageException {
-        manager = openStorageManager();
-        store = new HashPrefixKeyColumnValueStore(manager.openDatabase(storeName), 4);
+        manager = new HashPrefixStoreManager(openStorageManager(),4);
+        store = manager.openDatabase(storeName);
         tx = startTx();
     }
 

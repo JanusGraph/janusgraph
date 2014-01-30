@@ -30,10 +30,12 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
@@ -44,6 +46,23 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+
+import org.easymock.EasyMock;
+import org.easymock.IMocksControl;
+import org.easymock.LogicalOperator;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static org.easymock.EasyMock.*;
+import static org.junit.Assert.*;
 
 
 public class ConsistentKeyLockerTest {
@@ -65,7 +84,12 @@ public class ConsistentKeyLockerTest {
     private final StaticBuffer defaultLockVal = ByteBufferUtil.getIntBuffer(0); // maybe refactor...
 
     private StoreTransaction defaultTx;
+    private TransactionHandleConfig defaultTxCfg;
+    private Configuration defaultTxCustomOpts;
+
     private StoreTransaction otherTx;
+    private TransactionHandleConfig otherTxCfg;
+    private Configuration otherTxCustomOpts;
 
     private final long defaultWaitNS = 100 * 1000 * 1000;
     private final long defaultExpireNS = 30L * 1000 * 1000 * 1000;
@@ -75,13 +99,14 @@ public class ConsistentKeyLockerTest {
     private long currentTimeNS;
     private TimestampProvider times;
     private KeyColumnValueStore store;
+    private StoreManager manager;
     private LocalLockMediator<StoreTransaction> mediator;
     private LockerState<ConsistentKeyLockStatus> lockState;
     private ConsistentKeyLocker locker;
 
     @SuppressWarnings("unchecked")
     @Before
-    public void setupMocks() {
+    public void setupMocks() throws StorageException {
         currentTimeNS = 0;
 
         /*
@@ -89,11 +114,37 @@ public class ConsistentKeyLockerTest {
          * methods are called. This is useful for mocks of immutable objects.
          */
         relaxedCtrl = EasyMock.createControl();
+
+        manager = relaxedCtrl.createMock(StoreManager.class);
+
         defaultTx = relaxedCtrl.createMock(StoreTransaction.class);
-        expect(defaultTx.getConfiguration()).andReturn(new StoreTxConfig()).anyTimes();
+        defaultTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
+        defaultTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
+        expect(defaultTx.getConfiguration()).andReturn(defaultTxCfg).anyTimes();
+        expect(defaultTxCfg.getMetricsPrefix()).andReturn("default").anyTimes();
+        expect(defaultTxCfg.getCustomOptions()).andReturn(defaultTxCustomOpts).anyTimes();
+        Comparator<TransactionHandleConfig> defaultTxCfgChecker = new Comparator<TransactionHandleConfig>() {
+            @Override
+            public int compare(TransactionHandleConfig actual, TransactionHandleConfig ignored) {
+                return actual.getCustomOptions() == defaultTxCustomOpts ? 0 : -1;
+            }
+        };
+        expect(manager.beginTransaction(cmp(null, defaultTxCfgChecker, LogicalOperator.EQUAL))).andReturn(defaultTx).anyTimes();
+
         otherTx = relaxedCtrl.createMock(StoreTransaction.class);
-        expect(otherTx.getConfiguration()).andReturn(new StoreTxConfig()).anyTimes();
-        relaxedCtrl.replay();
+        otherTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
+        otherTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
+        expect(otherTx.getConfiguration()).andReturn(otherTxCfg).anyTimes();
+        expect(otherTxCfg.getMetricsPrefix()).andReturn("other").anyTimes();
+        expect(otherTxCfg.getCustomOptions()).andReturn(otherTxCustomOpts).anyTimes();
+        Comparator<TransactionHandleConfig> otherTxCfgChecker = new Comparator<TransactionHandleConfig>() {
+            @Override
+            public int compare(TransactionHandleConfig actual, TransactionHandleConfig ignored) {
+                return actual.getCustomOptions() == otherTxCustomOpts ? 0 : -1;
+            }
+        };
+        expect(manager.beginTransaction(cmp(null, otherTxCfgChecker, LogicalOperator.EQUAL))).andReturn(otherTx).anyTimes();
+
 
         /*
          * ctrl requires that the complete, order-sensitive sequence of actual
@@ -108,6 +159,19 @@ public class ConsistentKeyLockerTest {
         mediator = ctrl.createMock(LocalLockMediator.class);
         lockState = ctrl.createMock(LockerState.class);
         locker = getDefaultBuilder().build();
+//        locker = new ConsistentKeyLocker.Builder(store, manager)
+//                .times(times)
+//                .mediator(mediator)
+//                .internalState(lockState)
+//                .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
+//                .lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS)
+//                .rid(defaultLockRid).build();
+
+
+        expect(defaultTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
+        expect(otherTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
+
+        relaxedCtrl.replay();
     }
 
     @After
@@ -1037,7 +1101,7 @@ public class ConsistentKeyLockerTest {
     }
 
     private ConsistentKeyLocker.Builder getDefaultBuilder() {
-        return new ConsistentKeyLocker.Builder(store)
+        return new ConsistentKeyLocker.Builder(store, manager)
             .times(times)
             .mediator(mediator)
             .internalState(lockState)
