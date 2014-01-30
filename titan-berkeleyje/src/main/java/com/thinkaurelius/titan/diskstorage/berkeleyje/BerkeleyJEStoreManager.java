@@ -5,12 +5,13 @@ import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -44,17 +45,25 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
         int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);
 
-        features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = false;
-        features.supportsBatchMutation = false;
-        features.supportsTxIsolation = transactional;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = true;
-        features.isKeyOrdered = true;
-        features.isDistributed = false;
-        features.hasLocalKeyPartition = false;
-        features.supportsMultiQuery = false;
+        features = new StandardStoreFeatures.Builder()
+                    .orderedScan(true)
+                    .transactional(transactional)
+                    .keyConsistent(GraphDatabaseConfiguration.buildConfiguration())
+                    .locking(true)
+                    .keyOrdered(true)
+                    .build();
+
+//        features = new StoreFeatures();
+//        features.supportsOrderedScan = true;
+//        features.supportsUnorderedScan = false;
+//        features.supportsBatchMutation = false;
+//        features.supportsTxIsolation = transactional;
+//        features.supportsConsistentKeyOperations = true;
+//        features.supportsLocking = true;
+//        features.isKeyOrdered = true;
+//        features.isDistributed = false;
+//        features.hasLocalKeyPartition = false;
+//        features.supportsMultiQuery = false;
     }
 
     private void initialize(int cachePercent) throws StorageException {
@@ -85,7 +94,7 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
-    public BerkeleyJETx beginTransaction(final StoreTxConfig config) throws StorageException {
+    public BerkeleyJETx beginTransaction(final TransactionHandleConfig config) throws StorageException {
         try {
             Transaction tx = null;
             if (transactional) {

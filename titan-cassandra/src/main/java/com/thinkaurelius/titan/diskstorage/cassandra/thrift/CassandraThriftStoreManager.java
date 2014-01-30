@@ -149,7 +149,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         final Timestamp timestamp = getTimestamp(txh);
 
-        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
+        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThrift();
 
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
@@ -164,7 +164,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             for (Map.Entry<StaticBuffer, KCVMutation> mutEntry : keyMutation.getValue().entrySet()) {
                 ByteBuffer keyBB = mutEntry.getKey().asByteBuffer();
 
-                // Get or create the single Cassandra Mutation object responsible for this key 
+                // Get or create the single Cassandra Mutation object responsible for this key
                 Map<String, List<org.apache.cassandra.thrift.Mutation>> cfmutation = batch.get(keyBB);
                 if (cfmutation == null) {
                     cfmutation = new HashMap<String, List<org.apache.cassandra.thrift.Mutation>>(3); // Most mutations only modify the edgeStore and indexStore
@@ -288,7 +288,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 client.truncate(cfDef.name);
                 log.info(lp + "Truncated CF {} in keyspace {}", cfDef.name, keySpaceName);
             }
-                
+
             /*
              * Clearing the CTConnectionPool is unnecessary. This method
              * removes no keyspaces. All open Cassandra connections will
@@ -574,7 +574,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         ByteBuffer hottestEndToken = null;
         double hottestEndTokenValue = 0D;
-        
+
         /*
          * Count the number of iterations over countsByEndToken.entrySet()'s
          * members and store the result in perceivedEntrySetSize. We do this
@@ -643,7 +643,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private void closePool() {
         /*
          * pool.close() does not affect borrowed connections.
-         * 
+         *
          * Connections currently borrowed by some thread which are
          * talking to the old host will eventually be destroyed by
          * CTConnectionFactory#validateObject() returning false when

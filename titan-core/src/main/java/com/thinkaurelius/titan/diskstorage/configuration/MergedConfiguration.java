@@ -28,7 +28,7 @@ public class MergedConfiguration implements Configuration {
         if (second.has(option, umbrellaElements))
             return second.get(option, umbrellaElements);
 
-        return null;
+        return option.getDefaultValue();
     }
     @Override
     public Set<String> getContainedNamespaces(ConfigNamespace umbrella,

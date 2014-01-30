@@ -13,6 +13,8 @@ import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -194,6 +196,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
+    @Ignore
     public void testCacheConcurrency() throws InterruptedException {
         metricsPrefix = "evgt1";
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,

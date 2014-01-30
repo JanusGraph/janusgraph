@@ -114,7 +114,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         assert ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd()) < 0;
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
+        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();
         range.setCount(query.getLimit() + (query.hasLimit()?1:0)); //Add one for potentially removed last column
@@ -177,7 +177,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
         ColumnParent parent = new ColumnParent(columnFamily);
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
+        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();
         range.setCount(1);
