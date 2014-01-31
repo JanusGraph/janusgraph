@@ -121,7 +121,10 @@ public class ElasticSearchIndex implements IndexProvider {
 
         checkExpectedClientVersion();
 
-        if (!config.has(INDEX_HOSTS)) {
+        if (config.get(LOCAL_MODE)) {
+
+            log.debug("Configuring ES for JVM local transport");
+
             boolean clientOnly = config.get(CLIENT_ONLY);
             boolean local = config.get(LOCAL_MODE);
 
@@ -156,6 +159,7 @@ public class ElasticSearchIndex implements IndexProvider {
             client = node.client();
 
         } else {
+            log.debug("Configuring ES for network transport");
             ImmutableSettings.Builder settings = ImmutableSettings.settingsBuilder();
             if (config.has(CLUSTER_NAME)) {
                 String clustername = config.get(CLUSTER_NAME);
