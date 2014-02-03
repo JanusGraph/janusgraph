@@ -413,9 +413,12 @@ public class Backend {
              storeFeatures.isKeyConsistent();
 
         if (evcEnabled) {
-//            StoreTransaction consistentTx = storeManager.beginTransaction(storeFeatures.getKeyConsistentTxConfig()); // TODO merge with txConfig defaults
             Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
-            TransactionHandleConfig consistentTxCfg = StandardTransactionConfig.of(configuration.getMetricsPrefix(), customOptions);
+            TransactionHandleConfig consistentTxCfg = new StandardTransactionConfig.Builder()
+                    .metricsPrefix(configuration.getMetricsPrefix())
+                    .customOptions(customOptions)
+                    .timestampProvider(configuration.getTimestampProvider())
+                    .build();
             StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
             tx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);
         }

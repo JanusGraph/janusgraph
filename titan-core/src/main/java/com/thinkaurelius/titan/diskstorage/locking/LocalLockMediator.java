@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.NanoTime;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +116,7 @@ public class LocalLockMediator<T> {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= NanoTime.INSTANCE.getTime()) {
+        } else if (inmap.expires <= Timestamps.NANO.getTime()) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {

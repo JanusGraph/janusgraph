@@ -58,7 +58,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     public static class Builder {
         private Long timestamp = null;
         private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
-        private TimestampProvider timestampProvider = NanoTime.INSTANCE;
+        private TimestampProvider timestampProvider = Timestamps.NANO;
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
@@ -115,10 +115,6 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
 
     public static StandardTransactionConfig of(Configuration customOptions) {
         return new Builder().customOptions(customOptions).build();
-    }
-
-    public static StandardTransactionConfig of(String metricsPrefix, Configuration customOptions) {
-        return new Builder().metricsPrefix(metricsPrefix).customOptions(customOptions).build();
     }
 
     private StandardTransactionConfig(String metricsPrefix,

@@ -18,7 +18,7 @@ public class TestTimeUtility {
         Random r = new Random();
         long[] times = new long[10];
         for (int i = 0; i < times.length; i++) {
-            times[i] = NanoTime.INSTANCE.getTime();
+            times[i] = Timestamps.NANO.getTime();
             if (i > 0) assertTrue(times[i] + " > " + times[i - 1], times[i] > times[i - 1]);
             Thread.sleep(r.nextInt(50) + 2);
         }

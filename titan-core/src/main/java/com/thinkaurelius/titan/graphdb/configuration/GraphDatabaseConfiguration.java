@@ -5,17 +5,19 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedTypeCache;
 import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
 import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
+
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -121,6 +123,11 @@ public class GraphDatabaseConfiguration {
 //    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
 
     public static final String UKNOWN_FIELD_NAME = "unknown_key";
+
+
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(TITAN_NS, "timestamps",
+            "The timestamp resolution to use when writing to storage and indices",
+            ConfigOption.Type.FIXED, Timestamps.MICRO);
 
     // ################ CACHE #######################
     // ################################################
@@ -1274,6 +1281,10 @@ public class GraphDatabaseConfiguration {
 
     public int getStorageWaittime() {
         return configuration.get(STORAGE_ATTEMPT_WAITTIME);
+    }
+
+    public TimestampProvider getTimestampProvider() {
+        return configuration.get(TIMESTAMP_PROVIDER);
     }
 
     public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration configuration) {
