@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.NanoTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,7 @@ public class LocalLockMediator<T> {
      * The number of nanoseconds elapsed since the UNIX Epoch is not readily
      * available within the JVM. When reckoning expiration times, this method
      * uses the approximation implemented by
-     * {@link com.thinkaurelius.titan.diskstorage.util.TimeUtility#getApproxNSSinceEpoch(false)}.
+     * {@link com.thinkaurelius.titan.diskstorage.util.NanoTime#getApproxNSSinceEpoch(false)}.
      * <p/>
      * The current implementation of this method returns true when given an
      * {@code expiresAt} argument in the past. Future implementations may return
@@ -115,7 +115,7 @@ public class LocalLockMediator<T> {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= TimeUtility.INSTANCE.getApproxNSSinceEpoch()) {
+        } else if (inmap.expires <= NanoTime.INSTANCE.getTime()) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {
@@ -195,7 +195,7 @@ public class LocalLockMediator<T> {
         /**
          * The expiration time of a the lock. Conventionally, this is in
          * nanoseconds from the epoch as returned by
-         * {@link TimeUtility#getApproxNSSinceEpoch()}.
+         * {@link NanoTime#getTime()}.
          */
         private final long expires;
         /**

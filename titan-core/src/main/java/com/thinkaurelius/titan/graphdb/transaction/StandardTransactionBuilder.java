@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Rest
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.NanoTime;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -56,7 +56,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String metricsPrefix;
 
-    private TimestampProvider timestampProvider = TimeUtility.INSTANCE;
+    private TimestampProvider timestampProvider = NanoTime.INSTANCE;
 
     private final UserModifiableConfiguration storageConfiguration;
 

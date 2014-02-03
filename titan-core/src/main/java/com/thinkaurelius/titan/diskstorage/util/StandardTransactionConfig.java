@@ -58,7 +58,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     public static class Builder {
         private Long timestamp = null;
         private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
-        private TimestampProvider timestampProvider = TimeUtility.INSTANCE;
+        private TimestampProvider timestampProvider = NanoTime.INSTANCE;
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
@@ -134,7 +134,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         Preconditions.checkState(timestamp==null,"Timestamp has already been set");
         Preconditions.checkState(null != timestampProvider,
                 "Timestamp provider must be set for lazy timestamp initialization");
-        this.timestamp = timestampProvider.getApproxNSSinceEpoch();
+        this.timestamp = timestampProvider.getTime();
         return this;
     }
 }

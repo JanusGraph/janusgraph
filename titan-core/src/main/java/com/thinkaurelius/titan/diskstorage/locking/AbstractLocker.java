@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.NanoTime;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.stats.MetricManager;
@@ -21,9 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Abstract base class for building lockers. Implements locking between threads
@@ -43,12 +40,28 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     protected final StaticBuffer rid;
 
     /**
-     * Sole source of time. Don't call {@link System#currentTimeMillis()} or
+     * Sole source of time. All fields of type long that represent times or
+     * durations should be expressed in terms of
+     * {@link TimestampProvider#getUnit()}. Furthermore, if the locking backend
+     * allows the client to set a timestamp on writes, those timestamps should
+     * be in the same units.
+     * <p>
+     * Don't call {@link System#currentTimeMillis()} or
      * {@link System#nanoTime()} directly. Use only this object. This object is
      * replaced with a mock during testing to give tests exact control over the
      * flow of time.
      */
     protected final TimestampProvider times;
+
+    /**
+     * This is a copy of {@code times.getUnit()}. This field shouldn't exist.
+     * The JIT will undoubtedly inline {@code getUnit()} so this just wastes
+     * space and duplicates information. It's only here to ease testing with
+     * EasyMock. By calling {@code getUnit()} only during construction and never
+     * during normal operation, it's easier to create a strict
+     * method-order-checking mock of TimestampProvider in testing.
+     */
+    protected final TimeUnit timeUnit;
 
     /**
      * This is sort-of Cassandra/HBase specific. It concatenates
@@ -71,10 +84,11 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     protected final LockerState<S> lockState;
 
     /**
-     * The amount of time, in nanoseconds, that may pass after writing a lock
-     * before it is considered to be invalid and automatically unlocked.
+     * The amount of time, in {@link #times}{@code .getUnit()}, that may pass
+     * after writing a lock before it is considered to be invalid and
+     * automatically unlocked.
      */
-    protected final long lockExpireNS;
+    protected final long lockExpire;
 
     protected final Logger log;
 
@@ -104,16 +118,18 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         protected ConsistentKeyLockerSerializer serializer;
         protected LocalLockMediator<StoreTransaction> llm;
         protected LockerState<S> lockState;
-        protected long lockExpireNS;
+        protected long lockExpire;
+        protected TimeUnit lockExpireUnit;
         protected Logger log;
 
         public Builder() {
             this.rid = new StaticArrayBuffer(DistributedStoreManager.getRid(Configuration.EMPTY));
-            this.times = TimeUtility.INSTANCE;
+            this.times = NanoTime.INSTANCE;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockState = new LockerState<S>();
-            this.lockExpireNS = NANOSECONDS.convert(GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue(), MILLISECONDS);
+            this.lockExpire = GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue();
+            this.lockExpireUnit = TimeUnit.MILLISECONDS;
             this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }
 
@@ -161,8 +177,9 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             return self();
         }
 
-        public B lockExpireNS(long exp, TimeUnit unit) {
-            this.lockExpireNS = NANOSECONDS.convert(exp, unit);
+        public B lockExpire(long exp, TimeUnit unit) {
+            this.lockExpire = exp;
+            this.lockExpireUnit = unit;
             return self();
         }
 
@@ -201,14 +218,16 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
 
     public AbstractLocker(StaticBuffer rid, TimestampProvider times,
-                          ConsistentKeyLockerSerializer serializer,
-                          LocalLockMediator<StoreTransaction> llm, LockerState<S> lockState, long lockExpireNS, Logger log) {
+            ConsistentKeyLockerSerializer serializer,
+            LocalLockMediator<StoreTransaction> llm, LockerState<S> lockState,
+            long lockExpire, Logger log) {
         this.rid = rid;
         this.times = times;
+        this.timeUnit = times.getUnit();
         this.serializer = serializer;
         this.llm = llm;
         this.lockState = lockState;
-        this.lockExpireNS = lockExpireNS;
+        this.lockExpire = lockExpire;
         this.log = log;
     }
 
@@ -281,7 +300,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             boolean ok = false;
             try {
                 S stat = writeSingleLock(lockID, tx);
-                lockLocally(lockID, stat.getExpirationTimestamp(TimeUnit.NANOSECONDS), tx); // update local lock expiration time
+                lockLocally(lockID, stat.getExpirationTimestamp(timeUnit), tx); // update local lock expiration time
                 lockState.take(tx, lockID, stat);
                 ok = true;
             } catch (TemporaryStorageException tse) {
@@ -374,11 +393,11 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
 
     private boolean lockLocally(KeyColumn lockID, StoreTransaction tx) {
-        return lockLocally(lockID, times.getApproxNSSinceEpoch() + lockExpireNS, tx);
+        return lockLocally(lockID, times.getTime() + lockExpire, tx);
     }
 
-    private boolean lockLocally(KeyColumn lockID, long expireNS, StoreTransaction tx) {
-        return llm.lock(lockID, tx, expireNS, TimeUnit.NANOSECONDS);
+    private boolean lockLocally(KeyColumn lockID, long expire, StoreTransaction tx) {
+        return llm.lock(lockID, tx, expire, timeUnit);
     }
 
     private void unlockLocally(KeyColumn lockID, StoreTransaction txh) {

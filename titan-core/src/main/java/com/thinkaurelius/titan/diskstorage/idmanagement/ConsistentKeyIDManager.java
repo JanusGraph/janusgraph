@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
@@ -205,7 +206,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          * the same id block from another machine
                          */
 
-                        TimeUtility.INSTANCE.sleepUntil(after + idApplicationWaitMS, log);
+                        sleepAndConvertInterrupts(after + idApplicationWaitMS);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -266,7 +267,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             } catch (StorageException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
                                 if (rollbackWaitTime > 0)
-                                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
+                                    sleepAndConvertInterrupts(System.currentTimeMillis() + rollbackWaitTime);
                             }
                         }
                     }
@@ -274,7 +275,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", idApplicationWaitMS, e);
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    sleepAndConvertInterrupts(System.currentTimeMillis() + idApplicationWaitMS);
             }
         }
 
@@ -302,6 +303,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final long getBlockValue(Entry column) {
         return -column.getLong(0);
+    }
+
+    private static void sleepAndConvertInterrupts(final long time) throws StorageException {
+        try {
+            MicroTime.INSTANCE.sleepUntil(time, TimeUnit.MILLISECONDS, log);
+        } catch (InterruptedException e) {
+            throw new PermanentStorageException(e);
+        }
     }
 
 }

@@ -45,7 +45,7 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
 
         public AstyanaxRecipeLocker build() {
             super.preBuild();
-            return new AstyanaxRecipeLocker(rid, times, serializer, llm, lockState, lockExpireNS, log, ks, cf);
+            return new AstyanaxRecipeLocker(rid, times, serializer, llm, lockState, lockExpire, log, ks, cf);
         }
 
         @Override
@@ -73,18 +73,18 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
     @Override
     protected AstyanaxLockStatus writeSingleLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
-        long approxTimeNS = times.getApproxNSSinceEpoch();
+        long curTime = times.getTime();
 
         ByteBuffer keyToLock = serializer.toLockKey(lockID.getKey(), lockID.getColumn()).asByteBuffer();
 
         ColumnPrefixDistributedRowLock<ByteBuffer> lock =
                 new ColumnPrefixDistributedRowLock<ByteBuffer>(
-                        lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpireNS, TimeUnit.NANOSECONDS).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+                        lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpire, times.getUnit()).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
 
         try {
             lock.acquire();
             log.debug("Locked {} in store {}", lockID, lockColumnFamily.getName());
-            return new AstyanaxLockStatus(approxTimeNS, TimeUnit.NANOSECONDS, lock);
+            return new AstyanaxLockStatus(curTime, TimeUnit.NANOSECONDS, lock);
         } catch (StaleLockException e) {
             throw new TemporaryLockingException(e); // TODO handle gracefully?
         } catch (BusyLockException e) {
