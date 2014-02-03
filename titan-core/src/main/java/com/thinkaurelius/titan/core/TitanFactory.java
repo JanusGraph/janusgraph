@@ -46,6 +46,8 @@ public class TitanFactory {
     private static final Logger log =
             LoggerFactory.getLogger(TitanFactory.class);
 
+    private static boolean preloadedConfigOptions = false;
+
     /**
      * Opens a {@link TitanGraph} database.
      * <p/>
@@ -84,12 +86,20 @@ public class TitanFactory {
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
 
-    private static void preloadConfigOptions() {
+    private synchronized static void preloadConfigOptions() {
+
+        if (preloadedConfigOptions)
+            return;
+
+        long before = System.currentTimeMillis();
+
         org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
             .setUrls(ClasspathHelper.forJavaClassPath())
             .setScanners(new TypeAnnotationsScanner());
 //      .setScanners(new SubTypesScanner(), new TypeAnnotationsScanner(), new FieldAnnotationsScanner());
         Reflections reflections = new Reflections(rc);
+
+        int preloaded = 0;
 
 //        for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
         for (Class<?> c : reflections.getTypesAnnotatedWith(PreInitializeConfigOptions.class)) {
@@ -105,6 +115,7 @@ public class TitanFactory {
                         Object o = f.get(null);
                         Preconditions.checkNotNull(o);
                         log.debug("Initialized {}={}", f, o);
+                        preloaded++;
                     } catch (IllegalArgumentException e) {
                         log.warn("ConfigOption initialization error", e);
                     } catch (IllegalAccessException e) {
@@ -113,6 +124,12 @@ public class TitanFactory {
                 }
             }
         }
+
+        long after = System.currentTimeMillis();
+
+        preloadedConfigOptions = true;
+
+        log.error("Preloaded {} config options via reflections in {} ms", preloaded, after - before);
 
 //        //for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withAnnotation(PreInitialize.class))) {
 //        for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withTypeAssignableTo(ConfigOption.class))) {
