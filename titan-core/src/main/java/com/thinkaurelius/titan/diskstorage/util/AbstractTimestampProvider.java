@@ -24,10 +24,10 @@ public abstract class AbstractTimestampProvider implements TimestampProvider {
              * of the argument, if applicable, and passes both milliseconds and
              * nanoseconds parts into Thread#sleep(long, long)
              */
-//            if (log.isDebugEnabled()) {
-//                log.error("Sleeping: now={} targettime={} delta={} (unit={})",
-//                        new Object[] { now, time, delta, unit });
-//            }
+            if (log.isDebugEnabled()) {
+                log.debug("Sleeping: now={} targettime={} delta={} (unit={})",
+                        new Object[] { now, time, delta, unit });
+            }
             unit.sleep(delta);
         }
 
