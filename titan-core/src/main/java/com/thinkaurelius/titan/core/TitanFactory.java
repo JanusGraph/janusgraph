@@ -129,24 +129,7 @@ public class TitanFactory {
 
         preloadedConfigOptions = true;
 
-        log.error("Preloaded {} config options via reflections in {} ms", preloaded, after - before);
-
-//        //for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withAnnotation(PreInitialize.class))) {
-//        for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withTypeAssignableTo(ConfigOption.class))) {
-//            log.warn("Field {}", f);
-//            if (f.isAccessible() && Modifier.isStatic(f.getModifiers()) && ConfigOption.class.isAssignableFrom(f.getType())) {
-//                try {
-//                    Preconditions.checkNotNull(f.get(null));
-//                    log.warn("Loaded {}", f);
-//                } catch (IllegalArgumentException e) {
-//                    log.warn("Configuration preloading error", e);
-//                } catch (IllegalAccessException e) {
-//                    log.warn("Configuration preloading error", e);
-//                }
-//            }
-//        }
-
-        log.debug("ConfigOption initialization complete");
+        log.debug("Preloaded {} config options via reflections in {} ms", preloaded, after - before);
     }
 
 
