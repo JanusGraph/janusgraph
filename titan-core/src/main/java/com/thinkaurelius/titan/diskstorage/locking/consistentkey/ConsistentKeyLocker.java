@@ -218,28 +218,12 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 cleaner = null;
             }
 
-            return new ConsistentKeyLocker(store, manager, rid, times, serializer, llm, times.getUnit().convert(lockWait, lockWaitUnit), lockRetryCount, times.getUnit().convert(lockExpire, lockExpireUnit), lockState, cleaner);
-//<<<<<<< HEAD
-//
-//            final LockCleanerService cleaner;
-//
-//            switch (cleanerConfig) {
-//            case STANDARD:
-//                Preconditions.checkArgument(null == customCleanerService);
-//                cleaner = new StandardLockCleanerService(store, serializer);
-//                break;
-//            case CUSTOM:
-//                Preconditions.checkArgument(null != customCleanerService);
-//                cleaner = customCleanerService;
-//                break;
-//            default:
-//                cleaner = null;
-//            }
-//
-//            return new ConsistentKeyLocker(store, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState, cleaner);
-//=======
-//            return new ConsistentKeyLocker(store, manager, rid, times, serializer, llm, lockWaitNS, lockRetryCount, lockExpireNS, lockState);
-//>>>>>>> serializer
+            return new ConsistentKeyLocker(store, manager, rid, times,
+                    serializer, llm,
+                    times.getUnit().convert(lockWait, lockWaitUnit),
+                    lockRetryCount,
+                    times.getUnit().convert(lockExpire, lockExpireUnit),
+                    lockState, cleaner);
         }
 
         @Override
