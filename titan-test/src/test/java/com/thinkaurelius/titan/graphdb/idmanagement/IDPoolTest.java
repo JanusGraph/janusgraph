@@ -87,7 +87,7 @@ public class IDPoolTest {
                     }
                 }
             });
-            threads[i].run();
+            threads[i].start();
         }
         for (int i = 0; i < numThreads; i++) threads[i].join();
         for (int i = 0; i < idPools.length; i++) idPools[i].close();
