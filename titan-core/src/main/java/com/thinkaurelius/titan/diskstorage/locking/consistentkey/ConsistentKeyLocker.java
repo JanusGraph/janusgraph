@@ -187,6 +187,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                     ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX);
             mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(llmPrefix));
 
+            times(config.get(GraphDatabaseConfiguration.TIMESTAMP_PROVIDER));
+
             lockRetryCount(config.get(GraphDatabaseConfiguration.LOCK_RETRY));
 
             lockWait(config.get(GraphDatabaseConfiguration.LOCK_WAIT), TimeUnit.MILLISECONDS);
