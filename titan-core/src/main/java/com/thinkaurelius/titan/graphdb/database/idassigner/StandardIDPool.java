@@ -179,6 +179,7 @@ public class StandardIDPool implements IDPool {
         } catch (InterruptedException e) {
             throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
         }
+        exec.shutdownNow();
     }
 
     private void startNextIDAcquisition() {
@@ -193,7 +194,6 @@ public class StandardIDPool implements IDPool {
         @Override
         public void run() {
             renewBuffer();
-            log.debug("Finishing id renewal thread");
         }
 
     }
