@@ -213,6 +213,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } catch (InterruptedException e) {
             throw new TemporaryStorageException(e);
         }
+
+        Uninterruptibles.sleepUninterruptibly(1L, TimeUnit.MILLISECONDS);
     }
 
     @Override
