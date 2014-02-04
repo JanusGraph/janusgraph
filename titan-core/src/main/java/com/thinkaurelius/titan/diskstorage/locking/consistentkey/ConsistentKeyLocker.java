@@ -258,7 +258,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     private long getLockWait(TimeUnit tu) {
-        return tu.convert(lockWait, TimeUnit.NANOSECONDS);
+        return tu.convert(lockWait, timeUnit);
     }
 
     /**
@@ -441,7 +441,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 throw new TemporaryLockingException(msg);
             }
 
-            if (tr.getTimestamp() == ls.getWriteTimestamp(TimeUnit.NANOSECONDS)) {
+            if (tr.getTimestamp() == ls.getWriteTimestamp(timeUnit)) {
 //                log.debug("Checked lock {} in store {}", target, store.getName());
                 log.debug("Checked lock {}", target);
                 return;
@@ -449,7 +449,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
             log.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
                     new Object[]{target, tr.getRid(), tr.getTimestamp(),
-                            ls.getWriteTimestamp(TimeUnit.NANOSECONDS)});
+                            ls.getWriteTimestamp(timeUnit)});
         }
 
         /*
@@ -479,14 +479,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                     + " locks with our rid "
                     + rid
                     + " but mismatched timestamps; no lock column contained our timestamp ("
-                    + ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + ")";
+                    + ls.getWriteTimestamp(timeUnit) + ")";
             throw new PermanentStorageException(msg);
         }
     }
 
     @Override
     protected void deleteSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls, StoreTransaction tx) {
-        List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), rid));
+        List<StaticBuffer> dels = ImmutableList.of(serializer.toLockCol(ls.getWriteTimestamp(timeUnit), rid));
         for (int i = 0; i < lockRetryCount; i++) {
             try {
                 StoreTransaction newTx = overrideTimestamp(tx, times.getTime());
