@@ -198,6 +198,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
 
         mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
+
+        sleepAfterWrite(txh);
     }
 
     private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {

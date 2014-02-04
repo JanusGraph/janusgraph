@@ -363,6 +363,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
+
+        sleepAfterWrite(txh);
     }
 
     @Override

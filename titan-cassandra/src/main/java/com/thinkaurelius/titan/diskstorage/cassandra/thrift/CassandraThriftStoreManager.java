@@ -218,6 +218,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } finally {
             pool.returnObjectUnsafe(keySpaceName, conn);
         }
+
+        sleepAfterWrite(txh);
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap

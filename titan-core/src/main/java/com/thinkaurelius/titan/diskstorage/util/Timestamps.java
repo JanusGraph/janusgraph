@@ -79,6 +79,11 @@ public enum Timestamps implements TimestampProvider {
         public TimeUnit getUnit() {
             return TimeUnit.MICROSECONDS;
         }
+
+        @Override
+        public long sleepUntil(long time, final TimeUnit unit, final Logger log) throws InterruptedException {
+            return super.sleepUntil(TimeUnit.MILLISECONDS.convert(time, unit) + 1, TimeUnit.MILLISECONDS, log);
+        }
     },
 
     MILLI {

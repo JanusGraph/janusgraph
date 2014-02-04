@@ -2,9 +2,14 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
@@ -213,6 +218,19 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         long time = txh.getConfiguration().getTimestamp();
         time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
         return new Timestamp(time | 1L, time);
+    }
+
+    protected void sleepAfterWrite(StoreTransaction txh) throws StorageException {
+        TimestampProvider p = txh.getConfiguration().getTimestampProvider();
+        try {
+            if (null != p) {
+                p.sleepUntil(p.getTime() + 1, p.getUnit());
+            } else {
+                Thread.sleep(1L); // ms
+            }
+        } catch (InterruptedException e) {
+            throw new PermanentStorageException("Unexpected interrupt", e);
+        }
     }
 
     /**
