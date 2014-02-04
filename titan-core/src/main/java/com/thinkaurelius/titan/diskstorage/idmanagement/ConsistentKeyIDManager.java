@@ -84,14 +84,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
             uniqueId = -1;
-            storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(Timestamps.MILLI);
+            storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
         } else {
             randomizeUniqueId = false;
             if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
                 Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
-                storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig()).timestampProvider(Timestamps.MILLI);
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
             } else {
-                storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(Timestamps.MILLI);
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
             }
             uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);

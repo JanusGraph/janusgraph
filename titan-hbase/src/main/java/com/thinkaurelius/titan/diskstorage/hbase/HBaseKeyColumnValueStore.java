@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.util.system.IOUtils;
+
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
@@ -21,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -76,6 +78,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         byte[] keyBytes = key.as(StaticBuffer.ARRAY_FACTORY);
 
         Get g = new Get(keyBytes).addFamily(columnFamilyBytes);
+        try {
+            g.setTimeRange(0, Long.MAX_VALUE);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        }
 
         try {
             HTableInterface table = null;
@@ -121,7 +128,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         List<Get> requests = new ArrayList<Get>(keys.size());
         {
             for (StaticBuffer key : keys) {
-                requests.add(new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter));
+                Get g = new Get(key.as(StaticBuffer.ARRAY_FACTORY)).addFamily(columnFamilyBytes).setFilter(getFilter);
+                try {
+                    g.setTimeRange(0, Long.MAX_VALUE);
+                } catch (IOException e) {
+                    throw new PermanentStorageException(e);
+                }
+                requests.add(g);
             }
         }
 
@@ -200,6 +213,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                                             @Nullable SliceQuery columnSlice) throws StorageException {
         Scan scan = new Scan().addFamily(columnFamilyBytes);
 
+        try {
+            scan.setTimeRange(0, Long.MAX_VALUE);
+        } catch (IOException e) {
+            throw new PermanentStorageException(e);
+        }
+
         if (startKey != null)
             scan.setStartRow(startKey);
 
@@ -225,60 +244,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public String getName() {
         return storeName;
-    }
-
-    /**
-     * Convert deletions to a Delete command.
-     *
-     * @param cfName    The name of the ColumnFamily deletions belong to
-     * @param key       The row key
-     * @param deletions The name of the columns to delete (a.k.a deletions)
-     * @return Delete command or null if deletions were null or empty.
-     */
-    private static Delete makeDeletionCommand(byte[] cfName, byte[] key, List<StaticBuffer> deletions) {
-        Preconditions.checkArgument(!deletions.isEmpty());
-
-        Delete deleteCommand = new Delete(key);
-        for (StaticBuffer del : deletions) {
-            deleteCommand.deleteColumn(cfName, del.as(StaticBuffer.ARRAY_FACTORY));
-        }
-        return deleteCommand;
-    }
-
-    /**
-     * Convert modification entries into Put command.
-     *
-     * @param cfName        The name of the ColumnFamily modifications belong to
-     * @param key           The row key
-     * @param modifications The entries to insert/update.
-     * @return Put command or null if additions were null or empty.
-     */
-    private static Put makePutCommand(byte[] cfName, byte[] key, List<Entry> modifications) {
-        Preconditions.checkArgument(!modifications.isEmpty());
-
-        Put putCommand = new Put(key);
-        for (Entry e : modifications) {
-            putCommand.add(cfName, e.getColumnAs(StaticBuffer.ARRAY_FACTORY),
-                    e.getValueAs(StaticBuffer.ARRAY_FACTORY));
-        }
-        return putCommand;
-    }
-
-    public static List<Row> makeBatch(byte[] cfName, byte[] key, List<Entry> additions, List<StaticBuffer> deletions) {
-        if (additions.isEmpty() && deletions.isEmpty()) return Collections.emptyList();
-
-        List<Row> batch = new ArrayList<Row>(2);
-
-        if (!additions.isEmpty()) {
-            Put putCommand = makePutCommand(cfName, key, additions);
-            batch.add(putCommand);
-        }
-
-        if (!deletions.isEmpty()) {
-            Delete deleteCommand = makeDeletionCommand(cfName, key, deletions);
-            batch.add(deleteCommand);
-        }
-        return batch;
     }
 
     private class RowIterator implements KeyIterator {
