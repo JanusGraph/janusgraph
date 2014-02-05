@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
@@ -18,13 +19,9 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
-import org.reflections.scanners.FieldAnnotationsScanner;
-import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
-import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +29,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -91,7 +89,7 @@ public class TitanFactory {
         if (preloadedConfigOptions)
             return;
 
-        long before = System.currentTimeMillis();
+        final Stopwatch sw = new Stopwatch().start();
 
         org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
             .setUrls(ClasspathHelper.forJavaClassPath())
@@ -125,11 +123,10 @@ public class TitanFactory {
             }
         }
 
-        long after = System.currentTimeMillis();
-
         preloadedConfigOptions = true;
 
-        log.debug("Preloaded {} config options via reflections in {} ms", preloaded, after - before);
+        log.debug("Preloaded {} config options via reflections in {} ms",
+                preloaded, sw.stop().elapsed(TimeUnit.MILLISECONDS));
     }
 
 
