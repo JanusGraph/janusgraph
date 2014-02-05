@@ -5,7 +5,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -50,7 +52,7 @@ public class StandardIDPool implements IDPool {
     private volatile long bufferNextID;
     private volatile long bufferMaxID;
     private Future<?> idBlockFuture;
-    private final ExecutorService exec;
+    private final ThreadPoolExecutor exec;
 
     private boolean initialized;
 
@@ -73,7 +75,13 @@ public class StandardIDPool implements IDPool {
         bufferMaxID = BUFFER_EMPTY;
 
         // daemon=true would probably be fine too
-        exec = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setDaemon(false).setNameFormat("ID-Allocator-%d").build());
+        exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder()
+                        .setDaemon(false)
+                        .setNameFormat("TitanID[" + partitionID + "][%d]")
+                        .build());
+        //exec.allowCoreThreadTimeOut(false);
+        //exec.prestartCoreThread();
         idBlockFuture = null;
 
         initialized = false;
@@ -97,6 +105,8 @@ public class StandardIDPool implements IDPool {
                 String msg = String.format("ID block allocation on partition %d was cancelled after %d ms",
                         partitionID, sw.stop().elapsed(TimeUnit.MILLISECONDS));
                 throw new TitanException(msg, e);
+            } finally {
+                idBlockFuture = null;
             }
             // Allow InterruptedException to propagate up the stack
         }
@@ -132,7 +142,9 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferNextID == BUFFER_EMPTY, bufferNextID);
         Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
         try {
+            Stopwatch sw = new Stopwatch().start();
             long[] idblock = idAuthority.getIDBlock(partitionID);
+            log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];
             Preconditions.checkArgument(bufferNextID > 0, bufferNextID);
@@ -183,7 +195,7 @@ public class StandardIDPool implements IDPool {
     }
 
     private void startNextIDAcquisition() {
-        Preconditions.checkArgument(idBlockFuture == null || idBlockFuture.isDone(), idBlockFuture);
+        Preconditions.checkArgument(idBlockFuture == null, idBlockFuture);
         //Renew buffer
         log.debug("Starting id block renewal thread upon {}", nextID);
         idBlockFuture = exec.submit(new IDBlockRunnable());
@@ -191,9 +203,13 @@ public class StandardIDPool implements IDPool {
 
     private class IDBlockRunnable implements Runnable {
 
+        private final Stopwatch alive = new Stopwatch().start();
+
         @Override
         public void run() {
+            Stopwatch running = new Stopwatch().start();
             renewBuffer();
+            log.debug("Renewed buffer: partition {}, exec time {}, exec+q time {}", partitionID, running.stop(), alive.stop());
         }
 
     }
