@@ -364,7 +364,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh);
+        sleepAfterWrite(txh, timestamp);
     }
 
     @Override

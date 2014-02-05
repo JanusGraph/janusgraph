@@ -310,9 +310,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return -column.getLong(0);
     }
 
-    private static void sleepAndConvertInterrupts(final long time) throws StorageException {
+    private static void sleepAndConvertInterrupts(final long millis) throws StorageException {
         try {
-            Timestamps.MICRO.sleepUntil(time, TimeUnit.MILLISECONDS, log);
+            Timestamps.MILLI.sleepPast(millis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             throw new PermanentStorageException(e);
         }

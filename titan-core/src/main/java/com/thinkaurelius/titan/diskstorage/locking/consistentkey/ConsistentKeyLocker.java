@@ -379,7 +379,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         // Sleep, if necessary
         // We could be smarter about sleeping by iterating oldest -> latest...
-        final long now = times.sleepUntil(ls.getWriteTimestamp(timeUnit) + getLockWait(timeUnit), timeUnit);
+        final long now = times.sleepPast(ls.getWriteTimestamp(timeUnit) + getLockWait(timeUnit), timeUnit);
 
         // Slice the store
         KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START, LOCK_COL_END);

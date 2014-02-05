@@ -214,7 +214,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh);
+        sleepAfterWrite(txh, timestamp);
     }
 
     @Override

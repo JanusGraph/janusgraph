@@ -81,8 +81,17 @@ public enum Timestamps implements TimestampProvider {
         }
 
         @Override
-        public long sleepUntil(long time, final TimeUnit unit, final Logger log) throws InterruptedException {
-            return TimeUnit.MICROSECONDS.convert(super.sleepUntil(TimeUnit.MILLISECONDS.convert(time, unit) + 1, TimeUnit.MILLISECONDS, log), TimeUnit.MILLISECONDS);
+        public long sleepPast(long time, final TimeUnit unit) throws InterruptedException {
+            /*
+             * Sleep for at least a millisecond.
+             */
+            if (unit.equals(TimeUnit.NANOSECONDS) || unit.equals(TimeUnit.MICROSECONDS)) {
+                return unit.convert(
+                   super.sleepPast(TimeUnit.MILLISECONDS.convert(time, unit) + 1, TimeUnit.MILLISECONDS),
+                   TimeUnit.MILLISECONDS);
+            } else {
+                return super.sleepPast(time, unit);
+            }
         }
     },
 
@@ -102,14 +111,16 @@ public enum Timestamps implements TimestampProvider {
             LoggerFactory.getLogger(Timestamps.class);
 
     @Override
-    public long sleepUntil(final long time, final TimeUnit unit, final Logger log) throws InterruptedException {
+    public long sleepPast(final long time, final TimeUnit unit) throws InterruptedException {
 
         // All long variables are times in parameter unit
 
         long now;
 
         while ((now = unit.convert(getTime(), getUnit())) <= time) {
-            final long delta = time - now;
+            long delta = time - now;
+            if (0L == delta)
+                delta = 1L;
             /*
              * TimeUnit#sleep(long) internally preserves the nanoseconds parts
              * of the argument, if applicable, and passes both milliseconds and
@@ -122,12 +133,9 @@ public enum Timestamps implements TimestampProvider {
             unit.sleep(delta);
         }
 
-        return now;
-    }
+        assert time < now;
 
-    @Override
-    public long sleepUntil(final long time, final TimeUnit unit) throws InterruptedException {
-        return sleepUntil(time, unit, log);
+        return now;
     }
 
     @Override

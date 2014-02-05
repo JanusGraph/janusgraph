@@ -410,7 +410,7 @@ public class ConsistentKeyLockerTest {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
         // Checker should compare the fake lock's timestamp to the current time
-        expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
         // Expect a store getSlice() and return the fake lock's column and value
         recordLockGetSliceAndReturnSingleEntry(
                 StaticArrayEntry.of(
@@ -437,7 +437,7 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // pretend a huge multiple of the expiration time has passed
 
         // Checker should compare the fake lock's timestamp to the current time
-        expect(times.sleepUntil(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // Checker must slice the store; we return the single expired lock column
         recordLockGetSliceAndReturnSingleEntry(
@@ -470,7 +470,7 @@ public class ConsistentKeyLockerTest {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
 
-        expect(times.sleepUntil(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(ls.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
         final StaticBuffer lc = codec.toLockCol(ls.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid);
         recordLockGetSliceAndReturnSingleEntry(StaticArrayEntry.of(lc, defaultLockVal));
         ctrl.replay();
@@ -510,7 +510,7 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
 
         // Return defaultTx's lock in a map when requested
-        expect(times.sleepUntil(ownJuniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(ownJuniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -550,7 +550,7 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
 
         // Return defaultTx's lock in a map when requested
-        expect(times.sleepUntil(ownSeniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(ownSeniorLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -591,7 +591,7 @@ public class ConsistentKeyLockerTest {
 
         // Return defaultTx's second lock in a map when requested
         currentTimeNS += TimeUnit.NANOSECONDS.convert(10, TimeUnit.SECONDS);
-        expect(times.sleepUntil(mySecondLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(mySecondLS.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // When the checker slices the store, return the senior lock col by a
         // foreign tx and the junior lock col by defaultTx (in that order)
@@ -623,7 +623,7 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
 
-        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // First getSlice will fail
         TemporaryStorageException tse = new TemporaryStorageException("Storage cluster will be right back");
@@ -655,7 +655,7 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
 
-        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // Three successive getSlice calls, each throwing a distinct TSE
         recordExceptionalLockGetSlice(new TemporaryStorageException("Storage cluster is having me-time"));
@@ -689,7 +689,7 @@ public class ConsistentKeyLockerTest {
 
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, lockStatus));
 
-        expect(times.sleepUntil(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // First and only getSlice call throws a PSE
         recordExceptionalLockGetSlice(new PermanentStorageException("Connection to storage cluster failed: peer is an IPv6 toaster"));
@@ -945,7 +945,7 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(100, TimeUnit.DAYS); // pretend a huge multiple of the expiration time has passed
 
         // Checker should compare the fake lock's timestamp to the current time
-        expect(times.sleepUntil(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
+        expect(times.sleepPast(expired.getWriteTimestamp(TimeUnit.NANOSECONDS) + defaultWaitNS, TimeUnit.NANOSECONDS)).andReturn(currentTimeNS);
 
         // Checker must slice the store; we return the single expired lock column
         recordLockGetSliceAndReturnSingleEntry(
