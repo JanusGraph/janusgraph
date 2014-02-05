@@ -36,8 +36,7 @@ public class IDPoolTest {
 
     @Test
     public void testStandardIDPool2() throws InterruptedException {
-        final MockIDAuthority idauth = new MockIDAuthority(10000);
-        idauth.setDelayAcquisition(2000);
+        final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 2000);
         testIDPoolWith(new IDPoolFactory() {
             @Override
             public StandardIDPool get(long partitionID) {
@@ -103,8 +102,7 @@ public class IDPoolTest {
 
     @Test
     public void testAllocationTimeout() {
-        final MockIDAuthority idauth = new MockIDAuthority(10000);
-        idauth.setDelayAcquisition(5000);
+        final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 5000);
         StandardIDPool pool = new StandardIDPool(idauth, 1, Integer.MAX_VALUE, 4000, 0.1);
         try {
             pool.nextID();

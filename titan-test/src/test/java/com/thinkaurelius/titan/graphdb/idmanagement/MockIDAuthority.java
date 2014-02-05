@@ -28,11 +28,10 @@ public class MockIDAuthority implements IDAuthority {
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
     private final ConcurrentHashMap<Integer, AtomicLong> ids = new ConcurrentHashMap<Integer, AtomicLong>();
-    private IDBlockSizer blockSizer = null;
-    private int blockSizeLimit = BLOCK_SIZE_LIMIT;
+    private IDBlockSizer blockSizer;
+    private final int blockSizeLimit;
+    private final int delayAcquisitionMS;
     private int[] localPartition = {0, -1};
-
-    private int delayAcquisitionMS = 0;
 
     public MockIDAuthority() {
         this(100);
@@ -43,17 +42,18 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     public MockIDAuthority(int blockSize, int blockSizeLimit) {
-        blockSizer = new StaticIDBlockSizer(blockSize,blockSizeLimit);
-        this.blockSizeLimit = blockSizeLimit;
+        this(blockSize, blockSizeLimit, 0);
     }
 
-    public void setDelayAcquisition(int timeMS) {
-        Preconditions.checkArgument(timeMS>=0);
-        this.delayAcquisitionMS=timeMS;
+    public MockIDAuthority(int blockSize, int blockSizeLimit, int delayAcquisitionMS) {
+        blockSizer = new StaticIDBlockSizer(blockSize, blockSizeLimit);
+        this.blockSizeLimit = blockSizeLimit;
+        this.delayAcquisitionMS = delayAcquisitionMS;
+        Preconditions.checkArgument(0 <= this.delayAcquisitionMS);
     }
 
     @Override
-    public synchronized long[] getIDBlock(int partition) throws StorageException {
+    public long[] getIDBlock(int partition) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -68,6 +68,7 @@ public class MockIDAuthority implements IDAuthority {
         if (id == null) {
             ids.putIfAbsent(p, new AtomicLong(1));
             id = ids.get(p);
+            Preconditions.checkNotNull(id);
         }
         long lowerBound = id.getAndAdd(size);
         if (lowerBound >= blockSizeLimit) {
