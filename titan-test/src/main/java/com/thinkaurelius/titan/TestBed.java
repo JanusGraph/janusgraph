@@ -3,9 +3,6 @@ package com.thinkaurelius.titan;
 import cern.colt.function.LongObjectProcedure;
 import cern.colt.map.AbstractLongObjectMap;
 import cern.colt.map.OpenLongObjectHashMap;
-import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
@@ -17,7 +14,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Callable;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestBed {
 
@@ -37,11 +35,63 @@ public class TestBed {
 
     }
 
+    private static final void doSomethingExpensive(int milliseconds) {
+        double d=0.0;
+        Random r = new Random();
+        for (int i=0;i<10000*milliseconds;i++) d+=Math.pow(1.1,r.nextDouble());
+
+    }
+
     /**
      * @param args
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        final ScheduledExecutorService exe = new ScheduledThreadPoolExecutor(1,new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                r.run();
+            }
+        });
+        ScheduledFuture future = exe.scheduleWithFixedDelay(new Runnable() {
+            AtomicInteger atomicInt = new AtomicInteger(0);
+
+            @Override
+            public void run() {
+                try {
+                for (int i=0;i<10;i++) {
+                    exe.submit(new Runnable() {
+
+                        private final int number = atomicInt.incrementAndGet();
+
+                        @Override
+                        public void run() {
+                            try {
+                                Thread.sleep(150);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            System.out.println(number);
+                        }
+                    });
+                    System.out.println("Submitted: "+i);
+//                    doSomethingExpensive(20);
+                }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        },0,1, TimeUnit.SECONDS);
+        Thread.sleep(10000);
+//        future.get(1,TimeUnit.SECONDS);
+        System.out.println("Cancel: " + future.cancel(false));
+        System.out.println("Done: " + future.isDone());
+        exe.shutdown();
+//        Thread.sleep(2000);
+        System.out.println("Terminate: " + exe.awaitTermination(5,TimeUnit.SECONDS));
+        System.out.println("DONE");
+
+
         int size = 100; int trials = 10000; int arrsize = 40;
         Random r = new Random();
 

@@ -5,5 +5,7 @@ public interface TimestampProvider {
     //    public long getApproxNSSinceEpoch(final boolean setLSB);
     public long getApproxNSSinceEpoch();
 
+    public long getTimeMillis();
+
     public long sleepUntil(final long untilNS) throws InterruptedException;
 }

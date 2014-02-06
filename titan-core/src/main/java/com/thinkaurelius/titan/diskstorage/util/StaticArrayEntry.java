@@ -201,6 +201,11 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
     }
 
     @Override
+    public StaticBuffer getValue() {
+        return getValueAs(StaticBuffer.STATIC_FACTORY);
+    }
+
+    @Override
     public <T> T getValueAs(Factory<T> factory) {
         return super.as(factory,valuePosition,super.length()-valuePosition);
     }

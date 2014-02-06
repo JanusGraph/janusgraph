@@ -97,6 +97,19 @@ public class BackendOperation {
         }
     }
 
+    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, long maxTimeMS) throws TitanException {
+        return execute(new Callable<R>() {
+            @Override
+            public R call() throws Exception {
+                return execute(exe,provider);
+            }
+            @Override
+            public String toString() {
+                return exe.toString();
+            }
+        },maxTimeMS);
+    }
+
 
     public static interface Transactional<R> {
 

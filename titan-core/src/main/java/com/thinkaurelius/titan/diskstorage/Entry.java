@@ -24,6 +24,8 @@ public interface Entry extends StaticBuffer {
 
     public<T> T getColumnAs(Factory<T> factory);
 
+    public StaticBuffer getValue();
+
     public<T> T getValueAs(Factory<T> factory);
 
     /**

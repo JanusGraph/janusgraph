@@ -143,6 +143,11 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
         }
 
         @Override
+        public StaticBuffer getValue() {
+            return getValueAs(StaticBuffer.STATIC_FACTORY);
+        }
+
+        @Override
         public <T> T getValueAs(Factory<T> factory) {
             return super.as(factory,currentValuePos,super.length()-currentValuePos);
         }

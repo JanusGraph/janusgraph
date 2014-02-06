@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Utility methods for measuring fine time intervals
@@ -39,6 +40,7 @@ public enum TimeUtility implements TimestampProvider {
         final long t0ms = System.currentTimeMillis();
         final long t0ns = System.nanoTime();
 
+        t0MillisSinceEpoch = t0ms;
         t0NanosSinceEpoch = t0ms * 1000L * 1000L;
         t0NanoTime = t0ns;
     }
@@ -50,6 +52,7 @@ public enum TimeUtility implements TimestampProvider {
      * startup times a million (i.e. CTM in ns)
      */
     private final long t0NanosSinceEpoch;
+    private final long t0MillisSinceEpoch;
 
     // TODO this does not belong here
     private static final long MILLION = 1000L * 1000L;
@@ -69,6 +72,11 @@ public enum TimeUtility implements TimestampProvider {
     @Override
     public long getApproxNSSinceEpoch() {
         return (System.nanoTime() - t0NanoTime + t0NanosSinceEpoch);
+    }
+
+    @Override
+    public long getTimeMillis() {
+        return (System.nanoTime()-t0NanoTime)/(1000L*1000L) + t0MillisSinceEpoch;
     }
 
     /**
