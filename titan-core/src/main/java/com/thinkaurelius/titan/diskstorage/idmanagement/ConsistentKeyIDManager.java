@@ -166,7 +166,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                                 ,uniqueIdBitWidth,partition,idUpperBound);
         final long idBlockUpperBound = (1l<<bitOffset);
 
-        final List<String> exhausted = new ArrayList<String>(idApplicationRetryCount);
+        final List<String> exhausted = new ArrayList<String>(randomUniqueIDLimit);
 
         Preconditions.checkArgument(idBlockUpperBound>blockSize,
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
@@ -183,7 +183,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             partition, uniqueID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
                     if (randomizeUniqueId) {
                         exhausted.add(partition + "." + uniqueID);
-                        if (exhausted.size() == idApplicationRetryCount)
+                        if (exhausted.size() == randomUniqueIDLimit)
                             break;
                         else
                             continue;
