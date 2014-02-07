@@ -7,17 +7,21 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase</artifactId>
+    <packaging>pom</packaging>
     <name>Titan-HBase: Distributed Graph Database</name>
     <url>http://thinkaurelius.github.com/titan/</url>
+    
+    <modules>
+        <module>titan-hbase-094</module>
+        <module>titan-hbase-096</module>
+    </modules>
+    
     <properties>
-        <hbase.version>0.94.12</hbase.version>
-        <hadoop.version>1.0.4</hadoop.version>
-        <hadoop.artifact>hadoop-core</hadoop.artifact>
         <titan.hbase.mvn.opts />
         <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
-        <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
+    
     <dependencies>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -35,53 +39,6 @@
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase</artifactId>
-            <!-- Update the hadoop-core artifact version when you update this -->
-            <version>${hbase.version}</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>avro</artifactId>
-                    <groupId>org.apache.avro</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>jruby-complete</artifactId>
-                    <groupId>org.jruby</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>asm</artifactId>
-                    <groupId>asm</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-common</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-minicluster</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-annotations</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <artifactId>jruby-complete</artifactId>
-            <groupId>org.jruby</groupId>
-            <version>1.6.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>${hadoop.artifact}</artifactId>
-            <version>${hadoop.version}</version>
         </dependency>
         <!-- Logging.
 
@@ -113,76 +70,101 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-    <build>
-        <testResources>
-            <testResource>
-                <directory>${project.basedir}/src/test/resources</directory>
-                <filtering>true</filtering>
-            </testResource>
-        </testResources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-hbase-site-xml</id>
-                        <phase>process-test-resources</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.basedir}/conf</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>${project.basedir}/src/test/conf/</directory>
-                                    <filtering>true</filtering>
-                                </resource>
-                            </resources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
     
-    <profiles>
-        <profile>
-            <id>hadoop2</id>
-            
-            <activation>
-                <!-- 
-                We use the same activation criterion as HBase so that
-                there's one less command-line option to remember.
-                -->
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>2.0</value>
-                </property>
-            </activation>
-            
-            <properties>
-                <hadoop.version>2.2.0</hadoop.version>
-                <hadoop.artifact>hadoop-common</hadoop.artifact>
-                <titan.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=2.0</titan.hbase.mvn.opts>
-            </properties>
-            
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-annotations</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-hdfs</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-client</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>filter-hbase-conf</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.basedir}/conf</outputDirectory>
+                                <delimiters>
+                                    <delimiter>$MAVEN{*}</delimiter>
+                                </delimiters>
+                                <resources>
+                                    <resource>
+                                        <directory>${project.basedir}/../src/test/conf/</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <!-- Using assembly instead of resources because resources breaks filemodes and 
+                         permissions: http://jira.codehaus.org/browse/MRESOURCES-132 -->
+                    <artifactId>maven-assembly-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>copy-hbase-bin</id>
+                            <phase>process-test-resources</phase>
+                            <goals>
+                                <goal>single</goal>
+                            </goals>
+                            <configuration>
+                                <appendAssemblyId>false</appendAssemblyId>
+                                <finalName>/</finalName>
+                                <attach>false</attach>
+                                <outputDirectory>${project.basedir}/bin</outputDirectory>
+                                <descriptors>
+                                    <descriptor>${project.basedir}/../src/test/binassembly.xml</descriptor>
+                                </descriptors>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>include-common-hbase-sources</id>
+                            <phase>process-sources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>../src/main/java</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                
+                <plugin>
+                    <artifactId>maven-clean-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>clean-hbase-files</id>
+                            <phase>clean</phase>
+                            <goals>
+                                <goal>clean</goal>
+                            </goals>
+                            <configuration>
+                                <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                                <filesets>
+                                    <fileset>
+                                        <directory>bin/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>conf/</directory>
+                                    </fileset>
+                                </filesets>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 </project>

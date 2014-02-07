@@ -24,7 +24,6 @@ import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -336,7 +335,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (cf == null) {
             try {
                 adm.disableTable(tableName);
-                desc.addFamily(new HColumnDescriptor(columnFamily).setCompressionType(Compression.Algorithm.GZ));
+                HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
+                HBaseSupport.setCompression(cdesc, "GZ");
+                desc.addFamily(cdesc);
                 adm.modifyTable(tableName.getBytes(), desc);
 
                 try {
@@ -354,18 +355,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 logger.debug("Swallowing exception {}", ee);
             } catch (IOException ee) {
                 throw new TemporaryStorageException(ee);
-            }
-        } else { // check if compression was enabled, if not - enable it
-            if (cf.getCompressionType() == null || cf.getCompressionType() == Compression.Algorithm.NONE) {
-                try {
-                    adm.disableTable(tableName);
-
-                    adm.modifyColumn(tableName, cf.setCompressionType(Compression.Algorithm.GZ));
-
-                    adm.enableTable(tableName);
-                } catch (IOException e) {
-                    throw new TemporaryStorageException(e);
-                }
             }
         }
     }

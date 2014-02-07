@@ -34,11 +34,11 @@
 <configuration>
     <property>
         <name>hbase.rootdir</name>
-        <value>file://${project.build.directory}/hbase-root</value>
+        <value>file://$MAVEN{project.build.directory}/hbase-root</value>
     </property>
     <property>
         <name>hbase.zookeeper.property.dataDir</name>
-        <value>${project.build.directory}/zk-data</value>
+        <value>$MAVEN{project.build.directory}/zk-data</value>
     </property>
     <property>
         <name>zookeeper.session.timeout</name>

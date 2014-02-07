@@ -1,0 +1,6 @@
+/titan-hbase-*/.settings/
+/titan-hbase-*/.project
+/titan-hbase-*/.classpath
+/titan-hbase-*/bin/
+/titan-hbase-*/conf/
+/titan-hbase-*/logs/
