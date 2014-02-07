@@ -10,9 +10,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -39,6 +43,8 @@ public abstract class IDAllocationTest {
 
     public static final int CONCURRENCY = 8;
     public static final String DB_NAME = "test";
+
+    public static final long GET_ID_BLOCK_TIMEOUT_MS = 300000L;
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
@@ -168,7 +174,7 @@ public abstract class IDAllocationTest {
         List<Long> ids = Lists.newArrayList();
         long previous = 0;
         for (int i=0;i<100;i++) {
-            long[] block = idAuthorities[0].getIDBlock(0);
+            long[] block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             Assert.assertEquals(block[1], block[0] + blockSize);
             ids.add(block[0]);
             if (hasFixedUid) {
@@ -197,19 +203,19 @@ public abstract class IDAllocationTest {
         idAuthorities[0].setIDBlockSizer(blockSizer);
         if (hasFixedUid) {
             for (int i=0;i<chunks;i++) {
-                idAuthorities[0].getIDBlock(0);
+                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             }
             try {
-                idAuthorities[0].getIDBlock(0);
+                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
         } else {
             for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)/10));i++) {
-                idAuthorities[0].getIDBlock(0);
+                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             }
             try {
                 for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)*9/10));i++) {
-                    idAuthorities[0].getIDBlock(0);
+                    idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
                 }
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
@@ -336,7 +342,7 @@ public abstract class IDAllocationTest {
 
             long[] block;
             try {
-                block = authority.getIDBlock(partitionIndex);
+                block = authority.getIDBlock(partitionIndex, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
             } catch (StorageException e) {
                 log.error("Unexpected exception while getting ID block", e);
                 return null;

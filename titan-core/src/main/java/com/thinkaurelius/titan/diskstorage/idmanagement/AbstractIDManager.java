@@ -30,7 +30,7 @@ public abstract class AbstractIDManager implements IDAuthority {
     protected final int idApplicationRetryCount;
 
     protected final byte[] rid;
-    
+
     protected final String metricsPrefix;
 
     private IDBlockSizer blockSizer;

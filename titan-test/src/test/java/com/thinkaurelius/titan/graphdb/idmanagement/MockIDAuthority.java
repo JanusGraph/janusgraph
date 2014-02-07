@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -53,7 +54,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public long[] getIDBlock(int partition) throws StorageException {
+    public long[] getIDBlock(int partition, long timeout, TimeUnit unit) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
