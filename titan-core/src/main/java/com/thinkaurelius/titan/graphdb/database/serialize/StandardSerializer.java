@@ -3,8 +3,12 @@ package com.thinkaurelius.titan.graphdb.database.serialize;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+
+import static com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer.BYTE_LEN;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -127,6 +131,12 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
 
         @Override
         public DataOutput putBytes(byte[] val) {
+            super.putBytes(val);
+            return this;
+        }
+
+        @Override
+        public DataOutput putBytes(final StaticBuffer val) {
             super.putBytes(val);
             return this;
         }

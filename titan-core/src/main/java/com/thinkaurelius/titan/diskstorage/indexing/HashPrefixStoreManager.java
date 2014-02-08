@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import java.util.Map;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
@@ -23,11 +24,12 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 public class HashPrefixStoreManager implements KeyColumnValueStoreManager {
 
     private final KeyColumnValueStoreManager wrapped;
-    private final int prefixLen;
+    private final HashPrefixKeyColumnValueStore.HashLength hashPrefixLen;
 
-    public HashPrefixStoreManager(KeyColumnValueStoreManager wrapped, int prefixLen) {
+    public HashPrefixStoreManager(KeyColumnValueStoreManager wrapped, final HashPrefixKeyColumnValueStore.HashLength prefixLen) {
+        Preconditions.checkArgument(wrapped!=null && prefixLen!=null);
         this.wrapped = wrapped;
-        this.prefixLen = prefixLen;
+        this.hashPrefixLen = prefixLen;
     }
 
     @Override
@@ -59,7 +61,7 @@ public class HashPrefixStoreManager implements KeyColumnValueStoreManager {
     @Override
     public KeyColumnValueStore openDatabase(String name)
             throws StorageException {
-        return new HashPrefixKeyColumnValueStore(wrapped.openDatabase(name), prefixLen);
+        return new HashPrefixKeyColumnValueStore(wrapped.openDatabase(name), hashPrefixLen);
     }
 
     @Override

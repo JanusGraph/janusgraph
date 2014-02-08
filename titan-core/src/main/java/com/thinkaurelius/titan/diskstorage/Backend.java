@@ -244,8 +244,8 @@ public class Backend {
             boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
             if (hashPrefixIndex) {
                 log.info("Wrapping index store with HashPrefix");
-                vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, 4);
-                edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, 4);
+                vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
+                edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
             }
 
             if (reportMetrics) {

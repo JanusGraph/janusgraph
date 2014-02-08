@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixStoreManager;
 
 /**
@@ -10,7 +11,7 @@ public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTes
 
     @Override
     public void open() throws StorageException {
-        manager = new HashPrefixStoreManager(openStorageManager(),4);
+        manager = new HashPrefixStoreManager(openStorageManager(), HashPrefixKeyColumnValueStore.HashLength.LONG);
         store = manager.openDatabase(storeName);
         tx = startTx();
     }

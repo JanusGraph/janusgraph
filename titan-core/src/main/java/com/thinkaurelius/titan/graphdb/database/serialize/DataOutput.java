@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 public interface DataOutput extends WriteBuffer {
@@ -18,6 +19,9 @@ public interface DataOutput extends WriteBuffer {
 
     @Override
     public DataOutput putBytes(byte[] val);
+
+    @Override
+    public DataOutput putBytes(StaticBuffer val);
 
     @Override
     public DataOutput putChar(char val);

@@ -1,17 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.google.common.base.Preconditions;
+import com.google.common.hash.HashCode;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.HashUtility;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,39 +24,65 @@ import java.util.Map;
 
 public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
 
-    private static final String DEFAULT_ALGORITHM = "MD5";
+    public enum HashLength {
+        SHORT, LONG;
 
-    private final String algorithm = DEFAULT_ALGORITHM;
-    private final KeyColumnValueStore store;
-    private final int numPrefixBytes;
-
-
-    public HashPrefixKeyColumnValueStore(KeyColumnValueStore store, int numPrefixBytes) {
-        Preconditions.checkArgument(numPrefixBytes > 0 && numPrefixBytes <= 16, "Invalid number of prefix bytes. Must be in [1,16]");
-        this.store = store;
-        this.numPrefixBytes = numPrefixBytes;
-    }
-
-    private final StaticBuffer prefixKey(StaticBuffer key) {
-        try {
-            MessageDigest m = MessageDigest.getInstance(algorithm);
-            for (int i = 0; i < key.length(); i++) m.update(key.getByte(i));
-            byte[] hash = m.digest();
-            byte[] newKey = new byte[numPrefixBytes + key.length()];
-            for (int i = 0; i < numPrefixBytes; i++) {
-                newKey[i] = hash[i];
+        public int length() {
+            switch (this) {
+                case SHORT: return 4;
+                case LONG: return 8;
+                default: throw new AssertionError("Unknown hash type: " + this);
             }
-            for (int i = 0; i < key.length(); i++) {
-                newKey[numPrefixBytes + i] = key.getByte(i);
-            }
-            return StaticArrayBuffer.of(newKey);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
         }
     }
 
+    private static final StaticBuffer.Factory<HashCode> SHORT_HASH_FACTORY = new StaticBuffer.Factory<HashCode>() {
+        @Override
+        public HashCode get(byte[] array, int offset, int limit) {
+            return HashUtility.SHORT.get().hashBytes(array, offset, limit);
+        }
+    };
+
+    private static final StaticBuffer.Factory<HashCode> LONG_HASH_FACTORY = new StaticBuffer.Factory<HashCode>() {
+        @Override
+        public HashCode get(byte[] array, int offset, int limit) {
+            return HashUtility.LONG.get().hashBytes(array,offset,limit);
+        }
+    };
+
+    private final KeyColumnValueStore store;
+    private final HashLength hashPrefixLen;
+
+
+    public HashPrefixKeyColumnValueStore(KeyColumnValueStore store, final HashLength prefixLen) {
+        this.store = store;
+        this.hashPrefixLen = prefixLen;
+    }
+
+    private final StaticBuffer prefixKey(StaticBuffer key) {
+        final int prefixLen = hashPrefixLen.length();
+        final StaticBuffer.Factory<HashCode> hashFactory;
+        switch (hashPrefixLen) {
+            case SHORT:
+                hashFactory = SHORT_HASH_FACTORY;
+                break;
+            case LONG:
+                hashFactory = LONG_HASH_FACTORY;
+                break;
+            default: throw new IllegalArgumentException("Unknown hash prefix: " + hashPrefixLen);
+        }
+
+        HashCode hashcode = key.as(hashFactory);
+        WriteByteBuffer newKey = new WriteByteBuffer(prefixLen+key.length());
+        assert prefixLen==4 || prefixLen==8;
+        if (prefixLen==4) newKey.putInt(hashcode.asInt());
+        else newKey.putLong(hashcode.asLong());
+        newKey.putBytes(key);
+        return newKey.getStaticBuffer();
+    }
+
     private StaticBuffer truncateKey(StaticBuffer key) {
-        return key.subrange(numPrefixBytes, key.length() - numPrefixBytes);
+        return key.subrange(hashPrefixLen.length(), key.length() - hashPrefixLen.length());
     }
 
     @Override

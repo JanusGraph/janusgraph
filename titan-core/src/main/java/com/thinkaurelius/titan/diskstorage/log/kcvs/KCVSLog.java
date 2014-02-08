@@ -290,9 +290,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         out.writeObjectNotNull(manager.senderId);
         out.putLong(numMsgCounter.incrementAndGet());
         final int valuePos = out.getPosition();
-        for (int i = 0; i < content.length(); i++) {
-            out.putByte(content.getByte(i));
-        }
+        out.putBytes(content);
         return new StaticArrayEntry(out.getStaticBuffer(),valuePos);
     }
 

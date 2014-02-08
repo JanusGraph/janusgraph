@@ -76,6 +76,19 @@ public class WriteByteBuffer implements WriteBuffer {
     }
 
     @Override
+    public WriteBuffer putBytes(final StaticBuffer val) {
+        require(BYTE_LEN*val.length());
+        val.as(new Factory<Boolean>() {
+            @Override
+            public Boolean get(byte[] array, int offset, int limit) {
+                buffer.put(array,offset,val.length());
+                return Boolean.TRUE;
+            }
+        });
+        return this;
+    }
+
+    @Override
     public WriteBuffer putChar(char val) {
         require(CHAR_LEN);
         buffer.putChar(val);
