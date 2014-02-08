@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -9,24 +11,41 @@ import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 public class ReadMarker {
 
     private final String identifier;
-    private final long startTime;
+    private final long startTimeMicro;
 
-    private ReadMarker(String identifier, long startTime) {
+    private ReadMarker(String identifier, long startTimeMicro) {
         this.identifier = identifier;
-        this.startTime = startTime;
+        this.startTimeMicro = startTimeMicro;
     }
 
+    /**
+     * Whether this read marker has a configured identifier
+     * @return
+     */
     public boolean hasIdentifier() {
         return identifier!=null;
     }
 
+    /**
+     * Returns the configured identifier of this marker or throws an exception if none exists.
+     * @return
+     */
     public String getIdentifier() {
         Preconditions.checkArgument(identifier!=null,"ReadMarker does not have a configured identifier");
         return identifier;
     }
 
-    public long getStartTime() {
-        return startTime;
+    /**
+     * Returns the start time of this marker in microseconds
+     * @return
+     */
+    public long getStartTimeMicro() {
+        return startTimeMicro;
+    }
+
+
+    private static long convertToMirco(long time, TimeUnit unit) {
+        return TimeUnit.MICROSECONDS.convert(time,unit);
     }
 
     /**
@@ -35,7 +54,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, TimeUtility.INSTANCE.getTimeMillis());
+        return new ReadMarker(null, Timestamps.MICRO.getTime());
     }
 
     /**
@@ -43,8 +62,8 @@ public class ReadMarker {
      * @param timestamp
      * @return
      */
-    public static ReadMarker fromTime(long timestamp) {
-        return new ReadMarker(null,timestamp);
+    public static ReadMarker fromTime(long timestamp, TimeUnit unit) {
+        return new ReadMarker(null,convertToMirco(timestamp,unit));
     }
 
     /**
@@ -60,19 +79,19 @@ public class ReadMarker {
      * @param timestamp
      * @return
      */
-    public static ReadMarker fromIdentifierOrTime(String id, long timestamp) {
-        return new ReadMarker(id,timestamp);
+    public static ReadMarker fromIdentifierOrTime(String id, long timestamp, TimeUnit unit) {
+        return new ReadMarker(id,convertToMirco(timestamp,unit));
     }
 
     /**
-     * Identical to {@link #fromIdentifierOrTime(String, long)} but uses now as the start point instead of a timestamp in case
+     * Identical to {@link #fromIdentifierOrTime(String, long, TimeUnit)} but uses now as the start point instead of a timestamp in case
      * the id has not be previously defined for this log.
      *
      * @param id
      * @return
      */
     public static ReadMarker fromIdentifierOrNow(String id) {
-        return new ReadMarker(id,TimeUtility.INSTANCE.getTimeMillis());
+        return new ReadMarker(id,Timestamps.MICRO.getTime());
     }
 
 

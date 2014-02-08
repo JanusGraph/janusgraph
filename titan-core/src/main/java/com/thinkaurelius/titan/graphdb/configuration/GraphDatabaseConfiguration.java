@@ -675,6 +675,43 @@ public class GraphDatabaseConfiguration {
             "Path to a configuration file for those indexing backends that require/support a separate config file",
             ConfigOption.Type.MASKABLE, String.class);
 
+
+    // ############## Logging System ######################
+    // ################################################
+
+    public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.TITAN_NS,"log","Configuration options for Titan's logging system",true);
+
+    public static final String MANAGEMENT_LOG = "titan";
+    public static final String TRANSACTION_LOG = "tx";
+
+    public static final ConfigOption<String> LOG_BACKEND = new ConfigOption<String>(LOG_NS,"backend",
+            "Define the log backed to use",
+            ConfigOption.Type.GLOBAL_OFFLINE, "default");
+
+    public static final ConfigOption<Integer> LOG_NUM_BUCKETS = new ConfigOption<Integer>(LOG_NS,"num-buckets",
+            "The number of buckets to split log entries into for load balancing",
+            ConfigOption.Type.GLOBAL_OFFLINE, 1, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> LOG_SEND_BATCH_SIZE = new ConfigOption<Integer>(LOG_NS,"send-batch-size",
+            "Maximum number of log messages to batch up for sending for logging implementations that support batch sending",
+            ConfigOption.Type.MASKABLE, 256, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> LOG_READ_BATCH_SIZE = new ConfigOption<Integer>(LOG_NS,"read-batch-size",
+            "Maximum number of log messages to read at a time for logging implementations that read messages in batches",
+            ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
+
+    public static final ConfigOption<Integer> LOG_SEND_DELAY = new ConfigOption<Integer>(LOG_NS,"send-delay",
+            "Maximum time in ms that messages can be buffered locally before sending in batch",
+            ConfigOption.Type.MASKABLE, 1000, ConfigOption.nonnegativeInt());
+
+    public static final ConfigOption<Integer> LOG_READ_INTERVAL = new ConfigOption<Integer>(LOG_NS,"read-interval",
+            "Time in ms between message readings from the backend for thos logging implementations that read message in batch",
+            ConfigOption.Type.MASKABLE, 5000, ConfigOption.nonnegativeInt());
+
+    public static final ConfigOption<Integer> LOG_READ_THREADS = new ConfigOption<Integer>(LOG_NS,"read-threads",
+            "Number of threads to be used in reading and processing log messages",
+            ConfigOption.Type.MASKABLE, 1, ConfigOption.positiveInt());
+
     // ############## Attributes ######################
     // ################################################
 

@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.util.system;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -78,11 +80,12 @@ public abstract class BackgroundThread extends Thread {
         throw new UnsupportedOperationException("Use close() to properly terminate this thread");
     }
 
-    public void close(long maxWaitMs) {
+    public void close(long maxWait, TimeUnit unit) {
         synchronized (this) {
             stop = true;
             if (waiting) super.interrupt();
         }
+        final long maxWaitMs = TimeUnit.MILLISECONDS.convert(maxWait,unit);
         try {
             super.join(maxWaitMs);
         } catch (InterruptedException e) {

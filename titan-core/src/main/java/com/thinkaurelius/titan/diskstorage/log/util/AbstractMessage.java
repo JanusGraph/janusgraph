@@ -34,6 +34,10 @@ public abstract class AbstractMessage implements Message {
         return senderId;
     }
 
+    public long getTimestampMicro() {
+        return timestampMicro;
+    }
+
     @Override
     public long getTimestamp(TimeUnit unit) {
         return unit.convert(timestampMicro,TimeUnit.MICROSECONDS);

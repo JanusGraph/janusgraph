@@ -126,6 +126,15 @@ public class ConfigOption<O> extends ConfigElement {
         };
     }
 
+    public static final Predicate<Integer> nonnegativeInt() {
+        return new Predicate<Integer>() {
+            @Override
+            public boolean apply(@Nullable Integer num) {
+                return num!=null && num>=0;
+            }
+        };
+    }
+
     public static final Predicate<Long> positiveLong() {
         return new Predicate<Long>() {
             @Override
