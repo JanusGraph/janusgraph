@@ -9,18 +9,22 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -37,8 +41,8 @@ public class KCVSConfiguration implements WriteConfiguration {
     private final KeyColumnValueStore store;
     private final String identifier;
     private final StaticBuffer rowKey;
-
-    private final KryoSerializer serializer;
+    private final TransactionHandleConfig txCfg;
+    private final StandardSerializer serializer;
 
     private long maxOperationWaitTime = 10000;
 
@@ -52,8 +56,8 @@ public class KCVSConfiguration implements WriteConfiguration {
         this.store = manager.openDatabase(configurationName);
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
-
-        this.serializer = new KryoSerializer(true);
+        this.txCfg = StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig());
+        this.serializer = new StandardSerializer();
     }
 
     public void setMaxOperationWaitTime(long waitTimeMS) {
@@ -71,13 +75,13 @@ public class KCVSConfiguration implements WriteConfiguration {
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
         StaticBuffer column = string2StaticBuffer(key);
-        final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column),false);
+        final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new Callable<StaticBuffer>() {
             @Override
             public StaticBuffer call() throws Exception {
                 StoreTransaction txh = null;
                 try {
-                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh = manager.beginTransaction(txCfg);
                     List<Entry> entries = store.getSlice(query,txh);
                     if (entries.isEmpty()) return null;
                     return entries.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
@@ -114,7 +118,7 @@ public class KCVSConfiguration implements WriteConfiguration {
             public Boolean call() throws Exception {
                 StoreTransaction txh = null;
                 try {
-                    txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh = manager.beginTransaction(txCfg);
                     store.mutate(rowKey, additions, KeyColumnValueStore.NO_DELETIONS, txh);
                     return true;
                 } finally {
@@ -140,7 +144,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                 public Boolean call() throws Exception {
                     StoreTransaction txh = null;
                     try {
-                        txh = manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                        txh = manager.beginTransaction(txCfg);
                         store.mutate(rowKey, KeyColumnValueStore.NO_ADDITIONS, deletions, txh);
                         return true;
                     } finally {
@@ -168,7 +172,7 @@ public class KCVSConfiguration implements WriteConfiguration {
             public List<Entry> call() throws Exception {
                 StoreTransaction txh=null;
                 try {
-                    txh= manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT));
+                    txh= manager.beginTransaction(txCfg);
                     return store.getSlice(new KeySliceQuery(rowKey,ByteBufferUtil.zeroBuffer(128),ByteBufferUtil.oneBuffer(128)),txh);
                 } finally {
                     if (txh!=null) txh.commit();
@@ -241,7 +245,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     }
 
     private<O> StaticBuffer object2StaticBuffer(final O value) {
-        DataOutput out = serializer.getDataOutput(128, true);
+        DataOutput out = serializer.getDataOutput(128);
         out.writeClassAndObject(value);
         return out.getStaticBuffer();
     }

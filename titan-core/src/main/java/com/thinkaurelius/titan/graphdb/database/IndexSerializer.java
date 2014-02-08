@@ -282,7 +282,7 @@ public class IndexSerializer {
                 "Cannot retrieve for given property key - it does not have an index [%s]", key.getName());
         Object value = pc.getValue();
         StaticBuffer column = getUniqueIndexColumn(key);
-        KeySliceQuery sq = new KeySliceQuery(getIndexKey(value), column, SliceQuery.pointRange(column), ((InternalType) key).isStatic(Direction.IN)).setLimit(limit);
+        KeySliceQuery sq = new KeySliceQuery(getIndexKey(value), column, SliceQuery.pointRange(column)).setLimit(limit);
         EntryList r;
         if (resultType == ElementType.VERTEX) {
             r = tx.vertexIndexQuery(sq);
@@ -461,7 +461,7 @@ public class IndexSerializer {
     }
 
     private final StaticBuffer getIndexKey(Object att) {
-        DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY, true);
+        DataOutput out = serializer.getDataOutput(DEFAULT_VALUE_CAPACITY);
         out.writeObjectNotNull(att);
         return out.getStaticBuffer();
     }

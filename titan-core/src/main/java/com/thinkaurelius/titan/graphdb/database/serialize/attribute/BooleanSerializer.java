@@ -3,20 +3,18 @@ package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class BooleanSerializer implements AttributeSerializer<Boolean> {
+public class BooleanSerializer implements AttributeSerializer<Boolean>, OrderPreservingSerializer {
 
     @Override
     public Boolean read(ScanBuffer buffer) {
-        byte s = buffer.getByte();
-        if (s==0) return Boolean.FALSE;
-        else if (s==1) return Boolean.TRUE;
-        else throw new IllegalArgumentException("Invalid boolean value: " + s);
+        return decode(buffer.getByte());
     }
 
     @Override
     public void writeObjectData(WriteBuffer out, Boolean attribute) {
-        out.putByte((byte)(attribute.booleanValue()?1:0));
+        out.putByte(encode(attribute.booleanValue()));
     }
 
     @Override
@@ -27,12 +25,21 @@ public class BooleanSerializer implements AttributeSerializer<Boolean> {
     @Override
     public Boolean convert(Object value) {
         if (value instanceof Number) {
-            Number n = (Number)value;
-            if (n.doubleValue()==1.0) return Boolean.TRUE;
-            else if (n.doubleValue()==0.0) return Boolean.FALSE;
-            else throw new IllegalArgumentException("Number does not map to boolean value: " + value);
+            return decode(((Number)value).byteValue());
         } else if (value instanceof String) {
             return Boolean.parseBoolean((String)value);
         } else return null;
+    }
+
+    public static boolean decode(byte b) {
+        switch (b) {
+            case 0: return false;
+            case 1: return true;
+            default: throw new IllegalArgumentException("Invalid boolean value: " + b);
+        }
+    }
+
+    public static byte encode(boolean b) {
+        return (byte)(b?1:0);
     }
 }

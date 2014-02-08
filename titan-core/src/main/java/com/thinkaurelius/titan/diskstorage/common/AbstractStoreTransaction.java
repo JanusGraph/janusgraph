@@ -2,9 +2,8 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 /**
  * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.
@@ -14,9 +13,9 @@ import com.thinkaurelius.titan.diskstorage.util.TimeUtility;
 
 public abstract class AbstractStoreTransaction implements StoreTransaction {
 
-    private final StoreTxConfig config;
+    private final TransactionHandleConfig config;
 
-    public AbstractStoreTransaction(StoreTxConfig config) {
+    public AbstractStoreTransaction(TransactionHandleConfig config) {
         Preconditions.checkNotNull(config);
         this.config = config;
     }
@@ -35,7 +34,7 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
 
 
     @Override
-    public StoreTxConfig getConfiguration() {
+    public TransactionHandleConfig getConfiguration() {
         return config;
     }
 

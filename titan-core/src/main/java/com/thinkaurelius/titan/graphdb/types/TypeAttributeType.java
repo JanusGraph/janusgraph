@@ -13,7 +13,6 @@ public enum TypeAttributeType {
 
     UNIQUENESS(boolean[].class),
     UNIQUENESS_LOCK(boolean[].class),
-    STATIC(boolean[].class),
     HIDDEN(Boolean.class),
     MODIFIABLE(Boolean.class),
     SORT_KEY(long[].class),
@@ -24,10 +23,10 @@ public enum TypeAttributeType {
     SORT_ORDER(Order.class),
     INDEX_PARAMETERS(IndexParameters[].class);
 
-    static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK, STATIC,
+    static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
             HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, INDEXES, INDEX_PARAMETERS, DATATYPE);
 
-    static final Set<TypeAttributeType> EDGE_LABEL_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK, STATIC,
+    static final Set<TypeAttributeType> EDGE_LABEL_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
             HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, UNIDIRECTIONAL);
 
     private final Class attributeClass;

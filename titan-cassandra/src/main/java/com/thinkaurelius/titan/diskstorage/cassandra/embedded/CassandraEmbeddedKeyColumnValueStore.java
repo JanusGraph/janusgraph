@@ -147,14 +147,14 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 false,             // Reverse results? (false=no)
                 1);                // Max count of Columns to return
 
-        List<Row> rows = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
+        List<Row> rows = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
         if (null == rows || 0 == rows.size())
             return false;
-        
+
         /*
          * Find at least one live column
-		 * 
+		 *
 		 * Note that the rows list may contain arbitrarily many
 		 * marked-for-delete elements. Therefore, we can't assume that we're
 		 * dealing with a singleton even though we set the maximum column count
@@ -188,7 +188,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 false,                         // Reverse results? (false=no)
                 query.getLimit() + (query.hasLimit()?1:0));             // Max count of Columns to return, add 1 in case of limit since we might have to filter one out at the end
 
-        List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDBConsistency());
+        List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
         if (null == slice || 0 == slice.size())
             return EntryList.EMPTY_LIST;

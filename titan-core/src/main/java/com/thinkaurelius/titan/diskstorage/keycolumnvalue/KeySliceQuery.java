@@ -13,8 +13,8 @@ public class KeySliceQuery extends SliceQuery {
 
     private final StaticBuffer key;
 
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd, boolean isStatic) {
-        super(sliceStart, sliceEnd, isStatic);
+    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
+        super(sliceStart, sliceEnd);
         Preconditions.checkNotNull(key);
         this.key=key;
     }
@@ -23,10 +23,6 @@ public class KeySliceQuery extends SliceQuery {
         super(query);
         Preconditions.checkNotNull(key);
         this.key=key;
-    }
-
-    public KeySliceQuery(StaticBuffer key, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
-        this(key,sliceStart,sliceEnd,DEFAULT_STATIC);
     }
 
     /**

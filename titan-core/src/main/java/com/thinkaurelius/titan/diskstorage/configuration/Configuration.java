@@ -32,7 +32,7 @@ public interface Configuration {
 
         @Override
         public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-            return null;
+            return option.getDefaultValue();
         }
 
         @Override

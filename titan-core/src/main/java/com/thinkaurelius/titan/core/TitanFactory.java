@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
@@ -18,13 +19,9 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
-import org.reflections.scanners.FieldAnnotationsScanner;
-import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
 import org.reflections.util.ClasspathHelper;
-import org.reflections.util.FilterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +29,7 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -45,6 +43,8 @@ public class TitanFactory {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanFactory.class);
+
+    private static boolean preloadedConfigOptions = false;
 
     /**
      * Opens a {@link TitanGraph} database.
@@ -84,12 +84,20 @@ public class TitanFactory {
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
 
-    private static void preloadConfigOptions() {
+    private synchronized static void preloadConfigOptions() {
+
+        if (preloadedConfigOptions)
+            return;
+
+        final Stopwatch sw = new Stopwatch().start();
+
         org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
             .setUrls(ClasspathHelper.forJavaClassPath())
             .setScanners(new TypeAnnotationsScanner());
 //      .setScanners(new SubTypesScanner(), new TypeAnnotationsScanner(), new FieldAnnotationsScanner());
         Reflections reflections = new Reflections(rc);
+
+        int preloaded = 0;
 
 //        for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
         for (Class<?> c : reflections.getTypesAnnotatedWith(PreInitializeConfigOptions.class)) {
@@ -105,6 +113,7 @@ public class TitanFactory {
                         Object o = f.get(null);
                         Preconditions.checkNotNull(o);
                         log.debug("Initialized {}={}", f, o);
+                        preloaded++;
                     } catch (IllegalArgumentException e) {
                         log.warn("ConfigOption initialization error", e);
                     } catch (IllegalAccessException e) {
@@ -114,22 +123,10 @@ public class TitanFactory {
             }
         }
 
-//        //for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withAnnotation(PreInitialize.class))) {
-//        for (Field f : ReflectionUtils.getAllFields(ConfigOption.class, ReflectionUtils.withTypeAssignableTo(ConfigOption.class))) {
-//            log.warn("Field {}", f);
-//            if (f.isAccessible() && Modifier.isStatic(f.getModifiers()) && ConfigOption.class.isAssignableFrom(f.getType())) {
-//                try {
-//                    Preconditions.checkNotNull(f.get(null));
-//                    log.warn("Loaded {}", f);
-//                } catch (IllegalArgumentException e) {
-//                    log.warn("Configuration preloading error", e);
-//                } catch (IllegalAccessException e) {
-//                    log.warn("Configuration preloading error", e);
-//                }
-//            }
-//        }
+        preloadedConfigOptions = true;
 
-        log.debug("ConfigOption initialization complete");
+        log.debug("Preloaded {} config options via reflections in {} ms",
+                preloaded, sw.stop().elapsed(TimeUnit.MILLISECONDS));
     }
 
 

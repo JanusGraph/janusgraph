@@ -4,12 +4,13 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StringSerializer implements AttributeSerializer<String> {
+public class StringSerializer implements AttributeSerializer<String>, OrderPreservingSerializer {
 
     private final CharacterSerializer cs = new CharacterSerializer();
 

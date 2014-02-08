@@ -111,7 +111,7 @@ public abstract class IDAllocationTest {
             sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
-            if (storeFeatures.supportsConsistentKeyOperations())
+            if (storeFeatures.isKeyConsistent())
                 idAuthorities[i] = new ConsistentKeyIDManager(idStore, manager[i], sc);
             else throw new IllegalArgumentException("Cannot open id store");
         }

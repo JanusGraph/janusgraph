@@ -3,17 +3,20 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseException;
+import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager.LOCK_MODE;
 
 public class BerkeleyJETx extends AbstractStoreTransaction {
 
@@ -21,10 +24,12 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     private Transaction tx;
     private List<Cursor> openCursors = new ArrayList<Cursor>();
+    private final LockMode lm;
 
-    public BerkeleyJETx(Transaction t, StoreTxConfig config) {
+    public BerkeleyJETx(Transaction t, LockMode lockMode, TransactionHandleConfig config) {
         super(config);
         tx = t;
+        lm = lockMode;
     }
 
     public Transaction getTransaction() {
@@ -43,6 +48,10 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         for (Cursor cursor : openCursors) {
             cursor.close();
         }
+    }
+
+    LockMode getLockMode() {
+        return lm;
     }
 
     @Override

@@ -9,8 +9,10 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+
 import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,17 +20,27 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 /**
- * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation assuming that the backing store
- * supports consistent key operations.
+ * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation
+ * assuming that the backing store supports consistent key operations.
  * <p/>
- * ID blocks are allocated by first applying for an id block, waiting for a specified period of time and then
- * checking that the application was the first received for that particular id block. If so, the application is
- * considered successful. If not, some other process won the application and a new application is tried.
+ * ID blocks are allocated by first applying for an id block, waiting for a
+ * specified period of time and then checking that the application was the first
+ * received for that particular id block. If so, the application is considered
+ * successful. If not, some other process won the application and a new
+ * application is tried.
  * <p/>
- * The partition id is used as the key and since key operations are considered consistent, this protocol guarantees
- * unique id block assignments.
+ * The partition id is used as the key and since key operations are considered
+ * consistent, this protocol guarantees unique id block assignments.
+ * <p/>
+ * This class uses {@code System#currentTimeMillis()} internally, both for
+ * timing writes and for the timestamp values written to the storage backend
+ * during the lock application process. It always uses
+ * {@code currentTimeMillis()} no matter what
+ * {@link GraphDatabaseConfiguration#TIMESTAMP_PROVIDER} has been configured in
+ * the enclosing graph.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -42,6 +54,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
+    private final StandardTransactionConfig.Builder storeTxConfigBuilder;
 
     private final int rollbackAttempts = 5;
     private final int rollbackWaitTime = 200;
@@ -50,32 +63,35 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final int uniqueIDUpperBound;
     private final int uniqueId;
     private final boolean randomizeUniqueId;
-    private final ConsistencyLevel consistencLevel;
+    //private final ConsistencyLevel consistencLevel;
 
     private final Random random = new Random();
 
     public ConsistentKeyIDManager(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
         super(config);
-        Preconditions.checkArgument(manager.getFeatures().supportsConsistentKeyOperations());
+        Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;
         this.idStore = idStore;
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
+
+        storeTxConfigBuilder = new StandardTransactionConfig.Builder().metricsPrefix(metricsPrefix);
+
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");
             Preconditions.checkArgument(!config.has(IDAUTHORITY_USE_LOCAL_CONSISTENCY),
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
             uniqueId = -1;
-            consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+            storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
         } else {
             randomizeUniqueId = false;
             if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
                 Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
-                consistencLevel = ConsistencyLevel.LOCAL_KEY_CONSISTENT;
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
             } else {
-                consistencLevel = ConsistencyLevel.KEY_CONSISTENT;
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
             }
             uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
@@ -95,7 +111,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(new StoreTxConfig(consistencLevel, metricsPrefix));
+        return manager.beginTransaction(storeTxConfigBuilder.build());
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
@@ -195,7 +211,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          * the same id block from another machine
                          */
 
-                        TimeUtility.INSTANCE.sleepUntil(after + idApplicationWaitMS, log);
+                        sleepAndConvertInterrupts(after + idApplicationWaitMS);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -248,7 +264,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
                                     public StoreTransaction openTx() throws StorageException {
-                                        return manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.DEFAULT,metricsPrefix));
+                                        return manager.beginTransaction(storeTxConfigBuilder.build());
                                     }
                                 });
 
@@ -256,7 +272,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             } catch (StorageException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
                                 if (rollbackWaitTime > 0)
-                                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + rollbackWaitTime, log);
+                                    sleepAndConvertInterrupts(System.currentTimeMillis() + rollbackWaitTime);
                             }
                         }
                     }
@@ -264,7 +280,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
             } catch (TemporaryStorageException e) {
                 log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", idApplicationWaitMS, e);
                 if (idApplicationWaitMS > 0)
-                    TimeUtility.INSTANCE.sleepUntil(System.currentTimeMillis() + idApplicationWaitMS, log);
+                    sleepAndConvertInterrupts(System.currentTimeMillis() + idApplicationWaitMS);
             }
         }
 
@@ -292,6 +308,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final long getBlockValue(Entry column) {
         return -column.getLong(0);
+    }
+
+    private static void sleepAndConvertInterrupts(final long millis) throws StorageException {
+        try {
+            Timestamps.MILLI.sleepPast(millis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            throw new PermanentStorageException(e);
+        }
     }
 
 }

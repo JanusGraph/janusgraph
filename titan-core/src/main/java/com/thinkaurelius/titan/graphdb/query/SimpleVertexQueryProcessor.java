@@ -53,7 +53,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     private boolean filterHiddenProperties;
 
     private SimpleVertexQueryProcessor(InternalVertex vertex) {
-        Preconditions.checkArgument(vertex.isLoaded(),"SimpleVertexQuery only applies to unmodified vertices");
+        //Preconditions.checkArgument(vertex.isLoaded()); -> don't check since concurrent parallel modification may have taken place and should be ignored. This is verified in VertexCentricQueryBuilder
         this.vertex = vertex;
         this.tx = vertex.tx();
         this.edgeSerializer = this.tx.getEdgeSerializer();
@@ -62,8 +62,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     public SimpleVertexQueryProcessor(InternalVertex vertex, TitanKey key) {
         this(vertex);
         assert key==null || !((InternalType)key).isHidden();
-        assert key==null || !((InternalType)key).isStatic(Direction.OUT);
-        RelationQueryCache cache = tx.getGraph().getRelationCache();
+        RelationQueryCache cache = tx.getGraph().getQueryCache();
         filterHiddenProperties = key==null;
         if (key==null || tx.getConfiguration().hasPropertyPrefetching()) {
             this.key = key;
@@ -77,7 +76,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
                                       EdgeSerializer.TypedInterval[] sortKeyConstraints, int limit) {
         this(vertex);
         Preconditions.checkNotNull(dir);
-        RelationQueryCache cache = tx.getGraph().getRelationCache();
+        RelationQueryCache cache = tx.getGraph().getQueryCache();
         if (label==null) {
             assert sortKeyConstraints==null;
             sliceQuery = cache.getQuery(RelationType.EDGE);
@@ -119,13 +118,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
     public Iterable<TitanRelation> relations() {
-        return Iterables.transform(this,new Function<Entry, TitanRelation>() {
-            @Nullable
-            @Override
-            public TitanRelation apply(@Nullable Entry entry) {
-                return RelationConstructor.readRelation(vertex, entry,edgeSerializer);
-            }
-        });
+        return RelationConstructor.readRelation(vertex, this, tx);
     }
 
     public Iterable<TitanEdge> titanEdges() {

@@ -38,6 +38,7 @@ public class BackendTransaction implements TransactionHandle {
     public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
 
     private final StoreTransaction storeTx;
+    private final TransactionHandleConfig txConfig;
     private final StoreFeatures storeFeatures;
 
     private final KeyColumnValueStore edgeStore;
@@ -51,12 +52,13 @@ public class BackendTransaction implements TransactionHandle {
 
     private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(StoreTransaction storeTx, StoreFeatures features,
-                              KeyColumnValueStore edgeStore,
+    public BackendTransaction(StoreTransaction storeTx, TransactionHandleConfig txConfig,
+                              StoreFeatures features, KeyColumnValueStore edgeStore,
                               KeyColumnValueStore vertexIndexStore, KeyColumnValueStore edgeIndexStore,
                               int maxReadRetryAttempts, int retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
+        this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.vertexIndexStore = vertexIndexStore;
@@ -69,6 +71,10 @@ public class BackendTransaction implements TransactionHandle {
 
     public StoreTransaction getStoreTransactionHandle() {
         return storeTx;
+    }
+
+    public TransactionHandleConfig getConfiguration() {
+        return txConfig;
     }
 
     public IndexTransaction getIndexTransactionHandle(String index) {
@@ -193,7 +199,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public Map<StaticBuffer,EntryList> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
-        if (storeFeatures.supportsMultiQuery()) {
+        if (storeFeatures.hasMultiQuery()) {
             return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
                 public Map<StaticBuffer,EntryList> call() throws Exception {
@@ -287,7 +293,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
-        if (!storeFeatures.supportsScan())
+        if (!storeFeatures.hasScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
         return executeRead(new Callable<KeyIterator>() {
@@ -306,7 +312,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
-        Preconditions.checkArgument(storeFeatures.supportsOrderedScan(), "The configured storage backend does not support ordered scans");
+        Preconditions.checkArgument(storeFeatures.hasOrderedScan(), "The configured storage backend does not support ordered scans");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override

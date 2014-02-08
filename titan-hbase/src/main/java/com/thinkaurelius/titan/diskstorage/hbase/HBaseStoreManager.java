@@ -5,17 +5,23 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
+
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.hfile.Compression;
@@ -28,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -138,35 +145,48 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public StoreFeatures getFeatures() {
-        // TODO: allowing publicly mutate fields is bad, should be fixed
-        StoreFeatures features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = true;
-        features.supportsBatchMutation = true;
-        features.supportsTxIsolation = false;
-        features.supportsMultiQuery = true;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = false;
-        features.isKeyOrdered = true;
-        features.isDistributed = true;
-        features.hasLocalKeyPartition = false;
+        // StoreFeatures features = new StoreFeatures();
+        // features.supportsOrderedScan = true;
+        // features.supportsUnorderedScan = true;
+        // features.supportsBatchMutation = true;
+        // features.supportsTxIsolation = false;
+        // features.supportsMultiQuery = true;
+        // features.supportsConsistentKeyOperations = true;
+        // features.supportsLocking = false;
+        // features.isKeyOrdered = true;
+        // features.isDistributed = true;
+        // features.hasLocalKeyPartition = false;
+        // try {
+        // features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+        // } catch (Exception e) {
+        // logger.warn("Unexpected exception during getDeployment()", e);
+        // }
+        // return features;
+
+        Configuration c = GraphDatabaseConfiguration.buildConfiguration();
+
+        StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
+                .orderedScan(true).unorderedScan(true).batchMutation(true)
+                .multiQuery(true).distributed(true).keyOrdered(true)
+                .keyConsistent(c);
+
         try {
-            features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
+            fb.localKeyPartition(getDeployment() == Deployment.LOCAL);
         } catch (Exception e) {
             logger.warn("Unexpected exception during getDeployment()", e);
         }
-        return features;
+
+        return fb.build();
     }
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        //TODO: use same timestamp functionality as Cassandra
-//        final Timestamp timestamp = super.getTimestamp(txh);
-//        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.additionTime, timestamp.deletionTime);
+        final Timestamp timestamp = super.getTimestamp(txh);
+        // In case of an addition and deletion with identical timestamps, the
+        // deletion tombstone wins.
+        // http://hbase.apache.org/book/versions.html#d244e4250
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.additionTime, timestamp.deletionTime);
 
-        final long delTS = System.currentTimeMillis();
-        final long putTS = delTS + 1;
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, putTS, delTS);
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
         // convert sorted commands into representation required for 'batch' operation
@@ -194,7 +214,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
-        waitUntil(putTS);
+        sleepAfterWrite(txh, timestamp);
     }
 
     @Override
@@ -351,10 +371,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         return new HBaseTransaction(config);
     }
-
 
     /**
      * Deletes the specified table with all its columns.
@@ -373,6 +392,26 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
+        /*
+         * The commented code is the recommended way to truncate an HBase table.
+         * But it's so slow. The titan-hbase test suite takes 18 minutes to
+         * complete on my machine using the Scanner method. It takes 1 hour 17
+         * minutes to complete using the disable-delete-and-recreate method
+         * commented below. (after - before) below is usually between 3000 and
+         * 3100 ms on my machine, but it runs so many times in the test suite
+         * that it adds up.
+         */
+//        long before = System.currentTimeMillis();
+//        try {
+//            adm.disableTable(tableName);
+//            adm.deleteTable(tableName);
+//        } catch (IOException e) {
+//            throw new PermanentStorageException(e);
+//        }
+//        ensureTableExists(tableName);
+//        long after = System.currentTimeMillis();
+//        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
+
         HTable table = null;
 
         try {
@@ -382,14 +421,27 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             scan.setBatch(100);
             scan.setCacheBlocks(false);
             scan.setCaching(2000);
+            scan.setTimeRange(0, Long.MAX_VALUE);
+            scan.setMaxVersions(1);
 
             ResultScanner scanner = null;
+
+            long ts = -1;
 
             try {
                 scanner = table.getScanner(scan);
 
                 for (Result res : scanner) {
-                    table.delete(new Delete(res.getRow()));
+                    Delete d = new Delete(res.getRow());
+                    //Despite comment in Delete.java, LATEST_TIMESTAMP seems to be System.currentTimeMillis()
+                    //LATEST_TIMESTAMP is the default for the constructor invoked above, so it's redundant anyway
+                    //d.setTimestamp(HConstants.LATEST_TIMESTAMP);
+
+                    if (-1 == ts)
+                        ts = guessTimestamp(res);
+
+                    d.setTimestamp(ts);
+                    table.delete(d);
                 }
             } finally {
                 IOUtils.closeQuietly(scanner);
@@ -399,6 +451,45 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         } finally {
             IOUtils.closeQuietly(table);
         }
+    }
+
+    private static long guessTimestamp(Result res) {
+
+        Long sampleTime = res.getMap().firstEntry().getValue().firstEntry().getValue().firstEntry().getKey();
+        // Estimate timestamp unit from order of magnitude assuming UNIX epoch -- not compatible with arbitrary custom timestamps
+        Preconditions.checkArgument(null != sampleTime);
+        final double exponent = Math.log10(sampleTime);
+        final TimestampProvider prov;
+
+        /*
+         * These exponent brackets approximately cover UNIX Epoch timestamps
+         * between:
+         *
+         * Sat Sep 8 21:46:40 EDT 2001
+         *
+         * Thu Sep 26 21:46:40 EDT 33658
+         *
+         * Even though it won't rollover, this timestamp guessing kludge still
+         * eventually be refactored away to support arbitrary timestamps
+         * provided by the user. There's no good reason clearStorage() should be
+         * timestamp sensitive, it's just that truncating tables in the way
+         * recommended by HBase is so incredibly slow that it more than doubles
+         * the walltime taken by the titan-hbase test suite.
+         */
+        if (12 <= exponent && exponent < 15)
+            prov = Timestamps.MILLI;
+        else if (15 <= exponent && exponent < 18)
+            prov = Timestamps.MICRO;
+        else if (18 <= exponent && exponent < 21)
+            prov = Timestamps.NANO;
+        else
+            throw new IllegalStateException("Timestamp " + sampleTime + " does not match expected UNIX Epoch timestamp in milli-, micro-, or nanosecond units.  clearStorage() does not support custom timestamps.");
+
+        logger.debug("Guessed timestamp provider " + prov);
+
+        return prov.getTime();
+
+
     }
 
     @Override
@@ -445,8 +536,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
 
                 if (mutation.hasDeletions()) {
-                    if (commands.getSecond() == null)
-                        commands.setSecond(new Delete(key, delTimestamp, null));
+                    if (commands.getSecond() == null) {
+                        Delete d = new Delete(key);
+                        d.setTimestamp(delTimestamp);
+                        commands.setSecond(d);
+                    }
 
                     for (StaticBuffer b : mutation.getDeletions()) {
                         commands.getSecond().deleteColumns(cfName, b.as(StaticBuffer.ARRAY_FACTORY), delTimestamp);
@@ -454,8 +548,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 }
 
                 if (mutation.hasAdditions()) {
-                    if (commands.getFirst() == null)
-                        commands.setFirst(new Put(key, putTimestamp));
+                    if (commands.getFirst() == null) {
+                        Put p = new Put(key, putTimestamp);
+                        commands.setFirst(p);
+                    }
 
                     for (Entry e : mutation.getAdditions()) {
                         commands.getFirst().add(cfName,
@@ -472,18 +568,5 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private String getCfNameForStoreName(String storeName) throws PermanentStorageException {
         return shortCfNames ? shortenCfName(storeName) : storeName;
-    }
-
-    private static void waitUntil(long until) {
-        long now = System.currentTimeMillis();
-
-        while (now <= until) {
-            try {
-                Thread.sleep(1L);
-                now = System.currentTimeMillis();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 }

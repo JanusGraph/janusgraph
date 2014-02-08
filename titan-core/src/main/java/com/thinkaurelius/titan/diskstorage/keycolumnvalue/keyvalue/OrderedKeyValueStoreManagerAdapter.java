@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import java.util.HashMap;
@@ -46,7 +47,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         return manager.beginTransaction(config);
     }
 

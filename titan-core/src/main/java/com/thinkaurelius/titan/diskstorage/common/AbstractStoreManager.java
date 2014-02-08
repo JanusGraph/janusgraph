@@ -17,6 +17,7 @@ public abstract class AbstractStoreManager {
     protected final boolean transactional;
     protected final boolean isReadOnly;
     protected final boolean batchLoading;
+    private final Configuration storageConfig;
 
     public AbstractStoreManager(Configuration storageConfig) {
         isReadOnly = storageConfig.get(STORAGE_READONLY);
@@ -26,6 +27,10 @@ public abstract class AbstractStoreManager {
             transactional = false;
         }
         this.transactional = transactional;
+        this.storageConfig = storageConfig;
     }
 
+    public Configuration getStorageConfig() {
+        return storageConfig;
+    }
 }

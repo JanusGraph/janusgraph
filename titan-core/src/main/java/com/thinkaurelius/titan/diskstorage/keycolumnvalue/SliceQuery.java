@@ -33,34 +33,16 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
 
-    private final boolean isStatic;
-
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, boolean isStatic) {
+    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
         assert sliceStart != null && sliceEnd != null;
 
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
-        this.isStatic = isStatic;
-    }
-
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        this(sliceStart, sliceEnd, DEFAULT_STATIC);
     }
 
     public SliceQuery(final SliceQuery query) {
-        this(query.getSliceStart(), query.getSliceEnd(), query.isStatic());
+        this(query.getSliceStart(), query.getSliceEnd());
         setLimit(query.getLimit());
-    }
-
-
-    /**
-     * Whether the result set, if non-empty, is static, i.e. does not
-     * change anymore. This allows the query result (if non-empty) to be cached.
-     *
-     * @return whether query is static
-     */
-    public boolean isStatic() {
-        return isStatic;
     }
 
     /**
@@ -83,7 +65,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(isStatic).append(getLimit()).toHashCode();
+        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(getLimit()).toHashCode();
     }
 
     @Override
@@ -97,8 +79,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart)
                 && sliceEnd.equals(oth.sliceEnd)
-                && getLimit() == oth.getLimit()
-                && isStatic == oth.isStatic;
+                && getLimit() == oth.getLimit();
     }
 
     public boolean subsumes(SliceQuery oth) {
@@ -139,7 +120,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public SliceQuery updateLimit(int newLimit) {
-        return new SliceQuery(sliceStart, sliceEnd, isStatic).setLimit(newLimit);
+        return new SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
     }
 
 }

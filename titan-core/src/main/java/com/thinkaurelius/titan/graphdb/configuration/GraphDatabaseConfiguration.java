@@ -5,16 +5,19 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedTypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
-import com.thinkaurelius.titan.graphdb.database.cache.ExpirationStoreCache;
-import com.thinkaurelius.titan.graphdb.database.cache.PassThroughStoreCache;
-import com.thinkaurelius.titan.graphdb.database.cache.StoreCache;
+
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
@@ -36,7 +39,6 @@ import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.types.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
@@ -122,6 +124,11 @@ public class GraphDatabaseConfiguration {
 
     public static final String UKNOWN_FIELD_NAME = "unknown_key";
 
+
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(TITAN_NS, "timestamps",
+            "The timestamp resolution to use when writing to storage and indices",
+            ConfigOption.Type.FIXED, Timestamps.MICRO);
+
     // ################ CACHE #######################
     // ################################################
 
@@ -173,8 +180,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
             "Default expiration time for cached elements. Set to 0 to cache until change.",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
-
-    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
 
     /**
      * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
@@ -704,13 +709,6 @@ public class GraphDatabaseConfiguration {
      */
 //    public static final String METRICS_NAMESPACE = "metrics";
     public static final ConfigNamespace METRICS_NS = new ConfigNamespace(TITAN_NS,"metrics","Configuration options for metrics reporting");
-
-
-    /**
-     * Whether to enable Titan metrics.
-     */
-    public static final String METRICS_ENABLED = "enabled";
-    public static final boolean METRICS_ENABLED_DEFAULT = false;
 
     /**
      * Whether to enable basic timing and operation count monitoring on backend
@@ -1285,6 +1283,10 @@ public class GraphDatabaseConfiguration {
         return configuration.get(STORAGE_ATTEMPT_WAITTIME);
     }
 
+    public TimestampProvider getTimestampProvider() {
+        return configuration.get(TIMESTAMP_PROVIDER);
+    }
+
     public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration configuration) {
         List<RegisteredAttributeClass<?>> all = new ArrayList<RegisteredAttributeClass<?>>();
         for (String attributeId : configuration.getContainedNamespaces(CUSTOM_ATTRIBUTE_NS)) {
@@ -1305,20 +1307,20 @@ public class GraphDatabaseConfiguration {
             }
             Preconditions.checkNotNull(clazz);
 
-            if (configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId)) {
-                String serializername = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
-                try {
-                    Class sclass = Class.forName(serializername);
-                    serializer = (AttributeHandler) sclass.newInstance();
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalArgumentException("Could not find serializer class" + serializername);
-                } catch (InstantiationException e) {
-                    throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
-                }
+            Preconditions.checkArgument(configuration.has(CUSTOM_SERIALIZER_CLASS, attributeId));
+            String serializername = configuration.get(CUSTOM_SERIALIZER_CLASS, attributeId);
+            try {
+                Class sclass = Class.forName(serializername);
+                serializer = (AttributeHandler) sclass.newInstance();
+            } catch (ClassNotFoundException e) {
+                throw new IllegalArgumentException("Could not find serializer class" + serializername);
+            } catch (InstantiationException e) {
+                throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
+            } catch (IllegalAccessException e) {
+                throw new IllegalArgumentException("Could not instantiate serializer class" + serializername, e);
             }
-            RegisteredAttributeClass reg = new RegisteredAttributeClass(clazz, serializer, position);
+            Preconditions.checkNotNull(serializer);
+            RegisteredAttributeClass reg = new RegisteredAttributeClass(clazz, serializer);
             for (int i = 0; i < all.size(); i++) {
                 if (all.get(i).equals(reg)) {
                     throw new IllegalArgumentException("Duplicate attribute registration: " + all.get(i) + " and " + reg);
@@ -1327,7 +1329,6 @@ public class GraphDatabaseConfiguration {
             all.add(reg);
 
         }
-        Collections.sort(all);
         return all;
     }
 
@@ -1356,40 +1357,13 @@ public class GraphDatabaseConfiguration {
         return storeFeatures;
     }
 
-    public StoreCache getEdgeStoreCache() {
-        if (this.batchLoading || !configuration.get(DB_CACHE))
-            return new PassThroughStoreCache();
-
-        long expirationTime = configuration.get(DB_CACHE_TIME);
-        Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
-        if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
-
-        long cacheSizeBytes;
-        double cachesize = configuration.get(DB_CACHE_SIZE);
-        Preconditions.checkArgument(cachesize>0.0,"Invalid cache size specified: %s",cachesize);
-        if (cachesize<1.0) {
-            //Its a percentage
-            Runtime runtime = Runtime.getRuntime();
-            cacheSizeBytes = (long)((runtime.maxMemory()-(runtime.totalMemory()-runtime.freeMemory())) * cachesize);
-        } else {
-            Preconditions.checkArgument(cachesize>1000,"Cache size is too small: %s",cachesize);
-            cacheSizeBytes = (long)cachesize;
-        }
-        log.info("Configuring edge store cache size: {}",cacheSizeBytes);
-
-        return new ExpirationStoreCache(expirationTime,
-                configuration.get(DB_CACHE_CLEAN_WAIT),
-                cacheSizeBytes);
-    }
-
-
     public Serializer getSerializer() {
         return getSerializer(configuration);
     }
 
 
     public static Serializer getSerializer(Configuration configuration) {
-        Serializer serializer = new KryoSerializer(configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE));
+        Serializer serializer = new StandardSerializer(configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE));
         for (RegisteredAttributeClass<?> clazz : getRegisteredAttributeClasses(configuration)) {
             clazz.registerWith(serializer);
         }
@@ -1398,6 +1372,11 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasSerializeAll() {
         return configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE);
+    }
+
+    public TypeCache getTypeCache(TypeCache.StoreRetrieval retriever) {
+        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedTypeCache(retriever);
+        else return new StandardTypeCache(retriever);
     }
 
 

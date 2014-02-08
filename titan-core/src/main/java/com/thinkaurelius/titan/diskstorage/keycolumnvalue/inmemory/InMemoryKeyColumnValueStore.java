@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -73,13 +72,11 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConfiguration().getConsistency() == ConsistencyLevel.DEFAULT);
         return new RowIterator(kcv.subMap(query.getKeyStart(), query.getKeyEnd()).entrySet().iterator(), query, txh);
     }
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(txh.getConfiguration().getConsistency() == ConsistencyLevel.DEFAULT);
         return new RowIterator(kcv.entrySet().iterator(), query, txh);
     }
 

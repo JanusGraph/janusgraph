@@ -24,4 +24,18 @@ public interface ScanBuffer {
 
     public double getDouble();
 
+    public byte[] getBytes(int length);
+
+    public short[] getShorts(int length);
+
+    public int[] getInts(int length);
+
+    public long[] getLongs(int length);
+
+    public char[] getChars(int length);
+
+    public float[] getFloats(int length);
+
+    public double[] getDoubles(int length);
+
 }

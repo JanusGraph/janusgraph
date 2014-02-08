@@ -152,7 +152,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         final Timestamp timestamp = getTimestamp(txh);
 
-        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThriftConsistency();
+        ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThrift();
 
         // Generate Thrift-compatible batch_mutate() datastructure
         // key -> cf -> cassmutation
@@ -218,6 +218,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         } finally {
             pool.returnObjectUnsafe(keySpaceName, conn);
         }
+
+        sleepAfterWrite(txh, timestamp);
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap

@@ -143,7 +143,17 @@ public class UserModifiableConfiguration {
         } else if (datatype==String.class) {
             Preconditions.checkArgument(value instanceof String,"Expected string value: %s",value);
             return value;
-        } else throw new IllegalArgumentException("Unexpected data type: " + datatype.getClasses() );
+        } else if (datatype.isEnum()) {
+            // Check if value is an enum instance
+            for (Object e : datatype.getEnumConstants())
+                if (e.equals(value))
+                    return e;
+            // Else toString() it and try to parse it as an enum value
+            for (Object e : datatype.getEnumConstants())
+                if (e.toString().equals(value.toString()))
+                    return e;
+            throw new IllegalArgumentException("No match for " + value + " in enum " + datatype);
+        } else throw new IllegalArgumentException("Unexpected data type: " + datatype );
     }
 
 }

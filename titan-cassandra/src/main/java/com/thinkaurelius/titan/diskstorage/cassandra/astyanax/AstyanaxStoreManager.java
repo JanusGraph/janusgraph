@@ -320,7 +320,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws StorageException {
         MutationBatch m = keyspaceContext.getClient().prepareMutationBatch()
-                .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanaxConsistency())
+                .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate());
 
         final Timestamp timestamp = getTimestamp(txh);
@@ -363,6 +363,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         } catch (ConnectionException e) {
             throw new TemporaryStorageException(e);
         }
+
+        sleepAfterWrite(txh, timestamp);
     }
 
     @Override

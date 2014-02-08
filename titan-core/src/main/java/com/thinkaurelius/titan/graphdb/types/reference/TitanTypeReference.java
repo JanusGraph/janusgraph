@@ -60,11 +60,6 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
     }
 
     @Override
-    public boolean isStatic(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.STATIC, boolean[].class)[EdgeDirection.position(direction)];
-    }
-
-    @Override
     public long[] getSortKey() {
         return getDefinition().getValue(TypeAttributeType.SORT_KEY, long[].class);
     }

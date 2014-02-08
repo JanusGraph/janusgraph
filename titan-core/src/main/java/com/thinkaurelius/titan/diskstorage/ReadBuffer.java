@@ -16,10 +16,6 @@ public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
     public<T> T asRelative(Factory<T> factory);
 
-    /**
-     * Inverts the bytes on relative and absolute read operations.
-     * This method does not have any impact on static bulk reads.
-     */
-    public void invert();
+    public ReadBuffer subrange(int length, boolean invert);
 
 }

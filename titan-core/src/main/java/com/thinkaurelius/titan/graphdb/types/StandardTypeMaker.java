@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
@@ -24,28 +25,30 @@ abstract class StandardTypeMaker implements TypeMaker {
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
+    protected final AttributeHandling attributeHandler;
 
     private String name;
     private boolean[] isUnique;
     private boolean[] hasUniqueLock;
-    private boolean[] isStatic;
     private boolean isHidden;
     private boolean isModifiable;
     private List<TitanType> sortKey;
     private Order sortOrder;
     private List<TitanType> signature;
 
-    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
+    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
+                             final AttributeHandling attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
+        Preconditions.checkNotNull(attributeHandler);
         this.tx = tx;
         this.indexSerializer = indexSerializer;
+        this.attributeHandler = attributeHandler;
 
         //Default assignments
         name = null;
         isUnique = new boolean[2]; //false
         hasUniqueLock = new boolean[2]; //false
-        isStatic = new boolean[2]; //false
         isHidden = false;
         isModifiable = true;
         sortKey = new ArrayList<TitanType>(4);
@@ -74,11 +77,11 @@ abstract class StandardTypeMaker implements TypeMaker {
             throw new IllegalArgumentException("Cannot define a sort key on a both-unique type");
     }
 
-    private static long[] checkSortKey(List<TitanType> sig) {
+    private long[] checkSortKey(List<TitanType> sig) {
         for (TitanType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
-                    || Comparable.class.isAssignableFrom(((TitanKey) t).getDataType()),
-                    "Key must have comparable data type to be used as sort key: " + t);
+                    || attributeHandler.isOrderPreservingDatatype(((TitanKey) t).getDataType()),
+                    "Key must have an order-preserving data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
     }
@@ -105,7 +108,6 @@ abstract class StandardTypeMaker implements TypeMaker {
         TypeAttribute.Map def = new TypeAttribute.Map();
         def.setValue(UNIQUENESS, new boolean[]{isUnique[0], isUnique[1]});
         def.setValue(UNIQUENESS_LOCK, hasUniqueLock);
-        def.setValue(STATIC, isStatic);
         def.setValue(HIDDEN, isHidden);
         def.setValue(MODIFIABLE, isModifiable);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
@@ -164,21 +166,6 @@ abstract class StandardTypeMaker implements TypeMaker {
     public StandardTypeMaker unModifiable() {
         this.isModifiable = false;
         return this;
-    }
-
-    public StandardTypeMaker makeStatic(Direction direction) {
-        if (direction == Direction.BOTH) {
-            makeStatic(Direction.IN);
-            makeStatic(Direction.OUT);
-        } else {
-            isStatic[EdgeDirection.position(direction)] = true;
-        }
-        return this;
-    }
-
-    protected boolean isStatic(Direction direction) {
-        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
-        return isStatic[EdgeDirection.position(direction)];
     }
 
 

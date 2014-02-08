@@ -46,7 +46,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
             new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
 
     public ExpectedValueCheckingTransaction(StoreTransaction baseTx, StoreTransaction consistentTx, int retryCount) {
-        Preconditions.checkArgument(consistentTx.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT);
+        //Preconditions.checkArgument(consistentTx.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT);
         this.baseTx = baseTx;
         this.consistentTx = consistentTx;
         this.retryCount = retryCount;
@@ -204,7 +204,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     @Override
-    public StoreTxConfig getConfiguration() {
+    public TransactionHandleConfig getConfiguration() {
         return baseTx.getConfiguration();
     }
 }

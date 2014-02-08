@@ -17,8 +17,8 @@ import com.persistit.exception.PersistitException;
 import com.persistit.exception.RollbackException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 
 /**
  * @todo: read this and make sure multiple threads aren't sharing transactions http://akiban.github.com/persistit/javadoc/com/persistit/Transaction.html#_threadManagement
@@ -28,7 +28,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
 
     private Persistit db;
     private SessionId sessionId;
-    
+
     private static final Logger log = LoggerFactory.getLogger(PersistitTransaction.class);
 
     private static Queue<SessionId> sessionPool = new ConcurrentLinkedQueue<SessionId>();
@@ -45,7 +45,7 @@ public class PersistitTransaction extends AbstractStoreTransaction {
         sessionPool.offer(s);
     }
 
-    public PersistitTransaction(Persistit p, StoreTxConfig config) throws StorageException {
+    public PersistitTransaction(Persistit p, TransactionHandleConfig config) throws StorageException {
         super(config);
         db = p;
         synchronized (this) {

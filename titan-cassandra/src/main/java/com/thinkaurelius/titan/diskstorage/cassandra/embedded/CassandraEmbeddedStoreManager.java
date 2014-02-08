@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -10,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.apache.cassandra.config.CFMetaData;
@@ -18,7 +20,10 @@ import org.apache.cassandra.config.DatabaseDescriptor;
 import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamilyType;
+import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.db.SliceByNamesReadCommand;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
@@ -26,16 +31,21 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.exceptions.IsBootstrappingException;
+import org.apache.cassandra.exceptions.ReadTimeoutException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
+import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.io.compress.CompressionParameters;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.thrift.ColumnParent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
@@ -197,7 +207,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             }
         }
 
-        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDBConsistency());
+        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
+
+        sleepAfterWrite(txh, timestamp);
     }
 
     private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
@@ -265,7 +277,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
-            log.debug("Created keyspace {}", keyspaceName);
+            log.info("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
         }
@@ -320,9 +332,31 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewColumnFamily(cfm);
+            log.info("Created CF {} in KS {}", columnfamilyName, keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
         }
+
+        /*
+         * I'm chasing a nondetermistic exception that appears only rarely on my
+         * machine when executing the embedded cassandra tests. If these dummy
+         * reads ever actually fail and dump a log message, it could help debug
+         * the root cause.
+         *
+         *   java.lang.RuntimeException: java.lang.IllegalArgumentException: Unknown table/cf pair (InternalCassandraEmbeddedKeyColumnValueTest.testStore1)
+         *          at org.apache.cassandra.service.StorageProxy$DroppableRunnable.run(StorageProxy.java:1582)
+         *           at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+         *           at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+         *           at java.lang.Thread.run(Thread.java:744)
+         *   Caused by: java.lang.IllegalArgumentException: Unknown table/cf pair (InternalCassandraEmbeddedKeyColumnValueTest.testStore1)
+         *           at org.apache.cassandra.db.Table.getColumnFamilyStore(Table.java:166)
+         *           at org.apache.cassandra.db.Table.getRow(Table.java:354)
+         *           at org.apache.cassandra.db.SliceFromReadCommand.getRow(SliceFromReadCommand.java:70)
+         *           at org.apache.cassandra.service.StorageProxy$LocalReadRunnable.runMayThrow(StorageProxy.java:1052)
+         *           at org.apache.cassandra.service.StorageProxy$DroppableRunnable.run(StorageProxy.java:1578)
+         *           ... 3 more
+         */
+        retryDummyRead(keyspaceName, columnfamilyName);
     }
 
     @Override
@@ -334,5 +368,35 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             return null;
 
         return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
+    }
+
+    private void retryDummyRead(String ks, String cf) throws PermanentStorageException {
+
+        final long limit = System.currentTimeMillis() + (60L * 1000L);
+
+        while (System.currentTimeMillis() < limit) {
+            try {
+                StorageProxy.read(
+                    ImmutableList.<ReadCommand> of(
+                        new SliceByNamesReadCommand(
+                            ks,
+                            ByteBufferUtil.zeroByteBuffer(1),
+                            new ColumnParent(cf),
+                            ImmutableList.of(ByteBufferUtil.zeroByteBuffer(1)))),
+                    ConsistencyLevel.QUORUM);
+                log.info("Read on CF {} in KS {} succeeded", cf, ks);
+                return;
+            } catch (Throwable t) {
+                log.warn("Failed to read CF {} in KS {} following creation", cf, ks, t);
+            }
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+                throw new PermanentStorageException(e);
+            }
+        }
+
+        throw new PermanentStorageException("Timed out while attempting to read CF " + cf + " in KS " + ks + " following creation");
     }
 }
