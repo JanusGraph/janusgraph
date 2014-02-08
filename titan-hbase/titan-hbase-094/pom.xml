@@ -41,6 +41,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>${hadoop.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <artifactId>jruby-complete</artifactId>
