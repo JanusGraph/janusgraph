@@ -12,9 +12,11 @@ public abstract class KCVSLogTest extends LogTest {
 
     public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
 
+    private KeyColumnValueStoreManager storeManager;
+
     @Override
     public LogManager openLogManager(String senderId) throws StorageException {
-        KeyColumnValueStoreManager storeManager = openStorageManager();
+        storeManager = openStorageManager();
         return new KCVSLogManager(storeManager,senderId, Configuration.EMPTY);
     }
 
@@ -22,6 +24,12 @@ public abstract class KCVSLogTest extends LogTest {
     public void setup() throws Exception {
         openStorageManager().clearStorage();
         super.setup();
+    }
+
+    @Override
+    public void shutdown() throws Exception {
+        super.shutdown();
+        storeManager.close();
     }
 
 }
