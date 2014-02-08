@@ -98,6 +98,8 @@ public class StandardIDPool implements IDPool {
                         partitionID, sw.stop().elapsed(TimeUnit.MILLISECONDS));
                 throw new TitanException(msg, e);
             } catch (TimeoutException e) {
+                // Attempt to cancel the renewer
+                idBlockFuture.cancel(true);
                 String msg = String.format("ID block allocation on partition %d timed out in %d ms",
                         partitionID, sw.stop().elapsed(TimeUnit.MILLISECONDS));
                 throw new TitanException(msg, e);
@@ -143,7 +145,7 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
         try {
             Stopwatch sw = new Stopwatch().start();
-            long[] idblock = idAuthority.getIDBlock(partitionID);
+            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeoutMS, TimeUnit.MILLISECONDS);
             log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];

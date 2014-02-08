@@ -393,11 +393,22 @@ public class GraphDatabaseConfiguration {
 //    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
     /**
-     * Number of times the system attempts to acquire a unique id block before giving up and throwing an exception.
+     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
+     * enabled, it picks a random unique ID marker and attempts to allocate IDs
+     * from a partition using the marker. The ID markers function as
+     * subpartitions with each ID partition. If the attempt fails because that
+     * partition + uniqueid combination is already completely allocated, then
+     * Titan will generate a new random unique ID and try again. This controls
+     * the maximum number of attempts before Titan assumes the entire partition
+     * is allocated and fails the request. It must be set to at least 1 and
+     * should generally be set to 3 or more.
+     * <p/>
+     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
+     * is disabled.
      */
-    public static final ConfigOption<Integer> IDAUTHORITY_RETRY_COUNT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-retries",
-            "Number of times the system attempts to acquire a unique id block before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 20);
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_RETRY_COUNT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-retries",
+            "Number of times the system attempts attempts ID block allocations with random uniqueids before giving up and throwing an exception",
+            ConfigOption.Type.MASKABLE, 5);
 //    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
 //    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
 
