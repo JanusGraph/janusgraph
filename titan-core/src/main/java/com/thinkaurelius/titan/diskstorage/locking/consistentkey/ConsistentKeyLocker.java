@@ -122,10 +122,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      */
     private final LockCleanerService cleanerService;
 
-    private static final StaticBuffer zeroBuf = ByteBufferUtil.getIntBuffer(0); // TODO this does not belong here
+    private static final StaticBuffer zeroBuf = BufferUtil.getIntBuffer(0); // TODO this does not belong here
 
-    public static final StaticBuffer LOCK_COL_START = ByteBufferUtil.zeroBuffer(9);
-    public static final StaticBuffer LOCK_COL_END   = ByteBufferUtil.oneBuffer(9);
+    public static final StaticBuffer LOCK_COL_START = BufferUtil.zeroBuffer(9);
+    public static final StaticBuffer LOCK_COL_END   = BufferUtil.oneBuffer(9);
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
 

@@ -100,7 +100,7 @@ public abstract class KeyColumnValueStoreTest {
 
     public void loadValues(String[][] values, int shiftEveryNthRow,
                            int shiftSliceLength) throws StorageException {
-        loadValues(store,values,shiftEveryNthRow,shiftSliceLength);
+        loadValues(store, values, shiftEveryNthRow, shiftSliceLength);
     }
 
     public void loadValues(KeyColumnValueStore store, String[][] values, int shiftEveryNthRow,
@@ -459,16 +459,16 @@ public abstract class KeyColumnValueStoreTest {
 
         String[][] values = generateValues();
         loadValues(values);
-        final SliceQuery columnSlice = new SliceQuery(ByteBufferUtil.zeroBuffer(8), ByteBufferUtil.oneBuffer(8)).setLimit(1);
+        final SliceQuery columnSlice = new SliceQuery(BufferUtil.zeroBuffer(8), BufferUtil.oneBuffer(8)).setLimit(1);
 
         KeyIterator keys;
 
-        keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
+        keys = store.getKeys(new KeyRangeQuery(BufferUtil.getLongBuffer(minKey), BufferUtil.getLongBuffer(maxKey), columnSlice), tx);
         assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
 
         clopen();
 
-        keys = store.getKeys(new KeyRangeQuery(ByteBufferUtil.getLongBuffer(minKey), ByteBufferUtil.getLongBuffer(maxKey), columnSlice), tx);
+        keys = store.getKeys(new KeyRangeQuery(BufferUtil.getLongBuffer(minKey), BufferUtil.getLongBuffer(maxKey), columnSlice), tx);
         assertEquals(expectedKeyCount, KeyValueStoreUtil.count(keys));
     }
 
@@ -551,14 +551,14 @@ public abstract class KeyColumnValueStoreTest {
                         Preconditions.checkArgument(start < end);
 
                         // Set column bounds
-                        StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
-                        StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
+                        StaticBuffer startCol = BufferUtil.getIntBuffer(start);
+                        StaticBuffer endCol = BufferUtil.getIntBuffer(end);
                         SliceQuery sq = new SliceQuery(startCol, endCol);
 
                         // Compute expectation
                         expected.clear();
                         for (long l = Math.max(start, offset); l < upper; l++) {
-                            expected.add(ByteBufferUtil.getLongBuffer(l));
+                            expected.add(BufferUtil.getLongBuffer(l));
                         }
 
                         // Compute actual
@@ -583,19 +583,19 @@ public abstract class KeyColumnValueStoreTest {
                         Preconditions.checkArgument(start < end);
 
                         // Set column bounds
-                        StaticBuffer startCol = ByteBufferUtil.getIntBuffer(start);
-                        StaticBuffer endCol = ByteBufferUtil.getIntBuffer(end);
+                        StaticBuffer startCol = BufferUtil.getIntBuffer(start);
+                        StaticBuffer endCol = BufferUtil.getIntBuffer(end);
                         SliceQuery sq = new SliceQuery(startCol, endCol);
 
                         // Set key bounds
-                        StaticBuffer keyStart = ByteBufferUtil.getLongBuffer(start);
-                        StaticBuffer keyEnd = ByteBufferUtil.getLongBuffer(end);
+                        StaticBuffer keyStart = BufferUtil.getLongBuffer(start);
+                        StaticBuffer keyEnd = BufferUtil.getLongBuffer(end);
                         KeyRangeQuery krq = new KeyRangeQuery(keyStart, keyEnd, sq);
 
                         // Compute expectation
                         expected.clear();
                         for (long l = Math.max(start, offset); l < Math.min(upper, end); l++) {
-                            expected.add(ByteBufferUtil.getLongBuffer(l));
+                            expected.add(BufferUtil.getLongBuffer(l));
                         }
 
                         // Compute actual

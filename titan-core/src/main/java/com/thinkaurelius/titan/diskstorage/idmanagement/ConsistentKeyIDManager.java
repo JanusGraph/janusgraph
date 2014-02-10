@@ -52,8 +52,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
 
-    private static final StaticBuffer LOWER_SLICE = ByteBufferUtil.zeroBuffer(16);
-    private static final StaticBuffer UPPER_SLICE = ByteBufferUtil.oneBuffer(16);
+    private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(16);
+    private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(16);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
@@ -148,8 +148,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     protected StaticBuffer getPartitionKey(int partition, int uniqueId) {
         if (uniqueIdBitWidth==0)
-            return ByteBufferUtil.getIntBuffer(partition);
-        return ByteBufferUtil.getIntBuffer(new int[]{partition,uniqueId});
+            return BufferUtil.getIntBuffer(partition);
+        return BufferUtil.getIntBuffer(new int[]{partition, uniqueId});
     }
 
     @Override

@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
@@ -40,48 +42,32 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.LockCleanerService;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
-import org.easymock.EasyMock;
-import org.easymock.IMocksControl;
 import org.easymock.LogicalOperator;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static org.easymock.EasyMock.*;
-import static org.junit.Assert.*;
 
 
 public class ConsistentKeyLockerTest {
 
     // Arbitrary literals -- the exact values assigned here are not intrinsically important
     private final ConsistentKeyLockerSerializer codec = new ConsistentKeyLockerSerializer();
-    private final StaticBuffer defaultDataKey = ByteBufferUtil.getIntBuffer(2);
-    private final StaticBuffer defaultDataCol = ByteBufferUtil.getIntBuffer(4);
+    private final StaticBuffer defaultDataKey = BufferUtil.getIntBuffer(2);
+    private final StaticBuffer defaultDataCol = BufferUtil.getIntBuffer(4);
     private final StaticBuffer defaultLockKey = codec.toLockKey(defaultDataKey, defaultDataCol);
     private final KeyColumn defaultLockID = new KeyColumn(defaultDataKey, defaultDataCol);
 
-    private final StaticBuffer otherDataKey = ByteBufferUtil.getIntBuffer(8);
-    private final StaticBuffer otherDataCol = ByteBufferUtil.getIntBuffer(16);
+    private final StaticBuffer otherDataKey = BufferUtil.getIntBuffer(8);
+    private final StaticBuffer otherDataCol = BufferUtil.getIntBuffer(16);
     private final StaticBuffer otherLockKey = codec.toLockKey(otherDataKey, otherDataCol);
     private final KeyColumn otherLockID = new KeyColumn(otherDataKey, otherDataCol);
 
     private final StaticBuffer defaultLockRid = new StaticArrayBuffer(new byte[]{(byte) 32});
     private final StaticBuffer otherLockRid = new StaticArrayBuffer(new byte[]{(byte) 64});
-    private final StaticBuffer defaultLockVal = ByteBufferUtil.getIntBuffer(0); // maybe refactor...
+    private final StaticBuffer defaultLockVal = BufferUtil.getIntBuffer(0); // maybe refactor...
 
     private StoreTransaction defaultTx;
     private TransactionHandleConfig defaultTxCfg;

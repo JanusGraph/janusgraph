@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -367,8 +367,8 @@ public class EdgeSerializer implements RelationReader {
         if (dir == Direction.BOTH) {
             sliceStart = IDHandler.getEdgeType(type.getID(), getDirID(Direction.OUT, rt));
             sliceEnd = IDHandler.getEdgeType(type.getID(), getDirID(Direction.IN, rt));
-            assert ByteBufferUtil.isSmallerThan(sliceStart, sliceEnd);
-            sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+            assert sliceStart.compareTo(sliceEnd)<0;
+            sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
             int dirID = getDirID(dir, rt);
 
@@ -404,15 +404,15 @@ public class EdgeSerializer implements RelationReader {
                         case ASC:
                             sliceStart = colStart.getStaticBuffer();
                             sliceEnd = colEnd.getStaticBuffer();
-                            if (!interval.startInclusive()) sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
-                            if (interval.endInclusive()) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
+                            if (!interval.startInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
+                            if (interval.endInclusive()) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
                             break;
 
                         case DESC:
                             sliceEnd = colStart.getStaticBufferFlipBytes(startPosition,colStart.getPosition());
                             sliceStart = colEnd.getStaticBufferFlipBytes(startPosition,colEnd.getPosition());
-                            if (interval.startInclusive()) sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceEnd);
-                            if (!interval.endInclusive()) sliceStart = ByteBufferUtil.nextBiggerBuffer(sliceStart);
+                            if (interval.startInclusive()) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
+                            if (!interval.endInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
                             break;
 
                         default: throw new AssertionError(type.getSortOrder().toString());
@@ -452,7 +452,7 @@ public class EdgeSerializer implements RelationReader {
 
                     default: throw new AssertionError(type.getSortOrder().toString());
                 }
-                sliceEnd = ByteBufferUtil.nextBiggerBuffer(sliceStart);
+                sliceEnd = BufferUtil.nextBiggerBuffer(sliceStart);
             }
         }
         return new SliceQuery(sliceStart, sliceEnd);

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.util.*;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
@@ -27,11 +28,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 public class LockCleanerRunnableTest {
 
@@ -71,7 +68,7 @@ public class LockCleanerRunnableTest {
         long now = 1L;
 
         Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
-                defaultLockRid), ByteBufferUtil.getIntBuffer(0));
+                defaultLockRid), BufferUtil.getIntBuffer(0));
         EntryList expiredSingleton = StaticArrayEntryList.of(expiredLockCol);
 
         now += 1;
@@ -112,7 +109,7 @@ public class LockCleanerRunnableTest {
             final long ts = timeStart + (timeIncr * i);
             Entry lock = StaticArrayEntry.of(
                     codec.toLockCol(ts, defaultLockRid),
-                    ByteBufferUtil.getIntBuffer(0));
+                    BufferUtil.getIntBuffer(0));
 
             if (ts < timeCutoff) {
                 delsBuilder.add(lock);
@@ -149,9 +146,9 @@ public class LockCleanerRunnableTest {
         final long cutoff = 10L;
 
         Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,
-                defaultLockRid), ByteBufferUtil.getIntBuffer(0));
+                defaultLockRid), BufferUtil.getIntBuffer(0));
         Entry futureLock = StaticArrayEntry.of(codec.toLockCol(cutoff + 1,
-                defaultLockRid), ByteBufferUtil.getIntBuffer(0));
+                defaultLockRid), BufferUtil.getIntBuffer(0));
         EntryList locks = StaticArrayEntryList.of(currentLock, futureLock);
 
         // Don't increment cutoff: lockCol is exactly at the cutoff timestamp

@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,8 +34,8 @@ public class BackendTransaction implements TransactionHandle {
     public static final int MIN_TASKS_TO_PARALLELIZE = 2;
 
     //Assumes 64 bit key length as specified in IDManager
-    public static final StaticBuffer EDGESTORE_MIN_KEY = ByteBufferUtil.zeroBuffer(8);
-    public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
+    public static final StaticBuffer EDGESTORE_MIN_KEY = BufferUtil.zeroBuffer(8);
+    public static final StaticBuffer EDGESTORE_MAX_KEY = BufferUtil.oneBuffer(8);
 
     private final StoreTransaction storeTx;
     private final TransactionHandleConfig txConfig;

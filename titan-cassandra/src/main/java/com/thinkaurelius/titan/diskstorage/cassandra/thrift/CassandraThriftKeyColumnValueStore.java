@@ -100,9 +100,9 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
 		 */
-        if (ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd()) >= 0) {
+        if (query.getSliceStart().compareTo(query.getSliceEnd()) >= 0) {
             // Check for invalid arguments where columnEnd < columnStart
-            if (ByteBufferUtil.isSmallerThan(query.getSliceEnd(), query.getSliceStart())) {
+            if (query.getSliceEnd().compareTo(query.getSliceStart())<0) {
                 throw new PermanentStorageException("columnStart=" + query.getSliceStart() +
                         " is greater than columnEnd=" + query.getSliceEnd() + ". " +
                         "columnStart must be less than or equal to columnEnd");
@@ -113,7 +113,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             }
         }
 
-        assert ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd()) < 0;
+        assert query.getSliceStart().compareTo(query.getSliceEnd()) < 0;
         ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();

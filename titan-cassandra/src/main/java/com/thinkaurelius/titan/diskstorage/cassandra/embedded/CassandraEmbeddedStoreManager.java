@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -31,10 +30,7 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
 import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.cassandra.exceptions.IsBootstrappingException;
-import org.apache.cassandra.exceptions.ReadTimeoutException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
-import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.io.compress.CompressionParameters;
 import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;

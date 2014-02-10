@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.idhandling;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -15,13 +15,13 @@ import com.thinkaurelius.titan.graphdb.internal.RelationType;
 
 public class IDHandler {
 
-    public static final StaticBuffer MIN_KEY = ByteBufferUtil.getLongBuffer(0);
-    public static final StaticBuffer MAX_KEY = ByteBufferUtil.getLongBuffer(-1);
+    public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
+    public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
 
     public static StaticBuffer getKey(long id) {
         assert id >= 0;
-        return ByteBufferUtil.getLongBuffer(id << 1);
+        return BufferUtil.getLongBuffer(id << 1);
     }
 
     public static long getKeyID(StaticBuffer b) {

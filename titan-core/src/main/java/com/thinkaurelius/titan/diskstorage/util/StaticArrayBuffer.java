@@ -305,9 +305,21 @@ public class StaticArrayBuffer implements StaticBuffer {
         StringBuilder s = new StringBuilder();
         for (int i=offset;i<limit;i++) {
             if (i>offset) s.append(separator);
-            s.append(ByteBufferUtil.toFixedWidthString(array[i]));
+            s.append(toFixedWidthString(array[i]));
         }
         return s.toString();
+    }
+
+    private static String toString(byte b) {
+        return String.valueOf((b>=0)?b:256+b);
+    }
+
+    private static String toFixedWidthString(byte b) {
+        String s = toString(b);
+        assert s.length()<=3 && s.length()>0;
+        if (s.length()==1) s = "  "+s;
+        else if (s.length()==2) s = " " + s;
+        return s;
     }
 
     @Override

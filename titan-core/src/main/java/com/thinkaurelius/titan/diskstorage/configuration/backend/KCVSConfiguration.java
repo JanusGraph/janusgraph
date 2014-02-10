@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -75,7 +75,7 @@ public class KCVSConfiguration implements WriteConfiguration {
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
         StaticBuffer column = string2StaticBuffer(key);
-        final KeySliceQuery query = new KeySliceQuery(rowKey,column, ByteBufferUtil.nextBiggerBuffer(column));
+        final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new Callable<StaticBuffer>() {
             @Override
             public StaticBuffer call() throws Exception {
@@ -173,7 +173,7 @@ public class KCVSConfiguration implements WriteConfiguration {
                 StoreTransaction txh=null;
                 try {
                     txh= manager.beginTransaction(txCfg);
-                    return store.getSlice(new KeySliceQuery(rowKey,ByteBufferUtil.zeroBuffer(128),ByteBufferUtil.oneBuffer(128)),txh);
+                    return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)),txh);
                 } finally {
                     if (txh!=null) txh.commit();
                 }

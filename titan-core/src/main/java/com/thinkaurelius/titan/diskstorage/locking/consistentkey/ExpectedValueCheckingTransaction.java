@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +116,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
     private void checkSingleExpectedValueUnsafe(final KeyColumn kc,
                                                 final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
-        KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), ByteBufferUtil.nextBiggerBuffer(kc.getColumn()));
+        KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), BufferUtil.nextBiggerBuffer(kc.getColumn()));
         List<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
 
         if (null == actualEntries)

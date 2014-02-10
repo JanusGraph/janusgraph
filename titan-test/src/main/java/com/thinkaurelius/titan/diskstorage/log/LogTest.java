@@ -2,8 +2,7 @@ package com.thinkaurelius.titan.diskstorage.log;
 
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import org.junit.*;
 import static org.junit.Assert.*;
 import org.slf4j.Logger;
@@ -56,7 +55,7 @@ public abstract class LogTest {
         CountingReader count = new CountingReader();
         log1.registerReader(count);
         for (long i=1;i<=numMessages;i++) {
-            log1.add(ByteBufferUtil.getLongBuffer(i));
+            log1.add(BufferUtil.getLongBuffer(i));
             System.out.println("Wrote message: " + i);
             Thread.sleep(delayMS);
         }

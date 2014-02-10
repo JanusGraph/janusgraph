@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.log.util.FutureMessage;
 import com.thinkaurelius.titan.diskstorage.log.util.ProcessMessageJob;
 import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.util.system.BackgroundThread;
@@ -533,7 +533,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             final int timeslice = getTimeSlice(nextTimestamp);
             long maxTime = Math.min(Timestamps.MICRO.getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
             StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
-            KeySliceQuery query = new KeySliceQuery(logKey, ByteBufferUtil.getLongBuffer(nextTimestamp), ByteBufferUtil.getLongBuffer(maxTime));
+            KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
             query.setLimit(maxReadMsg);
             List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
             prepareMessageProcessing(entries);
@@ -542,7 +542,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 Entry lastEntry = entries.get(entries.size()-1);
                 maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
                 //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
-                query = new KeySliceQuery(logKey, ByteBufferUtil.nextBiggerBuffer(lastEntry.getColumn()),ByteBufferUtil.getLongBuffer(maxTime));
+                query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
                 List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
                 prepareMessageProcessing(extraEntries);
             }
@@ -626,7 +626,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private void writeSetting(String identifier, final StaticBuffer column, long value) {
         final StaticBuffer key = getSettingKey(identifier);
-        final Entry add = StaticArrayEntry.of(column, ByteBufferUtil.getLongBuffer(value));
+        final Entry add = StaticArrayEntry.of(column, BufferUtil.getLongBuffer(value));
         Boolean status = BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
             public Boolean call(StoreTransaction txh) throws StorageException {

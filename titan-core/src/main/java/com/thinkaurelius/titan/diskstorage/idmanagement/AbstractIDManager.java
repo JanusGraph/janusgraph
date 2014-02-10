@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
@@ -63,7 +63,7 @@ public abstract class AbstractIDManager implements IDAuthority {
      * @return
      */
     protected StaticBuffer getPartitionKey(int partition) {
-        return ByteBufferUtil.getIntBuffer(partition);
+        return BufferUtil.getIntBuffer(partition);
     }
 
     /**
