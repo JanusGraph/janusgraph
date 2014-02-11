@@ -5,7 +5,6 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.Uninterruptibles;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
@@ -14,7 +13,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.Timestamps;
@@ -33,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -69,8 +66,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
-    public static final ImmutableMap<ConfigOption, String> HBASE_CONFIGURATION = ImmutableMap.of(
-            (ConfigOption)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
+    public static final ImmutableMap<ConfigOption<?>, String> HBASE_CONFIGURATION = ImmutableMap.of(
+            (ConfigOption<?>)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
             GraphDatabaseConfiguration.PORT, "hbase.zookeeper.property.clientPort"
     );
 
@@ -110,7 +107,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.compression = config.get(COMPRESSION);
 
         this.hconf = HBaseConfiguration.create();
-        for (Map.Entry<ConfigOption, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
+        for (Map.Entry<ConfigOption<?>, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
             if (config.has(confEntry.getKey())) {
                 hconf.set(confEntry.getValue(), config.get(confEntry.getKey()).toString());
             }
