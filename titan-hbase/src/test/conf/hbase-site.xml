@@ -48,4 +48,8 @@
         <name>hbase.zookeeper.property.tickTime</name>
         <value>6000</value>
     </property>
+    <property>
+        <name>hbase.defaults.for.version.skip</name>
+        <value>true</value>
+    </property>
 </configuration>
