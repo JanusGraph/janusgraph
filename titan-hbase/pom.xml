@@ -17,7 +17,7 @@
     </modules>
     
     <properties>
-        <titan.hbase.mvn.opts />
+        <titan.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=${hadoop.profile}</titan.hbase.mvn.opts>
         <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
     </properties>

@@ -11,7 +11,10 @@
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
-        <hbase.version>0.96.1.1-hadoop2</hbase.version>
+        <hadoop.profile>2.0</hadoop.profile>
+        <hadoop.version>2.2.0</hadoop.version>
+        <hbase.version.base>0.96.1.1</hbase.version.base>
+        <hbase.version>${hbase.version.base}-hadoop2</hbase.version>
         <!-- <hadoop.version>2.2.0</hadoop.version> -->
         <jruby.version>1.6.8</jruby.version>
     </properties>
@@ -113,7 +116,7 @@
     
     <profiles>
         <profile>
-            <id>hadoop2</id>
+            <id>hadoop1</id>
             
             <activation>
                 <!-- 
@@ -122,16 +125,65 @@
                 -->
                 <property>
                     <name>hadoop.profile</name>
-                    <value>2.0</value>
+                    <value>1.0</value>
                 </property>
             </activation>
             
             <properties>
-                <hadoop.version>2.2.0</hadoop.version>
-                <hadoop.artifact>hadoop-common</hadoop.artifact>
-                <titan.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=2.0</titan.hbase.mvn.opts>
+                <hbase.version>${hbase.version.base}-hadoop1</hbase.version>
+                <hadoop.version>1.0.4</hadoop.version>
             </properties>
-            
+
+	    <build>
+	      <plugins>
+		<plugin>
+		  <artifactId>maven-surefire-plugin</artifactId>
+		  <configuration>
+		    <additionalClasspathElements>
+		      <additionalClasspathElement>${project.basedir}/conf</additionalClasspathElement>
+		    </additionalClasspathElements>
+		  </configuration>
+		</plugin>
+	      </plugins>
+	    </build>
+
+	    <dependencyManagement>
+	      <dependencies>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-core</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client</artifactId>
+                    <version>${hadoop.version}</version>
+                </dependency>
+	      </dependencies>
+	    </dependencyManagement>
+
+	    <dependencies>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-core</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client</artifactId>
+                </dependency>
+	    </dependencies>
+        </profile>
+
+        <profile>
+            <id>hadoop2</id>
+
+            <activation>
+                <property>
+                    <name>hadoop.profile</name>
+                    <value>2.0</value>
+                </property>
+            </activation>
+
             <dependencies>
                 <dependency>
                     <groupId>org.apache.hadoop</groupId>

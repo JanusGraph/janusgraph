@@ -14,6 +14,7 @@
         <hbase.version>0.94.16</hbase.version>
         <hadoop.version>1.0.4</hadoop.version>
         <jruby.version>1.6.5</jruby.version>
+        <hadoop.profile>1.0</hadoop.profile>
     </properties>
     
     <dependencies>
@@ -115,7 +116,6 @@
             <properties>
                 <hadoop.version>2.2.0</hadoop.version>
                 <hadoop.artifact>hadoop-common</hadoop.artifact>
-                <titan.hbase.mvn.opts>-Dhadoop.version=${hadoop.version} -Dhadoop.profile=2.0</titan.hbase.mvn.opts>
             </properties>
             
             <dependencies>
