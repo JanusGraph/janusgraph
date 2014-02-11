@@ -55,6 +55,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "Whether to automatically shorten the names of frequently used column families to preserve space",
             ConfigOption.Type.FIXED, true);
 
+    public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
+    
+    public static final ConfigOption<String> COMPRESSION = new ConfigOption<String>(STORAGE_NS,"compression-algorithm",
+            "An HBase Compression.Algorithm enum string which will be applied to newly created column families",
+            ConfigOption.Type.MASKABLE, COMPRESSION_DEFAULT);
+    
+
 //    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
 //    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
 
@@ -68,6 +75,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     );
 
     private final String tableName;
+    private final String compression;
     private final org.apache.hadoop.conf.Configuration hconf;
 
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -98,6 +106,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         super(config, PORT_DEFAULT);
 
         this.tableName = config.get(HBASE_TABLE);
+        
+        this.compression = config.get(COMPRESSION);
 
         this.hconf = HBaseConfiguration.create();
         for (Map.Entry<ConfigOption, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
@@ -336,7 +346,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             try {
                 adm.disableTable(tableName);
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
-                HBaseSupport.setCompression(cdesc, "GZ");
+                if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
+                    HBaseSupport.setCompression(cdesc, compression);
                 desc.addFamily(cdesc);
                 adm.modifyTable(tableName.getBytes(), desc);
 
