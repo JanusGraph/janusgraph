@@ -171,6 +171,13 @@
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client</artifactId>
                 </dependency>
+                <!-- HBase fails to start during testing with a
+                     Netty ClassNotFoundException unless this
+                     dependency is declared -->
+                <dependency>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty</artifactId>
+                </dependency>
 	    </dependencies>
         </profile>
 
