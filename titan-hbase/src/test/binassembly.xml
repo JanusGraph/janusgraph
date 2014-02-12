@@ -8,7 +8,7 @@
     
     <fileSets>
         <fileSet>
-            <directory>../src/test/bin</directory>
+            <directory>src/test/bin</directory>
             <outputDirectory>/</outputDirectory>
         </fileSet>
     </fileSets>
