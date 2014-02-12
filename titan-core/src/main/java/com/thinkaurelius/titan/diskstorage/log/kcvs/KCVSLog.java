@@ -530,23 +530,27 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         public void run() {
             if (allowReadMarkerRecovery) setReadMarker();
-            final int timeslice = getTimeSlice(nextTimestamp);
-            long maxTime = Math.min(Timestamps.MICRO.getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
-            StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
-            KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
-            query.setLimit(maxReadMsg);
-            List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
-            prepareMessageProcessing(entries);
-            if (entries.size()>=maxReadMsg) {
-                //Adjust maxTime to next timepoint
-                Entry lastEntry = entries.get(entries.size()-1);
-                maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
-                //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
-                query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
-                List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
-                prepareMessageProcessing(extraEntries);
+            try {
+                final int timeslice = getTimeSlice(nextTimestamp);
+                long maxTime = Math.min(Timestamps.MICRO.getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
+                StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
+                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
+                query.setLimit(maxReadMsg);
+                List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
+                prepareMessageProcessing(entries);
+                if (entries.size()>=maxReadMsg) {
+                    //Adjust maxTime to next timepoint
+                    Entry lastEntry = entries.get(entries.size()-1);
+                    maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
+                    //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
+                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
+                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
+                    prepareMessageProcessing(extraEntries);
+                }
+                nextTimestamp=maxTime;
+            } catch (Throwable e) {
+                log.error("Could not read messages for timestamp ["+nextTimestamp+"] - will attempt again",e);
             }
-            nextTimestamp=maxTime;
         }
 
         private void prepareMessageProcessing(List<Entry> entries) {
@@ -560,7 +564,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         private void setReadMarker() {
             if (readMarker.hasIdentifier()) {
-                writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), nextTimestamp);
+                try {
+                    writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), nextTimestamp);
+                } catch (Throwable e) {
+                    log.error("Could not persist read marker [" + readMarker.getIdentifier() + "] on bucket ["+bucketId+"] + partition ["+partitionId+"]",e);
+                }
             }
         }
 

@@ -45,9 +45,18 @@ public abstract class BackgroundThread extends Thread {
                 if (stop) break;
                 else throw new RuntimeException(getName() + " thread got interrupted",e);
             }
-            action();
+            try {
+                action();
+            } catch (Throwable e) {
+                log.error("Exception while executing action on background thread " + getName(),e);
+            }
         }
-        cleanup();
+        try {
+            cleanup();
+        } catch (Throwable e) {
+            log.error("Exception while executing cleanup on background thread " + getName(),e);
+        }
+
     }
 
     /**
