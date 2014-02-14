@@ -24,9 +24,12 @@ public class PartitionIDRange {
 
 
     public PartitionIDRange(int lowerID, int upperID, int idUpperBound) {
-        Preconditions.checkArgument(idUpperBound>0 && idUpperBound<=Integer.MAX_VALUE);
-        Preconditions.checkArgument(lowerID>=0 && lowerID<idUpperBound);
-        Preconditions.checkArgument(upperID>=0 && upperID<=idUpperBound);
+        Preconditions.checkArgument(idUpperBound>0, "Partition limit " + idUpperBound + " must be positive");
+        Preconditions.checkArgument(idUpperBound<=Integer.MAX_VALUE, "Partition limit cannot exceed representable range of an integer");
+        Preconditions.checkArgument(lowerID>=0, "Negative partition lower bound " + lowerID);
+        Preconditions.checkArgument(lowerID< idUpperBound, "Partition lower bound" + lowerID + " equal to or greater than limit " + idUpperBound);
+        Preconditions.checkArgument(upperID>=0, "Negative partition upper bound " + upperID);
+        Preconditions.checkArgument(upperID<=idUpperBound, "Partition upper bound " + upperID + " exceeds limit " + idUpperBound);
         this.lowerID = lowerID;
         this.upperID = upperID;
         this.idUpperBound = idUpperBound;
