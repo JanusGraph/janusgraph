@@ -135,6 +135,7 @@ public class VertexIDAssigner {
                     else partition[0] = (partition[0] >>> 2);
                     //Upper bound needs to be exclusive
                     partition[1] = (partition[1] >>> 2) - 1;
+                    partition[1] &= 0x3FFFFFFF;
                     if (partition[0]==partition[1]) {
                         log.warn("Individual key range is too small for partition block: {}",local);
                         continue;
