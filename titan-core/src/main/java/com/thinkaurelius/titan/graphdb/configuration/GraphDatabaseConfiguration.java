@@ -37,6 +37,7 @@ import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -611,9 +612,9 @@ public class GraphDatabaseConfiguration {
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
      */
-    public static final ConfigOption<Boolean> IDS_PARTITION = new ConfigOption<Boolean>(IDS_NS,"partition",
+    public static final ConfigOption<IDPartitionMode> IDS_PARTITION = new ConfigOption<IDPartitionMode>(IDS_NS,"partition",
             "Whether the id space should be partitioned for equal distribution of keys",
-            ConfigOption.Type.FIXED, false);
+            ConfigOption.Type.FIXED, IDPartitionMode.DEFAULT);
 //    public static final String IDS_PARTITION_KEY = "partition";
 //    public static final boolean IDS_PARTITION_DEFAULT = false;
 
