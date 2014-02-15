@@ -123,6 +123,7 @@ public class VertexIDAssigner {
             try {
                 List<KeyRange> locals = idAuthority.getLocalIDPartition();
                 if (locals==null || locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
+                log.debug("Processing {} local ID partition range(s)", locals.size());
                 for (KeyRange local : locals) {
                     Preconditions.checkArgument(local.getStart().length() >= 4);
                     Preconditions.checkArgument(local.getEnd().length() >= 4);
