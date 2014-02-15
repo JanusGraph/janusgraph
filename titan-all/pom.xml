@@ -40,7 +40,7 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hbase</artifactId>
+            <artifactId>titan-hbase-096</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
