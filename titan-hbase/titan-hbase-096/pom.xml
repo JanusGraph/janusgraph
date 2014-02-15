@@ -119,10 +119,6 @@
             <id>hadoop1</id>
             
             <activation>
-                <!-- 
-                We use the same activation criterion as HBase so that
-                there's one less command-line option to remember.
-                -->
                 <property>
                     <name>hadoop.profile</name>
                     <value>1.0</value>
@@ -185,6 +181,7 @@
             <id>hadoop2</id>
 
             <activation>
+                <activeByDefault>true</activeByDefault>
                 <property>
                     <name>hadoop.profile</name>
                     <value>2.0</value>

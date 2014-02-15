@@ -468,8 +468,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
                 if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
                     HBaseSupport.setCompression(cdesc, compression);
-                desc.addFamily(cdesc);
-                adm.modifyTable(tableName.getBytes(), desc);
+                adm.addColumn(tableName, cdesc);
 
                 try {
                     logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
