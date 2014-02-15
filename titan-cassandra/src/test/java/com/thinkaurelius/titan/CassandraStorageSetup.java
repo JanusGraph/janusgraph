@@ -35,6 +35,7 @@ public class CassandraStorageSetup {
     private static ModifiableConfiguration getGenericConfiguration(String ks, String backend) {
         ModifiableConfiguration config = buildConfiguration();
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
+        config.set(PAGE_SIZE,500);
         config.set(CONNECTION_TIMEOUT, 60000);
         config.set(STORAGE_BACKEND, backend);
         return config;
