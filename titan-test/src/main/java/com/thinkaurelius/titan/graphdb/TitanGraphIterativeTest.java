@@ -31,7 +31,7 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
 
     public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
 
-    @Test
+    //@Test
     public void testDataSequential() throws Exception {
         loadData(200000,2);
         close();
