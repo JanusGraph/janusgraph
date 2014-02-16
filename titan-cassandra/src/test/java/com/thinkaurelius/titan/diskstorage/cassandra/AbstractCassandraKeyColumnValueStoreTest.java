@@ -78,7 +78,7 @@ public abstract class AbstractCassandraKeyColumnValueStoreTest extends KeyColumn
 
         Map<String, String> defaultCfCompressionOps =
                 new ImmutableMap.Builder<String, String>()
-                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + ".SnappyCompressor")
+                .put("sstable_compression", DEFAULT_COMPRESSOR_PACKAGE + "." + AbstractCassandraStoreManager.CASSANDRA_COMPRESSION_TYPE.getDefaultValue())
                 .put("chunk_length_kb", "64")
                 .build();
 

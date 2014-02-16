@@ -1,0 +1,15 @@
+<assembly>
+    <id>hbase-bin</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>dir</format>
+    </formats>
+    
+    <fileSets>
+        <fileSet>
+            <directory>src/test/bin</directory>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>

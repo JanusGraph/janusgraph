@@ -96,7 +96,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final ConfigOption<String> CASSANDRA_COMPRESSION_TYPE = new ConfigOption<String>(STORAGE_NS,"compression-type",
             "The particular compression type to use for Cassandra sstable compression",
-            ConfigOption.Type.FIXED, "SnappyCompressor");
+            ConfigOption.Type.FIXED, "LZ4Compressor");
 
 //    public static final String COMPRESSION_KEY = "compression.sstable_compression";
 //    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";

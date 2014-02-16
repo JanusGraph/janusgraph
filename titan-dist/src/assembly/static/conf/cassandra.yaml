@@ -315,7 +315,7 @@ ssl_storage_port: 7001
 # address associated with the hostname (it might not be).
 #
 # Setting this to 0.0.0.0 is always wrong.
-listen_address: localhost
+listen_address: 127.0.0.1
 
 # Address to broadcast to other Cassandra nodes
 # Leaving this blank will set it to the same value as listen_address
@@ -346,7 +346,7 @@ start_rpc: true
 # 
 # Leaving this blank has the same effect it does for ListenAddress,
 # (i.e. it will be based on the configured hostname of the node).
-rpc_address: localhost
+rpc_address: 127.0.0.1
 # port for Thrift to listen for clients on
 rpc_port: 9160
 

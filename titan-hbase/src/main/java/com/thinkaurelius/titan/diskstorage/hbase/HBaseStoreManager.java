@@ -14,13 +14,16 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.io.hfile.Compression;
 import org.apache.hadoop.hbase.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +54,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "Whether to automatically shorten the names of frequently used column families to preserve space",
             ConfigOption.Type.FIXED, true);
 
+    public static final String COMPRESSION_DEFAULT = "-DEFAULT-";
+
+    public static final ConfigOption<String> COMPRESSION = new ConfigOption<String>(STORAGE_NS,"compression-algorithm",
+            "An HBase Compression.Algorithm enum string which will be applied to newly created column families",
+            ConfigOption.Type.MASKABLE, COMPRESSION_DEFAULT);
+
+
 //    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
 //    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
 
@@ -58,12 +68,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
-    public static final ImmutableMap<ConfigOption, String> HBASE_CONFIGURATION = ImmutableMap.of(
-            (ConfigOption)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
+    public static final ImmutableMap<ConfigOption<?>, String> HBASE_CONFIGURATION = ImmutableMap.of(
+            (ConfigOption<?>)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
             GraphDatabaseConfiguration.PORT, "hbase.zookeeper.property.clientPort"
     );
 
     private final String tableName;
+    private final String compression;
     private final org.apache.hadoop.conf.Configuration hconf;
 
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -82,6 +93,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "f")
                     .build();
 
+    private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);
+
     static {
         // Verify that shortCfNameMap is injective
         // Should be guaranteed by Guava BiMap, but it doesn't hurt to check
@@ -95,8 +108,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         this.tableName = config.get(HBASE_TABLE);
 
+        this.compression = config.get(COMPRESSION);
+
         this.hconf = HBaseConfiguration.create();
-        for (Map.Entry<ConfigOption, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
+        for (Map.Entry<ConfigOption<?>, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
             if (config.has(confEntry.getKey())) {
                 hconf.set(confEntry.getValue(), config.get(confEntry.getKey()).toString());
             }
@@ -234,6 +249,135 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return store;
     }
 
+    /**
+     * Given a map produced by {@link HTable#getRegionLocations()}, transform
+     * each key from an {@link HRegionInfo} to a {@link KeyRange} expressing the
+     * region's start and end key bounds using Titan-partitioning-friendly
+     * conventions (start inclusive, end exclusive, zero bytes appended where
+     * necessary to make all keys at least 4 bytes long).
+     * <p/>
+     * This method iterates over the entries in its map parameter and performs
+     * the following conditional conversions on its keys. "Require" below means
+     * either a {@link Preconditions} invocation or an assertion. HRegionInfo
+     * sometimes returns start and end keys of zero length; this method replaces
+     * zero length keys with null before doing any of the checks described
+     * below. The parameter map and the values it contains are only read and
+     * never modified.
+     *
+     * <ul>
+     * <li>If an entry's HRegionInfo has null start and end keys, then first
+     * require that the parameter map is a singleton, and then return a
+     * single-entry map whose {@code KeyRange} has start and end buffers that
+     * are both four bytes of zeros.</li>
+     * <li>If the entry has a null end key (but non-null start key), put an
+     * equivalent entry in the result map with a start key identical to the
+     * input, except that zeros are appended to values less than 4 bytes long,
+     * and an end key that is four bytes of zeros.
+     * <li>If the entry has a null start key (but non-null end key), put an
+     * equivalent entry in the result map where the start key is four bytes of
+     * zeros, and the end key has zeros appended, if necessary, to make it at
+     * least 4 bytes long, after which one is added to the padded value in
+     * unsigned 32-bit arithmetic with overflow allowed.</li>
+     * <li>Any entry which matches none of the above criteria results in an
+     * equivalent entry in the returned map, except that zeros are appended to
+     * both keys to make each at least 4 bytes long, and the end key is then
+     * incremented as described in the last bullet point.</li>
+     * </ul>
+     *
+     * After iterating over the parameter map, this method checks that it either
+     * saw no entries with null keys, one entry with a null start key and a
+     * different entry with a null end key, or one entry with both start and end
+     * keys null. If any null keys are observed besides these three cases, the
+     * method will die with a precondition failure.
+     *
+     * @param raw
+     *            A map of HRegionInfo and ServerName from HBase
+     * @return Titan-friendly expression of each region's rowkey boundaries
+     */
+    private Map<KeyRange, ServerName> normalizeKeyBounds(NavigableMap<HRegionInfo, ServerName> raw) {
+
+        Map.Entry<HRegionInfo, ServerName> nullStart = null;
+        Map.Entry<HRegionInfo, ServerName> nullEnd = null;
+
+        ImmutableMap.Builder<KeyRange, ServerName> b = ImmutableMap.builder();
+
+        for (Map.Entry<HRegionInfo, ServerName> e : raw.entrySet()) {
+            HRegionInfo regionInfo = e.getKey();
+            byte startKey[] = regionInfo.getStartKey();
+            byte endKey[]   = regionInfo.getEndKey();
+
+            if (0 == startKey.length) {
+                startKey = null;
+                logger.trace("Converted zero-length HBase startKey byte array to null");
+            }
+
+            if (0 == endKey.length) {
+                endKey = null;
+                logger.trace("Converted zero-length HBase endKey byte array to null");
+            }
+
+            if (null == startKey && null == endKey) {
+                Preconditions.checkState(1 == raw.size());
+                logger.debug("HBase table {} has a single region {}", tableName, regionInfo);
+                // Choose arbitrary shared value = startKey = endKey
+                return b.put(new KeyRange(FOUR_ZERO_BYTES, FOUR_ZERO_BYTES), e.getValue()).build();
+            } else if (null == startKey) {
+                logger.debug("Found HRegionInfo with null startKey on server {}: {}", e.getValue(), regionInfo);
+                Preconditions.checkState(null == nullStart);
+                nullStart = e;
+                StaticBuffer endBuf = BufferUtil.nextBiggerBufferAllowOverflow(StaticArrayBuffer.of(zeroExtend(endKey)));
+                // Replace null start key with zeroes
+                b.put(new KeyRange(FOUR_ZERO_BYTES, endBuf), e.getValue());
+            } else if (null == endKey) {
+                logger.debug("Found HRegionInfo with null endKey on server {}: {}", e.getValue(), regionInfo);
+                Preconditions.checkState(null == nullEnd);
+                nullEnd = e;
+                // Replace null end key with zeroes
+                b.put(new KeyRange(StaticArrayBuffer.of(zeroExtend(startKey)), FOUR_ZERO_BYTES), e.getValue());
+            } else {
+                Preconditions.checkState(null != startKey);
+                Preconditions.checkState(null != endKey);
+
+                // Convert HBase's inclusive end keys into exclusive Titan end keys
+                StaticBuffer startBuf = StaticArrayBuffer.of(zeroExtend(startKey));
+                StaticBuffer endBuf = BufferUtil.nextBiggerBufferAllowOverflow(StaticArrayBuffer.of(zeroExtend(endKey)));
+
+                b.put(new KeyRange(startBuf, endBuf), e.getValue());
+            }
+        }
+
+        // Require either no null key bounds or a pair of them
+        Preconditions.checkState(!(null == nullStart ^ null == nullEnd));
+
+        // Check that every key in the result is at least 4 bytes long
+        Map<KeyRange, ServerName> result = b.build();
+        for (KeyRange kr : result.keySet()) {
+            Preconditions.checkState(4 <= kr.getStart().length());
+            Preconditions.checkState(4 <= kr.getEnd().length());
+        }
+
+        return result;
+    }
+
+    private final byte[] zeroExtend(byte[] dataToPad) {
+        assert null != dataToPad;
+
+        final int targetLength = 4;
+
+        if (targetLength <= dataToPad.length)
+            return dataToPad;
+
+        byte padded[] = new byte[targetLength];
+
+        for (int i = 0; i < dataToPad.length; i++)
+            padded[i] = dataToPad[i];
+
+        for (int i = dataToPad.length; i < padded.length; i++)
+            padded[i] = (byte)0;
+
+        return padded;
+    }
+
     List<KeyRange> getLocalKeyPartition() {
 
         List<KeyRange> result = new LinkedList<KeyRange>();
@@ -241,23 +385,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         HTable table = null;
         try {
             table = new HTable(hconf, tableName);
-            NavigableMap<HRegionInfo, ServerName> regionLocs =
-                    table.getRegionLocations();
 
-            for (Map.Entry<HRegionInfo, ServerName> e : regionLocs.entrySet()) {
+            Map<KeyRange, ServerName> normed =
+                    normalizeKeyBounds(table.getRegionLocations());
+
+            for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
                 if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
-                    HRegionInfo regionInfo = e.getKey();
-                    byte startKey[] = regionInfo.getStartKey();
-                    byte endKey[]   = regionInfo.getEndKey();
-
-                    StaticBuffer startBuf = StaticArrayBuffer.of(startKey);
-                    StaticBuffer endBuf = BufferUtil.nextBiggerBufferAllowOverflow(StaticArrayBuffer.of(endKey));
-
-                    KeyRange kr = new KeyRange(startBuf, endBuf);
-
-                    result.add(kr);
-
-                    logger.debug("Found local key/row partition {} on host {}", kr, e.getValue());
+                    result.add(e.getKey());
+                    logger.debug("Found local key/row partition {} on host {}", e.getKey(), e.getValue());
                 } else {
                     logger.debug("Discarding remote {}", e.getValue());
                 }
@@ -330,8 +465,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         if (cf == null) {
             try {
                 adm.disableTable(tableName);
-                desc.addFamily(new HColumnDescriptor(columnFamily).setCompressionType(Compression.Algorithm.GZ));
-                adm.modifyTable(tableName.getBytes(), desc);
+                HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
+                if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
+                    HBaseSupport.setCompression(cdesc, compression);
+                adm.addColumn(tableName, cdesc);
 
                 try {
                     logger.debug("Added HBase ColumnFamily {}, waiting for 1 sec. to propogate.", columnFamily);
@@ -348,18 +485,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 logger.debug("Swallowing exception {}", ee);
             } catch (IOException ee) {
                 throw new TemporaryStorageException(ee);
-            }
-        } else { // check if compression was enabled, if not - enable it
-            if (cf.getCompressionType() == null || cf.getCompressionType() == Compression.Algorithm.NONE) {
-                try {
-                    adm.disableTable(tableName);
-
-                    adm.modifyColumn(tableName, cf.setCompressionType(Compression.Algorithm.GZ));
-
-                    adm.enableTable(tableName);
-                } catch (IOException e) {
-                    throw new TemporaryStorageException(e);
-                }
             }
         }
     }

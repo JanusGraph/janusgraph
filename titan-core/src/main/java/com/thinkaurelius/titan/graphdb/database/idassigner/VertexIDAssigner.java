@@ -70,14 +70,15 @@ public class VertexIDAssigner {
     private final int maxPartitionID;
     private final boolean hasLocalPartitions;
 
-
     public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures) {
         Preconditions.checkNotNull(idAuthority);
         this.idAuthority = idAuthority;
 
         long partitionBits;
-        boolean partitionIDs = config.get(IDS_PARTITION);
-        if (partitionIDs) {
+        IDPartitionMode partitionIDs = config.get(IDS_PARTITION);
+        boolean storeWantsPartitioning = idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed();
+        if (partitionIDs.equals(IDPartitionMode.ENABLED) ||
+                (storeWantsPartitioning && partitionIDs.equals(IDPartitionMode.DEFAULT))) {
             //Use a placement strategy that balances partitions
             partitionBits = DEFAULT_PARTITION_BITS;
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
@@ -85,8 +86,8 @@ public class VertexIDAssigner {
             placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY),
                     REGISTERED_PLACEMENT_STRATEGIES);
         } else {
-            if (idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed())
-                log.warn("ID Partitioning is disabled which will likely cause uneven data distribution");
+            if (storeWantsPartitioning)
+                log.warn("ID Partitioning is disabled, which will likely cause uneven data distribution and sequentially increasing keys");
             //Use the default placement strategy
             partitionBits = 0;
             hasLocalPartitions = false;
@@ -122,8 +123,10 @@ public class VertexIDAssigner {
             try {
                 List<KeyRange> locals = idAuthority.getLocalIDPartition();
                 if (locals==null || locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
+                log.debug("Processing {} local ID partition range(s)", locals.size());
                 for (KeyRange local : locals) {
-                    Preconditions.checkArgument(local.getStart().length() >= 4 && local.getEnd().length() >= 4);
+                    Preconditions.checkArgument(local.getStart().length() >= 4);
+                    Preconditions.checkArgument(local.getEnd().length() >= 4);
                     int[] partition = new int[2];
                     for (int i = 0; i < 2; i++) {
                         partition[i] = local.getAt(i).getInt(0);
@@ -133,6 +136,7 @@ public class VertexIDAssigner {
                     else partition[0] = (partition[0] >>> 2);
                     //Upper bound needs to be exclusive
                     partition[1] = (partition[1] >>> 2) - 1;
+                    partition[1] &= 0x3FFFFFFF;
                     if (partition[0]==partition[1]) {
                         log.warn("Individual key range is too small for partition block: {}",local);
                         continue;

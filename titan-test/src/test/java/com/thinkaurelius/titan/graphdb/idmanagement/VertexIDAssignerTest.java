@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -34,18 +35,18 @@ public class VertexIDAssignerTest {
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
         List<Object[]> configurations = new ArrayList<Object[]>();
-        configurations.add(new Object[]{false, Integer.MAX_VALUE, null});
+        configurations.add(new Object[]{IDPartitionMode.DISABLED, Integer.MAX_VALUE, null});
 
         for (int max : new int[]{Integer.MAX_VALUE, 100}) {
             for (int[] local : new int[][]{null, {0, 2000}, {-100000, -1}, {-10000, 10000}}) {
-                configurations.add(new Object[]{true, max, local});
+                configurations.add(new Object[]{IDPartitionMode.ENABLED, max, local});
             }
         }
 
         return configurations;
     }
 
-    public VertexIDAssignerTest(boolean partition, int partitionMax, int[] localPartition) {
+    public VertexIDAssignerTest(IDPartitionMode partition, int partitionMax, int[] localPartition) {
         MockIDAuthority idAuthority = new MockIDAuthority(11, partitionMax);
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
