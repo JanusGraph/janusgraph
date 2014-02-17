@@ -9,21 +9,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardAttributeHandling;
+import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.types.*;
 
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
@@ -36,7 +29,7 @@ public class KryoSerializer {
             //General
                     ArrayList.class, HashMap.class, Object.class,
             //Titan specific
-                    TypeAttributeType.class, TypeAttribute.class, TitanTypeClass.class,
+                    TypeAttributeType.class, TypeAttribute.class, TitanTypeCategory.class,
                     IndexType.class, IndexType[].class, Parameter.class, Parameter[].class,
                     IndexParameters.class, IndexParameters[].class, Order.class
             );

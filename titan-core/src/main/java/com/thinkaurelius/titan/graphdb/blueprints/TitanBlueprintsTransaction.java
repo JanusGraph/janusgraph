@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
+import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.*;
@@ -239,11 +239,11 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkNotNull(clazz);
         Iterable<TitanVertex> types = null;
         if (TitanKey.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeClass, TitanTypeClass.KEY);
+            types = getVertices(SystemKey.TypeCategory, TitanTypeCategory.KEY);
         } else if (TitanLabel.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL);
+            types = getVertices(SystemKey.TypeCategory, TitanTypeCategory.LABEL);
         } else if (TitanType.class.equals(clazz)) {
-            types = Iterables.concat(getVertices(SystemKey.TypeClass, TitanTypeClass.KEY), getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL));
+            types = Iterables.concat(getVertices(SystemKey.TypeCategory, TitanTypeCategory.KEY), getVertices(SystemKey.TypeCategory, TitanTypeCategory.LABEL));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
         return Iterables.filter(types, clazz);
     }

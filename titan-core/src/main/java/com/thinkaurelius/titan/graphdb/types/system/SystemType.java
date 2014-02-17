@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
@@ -18,7 +18,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     private final boolean isModifiable;
 
 
-    SystemType(String name, long id, RelationType type, boolean[] isUnique, boolean isModifiable) {
+    SystemType(String name, long id, RelationCategory type, boolean[] isUnique, boolean isModifiable) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         Preconditions.checkArgument(isUnique != null && isUnique.length == 2);
         this.name = SystemTypeManager.systemETprefix + name;
@@ -27,7 +27,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
         this.isModifiable = isModifiable;
     }
 
-    static long getSystemTypeId(long id, RelationType type) {
+    static long getSystemTypeId(long id, RelationCategory type) {
         Preconditions.checkArgument(id > 0);
         Preconditions.checkArgument(id <= SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());

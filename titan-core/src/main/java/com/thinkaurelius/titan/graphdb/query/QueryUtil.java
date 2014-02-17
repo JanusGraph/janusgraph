@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -209,7 +209,7 @@ public class QueryUtil {
      * @param condition
      * @return
      */
-    public static final Set<String> andClauseIndexCover(final ElementType result, Condition<TitanElement> condition, IndexSerializer indexInfo) {
+    public static final Set<String> andClauseIndexCover(final ElementCategory result, Condition<TitanElement> condition, IndexSerializer indexInfo) {
         Set<String> indexes = NO_INDEXES;
         if (condition instanceof PredicateCondition) {
             PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) condition;

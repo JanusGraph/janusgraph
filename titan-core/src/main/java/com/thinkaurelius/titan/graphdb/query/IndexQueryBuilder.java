@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -119,7 +119,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         return this;
     }
 
-    private Iterable<Result<TitanElement>> execute(ElementType resultType) {
+    private Iterable<Result<TitanElement>> execute(ElementCategory resultType) {
         Preconditions.checkNotNull(indexName);
         Preconditions.checkNotNull(query);
         if (tx.hasModifications())
@@ -143,13 +143,13 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     @Override
     public Iterable<Result<Vertex>> vertices() {
         setPrefix(VERTEX_PREFIX);
-        return (Iterable)execute(ElementType.VERTEX);
+        return (Iterable)execute(ElementCategory.VERTEX);
     }
 
     @Override
     public Iterable<Result<Edge>> edges() {
         setPrefix(EDGE_PREFIX);
-        return (Iterable)execute(ElementType.EDGE);
+        return (Iterable)execute(ElementCategory.EDGE);
     }
 
     private void setPrefix(String prefix) {

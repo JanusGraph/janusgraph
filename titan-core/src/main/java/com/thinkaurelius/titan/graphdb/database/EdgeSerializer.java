@@ -19,7 +19,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
@@ -88,21 +88,21 @@ public class EdgeSerializer implements RelationReader {
         long typeId = typeAndDir[0];
 
         Direction dir;
-        RelationType rtype;
+        RelationCategory rtype;
         switch (dirID) {
             case PROPERTY_DIR:
                 dir = Direction.OUT;
-                rtype = RelationType.PROPERTY;
+                rtype = RelationCategory.PROPERTY;
                 break;
 
             case EDGE_OUT_DIR:
                 dir = Direction.OUT;
-                rtype = RelationType.EDGE;
+                rtype = RelationCategory.EDGE;
                 break;
 
             case EDGE_IN_DIR:
                 dir = Direction.IN;
-                rtype = RelationType.EDGE;
+                rtype = RelationCategory.EDGE;
                 break;
 
             default:
@@ -116,7 +116,7 @@ public class EdgeSerializer implements RelationReader {
         long relationIdDiff, vertexIdDiff = 0;
         if (titanType.isUnique(dir)) {
             assert data.getValuePosition()==in.getPosition();
-            if (rtype == RelationType.EDGE)
+            if (rtype == RelationCategory.EDGE)
                 vertexIdDiff = VariableLong.read(in);
             relationIdDiff = VariableLong.read(in);
         } else {
@@ -124,7 +124,7 @@ public class EdgeSerializer implements RelationReader {
             //Move position to end to read ids backwards
             in.movePositionTo(data.getValuePosition() - 1);
             relationIdDiff = VariableLong.readBackward(in);
-            if (rtype == RelationType.EDGE)
+            if (rtype == RelationCategory.EDGE)
                 vertexIdDiff = VariableLong.readBackward(in);
 
             if (!excludeProperties && keysig.length>0) { //Read sort key which only exists if type is not unique in this direction
@@ -205,7 +205,7 @@ public class EdgeSerializer implements RelationReader {
         return key.getDataType().equals(Object.class);
     }
 
-    private static int getDirID(Direction dir, RelationType rt) {
+    private static int getDirID(Direction dir, RelationCategory rt) {
         switch (rt) {
             case PROPERTY:
                 assert dir == Direction.OUT;
@@ -245,7 +245,7 @@ public class EdgeSerializer implements RelationReader {
         long typeid = type.getID();
 
         Direction dir = EdgeDirection.fromPosition(position);
-        int dirID = getDirID(dir, relation.isProperty() ? RelationType.PROPERTY : RelationType.EDGE);
+        int dirID = getDirID(dir, relation.isProperty() ? RelationCategory.PROPERTY : RelationCategory.EDGE);
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
         int valuePosition;
@@ -351,7 +351,7 @@ public class EdgeSerializer implements RelationReader {
         }
     }
 
-    public SliceQuery getQuery(RelationType resultType) {
+    public SliceQuery getQuery(RelationCategory resultType) {
         Preconditions.checkNotNull(resultType);
         StaticBuffer[] bound = getBounds(resultType);
         return new SliceQuery(bound[0], bound[1]);
@@ -363,7 +363,7 @@ public class EdgeSerializer implements RelationReader {
 
         StaticBuffer sliceStart = null, sliceEnd = null;
         boolean isStatic;
-        RelationType rt = type.isPropertyKey() ? RelationType.PROPERTY : RelationType.EDGE;
+        RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
             sliceStart = IDHandler.getEdgeType(type.getID(), getDirID(Direction.OUT, rt));
             sliceEnd = IDHandler.getEdgeType(type.getID(), getDirID(Direction.IN, rt));

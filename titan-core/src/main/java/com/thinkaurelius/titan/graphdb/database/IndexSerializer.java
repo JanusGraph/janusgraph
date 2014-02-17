@@ -17,7 +17,7 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
@@ -73,7 +73,7 @@ public class IndexSerializer {
         return indexinfo.supports(new StandardKeyInformation(dataType,parameters));
     }
 
-    public boolean supports(final String indexName, final ElementType result, final TitanKey key, final TitanPredicate predicate) {
+    public boolean supports(final String indexName, final ElementCategory result, final TitanKey key, final TitanPredicate predicate) {
         IndexInformation indexinfo = indexes.get(indexName);
         Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", indexName);
         return indexinfo.supports(getKeyInformation(key,result.getElementType(),indexName),predicate);
@@ -111,8 +111,8 @@ public class IndexSerializer {
                     Preconditions.checkState(transaction!=null,"Retriever has not been initialized");
                     long keyid = string2KeyId(key);
                     TitanKey titanKey = (TitanKey)transaction.getExistingType(keyid);
-                    ElementType elementType = getElementType(store);
-                    return getKeyInformation(titanKey,elementType.getElementType(),index);
+                    ElementCategory elementCategory = getElementType(store);
+                    return getKeyInformation(titanKey, elementCategory.getElementType(),index);
                 }
 
                 @Override
@@ -136,11 +136,11 @@ public class IndexSerializer {
     public void newPropertyKey(TitanKey key, BackendTransaction tx) throws StorageException {
         for (String index : key.getIndexes(Vertex.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(ElementType.VERTEX.getName(), key2String(key), getKeyInformation(key,Vertex.class,index));
+                tx.getIndexTransactionHandle(index).register(ElementCategory.VERTEX.getName(), key2String(key), getKeyInformation(key,Vertex.class,index));
         }
         for (String index : key.getIndexes(Edge.class)) {
             if (!index.equals(Titan.Token.STANDARD_INDEX))
-                tx.getIndexTransactionHandle(index).register(ElementType.EDGE.getName(), key2String(key), getKeyInformation(key, Edge.class, index));
+                tx.getIndexTransactionHandle(index).register(ElementCategory.EDGE.getName(), key2String(key), getKeyInformation(key, Edge.class, index));
         }
     }
 
@@ -233,7 +233,7 @@ public class IndexSerializer {
         if (isStandardIndex(indexName)) {
             Preconditions.checkArgument(query.getOrder().isEmpty(), "Standard index does not support ordering");
             List<Object> results = null;
-            final ElementType resultType = getElementType(query.getStore());
+            final ElementCategory resultType = getElementType(query.getStore());
             final Condition<?> condition = query.getCondition();
 
             if (condition instanceof And) {
@@ -272,8 +272,8 @@ public class IndexSerializer {
         }
     }
 
-    private List<Object> processSingleCondition(ElementType resultType, PredicateCondition pc, final int limit, BackendTransaction tx) {
-        Preconditions.checkArgument(resultType == ElementType.EDGE || resultType == ElementType.VERTEX);
+    private List<Object> processSingleCondition(ElementCategory resultType, PredicateCondition pc, final int limit, BackendTransaction tx) {
+        Preconditions.checkArgument(resultType == ElementCategory.EDGE || resultType == ElementCategory.VERTEX);
         Preconditions.checkArgument(pc.getPredicate() == Cmp.EQUAL, "Only equality index retrievals are supported on standard index");
         Preconditions.checkNotNull(pc.getValue());
         Preconditions.checkArgument(limit >= 0);
@@ -284,7 +284,7 @@ public class IndexSerializer {
         StaticBuffer column = getUniqueIndexColumn(key);
         KeySliceQuery sq = new KeySliceQuery(getIndexKey(value), column, SliceQuery.pointRange(column)).setLimit(limit);
         EntryList r;
-        if (resultType == ElementType.VERTEX) {
+        if (resultType == ElementCategory.VERTEX) {
             r = tx.vertexIndexQuery(sq);
         } else {
             r = tx.edgeIndexQuery(sq);
@@ -294,17 +294,17 @@ public class IndexSerializer {
             Entry entry = iterator.next();
             ReadBuffer entryValue = entry.asReadBuffer();
             entryValue.movePositionTo(entry.getValuePosition());
-            if (resultType == ElementType.VERTEX) {
+            if (resultType == ElementCategory.VERTEX) {
                 results.add(VariableLong.readPositive(entryValue));
             } else {
                 results.add(bytebuffer2RelationId(entryValue));
             }
         }
-        Preconditions.checkArgument(!(resultType == ElementType.VERTEX && key.isUnique(Direction.IN)) || results.size() <= 1);
+        Preconditions.checkArgument(!(resultType == ElementCategory.VERTEX && key.isUnique(Direction.IN)) || results.size() <= 1);
         return results;
     }
 
-    public IndexQuery getQuery(String index, final ElementType resultType, final Condition condition, final OrderList orders) {
+    public IndexQuery getQuery(String index, final ElementCategory resultType, final Condition condition, final OrderList orders) {
         if (isStandardIndex(index)) {
             Preconditions.checkArgument(orders.isEmpty());
             return new IndexQuery(getStoreName(resultType), condition, IndexQuery.NO_ORDER);
@@ -332,7 +332,7 @@ public class IndexSerializer {
         }
     }
 
-    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementType resultType,
+    public Iterable<RawQuery.Result> executeQuery(IndexQueryBuilder query, final ElementCategory resultType,
                                                   final BackendTransaction backendTx, final StandardTitanTx transaction) {
         StringBuffer qB = new StringBuffer(query.getQuery());
         final String prefix = query.getPrefix();
@@ -447,17 +447,17 @@ public class IndexSerializer {
     }
 
     private static final String getStoreName(Element element) {
-        if (element instanceof TitanVertex) return getStoreName(ElementType.VERTEX);
-        else if (element instanceof TitanEdge) return getStoreName(ElementType.EDGE);
+        if (element instanceof TitanVertex) return getStoreName(ElementCategory.VERTEX);
+        else if (element instanceof TitanEdge) return getStoreName(ElementCategory.EDGE);
         else throw new IllegalArgumentException("Invalid class: " + element.getClass());
     }
 
-    private static final String getStoreName(ElementType type) {
+    private static final String getStoreName(ElementCategory type) {
         return type.getName();
     }
 
-    private static final ElementType getElementType(String store) {
-        return ElementType.getByName(store);
+    private static final ElementCategory getElementType(String store) {
+        return ElementCategory.getByName(store);
     }
 
     private final StaticBuffer getIndexKey(Object att) {

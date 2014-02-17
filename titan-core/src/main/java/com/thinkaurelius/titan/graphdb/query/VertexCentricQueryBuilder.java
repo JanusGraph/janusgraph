@@ -1,8 +1,5 @@
 package com.thinkaurelius.titan.graphdb.query;
 
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -10,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
@@ -169,7 +166,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         } else return null;
     }
 
-    public VertexCentricQuery constructQuery(RelationType returnType) {
+    public VertexCentricQuery constructQuery(RelationCategory returnType) {
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
         Condition<TitanRelation> condition = vq.getCondition();
         if (!vq.isEmpty()) {
@@ -180,19 +177,19 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
                 newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
             condition=newcond;
         }
-        if (returnType == RelationType.PROPERTY && hasTypes() && tx.getConfiguration().hasPropertyPrefetching()) {
+        if (returnType == RelationCategory.PROPERTY && hasTypes() && tx.getConfiguration().hasPropertyPrefetching()) {
             vertex.query().includeHidden().properties().iterator().hasNext();
         }
         return new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());
     }
 
-    private Iterable<TitanRelation> relations(RelationType returnType) {
+    private Iterable<TitanRelation> relations(RelationCategory returnType) {
         return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(constructQuery(returnType), tx.edgeProcessor);
     }
 
-    protected SimpleVertexQueryProcessor getSimpleQuery(RelationType relationType, InternalVertex vertex) {
+    protected SimpleVertexQueryProcessor getSimpleQuery(RelationCategory relationCategory, InternalVertex vertex) {
         if (!vertex.isLoaded() || types.length>1 || includeHidden || adjacentVertex!=null ||
-                (relationType==RelationType.PROPERTY && tx.getConfiguration().hasPropertyPrefetching())) {
+                (relationCategory == RelationCategory.PROPERTY && tx.getConfiguration().hasPropertyPrefetching())) {
             return null; //Simple query does not apply
         }
         TitanType type = null;
@@ -200,7 +197,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
             type = getType(types[0]);
             if (type==null) return null;
         }
-        switch (relationType) {
+        switch (relationCategory) {
             case PROPERTY:
                 assert constraints.isEmpty();
                 if (limit!=Query.NO_LIMIT) return null;
@@ -215,29 +212,29 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
                     if (!constraints.isEmpty()) return null;
                     return new SimpleVertexQueryProcessor(vertex,dir,(TitanLabel)type,null,limit);
                 }
-            default: throw new IllegalArgumentException("Invalid relation type: " + relationType);
+            default: throw new IllegalArgumentException("Invalid relation type: " + relationCategory);
         }
     }
 
 
     @Override
     public Iterable<TitanEdge> titanEdges() {
-        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationCategory.EDGE,vertex);
         if (qp!=null) return qp.titanEdges();
-        return (Iterable) relations(RelationType.EDGE);
+        return (Iterable) relations(RelationCategory.EDGE);
     }
 
 
     @Override
     public Iterable<TitanProperty> properties() {
-        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.PROPERTY,vertex);
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationCategory.PROPERTY,vertex);
         if (qp!=null) return qp.properties();
-        return (Iterable) relations(RelationType.PROPERTY);
+        return (Iterable) relations(RelationCategory.PROPERTY);
     }
 
     @Override
     public Iterable<TitanRelation> relations() {
-        return relations(RelationType.RELATION);
+        return relations(RelationCategory.RELATION);
     }
 
     @Override
@@ -257,14 +254,14 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 
     @Override
     public Iterable<Vertex> vertices() {
-        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationCategory.EDGE,vertex);
         if (qp!=null) return qp.vertices();
         return (Iterable) edges2Vertices(titanEdges(), vertex);
     }
 
     @Override
     public VertexList vertexIds() {
-        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationType.EDGE,vertex);
+        SimpleVertexQueryProcessor qp = getSimpleQuery(RelationCategory.EDGE,vertex);
         if (qp!=null) return qp.vertexIds();
         return edges2VertexIds(titanEdges(), vertex);
     }

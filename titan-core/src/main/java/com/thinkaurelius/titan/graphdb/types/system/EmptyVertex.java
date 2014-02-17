@@ -240,6 +240,11 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
+    public boolean isHidden() {
+        return false;
+    }
+
+    @Override
     public boolean isRemoved() {
         return false;
     }

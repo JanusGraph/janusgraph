@@ -6,17 +6,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
@@ -137,7 +134,7 @@ public class TypeReferenceContainer implements TypeInspector {
     private TitanTypeReference getFromJson(JsonObject input) {
         final long id = input.getJsonNumber(ID_KEY).longValue();
         final String name = input.getString(NAME_KEY);
-        final TitanTypeClass typeClass = TitanTypeClass.valueOf(input.getString(TYPE_KEY).toUpperCase());
+        final TitanTypeCategory typeClass = TitanTypeCategory.valueOf(input.getString(TYPE_KEY).toUpperCase());
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Invalid name found for id: %s",id);
         Preconditions.checkArgument(typeClass!=null,"Invalid type found for id: %s",id);
         TypeAttribute.Map definition = new TypeAttribute.Map();
@@ -239,7 +236,7 @@ public class TypeReferenceContainer implements TypeInspector {
         JsonObjectBuilder result = Json.createObjectBuilder();
         result.add(ID_KEY,type.getID());
         result.add(NAME_KEY, type.getName());
-        TitanTypeClass typeClass = type.isPropertyKey()?TitanTypeClass.KEY:TitanTypeClass.LABEL;
+        TitanTypeCategory typeClass = type.isPropertyKey()? TitanTypeCategory.KEY: TitanTypeCategory.LABEL;
         result.add(TYPE_KEY, typeClass.toString().toLowerCase());
         for (TypeAttribute ta : type.getDefinition().getAttributes()) {
             String name = ta.getType().toString().toLowerCase();

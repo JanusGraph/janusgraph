@@ -20,6 +20,7 @@ import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPool;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -136,9 +137,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     /**
      * Used to assign temporary ids to new vertices and relations added in this transaction.
-     * If ids are assigned immediately, this is not used.
+     * If ids are assigned immediately, this is not used. This IDPool is shared across all elements.
      */
-    private final AtomicLong temporaryID;
+    private final IDPool temporaryIds;
 
 
     /**
@@ -164,7 +165,20 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         this.edgeSerializer = graph.getEdgeSerializer();
         this.indexSerializer = graph.getIndexSerializer();
 
-        temporaryID = new AtomicLong(-1);
+        temporaryIds = new IDPool() {
+
+            private final AtomicLong counter = new AtomicLong(1);
+
+            @Override
+            public long nextID() {
+                return counter.getAndIncrement();
+            }
+
+            @Override
+            public void close() {
+                //Do nothing
+            }
+        };
 
         int concurrencyLevel;
         if (config.isSingleThreaded()) {
@@ -331,13 +345,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
         Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.Vertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
-        StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
+        StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.Vertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setID(vertexId);
         } else if (config.hasAssignIDsImmediately()) {
             graph.assignID(vertex);
         }
-        addProperty(vertex, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
+        addProperty(vertex, SystemKey.VertexExists, Boolean.TRUE);
         vertexCache.add(vertex, vertex.getID());
         return vertex;
 
@@ -466,7 +480,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             "An edge with the given type already exists on the in-vertex and the label [%s] is in-unique", label.getName());
                 }
             }
-            StandardEdge edge = new StandardEdge(temporaryID.decrementAndGet(), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
+            StandardEdge edge = new StandardEdge(IDManager.getTemporaryRelationID(temporaryIds.nextID()), label, (InternalVertex) outVertex, (InternalVertex) inVertex, ElementLifeCycle.New);
             if (config.hasAssignIDsImmediately()) graph.assignID(edge);
             connectRelation(edge);
             return edge;
@@ -512,7 +526,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                             "The given value [%s] is already used as a property and the property key [%s] is defined as graph-unique", value, key.getName());
                 }
             }
-            StandardProperty prop = new StandardProperty(temporaryID.decrementAndGet(), key, (InternalVertex) vertex, value, ElementLifeCycle.New);
+            StandardProperty prop = new StandardProperty(IDManager.getTemporaryRelationID(temporaryIds.nextID()), key, (InternalVertex) vertex, value, ElementLifeCycle.New);
             if (config.hasAssignIDsImmediately()) graph.assignID(prop);
             connectRelation(prop);
             return prop;
@@ -562,23 +576,23 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * ------------------------------------ Type Handling ------------------------------------
      */
 
-    private final TitanType makeTitanType(TitanTypeClass typeClass, String name, TypeAttribute.Map definition) {
+    private final TitanType makeRelationType(TitanTypeCategory typeCategory, String name, TypeAttribute.Map definition) {
         verifyOpen();
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         TitanTypeVertex type;
-        if (typeClass == TitanTypeClass.KEY) {
+        if (typeCategory == TitanTypeCategory.KEY) {
             TypeAttribute.isValidKeyDefinition(definition);
-            type = new TitanKeyVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
+            type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
         } else {
-            Preconditions.checkArgument(typeClass == TitanTypeClass.LABEL);
+            Preconditions.checkArgument(typeCategory == TitanTypeCategory.LABEL,"Illegal type category: %s",typeCategory);
             TypeAttribute.isValidLabelDefinition(definition);
-            type = new TitanLabelVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
+            type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
         }
         graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
         addProperty(type, SystemKey.TypeName, name);
-        addProperty(type, SystemKey.VertexState, SystemKey.VertexStates.DEFAULT.getValue());
-        addProperty(type, SystemKey.TypeClass, typeClass);
+        addProperty(type, SystemKey.VertexExists, Boolean.TRUE);
+        addProperty(type, SystemKey.TypeCategory, typeCategory);
         for (TypeAttribute attribute : definition.getAttributes()) {
             addProperty(type, SystemKey.TypeDefinition, attribute);
         }
@@ -589,11 +603,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public TitanKey makePropertyKey(String name, TypeAttribute.Map definition) {
-        return (TitanKey) makeTitanType(TitanTypeClass.KEY, name, definition);
+        return (TitanKey) makeRelationType(TitanTypeCategory.KEY, name, definition);
     }
 
     public TitanLabel makeEdgeLabel(String name, TypeAttribute.Map definition) {
-        return (TitanLabel) makeTitanType(TitanTypeClass.LABEL, name, definition);
+        return (TitanLabel) makeRelationType(TitanTypeCategory.LABEL, name, definition);
     }
 
     @Override
@@ -794,11 +808,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
-            Preconditions.checkArgument(query.getResultType() == ElementType.VERTEX || query.getResultType() == ElementType.EDGE);
+            Preconditions.checkArgument(query.getResultType() == ElementCategory.VERTEX || query.getResultType() == ElementCategory.EDGE);
             //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
             if (!query.getCondition().hasChildren()) return Iterators.emptyIterator();
 
-            if (query.getResultType() == ElementType.VERTEX && hasModifications()) {
+            if (query.getResultType() == ElementCategory.VERTEX && hasModifications()) {
                 Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));
                 PredicateCondition<TitanKey, TitanElement> standardIndexKey = getEqualityCondition(query.getCondition());
                 Iterator<TitanVertex> vertices;
@@ -847,7 +861,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                         return query.matches(vertex);
                     }
                 });
-            } else if (query.getResultType() == ElementType.EDGE && !addedRelations.isEmpty()) {
+            } else if (query.getResultType() == ElementCategory.EDGE && !addedRelations.isEmpty()) {
                 return (Iterator) addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
@@ -866,13 +880,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         @Override
         public boolean isDeleted(GraphCentricQuery query, TitanElement result) {
             if (result == null || result.isRemoved()) return true;
-            else if (query.getResultType() == ElementType.VERTEX) {
+            else if (query.getResultType() == ElementCategory.VERTEX) {
                 Preconditions.checkArgument(result instanceof InternalVertex);
                 InternalVertex v = ((InternalVertex) result).it();
                 if (v.hasAddedRelations() || v.hasRemovedRelations()) {
                     return !query.matches(result);
                 } else return false;
-            } else if (query.getResultType() == ElementType.EDGE) {
+            } else if (query.getResultType() == ElementCategory.EDGE) {
                 //Loaded edges are immutable and new edges are previously filtered
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
                 return false;
@@ -928,14 +942,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     };
 
-    public Function<Object, ? extends TitanElement> getConversionFunction(final ElementType elementType) {
-        switch (elementType) {
+    public Function<Object, ? extends TitanElement> getConversionFunction(final ElementCategory elementCategory) {
+        switch (elementCategory) {
             case VERTEX:
                 return vertexIDConversionFct;
             case EDGE:
                 return edgeIDConversionFct;
             default:
-                throw new IllegalArgumentException("Unexpected result type: " + elementType);
+                throw new IllegalArgumentException("Unexpected result type: " + elementCategory);
         }
     }
 

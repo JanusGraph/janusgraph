@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -130,7 +130,7 @@ public class IDHandler {
         return new StaticArrayBuffer(arr);
     }
 
-    public static StaticBuffer[] getBounds(RelationType type) {
+    public static StaticBuffer[] getBounds(RelationCategory type) {
         int start, end;
         switch (type) {
             case PROPERTY:

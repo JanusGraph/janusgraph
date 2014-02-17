@@ -187,6 +187,8 @@ public class IDManager {
         abstract boolean isProper();
 
         public final long addPadding(long count) {
+            assert offset()>0;
+            Preconditions.checkArgument(count>0 && count<(1l<<(TOTAL_BITS-offset())),"Count out of range for type [%s]: %s",this,count);
             return (count << offset()) | suffix();
         }
 
@@ -196,6 +198,10 @@ public class IDManager {
 
         public final boolean is(long id) {
             return (id & ((1l << offset()) - 1)) == suffix();
+        }
+
+        public final boolean isSubType(VertexIDType type) {
+            return is(type.suffix());
         }
     }
 
@@ -282,13 +288,32 @@ public class IDManager {
         return addPartition(VertexIDType.Vertex.addPadding(count), partition);
     }
 
+    /*
+
+    Temporary ids are negative and don't have partitions
+
+     */
+
+    public static long getTemporaryRelationID(long count) {
+        return makeTemporary(count);
+    }
+
+    public static long getTemporaryVertexID(VertexIDType type, long count) {
+        Preconditions.checkArgument(type.isProper(),"Invalid vertex id type: %s",type);
+        return makeTemporary(type.addPadding(count));
+    }
+
+    private static long makeTemporary(long id) {
+        Preconditions.checkArgument(id>0);
+        return (1l<<63) | id; //make negative but preserve bit pattern
+    }
 
     /* --- TitanRelation Type id bit format ---
       *  [ 0 | count | ID padding ]
      */
 
     private static long getSchemaIdBound(VertexIDType type) {
-        assert VertexIDType.SchemaType.is(type.suffix()) : "Expected schema type but got: " + type;
+        assert VertexIDType.SchemaType.isSubType(type) : "Expected schema type but got: " + type;
         assert TYPE_LEN_RESERVE>0;
         return (1l << (TOTAL_BITS - type.offset() - TYPE_LEN_RESERVE));
     }

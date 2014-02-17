@@ -8,8 +8,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Interval;
@@ -207,20 +206,20 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     private static final int HARD_MAX_LIMIT   = 300000;
 
-    protected BaseVertexCentricQuery constructQuery(RelationType returnType) {
+    protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         assert returnType != null;
         if (limit == 0)
             return BaseVertexCentricQuery.emptyQuery();
 
         //Prepare direction
-        if (returnType == RelationType.PROPERTY) {
+        if (returnType == RelationCategory.PROPERTY) {
             if (dir == Direction.IN)
                 return BaseVertexCentricQuery.emptyQuery();
 
             dir = Direction.OUT;
         }
 
-        assert getVertexConstraint() == null || returnType == RelationType.EDGE;
+        assert getVertexConstraint() == null || returnType == RelationCategory.EDGE;
 
         //Prepare constraints
         And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
@@ -236,14 +235,14 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
         List<BackendQueryHolder<SliceQuery>> queries;
         if (!hasTypes()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
-                    ((dir == Direction.BOTH || (returnType == RelationType.PROPERTY && dir == Direction.OUT))
+                    ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
                             && !conditions.hasChildren() && includeHidden), true, null);
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
-                if (dir != Direction.BOTH && (returnType == RelationType.EDGE || returnType == RelationType.RELATION))
+                if (dir != Direction.BOTH && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION))
                     sliceLimit *= 2;
                 //on properties, add some for the hidden properties on a vertex
-                if (!includeHidden && (returnType == RelationType.PROPERTY || returnType == RelationType.RELATION))
+                if (!includeHidden && (returnType == RelationCategory.PROPERTY || returnType == RelationCategory.RELATION))
                     sliceLimit += 3;
             }
             query.getBackendQuery().setLimit(computeLimit(conditions,sliceLimit));
@@ -262,14 +261,14 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                 if (type != null && (includeHidden || !type.isHidden())) {
                     ts.add(type);
                     if (type.isPropertyKey()) {
-                        if (returnType == RelationType.EDGE)
+                        if (returnType == RelationCategory.EDGE)
                             throw new IllegalArgumentException("Querying for edges but including a property key: " + type.getName());
-                        returnType = RelationType.PROPERTY;
+                        returnType = RelationCategory.PROPERTY;
                     }
                     if (type.isEdgeLabel()) {
-                        if (returnType == RelationType.PROPERTY)
+                        if (returnType == RelationCategory.PROPERTY)
                             throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.getName());
-                        returnType = RelationType.EDGE;
+                        returnType = RelationCategory.EDGE;
                     }
                     //Construct sort key constraints (if any, and if not direction==Both)
                     EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[type.getSortKey().length];

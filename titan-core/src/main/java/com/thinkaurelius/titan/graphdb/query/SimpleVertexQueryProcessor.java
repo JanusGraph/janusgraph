@@ -14,7 +14,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.RelationQueryCache;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -66,7 +66,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         filterHiddenProperties = key==null;
         if (key==null || tx.getConfiguration().hasPropertyPrefetching()) {
             this.key = key;
-            sliceQuery = cache.getQuery(RelationType.PROPERTY);
+            sliceQuery = cache.getQuery(RelationCategory.PROPERTY);
         } else {
             sliceQuery = cache.getQuery((InternalType)key,Direction.OUT);
         }
@@ -79,7 +79,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         RelationQueryCache cache = tx.getGraph().getQueryCache();
         if (label==null) {
             assert sortKeyConstraints==null;
-            sliceQuery = cache.getQuery(RelationType.EDGE);
+            sliceQuery = cache.getQuery(RelationCategory.EDGE);
             filterDirection = dir==Direction.BOTH?null:dir;
         } else {
             if (AbstractVertexCentricQueryBuilder.hasSortKeyConstraints(sortKeyConstraints)) {

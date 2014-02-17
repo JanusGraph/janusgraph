@@ -12,8 +12,6 @@ import com.tinkerpop.blueprints.Direction;
  */
 public interface InternalType extends TitanType, InternalVertex {
 
-    public boolean isHidden();
-
     public boolean uniqueLock(Direction direction);
 
     public long[] getSignature();

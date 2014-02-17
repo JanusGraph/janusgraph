@@ -1,20 +1,15 @@
 package com.thinkaurelius.titan.graphdb.query;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
-import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -22,9 +17,7 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -136,13 +129,13 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
 
     @Override
     public Iterable<Vertex> vertices() {
-        GraphCentricQuery query = constructQuery(ElementType.VERTEX);
+        GraphCentricQuery query = constructQuery(ElementCategory.VERTEX);
         return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Vertex.class);
     }
 
     @Override
     public Iterable<Edge> edges() {
-        GraphCentricQuery query = constructQuery(ElementType.EDGE);
+        GraphCentricQuery query = constructQuery(ElementCategory.EDGE);
         return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), Edge.class);
     }
 
@@ -155,7 +148,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     private static final int MAX_BASE_LIMIT = 20000;
     private static final int HARD_MAX_LIMIT = 50000;
 
-    private GraphCentricQuery constructQuery(final ElementType resultType) {
+    private GraphCentricQuery constructQuery(final ElementCategory resultType) {
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 
@@ -226,7 +219,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
-    private static final boolean indexCoversOrder(String index, OrderList orders, ElementType resultType) {
+    private static final boolean indexCoversOrder(String index, OrderList orders, ElementCategory resultType) {
         if (orders.isEmpty()) return true;
         else if (index.equals(Titan.Token.STANDARD_INDEX)) return false;
         for (int i = 0; i < orders.size(); i++) {

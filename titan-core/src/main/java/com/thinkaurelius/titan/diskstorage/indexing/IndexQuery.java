@@ -4,9 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.Query;
@@ -14,7 +11,6 @@ import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
-import java.util.Comparator;
 import java.util.List;
 
 /**

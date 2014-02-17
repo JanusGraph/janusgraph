@@ -156,5 +156,4 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      */
     public boolean isRemoved();
 
-
 }

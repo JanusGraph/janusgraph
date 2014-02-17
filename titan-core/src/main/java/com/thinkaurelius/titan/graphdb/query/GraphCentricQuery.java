@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.query;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.graphdb.internal.ElementType;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.FixedCondition;
@@ -20,9 +20,9 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     private final Condition<TitanElement> condition;
     private final BackendQueryHolder<JointIndexQuery> indexQuery;
     private final OrderList orders;
-    private final ElementType resultType;
+    private final ElementCategory resultType;
 
-    public GraphCentricQuery(ElementType resultType, Condition<TitanElement> condition, OrderList orders,
+    public GraphCentricQuery(ElementCategory resultType, Condition<TitanElement> condition, OrderList orders,
                              BackendQueryHolder<JointIndexQuery> indexQuery, int limit) {
         super(limit);
         Preconditions.checkNotNull(condition);
@@ -36,7 +36,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
         this.indexQuery = indexQuery;
     }
 
-    public static final GraphCentricQuery emptyQuery(ElementType resultType) {
+    public static final GraphCentricQuery emptyQuery(ElementCategory resultType) {
         Condition<TitanElement> cond = new FixedCondition<TitanElement>(false);
         return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
                 new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(),
@@ -47,7 +47,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
         return condition;
     }
 
-    public ElementType getResultType() {
+    public ElementCategory getResultType() {
         return resultType;
     }
 

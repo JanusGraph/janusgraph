@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
-public enum RelationType implements Condition<TitanRelation> {
+public enum RelationCategory implements Condition<TitanRelation> {
 
     EDGE, PROPERTY, RELATION;
 

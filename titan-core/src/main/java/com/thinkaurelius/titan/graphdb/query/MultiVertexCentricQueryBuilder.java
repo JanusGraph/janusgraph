@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
@@ -164,7 +164,7 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
     }
 
 
-    protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationType returnType) {
+    protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationCategory returnType) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
         Map<TitanVertex, Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size());
@@ -195,17 +195,17 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     @Override
     public Map<TitanVertex, Iterable<TitanEdge>> titanEdges() {
-        return (Map) relations(RelationType.EDGE);
+        return (Map) relations(RelationCategory.EDGE);
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanProperty>> properties() {
-        return (Map) relations(RelationType.PROPERTY);
+        return (Map) relations(RelationCategory.PROPERTY);
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanRelation>> relations() {
-        return (Map) relations(RelationType.RELATION);
+        return (Map) relations(RelationCategory.RELATION);
     }
 
     @Override

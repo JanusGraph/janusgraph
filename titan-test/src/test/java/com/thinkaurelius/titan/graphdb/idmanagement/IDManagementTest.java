@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
 import org.junit.Before;
@@ -20,9 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class IDManagementTest {
 
@@ -84,6 +82,27 @@ public class IDManagementTest {
         id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
         assertTrue(isp.isEdgeLabelId(id));
         assertTrue(isp.isRelationTypeId(id));
+
+        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.Vertex,1);
+        assertTrue(id<0);
+        assertTrue(IDManager.VertexIDType.Vertex.is(id));
+
+        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,2);
+        assertTrue(id<0);
+        assertTrue(IDManager.VertexIDType.EdgeLabel.is(id));
+
+        id = IDManager.getTemporaryRelationID(101);
+        assertTrue(id<0);
+
+        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.HiddenVertex,1011);
+        assertTrue(id<0);
+        assertTrue(IDManager.VertexIDType.Hidden.is(id));
+
+        try {
+            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.RelationType,5);
+            fail();
+        } catch (IllegalArgumentException e) {}
+
     }
 
     @Test
@@ -99,17 +118,17 @@ public class IDManagementTest {
             long count = RandomGenerator.randomLong(1, eid.getRelationTypeCountBound());
             long id;
             int dirID;
-            RelationType type;
+            RelationCategory type;
             if (Math.random() < 0.5) {
                 id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
                 assertTrue(isp.isEdgeLabelId(id));
-                type = RelationType.EDGE;
+                type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.EDGE_IN_DIR;
                 else
                     dirID = IDHandler.EDGE_OUT_DIR;
             } else {
-                type = RelationType.PROPERTY;
+                type = RelationCategory.PROPERTY;
                 id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey,count);
                 assertTrue(isp.isPropertyKeyId(id));
                 dirID = IDHandler.PROPERTY_DIR;
@@ -141,7 +160,7 @@ public class IDManagementTest {
             StaticBuffer[] bounds = IDHandler.getBounds(type);
             assertTrue(bounds[0].compareTo(b)<0);
             assertTrue(bounds[1].compareTo(b)>0);
-            bounds = IDHandler.getBounds(RelationType.RELATION);
+            bounds = IDHandler.getBounds(RelationCategory.RELATION);
             assertTrue(bounds[0].compareTo(b)<0);
             assertTrue(bounds[1].compareTo(b)>0);
         }
@@ -149,7 +168,7 @@ public class IDManagementTest {
 
     @Test
     public void testDirectionPrefix() {
-        for (RelationType type : RelationType.values()) {
+        for (RelationCategory type : RelationCategory.values()) {
             StaticBuffer[] bounds = IDHandler.getBounds(type);
             assertEquals(1,bounds[0].length());
             assertEquals(1,bounds[1].length());

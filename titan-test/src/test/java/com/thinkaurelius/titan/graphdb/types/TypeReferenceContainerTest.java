@@ -3,17 +3,13 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.reference.TitanTypeReference;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -23,10 +19,7 @@ import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonWriter;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.StringWriter;
-import java.util.Iterator;
 
 import static org.junit.Assert.*;
 
@@ -85,9 +78,9 @@ public class TypeReferenceContainerTest {
         assertTrue(((InternalType) uid).uniqueLock(Direction.IN));
         assertEquals(String.class,uid.getDataType());
 
-        assertTrue(types.containsType(SystemKey.VertexState.getName()));
+        assertTrue(types.containsType(SystemKey.VertexExists.getName()));
         assertEquals(SystemKey.TypeDefinition,types.getExistingType(SystemKey.TypeDefinition.getID()));
-        assertEquals(SystemKey.TypeClass,types.getType(SystemKey.TypeClass.getName()));
+        assertEquals(SystemKey.TypeCategory,types.getType(SystemKey.TypeCategory.getName()));
     }
 
     @Test

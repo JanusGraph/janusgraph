@@ -1,12 +1,11 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Element;
@@ -22,29 +21,14 @@ public class SystemKey extends SystemType implements TitanKey {
     public static final SystemKey TypeDefinition =
             new SystemKey("TypeDefinition", TypeAttribute.class, 2, false, new boolean[]{false, false}, false);
 
-    public static final SystemKey TypeClass =
-            new SystemKey("TypeClass", TitanTypeClass.class, 3, true, new boolean[]{true, false}, false);
+    public static final SystemKey TypeCategory =
+            new SystemKey("TypeCategory", TitanTypeCategory.class, 3, true, new boolean[]{true, false}, false);
 
-    public static final SystemKey VertexState =
-            new SystemKey("VertexState", Byte.class, 4, false, new boolean[]{true, false}, true);
-
-    public enum VertexStates {
-        DEFAULT(0);
-
-        private byte value;
-
-        VertexStates(int value) {
-            Preconditions.checkArgument(value >= 0 && value <= Byte.MAX_VALUE);
-            this.value = (byte) value;
-        }
-
-        public byte getValue() {
-            return value;
-        }
-    }
+    public static final SystemKey VertexExists =
+            new SystemKey("VertexExists", Boolean.class, 4, false, new boolean[]{true, false}, true);
 
     public static final Map<String, SystemKey> KEY_MAP = ImmutableMap.of(TypeDefinition.getName(), TypeDefinition,
-            TypeName.getName(), TypeName, TypeClass.getName(), TypeClass, VertexState.getName(), VertexState);
+            TypeName.getName(), TypeName, TypeCategory.getName(), TypeCategory, VertexExists.getName(), VertexExists);
 
     private final Class<?> dataType;
     private final boolean index;
@@ -54,7 +38,7 @@ public class SystemKey extends SystemType implements TitanKey {
     }
 
     private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean[] uniqueness, boolean modifiable) {
-        super(name, id, RelationType.PROPERTY, uniqueness, modifiable);
+        super(name, id, RelationCategory.PROPERTY, uniqueness, modifiable);
         this.dataType = dataType;
         this.index = index;
     }

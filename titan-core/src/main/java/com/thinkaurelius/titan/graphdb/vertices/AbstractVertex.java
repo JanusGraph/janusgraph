@@ -76,7 +76,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         }
         //Finally remove internal/hidden relations
         for (TitanRelation r : QueryUtil.queryAll(it())) {
-            if (r.getType().equals(SystemKey.VertexState)) r.remove();
+            if (r.getType().equals(SystemKey.VertexExists)) r.remove();
             else throw new IllegalStateException("Cannot remove vertex since it is still connected");
         }
     }
@@ -245,29 +245,5 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public <O> O removeProperty(String key) {
         if (!tx().containsType(key)) return null;
         else return removeProperty(tx().getPropertyKey(key));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == null)
-            return false;
-
-        if (this == other)
-            return true;
-
-        try {
-            return id == ((AbstractVertex) other).id;
-        } catch (ClassCastException e) {
-            return super.equals(other);
-        }
-    }
-    
-    /*
-     * This silences a static analysis warning about overridding equals without
-     * overridding hashcode.
-     */
-    @Override
-    public int hashCode() {
-        return super.hashCode();
     }
 }
