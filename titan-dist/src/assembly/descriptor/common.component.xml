@@ -29,10 +29,9 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>false</useProjectArtifact>
-            <excludes>
-                <exclude>${project.groupId}:titan-site:zip:htdocs:${project.version}</exclude>
-                <exclude>${project.groupId}:titan-all:pom:${project.version}</exclude>
-            </excludes>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
         </dependencySet>
     </dependencySets>
 </component>
