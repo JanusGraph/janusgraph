@@ -111,19 +111,23 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
         return this;
     }
 
+
     @Override
     public StandardKeyMaker signature(TitanType... types) {
-        throw new UnsupportedOperationException();
+        super.signature(types);
+        return this;
     }
 
     @Override
     public StandardKeyMaker sortKey(TitanType... types) {
-        throw new UnsupportedOperationException();
+        super.sortKey(types);
+        return this;
     }
 
     @Override
     public StandardKeyMaker sortOrder(Order order) {
-        throw new UnsupportedOperationException();
+        super.sortOrder(order);
+        return this;
     }
 
     @Override

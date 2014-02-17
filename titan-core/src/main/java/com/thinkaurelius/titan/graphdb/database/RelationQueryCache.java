@@ -68,7 +68,7 @@ public class RelationQueryCache {
 
         public CacheEntry(EdgeSerializer edgeSerializer, InternalType t) {
             if (t.isPropertyKey()) {
-                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[0],null);
+                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
                 in = out;
                 both = out;
             } else {

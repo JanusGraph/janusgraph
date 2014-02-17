@@ -75,11 +75,5 @@ public abstract class TitanGraphTestCommon extends TitanGraphBaseTest {
                 make();
     }
 
-    public TitanKey makeNonUniqueStringPropertyKey(String name) {
-        return tx.makeKey(name).list().
-                indexed(Vertex.class).
-                dataType(String.class).
-                make();
-    }
 
 }

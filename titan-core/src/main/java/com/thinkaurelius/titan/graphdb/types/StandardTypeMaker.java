@@ -116,17 +116,17 @@ abstract class StandardTypeMaker implements TypeMaker {
         return def;
     }
 
-    protected StandardTypeMaker signature(TitanType... types) {
+    public StandardTypeMaker signature(TitanType... types) {
         signature.addAll(Arrays.asList(types));
         return this;
     }
 
-    protected StandardTypeMaker sortKey(TitanType... types) {
+    public StandardTypeMaker sortKey(TitanType... types) {
         sortKey.addAll(Arrays.asList(types));
         return this;
     }
 
-    protected StandardTypeMaker sortOrder(Order order) {
+    public StandardTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);
         this.sortOrder=order;
         return this;

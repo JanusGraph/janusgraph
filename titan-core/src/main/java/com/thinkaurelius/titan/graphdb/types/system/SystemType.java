@@ -29,7 +29,7 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
 
     static long getSystemTypeId(long id, RelationCategory type) {
         Preconditions.checkArgument(id > 0);
-        Preconditions.checkArgument(id <= SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
+        Preconditions.checkArgument(id < SystemTypeManager.SYSTEM_TYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());
         switch (type) {
             case EDGE:

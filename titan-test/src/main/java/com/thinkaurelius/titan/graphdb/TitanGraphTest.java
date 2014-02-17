@@ -415,26 +415,45 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
          * The values list below must have at least two elements. The string
          * literals were chosen arbitrarily and have no special significance.
          */
-        final String foo = "foo", bar = "bar";
+        final String foo = "foo", bar = "bar", weight = "weight";
         final List<String> values =
                 ImmutableList.of("four", "score", "and", "seven");
         assertTrue("Values list must have multiple elements for this test to make sense",
                 2 <= values.size());
 
         // Create property with name pname and a vertex
-        makeNonUniqueStringPropertyKey(foo);
-        makeNonUniqueStringPropertyKey(bar);
+        TitanKey w = tx.makeKey(weight).dataType(Integer.class).make();
+        tx.makeKey(foo).list().sortKey(w).sortOrder(Order.DESC).indexed(Vertex.class).dataType(String.class).make();
+        tx.makeKey(bar).list().indexed(Vertex.class).dataType(String.class).make();
         newTx();
         TitanVertex v = tx.addVertex();
 
         // Insert prop values
+        int i=0;
         for (String s : values) {
-            v.addProperty(foo, s);
-            v.addProperty(bar, s);
+            TitanProperty p = v.addProperty(foo, s);
+            p.setProperty(weight,++i);
+            p = v.addProperty(bar, s);
+            p.setProperty(weight,i);
         }
 
         //Verify correct number of properties
         assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
+        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
+        //Verify order
+        for (String prop : new String[]{foo,bar}) {
+            int sum = 0;
+            int index = values.size();
+            for (TitanProperty p : v.getProperties(foo)) {
+                assertTrue(values.contains(p.getValue()));
+                int wint = p.getProperty(weight);
+                sum+=wint;
+                if (prop==foo) assertEquals(index,wint);
+                index--;
+            }
+            assertEquals(values.size()*(values.size()+1)/2,sum);
+        }
+
 
         assertEquals(1, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
         assertEquals(1, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
