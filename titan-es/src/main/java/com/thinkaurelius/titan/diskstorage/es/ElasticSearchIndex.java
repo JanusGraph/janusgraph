@@ -330,7 +330,6 @@ public class ElasticSearchIndex implements IndexProvider {
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
-
                     //Deletions first
                     if (mutation.hasDeletions()) {
                         if (mutation.isDeleted()) {
@@ -345,13 +344,12 @@ public class ElasticSearchIndex implements IndexProvider {
                                 }
                             }
                             if (!deletions.isEmpty()) {
-                                //TODO make part of batch mutation if/when possible
                                 StringBuilder script = new StringBuilder();
                                 for (String key : deletions) {
                                     script.append("ctx._source.remove(\"" + key + "\"); ");
                                 }
                                 log.trace("Deleting individual fields [{}] for document {}", deletions, docid);
-                                client.prepareUpdate(indexName, storename, docid).setScript(script.toString()).execute().actionGet();
+                                brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
                             }
                         }
                     }
@@ -361,13 +359,13 @@ public class ElasticSearchIndex implements IndexProvider {
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions())));
                             bulkrequests++;
-                        } else { //Update: TODO make part of batch mutation if/when possible
+                        } else {
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
                             UpdateRequestBuilder update = client.prepareUpdate(indexName, storename, docid).setDoc(builder);
                             if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}", docid, needUpsert);
-                            update.execute().actionGet();
+                            brb.add(update);
                         }
                     }
 

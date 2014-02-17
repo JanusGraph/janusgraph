@@ -414,6 +414,7 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
+        if (information.getCardinality()!= KeyInformation.Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
@@ -436,6 +437,7 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
+        if (information.getCardinality()!= KeyInformation.Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {
