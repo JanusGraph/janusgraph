@@ -68,11 +68,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
-    public static final ImmutableMap<ConfigOption<?>, String> HBASE_CONFIGURATION = ImmutableMap.of(
-            (ConfigOption<?>)GraphDatabaseConfiguration.STORAGE_HOSTS, "hbase.zookeeper.quorum",
-            GraphDatabaseConfiguration.PORT, "hbase.zookeeper.property.clientPort"
-    );
-
     private final String tableName;
     private final String compression;
     private final org.apache.hadoop.conf.Configuration hconf;
@@ -106,16 +101,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
 
+        checkConfigDeprecation(config);
+
         this.tableName = config.get(HBASE_TABLE);
 
         this.compression = config.get(COMPRESSION);
 
+        /* This static factory calls HBaseConfiguration.addHbaseResources(),
+         * which in turn applies the contents of hbase-default.xml and then
+         * applies the contents of hbase-site.xml.
+         */
         this.hconf = HBaseConfiguration.create();
-        for (Map.Entry<ConfigOption<?>, String> confEntry : HBASE_CONFIGURATION.entrySet()) {
-            if (config.has(confEntry.getKey())) {
-                hconf.set(confEntry.getValue(), config.get(confEntry.getKey()).toString());
-            }
-        }
 
         // Copy a subset of our commons config into a Hadoop config
         int keysLoaded=0;
@@ -687,5 +683,18 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private String getCfNameForStoreName(String storeName) throws PermanentStorageException {
         return shortCfNames ? shortenCfName(storeName) : storeName;
+    }
+
+    private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
+        if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
+            logger.warn(
+                    "The configuration property {} is ignored for HBase. Set hbase.zookeeper.quorum in hbase-site.xml or {}.hbase.zookeeper.quorum in Titan's configuration file.",
+                    GraphDatabaseConfiguration.STORAGE_HOSTS, HBASE_CONFIGURATION_NAMESPACE);
+        }
+
+        if (config.has(GraphDatabaseConfiguration.PORT)) {
+            logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
+                    GraphDatabaseConfiguration.PORT, HBASE_CONFIGURATION_NAMESPACE);
+        }
     }
 }
