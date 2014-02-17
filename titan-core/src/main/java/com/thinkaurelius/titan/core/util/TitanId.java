@@ -19,8 +19,8 @@ public class TitanId {
      */
     public static final long toVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Vertex id must be positive: %s", id);
-        Preconditions.checkArgument(IDManager.IDType.Vertex.removePadding(Long.MAX_VALUE) >= id, "Vertex id is too large: %s", id);
-        return IDManager.IDType.Vertex.addPadding(id);
+        Preconditions.checkArgument(IDManager.VertexIDType.Vertex.removePadding(Long.MAX_VALUE) >= id, "Vertex id is too large: %s", id);
+        return IDManager.VertexIDType.Vertex.addPadding(id);
     }
 
     /**
@@ -31,7 +31,7 @@ public class TitanId {
      */
     public static final long fromVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Invalid vertex id provided: %s", id);
-        return IDManager.IDType.Vertex.removePadding(id);
+        return IDManager.VertexIDType.Vertex.removePadding(id);
     }
 
     /**

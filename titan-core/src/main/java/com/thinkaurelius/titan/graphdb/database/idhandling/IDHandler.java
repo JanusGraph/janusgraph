@@ -57,7 +57,7 @@ public class IDHandler {
 
     public static int edgeTypeLength(long etid) {
         assert etid > 0 && (etid << 1) > 0;  //Check positive and no-overflow
-        return VariableLong.positiveWithPrefixLength(IDManager.getTypeCount(etid) << 1, PREFIX_BIT_LEN);
+        return VariableLong.positiveWithPrefixLength(IDManager.getRelationTypeIdCount(etid) << 1, PREFIX_BIT_LEN);
     }
 
 
@@ -71,7 +71,7 @@ public class IDHandler {
     public static void writeEdgeType(WriteBuffer out, long etid, int dirID) {
         assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
         assert isValidDirection(dirID);
-        etid = (IDManager.getTypeCount(etid) << 1) + getDirection(dirID);
+        etid = (IDManager.getRelationTypeIdCount(etid) << 1) + getDirection(dirID);
         VariableLong.writePositiveWithPrefix(out, etid, getRelationType(dirID), PREFIX_BIT_LEN);
     }
 
@@ -88,9 +88,9 @@ public class IDHandler {
         countPrefix[0] = countPrefix[0] >>> 1;
 
         if (countPrefix[1] == PROPERTY_DIR)
-            countPrefix[0] = IDManager.getPropertyKeyID(countPrefix[0]);
+            countPrefix[0] = IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey, countPrefix[0]);
         else if (countPrefix[1] == EDGE_IN_DIR || countPrefix[1] == EDGE_OUT_DIR)
-            countPrefix[0] = IDManager.getEdgeLabelID(countPrefix[0]);
+            countPrefix[0] = IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, countPrefix[0]);
         else
             throw new AssertionError("Invalid direction ID: " + countPrefix[1]);
         return countPrefix;
@@ -98,10 +98,10 @@ public class IDHandler {
 
 
     public static void writeInlineEdgeType(WriteBuffer out, long etid) {
-        long compressId = IDManager.getTypeCount(etid) << 1;
-        if (IDManager.isPropertyKeyID(etid))
+        long compressId = IDManager.getRelationTypeIdCount(etid) << 1;
+        if (IDManager.VertexIDType.PropertyKey.is(etid))
             compressId += 0;
-        else if (IDManager.isEdgeLabelID(etid))
+        else if (IDManager.VertexIDType.EdgeLabel.is(etid))
             compressId += 1;
         else throw new AssertionError("Invalid type id: " + etid);
         VariableLong.writePositive(out, compressId);
@@ -112,10 +112,10 @@ public class IDHandler {
         long id = compressId >>> 1;
         switch ((int) (compressId & 1)) {
             case 0:
-                id = IDManager.getPropertyKeyID(id);
+                id = IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey, id);
                 break;
             case 1:
-                id = IDManager.getEdgeLabelID(id);
+                id = IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel,id);
                 break;
             default:
                 throw new AssertionError("Invalid type: " + compressId);

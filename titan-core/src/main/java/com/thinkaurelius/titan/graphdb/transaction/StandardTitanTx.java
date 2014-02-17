@@ -270,7 +270,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertex getVertex(final long vertexid) {
         verifyOpen();
 
-        if (vertexid <= 0 || !(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid)))
+        if (vertexid <= 0 || !(idInspector.isRelationTypeId(vertexid) || idInspector.isVertexId(vertexid)))
             return null;
 
         if (null != config.getMetricsPrefix()) {
@@ -298,7 +298,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public InternalVertex get(Long vertexid) {
             Preconditions.checkNotNull(vertexid);
             Preconditions.checkArgument(vertexid > 0);
-            Preconditions.checkArgument(idInspector.isTypeID(vertexid) || idInspector.isVertexID(vertexid), "Not a valid vertex id: %s", vertexid);
+            Preconditions.checkArgument(idInspector.isRelationTypeId(vertexid) || idInspector.isVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
 
             byte lifecycle = ElementLifeCycle.Loaded;
             if (verifyExistence) {
@@ -307,14 +307,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             }
 
             InternalVertex vertex = null;
-            if (idInspector.isTypeID(vertexid)) {
-                if (idInspector.isPropertyKeyID(vertexid)) {
+            if (idInspector.isRelationTypeId(vertexid)) {
+                if (idInspector.isPropertyKeyId(vertexid)) {
                     vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
                 } else {
-                    Preconditions.checkArgument(idInspector.isEdgeLabelID(vertexid));
+                    Preconditions.checkArgument(idInspector.isEdgeLabelId(vertexid));
                     vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
                 }
-            } else if (idInspector.isVertexID(vertexid)) {
+            } else if (idInspector.isVertexId(vertexid)) {
                 vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;
@@ -329,7 +329,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             vertexId = null;
         }
         Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
-        Preconditions.checkArgument(vertexId == null || IDManager.isVertexID(vertexId), "Not a valid vertex id: %s", vertexId);
+        Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.Vertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
         StandardVertex vertex = new StandardVertex(this, temporaryID.decrementAndGet(), ElementLifeCycle.New);
         if (vertexId != null) {
@@ -599,7 +599,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public boolean containsType(String name) {
         verifyOpen();
-        return (newTypeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || graph.getTypeCache().getTypeId(name,this)!=null);
+        return (newTypeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || graph.getSchemaCache().getTypeId(name,this)!=null);
     }
 
     @Override
@@ -610,7 +610,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (type!=null) return type;
 
         Long typeId = newTypeCache.get(name);
-        if (typeId==null) typeId=graph.getTypeCache().getTypeId(name,this);
+        if (typeId==null) typeId=graph.getSchemaCache().getTypeId(name,this);
         if (typeId != null) {
             InternalVertex typeVertex = vertexCache.get(typeId, existingVertexRetriever);
             assert typeVertex!=null;
@@ -621,7 +621,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     // this is critical path we can't allow anything heavier then assertion in here
     @Override
     public TitanType getExistingType(long typeid) {
-        assert idInspector.isTypeID(typeid);
+        assert idInspector.isRelationTypeId(typeid);
 
         if (SystemTypeManager.isSystemRelationType(typeid))
             return SystemTypeManager.getSystemRelationType(typeid);

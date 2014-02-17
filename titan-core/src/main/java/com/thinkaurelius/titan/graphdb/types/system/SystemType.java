@@ -33,9 +33,9 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
         Preconditions.checkArgument(type.isProper());
         switch (type) {
             case EDGE:
-                return IDManager.getEdgeLabelID(id);
+                return IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel,id);
             case PROPERTY:
-                return IDManager.getPropertyKeyID(id);
+                return IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey,id);
             default:
                 throw new AssertionError("Illegal condition: " + type);
         }

@@ -12,9 +12,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.Timestamps;
-import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedTypeCache;
-import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
-import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
+import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
+import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
@@ -1423,9 +1423,9 @@ public class GraphDatabaseConfiguration {
         return configuration.get(ATTRIBUTE_ALLOW_ALL_SERIALIZABLE);
     }
 
-    public TypeCache getTypeCache(TypeCache.StoreRetrieval retriever) {
-        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedTypeCache(retriever);
-        else return new StandardTypeCache(retriever);
+    public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
+        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedSchemaCache(retriever);
+        else return new StandardSchemaCache(retriever);
     }
 
 

@@ -14,8 +14,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
-import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
+import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
@@ -69,7 +68,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     //Caches
     public final SliceQuery vertexExistenceQuery;
     private final RelationQueryCache queryCache;
-    private final TypeCache typeCache;
+    private final SchemaCache schemaCache;
 
     private boolean isOpen;
 
@@ -88,7 +87,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.edgeSerializer = new EdgeSerializer(this.serializer);
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
-        this.typeCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         isOpen = true;
     }
 
@@ -124,7 +123,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public IDInspector getIDInspector() {
-        return idManager.getIDInspector();
+        return idManager.getIdInspector();
     }
 
     public EdgeSerializer getEdgeSerializer() {
@@ -139,8 +138,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return queryCache;
     }
 
-    public TypeCache getTypeCache() {
-        return typeCache;
+    public SchemaCache getSchemaCache() {
+        return schemaCache;
     }
 
     public GraphDatabaseConfiguration getConfiguration() {
@@ -183,18 +182,18 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     // ################### READ #########################
 
-    private final TypeCache.StoreRetrieval typeCacheRetrieval = new TypeCache.StoreRetrieval() {
+    private final SchemaCache.StoreRetrieval typeCacheRetrieval = new SchemaCache.StoreRetrieval() {
 
         @Override
-        public Long retrieveTypeByName(String typename, StandardTitanTx tx) {
-            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(SystemKey.TypeName, typename),null);
+        public Long retrieveTypeByName(String typeName, StandardTitanTx tx) {
+            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(SystemKey.TypeName, typeName),null);
             return v!=null?v.getID():null;
         }
 
         @Override
-        public EntryList retrieveTypeRelations(final long typeid, final SystemType type, final Direction dir, final StandardTitanTx tx) {
+        public EntryList retrieveTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
-            return edgeQuery(typeid, query, tx.getTxHandle());
+            return edgeQuery(schemaId, query, tx.getTxHandle());
         }
 
     };

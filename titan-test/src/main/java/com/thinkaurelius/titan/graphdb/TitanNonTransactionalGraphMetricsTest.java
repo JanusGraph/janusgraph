@@ -14,7 +14,7 @@ import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import static com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedTypeCache.*;
+import static com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;

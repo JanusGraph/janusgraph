@@ -39,7 +39,7 @@ public class StandardIDPool implements IDPool {
 
 
     private final IDAuthority idAuthority;
-    private final long maxID; //inclusive
+    private final long idUpperBound; //exclusive
     private final int partitionID;
 
     private final long renewTimeoutMS;
@@ -56,12 +56,12 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID, long renewTimeoutMS, double renewBufferPercentage) {
-        Preconditions.checkArgument(maximumID > 0);
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, long renewTimeoutMS, double renewBufferPercentage) {
+        Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
         Preconditions.checkArgument(partitionID<(1l<<32));
         this.partitionID = (int) partitionID;
-        this.maxID = maximumID;
+        this.idUpperBound = idUpperBound;
         Preconditions.checkArgument(renewTimeoutMS>0,"Renew-timeout must be positive");
         this.renewTimeoutMS = renewTimeoutMS;
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
@@ -180,7 +180,7 @@ public class StandardIDPool implements IDPool {
         }
         long returnId = nextID;
         nextID++;
-        if (returnId > maxID) throw new IDPoolExhaustedException("Exhausted max id of " + maxID);
+        if (returnId >= idUpperBound) throw new IDPoolExhaustedException("Reached id upper bound of " + idUpperBound);
         log.trace("[{}] Returned id: {}", partitionID, returnId);
         return returnId;
     }

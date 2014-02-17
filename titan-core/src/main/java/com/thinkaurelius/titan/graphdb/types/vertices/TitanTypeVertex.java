@@ -30,7 +30,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
-                                            tx.getGraph().getTypeCache().getTypeRelations(getID(), SystemKey.TypeName, Direction.OUT, tx()),
+                                            tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeName, Direction.OUT, tx()),
                                             tx), null);
             } else {
                 p = Iterables.getOnlyElement(query().
@@ -50,7 +50,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getTypeCache().getTypeRelations(getID(), SystemKey.TypeDefinition, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeDefinition, Direction.OUT, tx()),
                         tx);
             } else {
                 ps = query().includeHidden().type(SystemKey.TypeDefinition).properties();

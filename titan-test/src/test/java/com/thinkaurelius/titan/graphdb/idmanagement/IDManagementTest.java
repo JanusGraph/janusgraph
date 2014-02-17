@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.After;
@@ -63,40 +62,47 @@ public class IDManagementTest {
 
     public void testEntityID(int partitionBits, long count, int partition) {
         IDManager eid = new IDManager(partitionBits);
+        IDInspector isp = eid.getIdInspector();
+
+        assertTrue(eid.getPartitionBound()>0);
+        assertTrue(eid.getPartitionBound()<=1l+Integer.MAX_VALUE);
+        assertTrue(eid.getRelationCountBound()>0);
+        assertTrue(eid.getRelationTypeCountBound()>0);
+        assertTrue(eid.getVertexCountBound()>0);
 
         long id = eid.getVertexID(count, partition);
-        assertTrue(eid.isVertexID(id));
-        assertEquals(eid.getPartitionID(id), partition);
+        assertTrue(isp.isVertexId(id));
+        assertEquals(eid.getPartitionId(id), partition);
 
         id = eid.getRelationID(count, partition);
-        assertTrue(eid.isRelationID(id));
-        assertEquals(eid.getPartitionID(id), partition);
+        assertEquals(eid.getPartitionId(id), partition);
 
-        id = eid.getPropertyKeyID(count);
-        assertTrue(eid.isPropertyKeyID(id));
-        assertTrue(eid.isTypeID(id));
+        id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey, count);
+        assertTrue(isp.isPropertyKeyId(id));
+        assertTrue(isp.isRelationTypeId(id));
 
-        id = eid.getEdgeLabelID(count);
-        assertTrue(eid.isEdgeLabelID(id));
-        assertTrue(eid.isTypeID(id));
+        id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+        assertTrue(isp.isEdgeLabelId(id));
+        assertTrue(isp.isRelationTypeId(id));
     }
 
     @Test
     public void edgeTypeIDTest() {
         int partitionBits = 21;
         IDManager eid = new IDManager(partitionBits);
+        IDInspector isp = eid.getIdInspector();
         int trails = 1000000;
-        assertEquals(eid.getMaxPartitionCount(), (1 << partitionBits) - 1);
+        assertEquals(eid.getPartitionBound(), (1l << partitionBits));
 
         Serializer serializer = new StandardSerializer();
         for (int t = 0; t < trails; t++) {
-            long count = RandomGenerator.randomLong(1, eid.getMaxTitanTypeCount());
+            long count = RandomGenerator.randomLong(1, eid.getRelationTypeCountBound());
             long id;
             int dirID;
             RelationType type;
             if (Math.random() < 0.5) {
-                id = eid.getEdgeLabelID(count);
-                assertTrue(eid.isEdgeLabelID(id));
+                id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+                assertTrue(isp.isEdgeLabelId(id));
                 type = RelationType.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.EDGE_IN_DIR;
@@ -104,11 +110,11 @@ public class IDManagementTest {
                     dirID = IDHandler.EDGE_OUT_DIR;
             } else {
                 type = RelationType.PROPERTY;
-                id = eid.getPropertyKeyID(count);
-                assertTrue(eid.isPropertyKeyID(id));
+                id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey,count);
+                assertTrue(isp.isPropertyKeyId(id));
                 dirID = IDHandler.PROPERTY_DIR;
             }
-            assertTrue(eid.isTypeID(id));
+            assertTrue(isp.isRelationTypeId(id));
 
             StaticBuffer b = IDHandler.getEdgeType(id, dirID);
 //            System.out.println(dirID);
