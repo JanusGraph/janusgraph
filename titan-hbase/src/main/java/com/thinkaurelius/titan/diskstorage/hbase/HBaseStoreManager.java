@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -146,7 +145,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final org.apache.hadoop.conf.Configuration hconf;
 
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
-    private final HTablePool connectionPool;
 
     private final boolean shortCfNames;
     private static final BiMap<String, String> shortCfNameMap =
@@ -210,8 +208,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
-
-        connectionPool = new HTablePool(hconf, connectionPoolSize);
 
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
@@ -292,13 +288,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         try {
             HTableInterface table = null;
+            HConnection cnx = null;
 
             try {
-                table = connectionPool.getTable(tableName);
+                cnx = HConnectionManager.createConnection(hconf);
+                table = cnx.getTable(tableName);
                 table.batch(batch);
                 table.flushCommits();
             } finally {
                 IOUtils.closeQuietly(table);
+                IOUtils.closeQuietly(cnx);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
@@ -318,7 +317,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, connectionPool, tableName, cfName, longName);
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, hconf, tableName, cfName, longName);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 

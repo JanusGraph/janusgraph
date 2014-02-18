@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 
 /**
  * This class overrides and adds nothing compared with
