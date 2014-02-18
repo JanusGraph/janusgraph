@@ -90,11 +90,12 @@ public class BufferUtil {
             }
             next[i]=b;
         }
-        if (!allowOverflow) {
-            Preconditions.checkArgument(!carry, "Buffer overflow");
-            return StaticArrayBuffer.of(next);
-        } else {
+        if (carry && allowOverflow) {
             return zeroBuffer(len);
+        } else if (carry) {
+            throw new IllegalArgumentException("Buffer overflow incrementing " + buffer);
+        } else {
+            return StaticArrayBuffer.of(next);
         }
 
     }
