@@ -216,7 +216,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             this.cnx = HConnectionManager.createConnection(hconf);
         } catch (ZooKeeperConnectionException e) {
             throw new PermanentStorageException(e);
-        } catch (IOException e) { // thrown in 0.96 but not 0.94
+        } catch (@SuppressWarnings("hiding") IOException e) { // not thrown in 0.94, but thrown in 0.96+
             throw new PermanentStorageException(e);
         }
 
