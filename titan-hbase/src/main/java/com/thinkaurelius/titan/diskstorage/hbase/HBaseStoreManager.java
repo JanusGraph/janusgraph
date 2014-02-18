@@ -142,6 +142,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final String compression;
     private final int regionCount;
     private final int regionsPerServer;
+    private final HConnection cnx;
     private final org.apache.hadoop.conf.Configuration hconf;
 
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -211,6 +212,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         this.shortCfNames = config.get(SHORT_CF_NAMES);
 
+        try {
+            this.cnx = HConnectionManager.createConnection(hconf);
+        } catch (ZooKeeperConnectionException e) {
+            throw new PermanentStorageException(e);
+        } catch (IOException e) { // thrown in 0.96 but not 0.94
+            throw new PermanentStorageException(e);
+        }
+
         openStores = new ConcurrentHashMap<String, HBaseKeyColumnValueStore>();
     }
 
@@ -228,6 +237,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     @Override
     public void close() {
         openStores.clear();
+        IOUtils.closeQuietly(cnx);
     }
 
 
@@ -288,16 +298,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         try {
             HTableInterface table = null;
-            HConnection cnx = null;
 
             try {
-                cnx = HConnectionManager.createConnection(hconf);
                 table = cnx.getTable(tableName);
                 table.batch(batch);
                 table.flushCommits();
             } finally {
                 IOUtils.closeQuietly(table);
-                IOUtils.closeQuietly(cnx);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
@@ -317,7 +324,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             final String cfName = shortCfNames ? shortenCfName(longName) : longName;
 
-            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, hconf, tableName, cfName, longName);
+            HBaseKeyColumnValueStore newStore = new HBaseKeyColumnValueStore(this, cnx, tableName, cfName, longName);
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 

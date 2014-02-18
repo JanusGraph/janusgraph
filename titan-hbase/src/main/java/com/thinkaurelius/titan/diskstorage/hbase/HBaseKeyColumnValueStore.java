@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPaginationFilter;
 import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
@@ -54,11 +53,11 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
 
-    private final Configuration hconf;
+    private final HConnection cnx;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, Configuration hconf, String tableName, String columnFamily, String storeName) {
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, HConnection cnx, String tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
-        this.hconf = hconf;
+        this.cnx = cnx;
         this.tableName = tableName;
         //this.columnFamily = columnFamily;
         this.storeName = storeName;
@@ -81,16 +80,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         try {
-            HConnection cnx = null;
             HTableInterface table = null;
 
             try {
-                cnx = HConnectionManager.createConnection(hconf);
                 table = cnx.getTable(tableName);
                 return table.exists(g);
             } finally {
                 IOUtils.closeQuietly(table);
-                IOUtils.closeQuietly(cnx);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
@@ -142,17 +138,14 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         Map<StaticBuffer,EntryList> resultMap = new HashMap<StaticBuffer,EntryList>(keys.size());
 
         try {
-            HConnection cnx = null;
             HTableInterface table = null;
             Result[] results = null;
 
             try {
-                cnx = HConnectionManager.createConnection(hconf);
                 table = cnx.getTable(tableName);
                 results = table.get(requests);
             } finally {
                 IOUtils.closeQuietly(table);
-                IOUtils.closeQuietly(cnx);
             }
 
             if (results == null)
@@ -233,16 +226,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             filters.addFilter(getFilter(columnSlice));
         }
 
-        HConnection cnx = null;
         HTableInterface table = null;
 
         try {
-            cnx = HConnectionManager.createConnection(hconf);
             table = cnx.getTable(tableName);
-            return new RowIterator(cnx, table, table.getScanner(scan.setFilter(filters)));
+            return new RowIterator(table, table.getScanner(scan.setFilter(filters)));
         } catch (IOException e) {
             IOUtils.closeQuietly(table);
-            IOUtils.closeQuietly(cnx);
             throw new PermanentStorageException(e);
         }
     }
@@ -258,15 +248,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private class RowIterator implements KeyIterator {
-        private final HConnection cnx;
         private final HTableInterface table;
         private final Iterator<Result> rows;
 
         private Result currentRow;
         private boolean isClosed;
 
-        public RowIterator(HConnection cnx, HTableInterface table, ResultScanner rows) {
-            this.cnx = cnx;
+        public RowIterator(HTableInterface table, ResultScanner rows) {
             this.table = table;
             this.rows = Iterators.filter(rows.iterator(), new Predicate<Result>() {
                 @Override
@@ -335,9 +323,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public void close() {
             IOUtils.closeQuietly(table);
-            IOUtils.closeQuietly(cnx);
             isClosed = true;
-            logger.debug("Closed RowIterator references: {}, {}", table, cnx);
+            logger.debug("RowIterator closed table {}", table);
         }
 
         @Override
