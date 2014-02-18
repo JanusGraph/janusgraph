@@ -321,7 +321,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 logger.debug("Found HRegionInfo with null startKey on server {}: {}", e.getValue(), regionInfo);
                 Preconditions.checkState(null == nullStart);
                 nullStart = e;
-                StaticBuffer endBuf = BufferUtil.nextBiggerBufferAllowOverflow(StaticArrayBuffer.of(zeroExtend(endKey)));
+                // I thought endBuf would be inclusive from the HBase javadoc, but in practice it is exclusive
+                StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
                 // Replace null start key with zeroes
                 b.put(new KeyRange(FOUR_ZERO_BYTES, endBuf), e.getValue());
             } else if (null == endKey) {
@@ -336,9 +337,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 // Convert HBase's inclusive end keys into exclusive Titan end keys
                 StaticBuffer startBuf = StaticArrayBuffer.of(zeroExtend(startKey));
-                StaticBuffer endBuf = BufferUtil.nextBiggerBufferAllowOverflow(StaticArrayBuffer.of(zeroExtend(endKey)));
+                StaticBuffer endBuf = StaticArrayBuffer.of(zeroExtend(endKey));
 
-                b.put(new KeyRange(startBuf, endBuf), e.getValue());
+                KeyRange kr = new KeyRange(startBuf, endBuf);
+                b.put(kr, e.getValue());
             }
         }
 
