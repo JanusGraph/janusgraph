@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 
 public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
 
@@ -17,7 +17,7 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
     }
 
     public boolean isUnidirected() {
-        return getDefinition().getValue(TypeAttributeType.UNIDIRECTIONAL,boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.UNIDIRECTIONAL,boolean.class);
     }
 
     @Override

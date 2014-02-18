@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.UNIDIRECTIONAL;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 import static com.tinkerpop.blueprints.Direction.IN;
 
 /**
@@ -112,7 +112,7 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
                 (!isUnique(IN)),
                 "Unidirectional labels cannot be unique");
 
-        TypeAttribute.Map definition = makeDefinition();
+        TypeDefinitionMap definition = makeDefinition();
         definition.setValue(UNIDIRECTIONAL, isUnidirectional);
         return tx.makeEdgeLabel(getName(), definition);
     }

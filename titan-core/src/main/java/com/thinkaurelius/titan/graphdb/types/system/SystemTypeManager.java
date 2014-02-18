@@ -41,7 +41,7 @@ public abstract class SystemTypeManager {
 
     public static final Set<? extends SystemType> prepersistedSystemTypes = ImmutableSet.of(
             SystemKey.TypeName,
-            SystemKey.TypeDefinition,
+            SystemKey.TypeDefinitionProperty,
             SystemKey.TypeCategory);
 
 }

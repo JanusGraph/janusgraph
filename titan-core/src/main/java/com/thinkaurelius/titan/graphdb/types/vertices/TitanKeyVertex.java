@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.IndexDefinition;
 import com.thinkaurelius.titan.graphdb.types.IndexParameters;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -29,7 +29,7 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
 
     @Override
     public Class<?> getDataType() {
-        return getDefinition().getValue(TypeAttributeType.DATATYPE,Class.class);
+        return getDefinition().getValue(TypeDefinitionCategory.DATATYPE,Class.class);
     }
 
     @Override
@@ -44,8 +44,8 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
 
     private IndexDefinition[] getIndexes() {
         if (indexes==null) {
-            IndexType[] indexTypes = getDefinition().getValue(TypeAttributeType.INDEXES,IndexType[].class);
-            IndexParameters[] indexParas = getDefinition().getValue(TypeAttributeType.INDEX_PARAMETERS,IndexParameters[].class);
+            IndexType[] indexTypes = getDefinition().getValue(TypeDefinitionCategory.INDEXES,IndexType[].class);
+            IndexParameters[] indexParas = getDefinition().getValue(TypeDefinitionCategory.INDEX_PARAMETERS,IndexParameters[].class);
             Preconditions.checkArgument(indexTypes!=null,"Missing index types!");
             if (indexParas==null) { //Default initialization to no parameters
                 indexParas = new IndexParameters[indexTypes.length];

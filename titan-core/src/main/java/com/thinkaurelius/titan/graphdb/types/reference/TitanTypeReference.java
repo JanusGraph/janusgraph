@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 import com.thinkaurelius.titan.graphdb.types.system.EmptyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.tinkerpop.blueprints.Direction;
@@ -18,13 +18,13 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
 
     private final long id;
     private final String name;
-    private final TypeAttribute.Map definition;
+    private final TypeDefinitionMap definition;
 
     protected TitanTypeReference(TitanTypeVertex type) {
         this(type.getID(),type.getName(),type.getDefinition());
     }
 
-    protected TitanTypeReference(long id, String name, TypeAttribute.Map definition) {
+    protected TitanTypeReference(long id, String name, TypeDefinitionMap definition) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         Preconditions.checkNotNull(definition);
         Preconditions.checkArgument(id>0);
@@ -38,7 +38,7 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
         return name;
     }
 
-    public TypeAttribute.Map getDefinition() {
+    public TypeDefinitionMap getDefinition() {
         return definition;
     }
 
@@ -51,37 +51,37 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
 
     @Override
     public boolean isUnique(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
+        return getDefinition().getValue(TypeDefinitionCategory.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public boolean uniqueLock(Direction direction) {
-        return isUnique(direction) && getDefinition().getValue(TypeAttributeType.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
+        return isUnique(direction) && getDefinition().getValue(TypeDefinitionCategory.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public long[] getSortKey() {
-        return getDefinition().getValue(TypeAttributeType.SORT_KEY, long[].class);
+        return getDefinition().getValue(TypeDefinitionCategory.SORT_KEY, long[].class);
     }
 
     @Override
     public Order getSortOrder() {
-        return getDefinition().getValue(TypeAttributeType.SORT_ORDER, Order.class);
+        return getDefinition().getValue(TypeDefinitionCategory.SORT_ORDER, Order.class);
     }
 
     @Override
     public long[] getSignature() {
-        return getDefinition().getValue(TypeAttributeType.SIGNATURE, long[].class);
+        return getDefinition().getValue(TypeDefinitionCategory.SIGNATURE, long[].class);
     }
 
     @Override
     public boolean isModifiable() {
-        return getDefinition().getValue(TypeAttributeType.MODIFIABLE, boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.MODIFIABLE, boolean.class);
     }
 
     @Override
     public boolean isHidden() {
-        return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.HIDDEN, boolean.class);
     }
 
 

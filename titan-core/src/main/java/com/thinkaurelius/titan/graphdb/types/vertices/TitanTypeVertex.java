@@ -8,8 +8,9 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
@@ -17,7 +18,7 @@ import com.tinkerpop.blueprints.Direction;
 public abstract class TitanTypeVertex extends CacheVertex implements InternalType {
 
     private String name = null;
-    private TypeAttribute.Map definition = null;
+    private TypeDefinitionMap definition = null;
 
     public TitanTypeVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
@@ -43,20 +44,23 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
         return name;
     }
 
-    public TypeAttribute.Map getDefinition() {
+    public TypeDefinitionMap getDefinition() {
         if (definition == null) {
-            TypeAttribute.Map def = new TypeAttribute.Map();
+            TypeDefinitionMap def = new TypeDefinitionMap();
             Iterable<TitanProperty> ps;
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeDefinition, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeDefinitionProperty, Direction.OUT, tx()),
                         tx);
             } else {
-                ps = query().includeHidden().type(SystemKey.TypeDefinition).properties();
+                ps = query().includeHidden().type(SystemKey.TypeDefinitionProperty).properties();
             }
-            for (TitanProperty p : ps) {
-                def.add(p.getValue(TypeAttribute.class));
+            for (TitanProperty property : ps) {
+                Preconditions.checkArgument(property.getPropertyKey().equals(SystemKey.TypeDefinitionProperty));
+                TypeDefinitionDescription desc = property.getProperty(SystemKey.TypeDefinitionDesc);
+                Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
+                def.setValue(desc.getCategory(), property.getValue());
             }
             definition = def;
         }
@@ -72,37 +76,37 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
 
     @Override
     public boolean isUnique(Direction direction) {
-        return getDefinition().getValue(TypeAttributeType.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
+        return getDefinition().getValue(TypeDefinitionCategory.UNIQUENESS, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public boolean uniqueLock(Direction direction) {
-        return isUnique(direction) && getDefinition().getValue(TypeAttributeType.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
+        return isUnique(direction) && getDefinition().getValue(TypeDefinitionCategory.UNIQUENESS_LOCK, boolean[].class)[EdgeDirection.position(direction)];
     }
 
     @Override
     public long[] getSortKey() {
-        return getDefinition().getValue(TypeAttributeType.SORT_KEY, long[].class);
+        return getDefinition().getValue(TypeDefinitionCategory.SORT_KEY, long[].class);
     }
 
     @Override
     public Order getSortOrder() {
-        return getDefinition().getValue(TypeAttributeType.SORT_ORDER, Order.class);
+        return getDefinition().getValue(TypeDefinitionCategory.SORT_ORDER, Order.class);
     }
 
     @Override
     public long[] getSignature() {
-        return getDefinition().getValue(TypeAttributeType.SIGNATURE, long[].class);
+        return getDefinition().getValue(TypeDefinitionCategory.SIGNATURE, long[].class);
     }
 
     @Override
     public boolean isModifiable() {
-        return getDefinition().getValue(TypeAttributeType.MODIFIABLE, boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.MODIFIABLE, boolean.class);
     }
 
     @Override
     public boolean isHidden() {
-        return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.HIDDEN, boolean.class);
     }
 
 }

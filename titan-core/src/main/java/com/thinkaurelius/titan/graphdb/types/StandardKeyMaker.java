@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.indexing.StandardKeyInformation;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -15,9 +14,9 @@ import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.DATATYPE;
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.INDEXES;
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.INDEX_PARAMETERS;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.DATATYPE;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INDEXES;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INDEX_PARAMETERS;
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
@@ -154,7 +153,7 @@ public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
             i++;
         }
 
-        TypeAttribute.Map definition = makeDefinition();
+        TypeDefinitionMap definition = makeDefinition();
         definition.setValue(DATATYPE, dataType).setValue(INDEXES, indexTypes).setValue(INDEX_PARAMETERS,indexParas);
         return tx.makePropertyKey(getName(), definition);
     }

@@ -576,16 +576,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * ------------------------------------ Type Handling ------------------------------------
      */
 
-    private final TitanType makeRelationType(TitanTypeCategory typeCategory, String name, TypeAttribute.Map definition) {
+    private final TitanType makeRelationType(TitanTypeCategory typeCategory, String name, TypeDefinitionMap definition) {
         verifyOpen();
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         TitanTypeVertex type;
         if (typeCategory == TitanTypeCategory.KEY) {
-            TypeAttribute.isValidKeyDefinition(definition);
+            definition.isValidKeyDefinition();
             type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
         } else {
             Preconditions.checkArgument(typeCategory == TitanTypeCategory.LABEL,"Illegal type category: %s",typeCategory);
-            TypeAttribute.isValidLabelDefinition(definition);
+            definition.isValidLabelDefinition();
             type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
         }
         graph.assignID(type);
@@ -593,8 +593,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         addProperty(type, SystemKey.TypeName, name);
         addProperty(type, SystemKey.VertexExists, Boolean.TRUE);
         addProperty(type, SystemKey.TypeCategory, typeCategory);
-        for (TypeAttribute attribute : definition.getAttributes()) {
-            addProperty(type, SystemKey.TypeDefinition, attribute);
+        for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
+            TitanProperty p = addProperty(type,SystemKey.TypeDefinitionProperty,def.getValue());
+            p.setProperty(SystemKey.TypeDefinitionDesc,def.getKey());
         }
         vertexCache.add(type, type.getID());
         newTypeCache.put(name, type.getID());
@@ -602,11 +603,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     }
 
-    public TitanKey makePropertyKey(String name, TypeAttribute.Map definition) {
+    public TitanKey makePropertyKey(String name, TypeDefinitionMap definition) {
         return (TitanKey) makeRelationType(TitanTypeCategory.KEY, name, definition);
     }
 
-    public TitanLabel makeEdgeLabel(String name, TypeAttribute.Map definition) {
+    public TitanLabel makeEdgeLabel(String name, TypeDefinitionMap definition) {
         return (TitanLabel) makeRelationType(TitanTypeCategory.LABEL, name, definition);
     }
 

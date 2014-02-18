@@ -14,7 +14,7 @@ import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 import static com.tinkerpop.blueprints.Direction.OUT;
 
 abstract class StandardTypeMaker implements TypeMaker {
@@ -102,10 +102,10 @@ abstract class StandardTypeMaker implements TypeMaker {
         return signature;
     }
 
-    protected final TypeAttribute.Map makeDefinition() {
+    protected final TypeDefinitionMap makeDefinition() {
         checkGeneralArguments();
 
-        TypeAttribute.Map def = new TypeAttribute.Map();
+        TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(UNIQUENESS, new boolean[]{isUnique[0], isUnique[1]});
         def.setValue(UNIQUENESS_LOCK, hasUniqueLock);
         def.setValue(HIDDEN, isHidden);

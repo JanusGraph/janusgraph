@@ -6,8 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.tinkerpop.blueprints.Edge;
@@ -26,7 +24,7 @@ public class TitanKeyReference extends TitanTypeReference implements TitanKey {
         super((TitanTypeVertex)type);
     }
 
-    public TitanKeyReference(long id, String name, TypeAttribute.Map definition) {
+    public TitanKeyReference(long id, String name, TypeDefinitionMap definition) {
         super(id, name, definition);
     }
 
@@ -34,7 +32,7 @@ public class TitanKeyReference extends TitanTypeReference implements TitanKey {
 
     @Override
     public Class<?> getDataType() {
-        return getDefinition().getValue(TypeAttributeType.DATATYPE,Class.class);
+        return getDefinition().getValue(TypeDefinitionCategory.DATATYPE,Class.class);
     }
 
     @Override
@@ -49,8 +47,8 @@ public class TitanKeyReference extends TitanTypeReference implements TitanKey {
 
     private IndexDefinition[] getIndexes() {
         if (indexes==null) {
-            IndexType[] indexTypes = getDefinition().getValue(TypeAttributeType.INDEXES,IndexType[].class);
-            IndexParameters[] indexParas = getDefinition().getValue(TypeAttributeType.INDEX_PARAMETERS,IndexParameters[].class);
+            IndexType[] indexTypes = getDefinition().getValue(TypeDefinitionCategory.INDEXES,IndexType[].class);
+            IndexParameters[] indexParas = getDefinition().getValue(TypeDefinitionCategory.INDEX_PARAMETERS,IndexParameters[].class);
             Preconditions.checkArgument(indexTypes != null, "Missing index types!");
             if (indexParas==null) { //Default initialization to no parameters
                 indexParas = new IndexParameters[indexTypes.length];

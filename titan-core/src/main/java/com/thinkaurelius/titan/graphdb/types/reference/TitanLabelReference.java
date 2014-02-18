@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.graphdb.types.reference;
 
 import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 
 /**
@@ -15,7 +14,7 @@ public class TitanLabelReference extends TitanTypeReference implements TitanLabe
         super((TitanTypeVertex)type);
     }
 
-    public TitanLabelReference(long id, String name, TypeAttribute.Map definition) {
+    public TitanLabelReference(long id, String name, TypeDefinitionMap definition) {
         super(id, name, definition);
     }
 
@@ -26,7 +25,7 @@ public class TitanLabelReference extends TitanTypeReference implements TitanLabe
     }
 
     public boolean isUnidirected() {
-        return getDefinition().getValue(TypeAttributeType.UNIDIRECTIONAL,boolean.class);
+        return getDefinition().getValue(TypeDefinitionCategory.UNIDIRECTIONAL,boolean.class);
     }
 
     @Override

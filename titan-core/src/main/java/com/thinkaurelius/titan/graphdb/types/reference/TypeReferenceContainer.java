@@ -137,10 +137,10 @@ public class TypeReferenceContainer implements TypeInspector {
         final TitanTypeCategory typeClass = TitanTypeCategory.valueOf(input.getString(TYPE_KEY).toUpperCase());
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Invalid name found for id: %s",id);
         Preconditions.checkArgument(typeClass!=null,"Invalid type found for id: %s",id);
-        TypeAttribute.Map definition = new TypeAttribute.Map();
+        TypeDefinitionMap definition = new TypeDefinitionMap();
         for (String key : input.keySet()) {
             if (META_KEYS.contains(key)) continue;
-            TypeAttributeType tat = TypeAttributeType.valueOf(key.toUpperCase());
+            TypeDefinitionCategory tat = TypeDefinitionCategory.valueOf(key.toUpperCase());
             Preconditions.checkArgument(tat!=null,"Unknown attribute: %s",key);
             Object value=null;
             switch(tat) {
@@ -238,10 +238,10 @@ public class TypeReferenceContainer implements TypeInspector {
         result.add(NAME_KEY, type.getName());
         TitanTypeCategory typeClass = type.isPropertyKey()? TitanTypeCategory.KEY: TitanTypeCategory.LABEL;
         result.add(TYPE_KEY, typeClass.toString().toLowerCase());
-        for (TypeAttribute ta : type.getDefinition().getAttributes()) {
-            String name = ta.getType().toString().toLowerCase();
-            Object value = ta.getValue();
-            switch(ta.getType()) {
+        for (Map.Entry<TypeDefinitionCategory,Object> def : type.getDefinition().entrySet()) {
+            String name = def.getKey().toString().toLowerCase();
+            Object value = def.getValue();
+            switch(def.getKey()) {
                 case HIDDEN:
                 case MODIFIABLE:
                 case UNIDIRECTIONAL:
@@ -320,9 +320,9 @@ public class TypeReferenceContainer implements TypeInspector {
             for (TitanTypeReference baseType : typesWithKey()) {
                 //Remap key
                 String name = baseType.getName();
-                TypeAttribute.Map definition = new TypeAttribute.Map(baseType.getDefinition());
-                for (TypeAttributeType at : new TypeAttributeType[]{
-                        TypeAttributeType.SORT_KEY,TypeAttributeType.SIGNATURE}) {
+                TypeDefinitionMap definition = new TypeDefinitionMap(baseType.getDefinition());
+                for (TypeDefinitionCategory at : new TypeDefinitionCategory[]{
+                        TypeDefinitionCategory.SORT_KEY, TypeDefinitionCategory.SIGNATURE}) {
                     long[] arr = definition.getValue(at);
                     if (arr!=null) {
                         long[] newarr = new long[arr.length];

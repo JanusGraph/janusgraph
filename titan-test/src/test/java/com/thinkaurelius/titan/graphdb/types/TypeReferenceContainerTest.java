@@ -79,7 +79,7 @@ public class TypeReferenceContainerTest {
         assertEquals(String.class,uid.getDataType());
 
         assertTrue(types.containsType(SystemKey.VertexExists.getName()));
-        assertEquals(SystemKey.TypeDefinition,types.getExistingType(SystemKey.TypeDefinition.getID()));
+        assertEquals(SystemKey.TypeDefinitionProperty,types.getExistingType(SystemKey.TypeDefinitionProperty.getID()));
         assertEquals(SystemKey.TypeCategory,types.getType(SystemKey.TypeCategory.getName()));
     }
 

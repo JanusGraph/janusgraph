@@ -29,7 +29,7 @@ public class KryoSerializer {
             //General
                     ArrayList.class, HashMap.class, Object.class,
             //Titan specific
-                    TypeAttributeType.class, TypeAttribute.class, TitanTypeCategory.class,
+                    TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanTypeCategory.class,
                     IndexType.class, IndexType[].class, Parameter.class, Parameter[].class,
                     IndexParameters.class, IndexParameters[].class, Order.class
             );
