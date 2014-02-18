@@ -454,12 +454,12 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     private static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
-            return new LabelCondition<TitanRelation>(types.iterator().next());
+            return new RelationTypeCondition<TitanRelation>(types.iterator().next());
 
         Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
 
         for (TitanType type : types)
-            typeCond.add(new LabelCondition<TitanRelation>(type));
+            typeCond.add(new RelationTypeCondition<TitanRelation>(type));
 
         return typeCond;
     }

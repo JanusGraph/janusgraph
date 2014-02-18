@@ -595,7 +595,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         addProperty(type, SystemKey.TypeCategory, typeCategory);
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
             TitanProperty p = addProperty(type,SystemKey.TypeDefinitionProperty,def.getValue());
-            p.setProperty(SystemKey.TypeDefinitionDesc,def.getKey());
+            p.setProperty(SystemKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(type, type.getID());
         newTypeCache.put(name, type.getID());
@@ -614,14 +614,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public boolean containsType(String name) {
         verifyOpen();
-        return (newTypeCache.containsKey(name) || SystemKey.KEY_MAP.containsKey(name) || graph.getSchemaCache().getTypeId(name,this)!=null);
+        return (newTypeCache.containsKey(name) || SystemTypeManager.isSystemType(name) || graph.getSchemaCache().getTypeId(name,this)!=null);
     }
 
     @Override
     public TitanType getType(String name) {
         verifyOpen();
 
-        TitanType type = SystemKey.KEY_MAP.get(name);
+        TitanType type = SystemTypeManager.getSystemType(name);
         if (type!=null) return type;
 
         Long typeId = newTypeCache.get(name);
@@ -638,8 +638,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanType getExistingType(long typeid) {
         assert idInspector.isRelationTypeId(typeid);
 
-        if (SystemTypeManager.isSystemRelationType(typeid))
-            return SystemTypeManager.getSystemRelationType(typeid);
+        SystemType st = SystemTypeManager.getSystemType(typeid);
+        if (st!=null) return st;
 
         InternalVertex v = getExistingVertex(typeid);
         assert v instanceof TitanType;

@@ -7,8 +7,10 @@ import com.google.common.base.Preconditions;
  */
 public class TypeDefinitionDescription {
 
-    private final TypeDefinitionCategory category;
-    private final Object modifier;
+    private TypeDefinitionCategory category;
+    private Object modifier;
+
+    private TypeDefinitionDescription() {} //For Kryo
 
     public TypeDefinitionDescription(TypeDefinitionCategory category, Object modifier) {
         Preconditions.checkNotNull(category);

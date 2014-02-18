@@ -12,30 +12,41 @@ public abstract class SystemTypeManager {
 
     public static final int SYSTEM_TYPE_OFFSET = 8;
 
-    private volatile static Map<Long, SystemType> SYSTEM_EDGE_TYPES;
+    private volatile static Map<Long, SystemType> SYSTEM_TYPES_BY_ID;
+    private volatile static Map<String, SystemType> SYSTEM_TYPES_BY_NAME;
 
     static {
         synchronized (SystemTypeManager.class) {
-            ImmutableMap.Builder<Long, SystemType> builder = ImmutableMap.builder();
-            for (SystemType et : SystemKey.KEY_MAP.values()) {
-                builder.put(et.getID(), et);
+            ImmutableMap.Builder<Long, SystemType> idBuilder = ImmutableMap.builder();
+            ImmutableMap.Builder<String, SystemType> nameBuilder = ImmutableMap.builder();
+            for (SystemType et : new SystemType[]{SystemKey.TypeCategory,SystemKey.TypeDefinitionDesc,
+                    SystemKey.TypeDefinitionProperty,SystemKey.TypeName,
+                    SystemKey.VertexExists,SystemLabel.TypeDefinitionEdge}) {
+                idBuilder.put(et.getID(), et);
+                nameBuilder.put(et.getName(),et);
             }
 
-            SYSTEM_EDGE_TYPES = builder.build();
+            SYSTEM_TYPES_BY_ID = idBuilder.build();
+            SYSTEM_TYPES_BY_NAME = nameBuilder.build();
         }
+        assert SYSTEM_TYPES_BY_ID.size()==6;
+        assert SYSTEM_TYPES_BY_NAME.size()==6;
     }
 
-    public static boolean isSystemRelationType(long id) {
-        return SYSTEM_EDGE_TYPES.containsKey(id);
+    public static boolean isSystemType(long id) {
+        return SYSTEM_TYPES_BY_ID.containsKey(id);
     }
 
+    public static SystemType getSystemType(long id) {
+        return SYSTEM_TYPES_BY_ID.get(id);
+    }
 
-    public static SystemType getSystemRelationType(long id) {
-        SystemType type = SYSTEM_EDGE_TYPES.get(id);
-        if (type == null)
-            throw new IllegalArgumentException("System edge type is unknown with ID:" + id);
+    public static SystemType getSystemType(String name) {
+        return SYSTEM_TYPES_BY_NAME.get(name);
+    }
 
-        return type;
+    public static boolean isSystemType(String name) {
+        return SYSTEM_TYPES_BY_NAME.containsKey(name);
     }
 
 

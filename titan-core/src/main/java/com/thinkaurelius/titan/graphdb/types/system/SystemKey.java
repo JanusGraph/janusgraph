@@ -30,10 +30,6 @@ public class SystemKey extends SystemType implements TitanKey {
     public static final SystemKey VertexExists =
             new SystemKey("VertexExists", Boolean.class, 7, false, new boolean[]{true, false}, true);
 
-
-    public static final Map<String, SystemKey> KEY_MAP = ImmutableMap.of(TypeDefinitionProperty.getName(), TypeDefinitionProperty,
-            TypeName.getName(), TypeName, TypeCategory.getName(), TypeCategory, VertexExists.getName(), VertexExists);
-
     private final Class<?> dataType;
     private final boolean index;
 

@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -84,13 +85,13 @@ public class TypeReferenceContainer implements TypeInspector {
     }
 
     public boolean containsType(long id) {
-        return typesById.containsKey(id) || SystemTypeManager.isSystemRelationType(id);
+        return typesById.containsKey(id) || SystemTypeManager.isSystemType(id);
     }
 
     @Override
     public TitanType getExistingType(long id) {
-        if (SystemTypeManager.isSystemRelationType(id))
-            return SystemTypeManager.getSystemRelationType(id);
+        SystemType st = SystemTypeManager.getSystemType(id);
+        if (st!=null) return st;
 
         Object type = typesById.get(id);
         Preconditions.checkArgument(type!=null,"Type could not be found for id: %s",id);
@@ -99,12 +100,12 @@ public class TypeReferenceContainer implements TypeInspector {
 
     @Override
     public boolean containsType(String name) {
-        return typesByName.containsKey(name) || SystemKey.KEY_MAP.containsKey(name);
+        return typesByName.containsKey(name) || SystemTypeManager.isSystemType(name);
     }
 
     @Override
     public TitanType getType(String name) {
-        TitanType type = SystemKey.KEY_MAP.get(name);
+        TitanType type = SystemTypeManager.getSystemType(name);
         if (type==null) type = typesByName.get(name);
         return type;
     }

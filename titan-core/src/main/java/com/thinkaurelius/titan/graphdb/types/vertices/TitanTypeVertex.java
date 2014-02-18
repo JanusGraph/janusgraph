@@ -62,6 +62,7 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.getValue());
             }
+            assert def.size()>0;
             definition = def;
         }
         return definition;
