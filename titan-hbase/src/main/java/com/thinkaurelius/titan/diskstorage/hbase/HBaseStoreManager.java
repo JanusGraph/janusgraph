@@ -64,15 +64,57 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     public static final int MIN_REGION_COUNT = 3;
 
+    /**
+     * The total number of HBase regions to create with Titan's table. This
+     * setting only effects table creation; this normally happens just once when
+     * Titan connects to an HBase backend for the first time.
+     */
     public static final ConfigOption<Integer> REGION_COUNT = new ConfigOption<Integer>(STORAGE_NS, "region-count",
             "The number of initial regions set when creating Titan's HBase table",
-            ConfigOption.Type.MASKABLE, 3, new Predicate<Integer>() {
+            ConfigOption.Type.MASKABLE, Integer.class, new Predicate<Integer>() {
                 @Override
                 public boolean apply(Integer input) {
                     return null != input && MIN_REGION_COUNT <= input;
                 }
             }
     );
+
+    /**
+     * This setting is used only when {@link #REGION_COUNT} is unset.
+     * <p/>
+     * If Titan's HBase table does not exist, then it will be created with total
+     * region count = (number of servers reported by ClusterStatus) * (this
+     * value).
+     * <p/>
+     * The Apache HBase manual suggests an order-of-magnitude range of potential
+     * values for this setting:
+     *
+     * <ul>
+     *  <li>
+     *   <a href="https://hbase.apache.org/book/important_configurations.html#disable.splitting">2.5.2.7. Managed Splitting</a>:
+     *   <blockquote>
+     *    What's the optimal number of pre-split regions to create? Mileage will
+     *    vary depending upon your application. You could start low with 10
+     *    pre-split regions / server and watch as data grows over time. It's
+     *    better to err on the side of too little regions and rolling split later.
+     *   </blockquote>
+     *  </li>
+     *  <li>
+     *   <a href="https://hbase.apache.org/book/regions.arch.html">9.7 Regions</a>:
+     *   <blockquote>
+     *    In general, HBase is designed to run with a small (20-200) number of
+     *    relatively large (5-20Gb) regions per server... Typically you want to
+     *    keep your region count low on HBase for numerous reasons. Usually
+     *    right around 100 regions per RegionServer has yielded the best results.
+     *   </blockquote>
+     *  </li>
+     * </ul>
+     *
+     * These considerations may differ for other HBase implementations (e.g. MapR).
+     */
+    public static final ConfigOption<Integer> REGIONS_PER_SERVER = new ConfigOption<Integer>(STORAGE_NS, "regions-per-server",
+            "The number of regions per regionserver to set when creating Titan's HBase table",
+            ConfigOption.Type.MASKABLE, Integer.class);
 
     private static final byte[] START_KEY;
     private static final byte[] END_KEY;
@@ -100,6 +142,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final String tableName;
     private final String compression;
     private final int regionCount;
+    private final int regionsPerServer;
     private final org.apache.hadoop.conf.Configuration hconf;
 
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -137,10 +180,17 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         this.compression = config.get(COMPRESSION);
 
-        if (config.has(REGION_COUNT)) {
-            this.regionCount = config.get(REGION_COUNT);
-        } else {
-            this.regionCount = -1;
+        this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
+        this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
+
+        /*
+         * Specifying both region count options is permitted but may be
+         * indicative of a misunderstanding, so issue a warning.
+         */
+        if (config.has(REGIONS_PER_SERVER) && config.has(REGION_COUNT)) {
+            logger.warn("Both {} and {} are set in Titan's configuration, but "
+                      + "the former takes precedence and the latter will be ignored.",
+                        REGION_COUNT, REGIONS_PER_SERVER);
         }
 
         /* This static factory calls HBaseConfiguration.addHbaseResources(),
@@ -489,13 +539,13 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private HTableDescriptor createTable(String name, HBaseAdmin adm) throws IOException {
         HTableDescriptor desc = new HTableDescriptor(tableName);
 
-        int count; // regions to create
+        int count; // total regions to create
         String src;
 
         if (MIN_REGION_COUNT <= (count = regionCount)) {
-            src = "configuration";
-        } else if (MIN_REGION_COUNT <= (count = getServerCount(adm))) {
-            src = "cluster status";
+            src = "region count configuration";
+        } else if (0 < regionsPerServer && MIN_REGION_COUNT <= (count = regionsPerServer * getServerCount(adm))) {
+            src = "ClusterStatus server count";
         } else {
             count = -1;
             src = "default";
@@ -512,12 +562,28 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
+    /**
+     * This method generates the second argument to
+     * {@link HBaseAdmin#createTable(HTableDescriptor, byte[], byte[], int)}.
+     * <p/>
+     * From the {@code createTable} javadoc:
+     * "The start key specified will become the end key of the first region of
+     * the table, and the end key specified will become the start key of the
+     * last region of the table (the first region has a null start key and
+     * the last region has a null end key)"
+     * <p/>
+     * To summarize, the {@code createTable} argument called "startKey" is
+     * actually the end key of the first region.
+     */
     private byte[] getStartKey(int regionCount) {
         ByteBuffer regionWidth = ByteBuffer.allocate(4);
         regionWidth.putInt((int)(((1L << 32) - 1L) / regionCount)).flip();
         return StaticArrayBuffer.of(regionWidth).getBytes(0, 4);
     }
 
+    /**
+     * Companion to {@link #getStartKey(int)}. See its javadoc for details.
+     */
     private byte[] getEndKey(int regionCount) {
         ByteBuffer regionWidth = ByteBuffer.allocate(4);
         regionWidth.putInt((int)(((1L << 32) - 1L) / regionCount * (regionCount - 1))).flip();
@@ -760,15 +826,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 
-    private Integer getServerCount(HBaseAdmin adm) {
-        ClusterStatus cs;
+    private int getServerCount(HBaseAdmin adm) {
+        int serverCount = -1;
         try {
-            cs = adm.getClusterStatus();
-            return cs.getServers().size();
+            serverCount = adm.getClusterStatus().getServers().size();
+            logger.debug("Read {} servers from HBase ClusterStatus", serverCount);
         } catch (IOException e) {
             logger.debug("Unable to retrieve HBase cluster status", e);
-            return null;
         }
+        return serverCount;
     }
 
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
