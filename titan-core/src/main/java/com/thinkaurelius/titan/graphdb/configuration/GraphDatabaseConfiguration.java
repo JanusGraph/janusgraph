@@ -37,7 +37,6 @@ import com.thinkaurelius.titan.core.AttributeHandler;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -612,9 +611,9 @@ public class GraphDatabaseConfiguration {
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
      */
-    public static final ConfigOption<IDPartitionMode> IDS_PARTITION = new ConfigOption<IDPartitionMode>(IDS_NS,"partition",
+    public static final ConfigOption<Boolean> IDS_PARTITION = new ConfigOption<Boolean>(IDS_NS,"partition",
             "Whether the id space should be partitioned for equal distribution of keys",
-            ConfigOption.Type.FIXED, IDPartitionMode.DEFAULT);
+            ConfigOption.Type.FIXED, false);
 //    public static final String IDS_PARTITION_KEY = "partition";
 //    public static final boolean IDS_PARTITION_DEFAULT = false;
 
@@ -1113,7 +1112,7 @@ public class GraphDatabaseConfiguration {
 
             // If lock prefix is unspecified, specify it now
             if (!localbc.has(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX)) {
-                Preconditions.checkArgument(localConfig instanceof WriteConfiguration,"Need to provide a WriteConfiguration if local lock mediator needs to be ovewritten");
+                Preconditions.checkArgument(localConfig instanceof WriteConfiguration,"Need to provide a WriteConfiguration if local lock mediator needs to be overridden");
                 new ModifiableConfiguration(TITAN_NS,(WriteConfiguration)localConfig, BasicConfiguration.Restriction.LOCAL)
                         .set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
             }
@@ -1130,6 +1129,14 @@ public class GraphDatabaseConfiguration {
                         return ((ConfigOption)entry.getKey().element).isGlobal();
                     }
                 }));
+
+                // If partitioning is unspecified, specify it now
+                if (!localbc.has(IDS_PARTITION)) {
+                    StoreFeatures f = storeManager.getFeatures();
+                    boolean part = f.isDistributed() && f.isKeyOrdered();
+                    globalWrite.set(IDS_PARTITION, part);
+                    log.info("Set ID partition mode to {}", part);
+                }
 
                 globalWrite.freezeConfiguration();
             }

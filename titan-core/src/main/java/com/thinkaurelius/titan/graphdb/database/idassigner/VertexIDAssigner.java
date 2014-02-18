@@ -75,10 +75,8 @@ public class VertexIDAssigner {
         this.idAuthority = idAuthority;
 
         long partitionBits;
-        IDPartitionMode partitionIDs = config.get(IDS_PARTITION);
-        boolean storeWantsPartitioning = idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed();
-        if (partitionIDs.equals(IDPartitionMode.ENABLED) ||
-                (storeWantsPartitioning && partitionIDs.equals(IDPartitionMode.DEFAULT))) {
+        boolean partitionIDs = config.get(IDS_PARTITION);
+        if (partitionIDs) {
             //Use a placement strategy that balances partitions
             partitionBits = DEFAULT_PARTITION_BITS;
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
@@ -86,6 +84,7 @@ public class VertexIDAssigner {
             placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY),
                     REGISTERED_PLACEMENT_STRATEGIES);
         } else {
+            boolean storeWantsPartitioning = idAuthFeatures.isKeyOrdered() && idAuthFeatures.isDistributed();
             if (storeWantsPartitioning)
                 log.warn("ID Partitioning is disabled, which will likely cause uneven data distribution and sequentially increasing keys");
             //Use the default placement strategy

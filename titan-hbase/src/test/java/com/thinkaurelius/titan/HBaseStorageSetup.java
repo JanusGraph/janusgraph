@@ -4,7 +4,6 @@ import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
@@ -67,7 +66,7 @@ public class HBaseStorageSetup {
     public static ModifiableConfiguration getHBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
-        config.set(GraphDatabaseConfiguration.IDS_PARTITION, IDPartitionMode.ENABLED);
+        config.set(GraphDatabaseConfiguration.IDS_PARTITION, true);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
         return config;
     }
