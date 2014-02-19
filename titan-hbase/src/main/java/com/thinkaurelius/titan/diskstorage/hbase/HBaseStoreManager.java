@@ -130,10 +130,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             END_KEY[i] = (byte)-1;
     }
 
-
-//    public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
-//    public static final boolean SHORT_CF_NAMES_DEFAULT = false;
-
     public static final int PORT_DEFAULT = 9160;
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
@@ -243,23 +239,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public StoreFeatures getFeatures() {
-        // StoreFeatures features = new StoreFeatures();
-        // features.supportsOrderedScan = true;
-        // features.supportsUnorderedScan = true;
-        // features.supportsBatchMutation = true;
-        // features.supportsTxIsolation = false;
-        // features.supportsMultiQuery = true;
-        // features.supportsConsistentKeyOperations = true;
-        // features.supportsLocking = false;
-        // features.isKeyOrdered = true;
-        // features.isDistributed = true;
-        // features.hasLocalKeyPartition = false;
-        // try {
-        // features.hasLocalKeyPartition = getDeployment()==Deployment.LOCAL;
-        // } catch (Exception e) {
-        // logger.warn("Unexpected exception during getDeployment()", e);
-        // }
-        // return features;
 
         Configuration c = GraphDatabaseConfiguration.buildConfiguration();
 
