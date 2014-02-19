@@ -473,7 +473,6 @@ public class Backend {
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
@@ -487,7 +486,6 @@ public class Backend {
 
     public static final Map<String, ConfigOption> REGISTERED_STORAGE_MANAGERS_SHORTHAND = new HashMap<String, ConfigOption>() {{
         put("berkeleyje", STORAGE_DIRECTORY);
-        put("persistit", STORAGE_DIRECTORY);
         put("hazelcast", STORAGE_DIRECTORY);
         put("hazelcastcache", STORAGE_DIRECTORY);
         put("infinispan", STORAGE_DIRECTORY);

@@ -96,7 +96,6 @@
         <module>titan-hbase</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
-        <module>titan-persistit</module>
         <module>titan-rexster</module>
         <module>titan-all</module>
         <module>titan-site</module>
