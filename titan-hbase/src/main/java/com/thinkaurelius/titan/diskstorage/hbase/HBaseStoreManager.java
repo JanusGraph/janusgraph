@@ -115,36 +115,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "The number of regions per regionserver to set when creating Titan's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
-    private static final byte[] START_KEY;
-    private static final byte[] END_KEY;
-
-    static {
-        // 4 bytes = 32 bits > 30 bit partition width
-        START_KEY = new byte[4];
-        END_KEY = new byte[4];
-
-        for (int i = 0; i < START_KEY.length; i++)
-            START_KEY[i] = (byte)0;
-
-        for (int i = 0; i < END_KEY.length; i++)
-            END_KEY[i] = (byte)-1;
-    }
-
     public static final int PORT_DEFAULT = 9160;
 
-    public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE = new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
+    public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
+            new ConfigNamespace(STORAGE_NS,"hbase-config","General HBase configuration options",true);
 
-    private final String tableName;
-    private final String compression;
-    private final int regionCount;
-    private final int regionsPerServer;
-    private final HConnection cnx;
-    private final org.apache.hadoop.conf.Configuration hconf;
-
-    private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
-
-    private final boolean shortCfNames;
-    private static final BiMap<String, String> shortCfNameMap =
+    private static final BiMap<String, String> SHORT_CF_NAME_MAP =
             ImmutableBiMap.<String, String>builder()
                     .put(VERTEXINDEX_STORE_NAME, "v")
                     .put(ID_STORE_NAME, "i")
@@ -161,10 +137,22 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     static {
         // Verify that shortCfNameMap is injective
         // Should be guaranteed by Guava BiMap, but it doesn't hurt to check
-        Preconditions.checkArgument(null != shortCfNameMap);
-        Collection<String> shorts = shortCfNameMap.values();
+        Preconditions.checkArgument(null != SHORT_CF_NAME_MAP);
+        Collection<String> shorts = SHORT_CF_NAME_MAP.values();
         Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
     }
+
+    // Immutable instance fields
+    private final String tableName;
+    private final String compression;
+    private final int regionCount;
+    private final int regionsPerServer;
+    private final HConnection cnx;
+    private final org.apache.hadoop.conf.Configuration hconf;
+    private final boolean shortCfNames;
+
+    // Mutable instance state
+    private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
 
     public HBaseStoreManager(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
@@ -235,7 +223,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         openStores.clear();
         IOUtils.closeQuietly(cnx);
     }
-
 
     @Override
     public StoreFeatures getFeatures() {
@@ -314,6 +301,132 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
 
         return store;
+    }
+
+    @Override
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
+        return new HBaseTransaction(config);
+    }
+
+    @Override
+    public String getName() {
+        return tableName;
+    }
+
+    /**
+     * Deletes the specified table with all its columns.
+     * ATTENTION: Invoking this method will delete the table if it exists and therefore causes data loss.
+     */
+    @Override
+    public void clearStorage() throws StorageException {
+        HBaseAdmin adm = getAdminInterface();
+
+        try { // first of all, check if table exists, if not - we are done
+            if (!adm.tableExists(tableName)) {
+                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
+                return;
+            }
+        } catch (IOException e) {
+            throw new TemporaryStorageException(e);
+        }
+
+        /*
+         * The commented code is the recommended way to truncate an HBase table.
+         * But it's so slow. The titan-hbase test suite takes 18 minutes to
+         * complete on my machine using the Scanner method. It takes 1 hour 17
+         * minutes to complete using the disable-delete-and-recreate method
+         * commented below. (after - before) below is usually between 3000 and
+         * 3100 ms on my machine, but it runs so many times in the test suite
+         * that it adds up.
+         */
+//        long before = System.currentTimeMillis();
+//        try {
+//            adm.disableTable(tableName);
+//            adm.deleteTable(tableName);
+//        } catch (IOException e) {
+//            throw new PermanentStorageException(e);
+//        }
+//        ensureTableExists(tableName);
+//        long after = System.currentTimeMillis();
+//        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
+
+        HTable table = null;
+
+        try {
+            table = new HTable(hconf, tableName);
+
+            Scan scan = new Scan();
+            scan.setBatch(100);
+            scan.setCacheBlocks(false);
+            scan.setCaching(2000);
+            scan.setTimeRange(0, Long.MAX_VALUE);
+            scan.setMaxVersions(1);
+
+            ResultScanner scanner = null;
+
+            long ts = -1;
+
+            try {
+                scanner = table.getScanner(scan);
+
+                for (Result res : scanner) {
+                    Delete d = new Delete(res.getRow());
+                    //Despite comment in Delete.java, LATEST_TIMESTAMP seems to be System.currentTimeMillis()
+                    //LATEST_TIMESTAMP is the default for the constructor invoked above, so it's redundant anyway
+                    //d.setTimestamp(HConstants.LATEST_TIMESTAMP);
+
+                    if (-1 == ts)
+                        ts = guessTimestamp(res);
+
+                    d.setTimestamp(ts);
+                    table.delete(d);
+                }
+            } finally {
+                IOUtils.closeQuietly(scanner);
+            }
+        } catch (IOException e) {
+            throw new TemporaryStorageException(e);
+        } finally {
+            IOUtils.closeQuietly(table);
+        }
+    }
+
+    List<KeyRange> getLocalKeyPartition() {
+
+        List<KeyRange> result = new LinkedList<KeyRange>();
+
+        HTable table = null;
+        try {
+            table = new HTable(hconf, tableName);
+
+            Map<KeyRange, ServerName> normed =
+                    normalizeKeyBounds(table.getRegionLocations());
+
+            for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
+                if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
+                    result.add(e.getKey());
+                    logger.debug("Found local key/row partition {} on host {}", e.getKey(), e.getValue());
+                } else {
+                    logger.debug("Discarding remote {}", e.getValue());
+                }
+            }
+        } catch (MasterNotRunningException e) {
+            logger.warn("Unexpected MasterNotRunningException", e);
+        } catch (ZooKeeperConnectionException e) {
+            logger.warn("Unexpected ZooKeeperConnectionException", e);
+        } catch (IOException e) {
+            logger.warn("Unexpected IOException", e);
+        } finally {
+            if (null != table) {
+                try {
+                    table.close();
+                } catch (IOException e) {
+                    logger.warn("Failed to close HTable {}", table, e);
+                }
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -428,6 +541,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return result;
     }
 
+    /**
+     * If the parameter is shorter than 4 bytes, then create and return a new 4
+     * byte array with the input array's bytes followed by zero bytes. Otherwise
+     * return the parameter.
+     *
+     * @param dataToPad non-null but possibly zero-length byte array
+     * @return either the parameter or a new array
+     */
     private final byte[] zeroExtend(byte[] dataToPad) {
         assert null != dataToPad;
 
@@ -447,54 +568,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return padded;
     }
 
-    List<KeyRange> getLocalKeyPartition() {
-
-        List<KeyRange> result = new LinkedList<KeyRange>();
-
-        HTable table = null;
-        try {
-            table = new HTable(hconf, tableName);
-
-            Map<KeyRange, ServerName> normed =
-                    normalizeKeyBounds(table.getRegionLocations());
-
-            for (Map.Entry<KeyRange, ServerName> e : normed.entrySet()) {
-                if (NetworkUtil.isLocalConnection(e.getValue().getHostname())) {
-                    result.add(e.getKey());
-                    logger.debug("Found local key/row partition {} on host {}", e.getKey(), e.getValue());
-                } else {
-                    logger.debug("Discarding remote {}", e.getValue());
-                }
-            }
-        } catch (MasterNotRunningException e) {
-            logger.warn("Unexpected MasterNotRunningException", e);
-        } catch (ZooKeeperConnectionException e) {
-            logger.warn("Unexpected ZooKeeperConnectionException", e);
-        } catch (IOException e) {
-            logger.warn("Unexpected IOException", e);
-        } finally {
-            if (null != table) {
-                try {
-                    table.close();
-                } catch (IOException e) {
-                    logger.warn("Failed to close HTable {}", table, e);
-                }
-            }
-        }
-
-        return result;
-    }
-
     private String shortenCfName(String longName) throws PermanentStorageException {
         final String s;
-        if (shortCfNameMap.containsKey(longName)) {
-            s = shortCfNameMap.get(longName);
+        if (SHORT_CF_NAME_MAP.containsKey(longName)) {
+            s = SHORT_CF_NAME_MAP.get(longName);
             Preconditions.checkNotNull(s);
             logger.debug("Substituted default CF name \"{}\" with short form \"{}\" to reduce HBase KeyValue size", longName, s);
         } else {
-            if (shortCfNameMap.containsValue(longName)) {
+            if (SHORT_CF_NAME_MAP.containsValue(longName)) {
                 String fmt = "Must use CF long-form name \"%s\" instead of the short-form name \"%s\" when configured with %s=true";
-                String msg = String.format(fmt, shortCfNameMap.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
+                String msg = String.format(fmt, SHORT_CF_NAME_MAP.inverse().get(longName), longName, SHORT_CF_NAMES.getName());
                 throw new PermanentStorageException(msg);
             }
             s = longName;
@@ -611,89 +694,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    @Override
-    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
-        return new HBaseTransaction(config);
-    }
-
-    /**
-     * Deletes the specified table with all its columns.
-     * ATTENTION: Invoking this method will delete the table if it exists and therefore causes data loss.
-     */
-    @Override
-    public void clearStorage() throws StorageException {
-        HBaseAdmin adm = getAdminInterface();
-
-        try { // first of all, check if table exists, if not - we are done
-            if (!adm.tableExists(tableName)) {
-                logger.debug("clearStorage() called before table {} was created, skipping.", tableName);
-                return;
-            }
-        } catch (IOException e) {
-            throw new TemporaryStorageException(e);
-        }
-
-        /*
-         * The commented code is the recommended way to truncate an HBase table.
-         * But it's so slow. The titan-hbase test suite takes 18 minutes to
-         * complete on my machine using the Scanner method. It takes 1 hour 17
-         * minutes to complete using the disable-delete-and-recreate method
-         * commented below. (after - before) below is usually between 3000 and
-         * 3100 ms on my machine, but it runs so many times in the test suite
-         * that it adds up.
-         */
-//        long before = System.currentTimeMillis();
-//        try {
-//            adm.disableTable(tableName);
-//            adm.deleteTable(tableName);
-//        } catch (IOException e) {
-//            throw new PermanentStorageException(e);
-//        }
-//        ensureTableExists(tableName);
-//        long after = System.currentTimeMillis();
-//        logger.debug("Dropped and recreated table {} in {} ms", tableName, after - before);
-
-        HTable table = null;
-
-        try {
-            table = new HTable(hconf, tableName);
-
-            Scan scan = new Scan();
-            scan.setBatch(100);
-            scan.setCacheBlocks(false);
-            scan.setCaching(2000);
-            scan.setTimeRange(0, Long.MAX_VALUE);
-            scan.setMaxVersions(1);
-
-            ResultScanner scanner = null;
-
-            long ts = -1;
-
-            try {
-                scanner = table.getScanner(scan);
-
-                for (Result res : scanner) {
-                    Delete d = new Delete(res.getRow());
-                    //Despite comment in Delete.java, LATEST_TIMESTAMP seems to be System.currentTimeMillis()
-                    //LATEST_TIMESTAMP is the default for the constructor invoked above, so it's redundant anyway
-                    //d.setTimestamp(HConstants.LATEST_TIMESTAMP);
-
-                    if (-1 == ts)
-                        ts = guessTimestamp(res);
-
-                    d.setTimestamp(ts);
-                    table.delete(d);
-                }
-            } finally {
-                IOUtils.closeQuietly(scanner);
-            }
-        } catch (IOException e) {
-            throw new TemporaryStorageException(e);
-        } finally {
-            IOUtils.closeQuietly(table);
-        }
-    }
-
     private static long guessTimestamp(Result res) {
 
         Long sampleTime = res.getMap().firstEntry().getValue().firstEntry().getValue().firstEntry().getKey();
@@ -729,13 +729,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         logger.debug("Guessed timestamp provider " + prov);
 
         return prov.getTime();
-
-
-    }
-
-    @Override
-    public String getName() {
-        return tableName;
     }
 
     private HBaseAdmin getAdminInterface() {
@@ -811,6 +804,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return shortCfNames ? shortenCfName(storeName) : storeName;
     }
 
+    /**
+     * Estimate the number of regionservers in the HBase cluster by calling
+     * {@link HBaseAdmin#getClusterStatus()} and then
+     * {@link ClusterStatus#getServers()} and finally {@code size()} on the
+     * returned server list.
+     *
+     * @param adm
+     *            HBase admin interface
+     * @return the number of servers in the cluster or -1 if an error occurred
+     */
     private int getServerCount(HBaseAdmin adm) {
         int serverCount = -1;
         try {

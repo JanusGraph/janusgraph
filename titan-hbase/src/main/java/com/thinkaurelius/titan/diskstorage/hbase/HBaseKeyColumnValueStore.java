@@ -104,7 +104,44 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return getHelper(keys, getFilter(query));
     }
 
-    public static Filter getFilter(SliceQuery query) {
+    @Override
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
+        mutateMany(mutations, txh);
+    }
+
+    @Override
+    public void acquireLock(StaticBuffer key,
+                            StaticBuffer column,
+                            StaticBuffer expectedValue,
+                            StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
+                query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
+                new FilterList(FilterList.Operator.MUST_PASS_ALL),
+                query);
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return storeManager.getLocalKeyPartition();
+    }
+
+    @Override
+    public String getName() {
+        return storeName;
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
+    }
+
+    private static Filter getFilter(SliceQuery query) {
         byte[] colStartBytes = query.getSliceEnd().length() > 0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
         byte[] colEndBytes = query.getSliceEnd().length() > 0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
 
@@ -168,43 +205,15 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-
-    @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
-        mutateMany(mutations, txh);
-    }
-
-    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
+    private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(storeName, mutations), txh);
     }
 
-    @Override
-    public void acquireLock(StaticBuffer key,
-                            StaticBuffer column,
-                            StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
-        return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
-                query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
-                new FilterList(FilterList.Operator.MUST_PASS_ALL),
-                query);
-    }
-
-    @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
-    }
-
-    public KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
+    private KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
         return executeKeySliceQuery(null, null, filters, columnSlice);
     }
 
-    public KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
+    private KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
                                             @Nullable byte[] endKey,
                                             FilterList filters,
                                             @Nullable SliceQuery columnSlice) throws StorageException {
@@ -235,16 +244,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             IOUtils.closeQuietly(table);
             throw new PermanentStorageException(e);
         }
-    }
-
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return storeManager.getLocalKeyPartition();
-    }
-
-    @Override
-    public String getName() {
-        return storeName;
     }
 
     private class RowIterator implements KeyIterator {
