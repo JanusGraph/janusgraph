@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 
 /**
  * Storage Manager for HBase
@@ -130,6 +131,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     .put(ID_STORE_NAME + LOCK_STORE_SUFFIX, "j")
                     .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "t")
                     .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "f")
+                    .put(SYSTEM_PROPERTIES_STORE_NAME, "c")
                     .build();
 
     private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);
