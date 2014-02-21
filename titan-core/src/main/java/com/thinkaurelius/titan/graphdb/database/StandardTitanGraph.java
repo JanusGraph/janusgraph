@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.cache.StandardTypeCache;
 import com.thinkaurelius.titan.graphdb.database.cache.TypeCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -71,7 +70,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final RelationQueryCache queryCache;
     private final TypeCache typeCache;
 
-    private boolean isOpen;
+    private volatile boolean isOpen = true;
 
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -89,7 +88,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexState, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.typeCache = configuration.getTypeCache(typeCacheRetrieval);
-        isOpen = true;
+
+        Runtime.getRuntime().addShutdownHook(new ShutdownThread(this));
     }
 
     @Override
@@ -99,7 +99,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public synchronized void shutdown() throws TitanException {
-        if (!isOpen) return;
+        if (!isOpen)
+            return;
+
         try {
             super.shutdown();
             idAssigner.close();
@@ -403,4 +405,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     }
 
+    private static class ShutdownThread extends Thread {
+        private final StandardTitanGraph graph;
+
+        public ShutdownThread(StandardTitanGraph graph) {
+            this.graph = graph;
+        }
+
+        @Override
+        public void start() {
+            if (graph.isOpen && log.isDebugEnabled())
+                log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
+
+            graph.shutdown();
+        }
+    }
 }
