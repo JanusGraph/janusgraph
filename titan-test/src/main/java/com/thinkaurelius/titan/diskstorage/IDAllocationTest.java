@@ -57,7 +57,7 @@ public abstract class IDAllocationTest {
 
         c = new BaseConfiguration();
         c.addProperty(IDAUTHORITY_RETRY_COUNT_KEY, 10);
-        c.addProperty(IDAUTHORITY_WAIT_MS_KEY, 10);
+        c.addProperty(IDAUTHORITY_WAIT_MS_KEY, 100);
         c.addProperty(IDAUTHORITY_UNIQUE_ID_BITS_KEY,7);
         c.addProperty(IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY,true);
         configurations.add(new Object[]{c});
