@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Parameter;
 
 /**
@@ -25,8 +26,6 @@ import com.thinkaurelius.titan.core.Parameter;
  */
 public interface KeyInformation {
 
-    public enum Cardinality { SINGLE, LIST, SET }
-
     /**
      * Returns the data type of the key's values.
      *
@@ -42,7 +41,7 @@ public interface KeyInformation {
     public Parameter[] getParameters();
 
     /**
-     * Returns the {@link Cardinality} for this key.
+     * Returns the {@link com.thinkaurelius.titan.core.Cardinality} for this key.
      * @return
      */
     public Cardinality getCardinality();

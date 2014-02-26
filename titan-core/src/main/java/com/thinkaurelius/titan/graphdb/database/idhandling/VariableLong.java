@@ -81,14 +81,14 @@ public class VariableLong {
         writeUnsigned(out, value);
     }
 
-    public static StaticBuffer positiveByteBuffer(final long value) {
+    public static StaticBuffer positiveBuffer(final long value) {
         WriteBuffer buffer = new WriteByteBuffer(positiveLength(value));
         writePositive(buffer, value);
         return buffer.getStaticBuffer();
     }
 
 
-    public static StaticBuffer positiveByteBuffer(long[] value) {
+    public static StaticBuffer positiveBuffer(long[] value) {
         int len = 0;
         for (long aValue : value)
             len += positiveLength(aValue);
@@ -232,9 +232,9 @@ public class VariableLong {
         long value = 0;
         int b;
         do {
+            position--;
             b = in.getByte(position);
             value = value << 7 | b & BIT_MASK;
-            position--;
         } while (b >= 0);
         in.movePositionTo(position);
         return value;

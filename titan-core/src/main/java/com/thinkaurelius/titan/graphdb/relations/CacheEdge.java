@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -77,6 +78,7 @@ public class CacheEdge extends AbstractEdge {
         copy.remove();
 
         StandardEdge u = (StandardEdge) tx().addEdge(getVertex(0), getVertex(1), getLabel());
+        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setID(super.getID());
         u.setPreviousID(super.getID());
         copyProperties(u);
         return u;
@@ -132,7 +134,6 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public void remove() {
-        verifyRemoval();
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
         }

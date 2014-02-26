@@ -82,7 +82,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
 
     @Override
     public synchronized void remove() {
-        verifyRemoval();
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);

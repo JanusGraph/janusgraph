@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.reference;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
@@ -14,7 +14,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanTypeReference extends EmptyVertex implements InternalType {
+public abstract class TitanTypeReference extends EmptyVertex implements InternalRelationType {
 
     private final long id;
     private final String name;

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -9,7 +10,7 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class RelationTypeCondition<E extends TitanRelation> extends Literal<E> {
+public class RelationTypeCondition<E extends TitanElement> extends Literal<E> {
 
     private final TitanType relationType;
 
@@ -20,7 +21,8 @@ public class RelationTypeCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public boolean evaluate(E element) {
-        return relationType.equals(element.getType());
+        Preconditions.checkArgument(element instanceof TitanRelation);
+        return relationType.equals(((TitanRelation)element).getType());
     }
 
     public TitanType getRelationType() {

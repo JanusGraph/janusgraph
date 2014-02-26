@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 
 import java.util.Set;
@@ -13,19 +14,35 @@ import java.util.Set;
 
 public enum TypeDefinitionCategory {
 
-    UNIQUENESS(boolean[].class),
-    UNIQUENESS_LOCK(boolean[].class),
+    //Relation Types
     HIDDEN(Boolean.class),
-    MODIFIABLE(Boolean.class),
     SORT_KEY(long[].class),
+    SORT_ORDER(Order.class),
     SIGNATURE(long[].class),
-    INDEXES(IndexType[].class),
+    MULTIPLICITY(Multiplicity.class),
     DATATYPE(Class.class),
     UNIDIRECTIONAL(Boolean.class),
-    SORT_ORDER(Order.class),
-    INDEX_PARAMETERS(IndexParameters[].class),
+    INVERTED_DIRECTION(Boolean.class),
 
-    RELATION_INDEX();
+    //Index Types
+    ELEMENT_CATEGORY(ElementCategory.class),
+    INDEX_CARDINALITY(Cardinality.class),
+    IS_MAPPING(Boolean.class),
+    INDEX_NAME(String.class),
+
+    //Consistency Types
+    CONSISTENCY_LEVEL(ConsistencyModifier.class),
+
+    //Schema Edges
+    RELATION_INDEX(),
+    CONSISTENCY_MODIFIER(),
+    INDEX_FIELD(RelationCategory.EDGE,Parameter[].class);
+
+    static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
+    static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL, INVERTED_DIRECTION);
+
+    public static final Set<TypeDefinitionCategory> SCHEMA_EDGE_DEFS = ImmutableSet.of(RELATION_INDEX,CONSISTENCY_MODIFIER,INDEX_FIELD);
+
 
 
     private final RelationCategory relationCategory;
@@ -74,11 +91,5 @@ public enum TypeDefinitionCategory {
             default: return null;
         }
     }
-
-    static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
-            HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, INDEXES, INDEX_PARAMETERS, DATATYPE);
-
-    static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
-            HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, UNIDIRECTIONAL);
 
 }

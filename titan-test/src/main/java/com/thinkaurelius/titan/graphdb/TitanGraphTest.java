@@ -9,10 +9,9 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.testutil.TestUtil;
@@ -20,8 +19,6 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,8 +127,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(friend.isEdgeLabel());
         assertFalse(friend.isPropertyKey());
         assertFalse(friend.isUnique(Direction.OUT));
-        assertFalse(((InternalType) friend).uniqueLock(Direction.OUT));
-        assertFalse(((InternalType) friend).isHidden());
+        assertFalse(((InternalRelationType) friend).uniqueLock(Direction.OUT));
+        assertFalse(((InternalRelationType) friend).isHidden());
 
         connect = tx.getEdgeLabel("connect");
         assertEquals("connect", connect.getName());
@@ -139,8 +136,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertTrue(connect.isEdgeLabel());
         assertFalse(connect.isPropertyKey());
         assertTrue(connect.isUnique(Direction.OUT));
-        assertFalse(((InternalType) connect).uniqueLock(Direction.OUT));
-        assertFalse(((InternalType) connect).isHidden());
+        assertFalse(((InternalRelationType) connect).uniqueLock(Direction.OUT));
+        assertFalse(((InternalRelationType) connect).isHidden());
 
         link = tx.getEdgeLabel("link");
         assertTrue(link.isUnidirected());

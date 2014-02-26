@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
@@ -13,7 +15,6 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -55,6 +56,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -277,17 +279,17 @@ public class ElasticSearchIndex implements IndexProvider {
             for (IndexEntry add : additions) {
                 if (add.value instanceof Number) {
                     if (AttributeUtil.isWholeNumber((Number) add.value)) {
-                        builder.field(add.key, ((Number) add.value).longValue());
+                        builder.field(add.field, ((Number) add.value).longValue());
                     } else { //double or float
-                        builder.field(add.key, ((Number) add.value).doubleValue());
+                        builder.field(add.field, ((Number) add.value).doubleValue());
                     }
                 } else if (AttributeUtil.isString(add.value)) {
-                    builder.field(add.key, (String) add.value);
+                    builder.field(add.field, (String) add.value);
                 } else if (add.value instanceof Geoshape) {
                     Geoshape shape = (Geoshape) add.value;
                     if (shape.getType() == Geoshape.Type.POINT) {
                         Geoshape.Point p = shape.getPoint();
-                        builder.field(add.key, new double[]{p.getLongitude(), p.getLatitude()});
+                        builder.field(add.field, new double[]{p.getLongitude(), p.getLatitude()});
                     } else throw new UnsupportedOperationException("Geo type is not supported: " + shape.getType());
 
 //                    builder.startObject(add.key);
@@ -337,10 +339,16 @@ public class ElasticSearchIndex implements IndexProvider {
                             brb.add(new DeleteRequest(indexName, storename, docid));
                             bulkrequests++;
                         } else {
-                            Set<String> deletions = Sets.newHashSet(mutation.getDeletions());
+                            Set<String> deletions = Sets.newHashSet(Iterables.transform(mutation.getDeletions(),new Function<IndexEntry, String>() {
+                                @Nullable
+                                @Override
+                                public String apply(@Nullable IndexEntry indexEntry) {
+                                    return indexEntry.field;
+                                }
+                            }));
                             if (mutation.hasAdditions()) {
                                 for (IndexEntry ie : mutation.getAdditions()) {
-                                    deletions.remove(ie.key);
+                                    deletions.remove(ie.field);
                                 }
                             }
                             if (!deletions.isEmpty()) {

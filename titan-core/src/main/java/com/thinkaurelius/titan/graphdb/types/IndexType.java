@@ -1,65 +1,31 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.google.common.base.Preconditions;
-import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.query.condition.And;
+
+import java.util.Set;
 
 /**
-* @author Matthias Broecheler (me@matthiasb.com)
-*/
-public class IndexType {
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public interface IndexType {
 
-    private static final int VERTEX = 0;
-    private static final int EDGE = 1;
+    public ElementCategory getElement();
 
-    private static final int fromType(final Class<? extends Element> element) {
-        if (element==Vertex.class) return VERTEX;
-        else if (element==Edge.class) return EDGE;
-        else throw new IllegalArgumentException("Either vertex or edge expected: " + element);
-    }
+    public IndexField[] getFields();
 
-    private static final Class<? extends Element> toType(final int element) {
-        if (element==VERTEX) return Vertex.class;
-        else if (element==EDGE) return Edge.class;
-        else throw new IllegalArgumentException("Either vertex or edge expected: " + element);
-    }
+    public IndexField getField(TitanKey key);
 
-    private String indexName;
-    private int element;
+    public boolean indexesKey(TitanKey key);
 
-    public IndexType() {} //For serialization
+    public boolean isInternalIndex();
 
-    public IndexType(final String indexName, final Class<? extends Element> element) {
-        this.indexName=indexName;
-        this.element=fromType(element);
-    }
+    public boolean isExternalIndex();
 
-    public String getIndexName() {
-        return indexName;
-    }
 
-    public Class<? extends Element> getElementType() {
-        return toType(element);
-    }
+    //TODO: Add in the future
+    //public And getCondition();
 
-    @Override
-    public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (!getClass().equals(other.getClass())) return false;
-        IndexType oth = (IndexType)other;
-        return element==oth.element && indexName.equals(oth.indexName);
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder().append(indexName).append(element).toHashCode();
-    }
-
-    @Override
-    public String toString() {
-        return indexName+':'+(element==VERTEX?"vertex":"edge");
-    }
 
 }

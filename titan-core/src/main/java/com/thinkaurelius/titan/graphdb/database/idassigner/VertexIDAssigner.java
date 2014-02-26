@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,9 +300,11 @@ public class VertexIDAssigner {
                 if (vertex instanceof InternalRelation) {
                     id = idManager.getRelationID(pool.relation.nextID(), partitionID);
                 } else if (vertex instanceof TitanKey) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.PropertyKey,pool.relationType.nextID()+SystemTypeManager.SYSTEM_TYPE_OFFSET);
+                    id = idManager.getSchemaId(IDManager.VertexIDType.PropertyKey,pool.relationType.nextID()+SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
                 } else if (vertex instanceof TitanLabel) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.EdgeLabel,pool.relationType.nextID()+SystemTypeManager.SYSTEM_TYPE_OFFSET);
+                    id = idManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, pool.relationType.nextID() + SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
+                } else if (vertex instanceof TitanTypeVertex) {
+                    id = idManager.getSchemaId(IDManager.VertexIDType.GenericType,pool.genericType.nextID()<<1);
                 } else {
                     id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
                 }
@@ -327,7 +330,7 @@ public class VertexIDAssigner {
     private class SimpleVertexIDBlockSizer implements IDBlockSizer {
 
         private static final int AVG_EDGES_PER_VERTEX = 10;
-        private static final int DEFAULT_NUM_EDGE_TYPES = 12;
+        private static final int DEFAULT_NUM_TYPES = 12;
 
         private final long baseBlockSize;
 
@@ -344,7 +347,9 @@ public class VertexIDAssigner {
                 case RELATION:
                     return baseBlockSize * AVG_EDGES_PER_VERTEX;
                 case RELATIONTYPE:
-                    return DEFAULT_NUM_EDGE_TYPES;
+                case GENERICTYPE:
+                    return DEFAULT_NUM_TYPES;
+
                 default:
                     throw new IllegalArgumentException("Unrecognized pool type");
             }
@@ -359,6 +364,8 @@ public class VertexIDAssigner {
                     return idManager.getRelationCountBound();
                 case RELATIONTYPE:
                     return idManager.getRelationTypeCountBound();
+                case GENERICTYPE:
+                    return idManager.getGenericTypeCountBound()>>1;
                 default:
                     throw new IllegalArgumentException("Unrecognized pool type");
             }
@@ -370,21 +377,27 @@ public class VertexIDAssigner {
         final IDPool vertex;
         final IDPool relation;
         final IDPool relationType;
+        final IDPool genericType;
 
         long lastAccess;
 
-        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeRelationType, long renewTimeoutMS, double renewBufferPercentage) {
+        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, long renewTimeoutMS, double renewBufferPercentage) {
             vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeoutMS, renewBufferPercentage);
             relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, renewBufferPercentage);
-            if (includeRelationType)
+            if (includeType) {
                 relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
-            else relationType = null;
+                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
+            } else {
+                relationType = null;
+                genericType = null;
+            }
         }
 
         public void close() {
             vertex.close();
             relation.close();
             if (relationType != null) relationType.close();
+            if (genericType != null) genericType.close();
         }
 
         public void accessed() {
@@ -394,15 +407,17 @@ public class VertexIDAssigner {
     }
 
     private enum PoolType {
-        VERTEX, RELATION, RELATIONTYPE;
+        VERTEX, RELATION, RELATIONTYPE, GENERICTYPE;
 
         private int getID() {
             switch (this) {
                 case VERTEX:
-                    return 1;
+                    return 0;
                 case RELATION:
-                    return 2;
+                    return 1;
                 case RELATIONTYPE:
+                    return 2;
+                case GENERICTYPE:
                     return 3;
                 default:
                     throw new IllegalArgumentException("Unrecognized PoolType: " + this);
@@ -420,12 +435,14 @@ public class VertexIDAssigner {
 
         public static PoolType getPoolType(int fullPartitionID) {
             switch (fullPartitionID & 3) { // & 11b (last two bits)
-                case 1:
+                case 0:
                     return VERTEX;
-                case 2:
+                case 1:
                     return RELATION;
-                case 3:
+                case 2:
                     return RELATIONTYPE;
+                case 3:
+                    return GENERICTYPE;
                 default:
                     throw new IllegalArgumentException("Unrecognized partition id: " + fullPartitionID);
             }

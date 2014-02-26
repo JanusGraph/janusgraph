@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
@@ -14,12 +14,12 @@ import java.util.Set;
 
 public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
 
-    protected final InternalType type;
+    protected final InternalRelationType type;
 
     public AbstractTypedRelation(final long id, final TitanType type) {
         super(id);
-        assert type != null && type instanceof InternalType;
-        this.type = (InternalType) type;
+        assert type != null && type instanceof InternalRelationType;
+        this.type = (InternalRelationType) type;
     }
 
     @Override
@@ -28,7 +28,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
         if (v == v.it())
             return this;
 
-        InternalRelation next = (InternalRelation) RelationIdentifier.get(v, type, super.getID()).findRelation(tx());
+        InternalRelation next = (InternalRelation) RelationIdentifier.get(this).findRelation(tx());
         if (next == null)
             throw new InvalidElementException("Relation has been removed", this);
 
@@ -63,12 +63,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public boolean isHidden() {
-        return type.isHidden();
-    }
-
-    @Override
-    public boolean isModifiable() {
-        return type.isModifiable();
+        return type.isHiddenRelationType();
     }
 
     @Override
@@ -84,11 +79,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public RelationIdentifier getId() {
         return RelationIdentifier.get(this);
-    }
-
-    protected void verifyRemoval() {
-        if (!isModifiable())
-            throw new UnsupportedOperationException("This relation is not modifiable and hence cannot be removed");
     }
 
     /* ---------------------------------------------------------------
@@ -112,7 +102,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public void setProperty(TitanLabel label, TitanVertex vertex) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         Preconditions.checkArgument(label.isUnidirected(),"Label must be unidirected");
-        Preconditions.checkArgument(label.isUnique(Direction.OUT),"Label must have unique end point");
         Preconditions.checkArgument(vertex!=null,"Vertex cannot be null");
         it().setPropertyDirect(label,vertex);
     }
@@ -120,7 +109,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public void setProperty(TitanKey key, Object value) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
-        Preconditions.checkArgument(key.isUnique(Direction.OUT),"Key must have unique assignment");
         it().setPropertyDirect(key,tx().verifyAttribute(key,value));
     }
 

@@ -4,9 +4,9 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
@@ -75,9 +75,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             iter.remove();
         }
         //Finally remove internal/hidden relations
-        for (TitanRelation r : QueryUtil.queryAll(it())) {
-            if (r.getType().equals(SystemKey.VertexExists)) r.remove();
-            else throw new IllegalStateException("Cannot remove vertex since it is still connected");
+        for (TitanProperty r : it().query().type(SystemKey.VertexExists).properties()) {
+            r.remove();
         }
     }
 
@@ -102,8 +101,11 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(TitanKey key) {
-        Iterator<TitanProperty> iter = query().type(key).includeHidden().properties().iterator();
-        if (key.isUnique(Direction.OUT)) {
+        if (!((InternalRelationType)key).isHiddenRelationType() && tx().getConfiguration().hasPropertyPrefetching()) {
+            getProperties().iterator().hasNext();
+        }
+        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
+        if (key.getCardinality()==Cardinality.SINGLE) {
             if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
         } else {

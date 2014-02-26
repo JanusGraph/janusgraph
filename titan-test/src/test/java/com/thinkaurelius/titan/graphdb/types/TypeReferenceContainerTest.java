@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
@@ -44,7 +44,7 @@ public class TypeReferenceContainerTest {
     private void defineTypes(TitanGraph graph) {
         graph.makeLabel("label1").manyToOne().make();
         TitanKey time = graph.makeKey("time").dataType(Long.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        assertFalse(((InternalType)time).uniqueLock(Direction.OUT));
+        assertFalse(((InternalRelationType)time).uniqueLock(Direction.OUT));
         graph.makeLabel("posted").manyToMany().sortKey(time).sortOrder(Order.DESC).make();
         graph.makeKey("uid").dataType(String.class).indexed(Vertex.class).indexed(Edge.class).unique(TypeMaker.UniquenessConsistency.LOCK).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
     }
@@ -57,7 +57,7 @@ public class TypeReferenceContainerTest {
         assertFalse(l.isUnique(Direction.IN));
         assertTrue(l.isUnique(Direction.OUT));
         assertTrue(l.isEdgeLabel());
-        InternalType t = (InternalType)l;
+        InternalRelationType t = (InternalRelationType)l;
         assertFalse(t.uniqueLock(Direction.IN));
         assertTrue(t.uniqueLock(Direction.OUT));
         assertEquals(0,t.getSortKey().length);
@@ -66,7 +66,7 @@ public class TypeReferenceContainerTest {
         TitanKey time = (TitanKey)types.getType("time");
         assertEquals(Long.class,time.getDataType());
         assertEquals(0, Iterables.size(time.getIndexes(Vertex.class)));
-        InternalType posted = (InternalType)types.getType("posted");
+        InternalRelationType posted = (InternalRelationType)types.getType("posted");
         assertEquals(1,posted.getSortKey().length);
         assertEquals(time.getID(),posted.getSortKey()[0]);
         assertEquals(Order.DESC,posted.getSortOrder());
@@ -74,8 +74,8 @@ public class TypeReferenceContainerTest {
         assertEquals(uid,types.getExistingType(uid.getID()));
         assertEquals(1,Iterables.size(uid.getIndexes(Vertex.class)));
         assertEquals(1,Iterables.size(uid.getIndexes(Edge.class)));
-        assertFalse(((InternalType) uid).uniqueLock(Direction.OUT));
-        assertTrue(((InternalType) uid).uniqueLock(Direction.IN));
+        assertFalse(((InternalRelationType) uid).uniqueLock(Direction.OUT));
+        assertTrue(((InternalRelationType) uid).uniqueLock(Direction.IN));
         assertEquals(String.class,uid.getDataType());
 
         assertTrue(types.containsType(SystemKey.VertexExists.getName()));

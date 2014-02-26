@@ -21,18 +21,13 @@ public enum ElementCategory {
     }
 
     public String getName() {
-        switch(this) {
-            case VERTEX: return "vertex";
-            case EDGE: return "edge";
-            case PROPERTY: return "property";
-            default: throw new IllegalArgumentException();
-        }
+        return toString().toLowerCase();
     }
 
     public static final ElementCategory getByName(final String name) {
-        if (name.equalsIgnoreCase("vertex")) return VERTEX;
-        else if (name.equalsIgnoreCase("edge")) return EDGE;
-        else if (name.equalsIgnoreCase("property")) return PROPERTY;
-        else throw new IllegalArgumentException("Unrecognized name: " + name);
+        for (ElementCategory category : values()) {
+            if (category.toString().equalsIgnoreCase(name)) return category;
+        }
+        throw new IllegalArgumentException("Unrecognized name: " + name);
     }
 }

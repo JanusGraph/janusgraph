@@ -19,21 +19,5 @@ import com.tinkerpop.blueprints.Element;
  */
 public interface TypeMaker {
 
-    /**
-     * Consistency imposed against the underlying storage backend as configured in {@link TypeMaker}.
-     */
-    public enum UniquenessConsistency {
-
-        /**
-         * Does not acquire a lock and hence concurrent transactions may overwrite existing
-         * uniqueness relations.
-         */
-        NO_LOCK,
-        /**
-         * Acquires a lock to ensure uniqueness consistency.
-         */
-        LOCK
-    }
-
     public TitanType make();
 }

@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 
@@ -32,7 +32,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (reltypecompare != 0) return reltypecompare;
 
         //1) TitanType
-        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
+        InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
         int typecompare = t1.compareTo(t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);
@@ -54,7 +54,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (dirCompare != 0) return dirCompare;
 
         // Breakout: If type&direction are the same and the type is unique in the direction it follows that the relations are the same
-        if (t1.isUnique(dir1)) return 0;
+        if (t1.getMultiplicity().isUnique(dir1)) return 0;
 
         // 3) Compare sort key values
         for (long typeid : t1.getSortKey()) {

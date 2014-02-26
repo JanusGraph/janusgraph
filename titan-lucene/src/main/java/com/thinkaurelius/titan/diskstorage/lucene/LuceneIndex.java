@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
@@ -180,7 +181,8 @@ public class LuceneIndex implements IndexProvider {
                         }
                     }
                     Preconditions.checkNotNull(doc);
-                    for (String key : mutation.getDeletions()) {
+                    for (IndexEntry del : mutation.getDeletions()) {
+                        String key = del.field;
                         if (doc.getField(key) != null) {
                             log.trace("Removing field [{}] on document [{}]", key, docid);
                             doc.removeFields(key);
@@ -188,35 +190,35 @@ public class LuceneIndex implements IndexProvider {
                         }
                     }
                     for (IndexEntry add : mutation.getAdditions()) {
-                        log.trace("Adding field [{}] on document [{}]", add.key, docid);
-                        if (doc.getField(add.key) != null) doc.removeFields(add.key);
+                        log.trace("Adding field [{}] on document [{}]", add.field, docid);
+                        if (doc.getField(add.field) != null) doc.removeFields(add.field);
                         if (add.value instanceof Number) {
                             Field field = null;
                             if (AttributeUtil.isWholeNumber((Number) add.value)) {
-                                field = new LongField(add.key, ((Number) add.value).longValue(), Field.Store.YES);
+                                field = new LongField(add.field, ((Number) add.value).longValue(), Field.Store.YES);
                             } else { //double or float
-                                field = new DoubleField(add.key, ((Number) add.value).doubleValue(), Field.Store.YES);
+                                field = new DoubleField(add.field, ((Number) add.value).doubleValue(), Field.Store.YES);
                             }
                             doc.add(field);
                         } else if (AttributeUtil.isString(add.value)) {
                             String str = (String) add.value;
-                            Mapping mapping = Mapping.getMapping(storename,add.key,informations);
+                            Mapping mapping = Mapping.getMapping(storename,add.field,informations);
                             Field field;
                             switch(mapping) {
                                 case DEFAULT:
                                 case TEXT:
-                                    field = new TextField(add.key, str, Field.Store.YES);
+                                    field = new TextField(add.field, str, Field.Store.YES);
                                     break;
                                 case STRING:
-                                    field = new StringField(add.key, str, Field.Store.YES);
+                                    field = new StringField(add.field, str, Field.Store.YES);
                                     break;
                                 default: throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
                             }
                             doc.add(field);
                         } else if (add.value instanceof Geoshape) {
                             Shape shape = ((Geoshape) add.value).convert2Spatial4j();
-                            geofields.put(add.key, shape);
-                            doc.add(new StoredField(add.key, GEOID + ctx.toString(shape)));
+                            geofields.put(add.field, shape);
+                            doc.add(new StoredField(add.field, GEOID + ctx.toString(shape)));
 
                         } else throw new IllegalArgumentException("Unsupported type: " + add.value);
                     }
@@ -414,7 +416,7 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information, TitanPredicate titanPredicate) {
-        if (information.getCardinality()!= KeyInformation.Cardinality.SINGLE) return false;
+        if (information.getCardinality()!= Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (mapping!=Mapping.DEFAULT && !AttributeUtil.isString(dataType)) return false;
@@ -437,7 +439,7 @@ public class LuceneIndex implements IndexProvider {
 
     @Override
     public boolean supports(KeyInformation information) {
-        if (information.getCardinality()!= KeyInformation.Cardinality.SINGLE) return false;
+        if (information.getCardinality()!= Cardinality.SINGLE) return false;
         Class<?> dataType = information.getDataType();
         Mapping mapping = Mapping.getMapping(information);
         if (Number.class.isAssignableFrom(dataType) || dataType == Geoshape.class) {

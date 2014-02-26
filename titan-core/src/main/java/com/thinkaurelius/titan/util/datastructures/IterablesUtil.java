@@ -26,6 +26,20 @@ public class IterablesUtil {
         };
     }
 
+    public static final Predicate NO_FILTER = new NoFilter();
+
+    public static final <E> Predicate<E> noFilter() {
+        return (Predicate<E>)NO_FILTER;
+    }
+
+    private static class NoFilter<E> implements Predicate<E> {
+
+        @Override
+        public boolean apply(@Nullable E e) {
+            return true;
+        }
+    }
+
     public static final<O> Iterable<O> limitedIterable(final Iterable<O> iterable, final int limit) {
         return Iterables.filter(iterable,new Predicate<O>() {
 

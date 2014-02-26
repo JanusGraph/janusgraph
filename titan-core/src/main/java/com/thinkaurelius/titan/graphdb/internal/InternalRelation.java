@@ -31,12 +31,6 @@ public interface InternalRelation extends TitanRelation, InternalElement {
      */
     public int getLen();
 
-    /**
-     * Whether this relation can be seen only internally to titan
-     * @return
-     */
-    public boolean isHidden();
-
     public <O> O getProperty(TitanType type);
 
     public <O> O getPropertyDirect(TitanType type);

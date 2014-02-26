@@ -68,13 +68,6 @@ public interface TitanRelation extends TitanElement {
     public boolean isIncidentOn(TitanVertex vertex);
 
     /**
-     * Checks whether this relation can be modified in the context of this transaction.
-     *
-     * @return true, if this relation can be modified, else false.
-     */
-    public boolean isModifiable();
-
-    /**
      * Checks whether this relation is a loop.
      * An relation is a loop if it connects a vertex with itself.
      *

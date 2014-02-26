@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INVERTED_DIRECTION;
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 import static com.tinkerpop.blueprints.Direction.IN;
 
@@ -17,12 +18,13 @@ import static com.tinkerpop.blueprints.Direction.IN;
 public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker {
 
     private boolean isUnidirectional;
+    private boolean invertedBaseDirection;
 
     public StandardLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
                               final AttributeHandling attributeHandler) {
         super(tx, indexSerializer, attributeHandler);
         isUnidirectional = false;
-
+        invertedBaseDirection = false;
     }
 
     @Override
@@ -37,42 +39,14 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
         return this;
     }
 
-    @Override
-    public LabelMaker oneToMany(UniquenessConsistency consistency) {
-        super.unique(Direction.IN, consistency);
+    public StandardLabelMaker invertDirection() {
+        invertedBaseDirection = true;
         return this;
     }
 
     @Override
-    public LabelMaker oneToMany() {
-        return oneToMany(UniquenessConsistency.LOCK);
-    }
-
-    @Override
-    public LabelMaker manyToOne(UniquenessConsistency consistency) {
-        super.unique(Direction.OUT, consistency);
-        return this;
-    }
-
-    @Override
-    public LabelMaker manyToOne() {
-        return manyToOne(UniquenessConsistency.LOCK);
-    }
-
-    @Override
-    public LabelMaker oneToOne(UniquenessConsistency consistency) {
-        super.unique(Direction.BOTH, consistency);
-        return this;
-    }
-
-    @Override
-    public LabelMaker oneToOne() {
-        return oneToOne(UniquenessConsistency.LOCK);
-    }
-
-    @Override
-    public LabelMaker manyToMany() {
-        super.unique(Direction.BOTH, null);
+    public StandardLabelMaker multiplicity(Multiplicity multiplicity) {
+        super.multiplicity(multiplicity);
         return this;
     }
 
@@ -100,20 +74,21 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
         return this;
     }
 
-    @Override
-    public StandardLabelMaker unModifiable() {
-        super.unModifiable();
-        return this;
-    }
 
     @Override
     public TitanLabel make() {
         Preconditions.checkArgument(!isUnidirectional ||
-                (!isUnique(IN)),
-                "Unidirectional labels cannot be unique");
+                !(getMultiplicity()==Multiplicity.ONE2MANY || getMultiplicity()==Multiplicity.ONE2ONE),
+                "Unidirectional labels cannot have restricted multiplicity at the end vertex");
+        Preconditions.checkArgument(!(isUnidirectional && hasSortKey()) ||
+                !(getMultiplicity()==Multiplicity.MANY2ONE),
+                "Unidirectional labels with restricted multiplicity cannot have a sort key");
+        Preconditions.checkArgument(!invertedBaseDirection || isUnidirectional);
+
 
         TypeDefinitionMap definition = makeDefinition();
         definition.setValue(UNIDIRECTIONAL, isUnidirectional);
+        definition.setValue(INVERTED_DIRECTION,invertedBaseDirection);
         return tx.makeEdgeLabel(getName(), definition);
     }
 

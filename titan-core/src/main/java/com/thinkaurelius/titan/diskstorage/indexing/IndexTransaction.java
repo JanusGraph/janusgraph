@@ -1,8 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +18,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexTransaction implements TransactionHandle {
+public class IndexTransaction implements TransactionHandle, LoggableTransaction {
 
     private static final int DEFAULT_OUTER_MAP_SIZE = 3;
     private static final int DEFAULT_INNER_MAP_SIZE = 5;
@@ -39,8 +42,8 @@ public class IndexTransaction implements TransactionHandle {
         getIndexMutation(store,docid,isNew,false).addition(new IndexEntry(key,value));
     }
 
-    public void delete(String store, String docid, String key, boolean deleteAll) {
-        getIndexMutation(store,docid,false,deleteAll).deletion(key);
+    public void delete(String store, String docid, String key, Object value, boolean deleteAll) {
+        getIndexMutation(store,docid,false,deleteAll).deletion(new IndexEntry(key,value));
     }
 
     private IndexMutation getIndexMutation(String store, String docid, boolean isNew, boolean isDeleted) {
@@ -95,6 +98,32 @@ public class IndexTransaction implements TransactionHandle {
             index.mutate(mutations,keyInformations,indexTx);
             mutations=null;
         }
+    }
+
+    @Override
+    public void logMutations(DataOutput out) {
+        VariableLong.writePositive(out,mutations.size());
+        for (Map.Entry<String,Map<String,IndexMutation>> store : mutations.entrySet()) {
+            out.writeObjectNotNull(store.getKey());
+            VariableLong.writePositive(out,store.getValue().size());
+            for (Map.Entry<String,IndexMutation> doc : store.getValue().entrySet()) {
+                out.writeObjectNotNull(doc.getKey());
+                IndexMutation mut = doc.getValue();
+                out.putByte((byte)(mut.isNew()?1:0));
+                out.putByte((byte)(mut.isDeleted()?1:0));
+                List<IndexEntry> adds = mut.getAdditions();
+                VariableLong.writePositive(out,adds.size());
+                for (IndexEntry add : adds) writeIndexEntry(out,add);
+                List<IndexEntry> dels = mut.getDeletions();
+                VariableLong.writePositive(out,dels.size());
+                for (IndexEntry del: dels) writeIndexEntry(out,del);
+            }
+        }
+    }
+
+    private void writeIndexEntry(DataOutput out, IndexEntry entry) {
+        out.writeObjectNotNull(entry.field);
+        out.writeClassAndObject(entry.value);
     }
 
 }

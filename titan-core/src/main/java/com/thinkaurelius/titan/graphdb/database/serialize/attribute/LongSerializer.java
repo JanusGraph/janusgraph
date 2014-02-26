@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.Idfiable;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
@@ -37,6 +38,8 @@ public class LongSerializer implements AttributeSerializer<Long>, OrderPreservin
             return ((Number)value).longValue();
         } else if (value instanceof String) {
             return Long.parseLong((String)value);
+        } else if (value instanceof Idfiable) {
+            return ((Idfiable)value).getID();
         } else return null;
     }
 }

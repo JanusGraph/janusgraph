@@ -293,7 +293,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         // Hard-coded caching settings
         if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
             cfm.caching(Caching.KEYS_ONLY);
-        } else if (columnfamilyName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
+        } else if (columnfamilyName.startsWith(Backend.INDEXSTORE_NAME)) {
             cfm.caching(Caching.ROWS_ONLY);
         }
 

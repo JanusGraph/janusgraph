@@ -382,17 +382,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     for (MessageEnvelope env : msgEnvelopes) {
                         mutations.put(env.key,env.entry);
                     }
-                    if (manager.storeManager.getFeatures().hasBatchMutation()) {
-                        Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
-                        for (StaticBuffer key : mutations.keySet()) {
-                            muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
-                        }
-                        manager.storeManager.mutateMany(ImmutableMap.of(store.getName(),muts),txh);
-                    } else {
-                        for (StaticBuffer key : mutations.keySet()) {
-                            store.mutate(key,mutations.get(key),KeyColumnValueStore.NO_DELETIONS,txh);
-                        }
+
+                    Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
+                    for (StaticBuffer key : mutations.keySet()) {
+                        muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
                     }
+                    manager.storeManager.mutateMany(ImmutableMap.of(store.getName(),muts),txh);
                     return Boolean.TRUE;
                 }
                 @Override

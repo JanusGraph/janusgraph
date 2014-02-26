@@ -14,8 +14,10 @@ import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.BufferTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
@@ -64,8 +66,7 @@ public class Backend {
      * disrupt storage adapters that rely on these names for specific configurations.
      */
     public static final String EDGESTORE_NAME = "edgestore";
-    public static final String VERTEXINDEX_STORE_NAME = "vertexindex";
-    public static final String EDGEINDEX_STORE_NAME = "edgeindex";
+    public static final String INDEXSTORE_NAME = "graphindex";
 
     public static final String ID_STORE_NAME = "titan_ids";
 
@@ -76,8 +77,7 @@ public class Backend {
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
-    public static final double VERTEXINDEX_CACHE_PERCENT = 0.15;
-    public static final double EDGEINDEX_CACHE_PERCENT = 0.05;
+    public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
     private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
 
@@ -95,8 +95,7 @@ public class Backend {
     private final StoreFeatures storeFeatures;
 
     private KeyColumnValueStore edgeStore;
-    private KeyColumnValueStore vertexIndexStore;
-    private KeyColumnValueStore edgeIndexStore;
+    private KeyColumnValueStore indexStore;
     private IDAuthority idAuthority;
 
     private final Map<String, IndexProvider> indexes;
@@ -125,10 +124,9 @@ public class Backend {
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
         int bufferSizeTmp = configuration.get(BUFFER_SIZE);
-        Preconditions.checkArgument(bufferSizeTmp >= 0, "Buffer size must be non-negative (use 0 to disable)");
+        Preconditions.checkArgument(bufferSizeTmp > 0, "Buffer size must be positive");
         if (!storeFeatures.hasBatchMutation()) {
-            bufferSize = 0;
-            log.debug("Buffering disabled because backend does not support batch mutations");
+            bufferSize = Integer.MAX_VALUE;
         } else bufferSize = bufferSizeTmp;
 
         writeAttempts = configuration.get(WRITE_ATTEMPTS);
@@ -200,16 +198,6 @@ public class Backend {
         return l;
     }
 
-    private KeyColumnValueStore getBufferStore(String name) throws StorageException {
-        Preconditions.checkArgument(bufferSize <= 1 || storeManager.getFeatures().hasBatchMutation());
-        KeyColumnValueStore store = null;
-        store = storeManager.openDatabase(name);
-        if (bufferSize > 1) {
-            store = new BufferedKeyColumnValueStore(store, true);
-        }
-        return store;
-    }
-
     private KeyColumnValueStore getStore(String name) throws StorageException {
         KeyColumnValueStore store = storeManager.openDatabase(name);
         return store;
@@ -236,22 +224,19 @@ public class Backend {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
 
-            edgeStore = getLockStore(getBufferStore(EDGESTORE_NAME));
-            vertexIndexStore = getLockStore(getBufferStore(VERTEXINDEX_STORE_NAME));
-            edgeIndexStore = getLockStore(getBufferStore(EDGEINDEX_STORE_NAME), false);
+            edgeStore = getLockStore(getStore(EDGESTORE_NAME));
+            indexStore = getLockStore(getStore(INDEXSTORE_NAME));
 
 
             boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
             if (hashPrefixIndex) {
                 log.info("Wrapping index store with HashPrefix");
-                vertexIndexStore = new HashPrefixKeyColumnValueStore(vertexIndexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
-                edgeIndexStore = new HashPrefixKeyColumnValueStore(edgeIndexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
+                indexStore = new HashPrefixKeyColumnValueStore(indexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
             }
 
             if (reportMetrics) {
                 edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsStoreName("edgeStore"));
-                vertexIndexStore = new MetricInstrumentedStore(vertexIndexStore, getMetricsStoreName("vertexIndexStore"));
-                edgeIndexStore = new MetricInstrumentedStore(edgeIndexStore, getMetricsStoreName("edgeIndexStore"));
+                indexStore = new MetricInstrumentedStore(indexStore, getMetricsStoreName("vertexIndexStore"));
             }
 
             //Configure caches
@@ -273,14 +258,15 @@ public class Backend {
                 }
                 log.info("Configuring total store cache size: {}",cacheSizeBytes);
                 long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
-                Preconditions.checkArgument(EDGESTORE_CACHE_PERCENT + VERTEXINDEX_CACHE_PERCENT + EDGEINDEX_CACHE_PERCENT == 1.0,"Cache percentages don't add up!");
+                Preconditions.checkArgument(EDGESTORE_CACHE_PERCENT + INDEXSTORE_CACHE_PERCENT == 1.0,"Cache percentages don't add up!");
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
-                long vertexIndexCacheSize = Math.round(cacheSizeBytes * VERTEXINDEX_CACHE_PERCENT);
-                long edgeIndexCacheSize = Math.round(cacheSizeBytes * EDGEINDEX_CACHE_PERCENT);
+                long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
                 edgeStore = new ExpirationKCVSCache(edgeStore,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                vertexIndexStore = new ExpirationKCVSCache(vertexIndexStore,getMetricsCacheName("vertexIndexStore",reportMetrics),expirationTime,cleanWaitTime,vertexIndexCacheSize);
-                edgeIndexStore = new ExpirationKCVSCache(edgeIndexStore,getMetricsCacheName("edgeIndexStore",reportMetrics),expirationTime,cleanWaitTime,edgeIndexCacheSize);
+                indexStore = new ExpirationKCVSCache(indexStore,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
+            } else {
+                edgeStore = new NoKCVSCache(edgeStore);
+                indexStore = new NoKCVSCache(indexStore);
             }
 
             String version = null;
@@ -400,12 +386,6 @@ public class Backend {
 
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
-        // Wrap with write buffer
-        if (bufferSize > 1) {
-            Preconditions.checkArgument(storeManager.getFeatures().hasBatchMutation());
-            tx = new BufferTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime);
-        }
-
         // Use ExpectedValueCheckingTransaction?
         final boolean evcEnabled =
             !storeFeatures.hasLocking() &&
@@ -424,9 +404,7 @@ public class Backend {
         }
 
         // Cache
-        if (cacheEnabled) {
-            tx = new CacheTransaction(tx);
-        }
+        CacheTransaction cacheTx = new CacheTransaction(tx, storeManager, bufferSize, writeAttempts, persistAttemptWaittime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
@@ -434,15 +412,14 @@ public class Backend {
             indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey())));
         }
 
-        return new BackendTransaction(tx, configuration, storeManager.getFeatures(),
-                edgeStore, vertexIndexStore, edgeIndexStore,
+        return new BackendTransaction(cacheTx, configuration, storeManager.getFeatures(),
+                edgeStore, indexStore,
                 readAttempts, persistAttemptWaittime, indexTx, threadPool);
     }
 
     public void close() throws StorageException {
         edgeStore.close();
-        vertexIndexStore.close();
-        edgeIndexStore.close();
+        indexStore.close();
         idAuthority.close();
         storeManager.close();
         if(threadPool != null) {
@@ -461,8 +438,7 @@ public class Backend {
      */
     public void clearStorage() throws StorageException {
         edgeStore.close();
-        vertexIndexStore.close();
-        edgeIndexStore.close();
+        indexStore.close();
         idAuthority.close();
         storeManager.clearStorage();
         //Indexes

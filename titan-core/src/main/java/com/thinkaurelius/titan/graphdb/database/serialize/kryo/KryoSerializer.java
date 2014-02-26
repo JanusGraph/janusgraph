@@ -31,7 +31,7 @@ public class KryoSerializer {
             //Titan specific
                     TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanTypeCategory.class,
                     IndexType.class, IndexType[].class, Parameter.class, Parameter[].class,
-                    IndexParameters.class, IndexParameters[].class, Order.class
+                    Order.class
             );
 
     public static final int KRYO_ID_OFFSET = 50;

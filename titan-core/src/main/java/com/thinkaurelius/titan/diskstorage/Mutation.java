@@ -1,10 +1,15 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Container for collection mutations against a data store.
@@ -105,6 +110,29 @@ public class Mutation<E,K> {
         if (null != m.deletions) {
             if (null == deletions) deletions = m.deletions;
             else deletions.addAll(m.deletions);
+        }
+    }
+
+
+    public int getTotalMutations() {
+        return (additions==null?0:additions.size()) + (deletions==null?0:deletions.size());
+    }
+
+    /**
+     * Consolidates this mutation by removing redundant deletions. A deletion is considered redundant if
+     * it is identical to some addition since we consider additions to apply logically after deletions.
+     * Hence, such a deletion would be applied and immediately overwritten by an addition. To avoid this
+     * inefficiency, consolidation should be called.
+     *
+     * @param convert Function which maps additions onto deletions. It needs to be ensure that K has valid hashCode() and equals()
+     */
+    public void consolidate(Function<E,K> convert) {
+        if (hasDeletions() && hasAdditions()) {
+            Set<K> adds = Sets.newHashSet(Iterables.transform(additions,convert));
+            Iterator<K> iter = deletions.iterator();
+            while (iter.hasNext()) {
+                if (adds.contains(iter.next())) iter.remove();
+            }
         }
     }
 

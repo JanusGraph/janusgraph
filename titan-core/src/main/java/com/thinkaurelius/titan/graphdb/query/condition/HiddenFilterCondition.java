@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**

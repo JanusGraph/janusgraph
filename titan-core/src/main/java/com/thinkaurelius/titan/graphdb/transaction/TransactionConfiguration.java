@@ -23,6 +23,14 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      */
     public boolean hasAssignIDsImmediately();
 
+
+    /**
+     * Whether this transaction should be optimized for batch-loading, i.e. ingestion of lots of data.
+     *
+     * @return
+     */
+    public boolean hasEnabledBatchLoading();
+
     /**
      * Whether the graph transaction is configured to verify that a vertex with the id GIVEN BY THE USER actually exists
      * in the database or not.

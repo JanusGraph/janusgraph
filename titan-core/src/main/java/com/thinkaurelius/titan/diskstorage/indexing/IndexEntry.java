@@ -11,14 +11,14 @@ import org.apache.commons.lang.StringUtils;
 
 public class IndexEntry {
 
-    public final String key;
+    public final String field;
     public final Object value;
 
-    public IndexEntry(final String key, final Object value) {
-        Preconditions.checkNotNull(key);
+    public IndexEntry(final String field, final Object value) {
+        Preconditions.checkNotNull(field);
         Preconditions.checkNotNull(value);
-        Preconditions.checkArgument(StringUtils.isNotBlank(key));
-        this.key=key;
+        Preconditions.checkArgument(StringUtils.isNotBlank(field));
+        this.field = field;
         this.value=value;
     }
 

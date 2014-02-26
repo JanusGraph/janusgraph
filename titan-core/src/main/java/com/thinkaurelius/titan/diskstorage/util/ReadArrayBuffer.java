@@ -58,7 +58,7 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
 
     @Override
     public void movePositionTo(int newPosition) {
-        assert newPosition >= -1 && newPosition <= length();
+        assert newPosition >= 0 && newPosition <= length();
         position = newPosition;
     }
 

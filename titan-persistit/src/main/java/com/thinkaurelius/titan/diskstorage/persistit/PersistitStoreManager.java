@@ -10,6 +10,7 @@ import com.persistit.Persistit;
 import com.persistit.Volume;
 import com.persistit.exception.PersistitException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
@@ -19,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -94,7 +96,16 @@ public class PersistitStoreManager extends LocalStoreManager implements OrderedK
 
     @Override
     public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        for (Map.Entry<String,KVMutation> muts : mutations.entrySet()) {
+            PersistitKeyValueStore store = openDatabase(muts.getKey());
+            KVMutation mut = muts.getValue();
+            if (mut.hasAdditions()) {
+                for (KeyValueEntry entry : mut.getAdditions()) store.insert(entry.getKey(),entry.getValue(),txh);
+            }
+            if (mut.hasDeletions()) {
+                for (StaticBuffer del : mut.getDeletions()) store.delete(del,txh);
+            }
+        }
     }
 
     public void removeDatabase(PersistitKeyValueStore db) {

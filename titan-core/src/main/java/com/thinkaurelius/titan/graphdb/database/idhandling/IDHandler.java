@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.tinkerpop.blueprints.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -29,30 +30,70 @@ public class IDHandler {
         return value >>> 1;
     }
 
-    //Would only need 1 bit to store relation-type-id, but using two so we can upper bound
-    private static final int PREFIX_BIT_LEN = 2;
 
-    public static final int PROPERTY_DIR = 0; //00b
-    public static final int EDGE_OUT_DIR = 2; //10b
-    public static final int EDGE_IN_DIR = 3;  //11b
+    public static enum DirectionID {
 
-    private static int getDirection(int dirID) {
-        //0=out, 1=in
-        return dirID & 1;
-    }
+        PROPERTY_DIR(0),  //00b
+        EDGE_OUT_DIR(2),  //10b
+        EDGE_IN_DIR(3);   //11b
 
-    private static int getRelationType(int dirID) {
-        //0=property, 1=edge
-        return dirID >>> 1;
-    }
+        private final int id;
 
-    private static int getDirectionID(int relationType, int direction) {
-        assert relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1;
-        return (relationType << 1) + direction;
-    }
+        private DirectionID(int id) {
+            this.id = id;
+        }
 
-    public static boolean isValidDirection(final int dirId) {
-        return dirId == PROPERTY_DIR || dirId == EDGE_IN_DIR || dirId == EDGE_OUT_DIR;
+        public int getId() {
+            return id;
+        }
+
+        public int getRelationType() {
+            return id >>> 1;
+        }
+
+        public RelationCategory getRelationCategory() {
+            switch(this) {
+                case PROPERTY_DIR:
+                    return RelationCategory.PROPERTY;
+                case EDGE_IN_DIR:
+                case EDGE_OUT_DIR:
+                    return RelationCategory.EDGE;
+                default: throw new AssertionError();
+            }
+        }
+
+        public int getDirectionInt() {
+            return id & 1;
+        }
+
+        public Direction getDirection() {
+            switch(this) {
+                case PROPERTY_DIR:
+                case EDGE_OUT_DIR:
+                    return Direction.OUT;
+                case EDGE_IN_DIR:
+                    return Direction.IN;
+                default: throw new AssertionError();
+            }
+        }
+
+        public int getPrefix(boolean hidden) {
+            return ((hidden?1:0)<<2) + getRelationType();
+        }
+
+        private static DirectionID getDirectionID(int relationType, int direction) {
+            assert relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1;
+            return forId((relationType << 1) + direction);
+        }
+
+        private static DirectionID forId(int id) {
+            switch(id) {
+                case 0: return PROPERTY_DIR;
+                case 2: return EDGE_OUT_DIR;
+                case 3: return EDGE_IN_DIR;
+                default: throw new AssertionError("Invalid id: " + id);
+            }
+        }
     }
 
     public static int edgeTypeLength(long etid) {
@@ -61,39 +102,51 @@ public class IDHandler {
     }
 
 
+    private static final int PREFIX_BIT_LEN = 3;
+
     /**
-     * The edge type is written as follows: [ Relation-Type-ID (2 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * The edge type is written as follows: [ Hidden (1 bit) | Relation-Type-ID (2 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * Would only need 1 bit to store relation-type-id, but using two so we can upper bound.
+     *
      *
      * @param out
      * @param etid
      * @param dirID
      */
-    public static void writeEdgeType(WriteBuffer out, long etid, int dirID) {
+    public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean hidden) {
         assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
-        assert isValidDirection(dirID);
-        etid = (IDManager.getRelationTypeIdCount(etid) << 1) + getDirection(dirID);
-        VariableLong.writePositiveWithPrefix(out, etid, getRelationType(dirID), PREFIX_BIT_LEN);
+
+        etid = (IDManager.getRelationTypeIdCount(etid) << 1) + dirID.getDirectionInt();
+        VariableLong.writePositiveWithPrefix(out, etid, dirID.getPrefix(hidden), PREFIX_BIT_LEN);
     }
 
-    public static StaticBuffer getEdgeType(long etid, int dirID) {
+    public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean hidden) {
         WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid));
-        IDHandler.writeEdgeType(b, etid, dirID);
+        IDHandler.writeEdgeType(b, etid, dirID, hidden);
         return b.getStaticBuffer();
     }
 
-    public static long[] readEdgeType(ReadBuffer in) {
+    public static EdgeTypeParse readEdgeType(ReadBuffer in) {
         long[] countPrefix = VariableLong.readPositiveWithPrefix(in, PREFIX_BIT_LEN);
-        int dirID = getDirectionID((int) countPrefix[1], (int) (countPrefix[0] & 1));
-        countPrefix[1] = dirID;
-        countPrefix[0] = countPrefix[0] >>> 1;
+        DirectionID dirID = DirectionID.getDirectionID((int) countPrefix[1] & 1, (int) (countPrefix[0] & 1));
+        long typeId = countPrefix[0] >>> 1;
 
-        if (countPrefix[1] == PROPERTY_DIR)
-            countPrefix[0] = IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey, countPrefix[0]);
-        else if (countPrefix[1] == EDGE_IN_DIR || countPrefix[1] == EDGE_OUT_DIR)
-            countPrefix[0] = IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, countPrefix[0]);
+        if (dirID == DirectionID.PROPERTY_DIR)
+            typeId = IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey, typeId);
         else
-            throw new AssertionError("Invalid direction ID: " + countPrefix[1]);
-        return countPrefix;
+            typeId = IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, typeId);
+        return new EdgeTypeParse(typeId,dirID);
+    }
+
+    public static class EdgeTypeParse {
+
+        public final long typeId;
+        public final DirectionID dirID;
+
+        public EdgeTypeParse(long typeId, DirectionID dirID) {
+            this.typeId = typeId;
+            this.dirID = dirID;
+        }
     }
 
 
@@ -130,24 +183,26 @@ public class IDHandler {
         return new StaticArrayBuffer(arr);
     }
 
+    //Assumes not hidden!
     public static StaticBuffer[] getBounds(RelationCategory type) {
         int start, end;
         switch (type) {
             case PROPERTY:
-                start = getRelationType(PROPERTY_DIR);
-                end = start + 1;
+                start = DirectionID.PROPERTY_DIR.getPrefix(false);
+                end = start;
                 break;
             case EDGE:
-                start = getRelationType(EDGE_OUT_DIR);
-                end = start + 1;
+                start = DirectionID.EDGE_OUT_DIR.getPrefix(false);
+                end = start;
                 break;
             case RELATION:
-                start = getRelationType(PROPERTY_DIR);
-                end = getRelationType(EDGE_OUT_DIR) + 1;
+                start = DirectionID.PROPERTY_DIR.getPrefix(false);
+                end = DirectionID.EDGE_OUT_DIR.getPrefix(false);
                 break;
             default:
                 throw new AssertionError("Unrecognized type:" + type);
         }
+        end++;
         assert end > start;
         return new StaticBuffer[]{getPrefixed(start), getPrefixed(end)};
     }

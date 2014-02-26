@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -18,20 +18,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 public class QueryUtil {
-
-    public static TitanProperty queryHiddenUniqueProperty(InternalVertex vertex, TitanKey key) {
-        assert ((InternalType) key).isHidden() : "Expected hidden property key";
-        assert key.isUnique(Direction.OUT) : "Expected functional property  type";
-        return Iterables.getOnlyElement(
-                vertex.query().
-                        includeHidden().
-                        type(key).
-                        properties(), null);
-    }
-
-    public static Iterable<TitanRelation> queryAll(InternalVertex vertex) {
-        return vertex.query().includeHidden().relations();
-    }
 
     public static int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {
         assert limit > 0 && limit <= 1000000000; //To make sure limit computation does not overflow
@@ -48,12 +34,12 @@ public class QueryUtil {
         return limit;
     }
 
-    private static InternalType getType(StandardTitanTx tx, String typeName) {
+    public static InternalRelationType getType(StandardTitanTx tx, String typeName) {
         TitanType t = tx.getType(typeName);
         if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
         }
-        return (InternalType) t;
+        return (InternalRelationType) t;
     }
 
     /**
@@ -196,55 +182,17 @@ public class QueryUtil {
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof TitanVertex);
         }
-        conditions.add(new PredicateCondition<TitanType, E>(type, predicate, value));
+        PredicateCondition<TitanType, E> pc = new PredicateCondition<TitanType, E>(type, predicate, value);
+        if (!conditions.contains(pc)) conditions.add(pc);
     }
 
-    private static final Set<String> NO_INDEXES = ImmutableSet.of();
 
-    /**
-     * Returns the names of the indexes that cover this condition (i.e. can return the result set for this condition).
-     * It is assumed that the given condition is from the top level AND clause of a QNF formula.
-     *
-     * @param result
-     * @param condition
-     * @return
-     */
-    public static final Set<String> andClauseIndexCover(final ElementCategory result, Condition<TitanElement> condition, IndexSerializer indexInfo) {
-        Set<String> indexes = NO_INDEXES;
-        if (condition instanceof PredicateCondition) {
-            PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) condition;
-            if (atom.getValue() != null) {
-                Preconditions.checkArgument(atom.getKey().isPropertyKey());
-                TitanKey key = (TitanKey) atom.getKey();
-                indexes = Sets.newHashSet(key.getIndexes(result.getElementType()));
-                Iterator<String> indexiter = indexes.iterator();
-                while (indexiter.hasNext()) {
-                    if (!indexInfo.supports(indexiter.next(),result,key,atom.getPredicate())) {
-                        indexiter.remove();
-                    }
-                }
-
-            } else {
-                //Not supported
-            }
-        } else if (condition instanceof Not) {
-            return andClauseIndexCover(result, ((Not<TitanElement>) condition).getChild(), indexInfo);
-        } else if (condition instanceof Or) {
-            boolean matchesAll = true;
-            for (Condition<TitanElement> child : condition.getChildren()) {
-                Set<String> subindexes = andClauseIndexCover(result, child, indexInfo);
-                if (indexes == NO_INDEXES) indexes = subindexes;
-                else indexes.retainAll(subindexes);
-            }
-        } else throw new IllegalArgumentException("Query not in QNF: " + condition);
-        return indexes;
-    }
 
 
     public static <R> List<R> processIntersectingRetrievals(List<IndexCall<R>> retrievals, final int limit) {
         Preconditions.checkArgument(!retrievals.isEmpty());
         Preconditions.checkArgument(limit >= 0, "Invalid limit: %s", limit);
-        List<R> results = null;
+        List<R> results;
         /*
          * Iterate over the clauses in the and collection
          * query.getCondition().getChildren(), taking the intersection
@@ -277,7 +225,7 @@ public class QueryUtil {
                     }
                 }
             }
-            sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.pow(sublimit, 1.5));
+            sublimit = (int) Math.min(Integer.MAX_VALUE - 1, Math.max(Math.pow(sublimit, 1.5),(sublimit+1)*2));
         } while (results.size() < limit && !exhaustedResults);
         return results;
     }

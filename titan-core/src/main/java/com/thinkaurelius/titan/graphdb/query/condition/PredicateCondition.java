@@ -3,8 +3,9 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
@@ -48,23 +49,17 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
         Preconditions.checkNotNull(type);
 
         if (type.isPropertyKey()) {
-            if (type.isUnique(Direction.OUT))
-                return satisfiesCondition(element.getProperty((TitanKey) type));
-
-            Iterator<TitanProperty> iter = ((VertexCentricQueryBuilder) ((TitanVertex) element).query()).type(type).includeHidden().properties().iterator();
-
+            Iterator<Object> iter = ElementHelper.getValues(element,(TitanKey)type).iterator();
             if (iter.hasNext()) {
                 while (iter.hasNext()) {
-                    if (satisfiesCondition(iter.next().getValue()))
+                    if (satisfiesCondition(iter.next()))
                         return true;
                 }
-
                 return false;
             }
-
             return satisfiesCondition(null);
         } else {
-            Preconditions.checkArgument(type.isUnique(Direction.OUT));
+            assert ((InternalRelationType)type).getMultiplicity().isUnique(Direction.OUT);
             return satisfiesCondition(((TitanRelation) element).getProperty((TitanLabel) type));
         }
     }

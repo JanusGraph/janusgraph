@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -60,6 +61,7 @@ public class CacheProperty extends AbstractProperty {
         copy.remove();
 
         StandardProperty u = (StandardProperty) tx().addProperty(getVertex(0), getPropertyKey(), getValue());
+        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setID(super.getID());
         u.setPreviousID(super.getID());
         copyProperties(u);
         return u;
@@ -114,7 +116,6 @@ public class CacheProperty extends AbstractProperty {
 
     @Override
     public void remove() {
-        verifyRemoval();
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
         }

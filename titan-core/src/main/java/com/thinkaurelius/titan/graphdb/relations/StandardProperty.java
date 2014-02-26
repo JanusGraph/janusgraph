@@ -82,7 +82,6 @@ public class StandardProperty extends AbstractProperty implements StandardRelati
 
     @Override
     public synchronized void remove() {
-        verifyRemoval();
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);

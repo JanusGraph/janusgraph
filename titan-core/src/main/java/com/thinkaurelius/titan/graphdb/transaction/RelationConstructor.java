@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
@@ -41,16 +42,26 @@ public class RelationConstructor {
 
     private static InternalRelation readRelation(final InternalVertex vertex, final RelationCache relation,
                                          final Entry data, final StandardTitanTx tx) {
-        TitanType type = tx.getExistingType(relation.typeId);
+        InternalRelationType type = (InternalRelationType) tx.getExistingType(relation.typeId);
+
+        InternalRelationType base = type.getBaseType();
+        boolean invertDirection = false;
+        if (base!=null) {
+            invertDirection = type.invertedBaseDirection();
+            type = base;
+        }
 
         if (type.isPropertyKey()) {
             assert relation.direction == Direction.OUT;
+            assert !invertDirection;
             return new CacheProperty(relation.relationId, (TitanKey) type, vertex, relation.getValue(), data);
         }
 
         if (type.isEdgeLabel()) {
             InternalVertex otherVertex = tx.getExistingVertex(relation.getOtherVertexId());
-            switch (relation.direction) {
+            Direction dir = relation.direction;
+            if (invertDirection) dir=dir.opposite();
+            switch (dir) {
                 case IN:
                     return new CacheEdge(relation.relationId, (TitanLabel) type, otherVertex, vertex, (byte) 1, data);
 

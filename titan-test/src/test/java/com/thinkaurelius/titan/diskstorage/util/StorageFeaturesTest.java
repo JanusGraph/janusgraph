@@ -19,20 +19,20 @@ public class StorageFeaturesTest {
 
         features = new StandardStoreFeatures.Builder().build();
 
-        assertFalse(features.hasBatchMutation());
+        assertFalse(features.hasMultiQuery());
         assertFalse(features.hasLocking());
         assertFalse(features.isDistributed());
         assertFalse(features.hasScan());
 
         features = new StandardStoreFeatures.Builder().locking(true).build();
 
-        assertFalse(features.hasBatchMutation());
+        assertFalse(features.hasMultiQuery());
         assertTrue(features.hasLocking());
         assertFalse(features.isDistributed());
 
-        features = new StandardStoreFeatures.Builder().batchMutation(true).unorderedScan(true).build();
+        features = new StandardStoreFeatures.Builder().multiQuery(true).unorderedScan(true).build();
 
-        assertTrue(features.hasBatchMutation());
+        assertTrue(features.hasMultiQuery());
         assertTrue(features.hasUnorderedScan());
         assertFalse(features.hasOrderedScan());
         assertTrue(features.hasScan());

@@ -51,7 +51,7 @@ public class VariableLongTest {
         };
 
         if (backward) {
-            rb.movePositionTo(rb.length()-1);
+            rb.movePositionTo(rb.length());
             for (long i = maxValue; i != (negative?-maxValue:0); i -= jump) {
                 read.next(rb,i);
             }
@@ -68,7 +68,7 @@ public class VariableLongTest {
         if (negative) impl.write(wb,-Long.MAX_VALUE);
         rb = wb.getStaticBuffer().asReadBuffer();
         if (backward) {
-            rb.movePositionTo(rb.length()-1);
+            rb.movePositionTo(rb.length());
             if (negative) assertEquals(-Long.MAX_VALUE, impl.read(rb));
             assertEquals(Long.MAX_VALUE, impl.read(rb));
             assertEquals(0, impl.read(rb));

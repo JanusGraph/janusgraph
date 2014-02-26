@@ -434,7 +434,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         // Hard-coded caching settings
         if (cfName.startsWith(Backend.EDGESTORE_NAME)) {
             createColumnFamily.setCaching("keys_only");
-        } else if (cfName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
+        } else if (cfName.startsWith(Backend.INDEXSTORE_NAME)) {
             createColumnFamily.setCaching("rows_only");
         }
 

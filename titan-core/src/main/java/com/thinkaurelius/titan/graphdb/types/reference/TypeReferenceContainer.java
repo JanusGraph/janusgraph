@@ -9,8 +9,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -90,7 +89,7 @@ public class TypeReferenceContainer implements TypeInspector {
 
     @Override
     public TitanType getExistingType(long id) {
-        SystemType st = SystemTypeManager.getSystemType(id);
+        SystemRelationType st = SystemTypeManager.getSystemType(id);
         if (st!=null) return st;
 
         Object type = typesById.get(id);

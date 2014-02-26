@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.BufferTransaction;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
@@ -55,7 +56,6 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        Assert.assertTrue(manager.getFeatures().hasBatchMutation());
         tx = new BufferTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0);
         store1 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName1), true);
         store2 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName2), true);

@@ -29,6 +29,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean isReadOnly = false;
 
+    private boolean hasEnabledBatchLoading = false;
+
     private boolean assignIDsImmediately = false;
 
     private DefaultTypeMaker defaultTypeMaker;
@@ -93,6 +95,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder enableBatchLoading() {
+        hasEnabledBatchLoading = true;
         verifyUniqueness = false;
         verifyExternalVertexExistence = false;
         acquireLocks = false;
@@ -133,7 +136,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public TitanTransaction start() {
-        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly,
+        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
@@ -158,6 +161,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
+    }
+
+    @Override
+    public boolean hasEnabledBatchLoading() {
+        return hasEnabledBatchLoading;
     }
 
     @Override
@@ -249,6 +257,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private static class ImmutableTxCfg implements TransactionConfiguration {
 
         private final boolean isReadOnly;
+        private final boolean hasEnabledBatchLoading;
         private final boolean hasAssignIDsImmediately;
         private final boolean hasVerifyExternalVertexExistence;
         private final boolean hasVerifyInternalVertexExistence;
@@ -264,6 +273,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final TransactionHandleConfig handleConfig;
 
         public ImmutableTxCfg(boolean isReadOnly,
+                boolean hasEnabledBatchLoading,
                 boolean hasAssignIDsImmediately,
                 boolean hasVerifyExternalVertexExistence,
                 boolean hasVerifyInternalVertexExistence,
@@ -274,6 +284,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
+            this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
             this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
             this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
@@ -289,6 +300,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                     .timestampProvider(timestampProvider).timestamp(timestamp)
                     .metricsPrefix(metricsPrefix)
                     .customOptions(storageConfiguration).build();
+        }
+
+        @Override
+        public boolean hasEnabledBatchLoading() {
+            return hasEnabledBatchLoading;
         }
 
         @Override

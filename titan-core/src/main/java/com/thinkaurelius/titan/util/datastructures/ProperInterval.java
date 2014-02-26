@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ProperInterval<T extends Comparable<T>> implements Interval<T> {
+public class ProperInterval<T> implements Interval<T> {
 
     private boolean startInclusive=true;
     private boolean endInclusive=true;
@@ -22,19 +23,31 @@ public class ProperInterval<T extends Comparable<T>> implements Interval<T> {
         setEnd(end);
     }
 
+    public void setPoint(T point) {
+        Preconditions.checkNotNull(point);
+        this.start=point;
+        this.end=point;
+        this.startInclusive=true;
+        this.endInclusive=true;
+    }
+
     public void setStart(T start) {
+        Preconditions.checkArgument(start instanceof Comparable);
         this.start=start;
     }
 
     public void setEnd(T end) {
+        Preconditions.checkArgument(end instanceof Comparable);
         this.end=end;
     }
 
     public void setStartInclusive(boolean inclusive) {
+        Preconditions.checkArgument(start==null || start instanceof  Comparable);
         this.startInclusive=inclusive;
     }
 
     public void setEndInclusive(boolean inclusive) {
+        Preconditions.checkArgument(end==null || end instanceof  Comparable);
         this.endInclusive=inclusive;
     }
 
@@ -66,8 +79,25 @@ public class ProperInterval<T extends Comparable<T>> implements Interval<T> {
     @Override
     public boolean isEmpty() {
         if (start==null || end==null) return false;
-        int cmp = start.compareTo(end);
+        if (isPoint()) return false;
+        int cmp = ((Comparable)start).compareTo(end);
         return cmp>0 || (cmp==0 && (!startInclusive || !endInclusive));
+    }
+
+    public boolean contains(T other) {
+        Preconditions.checkNotNull(other);
+        if (isPoint()) return start.equals(other);
+        else {
+            if (start!=null) {
+                int cmp = ((Comparable)start).compareTo(other);
+                if (cmp>0 || (cmp==0 && !startInclusive)) return false;
+            }
+            if (end!=null) {
+                int cmp = ((Comparable)end).compareTo(other);
+                if (cmp<0 || (cmp==0 && !endInclusive)) return false;
+            }
+            return true;
+        }
     }
 
     @Override
