@@ -15,6 +15,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
+import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -88,6 +89,7 @@ public abstract class IDAllocationTest {
 
     public IDAllocationTest(WriteConfiguration baseConfig) {
         Preconditions.checkNotNull(baseConfig);
+        TestGraphConfigs.applyOverrides(baseConfig);
         this.baseStoreConfiguration = baseConfig;
         Configuration config = StorageSetup.getConfig(baseConfig);
         hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID);
