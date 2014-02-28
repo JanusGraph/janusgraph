@@ -63,6 +63,11 @@ case "`uname`" in
 CYGWIN*) cygwin=true;;
 esac
 
+MVN="mvn"
+if [ "$M2_HOME" != "" ]; then
+  MVN="${M2_HOME}"/bin/mvn
+fi
+
 # Detect if we are in hbase sources dir
 in_dev_env=false
 if [ -d "${HBASE_HOME}/target" ]; then
@@ -159,7 +164,7 @@ add_maven_deps_to_classpath() {
     if [ -f "${optf}" ]; then
       MVN_OPTS=`cat "${optf}"`
     fi
-    mvn -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
+    "$MVN" -f "${HBASE_HOME}/pom.xml" $MVN_OPTS dependency:build-classpath -Dmdep.outputFile="${f}" &> /dev/null
     IFS=
   fi
   CLASSPATH=${CLASSPATH}:`cat "${f}"`
