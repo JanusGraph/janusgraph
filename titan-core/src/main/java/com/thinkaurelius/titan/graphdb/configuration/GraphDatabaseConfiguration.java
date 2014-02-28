@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
@@ -16,25 +16,30 @@ import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCa
 import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
@@ -129,6 +134,14 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(TITAN_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices",
             ConfigOption.Type.FIXED, Timestamps.MICRO);
+
+
+    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TITAN_NS,"log-tx",
+            "Whether transaction mutations should be logged to Titan's system log",
+            ConfigOption.Type.GLOBAL, true);
+
+    public static final ConfigOption<String> UNIQUE_GRAPH_ID = new ConfigOption<String>(TITAN_NS,"unique-graph-id",
+            "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
 
     // ################ CACHE #######################
     // ################################################
@@ -1084,6 +1097,7 @@ public class GraphDatabaseConfiguration {
 
 
     private final Configuration configuration;
+    private final String uniqueGraphId;
 
 
     private boolean readOnly;
@@ -1093,6 +1107,7 @@ public class GraphDatabaseConfiguration {
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
+    private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeydName;
 
@@ -1100,7 +1115,9 @@ public class GraphDatabaseConfiguration {
 
     public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
         Preconditions.checkNotNull(localConfig);
+
         BasicConfiguration localbc = new BasicConfiguration(TITAN_NS,localConfig, BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration overwrite = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
 
         KeyColumnValueStoreManager storeManager=null;
         KCVSConfiguration kcvsConfig=null;
@@ -1113,9 +1130,7 @@ public class GraphDatabaseConfiguration {
 
             // If lock prefix is unspecified, specify it now
             if (!localbc.has(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX)) {
-                Preconditions.checkArgument(localConfig instanceof WriteConfiguration,"Need to provide a WriteConfiguration if local lock mediator needs to be ovewritten");
-                new ModifiableConfiguration(TITAN_NS,(WriteConfiguration)localConfig, BasicConfiguration.Restriction.LOCAL)
-                        .set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
+                overwrite.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
             }
 
             //Freeze global configuration if not already frozen!
@@ -1143,10 +1158,38 @@ public class GraphDatabaseConfiguration {
                 throw new TitanException("Could not close global configuration store",e);
             }
         }
+        Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
+        this.uniqueGraphId = getUniqueGraphId(combinedConfig);
+        log.info("Setting unique graph id: {}",uniqueGraphId);
+        overwrite.set(UNIQUE_GRAPH_ID,uniqueGraphId);
 
-
-        this.configuration = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
+        this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();
+    }
+
+    private static final AtomicLong INSTANCE_COUNTER = new AtomicLong(0);
+
+    private static String getUniqueGraphId(Configuration config) {
+        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
+            return config.get(INSTANCE_RID_RAW);
+        } else {
+            final String suffix;
+
+            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
+                suffix = LongEncoding.encode(config.get(
+                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT));
+            } else {
+                suffix = ManagementFactory.getRuntimeMXBean().getName() + LongEncoding.encode(INSTANCE_COUNTER.incrementAndGet());
+            }
+
+            byte[] addrBytes;
+            try {
+                addrBytes = Inet4Address.getLocalHost().getAddress();
+            } catch (UnknownHostException e) {
+                throw new TitanConfigurationException("Cannot determine local host", e);
+            }
+            return new String(Hex.encodeHex(addrBytes)) + suffix;
+        }
     }
 
     private static final KCVSConfiguration getGlobalConfig(KeyColumnValueStoreManager storeManager) {
@@ -1187,6 +1230,7 @@ public class GraphDatabaseConfiguration {
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
         else propertyPrefetching = null;
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
+        logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
         unknownIndexKeydName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UKNOWN_FIELD_NAME : null;
 
@@ -1324,8 +1368,8 @@ public class GraphDatabaseConfiguration {
         return configuration.get(WRITE_ATTEMPTS);
     }
 
-    public int getReadAttempts() {
-        return configuration.get(READ_ATTEMPTS);
+    public boolean hasLogTransactions() {
+        return logTransactions;
     }
 
     public int getStorageWaittime() {

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 
-abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
+public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
 
@@ -275,6 +275,9 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                 InternalRelationType bestCandidate = null;
                 int bestScore = Integer.MIN_VALUE;
                 for (InternalRelationType candidate : type.getRelationIndexes()) {
+                    if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(dir)) continue;
+                    if (!type.isEnabled()) continue;
+
                     int score = 0;
                     boolean coveredAllSortKeys = true;
                     for (long keyid : candidate.getSortKey()) {
@@ -295,7 +298,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                         bestCandidate=candidate;
                     }
                 }
-                assert bestCandidate!=null;
+                Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.getName());
 
                 //Construct sort key constraints
                 long[] sortKey = bestCandidate.getSortKey();

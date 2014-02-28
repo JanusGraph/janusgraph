@@ -12,6 +12,8 @@ public interface TypeSource {
 
     public String getName();
 
+    public boolean isEnabled();
+
     public TypeDefinitionMap getDefinition();
 
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir);

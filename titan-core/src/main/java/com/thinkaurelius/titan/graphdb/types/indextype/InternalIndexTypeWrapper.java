@@ -31,6 +31,11 @@ public class InternalIndexTypeWrapper extends IndexTypeWrapper implements Intern
         return base.getID();
     }
 
+    @Override
+    public boolean isEnabled() {
+        return base.isEnabled();
+    }
+
     IndexField[] fields = null;
 
     @Override

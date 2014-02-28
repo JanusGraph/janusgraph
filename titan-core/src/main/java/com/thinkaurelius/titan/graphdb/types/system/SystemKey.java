@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Collections;
 
@@ -62,6 +63,11 @@ public class SystemKey extends SystemRelationType implements TitanKey {
     @Override
     public Multiplicity getMultiplicity() {
         return Multiplicity.convert(getCardinality());
+    }
+
+    @Override
+    public boolean isUnidirected(Direction dir) {
+        return dir==Direction.OUT;
     }
 
     @Override
@@ -128,6 +134,11 @@ public class SystemKey extends SystemRelationType implements TitanKey {
         @Override
         public boolean isExternalIndex() {
             return false;
+        }
+
+        @Override
+        public boolean isEnabled() {
+            return true;
         }
 
         //Use default hashcode and equals

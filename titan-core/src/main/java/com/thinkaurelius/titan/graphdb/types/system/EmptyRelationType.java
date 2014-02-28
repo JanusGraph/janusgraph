@@ -39,13 +39,13 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
     }
 
     @Override
-    public boolean invertedBaseDirection() {
-        return false;
+    public Iterable<InternalRelationType> getRelationIndexes() {
+        return Collections.EMPTY_LIST;
     }
 
     @Override
-    public Iterable<InternalRelationType> getRelationIndexes() {
-        return Collections.EMPTY_LIST;
+    public boolean isEnabled() {
+        return true;
     }
 
     @Override

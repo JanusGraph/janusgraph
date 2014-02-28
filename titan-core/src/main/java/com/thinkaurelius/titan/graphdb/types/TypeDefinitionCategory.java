@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Set;
 
@@ -21,8 +22,10 @@ public enum TypeDefinitionCategory {
     SIGNATURE(long[].class),
     MULTIPLICITY(Multiplicity.class),
     DATATYPE(Class.class),
-    UNIDIRECTIONAL(Boolean.class),
-    INVERTED_DIRECTION(Boolean.class),
+    UNIDIRECTIONAL(Direction.class),
+
+    //General admin
+    ENABLED(Boolean.class),
 
     //Index Types
     ELEMENT_CATEGORY(ElementCategory.class),
@@ -39,7 +42,7 @@ public enum TypeDefinitionCategory {
     INDEX_FIELD(RelationCategory.EDGE,Parameter[].class);
 
     static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL, INVERTED_DIRECTION);
+    static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
 
     public static final Set<TypeDefinitionCategory> SCHEMA_EDGE_DEFS = ImmutableSet.of(RELATION_INDEX,CONSISTENCY_MODIFIER,INDEX_FIELD);
 
@@ -88,6 +91,7 @@ public enum TypeDefinitionCategory {
     public Object defaultValue(TypeDefinitionMap map) {
         switch(this) {
             case SORT_ORDER: return Order.ASC;
+            case ENABLED: return Boolean.TRUE;
             default: return null;
         }
     }

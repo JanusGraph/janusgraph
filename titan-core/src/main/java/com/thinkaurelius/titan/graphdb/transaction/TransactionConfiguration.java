@@ -115,4 +115,12 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      */
     public long getIndexCacheWeight();
 
+    /**
+     * The name of the log to be used for logging the mutations in this transaction.
+     * If the identifier is NULL the mutations will not be logged.
+     *
+     * @return
+     */
+    public String getLogIdentifier();
+
 }

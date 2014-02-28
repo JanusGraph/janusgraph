@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.tinkerpop.blueprints.Direction;
 
 public class SystemLabel extends SystemRelationType implements TitanLabel {
 
@@ -42,4 +43,11 @@ public class SystemLabel extends SystemRelationType implements TitanLabel {
     public boolean isUnidirected() {
         return false;
     }
+
+    @Override
+    public boolean isUnidirected(Direction dir) {
+        return dir==Direction.BOTH;
+    }
+
+
 }

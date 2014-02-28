@@ -27,6 +27,10 @@ public class CommonsConfiguration implements WriteConfiguration {
     private static final Logger log =
             LoggerFactory.getLogger(CommonsConfiguration.class);
 
+    public CommonsConfiguration() {
+        this(new BaseConfiguration());
+    }
+
     public CommonsConfiguration(Configuration config) {
         Preconditions.checkArgument(config!=null);
         this.config = config;

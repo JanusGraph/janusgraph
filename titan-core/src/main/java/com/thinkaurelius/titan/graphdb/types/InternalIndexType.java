@@ -20,6 +20,8 @@ public interface InternalIndexType extends IndexType {
 
     public IndexField[] getFields();
 
+    public boolean isEnabled();
+
     /*
      * single == unique,
      */

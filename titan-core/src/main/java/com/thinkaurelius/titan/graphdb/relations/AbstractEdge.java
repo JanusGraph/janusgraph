@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.StringFactory;
@@ -55,6 +56,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public int getLen() {
+        assert !type.isUnidirected(Direction.IN);
         return isUnidirected()?1:2;
     }
 
@@ -83,7 +85,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public boolean isDirected() {
-        return !isUnidirected();
+        return ((TitanLabel)type).isDirected();
     }
 
     @Override

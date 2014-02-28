@@ -209,10 +209,9 @@ public class EdgeSerializer implements RelationReader {
 
     public Entry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
         assert type==relation.getType() || type.getBaseType().equals(relation.getType());
-        Preconditions.checkArgument(position < relation.getLen());
-        long typeid = type.getID();
-
         Direction dir = EdgeDirection.fromPosition(position);
+        Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
+        long typeid = type.getID();
         DirectionID dirID = getDirID(dir, relation.isProperty() ? RelationCategory.PROPERTY : RelationCategory.EDGE);
 
         DataOutput out = serializer.getDataOutput(DEFAULT_CAPACITY);
@@ -340,10 +339,13 @@ public class EdgeSerializer implements RelationReader {
     public SliceQuery getQuery(InternalRelationType type, Direction dir, TypedInterval[] sortKey, VertexConstraint vertexCon) {
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(dir);
+        Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
+
 
         StaticBuffer sliceStart = null, sliceEnd = null;
         RelationCategory rt = type.isPropertyKey() ? RelationCategory.PROPERTY : RelationCategory.EDGE;
         if (dir == Direction.BOTH) {
+            assert type.isEdgeLabel();
             sliceStart = IDHandler.getEdgeType(type.getID(), getDirID(Direction.OUT, rt),type.isHiddenRelationType());
             sliceEnd = IDHandler.getEdgeType(type.getID(), getDirID(Direction.IN, rt),type.isHiddenRelationType());
             assert sliceStart.compareTo(sliceEnd)<0;

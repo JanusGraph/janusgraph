@@ -88,6 +88,18 @@ public class StaticArrayEntry extends BaseStaticArrayEntry {
 
     }
 
+    public static GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
+        @Override
+        public StaticBuffer getColumn(Entry entry) {
+            return entry.getColumn();
+        }
+
+        @Override
+        public StaticBuffer getValue(Entry entry) {
+            return entry.getValue();
+        }
+    };
+
     public static interface DataHandler<D> {
 
         public int getSize(D data);

@@ -86,7 +86,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever);
+        tx = new IndexTransaction(index, indexRetriever, mutationAttempts, attemptWaitTime);
     }
 
     @After

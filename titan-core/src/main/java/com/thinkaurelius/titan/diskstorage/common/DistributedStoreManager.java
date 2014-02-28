@@ -155,57 +155,58 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return A byte array which should uniquely identify this machine
      */
     public static byte[] getRid(Configuration config) {
+        return config.get(UNIQUE_GRAPH_ID).getBytes();
 
-        byte tentativeRid[] = null;
-
-        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
-            String ridText =
-                    config.get(GraphDatabaseConfiguration.INSTANCE_RID_RAW);
-            try {
-                tentativeRid = Hex.decodeHex(ridText.toCharArray());
-            } catch (DecoderException e) {
-                throw new TitanConfigurationException("Could not decode hex value", e);
-            }
-
-            log.debug("Set rid from hex string: 0x{}", ridText);
-        } else {
-            final byte[] endBytes;
-
-            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
-
-                short s = config.get(
-                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT);
-
-                endBytes = new byte[2];
-
-                endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
-                endBytes[1] = (byte) (s & 0x000000FF);
-            } else {
-                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
-                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
-                            .append("@")
-                            .append(ManagementFactory.getRuntimeMXBean().getName())
-                            .toString()
-                            .getBytes();
-            }
-
-            byte[] addrBytes;
-            try {
-                addrBytes = Inet4Address.getLocalHost().getAddress();
-            } catch (UnknownHostException e) {
-                throw new TitanConfigurationException("Unknown host specified", e);
-            }
-
-            tentativeRid = new byte[addrBytes.length + endBytes.length];
-            System.arraycopy(addrBytes, 0, tentativeRid, 0, addrBytes.length);
-            System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));
-            }
-        }
-
-        return tentativeRid;
+//        byte tentativeRid[] = null;
+//
+//        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
+//            String ridText =
+//                    config.get(GraphDatabaseConfiguration.INSTANCE_RID_RAW);
+//            try {
+//                tentativeRid = Hex.decodeHex(ridText.toCharArray());
+//            } catch (DecoderException e) {
+//                throw new TitanConfigurationException("Could not decode hex value", e);
+//            }
+//
+//            log.debug("Set rid from hex string: 0x{}", ridText);
+//        } else {
+//            final byte[] endBytes;
+//
+//            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
+//
+//                short s = config.get(
+//                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT);
+//
+//                endBytes = new byte[2];
+//
+//                endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
+//                endBytes[1] = (byte) (s & 0x000000FF);
+//            } else {
+//                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+//                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
+//                            .append("@")
+//                            .append(ManagementFactory.getRuntimeMXBean().getName())
+//                            .toString()
+//                            .getBytes();
+//            }
+//
+//            byte[] addrBytes;
+//            try {
+//                addrBytes = Inet4Address.getLocalHost().getAddress();
+//            } catch (UnknownHostException e) {
+//                throw new TitanConfigurationException("Unknown host specified", e);
+//            }
+//
+//            tentativeRid = new byte[addrBytes.length + endBytes.length];
+//            System.arraycopy(addrBytes, 0, tentativeRid, 0, addrBytes.length);
+//            System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
+//
+//            if (log.isDebugEnabled()) {
+//                log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));
+//            }
+//        }
+//
+//        return tentativeRid;
     }
 
     /**

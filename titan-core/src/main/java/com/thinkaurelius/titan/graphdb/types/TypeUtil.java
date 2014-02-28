@@ -45,6 +45,12 @@ public class TypeUtil {
         return false;
     }
 
+    public static InternalRelationType getBaseType(InternalRelationType type) {
+        InternalRelationType baseType = type.getBaseType();
+        if (baseType == null) return type;
+        else return baseType;
+    }
+
     public static Set<TitanKey> getIndexedKeys(IndexType index) {
         Set<TitanKey> s = Sets.newHashSet();
         for (IndexField f : index.getFields()) {

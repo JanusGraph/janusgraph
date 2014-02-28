@@ -121,8 +121,10 @@ public class TitanTypeVertex extends CacheVertex implements TypeSource {
         return getName();
     }
 
-
-
+    @Override
+    public boolean isEnabled() {
+        return getDefinition().getValue(TypeDefinitionCategory.ENABLED,Boolean.class);
+    }
 
 
 }

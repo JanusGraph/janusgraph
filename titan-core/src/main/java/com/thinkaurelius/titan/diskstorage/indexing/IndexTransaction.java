@@ -4,12 +4,14 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * Wraps the transaction handle of an index and buffers all mutations against an index for efficiency.
@@ -26,15 +28,22 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private final IndexProvider index;
     private final TransactionHandle indexTx;
     private final KeyInformation.IndexRetriever keyInformations;
+
+    private final int mutationAttempts;
+    private final int attemptWaitTime;
+
     private Map<String,Map<String,IndexMutation>> mutations;
 
-    public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations) throws StorageException {
+    public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
+                            int mutationAttempts, int attemptWaitTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);
         this.index=index;
         this.keyInformations = keyInformations;
         this.indexTx=index.beginTransaction();
         Preconditions.checkNotNull(indexTx);
+        this.mutationAttempts = mutationAttempts;
+        this.attemptWaitTime = attemptWaitTime;
         this.mutations = null;
     }
 
@@ -95,7 +104,19 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
 
     private void flushInternal() throws StorageException {
         if (mutations!=null && !mutations.isEmpty()) {
-            index.mutate(mutations,keyInformations,indexTx);
+            BackendOperation.execute(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    index.mutate(mutations, keyInformations, indexTx);
+                    return true;
+                }
+
+                @Override
+                public String toString() {
+                    return "IndexMutation";
+                }
+            }, mutationAttempts, attemptWaitTime);
+
             mutations=null;
         }
     }

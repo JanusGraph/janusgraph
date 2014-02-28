@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.INVERTED_DIRECTION;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.HIDDEN;
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 import static com.tinkerpop.blueprints.Direction.IN;
 
@@ -17,30 +17,28 @@ import static com.tinkerpop.blueprints.Direction.IN;
 
 public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker {
 
-    private boolean isUnidirectional;
-    private boolean invertedBaseDirection;
+    private Direction unidirectionality;
 
     public StandardLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
                               final AttributeHandling attributeHandler) {
         super(tx, indexSerializer, attributeHandler);
-        isUnidirectional = false;
-        invertedBaseDirection = false;
+        unidirectionality = Direction.BOTH;
     }
 
     @Override
     public StandardLabelMaker directed() {
-        isUnidirectional = false;
+        unidirectionality = Direction.BOTH;
         return this;
     }
 
     @Override
     public StandardLabelMaker unidirected() {
-        isUnidirectional = true;
-        return this;
+        return unidirected(Direction.OUT);
     }
 
-    public StandardLabelMaker invertDirection() {
-        invertedBaseDirection = true;
+    public StandardLabelMaker unidirected(Direction dir) {
+        Preconditions.checkNotNull(dir);
+        unidirectionality = dir;
         return this;
     }
 
@@ -77,18 +75,16 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
 
     @Override
     public TitanLabel make() {
-        Preconditions.checkArgument(!isUnidirectional ||
-                !(getMultiplicity()==Multiplicity.ONE2MANY || getMultiplicity()==Multiplicity.ONE2ONE),
-                "Unidirectional labels cannot have restricted multiplicity at the end vertex");
-        Preconditions.checkArgument(!(isUnidirectional && hasSortKey()) ||
-                !(getMultiplicity()==Multiplicity.MANY2ONE),
-                "Unidirectional labels with restricted multiplicity cannot have a sort key");
-        Preconditions.checkArgument(!invertedBaseDirection || isUnidirectional);
-
-
         TypeDefinitionMap definition = makeDefinition();
-        definition.setValue(UNIDIRECTIONAL, isUnidirectional);
-        definition.setValue(INVERTED_DIRECTION,invertedBaseDirection);
+        Preconditions.checkArgument(unidirectionality==Direction.BOTH || !getMultiplicity().isUnique(unidirectionality.opposite()),
+                "Unidirectional labels cannot have restricted multiplicity at the other end");
+        Preconditions.checkArgument(unidirectionality==Direction.BOTH || !hasSortKey() ||
+                !getMultiplicity().isUnique(unidirectionality),
+                "Unidirectional labels with restricted multiplicity cannot have a sort key");
+        Preconditions.checkArgument(unidirectionality!=Direction.IN || definition.getValue(HIDDEN,Boolean.class));
+
+
+        definition.setValue(UNIDIRECTIONAL, unidirectionality);
         return tx.makeEdgeLabel(getName(), definition);
     }
 

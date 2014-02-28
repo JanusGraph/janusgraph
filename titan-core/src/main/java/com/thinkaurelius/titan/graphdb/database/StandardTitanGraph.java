@@ -10,7 +10,9 @@ import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.log.Log;
+import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
@@ -18,7 +20,9 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -49,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -76,6 +80,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final SchemaCache schemaCache;
 
     private boolean isOpen;
+    private AtomicLong txCounter;
 
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -94,6 +99,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         isOpen = true;
+        txCounter = new AtomicLong(0);
     }
 
     @Override
@@ -276,132 +282,161 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 && index.getCardinality()!=Cardinality.LIST;
     }
 
-    public Callable<Boolean> persist(final Collection<InternalRelation> addedRelations,
+    public void persist(final Collection<InternalRelation> addedRelations,
                                      final Collection<InternalRelation> deletedRelations,
                                      final Predicate<InternalRelation> filter,
-                                     final StandardTitanTx tx, final boolean commit) {
+                                     final StandardTitanTx tx, final boolean commit) throws StorageException {
         final BackendTransaction mutator = tx.getTxHandle();
         final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
+        final boolean hasMutations;
 
-        return new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
-                List<IndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
-                //1) Collect deleted edges and their index updates and acquire edge locks
-                for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
-                    Preconditions.checkArgument(del.isRemoved());
-                    for (int pos = 0; pos < del.getLen(); pos++) {
-                        InternalVertex vertex = del.getVertex(pos);
-                        if (pos == 0 || !del.isLoop()) mutations.put(vertex, del);
-                        if (acquireLock(del,pos,acquireLocks)) {
-                            Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                            mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry);
-                        }
-                    }
-                    indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
+        ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
+        List<IndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
+        //1) Collect deleted edges and their index updates and acquire edge locks
+        for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
+            Preconditions.checkArgument(del.isRemoved());
+            for (int pos = 0; pos < del.getLen(); pos++) {
+                InternalVertex vertex = del.getVertex(pos);
+                if (pos == 0 || !del.isLoop()) mutations.put(vertex, del);
+                if (acquireLock(del,pos,acquireLocks)) {
+                    Entry entry = edgeSerializer.writeRelation(del, pos, tx);
+                    mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry);
                 }
+            }
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
+        }
 
-                //2) Collect added edges and their index updates and acquire edge locks
-                for (InternalRelation add : Iterables.filter(addedRelations,filter)) {
-                    Preconditions.checkArgument(add.isNew());
+        //2) Collect added edges and their index updates and acquire edge locks
+        for (InternalRelation add : Iterables.filter(addedRelations,filter)) {
+            Preconditions.checkArgument(add.isNew());
 
-                    for (int pos = 0; pos < add.getLen(); pos++) {
-                        InternalVertex vertex = add.getVertex(pos);
-                        if (pos == 0 || !add.isLoop()) mutations.put(vertex, add);
-                        if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
-                            Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                            mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn());
-                        }
-                    }
-                    indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
+            for (int pos = 0; pos < add.getLen(); pos++) {
+                InternalVertex vertex = add.getVertex(pos);
+                if (pos == 0 || !add.isLoop()) mutations.put(vertex, add);
+                if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
+                    Entry entry = edgeSerializer.writeRelation(add, pos, tx);
+                    mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn());
                 }
+            }
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
+        }
 
-                //3) Collect all index update for vertices
-                for (InternalVertex v : mutations.keySet()) {
-                    indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutations.get(v)));
-                }
-                //4) Acquire index locks (deletions first)
-                for (IndexSerializer.IndexUpdate update : indexUpdates) {
-                    if (!update.isInternalIndex() || !update.isDeletion()) continue;
-                    InternalIndexType iIndex = (InternalIndexType) update.getIndex();
-                    if (acquireLock(iIndex,acquireLocks)) {
-                        mutator.acquireIndexLock((StaticBuffer)update.getKey(), (Entry)update.getEntry());
-                    }
-                }
-                for (IndexSerializer.IndexUpdate update : indexUpdates) {
-                    if (!update.isInternalIndex() || !update.isAddition()) continue;
-                    InternalIndexType iIndex = (InternalIndexType) update.getIndex();
-                    if (acquireLock(iIndex,acquireLocks)) {
-                        mutator.acquireIndexLock((StaticBuffer)update.getKey(), ((Entry)update.getEntry()).getColumn());
-                    }
-                }
+        //3) Collect all index update for vertices
+        for (InternalVertex v : mutations.keySet()) {
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutations.get(v)));
+        }
+        //4) Acquire index locks (deletions first)
+        for (IndexSerializer.IndexUpdate update : indexUpdates) {
+            if (!update.isInternalIndex() || !update.isDeletion()) continue;
+            InternalIndexType iIndex = (InternalIndexType) update.getIndex();
+            if (acquireLock(iIndex,acquireLocks)) {
+                mutator.acquireIndexLock((StaticBuffer)update.getKey(), (Entry)update.getEntry());
+            }
+        }
+        for (IndexSerializer.IndexUpdate update : indexUpdates) {
+            if (!update.isInternalIndex() || !update.isAddition()) continue;
+            InternalIndexType iIndex = (InternalIndexType) update.getIndex();
+            if (acquireLock(iIndex,acquireLocks)) {
+                mutator.acquireIndexLock((StaticBuffer)update.getKey(), ((Entry)update.getEntry()).getColumn());
+            }
+        }
 
-                //5) Add relation mutations
-                BackendTransaction mutator = tx.getTxHandle();
-                for (InternalVertex vertex : mutations.keySet()) {
-                    Preconditions.checkArgument(vertex.getID() > 0, "Vertex has no id: %s", vertex.getID());
-                    List<InternalRelation> edges = mutations.get(vertex);
-                    List<Entry> additions = new ArrayList<Entry>(edges.size());
-                    List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
-                    for (InternalRelation edge : edges) {
-                        for (int pos = 0; pos < edge.getLen(); pos++) {
-                            if (edge.getVertex(pos).equals(vertex)) {
-                                if (edge.isRemoved()) {
-                                    deletions.add(edgeSerializer.writeRelation(edge, pos, tx).getColumn());
-                                } else {
-                                    Preconditions.checkArgument(edge.isNew());
-                                    additions.add(edgeSerializer.writeRelation(edge, pos, tx));
-                                }
+        //5) Add relation mutations
+        for (InternalVertex vertex : mutations.keySet()) {
+            Preconditions.checkArgument(vertex.getID() > 0, "Vertex has no id: %s", vertex.getID());
+            List<InternalRelation> edges = mutations.get(vertex);
+            List<Entry> additions = new ArrayList<Entry>(edges.size());
+            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
+            for (InternalRelation edge : edges) {
+                InternalRelationType baseType = (InternalRelationType) edge.getType();
+                assert baseType.getBaseType()==null;
+                for (InternalRelationType type : baseType.getRelationIndexes()) {
+                    for (int pos = 0; pos < edge.getArity(); pos++) {
+                        if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
+                            continue; //Directionality is not covered
+                        if (edge.getVertex(pos).equals(vertex)) {
+                            Entry entry = edgeSerializer.writeRelation(edge, pos, tx);
+                            if (edge.isRemoved()) {
+                                deletions.add(entry.getColumn());
+                            } else {
+                                Preconditions.checkArgument(edge.isNew());
+                                additions.add(entry);
                             }
                         }
                     }
-
-                    StaticBuffer vertexKey = IDHandler.getKey(vertex.getID());
-                    mutator.mutateEdges(vertexKey, additions, deletions);
                 }
+            }
 
-                //6) Add index updates
-                for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
-                    assert indexUpdate.isAddition() || indexUpdate.isDeletion();
-                    if (indexUpdate.isInternalIndex()) {
-                        IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
-                        if (update.isAddition())
-                            mutator.mutateIndex(update.getKey(), ImmutableList.of(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
-                        else
-                            mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, ImmutableList.of(update.getEntry().getColumn()));
-                    } else {
-                        IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
-                        IndexTransaction itx = mutator.getIndexTransactionHandle(((ExternalIndexType)update.getIndex()).getIndexName());
-                        if (update.isAddition())
-                            itx.add(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
-                        else
-                            itx.delete(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
-                    }
-                }
+            StaticBuffer vertexKey = IDHandler.getKey(vertex.getID());
+            mutator.mutateEdges(vertexKey, additions, deletions);
+        }
 
-                //TODO: Register new keys with indexprovider
+        //6) Add index updates
+        for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
+            assert indexUpdate.isAddition() || indexUpdate.isDeletion();
+            if (indexUpdate.isInternalIndex()) {
+                IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
+                if (update.isAddition())
+                    mutator.mutateIndex(update.getKey(), ImmutableList.of(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
+                else
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, ImmutableList.of(update.getEntry().getColumn()));
+            } else {
+                IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
+                IndexTransaction itx = mutator.getIndexTransactionHandle(((ExternalIndexType)update.getIndex()).getIndexName());
+                if (update.isAddition())
+                    itx.add(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
+                else
+                    itx.delete(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
+            }
+        }
+        hasMutations = !mutations.isEmpty();
+
+
+        //7) Log transaction
+        final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
+        final Log txLog = logTransaction?backend.getSystemTxLog():null;
+        final long txId = txCounter.incrementAndGet();
+        final long timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
+        if (logTransaction) {
+            DataOutput out = getTxLogHeader(txId,timestamp,LogTxStatus.PRECOMMIT);
+            mutator.logMutations(out);
+            txLog.add(out.getStaticBuffer());
+        }
+
+
+        // 8) Commit changes
+        boolean success = false;
+        try {
+            if (commit) mutator.commit();
+            else if (hasMutations) mutator.flush();
+        } catch (RuntimeException e) {
+            success=false;
+            throw e;
+        } finally {
+            if (logTransaction) {
+                DataOutput out = getTxLogHeader(txId,timestamp,success?LogTxStatus.SUCCESS:LogTxStatus.FAILURE);
+                txLog.add(out.getStaticBuffer());
+            }
+        }
+
+
+        //TODO: Register new keys with indexprovider
 //                for (InternalRelationType itype : otherEdgeTypes.keySet()) {
 //                    if (itype.isPropertyKey() && itype.isNew())
 //                        indexSerializer.newPropertyKey((TitanKey) itype, mutator);
 //                }
 
+    }
 
-                //7) Persist
-                if (!mutations.isEmpty()) {
-                    persist(mutations, tx);
-                    //TODO: Send log message
-                    if (!commit) mutator.flush();
-                }
-                if (commit) mutator.commit();
-                return Boolean.TRUE;
-            }
+    public enum LogTxStatus { PRECOMMIT, SUCCESS, FAILURE }
 
-            @Override
-            public String toString() {
-                return "PersistingTransaction";
-            }
-        };
+    private final DataOutput getTxLogHeader(final long txId, final long txTimestamp, LogTxStatus status) {
+        DataOutput out = serializer.getDataOutput(128);
+        out.putLong(txTimestamp);
+        VariableLong.writePositive(out,txId);
+        assert status.ordinal()>=0 && status.ordinal()<Byte.MAX_VALUE;
+        out.putByte((byte)status.ordinal());
+        return out;
     }
 
     private static final Predicate<InternalRelation> SYSTEMTYPES_FILTER = new Predicate<InternalRelation>() {
@@ -428,98 +463,42 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
-        if (tx.getConfiguration().hasEnabledBatchLoading()) {
-            BackendOperation.execute(persist(addedRelations,deletedRelations, IterablesUtil.NO_FILTER, tx,true),
-                    maxWriteRetryAttempts, retryStorageWaitTime);
-        } else {
-            BackendOperation.execute(persist(addedRelations,deletedRelations, SYSTEMTYPES_FILTER, tx,false),
-                    maxWriteRetryAttempts, retryStorageWaitTime);
-            BackendOperation.execute(persist(addedRelations,deletedRelations, NO_SYSTEMTYPES_FILTER, tx,true),
-                    maxWriteRetryAttempts, retryStorageWaitTime);
+        try {
+            if (tx.getConfiguration().hasEnabledBatchLoading()) {
+                persist(addedRelations,deletedRelations, IterablesUtil.NO_FILTER, tx,true);
+            } else {
+                persist(addedRelations,deletedRelations, SYSTEMTYPES_FILTER, tx,false);
+                persist(addedRelations,deletedRelations, NO_SYSTEMTYPES_FILTER, tx,true);
+            }
+        } catch (StorageException e) {
+            throw new TitanException("Storage exception during commit",e);
+        }
+
+        String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
+        if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
+            try {
+                final Log txLog = backend.getTransactionLog(logTxIdentifier);
+                final long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
+                out.putLong(timestamp);
+                logRelations(out,addedRelations,tx);
+                logRelations(out, deletedRelations,tx);
+                txLog.add(out.getStaticBuffer());
+            } catch (StorageException e) {
+                throw new TitanException("Could not log committed transaction to "+logTxIdentifier,e);
+            }
         }
 
 
-//        Callable<Boolean> persist = new Callable<Boolean>() {
-//            @Override
-//            public Boolean call() throws Exception {
-//                //2. Collect deleted edges
-//                ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
-//                if (deletedRelations != null && !deletedRelations.isEmpty()) {
-//                    for (InternalRelation del : deletedRelations) {
-//                        Preconditions.checkArgument(del.isRemoved());
-//                        for (int pos = 0; pos < del.getLen(); pos++) {
-//                            InternalVertex vertex = del.getVertex(pos);
-//                            if (pos == 0 || !del.isLoop()) mutations.put(vertex, del);
-//                            Direction dir = EdgeDirection.fromPosition(pos);
-//                            if (acquireLocks && del.getType().isUnique(dir) &&
-//                                    ((InternalRelationType) del.getType()).uniqueLock(dir)) {
-//                                Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-//                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry);
-//                            }
-//                        }
-//                        //Update Indexes
-//                        if (del.isProperty()) {
-//                            if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) del, mutator);
-//                        }
-//
-//                    }
-//                }
-//
-//                ListMultimap<InternalRelationType, InternalRelation> otherEdgeTypes = ArrayListMultimap.create();
-//
-//                //3. Sort Added Edges
-//                for (InternalRelation relation : addedRelations) {
-//                    Preconditions.checkArgument(relation.isNew());
-//
-//                    TitanType type = relation.getType();
-//
-//                    //Give special treatment to edge type definitions
-//                    if (SystemTypeManager.prepersistedSystemTypes.contains(type)) {
-//                        InternalRelationType itype = (InternalRelationType) relation.getVertex(0);
-//                        otherEdgeTypes.put(itype, relation);
-//                    } else { //STANDARD TitanRelation
-//                        for (int pos = 0; pos < relation.getLen(); pos++) {
-//                            InternalVertex vertex = relation.getVertex(pos);
-//                            if (pos == 0 || !relation.isLoop()) mutations.put(vertex, relation);
-//                            Direction dir = EdgeDirection.fromPosition(pos);
-//                            if (acquireLocks && relation.getType().isUnique(dir) && !vertex.isNew()
-//                                    && ((InternalRelationType) relation.getType()).uniqueLock(dir)) {
-//                                Entry entry = edgeSerializer.writeRelation(relation, pos, tx);
-//                                mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn(), null);
-//                            }
-//                        }
-//                    }
-//                    //Update Indexes
-//                    if (relation.isProperty()) {
-//                        if (acquireLocks) indexSerializer.lockKeyedProperty((TitanProperty) relation, mutator);
-//                    }
-//
-//                }
-//
-//                //3. Persist
-//                if (!otherEdgeTypes.isEmpty()) {
-//                    persist(otherEdgeTypes, tx);
-//                    mutator.flush();
-//                    //Register new keys with indexprovider
-//                    for (InternalRelationType itype : otherEdgeTypes.keySet()) {
-//                        if (itype.isPropertyKey() && itype.isNew())
-//                            indexSerializer.newPropertyKey((TitanKey) itype, mutator);
-//                    }
-//                }
-//
-//                if (!mutations.isEmpty()) persist(mutations, tx);
-//                mutator.commit();
-//                return Boolean.TRUE;
-//            }
-//
-//            @Override
-//            public String toString() {
-//                return "PersistingTransaction";
-//            }
-//        };
-//        BackendOperation.execute(persist, maxWriteRetryAttempts, retryStorageWaitTime);
     }
 
+    private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
+        out.putInt(relations.size());
+        for (InternalRelation rel : relations) {
+            Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
+            BufferUtil.writeEntry(out,entry);
+        }
 
+    }
 
 }

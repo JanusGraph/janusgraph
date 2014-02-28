@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.BufferTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
@@ -24,6 +23,10 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLo
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
+import com.thinkaurelius.titan.diskstorage.log.Log;
+import com.thinkaurelius.titan.diskstorage.log.LogManager;
+import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
@@ -76,6 +79,10 @@ public class Backend {
     public static final String METRICS_CACHE_SUFFIX = ".cache";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
+    public static final String SYSTEM_TX_LOG_NAME = "systxlog";
+    public static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
+    public static final String TX_LOG_PREFIX = "txlog_";
+
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
@@ -97,6 +104,11 @@ public class Backend {
     private KeyColumnValueStore edgeStore;
     private KeyColumnValueStore indexStore;
     private IDAuthority idAuthority;
+
+    private final LogManager logManager;
+    private Log txLog;
+    private Log sysLog;
+
 
     private final Map<String, IndexProvider> indexes;
 
@@ -120,6 +132,8 @@ public class Backend {
         storeManager = getStorageManager(configuration);
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
+
+        logManager = new KCVSLogManager(storeManager,configuration.get(UNIQUE_GRAPH_ID),configuration);
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
@@ -269,6 +283,9 @@ public class Backend {
                 indexStore = new NoKCVSCache(indexStore);
             }
 
+            txLog = logManager.openLog(SYSTEM_TX_LOG_NAME, ReadMarker.fromNow());
+            sysLog = logManager.openLog(SYSTEM_MGMT_LOG_NAME, ReadMarker.fromNow());
+
             String version = null;
             KCVSConfiguration systemConfig = new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
                                                         SYSTEM_PROPERTIES_IDENTIFIER);
@@ -301,6 +318,15 @@ public class Backend {
         copy.putAll(indexes);
         copy.put(Titan.Token.STANDARD_INDEX, StandardIndexInformation.INSTANCE);
         return copy.build();
+    }
+
+    public Log getSystemTxLog() {
+        return txLog;
+    }
+
+    public Log getTransactionLog(String identifier) throws StorageException {
+        Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
+        return logManager.openLog(TX_LOG_PREFIX+identifier,ReadMarker.fromNow());
     }
 
     private String getMetricsStoreName(String storeName) {
@@ -409,7 +435,7 @@ public class Backend {
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey())));
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), writeAttempts, persistAttemptWaittime));
         }
 
         return new BackendTransaction(cacheTx, configuration, storeManager.getFeatures(),
@@ -418,6 +444,10 @@ public class Backend {
     }
 
     public void close() throws StorageException {
+        txLog.close();
+        sysLog.close();
+        logManager.close();
+
         edgeStore.close();
         indexStore.close();
         idAuthority.close();
@@ -437,6 +467,10 @@ public class Backend {
      * @throws StorageException
      */
     public void clearStorage() throws StorageException {
+        txLog.close();
+        sysLog.close();
+        logManager.close();
+
         edgeStore.close();
         indexStore.close();
         idAuthority.close();

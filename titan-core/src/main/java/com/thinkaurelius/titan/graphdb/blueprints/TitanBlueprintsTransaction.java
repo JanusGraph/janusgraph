@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
@@ -56,7 +57,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
      * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
@@ -180,48 +181,49 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, Parameter... indexParameters) {
-        Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(elementClass == Element.class || elementClass == Vertex.class || elementClass == Edge.class,
-                "Expected vertex, edge or element");
-
-        if (indexParameters == null || indexParameters.length == 0) {
-            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX, "")};
-        }
-
-        if (containsType(key)) {
-            TitanType type = getType(key);
-            if (!type.isPropertyKey())
-                throw new IllegalArgumentException("Key string does not denote a property key but a label");
-            List<String> indexes = new ArrayList<String>(indexParameters.length);
-            for (Parameter p : indexParameters) {
-                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
-                indexes.add((String) p.getKey());
-            }
-            boolean indexesCovered;
-            if (elementClass == Element.class) {
-                indexesCovered = hasIndexes((TitanKey) type, Vertex.class, indexes) &&
-                        hasIndexes((TitanKey) type, Edge.class, indexes);
-            } else {
-                indexesCovered = hasIndexes((TitanKey) type, elementClass, indexes);
-            }
-            if (!indexesCovered)
-                throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
-        } else {
-            KeyMaker tm = makeKey(key).dataType(Object.class);
-            for (Parameter p : indexParameters) {
-                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
-                tm.indexed((String) p.getKey(), elementClass);
-            }
-            tm.make();
-        }
+        throw new UnsupportedOperationException("Use Titan's Management API to create indexes");
+//        Preconditions.checkNotNull(key);
+//        Preconditions.checkArgument(elementClass == Element.class || elementClass == Vertex.class || elementClass == Edge.class,
+//                "Expected vertex, edge or element");
+//
+//        if (indexParameters == null || indexParameters.length == 0) {
+//            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX, "")};
+//        }
+//
+//        if (containsType(key)) {
+//            TitanType type = getType(key);
+//            if (!type.isPropertyKey())
+//                throw new IllegalArgumentException("Key string does not denote a property key but a label");
+//            List<String> indexes = new ArrayList<String>(indexParameters.length);
+//            for (Parameter p : indexParameters) {
+//                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
+//                indexes.add((String) p.getKey());
+//            }
+//            boolean indexesCovered;
+//            if (elementClass == Element.class) {
+//                indexesCovered = hasIndexes((TitanKey) type, Vertex.class, indexes) &&
+//                        hasIndexes((TitanKey) type, Edge.class, indexes);
+//            } else {
+//                indexesCovered = hasIndexes((TitanKey) type, elementClass, indexes);
+//            }
+//            if (!indexesCovered)
+//                throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
+//        } else {
+//            KeyMaker tm = makeKey(key).dataType(Object.class);
+//            for (Parameter p : indexParameters) {
+//                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
+//                tm.indexed((String) p.getKey(), elementClass);
+//            }
+//            tm.make();
+//        }
     }
 
-    private static final boolean hasIndexes(TitanKey key, Class<? extends Element> elementClass, List<String> indexes) {
-        for (String index : indexes) {
-            if (!Iterables.contains(key.getIndexes(elementClass), index)) return false;
-        }
-        return true;
-    }
+//    private static final boolean hasIndexes(TitanKey key, Class<? extends Element> elementClass, List<String> indexes) {
+//        for (String index : indexes) {
+//            if (!Iterables.contains(key.getIndexes(elementClass), index)) return false;
+//        }
+//        return true;
+//    }
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
@@ -229,7 +231,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
         Set<String> indexedkeys = new HashSet<String>();
         for (TitanKey k : getTypes(TitanKey.class)) {
-            if (!Iterables.isEmpty(k.getIndexes(elementClass))) indexedkeys.add(k.getName());
+            if (!Iterables.isEmpty(((InternalRelationType)k).getKeyIndexes())) indexedkeys.add(k.getName());
         }
         return indexedkeys;
     }

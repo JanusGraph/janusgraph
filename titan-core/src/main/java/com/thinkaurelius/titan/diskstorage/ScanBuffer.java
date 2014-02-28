@@ -12,6 +12,8 @@ public interface ScanBuffer {
 
     public byte getByte();
 
+    public boolean getBoolean();
+
     public short getShort();
 
     public int getInt();

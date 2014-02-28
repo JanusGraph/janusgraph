@@ -53,6 +53,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private long indexCacheWeight;
 
+    private String logIdentifier;
+
     private Long timestamp = null;
 
     private String metricsPrefix;
@@ -73,6 +75,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.timestampProvider = graphConfig.getTimestampProvider();
         this.storageConfiguration = TitanFactory.buildConfiguration();
@@ -129,6 +132,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public StandardTransactionBuilder setLogIdentifier(String logName) {
+        this.logIdentifier = logName;
+        return this;
+    }
+
+    @Override
     public TransactionBuilder setCustomOption(String k, Object v) {
         storageConfiguration.set(k, v);
         return this;
@@ -141,7 +150,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
                 hasTimestamp(), timestamp, timestampProvider,
-                indexCacheWeight, vertexCacheSize, metricsPrefix,
+                indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
@@ -218,6 +227,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public String getLogIdentifier() {
+        return logIdentifier;
+    }
+
+    @Override
     public boolean hasTimestamp() {
         return timestamp != null;
     }
@@ -268,6 +282,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isThreadBound;
         private final long indexCacheWeight;
         private final int vertexCacheSize;
+        private final String logIdentifier;
         private final DefaultTypeMaker defaultTypeMaker;
 
         private final TransactionHandleConfig handleConfig;
@@ -280,7 +295,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound, boolean hasTimestamp, Long timestamp, TimestampProvider timestampProvider,
-                long indexCacheWeight, int vertexCacheSize,
+                long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
@@ -295,6 +310,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isThreadBound = isThreadBound;
             this.indexCacheWeight = indexCacheWeight;
             this.vertexCacheSize = vertexCacheSize;
+            this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionConfig.Builder()
                     .timestampProvider(timestampProvider).timestamp(timestamp)
@@ -365,6 +381,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public long getIndexCacheWeight() {
             return indexCacheWeight;
+        }
+
+        @Override
+        public String getLogIdentifier() {
+            return logIdentifier;
         }
 
         @Override

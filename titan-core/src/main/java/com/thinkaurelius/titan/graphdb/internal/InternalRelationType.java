@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.tinkerpop.blueprints.Direction;
 
 /**
  * Internal Type interface adding methods that should only be used by Titan
@@ -25,11 +26,15 @@ public interface InternalRelationType extends TitanType, InternalVertex {
 
     public ConsistencyModifier getConsistencyModifier();
 
+
+    public boolean isUnidirected(Direction dir);
+
     public InternalRelationType getBaseType();
 
-    public boolean invertedBaseDirection();
+    public boolean isEnabled();
 
     public Iterable<InternalRelationType> getRelationIndexes();
+
 
     public Iterable<IndexType> getKeyIndexes();
 }

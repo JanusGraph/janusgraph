@@ -15,6 +15,8 @@ public interface WriteBuffer {
 
     public WriteBuffer putBytes(StaticBuffer val);
 
+    public WriteBuffer putBoolean(boolean val);
+
     public WriteBuffer putShort(short val);
 
     public WriteBuffer putInt(int val);

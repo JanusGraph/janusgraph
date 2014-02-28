@@ -281,6 +281,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     public static final Object[] indexCover(final InternalIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
+        if (!index.isEnabled()) return null;
         IndexField[] fields = index.getFields();
         Object[] indexCover = new Object[fields.length];
         Condition[] coveredClauses = new Condition[fields.length];
@@ -327,6 +328,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
             ParameterIndexField[] fields = index.getFields();
             ParameterIndexField match = null;
             for (int i = 0; i < fields.length; i++) {
+                if (!fields[i].isEnabled()) continue;
                 if (fields[i].getFieldKey().equals(key)) match = fields[i];
             }
             if (match==null) return false;

@@ -92,7 +92,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
             @Override
             public String toString() {
-                return "BufferMutation";
+                return "CacheMutation";
             }
         }, mutationAttempts, attemptWaitTime);
         subMutations.clear();

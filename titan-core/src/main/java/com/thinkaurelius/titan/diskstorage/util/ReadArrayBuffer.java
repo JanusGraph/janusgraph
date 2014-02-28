@@ -68,6 +68,11 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
+    public boolean getBoolean() {
+        return getBoolean(updatePos(1));
+    }
+
+    @Override
     public short getShort() {
         return getShort(updatePos(2));
     }

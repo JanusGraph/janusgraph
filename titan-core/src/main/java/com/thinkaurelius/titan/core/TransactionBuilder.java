@@ -87,6 +87,14 @@ public interface TransactionBuilder {
      */
     public TransactionBuilder setMetricsPrefix(String prefix);
 
+    /**
+     * Name of the log to be used for logging the mutations in this transaction.
+     *
+     * @param logName
+     * @return
+     */
+    public TransactionBuilder setLogIdentifier(String logName);
+
     public TransactionBuilder setCustomOption(String k, Object v);
 
     /**

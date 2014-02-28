@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.ParameterType;
 import com.thinkaurelius.titan.core.TitanKey;
 
 /**
@@ -17,6 +18,10 @@ public class ParameterIndexField extends IndexField {
         this.parameters=parameters;
     }
 
+    public boolean isEnabled() {
+        return ParameterType.ENABLED.findParameter(parameters,Boolean.FALSE);
+    }
+
     public Parameter[] getParameters() {
         return parameters;
     }
@@ -24,5 +29,6 @@ public class ParameterIndexField extends IndexField {
     public static ParameterIndexField of(TitanKey key, Parameter... parameters) {
         return new ParameterIndexField(key,parameters);
     }
+
 
 }

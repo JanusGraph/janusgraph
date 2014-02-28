@@ -124,6 +124,12 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
         }
 
         @Override
+        public WriteBuffer putBoolean(boolean val) {
+            super.putBoolean(val);
+            return this;
+        }
+
+        @Override
         public DataOutput putByte(byte val) {
             super.putByte(val);
             return this;

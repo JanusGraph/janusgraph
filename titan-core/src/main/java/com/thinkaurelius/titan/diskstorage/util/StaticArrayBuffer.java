@@ -153,6 +153,11 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     @Override
+    public boolean getBoolean(int position) {
+        return getByte(position)>0?true:false;
+    }
+
+    @Override
     public short getShort(int position) {
         int base = require(position, SHORT_LEN);
         return (short) (((array[base++] & 0xFF) << 8) | (array[base++] & 0xFF));
