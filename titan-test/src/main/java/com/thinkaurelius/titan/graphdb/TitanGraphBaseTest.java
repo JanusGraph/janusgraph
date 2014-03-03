@@ -11,6 +11,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.testutil.TestGraphConfigs;
+
 import org.junit.After;
 import org.junit.Before;
 
@@ -34,6 +36,7 @@ public abstract class TitanGraphBaseTest {
     @Before
     public void setUp() throws Exception {
         this.config = getConfiguration();
+        TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
         ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.clone(), BasicConfiguration.Restriction.NONE);
         configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
