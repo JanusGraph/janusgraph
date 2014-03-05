@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.graphdb.query.condition.*;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.ElasticSearchInterruptedException;
 import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -175,7 +174,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     private StorageException convert(Exception esException) {
-        if (esException instanceof ElasticSearchInterruptedException) {
+        if (esException instanceof InterruptedException) {
             return new TemporaryStorageException("Interrupted while waiting for response", esException);
         } else {
             return new PermanentStorageException("Unknown exception while executing index operation", esException);
@@ -438,7 +437,7 @@ public class ElasticSearchIndex implements IndexProvider {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.matchAllQuery());
-        srb.setFilter(getFilter(query.getCondition(),informations.get(query.getStore())));
+        srb.setPostFilter(getFilter(query.getCondition(),informations.get(query.getStore())));
         if (!query.getOrder().isEmpty()) {
             List<IndexQuery.OrderEntry> orders = query.getOrder();
             for (int i = 0; i < orders.size(); i++) {

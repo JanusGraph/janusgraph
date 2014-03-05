@@ -29,7 +29,7 @@
           dependency behind the ES version declared in the titan-es
           module.
         -->
-        <lucene.version>4.4.0</lucene.version>
+        <lucene.version>4.6.1</lucene.version>
     </properties>
 
     <dependencies>
