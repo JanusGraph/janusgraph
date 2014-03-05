@@ -1116,17 +1116,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <profile>
-            <id>release-plugin-hack</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <modules>
-                <module>titan-dist/titan-dist-parent</module>
-            </modules>
-        </profile>
-        
         
         <profile>
             <id>target-jre6</id>
