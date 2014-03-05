@@ -15,11 +15,11 @@ import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
-abstract class StandardTypeMaker implements TypeMaker {
+public abstract class StandardTypeMaker implements TypeMaker {
 
     private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");//, "key");
 
-    private static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
+    private static final char[] RESERVED_CHARS = {'{', '}', '"'};
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
@@ -68,6 +68,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
+        if (!isHidden) Token.verifyName(name);
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
                 "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),

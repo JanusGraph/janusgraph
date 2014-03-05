@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.blueprints.Direction;
 
-public class SystemLabel extends SystemRelationType implements TitanLabel {
+public class SystemLabel extends SystemType implements TitanLabel {
 
     public static final SystemLabel TypeDefinitionEdge =
             new SystemLabel("TypeRelated", 6);

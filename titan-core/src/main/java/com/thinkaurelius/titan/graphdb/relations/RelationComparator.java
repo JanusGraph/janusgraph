@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 
@@ -32,7 +32,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (reltypecompare != 0) return reltypecompare;
 
         //1) TitanType
-        InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
+        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
         int typecompare = t1.compareTo(t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);

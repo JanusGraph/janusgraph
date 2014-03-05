@@ -1,17 +1,16 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
-import com.thinkaurelius.titan.core.ConsistencyModifier;
-import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 
 import java.util.Collections;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class EmptyRelationType extends EmptyVertex implements InternalRelationType {
+public abstract class EmptyType extends EmptyVertex implements InternalType {
 
     @Override
     public boolean isHidden() {
@@ -34,18 +33,18 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
     }
 
     @Override
-    public InternalRelationType getBaseType() {
+    public InternalType getBaseType() {
         return null;
     }
 
     @Override
-    public Iterable<InternalRelationType> getRelationIndexes() {
+    public Iterable<InternalType> getRelationIndexes() {
         return Collections.EMPTY_LIST;
     }
 
     @Override
-    public boolean isEnabled() {
-        return true;
+    public SchemaStatus getStatus() {
+        return SchemaStatus.ENABLED;
     }
 
     @Override

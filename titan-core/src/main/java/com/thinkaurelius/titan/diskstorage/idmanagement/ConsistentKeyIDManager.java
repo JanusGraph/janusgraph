@@ -279,6 +279,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                     public StoreTransaction openTx() throws StorageException {
                                         return manager.beginTransaction(storeTxConfigBuilder.build());
                                     }
+                                    @Override
+                                    public void close() {}
                                 });
 
                                 break;

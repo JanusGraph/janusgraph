@@ -18,8 +18,8 @@ public class ParameterIndexField extends IndexField {
         this.parameters=parameters;
     }
 
-    public boolean isEnabled() {
-        return ParameterType.ENABLED.findParameter(parameters,Boolean.FALSE);
+    public SchemaStatus getStatus() {
+        return ParameterType.STATUS.findParameter(parameters, SchemaStatus.DISABLED);
     }
 
     public Parameter[] getParameters() {

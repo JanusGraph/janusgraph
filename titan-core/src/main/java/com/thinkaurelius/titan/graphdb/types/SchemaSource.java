@@ -6,30 +6,32 @@ import com.tinkerpop.blueprints.Direction;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TypeSource {
+public interface SchemaSource {
 
     public long getID();
 
     public String getName();
 
-    public boolean isEnabled();
+    public SchemaStatus getStatus();
 
     public TypeDefinitionMap getDefinition();
 
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir);
 
+    public IndexType asIndexType();
+
     public static class Entry {
 
-        private final TypeSource schemaType;
+        private final SchemaSource schemaType;
         private final Object modifier;
 
-        public Entry(TypeSource schemaType, Object modifier) {
+        public Entry(SchemaSource schemaType, Object modifier) {
             Preconditions.checkNotNull(schemaType);
             this.schemaType = schemaType;
             this.modifier = modifier;
         }
 
-        public TypeSource getSchemaType() {
+        public SchemaSource getSchemaType() {
             return schemaType;
         }
 

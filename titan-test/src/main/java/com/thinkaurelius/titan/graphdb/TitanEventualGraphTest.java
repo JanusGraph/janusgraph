@@ -50,23 +50,25 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void concurrentIndexTest() {
-        TitanKey id = tx.makeKey("uid").single().unique().indexed(Vertex.class).dataType(String.class).make();
-        TitanKey value = tx.makeKey("value").single(TypeMaker.UniquenessConsistency.NO_LOCK).dataType(Object.class).indexed(Vertex.class).make();
+        makeVertexIndexedUniqueKey("uid", String.class);
+        makeVertexIndexedKey("value", Object.class);
+        finishSchema();
+
 
         TitanVertex v = tx.addVertex();
-        v.setProperty(id, "v");
+        v.setProperty("uid", "v");
 
         clopen();
 
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        tx1.getVertex(id, "v").setProperty("value", 11);
-        tx2.getVertex(id, "v").setProperty("value", 11);
+        tx1.getVertex("uid", "v").setProperty("value", 11);
+        tx2.getVertex("uid", "v").setProperty("value", 11);
         tx1.commit();
         tx2.commit();
 
-        assertEquals("v", Iterables.getOnlyElement(tx.getVertices("value", 11)).getProperty(id.getName()));
+        assertEquals("v", Iterables.getOnlyElement(tx.getVertices("value", 11)).getProperty("uid"));
 
     }
 

@@ -47,11 +47,11 @@ import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanRelationTypeVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.IndexHelper;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -166,7 +166,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         this.graph = graph;
         this.config = config;
         this.idInspector = graph.getIDInspector();
-        this.attributeHandler = graph.getAttributeHandling();
+        this.attributeHandler = graph.getDataSerializer();
         this.txHandle = txHandle;
         this.edgeSerializer = graph.getEdgeSerializer();
         this.indexSerializer = graph.getIndexSerializer();
@@ -238,7 +238,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         verifyOpen();
         for (TitanVertex v : vertices) {
             Preconditions.checkArgument(v instanceof InternalVertex, "Invalid vertex: %s", v);
-            if (!(v instanceof SystemRelationType) && this != ((InternalVertex) v).tx())
+            if (!(v instanceof SystemType) && this != ((InternalVertex) v).tx())
                 throw new IllegalArgumentException("The vertex or type is not associated with this transaction [" + v + "]");
             if (v.isRemoved())
                 throw new IllegalArgumentException("The vertex or type has been removed [" + v + "]");
@@ -334,6 +334,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     Preconditions.checkArgument(idInspector.isEdgeLabelId(vertexid));
                     vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
                 }
+            } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
+                vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
             } else if (idInspector.isVertexId(vertexid)) {
                 vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
@@ -461,7 +463,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return (existingLock == null)?lock:existingLock;
     }
 
-    private TransactionLock getUniquenessLock(final TitanVertex out, final InternalRelationType type, final Object in) {
+    private TransactionLock getUniquenessLock(final TitanVertex out, final InternalType type, final Object in) {
         Multiplicity multiplicity = type.getMultiplicity();
         TransactionLock uniqueLock = FakeLock.INSTANCE;
         if (config.hasVerifyUniqueness() && multiplicity.isConstrained()) {
@@ -490,7 +492,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         inVertex = ((InternalVertex) inVertex).it();
         Preconditions.checkNotNull(label);
         Multiplicity multiplicity = label.getMultiplicity();
-        TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalRelationType) label,inVertex);
+        TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalType) label,inVertex);
         uniqueLock.lock(LOCK_TIMEOUT_MS);
         try {
             //Check uniqueness
@@ -547,7 +549,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             for (Object[] match : matches.getRecordValues()) uniqueIndexTuples.add(new IndexLockTuple(index,match));
         }
 
-        TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalRelationType) key, normalizedValue);
+        TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalType) key, normalizedValue);
         //Add locks for unique indexes
         for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple));
         uniqueLock.lock(LOCK_TIMEOUT_MS);
@@ -623,18 +625,22 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      * ------------------------------------ Type Handling ------------------------------------
      */
 
-    private final TitanType makeRelationType(TitanTypeCategory typeCategory, String name, TypeDefinitionMap definition) {
+    public final TitanSchemaVertex makeSchemaVertex(TitanSchemaCategory typeCategory, String name, TypeDefinitionMap definition) {
         verifyOpen();
-        Preconditions.checkArgument(StringUtils.isNotBlank(name));
-        TitanRelationTypeVertex type;
-        if (typeCategory == TitanTypeCategory.KEY) {
-            definition.isValidKeyDefinition();
-            type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
+        Preconditions.checkArgument(!typeCategory.hasName() || StringUtils.isNotBlank(name), "Need to provide a valid name for type [%s]", typeCategory);
+        typeCategory.verifyValidDefinition(definition);
+        TitanSchemaVertex type;
+        if (typeCategory.isRelationType()) {
+            if (typeCategory == TitanSchemaCategory.KEY) {
+                type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
+            } else {
+                assert typeCategory == TitanSchemaCategory.LABEL;
+                type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
+            }
         } else {
-            Preconditions.checkArgument(typeCategory == TitanTypeCategory.LABEL,"Illegal type category: %s",typeCategory);
-            definition.isValidLabelDefinition();
-            type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
+            type = new TitanSchemaVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.GenericSchemaType,temporaryIds.nextID()), ElementLifeCycle.New);
         }
+
         graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
         addProperty(type, SystemKey.TypeName, name);
@@ -645,17 +651,17 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             p.setProperty(SystemKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(type, type.getID());
-        newTypeCache.put(name, type.getID());
+        if (typeCategory.hasName()) newTypeCache.put(name, type.getID());
         return type;
 
     }
 
     public TitanKey makePropertyKey(String name, TypeDefinitionMap definition) {
-        return (TitanKey) makeRelationType(TitanTypeCategory.KEY, name, definition);
+        return (TitanKey) makeSchemaVertex(TitanSchemaCategory.KEY, name, definition);
     }
 
     public TitanLabel makeEdgeLabel(String name, TypeDefinitionMap definition) {
-        return (TitanLabel) makeRelationType(TitanTypeCategory.LABEL, name, definition);
+        return (TitanLabel) makeSchemaVertex(TitanSchemaCategory.LABEL, name, definition);
     }
 
     @Override
@@ -685,7 +691,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanType getExistingType(long typeid) {
         assert idInspector.isRelationTypeId(typeid);
 
-        SystemRelationType st = SystemTypeManager.getSystemType(typeid);
+        SystemType st = SystemTypeManager.getSystemType(typeid);
         if (st!=null) return st;
 
         InternalVertex v = getExistingVertex(typeid);
@@ -1112,6 +1118,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private void close() {
         //TODO: release non crucial data structures to preserve memory?
         isOpen = false;
+        graph.closeTransaction(this);
         vertexCache.close();
     }
 

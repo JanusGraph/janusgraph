@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.blueprints.Direction;
@@ -59,7 +59,7 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
             }
             return satisfiesCondition(null);
         } else {
-            assert ((InternalRelationType)type).getMultiplicity().isUnique(Direction.OUT);
+            assert ((InternalType)type).getMultiplicity().isUnique(Direction.OUT);
             return satisfiesCondition(((TitanRelation) element).getProperty((TitanLabel) type));
         }
     }

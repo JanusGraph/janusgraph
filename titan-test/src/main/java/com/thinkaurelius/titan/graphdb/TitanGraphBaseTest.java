@@ -2,15 +2,15 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
 import org.junit.Before;
 
@@ -25,9 +25,12 @@ public abstract class TitanGraphBaseTest {
     public StandardTitanGraph graph;
     public StoreFeatures features;
     public TitanTransaction tx;
+    public TitanManagement mgmt;
 
     public TitanGraphBaseTest() {
     }
+
+
 
     public abstract WriteConfiguration getConfiguration();
 
@@ -35,7 +38,7 @@ public abstract class TitanGraphBaseTest {
     public void setUp() throws Exception {
         this.config = getConfiguration();
         Preconditions.checkNotNull(config);
-        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.clone(), BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.copy(), BasicConfiguration.Restriction.NONE);
         configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
@@ -47,6 +50,7 @@ public abstract class TitanGraphBaseTest {
         graph = (StandardTitanGraph) TitanFactory.open(config);
         features = graph.getConfiguration().getStoreFeatures();
         tx = graph.newTransaction();
+        mgmt = graph.getManagementSystem();
     }
 
     @After
@@ -54,7 +58,13 @@ public abstract class TitanGraphBaseTest {
         close();
     }
 
+    public void finishSchema() {
+        mgmt.commit();
+        mgmt=null;
+    }
+
     public void close() {
+        if (mgmt!=null) mgmt.rollback();
         if (null != tx && tx.isOpen())
             tx.commit();
 
@@ -80,16 +90,16 @@ public abstract class TitanGraphBaseTest {
                 Preconditions.checkNotNull(settings[i+1],"Null setting at position [%s]",i+1);
                 options.put((TestConfigOption)settings[i],settings[i+1]);
             }
-            UserModifiableConfiguration gconf = graph.getGlobalConfiguration();
+            TitanManagement gconf = graph.getManagementSystem();
             ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
                     lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
                 } else {
-                    gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue(),"force");
+                    gconf.set(ConfigElement.getPath(option.getKey().option,option.getKey().umbrella),option.getValue());
                 }
             }
-            gconf.close();
+            gconf.commit();
             lconf.close();
         }
         close();
@@ -113,6 +123,57 @@ public abstract class TitanGraphBaseTest {
             if (umbrella==null) umbrella=new String[0];
             this.umbrella = umbrella;
         }
+    }
+
+    /*
+    ========= Type Definition Helpers ============
+     */
+
+    public TitanKey makeVertexIndexedKey(String name, Class datatype) {
+        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+        mgmt.createInternalIndex(name,Vertex.class,key);
+        return key;
+    }
+
+    public TitanKey makeVertexIndexedUniqueKey(String name, Class datatype) {
+        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+        mgmt.createInternalIndex(name,Vertex.class,true,key);
+        return key;
+    }
+
+    public TitanKey makeKey(String name, Class datatype) {
+        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+        return key;
+    }
+
+    public TitanLabel makeLabel(String name) {
+        return mgmt.makeLabel(name).make();
+    }
+
+    public TitanLabel makeKeyedEdgeLabel(String name, TitanKey sort, TitanKey signature) {
+        TitanLabel relType = tx.makeLabel(name).
+                sortKey(sort).signature(signature).directed().make();
+        return relType;
+    }
+
+    /*
+    ========= General Helpers ===========
+     */
+
+    public static final int DEFAULT_THREAD_COUNT = 4;
+
+    public static int getThreadCount() {
+        String s = System.getProperty("titan.test.threads");
+        if (null != s)
+            return Integer.valueOf(s);
+        else
+            return DEFAULT_THREAD_COUNT;
+    }
+
+    public static int wrapAround(int value, int maxValue) {
+        value = value % maxValue;
+        if (value < 0) value = value + maxValue;
+        return value;
     }
 
 }

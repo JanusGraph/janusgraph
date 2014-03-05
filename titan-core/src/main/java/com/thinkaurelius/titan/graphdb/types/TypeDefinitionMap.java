@@ -47,20 +47,12 @@ public class TypeDefinitionMap extends EnumMap<TypeDefinitionCategory,Object> {
         return (O) ((value == null) ? type.defaultValue(this) : value);
     }
 
-    public void isValidKeyDefinition() {
-        isValidDefinition(TypeDefinitionCategory.PROPERTY_KEY_DEFINITION_CATEGORIES);
-    }
-
-    public void isValidLabelDefinition() {
-        isValidDefinition(TypeDefinitionCategory.EDGE_LABEL_DEFINITION_CATEGORIES);
-    }
-
-    private void isValidDefinition(Set<TypeDefinitionCategory> types) {
+    public void isValidDefinition(Set<TypeDefinitionCategory> requiredTypes) {
         Set<TypeDefinitionCategory> keys = this.keySet();
-        for (TypeDefinitionCategory type : types) {
-            assert keys.contains(type) : type + " not in " + this;
+        for (TypeDefinitionCategory type : requiredTypes) {
+            Preconditions.checkArgument(keys.contains(type),"%s not in %s",type,this);
         }
-        assert keys.size() == types.size() : keys.size() + " vs " + types.size() + " : " + keys.toString();
+        Preconditions.checkArgument(keys.size() == requiredTypes.size(),"Found irrelevant definitions in: %s",this);
     }
 
 }

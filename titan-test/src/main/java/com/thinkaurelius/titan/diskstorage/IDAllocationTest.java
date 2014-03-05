@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -113,7 +112,7 @@ public abstract class IDAllocationTest {
             manager[i] = openStorageManager(i);
             StoreFeatures storeFeatures = manager[i].getFeatures();
 
-            ModifiableConfiguration sc = StorageSetup.getConfig(baseStoreConfiguration.clone());
+            ModifiableConfiguration sc = StorageSetup.getConfig(baseStoreConfiguration.copy());
             sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
 
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");

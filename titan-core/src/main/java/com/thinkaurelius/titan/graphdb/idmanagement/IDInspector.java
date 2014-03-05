@@ -13,6 +13,8 @@ public interface IDInspector {
 
     public boolean isPropertyKeyId(long id);
 
+    public boolean isGenericSchemaVertexId(long id);
+
     public boolean isVertexId(long id);
 
     public long getPartitionId(long id);

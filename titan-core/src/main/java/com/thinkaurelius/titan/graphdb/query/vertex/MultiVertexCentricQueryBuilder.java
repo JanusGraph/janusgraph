@@ -13,7 +13,6 @@ import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
 import org.slf4j.Logger;

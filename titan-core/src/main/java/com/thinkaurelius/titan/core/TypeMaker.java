@@ -1,8 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
-
 /**
  * TypeMaker is a factory for {@link TitanType}s. TitanTypes can be configured to provide data verification,
  * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link TitanRelation}s

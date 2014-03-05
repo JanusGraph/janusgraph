@@ -23,8 +23,10 @@ public class IDManager {
      *  00101 -                 * Property Key
      *  10101 -                 * Edge Label
      *   1101 -             Other Type vertices
-     *  01101 -                 * Generic Type Vertices
-     *    001 -         Reserved namespace for other schema stuff
+     *  01101 -                   Vertex Type (future???)
+     *    001 -         Non-Type vertices
+     *   1001 -             * Generic Schema Vertex
+     *   0001 -             Reserved for future
      *
      *
      */
@@ -144,16 +146,16 @@ public class IDManager {
             }
         },
 
-        GenericType {
+        GenericSchemaType {
             @Override
             final long offset() {
-                return 5l;
+                return 4l;
             }
 
             @Override
             final long suffix() {
-                return 13l;
-            }    // 01101b
+                return 9l;
+            }    // 1001b
 
             @Override
             final boolean isProper() {
@@ -331,7 +333,7 @@ public class IDManager {
     }
 
     public long getGenericTypeCountBound() {
-        return getSchemaIdBound(VertexIDType.GenericType);
+        return getSchemaIdBound(VertexIDType.GenericSchemaType);
     }
 
     public long getVertexCountBound() {
@@ -372,6 +374,11 @@ public class IDManager {
         @Override
         public final boolean isVertexId(long id) {
             return VertexIDType.Vertex.is(id);
+        }
+
+        @Override
+        public boolean isGenericSchemaVertexId(long id) {
+            return VertexIDType.GenericSchemaType.is(id);
         }
 
         @Override

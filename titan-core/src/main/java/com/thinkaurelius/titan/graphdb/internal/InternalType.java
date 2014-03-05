@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -12,9 +13,9 @@ import com.tinkerpop.blueprints.Direction;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface InternalRelationType extends TitanType, InternalVertex {
+public interface InternalType extends TitanType, InternalVertex {
 
-    public boolean isHiddenRelationType();
+    public boolean isHiddenType();
 
     public long[] getSignature();
 
@@ -29,12 +30,11 @@ public interface InternalRelationType extends TitanType, InternalVertex {
 
     public boolean isUnidirected(Direction dir);
 
-    public InternalRelationType getBaseType();
+    public InternalType getBaseType();
 
-    public boolean isEnabled();
+    public Iterable<InternalType> getRelationIndexes();
 
-    public Iterable<InternalRelationType> getRelationIndexes();
-
+    public SchemaStatus getStatus();
 
     public Iterable<IndexType> getKeyIndexes();
 }

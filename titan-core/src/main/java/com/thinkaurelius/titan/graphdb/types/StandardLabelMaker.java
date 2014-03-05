@@ -9,7 +9,6 @@ import com.tinkerpop.blueprints.Direction;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.HIDDEN;
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
-import static com.tinkerpop.blueprints.Direction.IN;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

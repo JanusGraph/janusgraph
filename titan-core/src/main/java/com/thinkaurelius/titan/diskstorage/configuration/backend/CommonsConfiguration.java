@@ -104,7 +104,8 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public <O> void set(String key, O value) {
-        config.setProperty(key,value);
+        if (value==null) config.clearProperty(key);
+        else config.setProperty(key,value);
     }
 
     @Override
@@ -113,7 +114,7 @@ public class CommonsConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public WriteConfiguration clone() {
+    public WriteConfiguration copy() {
         BaseConfiguration copy = new BaseConfiguration();
         copy.copy(config);
         return new CommonsConfiguration(copy);

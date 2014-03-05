@@ -5,11 +5,10 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
@@ -53,7 +52,7 @@ public class RelationConstructor {
 
     private static InternalRelation readRelation(final InternalVertex vertex, final RelationCache relation,
                                          final Entry data, final TypeInspector types, final VertexFactory vertexFac) {
-        InternalRelationType type = TypeUtil.getBaseType((InternalRelationType) types.getExistingType(relation.typeId));
+        InternalType type = TypeUtil.getBaseType((InternalType) types.getExistingType(relation.typeId));
 
         if (type.isPropertyKey()) {
             assert relation.direction == Direction.OUT;

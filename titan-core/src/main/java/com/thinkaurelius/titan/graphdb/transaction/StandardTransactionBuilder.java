@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
@@ -78,7 +78,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.timestampProvider = graphConfig.getTimestampProvider();
-        this.storageConfiguration = TitanFactory.buildConfiguration();
+        this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();

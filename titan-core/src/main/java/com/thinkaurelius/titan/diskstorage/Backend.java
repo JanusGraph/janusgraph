@@ -8,9 +8,7 @@ import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -27,9 +25,11 @@ import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
@@ -104,6 +104,7 @@ public class Backend {
     private KeyColumnValueStore edgeStore;
     private KeyColumnValueStore indexStore;
     private IDAuthority idAuthority;
+    private KCVSConfiguration systemConfig;
 
     private final LogManager logManager;
     private Log txLog;
@@ -286,18 +287,33 @@ public class Backend {
             txLog = logManager.openLog(SYSTEM_TX_LOG_NAME, ReadMarker.fromNow());
             sysLog = logManager.openLog(SYSTEM_MGMT_LOG_NAME, ReadMarker.fromNow());
 
-            String version = null;
-            KCVSConfiguration systemConfig = new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
-                                                        SYSTEM_PROPERTIES_IDENTIFIER);
-            try {
-                systemConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
-                version = systemConfig.get(TITAN_BACKEND_VERSION,String.class);
-                if (version == null) {
-                    systemConfig.set(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
-                    version = TitanConstants.VERSION;
+            KeyColumnValueStore systemConfigStore = getLockStore(getStore(SYSTEM_PROPERTIES_STORE_NAME));
+            systemConfig = new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
+                @Override
+                public StoreTransaction openTx() throws StorageException {
+                    StoreTransaction tx = storeManager.beginTransaction(StandardTransactionConfig.of(
+                            storeFeatures.getKeyConsistentTxConfig()));
+
+                    if (wrapInExpectedValueCheckingLocker(storeFeatures)) {
+                        StoreTransaction consistentTx = storeManager.beginTransaction(StandardTransactionConfig.of(
+                                storeFeatures.getKeyConsistentTxConfig()));
+                        tx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);
+                    }
+                    return tx;
                 }
-            } finally {
-                systemConfig.close();
+
+                @Override
+                public void close() throws StorageException {
+                    //Do nothing
+                }
+            },systemConfigStore,SYSTEM_PROPERTIES_IDENTIFIER);
+
+            String version = null;
+            systemConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
+            version = systemConfig.get(TITAN_BACKEND_VERSION,String.class);
+            if (version == null) {
+                systemConfig.set(TITAN_BACKEND_VERSION, TitanConstants.VERSION);
+                version = TitanConstants.VERSION;
             }
             Preconditions.checkState(version != null, "Could not read version from storage backend");
             if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
@@ -316,12 +332,19 @@ public class Backend {
     public Map<String, IndexInformation> getIndexInformation() {
         ImmutableMap.Builder<String, IndexInformation> copy = ImmutableMap.builder();
         copy.putAll(indexes);
-        copy.put(Titan.Token.STANDARD_INDEX, StandardIndexInformation.INSTANCE);
         return copy.build();
     }
 
     public Log getSystemTxLog() {
         return txLog;
+    }
+
+    public Log getSystemMgmtLog() {
+        return sysLog;
+    }
+
+    public KCVSConfiguration getSystemConfig() {
+        return systemConfig;
     }
 
     public Log getTransactionLog(String identifier) throws StorageException {
@@ -338,7 +361,7 @@ public class Backend {
         return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
-    public final static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
+    public static KeyColumnValueStoreManager getStorageManager(Configuration storageConfig) {
         StoreManager manager = getImplementationClass(storageConfig, storageConfig.get(STORAGE_BACKEND),
                 REGISTERED_STORAGE_MANAGERS);
         if (manager instanceof OrderedKeyValueStoreManager) {
@@ -346,6 +369,26 @@ public class Backend {
         }
         Preconditions.checkArgument(manager instanceof KeyColumnValueStoreManager,"Invalid storage manager: %s",manager.getClass());
         return (KeyColumnValueStoreManager) manager;
+    }
+
+    public static KCVSConfiguration getStandaloneGlobalConfiguration(final KeyColumnValueStoreManager manager) {
+        try {
+            final StoreFeatures features = manager.getFeatures();
+            return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
+                @Override
+                public StoreTransaction openTx() throws StorageException {
+                    return manager.beginTransaction(StandardTransactionConfig.of(features.getKeyConsistentTxConfig()));
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    manager.close();
+                }
+            },manager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME),
+                    SYSTEM_CONFIGURATION_IDENTIFIER);
+        } catch (StorageException e) {
+            throw new TitanException("Could not open global configuration",e);
+        }
     }
 
     private final static Map<String, IndexProvider> getIndexes(Configuration config) {
@@ -400,7 +443,13 @@ public class Backend {
         return storeManager.getFeatures();
     }
 
-    //3. Messaging queues
+    public boolean wrapInExpectedValueCheckingLocker(StoreFeatures storeFeatures) {
+        // Use ExpectedValueCheckingTransaction?
+        return !storeFeatures.hasLocking() &&
+                !storeFeatures.hasTxIsolation() &&
+                storeFeatures.isKeyConsistent();
+    }
+
 
     /**
      * Opens a new transaction against all registered backend system wrapped in one {@link BackendTransaction}.
@@ -412,13 +461,7 @@ public class Backend {
 
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
-        // Use ExpectedValueCheckingTransaction?
-        final boolean evcEnabled =
-            !storeFeatures.hasLocking() &&
-            !storeFeatures.hasTxIsolation() &&
-             storeFeatures.isKeyConsistent();
-
-        if (evcEnabled) {
+        if (wrapInExpectedValueCheckingLocker(storeFeatures)) {
             Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
             TransactionHandleConfig consistentTxCfg = new StandardTransactionConfig.Builder()
                     .metricsPrefix(configuration.getMetricsPrefix())
@@ -451,6 +494,7 @@ public class Backend {
         edgeStore.close();
         indexStore.close();
         idAuthority.close();
+        systemConfig.close();
         storeManager.close();
         if(threadPool != null) {
         	threadPool.shutdown();
@@ -474,6 +518,7 @@ public class Backend {
         edgeStore.close();
         indexStore.close();
         idAuthority.close();
+        systemConfig.close();
         storeManager.clearStorage();
         //Indexes
         for (IndexProvider index : indexes.values()) index.clearStorage();

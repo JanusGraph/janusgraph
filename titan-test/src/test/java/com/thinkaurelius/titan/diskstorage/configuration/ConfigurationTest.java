@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;

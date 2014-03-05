@@ -5,16 +5,14 @@ import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
-import com.thinkaurelius.titan.graphdb.types.IndexField;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
-import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Collections;
 
-public class SystemKey extends SystemRelationType implements TitanKey {
+public class SystemKey extends SystemType implements TitanKey {
 
     private enum Index { NONE, STANDARD, UNIQUE }
 
@@ -25,7 +23,7 @@ public class SystemKey extends SystemRelationType implements TitanKey {
             new SystemKey("TypeDefinitionProperty", Object.class, 2, Index.NONE, Cardinality.LIST);
 
     public static final SystemKey TypeCategory =
-            new SystemKey("TypeCategory", TitanTypeCategory.class, 3, Index.STANDARD, Cardinality.SINGLE);
+            new SystemKey("TypeCategory", TitanSchemaCategory.class, 3, Index.STANDARD, Cardinality.SINGLE);
 
     public static final SystemKey TypeDefinitionDesc =
             new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 4, Index.NONE, Cardinality.SINGLE);
@@ -92,7 +90,7 @@ public class SystemKey extends SystemRelationType implements TitanKey {
         }
 
         @Override
-        public IndexField[] getFields() {
+        public IndexField[] getFieldKeys() {
             return fields;
         }
 
@@ -137,8 +135,18 @@ public class SystemKey extends SystemRelationType implements TitanKey {
         }
 
         @Override
-        public boolean isEnabled() {
-            return true;
+        public String getBackingIndexName() {
+            return Token.INTERNAL_INDEX_NAME;
+        }
+
+        @Override
+        public String getName() {
+            return "SystemIndex#"+getID();
+        }
+
+        @Override
+        public SchemaStatus getStatus() {
+            return SchemaStatus.ENABLED;
         }
 
         //Use default hashcode and equals

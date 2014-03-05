@@ -2,8 +2,6 @@
 package com.thinkaurelius.titan.core;
 
 
-import com.tinkerpop.blueprints.Element;
-
 /**
  * TitanKey is an extension of {@link TitanType} for properties.
  * <p/>

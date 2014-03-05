@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.TitanTypeCategory;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
@@ -16,9 +16,7 @@ import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -181,7 +179,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, Parameter... indexParameters) {
-        throw new UnsupportedOperationException("Use Titan's Management API to create indexes");
+        throw new UnsupportedOperationException("Use Titan's Management API to create indices");
 //        Preconditions.checkNotNull(key);
 //        Preconditions.checkArgument(elementClass == Element.class || elementClass == Vertex.class || elementClass == Edge.class,
 //                "Expected vertex, edge or element");
@@ -230,24 +228,13 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
-        for (TitanKey k : getTypes(TitanKey.class)) {
-            if (!Iterables.isEmpty(((InternalRelationType)k).getKeyIndexes())) indexedkeys.add(k.getName());
+        for (TitanVertex k : getVertices(SystemKey.TypeCategory, TitanSchemaCategory.KEY)) {
+            assert k instanceof InternalType;
+            if (!Iterables.isEmpty(((InternalType) k).getKeyIndexes())) indexedkeys.add(((TitanKey)k).getName());
         }
         return indexedkeys;
     }
 
-    @Override
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
-        Preconditions.checkNotNull(clazz);
-        Iterable<TitanVertex> types = null;
-        if (TitanKey.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeCategory, TitanTypeCategory.KEY);
-        } else if (TitanLabel.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeCategory, TitanTypeCategory.LABEL);
-        } else if (TitanType.class.equals(clazz)) {
-            types = Iterables.concat(getVertices(SystemKey.TypeCategory, TitanTypeCategory.KEY), getVertices(SystemKey.TypeCategory, TitanTypeCategory.LABEL));
-        } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(types, clazz);
-    }
+
 
 }

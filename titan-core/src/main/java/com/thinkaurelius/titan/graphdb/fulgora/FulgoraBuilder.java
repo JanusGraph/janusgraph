@@ -6,16 +6,8 @@ import com.thinkaurelius.titan.core.olap.OLAPJob;
 import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
 import com.thinkaurelius.titan.core.olap.OLAPQueryBuilder;
 import com.thinkaurelius.titan.core.olap.StateInitializer;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
@@ -24,16 +16,11 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 /**

@@ -4,7 +4,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -101,7 +101,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(TitanKey key) {
-        if (!((InternalRelationType)key).isHiddenRelationType() && tx().getConfiguration().hasPropertyPrefetching()) {
+        if (!((InternalType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
             getProperties().iterator().hasNext();
         }
         Iterator<TitanProperty> iter = query().type(key).properties().iterator();

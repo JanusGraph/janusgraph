@@ -23,7 +23,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,7 +178,7 @@ public class VertexIDAssigner {
             long partitionID = -1;
             if (vertex instanceof InternalRelation) {
                 partitionID = placementStrategy.getPartition(vertex);
-            } else if (vertex instanceof TitanType) {
+            } else if (vertex instanceof TitanSchemaVertex) {
                 partitionID = DEFAULT_PARTITION;
             } else {
                 partitionID = placementStrategy.getPartition(vertex);
@@ -303,8 +303,8 @@ public class VertexIDAssigner {
                     id = idManager.getSchemaId(IDManager.VertexIDType.PropertyKey,pool.relationType.nextID()+SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
                 } else if (vertex instanceof TitanLabel) {
                     id = idManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, pool.relationType.nextID() + SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
-                } else if (vertex instanceof TitanTypeVertex) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.GenericType,pool.genericType.nextID()<<1);
+                } else if (vertex instanceof TitanSchemaVertex) {
+                    id = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,pool.genericType.nextID()<<1);
                 } else {
                     id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
                 }

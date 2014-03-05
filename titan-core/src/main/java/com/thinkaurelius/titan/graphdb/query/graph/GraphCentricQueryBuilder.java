@@ -5,17 +5,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.util.stats.ObjectAccumulator;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
@@ -184,7 +181,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
                 if (condition instanceof PredicateCondition) {
                     TitanType type = ((PredicateCondition<TitanType,TitanElement>)condition).getKey();
                     Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
+                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalType) type).getKeyIndexes(), new Predicate<IndexType>() {
                         @Override
                         public boolean apply(@Nullable IndexType indexType) {
                             return indexType.getElement()==resultType;
@@ -281,8 +278,8 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     public static final Object[] indexCover(final InternalIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
-        if (!index.isEnabled()) return null;
-        IndexField[] fields = index.getFields();
+        if (index.getStatus()!= SchemaStatus.ENABLED) return null;
+        IndexField[] fields = index.getFieldKeys();
         Object[] indexCover = new Object[fields.length];
         Condition[] coveredClauses = new Condition[fields.length];
         for (int i = 0; i < fields.length; i++) {
@@ -325,10 +322,10 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
 
             Preconditions.checkArgument(atom.getKey().isPropertyKey());
             TitanKey key = (TitanKey) atom.getKey();
-            ParameterIndexField[] fields = index.getFields();
+            ParameterIndexField[] fields = index.getFieldKeys();
             ParameterIndexField match = null;
             for (int i = 0; i < fields.length; i++) {
-                if (!fields[i].isEnabled()) continue;
+                if (fields[i].getStatus()!= SchemaStatus.DISABLED) continue;
                 if (fields[i].getFieldKey().equals(key)) match = fields[i];
             }
             if (match==null) return false;

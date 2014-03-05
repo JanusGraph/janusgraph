@@ -6,13 +6,9 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -34,12 +30,12 @@ public class QueryUtil {
         return limit;
     }
 
-    public static InternalRelationType getType(StandardTitanTx tx, String typeName) {
+    public static InternalType getType(StandardTitanTx tx, String typeName) {
         TitanType t = tx.getType(typeName);
         if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
         }
-        return (InternalRelationType) t;
+        return (InternalType) t;
     }
 
     /**

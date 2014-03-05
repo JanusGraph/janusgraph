@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.cache;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 
@@ -28,7 +28,7 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
             }
 
             @Override
-            public EntryList retrieveTypeRelations(long schemaId, SystemRelationType type, Direction dir, StandardTitanTx tx) {
+            public EntryList retrieveTypeRelations(long schemaId, SystemType type, Direction dir, StandardTitanTx tx) {
                 incAction(METRICS_RELATIONS,CacheMetricsAction.MISS,tx);
                 return retriever.retrieveTypeRelations(schemaId,type,dir,tx);
             }
@@ -48,7 +48,7 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     }
 
     @Override
-    public EntryList getTypeRelations(long schemaId, SystemRelationType type, Direction dir, StandardTitanTx tx) {
+    public EntryList getTypeRelations(long schemaId, SystemType type, Direction dir, StandardTitanTx tx) {
         incAction(METRICS_RELATIONS,CacheMetricsAction.RETRIEVAL,tx);
         return cache.getTypeRelations(schemaId, type, dir, tx);
     }

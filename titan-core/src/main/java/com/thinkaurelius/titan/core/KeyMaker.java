@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Element;
-
 /**
  * Used to define new {@link TitanKey}s
  *

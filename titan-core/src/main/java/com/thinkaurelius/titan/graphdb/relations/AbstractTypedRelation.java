@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
@@ -14,12 +14,12 @@ import java.util.Set;
 
 public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
 
-    protected final InternalRelationType type;
+    protected final InternalType type;
 
     public AbstractTypedRelation(final long id, final TitanType type) {
         super(id);
-        assert type != null && type instanceof InternalRelationType;
-        this.type = (InternalRelationType) type;
+        assert type != null && type instanceof InternalType;
+        this.type = (InternalType) type;
     }
 
     @Override
@@ -63,7 +63,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public boolean isHidden() {
-        return type.isHiddenRelationType();
+        return type.isHiddenType();
     }
 
     @Override

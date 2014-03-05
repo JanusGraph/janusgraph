@@ -143,6 +143,14 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> UNIQUE_GRAPH_ID = new ConfigOption<String>(TITAN_NS,"unique-graph-id",
             "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
 
+    // ################ INSTANCE REGISTRATION #######################
+    // ##############################################################
+
+    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(TITAN_NS,"system-registration","This is used internally to keep track of open instances",true);
+
+    public static final ConfigOption<Long> REGISTRATION_TIME = new ConfigOption<Long>(REGISTRATION_NS,"startup-time",
+            "Timestamp when this instance was started", ConfigOption.Type.GLOBAL, Long.class);
+
     // ################ CACHE #######################
     // ################################################
 
@@ -1119,15 +1127,13 @@ public class GraphDatabaseConfiguration {
         BasicConfiguration localbc = new BasicConfiguration(TITAN_NS,localConfig, BasicConfiguration.Restriction.NONE);
         ModifiableConfiguration overwrite = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
 
-        KeyColumnValueStoreManager storeManager=null;
-        KCVSConfiguration kcvsConfig=null;
+//        KeyColumnValueStoreManager storeManager=null;
+        final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
+        KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager);
         ReadConfiguration globalConfig=null;
 
         //Read out global configuration
         try {
-            storeManager = Backend.getStorageManager(localbc);
-            kcvsConfig = getGlobalConfig(storeManager);
-
             // If lock prefix is unspecified, specify it now
             if (!localbc.has(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX)) {
                 overwrite.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, storeManager.getName());
@@ -1152,11 +1158,6 @@ public class GraphDatabaseConfiguration {
             globalConfig = kcvsConfig.asReadConfiguration();
         } finally {
             if (kcvsConfig!=null) kcvsConfig.close();
-            try {
-            if (storeManager!=null) storeManager.close();
-            } catch (StorageException e) {
-                throw new TitanException("Could not close global configuration store",e);
-            }
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
         this.uniqueGraphId = getUniqueGraphId(combinedConfig);
@@ -1190,20 +1191,6 @@ public class GraphDatabaseConfiguration {
             }
             return new String(Hex.encodeHex(addrBytes)) + suffix;
         }
-    }
-
-    private static final KCVSConfiguration getGlobalConfig(KeyColumnValueStoreManager storeManager) {
-        try {
-            return new KCVSConfiguration(storeManager,SYSTEM_PROPERTIES_STORE_NAME,
-                    SYSTEM_CONFIGURATION_IDENTIFIER);
-        } catch (StorageException e) {
-            throw new TitanException("Could not open global configuration",e);
-        }
-    }
-
-    public static final UserModifiableConfiguration getGlobalUserConfig(KeyColumnValueStoreManager storeManager) {
-        return new UserModifiableConfiguration(new ModifiableConfiguration(
-                TITAN_NS,getGlobalConfig(storeManager), BasicConfiguration.Restriction.GLOBAL));
     }
 
     public static final ModifiableConfiguration buildConfiguration() {
@@ -1338,6 +1325,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean isBatchLoading() {
         return batchLoading;
+    }
+
+    public String getUniqueGraphId() {
+        return uniqueGraphId;
     }
 
     public String getMetricsPrefix() {

@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
@@ -105,7 +105,7 @@ public class StandardSchemaCache implements SchemaCache {
     }
 
     @Override
-    public EntryList getTypeRelations(final long schemaId, final SystemRelationType type, final Direction dir, final StandardTitanTx tx) {
+    public EntryList getTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
         assert IDManager.getRelationTypeIdCount(type.getID())<SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET;
         Preconditions.checkArgument(IDManager.VertexIDType.SchemaType.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);

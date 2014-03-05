@@ -6,14 +6,15 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -21,14 +22,16 @@ import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementLogger;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -36,9 +39,10 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -49,11 +53,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -79,8 +84,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final RelationQueryCache queryCache;
     private final SchemaCache schemaCache;
 
+    //Log
+    private final ManagementLogger mgmtLogger;
+
     private boolean isOpen;
     private AtomicLong txCounter;
+
+    private Set<StandardTitanTx> openTransactions;
 
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
@@ -100,6 +110,20 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         isOpen = true;
         txCounter = new AtomicLong(0);
+        openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100,0.75f,1));
+
+        //Register instance and ensure uniqueness
+        String uniqueInstanceId = configuration.getUniqueGraphId();
+        ModifiableConfiguration globalConfig = new ModifiableConfiguration(TITAN_NS,
+                backend.getSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+        if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
+            throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
+        }
+        globalConfig.set(REGISTRATION_TIME, Timestamps.MILLI.getTime(), uniqueInstanceId);
+
+        Log mgmtLog = backend.getSystemMgmtLog();
+        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
+        mgmtLog.registerReader(mgmtLogger);
     }
 
     @Override
@@ -110,6 +134,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     @Override
     public synchronized void shutdown() throws TitanException {
         if (!isOpen) return;
+        //Unregister instance
+        ModifiableConfiguration globalConfig = new ModifiableConfiguration(TITAN_NS,
+                backend.getSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+        globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
         try {
             super.shutdown();
             idAssigner.close();
@@ -141,7 +169,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return edgeSerializer;
     }
 
-    public AttributeHandling getAttributeHandling() {
+    public Serializer getDataSerializer() {
         return serializer;
     }
 
@@ -158,8 +186,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     @Override
-    public UserModifiableConfiguration getGlobalConfiguration() {
-        return GraphDatabaseConfiguration.getGlobalUserConfig(backend.getStoreManager());
+    public TitanManagement getManagementSystem() {
+        return new ManagementSystem(this,backend.getSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger);
+    }
+
+    public Set<? extends TitanTransaction> getOpenTransactions() {
+        return Sets.newHashSet(openTransactions);
     }
 
     // ################### TRANSACTIONS #########################
@@ -185,10 +217,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever();
             StandardTitanTx tx = new StandardTitanTx(this, configuration, backend.beginTransaction(configuration,retriever));
             retriever.setTransaction(tx);
+            openTransactions.add(tx);
             return tx;
         } catch (StorageException e) {
             throw new TitanException("Could not start new transaction", e);
         }
+    }
+
+    public void closeTransaction(StandardTitanTx tx) {
+        openTransactions.remove(tx);
     }
 
     // ################### READ #########################
@@ -202,7 +239,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
 
         @Override
-        public EntryList retrieveTypeRelations(final long schemaId, final SystemRelationType type, final Direction dir, final StandardTitanTx tx) {
+        public EntryList retrieveTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
             return edgeQuery(schemaId, query, tx.getTxHandle());
         }
@@ -271,7 +308,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public static boolean acquireLock(InternalRelation relation, int pos, boolean acquireLocksConfig) {
-        InternalRelationType type = (InternalRelationType)relation.getType();
+        InternalType type = (InternalType)relation.getType();
         return acquireLocksConfig && type.getConsistencyModifier()==ConsistencyModifier.LOCK &&
                 ( type.getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))
                         || pos==0 && type.getMultiplicity()==Multiplicity.SIMPLE);
@@ -348,9 +385,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
-                InternalRelationType baseType = (InternalRelationType) edge.getType();
+                InternalType baseType = (InternalType) edge.getType();
                 assert baseType.getBaseType()==null;
-                for (InternalRelationType type : baseType.getRelationIndexes()) {
+                for (InternalType type : baseType.getRelationIndexes()) {
+                    if (type.getStatus()== SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
@@ -382,11 +420,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, ImmutableList.of(update.getEntry().getColumn()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
-                IndexTransaction itx = mutator.getIndexTransactionHandle(((ExternalIndexType)update.getIndex()).getIndexName());
+                IndexTransaction itx = mutator.getIndexTransactionHandle(update.getIndex().getBackingIndexName());
+                String indexStore = ((ExternalIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
-                    itx.add(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
+                    itx.add(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
                 else
-                    itx.delete(update.getIndex().getElement().getName(),update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
+                    itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }
         }
         hasMutations = !mutations.isEmpty();
@@ -398,7 +437,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final long txId = txCounter.incrementAndGet();
         final long timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
         if (logTransaction) {
-            DataOutput out = getTxLogHeader(txId,timestamp,LogTxStatus.PRECOMMIT);
+            DataOutput out = getTxLogHeader(txId,timestamp, LogTxStatus.PRECOMMIT);
             mutator.logMutations(out);
             txLog.add(out.getStaticBuffer());
         }
@@ -420,29 +459,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
 
 
-        //TODO: Register new keys with indexprovider
-//                for (InternalRelationType itype : otherEdgeTypes.keySet()) {
-//                    if (itype.isPropertyKey() && itype.isNew())
-//                        indexSerializer.newPropertyKey((TitanKey) itype, mutator);
-//                }
+
 
     }
-
-    public enum LogTxStatus { PRECOMMIT, SUCCESS, FAILURE }
 
     private final DataOutput getTxLogHeader(final long txId, final long txTimestamp, LogTxStatus status) {
         DataOutput out = serializer.getDataOutput(128);
         out.putLong(txTimestamp);
-        VariableLong.writePositive(out,txId);
-        assert status.ordinal()>=0 && status.ordinal()<Byte.MAX_VALUE;
-        out.putByte((byte)status.ordinal());
+        VariableLong.writePositive(out, txId);
+        out.writeObjectNotNull(status);
         return out;
     }
 
     private static final Predicate<InternalRelation> SYSTEMTYPES_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return internalRelation instanceof SystemRelationType && internalRelation.getVertex(0) instanceof TitanTypeVertex;
+            return internalRelation instanceof SystemType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
         }
     };
 

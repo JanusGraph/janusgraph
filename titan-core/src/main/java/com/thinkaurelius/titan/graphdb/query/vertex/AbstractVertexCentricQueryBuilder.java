@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.Query;
@@ -17,8 +17,7 @@ import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.util.datastructures.Interval;
-import com.thinkaurelius.titan.util.datastructures.PointInterval;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
@@ -255,7 +254,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 
 
             for (String typeName : types) {
-                InternalRelationType type = QueryUtil.getType(tx, typeName);
+                InternalType type = QueryUtil.getType(tx, typeName);
                 if (type==null) continue;
                 ts.add(type);
 
@@ -272,11 +271,11 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 
 
                 //Find best scoring relation type
-                InternalRelationType bestCandidate = null;
+                InternalType bestCandidate = null;
                 int bestScore = Integer.MIN_VALUE;
-                for (InternalRelationType candidate : type.getRelationIndexes()) {
+                for (InternalType candidate : type.getRelationIndexes()) {
                     if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(dir)) continue;
-                    if (!type.isEnabled()) continue;
+                    if (type.getStatus()!= SchemaStatus.ENABLED) continue;
 
                     int score = 0;
                     boolean coveredAllSortKeys = true;
@@ -308,7 +307,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
                     TitanType keyType = tx.getExistingType(sortKey[i]);
                     ProperInterval interval = intervalConstraints.get(keyType);
                     if (interval!=null) {
-                        sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,interval);
+                        sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalType) keyType,interval);
                         coveredTypes++;
                     }
                     if (interval==null || !interval.isPoint()) break;

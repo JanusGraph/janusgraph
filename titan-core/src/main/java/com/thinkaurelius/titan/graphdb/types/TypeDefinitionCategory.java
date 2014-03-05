@@ -25,26 +25,27 @@ public enum TypeDefinitionCategory {
     UNIDIRECTIONAL(Direction.class),
 
     //General admin
-    ENABLED(Boolean.class),
+    STATUS(SchemaStatus.class),
 
     //Index Types
     ELEMENT_CATEGORY(ElementCategory.class),
     INDEX_CARDINALITY(Cardinality.class),
-    IS_MAPPING(Boolean.class),
-    INDEX_NAME(String.class),
+    INTERNAL_INDEX(Boolean.class),
+    BACKING_INDEX(String.class),
+    INDEXSTORE_NAME(String.class),
 
     //Consistency Types
     CONSISTENCY_LEVEL(ConsistencyModifier.class),
 
     //Schema Edges
-    RELATION_INDEX(),
+    RELATIONTYPE_INDEX(),
     CONSISTENCY_MODIFIER(),
     INDEX_FIELD(RelationCategory.EDGE,Parameter[].class);
 
-    static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
-
-    public static final Set<TypeDefinitionCategory> SCHEMA_EDGE_DEFS = ImmutableSet.of(RELATION_INDEX,CONSISTENCY_MODIFIER,INDEX_FIELD);
+    public static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
+    public static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
+    public static final Set<TypeDefinitionCategory> CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES = ImmutableSet.of(CONSISTENCY_LEVEL);
+    public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
 
 
 
@@ -91,7 +92,7 @@ public enum TypeDefinitionCategory {
     public Object defaultValue(TypeDefinitionMap map) {
         switch(this) {
             case SORT_ORDER: return Order.ASC;
-            case ENABLED: return Boolean.TRUE;
+            case STATUS: return SchemaStatus.ENABLED;
             default: return null;
         }
     }

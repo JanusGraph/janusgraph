@@ -11,7 +11,7 @@ import com.tinkerpop.blueprints.Direction;
  */
 public class InternalIndexTypeWrapper extends IndexTypeWrapper implements InternalIndexType {
 
-    public InternalIndexTypeWrapper(TypeSource base) {
+    public InternalIndexTypeWrapper(SchemaSource base) {
         super(base);
     }
 
@@ -25,26 +25,25 @@ public class InternalIndexTypeWrapper extends IndexTypeWrapper implements Intern
         return false;
     }
 
-
     @Override
     public long getID() {
         return base.getID();
     }
 
     @Override
-    public boolean isEnabled() {
-        return base.isEnabled();
+    public SchemaStatus getStatus() {
+        return base.getStatus();
     }
 
     IndexField[] fields = null;
 
     @Override
-    public IndexField[] getFields() {
+    public IndexField[] getFieldKeys() {
         if (fields==null) {
-            Iterable<TypeSource.Entry> entries = base.getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT);
+            Iterable<SchemaSource.Entry> entries = base.getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT);
             int numFields = Iterables.size(entries);
             IndexField[] f = new IndexField[numFields];
-            for (TypeSource.Entry entry : entries) {
+            for (SchemaSource.Entry entry : entries) {
                 Integer value = ParameterType.INDEX_POSITION.findParameter((Parameter[]) entry.getModifier(),null);
                 Preconditions.checkNotNull(value);
                 int pos = value;
@@ -67,9 +66,7 @@ public class InternalIndexTypeWrapper extends IndexTypeWrapper implements Intern
 
     public ConsistencyModifier getConsistencyModifier() {
         if (consistency==null) {
-            TypeSource.Entry entry = Iterables.getOnlyElement(base.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.OUT),null);
-            if (entry==null) consistency=ConsistencyModifier.DEFAULT;
-            else consistency=entry.getSchemaType().getDefinition().getValue(TypeDefinitionCategory.CONSISTENCY_LEVEL,ConsistencyModifier.class);
+            consistency = TypeUtil.getConsistencyModifier(base);
         }
         return consistency;
     }

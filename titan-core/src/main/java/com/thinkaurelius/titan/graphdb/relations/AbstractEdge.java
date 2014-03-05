@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.StringFactory;

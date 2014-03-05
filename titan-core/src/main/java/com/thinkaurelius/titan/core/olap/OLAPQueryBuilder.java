@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.core.olap;
 
 import com.thinkaurelius.titan.core.BaseVertexQuery;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.TitanType;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Predicate;
 
 /**

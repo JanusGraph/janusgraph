@@ -13,7 +13,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.core.*;
-import org.apache.commons.configuration.Configuration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -23,7 +22,6 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;

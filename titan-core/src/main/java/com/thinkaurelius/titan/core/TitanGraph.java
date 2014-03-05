@@ -74,16 +74,6 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     public LabelMaker makeLabel(String name);
 
     /**
-     * Returns an iterable over all defined types that have the given clazz (either {@link TitanLabel} which returns all labels,
-     * {@link TitanKey} which returns all keys, or {@link TitanType} which returns all types).
-     *
-     * @param clazz {@link TitanType} or sub-interface
-     * @param <T>
-     * @return Iterable over all types for the given category (label, key, or both)
-     */
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
-
-    /**
      * Returns a {@link TitanGraphQuery} to query for vertices or edges in the graph by their properties.
      *
      * @return
@@ -133,12 +123,12 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
 
 
     /**
-     * Returns the global configuration behind this Titan graph. This allows to inspect global configuration
-     * options as well as modify some of those settings if allowed.
+     * Returns the management system for this graph instance. The management system provides functionality
+     * to change global configuration options, install indexes and inspect the graph schema.
      *
      * @return
      */
-    public UserModifiableConfiguration getGlobalConfiguration();
+    public TitanManagement getManagementSystem();
 
     /**
      * Checks whether the graph is still open.

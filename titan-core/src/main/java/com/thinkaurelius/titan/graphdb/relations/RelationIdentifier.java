@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
-import com.google.common.hash.HashCode;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.vertices.AbstractVertex;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;

@@ -121,6 +121,8 @@ public class BackendOperation {
 
         public StoreTransaction openTx() throws StorageException;
 
+        public void close() throws StorageException;
+
     }
 
 }

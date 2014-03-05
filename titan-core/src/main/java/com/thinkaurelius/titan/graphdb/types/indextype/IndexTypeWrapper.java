@@ -4,10 +4,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaSource;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
-import com.thinkaurelius.titan.graphdb.types.TypeSource;
 
 import java.util.Map;
 
@@ -16,11 +17,15 @@ import java.util.Map;
  */
 public abstract class IndexTypeWrapper implements IndexType {
 
-    protected final TypeSource base;
+    protected final SchemaSource base;
 
-    public IndexTypeWrapper(TypeSource base) {
+    public IndexTypeWrapper(SchemaSource base) {
         Preconditions.checkNotNull(base);
         this.base = base;
+    }
+
+    public SchemaSource getSchemaBase() {
+        return base;
     }
 
     @Override
@@ -43,7 +48,14 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public String toString() {
-        return "index" + base.getID();
+        return base.getName();
+    }
+
+    @Override
+    public String getName() {
+        String[] comps = Token.splitSeparatedName(base.getName());
+        assert comps.length==2;
+        return comps[1];
     }
 
     private Map<TitanKey,IndexField> fieldMap = null;
@@ -52,7 +64,7 @@ public abstract class IndexTypeWrapper implements IndexType {
     public IndexField getField(TitanKey key) {
         if (fieldMap==null) {
             ImmutableMap.Builder<TitanKey,IndexField> b = ImmutableMap.builder();
-            for (IndexField f : getFields()) b.put(f.getFieldKey(),f);
+            for (IndexField f : getFieldKeys()) b.put(f.getFieldKey(),f);
             fieldMap=b.build();
         }
         assert fieldMap!=null;
@@ -62,6 +74,11 @@ public abstract class IndexTypeWrapper implements IndexType {
     @Override
     public boolean indexesKey(TitanKey key) {
         return getField(key)!=null;
+    }
+
+    @Override
+    public String getBackingIndexName() {
+        return base.getDefinition().getValue(TypeDefinitionCategory.BACKING_INDEX,String.class);
     }
 
 }

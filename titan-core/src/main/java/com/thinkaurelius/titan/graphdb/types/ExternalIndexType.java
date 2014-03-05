@@ -8,10 +8,10 @@ import com.thinkaurelius.titan.core.TitanKey;
  */
 public interface ExternalIndexType extends IndexType {
 
-    public ParameterIndexField[] getFields();
+    public ParameterIndexField[] getFieldKeys();
 
     public ParameterIndexField getField(TitanKey key);
 
-    public String getIndexName();
+    public String getStoreName();
 
 }

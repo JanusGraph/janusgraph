@@ -28,9 +28,9 @@ public class IndexHelper {
 
     public static GraphCentricQueryBuilder getQuery(InternalIndexType index, Object[] values, StandardTitanTx tx) {
         Preconditions.checkArgument(index != null && values != null && values.length > 0 && tx != null);
-        Preconditions.checkArgument(values.length==index.getFields().length);
+        Preconditions.checkArgument(values.length==index.getFieldKeys().length);
         GraphCentricQueryBuilder gb = tx.query();
-        IndexField[] fields = index.getFields();
+        IndexField[] fields = index.getFieldKeys();
         for (int i = 0; i <fields.length; i++) {
             IndexField f = fields[i];
             Object value = values[i];

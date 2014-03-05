@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.tinkerpop.blueprints.Direction;
 
-public class TitanKeyVertex extends TitanRelationTypeVertex implements TitanKey {
+public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
 
     public TitanKeyVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);

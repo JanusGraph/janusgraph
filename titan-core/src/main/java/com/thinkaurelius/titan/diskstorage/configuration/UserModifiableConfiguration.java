@@ -1,6 +1,7 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 
 import java.lang.reflect.Array;
@@ -11,13 +12,21 @@ import java.lang.reflect.Array;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class UserModifiableConfiguration {
+public class UserModifiableConfiguration implements TitanConfiguration {
 
     private final ModifiableConfiguration config;
+    private final ConfigVerifier verifier;
 
     public UserModifiableConfiguration(ModifiableConfiguration config) {
-        this.config = config;
+        this(config,ALLOW_ALL);
     }
+
+    public UserModifiableConfiguration(ModifiableConfiguration config, ConfigVerifier verifier) {
+        Preconditions.checkArgument(config!=null && verifier!=null);
+        this.config = config;
+        this.verifier = verifier;
+    }
+
 
     /**
      * Returns the backing configuration as a {@link ReadConfiguration} that can be used
@@ -29,14 +38,7 @@ public class UserModifiableConfiguration {
         return config.getConfiguration();
     }
 
-    /**
-     * Returns a string representation of the provided configuration option or namespace for inspection.
-     * <p />
-     * An exception is thrown if the path is invalid.
-     *
-     * @param path
-     * @return
-     */
+    @Override
     public String get(String path) {
         ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
         if (pp.element.isNamespace()) {
@@ -74,25 +76,12 @@ public class UserModifiableConfiguration {
     }
 
 
-    /**
-     * Sets the configuration option identified by the provided path to the given value.
-     * <p />
-     * Setting some configuration options requires that additional parameters may be set.
-     * For instance, when setting a global configuration value that requires a complete cluster restart, one
-     * has to pass in the additional parameter "force" to force the configuration update.
-     *
-     * @param path
-     * @param value
-     * @param paras
-     */
-    public void set(String path, Object value, String... paras) {
+    @Override
+    public UserModifiableConfiguration set(String path, Object value) {
         ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
         Preconditions.checkArgument(pp.element.isOption(),"Need to provide configuration option - not namespace: %s",path);
         ConfigOption option = (ConfigOption)pp.element;
-        if (option.getType()== ConfigOption.Type.GLOBAL_OFFLINE && config.isFrozen()) {
-            Preconditions.checkArgument(paras != null && paras.length > 0 && paras[0].trim().equalsIgnoreCase("force"),
-                    "Changing this option requires a complete cluster restart! Need to force global parameter update for: %s", option);
-        }
+        verifier.verifyModification(option);
         if (option.getDatatype().isArray()) {
             Class arrayType = option.getDatatype().getComponentType();
             Object arr;
@@ -111,6 +100,7 @@ public class UserModifiableConfiguration {
             value = convertBasic(value,option.getDatatype());
         }
         config.set(option,value,pp.umbrellaElements);
+        return this;
     }
 
     /**
@@ -155,5 +145,25 @@ public class UserModifiableConfiguration {
             throw new IllegalArgumentException("No match for " + value + " in enum " + datatype);
         } else throw new IllegalArgumentException("Unexpected data type: " + datatype );
     }
+
+
+    public interface ConfigVerifier {
+
+        /**
+         * Throws an exception if the given configuration option is not allowed to be changed.
+         * Otherwise just returns.
+         * @param option
+         */
+        public void verifyModification(ConfigOption option);
+
+    }
+
+    public static final ConfigVerifier ALLOW_ALL = new ConfigVerifier() {
+        @Override
+        public void verifyModification(ConfigOption option) {
+            //Do nothing;
+        }
+    };
+
 
 }

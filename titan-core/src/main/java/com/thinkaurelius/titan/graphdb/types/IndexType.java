@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types;
 
+import com.thinkaurelius.titan.core.TitanGraphIndex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
@@ -13,7 +14,7 @@ public interface IndexType {
 
     public ElementCategory getElement();
 
-    public IndexField[] getFields();
+    public IndexField[] getFieldKeys();
 
     public IndexField getField(TitanKey key);
 
@@ -23,6 +24,9 @@ public interface IndexType {
 
     public boolean isExternalIndex();
 
+    public String getBackingIndexName();
+
+    public String getName();
 
     //TODO: Add in the future
     //public And getCondition();
