@@ -62,6 +62,27 @@
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-sail-graph</artifactId>
+            <version>${tinkerpop.version}</version>
+            <!-- temporary, due to a LinkedDataSail 1.0 dependency on Sesame 2.7.0-beta -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.openrdf.sesame</groupId>
+                    <artifactId>sesame-model</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.openrdf.sesame</groupId>
+                    <artifactId>sesame-rio-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.blueprints</groupId>
+            <artifactId>blueprints-graph-sail</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
