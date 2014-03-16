@@ -20,6 +20,7 @@ import java.util.List;
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
@@ -44,8 +45,13 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     }
 
     public SliceQuery(final SliceQuery query) {
+        this(query, query.getOffset(), query.getLimit());
+    }
+
+    public SliceQuery(final SliceQuery query, final int offset, final int limit) {
         this(query.getSliceStart(), query.getSliceEnd(), query.isStatic());
-        setLimit(query.getLimit());
+        setOffset(offset);
+        setLimit(limit);
     }
 
 
@@ -125,6 +131,18 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     }
 
     @Override
+    public SliceQuery setOffset(int offset) {
+        Preconditions.checkArgument(!hasOffset());
+        super.setOffset(offset);
+        return this;
+    }
+
+    @Override
+    public SliceQuery updateOffset(int newOffset) {
+        return new SliceQuery(this, newOffset, getLimit());
+    }
+
+    @Override
     public SliceQuery setLimit(int limit) {
         Preconditions.checkArgument(!hasLimit());
         super.setLimit(limit);
@@ -133,7 +151,6 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public SliceQuery updateLimit(int newLimit) {
-        return new SliceQuery(sliceStart, sliceEnd, isStatic).setLimit(newLimit);
+        return new SliceQuery(this, getOffset(), newLimit);
     }
-
 }

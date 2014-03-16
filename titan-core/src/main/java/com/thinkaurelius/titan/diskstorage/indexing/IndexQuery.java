@@ -24,6 +24,7 @@ import java.util.List;
  * which defines which entries match the query.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
@@ -33,11 +34,12 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
     private final String store;
     private final Condition condition;
     private final ImmutableList<OrderEntry> orders;
-
+    private final int offset;
+    private final int limit;
     private final int hashcode;
 
-    public IndexQuery(String store, Condition condition, ImmutableList<OrderEntry> orders, int limit) {
-        super(limit);
+    public IndexQuery(String store, Condition condition, ImmutableList<OrderEntry> orders, int offset, int limit) {
+        super(offset, limit);
         Preconditions.checkNotNull(store);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(orders != null);
@@ -45,20 +47,21 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
         this.condition = condition;
         this.orders = orders;
         this.store = store;
-
+        this.offset = offset;
+        this.limit = limit;
         this.hashcode = new HashCodeBuilder().append(condition).append(store).append(orders).append(limit).toHashCode();
     }
 
     public IndexQuery(String store, Condition condition, ImmutableList<OrderEntry> orders) {
-        this(store, condition, orders, Query.NO_LIMIT);
+        this(store, condition, orders, Query.NO_OFFSET, Query.NO_LIMIT);
     }
 
     public IndexQuery(String store, Condition condition) {
-        this(store, condition, NO_ORDER, Query.NO_LIMIT);
+        this(store, condition, NO_ORDER, Query.NO_OFFSET, Query.NO_LIMIT);
     }
 
-    public IndexQuery(String store, Condition condition, int limit) {
-        this(store, condition, NO_ORDER, limit);
+    public IndexQuery(String store, Condition condition, int offset, int limit) {
+        this(store, condition, NO_ORDER, offset, limit);
     }
 
     public Condition<TitanElement> getCondition() {
@@ -74,13 +77,23 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
     }
 
     @Override
+    public IndexQuery setOffset(int offset) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IndexQuery setLimit(int limit) {
         throw new UnsupportedOperationException();
     }
 
     @Override
+    public IndexQuery updateOffset(int newOffset) {
+        return new IndexQuery(store, condition, orders, newOffset, limit);
+    }
+
+    @Override
     public IndexQuery updateLimit(int newLimit) {
-        return new IndexQuery(store, condition, orders, newLimit);
+        return new IndexQuery(store, condition, orders, offset, newLimit);
     }
 
     @Override

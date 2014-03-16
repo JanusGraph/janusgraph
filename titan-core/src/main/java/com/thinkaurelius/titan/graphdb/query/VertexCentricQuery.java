@@ -14,6 +14,7 @@ import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<TitanRelation, SliceQuery> {
@@ -23,8 +24,8 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
     public VertexCentricQuery(InternalVertex vertex, Condition<TitanRelation> condition,
                               Direction direction,
                               List<BackendQueryHolder<SliceQuery>> queries,
-                              int limit) {
-        super(condition, direction, queries, limit);
+                              int offset, int limit) {
+        super(condition, direction, queries, offset, limit);
         Preconditions.checkNotNull(vertex);
         this.vertex = vertex;
     }

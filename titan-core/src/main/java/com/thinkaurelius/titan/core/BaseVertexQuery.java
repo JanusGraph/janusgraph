@@ -15,6 +15,7 @@ import com.tinkerpop.blueprints.VertexQuery;
  * A TitanQuery is initialized by calling {@link TitanVertex#query()} on the vertex itself.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 public interface BaseVertexQuery {
 
@@ -126,6 +127,14 @@ public interface BaseVertexQuery {
      * @return this query
      */
     public <T extends Comparable<?>> BaseVertexQuery interval(TitanKey key, T start, T end);
+
+    /**
+     * Sets the retrieval offset for this query.
+     *
+     * @param offset the offset from where to start retrieving relations for this query
+     * @return this query
+     */
+    public BaseVertexQuery offset(int offset);
 
     /**
      * Sets the retrieval limit for this query.

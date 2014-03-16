@@ -13,6 +13,7 @@ import java.util.Comparator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanElement, JointIndexQuery> {
@@ -23,8 +24,8 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
     private final ElementType resultType;
 
     public GraphCentricQuery(ElementType resultType, Condition<TitanElement> condition, OrderList orders,
-                             BackendQueryHolder<JointIndexQuery> indexQuery, int limit) {
-        super(limit);
+                             BackendQueryHolder<JointIndexQuery> indexQuery, int offset, int limit) {
+        super(offset, limit);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(orders != null && orders.isImmutable());
         Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
@@ -40,7 +41,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanEl
         Condition<TitanElement> cond = new FixedCondition<TitanElement>(false);
         return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
                 new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(),
-                        true, false, null), 0);
+                        true, false, null), 0, 0);
     }
 
     public Condition<TitanElement> getCondition() {
