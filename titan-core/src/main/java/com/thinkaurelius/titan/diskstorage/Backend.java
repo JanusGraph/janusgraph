@@ -143,7 +143,7 @@ public class Backend {
         Preconditions.checkArgument(persistAttemptWaittime > 0, "Persistence attempt retry wait time must be non-negative");
 
         if (storageConfig.getBoolean(PARALLEL_BACKEND_OPS_KEY, PARALLEL_BACKEND_OPS_DEFAULT)) {
-            int poolsize = Math.min(1, Runtime.getRuntime().availableProcessors()) * THREAD_POOL_SIZE_SCALE_FACTOR;
+            int poolsize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolsize);
             log.info("Initiated backend operations thread pool of size {}", poolsize);
         } else {
