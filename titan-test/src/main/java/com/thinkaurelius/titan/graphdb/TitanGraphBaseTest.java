@@ -10,6 +10,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
 import org.junit.Before;
@@ -59,8 +61,11 @@ public abstract class TitanGraphBaseTest {
     }
 
     public void finishSchema() {
+        assert mgmt!=null;
         mgmt.commit();
-        mgmt=null;
+        mgmt=graph.getManagementSystem();
+        newTx();
+        graph.commit();
     }
 
     public void close() {
@@ -139,6 +144,27 @@ public abstract class TitanGraphBaseTest {
         TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
         mgmt.createInternalIndex(name,Vertex.class,true,key);
         return key;
+    }
+
+    public void createExternalVertexIndex(TitanKey key, String backingIndex) {
+        createExternalIndex(key,Vertex.class,backingIndex);
+    }
+
+    public void createExternalEdgeIndex(TitanKey key, String backingIndex) {
+        createExternalIndex(key,Edge.class,backingIndex);
+    }
+
+    public TitanGraphIndex getExternalIndex(Class<? extends Element> clazz, String backingIndex) {
+        String indexName = (Vertex.class.isAssignableFrom(clazz)?"v":"e")+backingIndex;
+        TitanGraphIndex index = mgmt.getGraphIndex(indexName);
+        if (index==null) {
+            index = mgmt.createExternalIndex(indexName,clazz,backingIndex);
+        }
+        return index;
+    }
+
+    private void createExternalIndex(TitanKey key, Class<? extends Element> clazz, String backingIndex) {
+        mgmt.addIndexKey(getExternalIndex(clazz,backingIndex),key);
     }
 
     public TitanKey makeKey(String name, Class datatype) {

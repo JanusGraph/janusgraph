@@ -6,11 +6,14 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -30,7 +33,9 @@ import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -221,11 +226,12 @@ public class ManagementSystem implements TitanManagement {
         return new TitanTypeIndexWrapper((InternalType)typeIndex);
     }
 
-    private void addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
+    private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
         TitanEdge edge = transaction.addEdge(out,in, SystemLabel.TypeDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
         edge.setProperty(SystemKey.TypeDefinitionDesc,def);
+        return edge;
     }
 
     @Override
@@ -261,7 +267,7 @@ public class ManagementSystem implements TitanManagement {
     Graph Indexes
      --------------- */
 
-    public static IndexType getInternalGraphIndex(String name, StandardTitanTx transaction) {
+    public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = composeIndexName(name);
 
@@ -282,7 +288,8 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public TitanGraphIndex getGraphIndex(String name) {
-        return new TitanGraphIndexWrapper(getInternalGraphIndex(name,transaction));
+        IndexType index = getGraphIndexDirect(name, transaction);
+        return index==null?null:new TitanGraphIndexWrapper(index);
     }
 
     @Override
@@ -344,8 +351,28 @@ public class ManagementSystem implements TitanManagement {
         Parameter[] extendedParas = new Parameter[parameters.length+1];
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
         extendedParas[parameters.length]=ParameterType.STATUS.getParameter(SchemaStatus.ENABLED);
-        addSchemaEdge(indexVertex,key,TypeDefinitionCategory.INDEX_FIELD,extendedParas);
+        addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
+        try {
+            IndexSerializer.register((ExternalIndexType) indexType,key,transaction.getTxHandle());
+        } catch (StorageException e) {
+            throw new TitanException("Could not register new index field with index backend",e);
+        }
+
         //TODO: it is possible to have a race condition here if two threads add the same field at the same time
+    }
+
+    private class IndexRegistration {
+        private final ExternalIndexType index;
+        private final TitanKey key;
+
+        private IndexRegistration(ExternalIndexType index, TitanKey key) {
+            this.index = index;
+            this.key = key;
+        }
+
+        private void register() throws StorageException {
+
+        }
     }
 
     @Override

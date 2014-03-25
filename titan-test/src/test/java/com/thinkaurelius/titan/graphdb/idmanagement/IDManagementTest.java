@@ -117,32 +117,32 @@ public class IDManagementTest {
         for (int t = 0; t < trails; t++) {
             long count = RandomGenerator.randomLong(1, eid.getRelationTypeCountBound());
             long id;
-            int dirID;
+            IDHandler.DirectionID dirID;
             RelationCategory type;
             if (Math.random() < 0.5) {
                 id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
                 assertTrue(isp.isEdgeLabelId(id));
                 type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
-                    dirID = IDHandler.EDGE_IN_DIR;
+                    dirID = IDHandler.DirectionID.EDGE_IN_DIR;
                 else
-                    dirID = IDHandler.EDGE_OUT_DIR;
+                    dirID = IDHandler.DirectionID.EDGE_OUT_DIR;
             } else {
                 type = RelationCategory.PROPERTY;
                 id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey,count);
                 assertTrue(isp.isPropertyKeyId(id));
-                dirID = IDHandler.PROPERTY_DIR;
+                dirID = IDHandler.DirectionID.PROPERTY_DIR;
             }
             assertTrue(isp.isRelationTypeId(id));
 
-            StaticBuffer b = IDHandler.getEdgeType(id, dirID);
+            StaticBuffer b = IDHandler.getEdgeType(id, dirID, false);
 //            System.out.println(dirID);
 //            System.out.println(getBinary(id));
 //            System.out.println(getBuffer(b.asReadBuffer()));
             ReadBuffer rb = b.asReadBuffer();
-            long[] vals = IDHandler.readEdgeType(rb);
-            assertEquals(id,vals[0]);
-            assertEquals(dirID, vals[1]);
+            IDHandler.EdgeTypeParse parse = IDHandler.readEdgeType(rb);
+            assertEquals(id,parse.typeId);
+            assertEquals(dirID, parse.dirID);
             assertFalse(rb.hasRemaining());
 
             //Inline edge type
@@ -153,7 +153,7 @@ public class IDManagementTest {
 
             //Compare to Kryo
             DataOutput out = serializer.getDataOutput(10);
-            IDHandler.writeEdgeType(out, id, dirID);
+            IDHandler.writeEdgeType(out, id, dirID, false);
             assertEquals(b, out.getStaticBuffer());
 
             //Make sure the bounds are right

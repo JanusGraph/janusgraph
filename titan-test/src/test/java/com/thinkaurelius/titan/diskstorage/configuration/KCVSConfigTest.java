@@ -4,7 +4,10 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import org.apache.commons.configuration.BaseConfiguration;
 
 /**
@@ -14,9 +17,19 @@ public class KCVSConfigTest extends WritableConfigurationTest {
 
     @Override
     public WriteConfiguration getConfig() {
-        KeyColumnValueStoreManager manager = new InMemoryStoreManager(Configuration.EMPTY);
+        final KeyColumnValueStoreManager manager = new InMemoryStoreManager(Configuration.EMPTY);
         try {
-            return new KCVSConfiguration(manager,"titan","general");
+            return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
+                @Override
+                public StoreTransaction openTx() throws StorageException {
+                    return manager.beginTransaction(StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig()));
+                }
+
+                @Override
+                public void close() throws StorageException {
+                    manager.close();
+                }
+            },manager.openDatabase("titan"),"general");
         } catch (StorageException e) {
             throw new RuntimeException(e);
         }

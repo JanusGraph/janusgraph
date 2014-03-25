@@ -172,9 +172,13 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     public void testBatchLoadingLocking(boolean batchloading) {
-        tx.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single(TypeMaker.UniquenessConsistency.LOCK).unique(TypeMaker.UniquenessConsistency.LOCK).make();
-        tx.makeLabel("knows").oneToOne(TypeMaker.UniquenessConsistency.LOCK).make();
-        newTx();
+        TitanKey uid = makeKey("uid",Long.class);
+        TitanGraphIndex uidIndex = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
+        mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
+        mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
+        TitanLabel knows = mgmt.makeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
+        mgmt.setConsistency(knows,ConsistencyModifier.LOCK);
+        finishSchema();
 
         TestLockerManager.ERROR_ON_LOCKING=true;
         clopen(option(GraphDatabaseConfiguration.STORAGE_BATCH),batchloading,
@@ -210,7 +214,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makeKey(prop).dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
+        graph.makeKey(prop).dataType(Integer.class).make();
 
         final int numV = 100;
         final long[] vids = new long[numV];

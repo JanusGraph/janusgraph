@@ -62,6 +62,11 @@ public class IndexSerializer {
         return externalIndexes.containsKey(indexName);
     }
 
+    public static void register(final ExternalIndexType index, final TitanKey key, final BackendTransaction tx) throws StorageException {
+        tx.getIndexTransactionHandle(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
+
+    }
+
 //    public boolean supports(final String indexName, final Class<?> dataType, final Parameter[] parameters) {
 //        IndexInformation indexinfo = indexes.get(indexName);
 //        Preconditions.checkArgument(indexinfo != null, "Index is unknown or not configured: %s", indexName);
@@ -519,7 +524,7 @@ public class IndexSerializer {
     ################################################### */
 
     private static final ExternalIndexType getExternalIndex(String indexName,StandardTitanTx transaction) {
-        IndexType index = ManagementSystem.getInternalGraphIndex(indexName,transaction);
+        IndexType index = ManagementSystem.getGraphIndexDirect(indexName, transaction);
         Preconditions.checkArgument(index.isExternalIndex());
         return (ExternalIndexType)index;
     }

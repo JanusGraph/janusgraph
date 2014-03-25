@@ -89,12 +89,12 @@ public class ConfigurationTest {
         try {
             userconfig.set("storage.bits",6);
         } catch (IllegalArgumentException e) {}
-        userconfig.set("storage.bits",6,"force");
+        userconfig.set("storage.bits",6);
         try {
             userconfig.set("storage.locktime",1221);
         } catch (IllegalArgumentException e) {}
         try {
-            userconfig.set("storage.locktime",1221,"force");
+            userconfig.set("storage.locktime",1221);
         } catch (IllegalArgumentException e) {}
         userconfig.set("indexes.find.name","lulu");
 

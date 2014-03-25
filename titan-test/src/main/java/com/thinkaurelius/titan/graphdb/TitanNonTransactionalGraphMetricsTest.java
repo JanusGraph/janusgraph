@@ -185,19 +185,22 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
 
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
+        TitanKey uid = makeKey("uid",String.class);
+        TitanGraphIndex index = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
+        mgmt.setConsistency(index,ConsistencyModifier.LOCK);
+        finishSchema();
+
         clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING), fastProperty);
         metricsPrefix = "metrics3"+fastProperty;
 
         TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
-        tx.makeKey("name").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        tx.makeKey("age").dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        tx.makeKey("uid").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
-                .unique(TypeMaker.UniquenessConsistency.LOCK).indexed(Vertex.class).make();
+        tx.makeKey("name").dataType(String.class).make();
+        tx.makeKey("age").dataType(Integer.class).make();
         TitanVertex v = tx.addVertex(null);
         ElementHelper.setProperties(v, "uid", "v1", "age", 25, "name", "john");
         tx.commit();
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 7l));
-        verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 4l));
+        verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 3l));
         verifyTypeCacheMetrics(0, 0, 0, 0);
 
         tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
