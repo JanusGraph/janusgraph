@@ -225,7 +225,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             if (store == null ) {
                 if( !this.config.getBoolean(SKIP_SCHEMA_CHECK,SKIP_SCHEMA_CHECK_DEFAULT))
-                    // ensure that CF exists only first time somebody tries to open it
                     ensureColumnFamilyExists(tableName, cfName);
 
                 store = newStore;
