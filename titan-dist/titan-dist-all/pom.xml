@@ -66,8 +66,8 @@
             <groupId>com.tinkerpop.blueprints</groupId>
             <artifactId>blueprints-sail-graph</artifactId>
             <version>${tinkerpop.version}</version>
-            <!-- temporary, due to a LinkedDataSail 1.0 dependency on Sesame 2.7.0-beta -->
             <exclusions>
+                <!-- temporary, due to a LinkedDataSail 1.0 dependency on Sesame 2.7.0-beta -->
                 <exclusion>
                     <groupId>org.openrdf.sesame</groupId>
                     <artifactId>sesame-model</artifactId>
@@ -75,6 +75,11 @@
                 <exclusion>
                     <groupId>org.openrdf.sesame</groupId>
                     <artifactId>sesame-rio-api</artifactId>
+                </exclusion>
+                <!-- conflict with Cassandra -->
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
