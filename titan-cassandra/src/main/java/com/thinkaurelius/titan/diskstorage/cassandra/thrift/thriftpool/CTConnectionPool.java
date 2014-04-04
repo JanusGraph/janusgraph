@@ -40,7 +40,7 @@ public class CTConnectionPool extends GenericKeyedObjectPool<String, CTConnectio
     }
 
     /**
-     * If {@code conn} is non-null, then call
+     * If {@code conn} is non-null and is still open, then call
      * {@link GenericKeyedObjectPool#returnObject(String, CTConnection),
      * catching and logging and Exception that method might generate. 
      * This method does not emit any exceptions.
@@ -49,7 +49,7 @@ public class CTConnectionPool extends GenericKeyedObjectPool<String, CTConnectio
      * @param conn The pooled object being returned, or null to do nothing
      */
     public void returnObjectUnsafe(String keyspace, CTConnection conn) {
-        if (conn != null) {
+        if (conn != null && conn.isOpen()) {
             try {
                 returnObject(keyspace, conn);
             } catch (Exception e) {
