@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
+import com.netflix.astyanax.connectionpool.Host;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.RetryBackoffStrategy;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
@@ -97,6 +100,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      */
     public static final String NODE_DISCOVERY_TYPE_DEFAULT = "RING_DESCRIBE";
     public static final String NODE_DISCOVERY_TYPE_KEY = "node-discovery-type";
+
+    /**
+     * Astyanax specific host supplier useful only when discovery type set to DISCOVERY_SERVICE or TOKEN_AWARE.
+     * Excepts fully qualified class name which extends google.common.base.Supplier<List<Host>>.
+     */
+    public static final String ASTYANAX_HOST_SUPPLIER_KEY= "host-supplier";
 
     /**
      * Astyanax's connection pooler implementation. This must be one of the
@@ -490,11 +499,22 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
         }
 
+        String hostSupplier = config.getString(ASTYANAX_HOST_SUPPLIER_KEY);
+        Supplier<List<Host>> supplier = null;
+        if (hostSupplier != null) {
+            try {
+                supplier = (Supplier<List<Host>>) Class.forName(hostSupplier).newInstance();
+            } catch (Exception e) {
+                log.warn("Problem with host supplier class " + hostSupplier + ", going to use default.", e);
+            }
+        }
+
         return new AstyanaxContext.Builder()
                         .forCluster(clusterName)
                         .forKeyspace(keySpaceName)
                         .withAstyanaxConfiguration(aconf)
                         .withConnectionPoolConfiguration(cpool)
+                        .withHostSupplier(supplier)
                         .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
     }
 
