@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -28,9 +29,15 @@ public class Mutation<E,K> {
         Preconditions.checkNotNull(additions);
         Preconditions.checkNotNull(deletions);
         if (additions.isEmpty()) this.additions=null;
-        else this.additions = additions;
+        else {
+            assert !(additions instanceof ImmutableCollection);
+            this.additions = additions;
+        }
         if (deletions.isEmpty()) this.deletions=null;
-        else this.deletions = deletions;
+        else {
+            assert !(deletions instanceof ImmutableCollection);
+            this.deletions = deletions;
+        }
     }
 
     public Mutation() {

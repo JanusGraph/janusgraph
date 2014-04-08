@@ -30,9 +30,9 @@ public class StandardSchemaCache implements SchemaCache {
 
     private static final int SCHEMAID_FORW_SHIFT = 4; //Number of bits at the end to append the id of the system type
     private static final int SCHEMAID_TOTALFORW_SHIFT = SCHEMAID_FORW_SHIFT +1; //Total number of bits appended - the 1 is for the 1 bit direction
-    private static final int SCHEMAID_BACK_SHIFT = 3; //Number of bits to remove from end of schema id since its just the padding
+    private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
     {
-        assert IDManager.VertexIDType.SchemaType.removePadding(1l<<SCHEMAID_BACK_SHIFT)==1;
+        assert IDManager.VertexIDType.Schema.removePadding(1l<<SCHEMAID_BACK_SHIFT)==1;
         assert SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET <= (1<< SCHEMAID_FORW_SHIFT);
         assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
     }
@@ -107,7 +107,7 @@ public class StandardSchemaCache implements SchemaCache {
     @Override
     public EntryList getTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
         assert IDManager.getRelationTypeIdCount(type.getID())<SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET;
-        Preconditions.checkArgument(IDManager.VertexIDType.SchemaType.is(schemaId));
+        Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
 
         int edgeDir = EdgeDirection.position(dir);

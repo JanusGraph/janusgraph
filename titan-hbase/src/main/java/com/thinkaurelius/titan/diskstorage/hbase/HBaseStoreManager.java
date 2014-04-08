@@ -83,14 +83,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final boolean shortCfNames;
     private static final BiMap<String, String> shortCfNameMap =
             ImmutableBiMap.<String, String>builder()
-                    .put(VERTEXINDEX_STORE_NAME, "v")
+                    .put(INDEXSTORE_NAME, "v")
                     .put(ID_STORE_NAME, "i")
                     .put(EDGESTORE_NAME, "s")
-                    .put(EDGEINDEX_STORE_NAME, "e")
-                    .put(VERTEXINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "w")
+                    .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "w")
                     .put(ID_STORE_NAME + LOCK_STORE_SUFFIX, "j")
                     .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "t")
-                    .put(EDGEINDEX_STORE_NAME + LOCK_STORE_SUFFIX, "f")
                     .build();
 
     private static final StaticBuffer FOUR_ZERO_BYTES = BufferUtil.zeroBuffer(4);

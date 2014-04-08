@@ -23,6 +23,11 @@ public enum ElementCategory {
         }
     }
 
+    public boolean isInstance(Element element) {
+        Preconditions.checkNotNull(element);
+        return getElementType().isAssignableFrom(element.getClass());
+    }
+
     public boolean subsumedBy(Class<? extends Element> clazz) {
         return clazz.isAssignableFrom(getElementType());
     }

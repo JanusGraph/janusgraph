@@ -17,7 +17,7 @@ public class IDManager {
      *      0 - * Normal (user created) Vertex
      *      1 - + Hidden
      *     11 -     * Hidden (user created/triggered) Vertex [for later]
-     *     01 -     Schema related vertices
+     *     01 -     + Schema related vertices
      *    101 -         + Schema Type vertices
      *   0101 -             + Relation Type vertices
      *  00101 -                 * Property Key
@@ -80,7 +80,22 @@ public class IDManager {
                 return true;
             }
         },
+        Schema {
+            @Override
+            final long offset() {
+                return 2l;
+            }
 
+            @Override
+            final long suffix() {
+                return 1l;
+            } // 01b
+
+            @Override
+            final boolean isProper() {
+                return false;
+            }
+        },
         SchemaType {
             @Override
             final long offset() {
@@ -296,13 +311,13 @@ public class IDManager {
      */
 
     private static long getSchemaIdBound(VertexIDType type) {
-        assert VertexIDType.SchemaType.isSubType(type) : "Expected schema type but got: " + type;
+        assert VertexIDType.Schema.isSubType(type) : "Expected schema type but got: " + type;
         assert TYPE_LEN_RESERVE>0;
         return (1l << (TOTAL_BITS - type.offset() - TYPE_LEN_RESERVE));
     }
 
     private static void checkSchemaTypeId(VertexIDType type, long count) {
-        Preconditions.checkArgument(VertexIDType.SchemaType.is(type.suffix()),"Expected schema type but got: %s",type);
+        Preconditions.checkArgument(VertexIDType.Schema.is(type.suffix()),"Expected schema vertex but got: %s",type);
         Preconditions.checkArgument(type.isProper(),"Expected proper type but got: %s",type);
         long idBound = getSchemaIdBound(type);
         Preconditions.checkArgument(count > 0 && count < idBound,
@@ -346,7 +361,7 @@ public class IDManager {
 
 
     public long getPartitionId(long id) {
-        Preconditions.checkArgument(!VertexIDType.SchemaType.is(id), "Types don't have a partition: %s", id);
+        Preconditions.checkArgument(!VertexIDType.Schema.is(id), "Schema vertices don't have a partition: %s", id);
         return (id >>> partitionOffset);
     }
 
@@ -355,6 +370,11 @@ public class IDManager {
     }
 
     private final IDInspector inspector = new IDInspector() {
+
+        @Override
+        public final boolean isSchemaVertexId(long id) {
+            return VertexIDType.Schema.is(id);
+        }
 
         @Override
         public final boolean isRelationTypeId(long id) {

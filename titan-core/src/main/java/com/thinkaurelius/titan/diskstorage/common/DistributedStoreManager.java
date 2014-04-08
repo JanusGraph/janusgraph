@@ -1,22 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.management.ManagementFactory;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.util.Random;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -52,8 +45,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
     private static final Random random = new Random();
 
-    protected final byte[] rid;
-
     protected final String[] hostnames;
     protected final int port;
     protected final int connectionTimeout;
@@ -69,7 +60,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
         else this.port = portDefault;
-        this.rid = getRid(storageConfig);
         this.connectionTimeout = storageConfig.get(CONNECTION_TIMEOUT);
         this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
@@ -154,9 +144,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @param config commons config from which to read Rid-related keys
      * @return A byte array which should uniquely identify this machine
      */
-    public static byte[] getRid(Configuration config) {
-        return config.get(UNIQUE_GRAPH_ID).getBytes();
-
+//    public static byte[] getRid(Configuration config) {
+//        Preconditions.checkArgument(config.has(UNIQUE_INSTANCE_ID));
+//        return config.get(UNIQUE_INSTANCE_ID).getBytes();
+//
 //        byte tentativeRid[] = null;
 //
 //        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
@@ -207,7 +198,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //        }
 //
 //        return tentativeRid;
-    }
+//    }
 
     /**
      * Returns the {@link Timestamp} for a particular transaction

@@ -318,7 +318,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public InternalVertex get(Long vertexid) {
             Preconditions.checkNotNull(vertexid);
             Preconditions.checkArgument(vertexid > 0);
-            Preconditions.checkArgument(idInspector.isRelationTypeId(vertexid) || idInspector.isVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
+            Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
 
             byte lifecycle = ElementLifeCycle.Loaded;
             if (verifyExistence) {

@@ -230,7 +230,7 @@ public class ManagementSystem implements TitanManagement {
         assert def.isEdge();
         TitanEdge edge = transaction.addEdge(out,in, SystemLabel.TypeDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
-        edge.setProperty(SystemKey.TypeDefinitionDesc,def);
+        edge.setProperty(SystemKey.TypeDefinitionDesc,desc);
         return edge;
     }
 

@@ -136,10 +136,10 @@ public class QueryUtil {
             Object value = atom.getValue();
             TitanPredicate predicate = atom.getPredicate();
 
-            assert predicate.isValidCondition(value);
 
             if (type.isPropertyKey()) {
                 TitanKey key = (TitanKey) type;
+                assert predicate.isValidCondition(value);
                 Preconditions.checkArgument(key.getDataType()==Object.class || predicate.isValidValueType(key.getDataType()), "Data type of key is not compatible with condition");
             } else { //its a label
                 Preconditions.checkArgument(((TitanLabel) type).isUnidirected());

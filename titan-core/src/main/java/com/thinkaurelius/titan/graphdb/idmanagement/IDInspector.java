@@ -7,6 +7,8 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
  */
 public interface IDInspector {
 
+    public boolean isSchemaVertexId(long id);
+
     public boolean isRelationTypeId(long id);
 
     public boolean isEdgeLabelId(long id);

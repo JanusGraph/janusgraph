@@ -71,9 +71,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final IDManager idManager;
     private final VertexIDAssigner idAssigner;
 
-    private final int maxWriteRetryAttempts;
-    private final int retryStorageWaitTime;
-
     //Serializers
     protected final IndexSerializer indexSerializer;
     protected final EdgeSerializer edgeSerializer;
@@ -96,8 +93,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
         this.backend = configuration.getBackend();
-        this.maxWriteRetryAttempts = config.getWriteAttempts();
-        this.retryStorageWaitTime = config.getStorageWaittime();
 
         this.idAssigner = config.getIDAssigner(backend);
         this.idManager = idAssigner.getIDManager();
@@ -173,9 +168,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return serializer;
     }
 
-    public RelationQueryCache getQueryCache() {
-        return queryCache;
-    }
+    //TODO: premature optimization, re-evaluate later
+//    public RelationQueryCache getQueryCache() {
+//        return queryCache;
+//    }
 
     public SchemaCache getSchemaCache() {
         return schemaCache;
@@ -415,9 +411,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (indexUpdate.isInternalIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
-                    mutator.mutateIndex(update.getKey(), ImmutableList.of(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
+                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
                 else
-                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, ImmutableList.of(update.getEntry().getColumn()));
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry().getColumn()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
                 IndexTransaction itx = mutator.getIndexTransactionHandle(update.getIndex().getBackingIndexName());

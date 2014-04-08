@@ -25,17 +25,6 @@ public class KryoSerializer {
 
     private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
 
-    private static final List<Class<? extends Object>> DEFAULT_REGISTRATIONS =
-            ImmutableList.of(
-            //General
-                    ArrayList.class, HashMap.class, Object.class,
-            //Titan specific
-                    TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanSchemaCategory.class,
-                    IndexType.class, IndexType[].class, Parameter.class, Parameter[].class,
-                    Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
-                    ConsistencyModifier.class, ParameterType.class, SchemaStatus.class
-            );
-
     public static final int KRYO_ID_OFFSET = 50;
 
     private final boolean registerRequired;
@@ -52,11 +41,11 @@ public class KryoSerializer {
     };
 
 
-    public KryoSerializer() {
+    public KryoSerializer(final List<Class<? extends Object>> defaultRegistrations) {
         this.registerRequired=false;
         this.registrations = new HashMap<Integer,TypeRegistration>();
 
-        for (Class clazz : DEFAULT_REGISTRATIONS) {
+        for (Class clazz : defaultRegistrations) {
             Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
             objectVerificationCache.put(clazz,Boolean.TRUE);
         }
@@ -66,8 +55,8 @@ public class KryoSerializer {
                 Kryo k = new Kryo();
                 k.setRegistrationRequired(registerRequired);
                 k.register(Class.class,new DefaultSerializers.ClassSerializer());
-                for (int i=0;i<DEFAULT_REGISTRATIONS.size();i++) {
-                    Class clazz = DEFAULT_REGISTRATIONS.get(i);
+                for (int i=0;i<defaultRegistrations.size();i++) {
+                    Class clazz = defaultRegistrations.get(i);
                     k.register(clazz, KRYO_ID_OFFSET + i);
                 }
                 return k;

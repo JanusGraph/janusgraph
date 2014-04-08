@@ -181,7 +181,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
 
         public Builder fromConfig(Configuration config) {
-            rid(new StaticArrayBuffer(DistributedStoreManager.getRid(config)));
+            rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID).getBytes()));
 
             final String llmPrefix = config.get(
                     ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX);

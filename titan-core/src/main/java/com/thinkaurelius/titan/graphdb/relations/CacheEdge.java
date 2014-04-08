@@ -81,13 +81,8 @@ public class CacheEdge extends AbstractEdge {
         if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setID(super.getID());
         u.setPreviousID(super.getID());
         copyProperties(u);
+        setID(u.getID());
         return u;
-    }
-
-    @Override
-    public long getID() {
-        InternalRelation it = it();
-        return (it == this) ? super.getID() : it.getID();
     }
 
     private RelationCache getPropertyMap() {

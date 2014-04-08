@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.types.system;
 
+import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -39,7 +40,7 @@ public abstract class EmptyType extends EmptyVertex implements InternalType {
 
     @Override
     public Iterable<InternalType> getRelationIndexes() {
-        return Collections.EMPTY_LIST;
+        return ImmutableSet.of((InternalType)this);
     }
 
     @Override

@@ -105,13 +105,13 @@ public final class RelationIdentifier {
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
         TitanType type = (TitanType)typeVertex;
-        Iterable<TitanRelation> rels;
+        Iterable<? extends TitanRelation> rels;
         if (((TitanType) typeVertex).isEdgeLabel()) {
             TitanVertex in = tx.getVertex(inVertexId);
             if (in==null) return null;
-            rels = v.query().types((TitanLabel)type).direction(Direction.OUT).adjacentVertex(in).relations();
+            rels = v.query().types((TitanLabel)type).direction(Direction.OUT).adjacentVertex(in).titanEdges();
         } else {
-            rels = v.query().types((TitanKey)type).relations();
+            rels = v.query().types((TitanKey)type).properties();
         }
 
         for (TitanRelation r : rels) {

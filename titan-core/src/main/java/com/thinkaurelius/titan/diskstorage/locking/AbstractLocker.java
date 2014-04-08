@@ -124,7 +124,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         protected Logger log;
 
         public Builder() {
-            this.rid = new StaticArrayBuffer(DistributedStoreManager.getRid(Configuration.EMPTY));
+            this.rid = null; //TODO: can we ensure that this is always set correctly? Check the AstyanaxRecipe
             this.times = Timestamps.NANO;
             this.serializer = new ConsistentKeyLockerSerializer();
             this.llm = null; // redundant, but it preserves this constructor's overall pattern

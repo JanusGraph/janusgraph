@@ -79,7 +79,6 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public void setID(long id) {
-        assert isTemporaryId(this.id);
         assert id > 0;
         this.id=id;
     }

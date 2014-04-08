@@ -171,9 +171,11 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
         And<TitanElement> conditions = QueryUtil.constraints2QNF(tx, constraints);
         if (conditions == null) return GraphCentricQuery.emptyQuery(resultType);
 
+        //Prepare orders
         orders.makeImmutable();
         if (orders.isEmpty()) orders = OrderList.NO_ORDER;
 
+        //Compile all indexes that cover at least one of the query conditions
         final Set<IndexType> indexCandidates = new HashSet<IndexType>();
         ConditionUtil.traversal(conditions,new Predicate<Condition<TitanElement>>() {
             @Override
@@ -192,6 +194,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
             }
         });
 
+        /*
+        Determine the best join index query to answer this query:
+        Iterate over all potential indexes (as compiled above) and compute a score based on how many clauses
+        this index covers. The index with the highest score (as long as it covers at least one additional clause)
+        is picked and added to the joint query for as long as such exist.
+         */
         JointIndexQuery jointQuery = new JointIndexQuery();
         boolean isSorted=false;
         Set<Condition> coveredClauses = Sets.newHashSet();
@@ -216,17 +224,19 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
                 if (subcover.isEmpty()) continue;
                 assert subcondition!=null;
                 double score = 0.0;
+                boolean coversAdditionalClause = false;
                 for (Condition c : subcover) {
                     double s = (c instanceof PredicateCondition && ((PredicateCondition)c).getPredicate()==Cmp.EQUAL)?
                             EQUAL_CONDITION_SCORE:OTHER_CONDITION_SCORE;
                     if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
+                    else coversAdditionalClause = true;
                     score+=s;
                     if (index.isInternalIndex())
                         score+=((InternalIndexType)index).getCardinality()==Cardinality.SINGLE?
                                 CARDINALITY_SINGE_SCORE:CARDINALITY_OTHER_SCORE;
                 }
                 if (supportsSort) score+=ORDER_MATCH;
-                if (score>candidateScore) {
+                if (coversAdditionalClause && score>candidateScore) {
                     candidateScore=score;
                     bestCandidate=index;
                     candidateSubcover = subcover;
@@ -252,7 +262,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
                     if they would result in an individual index call (better to filter afterwards in memory)
             - move OR's up and extend GraphCentricQuery to allow multiple JointIndexQuery for proper or'ing of queries
             */
-
         }
 
         BackendQueryHolder<JointIndexQuery> query;
@@ -286,7 +295,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
             IndexField field = fields[i];
             for (Condition<TitanElement> subclause : condition.getChildren()) {
                 if (subclause instanceof PredicateCondition) {
-                    PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) condition;
+                    PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) subclause;
                     if (atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null && atom.getKey().equals(field.getFieldKey())) {
                         indexCover[i]=atom.getValue();
                         coveredClauses[i]=subclause;

@@ -9,6 +9,8 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+
 
 /**
  * Base Class for {@link IDAuthority} implementations.
@@ -37,7 +39,7 @@ public abstract class AbstractIDManager implements IDAuthority {
     private volatile boolean isActive;
 
     public AbstractIDManager(Configuration config) {
-        this.rid = DistributedStoreManager.getRid(config);
+        this.rid = config.get(UNIQUE_INSTANCE_ID).getBytes();
 
         this.isActive = false;
 

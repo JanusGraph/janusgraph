@@ -1,22 +1,37 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.tinkerpop.blueprints.Direction;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class StandardAttributeHandling implements AttributeHandling {
+
+    public static final List<Class<? extends Object>> DEFAULT_REGISTRATIONS =
+            ImmutableList.of(
+                    //General
+                    ArrayList.class, HashMap.class, Object.class,
+                    //Titan specific
+                    TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanSchemaCategory.class,
+                    Parameter.class, Parameter[].class, ParameterType.class,
+                    Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
+                    ConsistencyModifier.class, SchemaStatus.class
+            );
 
     private final Map<Class,AttributeHandler> handlers;
 

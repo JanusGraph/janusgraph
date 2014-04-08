@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
@@ -32,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
 
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.slf4j.Logger;
@@ -140,7 +137,7 @@ public class GraphDatabaseConfiguration {
             "Whether transaction mutations should be logged to Titan's system log",
             ConfigOption.Type.GLOBAL, true);
 
-    public static final ConfigOption<String> UNIQUE_GRAPH_ID = new ConfigOption<String>(TITAN_NS,"unique-graph-id",
+    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(TITAN_NS,"unique-instance-id",
             "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
 
     // ################ INSTANCE REGISTRATION #######################
@@ -336,9 +333,9 @@ public class GraphDatabaseConfiguration {
      * A unique identifier for the machine running the TitanGraph instance.
      * It must be ensured that no other machine accessing the storage backend can have the same identifier.
      */
-    public static final ConfigOption<String> INSTANCE_RID_RAW = new ConfigOption<String>(STORAGE_NS,"machine-id",
-            "A unique identifier for the machine running the TitanGraph instance",
-            ConfigOption.Type.LOCAL, String.class);
+//    public static final ConfigOption<String> INSTANCE_RID_RAW = new ConfigOption<String>(STORAGE_NS,"machine-id",
+//            "A unique identifier for the machine running the TitanGraph instance",
+//            ConfigOption.Type.LOCAL, String.class);
 //    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
 
 
@@ -1125,7 +1122,7 @@ public class GraphDatabaseConfiguration {
         Preconditions.checkNotNull(localConfig);
 
         BasicConfiguration localbc = new BasicConfiguration(TITAN_NS,localConfig, BasicConfiguration.Restriction.NONE);
-        ModifiableConfiguration overwrite = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.LOCAL);
+        ModifiableConfiguration overwrite = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
@@ -1160,9 +1157,14 @@ public class GraphDatabaseConfiguration {
             if (kcvsConfig!=null) kcvsConfig.close();
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
-        this.uniqueGraphId = getUniqueGraphId(combinedConfig);
-        log.info("Setting unique graph id: {}",uniqueGraphId);
-        overwrite.set(UNIQUE_GRAPH_ID,uniqueGraphId);
+
+        if (!combinedConfig.has(UNIQUE_INSTANCE_ID)) {
+            this.uniqueGraphId = computeUniqueInstanceId(combinedConfig);
+            log.info("Setting unique instance id: {}",uniqueGraphId);
+            overwrite.set(UNIQUE_INSTANCE_ID,uniqueGraphId);
+        } else {
+            this.uniqueGraphId = combinedConfig.get(UNIQUE_INSTANCE_ID);
+        }
 
         this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();
@@ -1170,27 +1172,23 @@ public class GraphDatabaseConfiguration {
 
     private static final AtomicLong INSTANCE_COUNTER = new AtomicLong(0);
 
-    private static String getUniqueGraphId(Configuration config) {
-        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
-            return config.get(INSTANCE_RID_RAW);
+    private static String computeUniqueInstanceId(Configuration config) {
+        final String suffix;
+
+        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
+            suffix = LongEncoding.encode(config.get(
+                    GraphDatabaseConfiguration.INSTANCE_RID_SHORT));
         } else {
-            final String suffix;
-
-            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
-                suffix = LongEncoding.encode(config.get(
-                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT));
-            } else {
-                suffix = ManagementFactory.getRuntimeMXBean().getName() + LongEncoding.encode(INSTANCE_COUNTER.incrementAndGet());
-            }
-
-            byte[] addrBytes;
-            try {
-                addrBytes = Inet4Address.getLocalHost().getAddress();
-            } catch (UnknownHostException e) {
-                throw new TitanConfigurationException("Cannot determine local host", e);
-            }
-            return new String(Hex.encodeHex(addrBytes)) + suffix;
+            suffix = ManagementFactory.getRuntimeMXBean().getName() + LongEncoding.encode(INSTANCE_COUNTER.incrementAndGet());
         }
+
+        byte[] addrBytes;
+        try {
+            addrBytes = Inet4Address.getLocalHost().getAddress();
+        } catch (UnknownHostException e) {
+            throw new TitanConfigurationException("Cannot determine local host", e);
+        }
+        return new String(Hex.encodeHex(addrBytes)) + suffix;
     }
 
     public static final ModifiableConfiguration buildConfiguration() {

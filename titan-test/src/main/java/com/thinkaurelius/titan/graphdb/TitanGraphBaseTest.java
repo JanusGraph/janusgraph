@@ -32,8 +32,6 @@ public abstract class TitanGraphBaseTest {
     public TitanGraphBaseTest() {
     }
 
-
-
     public abstract WriteConfiguration getConfiguration();
 
     @Before
@@ -42,6 +40,7 @@ public abstract class TitanGraphBaseTest {
         Preconditions.checkNotNull(config);
         ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.copy(), BasicConfiguration.Restriction.NONE);
         configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
         Backend backend = new Backend(configuration);
         backend.initialize(configuration);
         backend.clearStorage();

@@ -223,6 +223,7 @@ public class IndexSerializer {
             if (!(type instanceof TitanKey)) continue;
             TitanKey key = (TitanKey)type;
             for (IndexType index : ((InternalType)key).getKeyIndexes()) {
+                if (!index.getElement().isInstance(relation)) continue;
                 if (index instanceof InternalIndexType) {
                     InternalIndexType iIndex= (InternalIndexType) index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -249,6 +250,7 @@ public class IndexSerializer {
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             IndexUpdate.Type updateType = getUpateType(rel);
             for (IndexType index : ((InternalType)p.getPropertyKey()).getKeyIndexes()) {
+                if (index.getElement()!=ElementCategory.VERTEX) continue;
                 if (index.isInternalIndex()) { //Gather internal indexes
                     InternalIndexType iIndex = (InternalIndexType)index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -387,6 +389,7 @@ public class IndexSerializer {
                         results.add(bytebuffer2RelationId(entryValue));
                 }
             }
+            boolean hasCardinalitySize = ((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1;
             Preconditions.checkArgument(((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1);
             return results;
         } else {
@@ -573,8 +576,12 @@ public class IndexSerializer {
             IndexField f = fields[i];
             Object value = values[i];
             Preconditions.checkNotNull(value);
-            if (AttributeUtil.hasGenericDataType(f.getFieldKey())) out.writeClassAndObject(value);
-            else out.writeObjectNotNull(value);
+            if (AttributeUtil.hasGenericDataType(f.getFieldKey())) {
+                out.writeClassAndObject(value);
+            } else {
+                assert value.getClass().equals(f.getFieldKey().getDataType());
+                out.writeObjectNotNull(value);
+            }
         }
         VariableLong.writePositiveBackward(out, index.getID());
         return out.getStaticBuffer();

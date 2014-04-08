@@ -23,7 +23,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     private final List<Subquery> queries;
 
     private JointIndexQuery(List<Subquery> queries) {
-        Preconditions.checkArgument(queries!=null && !queries.isEmpty());
+        Preconditions.checkArgument(queries!=null);
         this.queries = queries;
     }
 

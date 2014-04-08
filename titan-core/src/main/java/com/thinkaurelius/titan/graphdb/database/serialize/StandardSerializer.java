@@ -18,7 +18,7 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     private final KryoSerializer backupSerializer;
 
     public StandardSerializer(boolean allowCustomSerialization) {
-        if (allowCustomSerialization) backupSerializer = new KryoSerializer();
+        if (allowCustomSerialization) backupSerializer = new KryoSerializer(DEFAULT_REGISTRATIONS);
         else backupSerializer = null;
     }
 

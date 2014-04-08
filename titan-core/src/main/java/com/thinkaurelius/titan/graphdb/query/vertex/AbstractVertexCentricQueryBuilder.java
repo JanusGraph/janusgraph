@@ -147,7 +147,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
     }
 
     private AbstractVertexCentricQueryBuilder types(String... types) {
-        Preconditions.checkArgument(types!=null && types.length>0);
+        Preconditions.checkArgument(types!=null);
         for (String type : types) Preconditions.checkArgument(StringUtils.isNotBlank(type),"Invalid type: %s",type);
         this.types=types;
         return this;
@@ -216,7 +216,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
             dir = Direction.OUT;
         }
 
-        assert getVertexConstraint() == null || returnType == RelationCategory.EDGE;
+        Preconditions.checkArgument(getVertexConstraint() == null || returnType == RelationCategory.EDGE,"Vertex constraints only apply to edges");
 
         //Prepare constraints
         And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
@@ -231,7 +231,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
         EdgeSerializer serializer = tx.getEdgeSerializer();
         List<BackendQueryHolder<SliceQuery>> queries;
         if (!hasTypes()) {
-            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(tx.getGraph().getQueryCache().getQuery(returnType),
+            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                     ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
                             && !conditions.hasChildren()), true, null);
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
@@ -246,7 +246,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
             Set<TitanType> ts = new HashSet<TitanType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
             Map<TitanType,ProperInterval> intervalConstraints = new HashMap<TitanType, ProperInterval>(conditions.size());
-            final boolean isIntervalFittedConditions = compileConstraints(intervalConstraints);
+            final boolean isIntervalFittedConditions = compileConstraints(conditions,intervalConstraints);
             for (ProperInterval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
             }
@@ -333,11 +333,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
                     boolean isFitted = isIntervalFittedConditions && coveredTypes==intervalConstraints.size()
                             && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
                     SliceQuery q;
-                    if (emptySortConstraints(sortConstraints) && vertexCon==null) {
-                        q = tx.getGraph().getQueryCache().getQuery(bestCandidate,dir);
-                    } else {
-                        q = serializer.getQuery(bestCandidate, dir, sortConstraints, vertexCon);
-                    }
+                    q = serializer.getQuery(bestCandidate, dir, sortConstraints, vertexCon);
                     q.setLimit(computeLimit(intervalConstraints.size()-coveredTypes, sliceLimit));
                     queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, null));
                 }
@@ -357,17 +353,19 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
     }
 
 
-    private boolean compileConstraints(Map<TitanType,ProperInterval> constraintMap) {
+    private boolean compileConstraints(And<TitanRelation> conditions, Map<TitanType,ProperInterval> constraintMap) {
         boolean isFitted = true;
-        for (PredicateCondition<String, TitanRelation> atom : constraints) {
-            TitanType type = QueryUtil.getType(tx,atom.getKey());
+        for (Condition<TitanRelation> condition : conditions.getChildren()) {
+            if (!(condition instanceof PredicateCondition)) continue; //TODO: Should we optimize OR clauses?
+            PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition)condition;
+            TitanType type = atom.getKey();
             assert type!=null;
             ProperInterval pi = constraintMap.get(type);
             if (pi==null) {
                 pi = new ProperInterval();
                 constraintMap.put(type,pi);
             }
-            boolean fittedSub = compileConstraint(pi,QueryUtil.getType(tx,atom.getKey()),atom.getPredicate(),atom.getValue());
+            boolean fittedSub = compileConstraint(pi,type,atom.getPredicate(),atom.getValue());
             isFitted = isFitted && fittedSub;
         }
         return isFitted;
@@ -412,37 +410,6 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
                         pint.setStartInclusive(true);
                     }
                     return true;
-                default: throw new AssertionError();
-            }
-        } else if (predicate instanceof Contain) {
-            Collection values = (Collection) value;
-            switch((Contain)predicate) {
-                case IN:
-                    if (values.isEmpty()) return false;
-                    if (values.size() == 1)
-                        return compileConstraint(pint, type, Cmp.EQUAL, values.iterator().next());
-
-                    if (isIntervalType(type)) {
-                        Comparable smallest=null, largest=null;
-                        for (Object v : values) {
-                            if (smallest == null) {
-                                smallest = (Comparable) v;
-                                largest = (Comparable) v;
-                            } else {
-                                if (smallest.compareTo(v) > 0) {
-                                    smallest = (Comparable) v;
-                                } else if (largest.compareTo(v) < 0) {
-                                    largest = (Comparable) v;
-                                }
-                            }
-                        }
-                        assert smallest!=null && largest!=null;
-                        compileConstraint(pint,type,Cmp.GREATER_THAN_EQUAL,smallest);
-                        compileConstraint(pint,type,Cmp.LESS_THAN_EQUAL,largest);
-                    }
-                    return false;
-                case NOT_IN:
-                    return values.isEmpty();
                 default: throw new AssertionError();
             }
         } else return false;

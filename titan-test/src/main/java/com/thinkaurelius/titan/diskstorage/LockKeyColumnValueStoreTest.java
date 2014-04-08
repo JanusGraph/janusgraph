@@ -95,7 +95,7 @@ public abstract class LockKeyColumnValueStoreTest {
 
             ModifiableConfiguration sc = GraphDatabaseConfiguration.buildConfiguration();
             sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
-            sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
+            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
             sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, EXPIRE_MS);
 

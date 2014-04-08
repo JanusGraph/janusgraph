@@ -220,7 +220,7 @@ public class EdgeSerializer implements RelationReader {
         Multiplicity multiplicity = type.getMultiplicity();
 
         long[] sortKey = type.getSortKey();
-        assert sortKey.length>0 ^ multiplicity.isConstrained();
+        assert !multiplicity.isConstrained() || sortKey.length==0: type.getName();
         int keyStartPos = out.getPosition();
         if (!multiplicity.isConstrained()) {
             writeInlineTypes(sortKey, relation, out, tx);
@@ -326,6 +326,7 @@ public class EdgeSerializer implements RelationReader {
         if (AttributeUtil.hasGenericDataType(key)) {
             out.writeClassAndObject(value);
         } else {
+            assert value==null || value.getClass().equals(key.getDataType());
             out.writeObject(value, key.getDataType());
         }
     }
@@ -364,7 +365,7 @@ public class EdgeSerializer implements RelationReader {
             int startPosition = colStart.getPosition();
             int i;
             boolean wroteInterval = false;
-            Preconditions.checkArgument(sortKey.length>0 ^ type.getMultiplicity().isConstrained(),"Cannot use sort key with constrained types");
+            Preconditions.checkArgument(!type.getMultiplicity().isConstrained() || sortKey.length==0,"Cannot use sort key with constrained types");
             for (i = 0; i < sortKeyIDs.length && sortKey[i] != null; i++) {
                 TitanType t = sortKey[i].type;
                 Interval interval = sortKey[i].interval;

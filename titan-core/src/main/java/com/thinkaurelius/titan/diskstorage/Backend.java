@@ -4,7 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
@@ -29,9 +28,7 @@ import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
-import com.thinkaurelius.titan.graphdb.database.indexing.StandardIndexInformation;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 
@@ -106,9 +103,8 @@ public class Backend {
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
 
-    private final LogManager logManager;
-    private Log txLog;
-    private Log sysLog;
+    private final LogManager mgmtLogManager;
+    private final LogManager txLogManager;
 
 
     private final Map<String, IndexProvider> indexes;
@@ -134,7 +130,8 @@ public class Backend {
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
-        logManager = new KCVSLogManager(storeManager,configuration.get(UNIQUE_GRAPH_ID),configuration);
+        mgmtLogManager = new KCVSLogManager(storeManager,configuration.get(UNIQUE_INSTANCE_ID),configuration.restrictTo(MANAGEMENT_LOG));
+        txLogManager = new KCVSLogManager(storeManager,configuration.get(UNIQUE_INSTANCE_ID),configuration.restrictTo(TRANSACTION_LOG));
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
 
@@ -284,8 +281,10 @@ public class Backend {
                 indexStore = new NoKCVSCache(indexStore);
             }
 
-            txLog = logManager.openLog(SYSTEM_TX_LOG_NAME, ReadMarker.fromNow());
-            sysLog = logManager.openLog(SYSTEM_MGMT_LOG_NAME, ReadMarker.fromNow());
+            //Just open them so that they are cached
+            txLogManager.openLog(SYSTEM_TX_LOG_NAME, ReadMarker.fromNow());
+            mgmtLogManager.openLog(SYSTEM_MGMT_LOG_NAME, ReadMarker.fromNow());
+
 
             KeyColumnValueStore systemConfigStore = getLockStore(getStore(SYSTEM_PROPERTIES_STORE_NAME));
             systemConfig = new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
@@ -336,11 +335,20 @@ public class Backend {
     }
 
     public Log getSystemTxLog() {
-        return txLog;
+        try {
+            return txLogManager.openLog(SYSTEM_TX_LOG_NAME, ReadMarker.fromNow());
+        } catch (StorageException e) {
+            throw new TitanException("Could not re-open transaction log", e);
+        }
     }
 
     public Log getSystemMgmtLog() {
-        return sysLog;
+        try {
+            return mgmtLogManager.openLog(SYSTEM_MGMT_LOG_NAME, ReadMarker.fromNow());
+        } catch (StorageException e) {
+            throw new TitanException("Could not re-open management log", e);
+        }
+
     }
 
     public KCVSConfiguration getSystemConfig() {
@@ -349,7 +357,7 @@ public class Backend {
 
     public Log getTransactionLog(String identifier) throws StorageException {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
-        return logManager.openLog(TX_LOG_PREFIX+identifier,ReadMarker.fromNow());
+        return txLogManager.openLog(TX_LOG_PREFIX+identifier,ReadMarker.fromNow());
     }
 
     private String getMetricsStoreName(String storeName) {
@@ -487,9 +495,8 @@ public class Backend {
     }
 
     public void close() throws StorageException {
-        txLog.close();
-        sysLog.close();
-        logManager.close();
+        mgmtLogManager.close();
+        txLogManager.close();
 
         edgeStore.close();
         indexStore.close();
@@ -511,9 +518,8 @@ public class Backend {
      * @throws StorageException
      */
     public void clearStorage() throws StorageException {
-        txLog.close();
-        sysLog.close();
-        logManager.close();
+        mgmtLogManager.close();
+        txLogManager.close();
 
         edgeStore.close();
         indexStore.close();

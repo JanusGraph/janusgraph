@@ -49,29 +49,31 @@ public abstract class IDAllocationTest {
     public static Collection<Object[]> configs() {
         List<Object[]> configurations = new ArrayList<Object[]>();
 
-        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
-        c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
-        c.set(IDAUTHORITY_WAIT_MS,100);
-        c.set(IDS_BLOCK_SIZE,400);
+        ModifiableConfiguration c = getBasicConfig();
         configurations.add(new Object[]{c.getConfiguration()});
 
-        c = GraphDatabaseConfiguration.buildConfiguration();
-        c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
-        c.set(IDAUTHORITY_WAIT_MS,100);
+        c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUE_ID_BITS,9);
         c.set(IDAUTHORITY_UNIQUE_ID,511);
-        c.set(IDS_BLOCK_SIZE,400);
         configurations.add(new Object[]{c.getConfiguration()});
 
-        c = GraphDatabaseConfiguration.buildConfiguration();
+        c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
         c.set(IDAUTHORITY_WAIT_MS,10);
         c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
         c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
-        c.set(IDS_BLOCK_SIZE,400);
         configurations.add(new Object[]{c.getConfiguration()});
 
         return configurations;
+    }
+
+    public static ModifiableConfiguration getBasicConfig() {
+        ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
+        c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
+        c.set(IDAUTHORITY_WAIT_MS,100);
+        c.set(IDS_BLOCK_SIZE,400);
+        c.set(UNIQUE_INSTANCE_ID,"inst");
+        return c;
     }
 
     public KeyColumnValueStoreManager[] manager;
