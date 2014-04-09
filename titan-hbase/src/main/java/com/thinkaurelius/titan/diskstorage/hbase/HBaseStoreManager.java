@@ -57,7 +57,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
 
-    public static final String SKIP_SCHEMA_CHECK = "skip-table-creation";
+    public static final String SKIP_SCHEMA_CHECK = "skip-schema-check";
     public static final boolean SKIP_SCHEMA_CHECK_DEFAULT = false;
 
     public static final ImmutableMap<String, String> HBASE_CONFIGURATION;
