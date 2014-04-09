@@ -533,6 +533,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             try {
                 final int timeslice = getTimeSlice(nextTimestamp);
                 long maxTime = Math.min(Timestamps.MICRO.getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
+                // maxTime must be at least nextTimestamp, or else we will have a slice start after slice end
+                maxTime = Math.max(maxTime, nextTimestamp);
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
                 KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
                 query.setLimit(maxReadMsg);
