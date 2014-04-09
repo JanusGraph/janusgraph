@@ -272,10 +272,24 @@ public class LuceneIndex implements IndexProvider {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
             if (searcher == null) return ImmutableList.of(); //Index does not yet exist
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
+            int nDocs;
+            if (query.hasLimit()) {
+                if (query.hasOffset()) {
+                    long tmp = query.getOffset() + query.getLimit();
+                    long max = Integer.MAX_VALUE - 1;
+                    nDocs = (int) Math.min(max, tmp);
+                }
+                else {
+                    nDocs = query.getLimit();
+                }
+            }
+            else {
+                nDocs = Integer.MAX_VALUE - 1;
+            }
+            TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, nDocs, getSortOrder(query));
             log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
-            List<String> result = new ArrayList<String>(docs.scoreDocs.length);
-            for (int i = 0; i < docs.scoreDocs.length; i++) {
+            List<String> result = new ArrayList<String>(Math.max(0, docs.scoreDocs.length - query.getOffset()));
+            for (int i = query.getOffset(); i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
             }
             return result;
@@ -396,10 +410,24 @@ public class LuceneIndex implements IndexProvider {
             if (searcher == null) return ImmutableList.of(); //Index does not yet exist
 
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1);
+            int nDocs;
+            if (query.hasLimit()) {
+                if (query.hasOffset()) {
+                    long tmp = query.getOffset() + query.getLimit();
+                    long max = Integer.MAX_VALUE - 1;
+                    nDocs = (int) Math.min(max, tmp);
+                }
+                else {
+                    nDocs = query.getLimit();
+                }
+            }
+            else {
+                nDocs = Integer.MAX_VALUE - 1;
+            }
+            TopDocs docs = searcher.search(q, nDocs);
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
-            List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
-            for (int i = 0; i < docs.scoreDocs.length; i++) {
+            List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(Math.max(0, docs.scoreDocs.length - query.getOffset()));
+            for (int i = query.getOffset(); i < docs.scoreDocs.length; i++) {
                 result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
             }
             return result;
