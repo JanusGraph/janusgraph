@@ -137,25 +137,29 @@ public abstract class LogTest {
 
     @Test
     public void testFuzzMessages() throws Exception {
-        // Send and receive random byte messages in the tradition of "fuzz testing"
-        final int maxLen = 1024 * 128;
-        final int rounds = 64;
+        final int maxLen = 256;
+        final int rounds = 32;
 
         StoringReader reader = new StoringReader();
-        List<StaticBuffer> expected = new ArrayList<StaticBuffer>(64);
+        List<StaticBuffer> expected = new ArrayList<StaticBuffer>(rounds);
 
         Log l = manager.openLog("fuzz", ReadMarker.fromNow());
         l.registerReader(reader);
         Random rand = new Random();
         for (int i = 0; i < rounds; i++) {
-            int len = rand.nextInt(maxLen + 1);
+            //int len = rand.nextInt(maxLen + 1);
+            int len = maxLen;
+            if (0 == len)
+                len = 1; // 0 would throw IllegalArgumentException
             byte[] raw = new byte[len];
             rand.nextBytes(raw);
             StaticBuffer sb = StaticArrayBuffer.of(raw);
             l.add(sb);
             expected.add(sb);
+            Thread.sleep(50L);
         }
         Thread.sleep(11000L);
+        assertEquals(rounds, reader.msgCount);
         assertEquals(expected, reader.msgs);
     }
 
@@ -211,6 +215,7 @@ public abstract class LogTest {
     private static class StoringReader implements MessageReader {
 
         private List<StaticBuffer> msgs = new ArrayList<StaticBuffer>(64);
+        private volatile int msgCount = 0;
 
         @Override
         public void read(Message message) {
@@ -220,6 +225,7 @@ public abstract class LogTest {
             StaticBuffer content = message.getContent();
             assertNotNull(content);
             msgs.add(content);
+            msgCount++;
         }
     }
 }
