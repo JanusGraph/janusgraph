@@ -22,6 +22,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Daniel Kuppitz <daniel at thinkaurelius.com>
+ */
+
 public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanMultiVertexQuery {
 
     @SuppressWarnings("unused")
@@ -180,7 +185,7 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
                 if (condition instanceof And) newcond.addAll((And) condition);
                 else newcond.add(condition);
                 newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
-                VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
+                VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getOffset(), vq.getLimit());
                 result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
 
             }
