@@ -49,12 +49,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final String TABLE_NAME_KEY = "tablename";
     public static final String TABLE_NAME_DEFAULT = "titan";
 
+
     public static final String SHORT_CF_NAMES_KEY = "short-cf-names";
     public static final boolean SHORT_CF_NAMES_DEFAULT = false;
 
     public static final int PORT_DEFAULT = 9160;
 
     public static final String HBASE_CONFIGURATION_NAMESPACE = "hbase-config";
+
+    public static final String SKIP_SCHEMA_CHECK = "skip-table-creation";
+    public static final boolean SKIP_SCHEMA_CHECK_DEFAULT = false;
 
     public static final ImmutableMap<String, String> HBASE_CONFIGURATION;
 
@@ -64,6 +68,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 .put(GraphDatabaseConfiguration.PORT_KEY, "hbase.zookeeper.property.clientPort")
                 .build();
     }
+
+
 
     private final String tableName;
     private final org.apache.hadoop.conf.Configuration hconf;
@@ -95,8 +101,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         Preconditions.checkArgument(Sets.newHashSet(shorts).size() == shorts.size());
     }
 
+    private org.apache.commons.configuration.Configuration config = null;
+
     public HBaseStoreManager(org.apache.commons.configuration.Configuration config) throws StorageException {
         super(config, PORT_DEFAULT);
+
+        this.config = config;
 
         this.tableName = config.getString(TABLE_NAME_KEY, TABLE_NAME_DEFAULT);
 
@@ -213,8 +223,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
-            if (store == null) { // ensure that CF exists only first time somebody tries to open it
-                ensureColumnFamilyExists(tableName, cfName);
+            if (store == null ) {
+                if( !this.config.getBoolean(SKIP_SCHEMA_CHECK,SKIP_SCHEMA_CHECK_DEFAULT))
+                    ensureColumnFamilyExists(tableName, cfName);
+
                 store = newStore;
             }
         }
