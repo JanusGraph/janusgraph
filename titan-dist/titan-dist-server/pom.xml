@@ -75,6 +75,18 @@
             <groupId>com.tinkerpop.rexster</groupId>
             <artifactId>rexster-server</artifactId>
             <version>${tinkerpop.version}</version>
+            <exclusions>
+                <!-- conflict with Astyanax dependencies -->
+                <exclusion>
+                    <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+                    <artifactId>concurrentlinkedhashmap-lru</artifactId>
+                </exclusion>
+                <!-- conflict with titan-es and titan-lucene -->
+                <exclusion>
+                    <groupId>org.apache.lucene</groupId>
+                    <artifactId>lucene-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     
