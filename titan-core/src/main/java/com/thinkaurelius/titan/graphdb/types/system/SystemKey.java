@@ -149,6 +149,9 @@ public class SystemKey extends SystemType implements TitanKey {
             return SchemaStatus.ENABLED;
         }
 
+        @Override
+        public void resetCache() {}
+
         //Use default hashcode and equals
     };
 

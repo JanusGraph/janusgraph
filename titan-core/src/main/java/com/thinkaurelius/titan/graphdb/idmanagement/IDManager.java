@@ -361,7 +361,8 @@ public class IDManager {
 
 
     public long getPartitionId(long id) {
-        Preconditions.checkArgument(!VertexIDType.Schema.is(id), "Schema vertices don't have a partition: %s", id);
+        //Cannot do this check because it does not apply to edges which are in a different id space
+        //Preconditions.checkArgument(!VertexIDType.Schema.is(id), "Schema vertices don't have a partition: %s", id);
         return (id >>> partitionOffset);
     }
 

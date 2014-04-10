@@ -512,7 +512,7 @@ public class IndexSerializer {
         log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
         RawQuery rawQuery=new RawQuery(index.getStoreName(),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
-        return Iterables.transform(backendTx.rawQuery(query.getIndex(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
+        return Iterables.transform(backendTx.rawQuery(index.getBackingIndexName(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
             @Nullable
             @Override
             public RawQuery.Result apply(@Nullable RawQuery.Result<String> result) {
@@ -528,6 +528,7 @@ public class IndexSerializer {
 
     private static final ExternalIndexType getExternalIndex(String indexName,StandardTitanTx transaction) {
         IndexType index = ManagementSystem.getGraphIndexDirect(indexName, transaction);
+        Preconditions.checkArgument(index!=null,"Index with name [%s] is unknown or not configured properly",indexName);
         Preconditions.checkArgument(index.isExternalIndex());
         return (ExternalIndexType)index;
     }

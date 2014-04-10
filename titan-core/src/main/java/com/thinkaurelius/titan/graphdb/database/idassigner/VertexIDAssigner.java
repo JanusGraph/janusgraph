@@ -259,7 +259,7 @@ public class VertexIDAssigner {
 
     private final long getPartitionID(final InternalVertex v) {
         long vid = v.getID();
-        if (IDManager.VertexIDType.RelationType.is(vid)) return 0;
+        if (IDManager.VertexIDType.Schema.is(vid)) return 0;
         else return idManager.getPartitionId(vid);
     }
 

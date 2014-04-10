@@ -68,7 +68,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public synchronized void remove() {
         if (it().isRemoved()) return;
-        //TODO: It's Blueprints semantics to remove all edges - is this correct?
         Iterator<TitanRelation> iter = it().getRelations().iterator();
         while (iter.hasNext()) {
             iter.next();

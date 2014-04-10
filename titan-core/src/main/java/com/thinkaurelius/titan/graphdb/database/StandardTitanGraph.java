@@ -109,8 +109,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         //Register instance and ensure uniqueness
         String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = new ModifiableConfiguration(TITAN_NS,
-                backend.getSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
@@ -130,8 +129,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     public synchronized void shutdown() throws TitanException {
         if (!isOpen) return;
         //Unregister instance
-        ModifiableConfiguration globalConfig = new ModifiableConfiguration(TITAN_NS,
-                backend.getSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
         globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
         try {
             super.shutdown();
@@ -183,7 +181,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     @Override
     public TitanManagement getManagementSystem() {
-        return new ManagementSystem(this,backend.getSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger);
+        return new ManagementSystem(this,backend.getGlobalSystemConfig(),backend.getSystemMgmtLog(), mgmtLogger);
     }
 
     public Set<? extends TitanTransaction> getOpenTransactions() {

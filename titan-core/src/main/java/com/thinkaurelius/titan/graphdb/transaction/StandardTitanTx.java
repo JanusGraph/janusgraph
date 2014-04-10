@@ -545,7 +545,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         //Determine unique indexes
         List<IndexLockTuple> uniqueIndexTuples = new ArrayList<IndexLockTuple>();
         for (InternalIndexType index : TypeUtil.getUniqueIndexes(key)) {
-            IndexSerializer.IndexRecords matches = IndexSerializer.indexMatches(vertex, index, key, value);
+            IndexSerializer.IndexRecords matches = IndexSerializer.indexMatches(vertex, index, key, normalizedValue);
             for (Object[] match : matches.getRecordValues()) uniqueIndexTuples.add(new IndexLockTuple(index,match));
         }
 
@@ -864,7 +864,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
             Preconditions.checkArgument(query.getResultType() == ElementCategory.VERTEX || query.getResultType() == ElementCategory.EDGE);
             //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
-            if (!query.getCondition().hasChildren()) return Iterators.emptyIterator();
+            if (query.numSubQueries()==1 && query.getSubQuery(0).getBackendQuery().isEmpty()) return Iterators.emptyIterator();
+            Preconditions.checkArgument(query.getCondition().hasChildren(),"If the query is non-empty it needs to have a condition");
 
             if (query.getResultType() == ElementCategory.VERTEX && hasModifications()) {
                 Preconditions.checkArgument(QueryUtil.isQueryNormalForm(query.getCondition()));

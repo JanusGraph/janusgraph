@@ -85,6 +85,8 @@ public abstract class TitanGraphBaseTest {
 
     public void clopen(Object... settings) {
         config = getConfiguration();
+        if (mgmt!=null) mgmt.rollback();
+        if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
             //Parse settings
             Preconditions.checkArgument(settings.length%2==0,"Expected even number of settings: %s",settings);
@@ -106,7 +108,8 @@ public abstract class TitanGraphBaseTest {
             gconf.commit();
             lconf.close();
         }
-        close();
+        if (null != graph && graph.isOpen())
+            graph.shutdown();
         Preconditions.checkNotNull(config);
         open(config);
     }

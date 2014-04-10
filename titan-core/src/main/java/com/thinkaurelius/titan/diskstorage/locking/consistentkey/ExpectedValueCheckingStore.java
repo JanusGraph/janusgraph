@@ -68,7 +68,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         return dataStore;
     }
 
-    private StoreTransaction getBaseTx(StoreTransaction txh) {
+    static StoreTransaction getBaseTx(StoreTransaction txh) {
         Preconditions.checkNotNull(txh);
         Preconditions.checkArgument(txh instanceof ExpectedValueCheckingTransaction);
         return ((ExpectedValueCheckingTransaction) txh).getBaseTransaction();
@@ -98,6 +98,11 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
      */
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        verifyLocksOnMutations(txh);
+        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
+    }
+
+    void verifyLocksOnMutations(StoreTransaction txh) throws StorageException {
         if (locker != null) {
             ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (!tx.isMutationStarted()) {
@@ -106,7 +111,6 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
                 tx.checkExpectedValues();
             }
         }
-        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
     }
 
     /**

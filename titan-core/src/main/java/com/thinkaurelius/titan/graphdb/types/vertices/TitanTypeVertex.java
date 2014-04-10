@@ -81,16 +81,23 @@ public abstract class TitanTypeVertex extends TitanSchemaVertex implements Inter
     private List<IndexType> indexes = null;
 
     public Iterable<IndexType> getKeyIndexes() {
-        if (indexes==null) {
+        List<IndexType> result = indexes;
+        if (result==null) {
             ImmutableList.Builder<IndexType> b = ImmutableList.builder();
             for (Entry entry : getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.IN)) {
                 SchemaSource index = entry.getSchemaType();
                 b.add(index.asIndexType());
             }
-            indexes = b.build();
+            result = b.build();
+            indexes=result;
         }
-        assert indexes!=null;
-        return indexes;
+        assert result!=null;
+        return result;
+    }
+
+    public void resetCache() {
+        super.resetCache();
+        indexes=null;
     }
 
 }

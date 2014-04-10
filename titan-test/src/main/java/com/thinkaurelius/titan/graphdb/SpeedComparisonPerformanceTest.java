@@ -25,7 +25,9 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
 
     @Test
     public void compare() {
-        graph.createKeyIndex("uid", Vertex.class);
+        makeVertexIndexedUniqueKey("uid", Long.class);
+        finishSchema();
+
         Vertex vertices[] = new TitanVertex[numVertices];
         for (int i = 0; i < numVertices; i++) {
             vertices[i] = graph.addVertex(null);

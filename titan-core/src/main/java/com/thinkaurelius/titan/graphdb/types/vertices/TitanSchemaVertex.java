@@ -50,8 +50,9 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     @Override
     public TypeDefinitionMap getDefinition() {
-        if (definition == null) {
-            TypeDefinitionMap def = new TypeDefinitionMap();
+        TypeDefinitionMap def = definition;
+        if (def == null) {
+            def = new TypeDefinitionMap();
             Iterable<TitanProperty> ps;
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
@@ -69,20 +70,19 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             assert def.size()>0;
             definition = def;
         }
-        return definition;
+        assert def!=null;
+        return def;
     }
 
     private ListMultimap<TypeDefinitionCategory,Entry> outRelations = null;
     private ListMultimap<TypeDefinitionCategory,Entry> inRelations = null;
 
-    private ListMultimap<TypeDefinitionCategory,Entry> getRelations(Direction dir) {
-        assert dir==Direction.OUT || dir==Direction.IN;
-        return dir==Direction.OUT?outRelations:inRelations;
-    }
 
     @Override
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
-        if (getRelations(dir)==null) {
+        assert dir==Direction.OUT || dir==Direction.IN;
+        ListMultimap<TypeDefinitionCategory,Entry> rels = dir==Direction.OUT?outRelations:inRelations;
+        if (rels==null) {
             ImmutableListMultimap.Builder<TypeDefinitionCategory,Entry> b = ImmutableListMultimap.builder();
             Iterable<TitanEdge> edges;
             if (isLoaded()) {
@@ -104,11 +104,22 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
                 }
                 b.put(desc.getCategory(), new Entry((TitanSchemaVertex) oth, modifier));
             }
-            if (dir==Direction.OUT) outRelations=b.build();
-            else inRelations=b.build();
+            rels = b.build();
+            if (dir==Direction.OUT) outRelations=rels;
+            else inRelations=rels;
         }
-        assert getRelations(dir)!=null;
-        return getRelations(dir).get(def);
+        assert rels!=null;
+        return rels.get(def);
+    }
+
+    /**
+     * Resets the internal caches used to speed up lookups on this index type.
+     * This is needed when the type gets modified in the {@link com.thinkaurelius.titan.graphdb.database.management.ManagementSystem}.
+     */
+    public void resetCache() {
+        definition=null;
+        outRelations=null;
+        inRelations=null;
     }
 
     public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir) {

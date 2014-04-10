@@ -36,7 +36,7 @@ public class IndexHelper {
             Object value = values[i];
             Preconditions.checkNotNull(value);
             TitanKey key = f.getFieldKey();
-            Preconditions.checkArgument(key.getDataType().equals(value.getClass()),"Incompatible data types");
+            Preconditions.checkArgument(key.getDataType().equals(value.getClass()),"Incompatible data types for: " + value);
             gb.has(key, Cmp.EQUAL,value);
         }
         return gb;

@@ -234,9 +234,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
 
     @Test
     public void elementCreationPerformance() {
-        TitanLabel connect = makeLabel("connect");
-        finishSchema();
-
+        TitanLabel connect = tx.makeLabel("connect").make();
         int noNodes = 20000;
         TitanVertex[] nodes = new TitanVertex[noNodes];
         PerformanceTest p = new PerformanceTest(true);
@@ -247,6 +245,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
         System.out.println("Time per node in (ns): " + (p.getNanoTime() / noNodes));
 
         p = new PerformanceTest(true);
+
         for (int i = 0; i < noNodes; i++) {
             new StandardEdge(i + 1, connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
         }

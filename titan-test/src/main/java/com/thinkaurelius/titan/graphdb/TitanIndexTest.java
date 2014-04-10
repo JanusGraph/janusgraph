@@ -27,6 +27,9 @@ import static org.junit.Assert.assertTrue;
 public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     public static final String INDEX = "index";
+    public static final String VINDEX = "vindex";
+    public static final String EINDEX = "eindex";
+
 
     public final boolean supportsGeoPoint;
     public final boolean supportsNumeric;
@@ -360,18 +363,18 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         setupChainGraph(numV,strs);
         clopen();
 
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry)").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(beautiful are ducks)").vertices()));
-        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry)").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
 
         //Same queries for edges
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:ducks").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry)").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").edges()));
+        assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
 
     }
 

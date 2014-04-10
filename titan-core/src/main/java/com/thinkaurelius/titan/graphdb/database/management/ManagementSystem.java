@@ -22,6 +22,7 @@ import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.indextype.ExternalIndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
@@ -329,6 +330,7 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.BACKING_INDEX,backingIndex);
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,Cardinality.LIST);
+        def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
         TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.INDEX,composeIndexName(indexName),def);
         return new TitanGraphIndexWrapper(v.asIndexType());
     }
@@ -352,6 +354,7 @@ public class ManagementSystem implements TitanManagement {
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
         extendedParas[parameters.length]=ParameterType.STATUS.getParameter(SchemaStatus.ENABLED);
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
+        indexType.resetCache();
         try {
             IndexSerializer.register((ExternalIndexType) indexType,key,transaction.getTxHandle());
         } catch (StorageException e) {

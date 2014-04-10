@@ -242,6 +242,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
+            conditions.add(new HiddenFilterCondition<TitanRelation>());
         } else {
             Set<TitanType> ts = new HashSet<TitanType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);

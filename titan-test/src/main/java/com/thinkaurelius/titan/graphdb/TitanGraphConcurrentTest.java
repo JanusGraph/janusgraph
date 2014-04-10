@@ -55,23 +55,22 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         super.setUp();
 
         //Create schema
-        TitanLabel[] rels = new TitanLabel[REL_COUNT];
-        for (int i = 0; i < rels.length; i++) {
-            rels[i] = makeLabel("rel" + i);
+        for (int i = 0; i < REL_COUNT; i++) {
+            makeLabel("rel" + i);
         }
-        TitanKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        makeVertexIndexedUniqueKey("uid",Integer.class);
         finishSchema();
 
         // Generate synthetic graph
         TitanVertex nodes[] = new TitanVertex[NODE_COUNT];
         for (int i = 0; i < NODE_COUNT; i++) {
             nodes[i] = tx.addVertex();
-            nodes[i].addProperty(id, i);
+            nodes[i].addProperty("uid", i);
         }
         for (int i = 0; i < NODE_COUNT; i++) {
-            for (int r = 0; r < rels.length; r++) {
+            for (int r = 0; r < REL_COUNT; r++) {
                 for (int j = 1; j <= EDGE_COUNT; j++) {
-                    nodes[i].addEdge(rels[r], nodes[wrapAround(i + j, NODE_COUNT)]);
+                    nodes[i].addEdge("rel"+r, nodes[wrapAround(i + j, NODE_COUNT)]);
                 }
             }
         }
@@ -110,6 +109,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         }
         finishSchema();
         clopen();
+
         Thread[] threads = new Thread[numThreads];
         for (int t = 0; t < numThreads; t++) {
             threads[t] = new Thread(new Runnable() {
@@ -168,13 +168,14 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
      */
     @Test
     public void concurrentReadWriteOnSingleTransaction() throws Exception {
-        TitanKey id = mgmt.getPropertyKey("uid");
-        TitanKey randomProp = makeVertexIndexedUniqueKey("dummyProperty",String.class);
-        TitanLabel randomLabel = makeLabel("dummyRelationship");
+        mgmt.getPropertyKey("uid");
+        makeVertexIndexedUniqueKey("dummyProperty",String.class);
+        makeLabel("dummyRelationship");
         finishSchema();
 
-        Runnable propMaker = new RandomPropertyMaker(tx, NODE_COUNT, id, randomProp);
-        Runnable relMaker = new FixedRelationshipMaker(tx, id, randomLabel);
+        TitanKey id = tx.getPropertyKey("uid");
+        Runnable propMaker = new RandomPropertyMaker(tx, NODE_COUNT, id, tx.getPropertyKey("dummyProperty"));
+        Runnable relMaker = new FixedRelationshipMaker(tx, id, tx.getEdgeLabel("dummyRelationship"));
 
         Future<?> propFuture = executor.submit(propMaker);
         Future<?> relFuture = executor.submit(relMaker);
@@ -218,6 +219,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             makeVertexIndexedUniqueKey("p"+i,String.class);
         }
         finishSchema();
+
         log.info("Creating vertices");
         // Write vertices with indexed properties
         for (int i = 0; i < vertexCount; i++) {

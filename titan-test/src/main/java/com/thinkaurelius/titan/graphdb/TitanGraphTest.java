@@ -83,7 +83,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         TitanLabel connect = mgmt.makeLabel("connect").signature(id, weight).multiplicity(Multiplicity.MANY2ONE).make();
 
-        TitanLabel parent = mgmt.makeLabel("parent").multiplicity(Multiplicity.MANY2ONE).sortKey(weight).make();
+        TitanLabel parent = mgmt.makeLabel("parent").multiplicity(Multiplicity.MANY2ONE).make();
         assertTrue(parent.getMultiplicity().isUnique(OUT));
         TitanLabel child = mgmt.makeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
         assertTrue(child.getMultiplicity().isUnique(IN));
@@ -127,7 +127,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(friend.isEdgeLabel());
         assertFalse(friend.isPropertyKey());
         assertFalse(friend.getMultiplicity().isUnique(Direction.OUT));
-        assertFalse(((InternalType) friend).isHidden());
+        assertTrue(((InternalType) friend).isHidden());
+        assertFalse(((InternalType) friend).isHiddenType());
 
         connect = tx.getEdgeLabel("connect");
         assertEquals("connect", connect.getName());
@@ -135,7 +136,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(connect.isEdgeLabel());
         assertFalse(connect.isPropertyKey());
         assertTrue(connect.getMultiplicity().isUnique(Direction.OUT));
-        assertFalse(((InternalType) connect).isHidden());
+        assertFalse(((InternalType) connect).isHiddenType());
 
         link = tx.getEdgeLabel("link");
         assertTrue(link.isUnidirected());
@@ -1568,13 +1569,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
             previous=v;
         }
-        clopen();
 
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(400).vertices(),"kid",Order.DESC,400);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
 
+        clopen();
+
+        //Copied from above
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(400).vertices(),"kid",Order.DESC,400);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
     }
 
     @Test

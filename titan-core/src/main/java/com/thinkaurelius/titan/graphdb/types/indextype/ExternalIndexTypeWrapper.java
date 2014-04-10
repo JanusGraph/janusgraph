@@ -31,25 +31,32 @@ public class ExternalIndexTypeWrapper extends IndexTypeWrapper implements Extern
 
     @Override
     public ParameterIndexField[] getFieldKeys() {
-        if (fields==null) {
+        ParameterIndexField[] result = fields;
+        if (result==null) {
             Iterable<SchemaSource.Entry> entries = base.getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT);
             int numFields = Iterables.size(entries);
-            ParameterIndexField[] f = new ParameterIndexField[numFields];
+            result = new ParameterIndexField[numFields];
             int pos = 0;
             for (SchemaSource.Entry entry : entries) {
                 assert entry.getSchemaType() instanceof TitanKey;
                 assert entry.getModifier() instanceof Parameter[];
-                f[pos++]=ParameterIndexField.of((TitanKey)entry.getSchemaType(),(Parameter[])entry.getModifier());
+                result[pos++]=ParameterIndexField.of((TitanKey)entry.getSchemaType(),(Parameter[])entry.getModifier());
             }
-            fields=f;
+            fields = result;
         }
-        assert fields!=null;
-        return fields;
+        assert result!=null;
+        return result;
     }
 
     @Override
     public ParameterIndexField getField(TitanKey key) {
         return (ParameterIndexField)super.getField(key);
+    }
+
+    @Override
+    public void resetCache() {
+        super.resetCache();
+        fields = null;
     }
 
     @Override

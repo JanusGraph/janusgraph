@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
@@ -18,6 +19,7 @@ import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
+import java.util.Iterator;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -29,12 +31,33 @@ public class RelationConstructor {
     }
 
     public static Iterable<TitanRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardTitanTx tx) {
-        return Iterables.transform(data, new Function<Entry, TitanRelation>() {
+        return new Iterable<TitanRelation>() {
             @Override
-            public TitanRelation apply(@Nullable Entry entry) {
-                return RelationConstructor.readRelation(vertex, entry, tx);
+            public Iterator<TitanRelation> iterator() {
+                return new Iterator<TitanRelation>() {
+
+                    Iterator<Entry> iter = data.iterator();
+                    TitanRelation current = null;
+
+                    @Override
+                    public boolean hasNext() {
+                        return iter.hasNext();
+                    }
+
+                    @Override
+                    public TitanRelation next() {
+                        current = readRelation(vertex,iter.next(),tx);
+                        return current;
+                    }
+
+                    @Override
+                    public void remove() {
+                        Preconditions.checkState(current!=null);
+                        current.remove();
+                    }
+                };
             }
-        });
+        };
     }
 
     public static InternalRelation readRelation(final InternalVertex vertex, final Entry data, final StandardTitanTx tx) {

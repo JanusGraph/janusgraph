@@ -140,6 +140,9 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(TITAN_NS,"unique-instance-id",
             "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
 
+    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(TITAN_NS,"titan-version",
+            "The version of Titan with which this database was created", ConfigOption.Type.FIXED, String.class);
+
     // ################ INSTANCE REGISTRATION #######################
     // ##############################################################
 
@@ -1126,7 +1129,7 @@ public class GraphDatabaseConfiguration {
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
-        KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager);
+        KCVSConfiguration kcvsConfig=Backend.getStandaloneGlobalConfiguration(storeManager,localbc);
         ReadConfiguration globalConfig=null;
 
         //Read out global configuration
@@ -1149,12 +1152,22 @@ public class GraphDatabaseConfiguration {
                     }
                 }));
 
+                //Write Titan version
+                Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
+                globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
+
                 globalWrite.freezeConfiguration();
+            } else {
+                String version = globalWrite.get(INITIAL_TITAN_VERSION);
+                Preconditions.checkArgument(version!=null,"Titan version has not been initialized");
+                if (!TitanConstants.VERSION.equals(version) && !TitanConstants.COMPATIBLE_VERSIONS.contains(version)) {
+                    throw new TitanException("StorageBackend version is incompatible with current Titan version: " + version + " vs. " + TitanConstants.VERSION);
+                }
             }
 
             globalConfig = kcvsConfig.asReadConfiguration();
         } finally {
-            if (kcvsConfig!=null) kcvsConfig.close();
+            kcvsConfig.close();
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
 
@@ -1200,6 +1213,11 @@ public class GraphDatabaseConfiguration {
 
     public static final String getSystemMetricsPrefix() {
         return METRICS_SYSTEM_PREFIX_DEFAULT;
+    }
+
+    public static ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
+        return new ModifiableConfiguration(TITAN_NS,
+                backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
     private void preLoadConfiguration() {

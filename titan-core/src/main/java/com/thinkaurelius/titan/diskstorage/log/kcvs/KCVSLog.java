@@ -434,9 +434,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         protected void action() {
             MessageEnvelope msg;
+            //Opportunistically drain the queue for up to the batch-send-size number of messages before evaluating condition
             while (toSend.size()<sendBatchSize && (msg=outgoingMsg.poll())!=null) {
                 toSend.add(msg);
             }
+            //Evaluate send condition: 1) Is the oldest message waiting longer than the delay? or 2) Do we have enough messages to send?
             if (!toSend.isEmpty() && (timeSinceFirstMsg()>=maxSendDelay || toSend.size()>=sendBatchSize)) {
                 sendMessages(toSend);
                 toSend.clear();
@@ -445,6 +447,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         @Override
         protected void cleanup() {
+            //Send all remaining messages
             if (!toSend.isEmpty() || !outgoingMsg.isEmpty()) {
                 //There are still messages waiting to be sent
                 toSend.addAll(outgoingMsg);

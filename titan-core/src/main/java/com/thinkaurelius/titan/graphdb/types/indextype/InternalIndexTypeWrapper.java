@@ -39,22 +39,29 @@ public class InternalIndexTypeWrapper extends IndexTypeWrapper implements Intern
 
     @Override
     public IndexField[] getFieldKeys() {
-        if (fields==null) {
+        IndexField[] result = fields;
+        if (result==null) {
             Iterable<SchemaSource.Entry> entries = base.getRelated(TypeDefinitionCategory.INDEX_FIELD,Direction.OUT);
             int numFields = Iterables.size(entries);
-            IndexField[] f = new IndexField[numFields];
+            result = new IndexField[numFields];
             for (SchemaSource.Entry entry : entries) {
                 Integer value = ParameterType.INDEX_POSITION.findParameter((Parameter[]) entry.getModifier(),null);
                 Preconditions.checkNotNull(value);
                 int pos = value;
                 Preconditions.checkArgument(pos>=0 && pos<numFields,"Invalid field position: %s",pos);
                 assert entry.getSchemaType() instanceof TitanKey;
-                f[pos]=IndexField.of((TitanKey)entry.getSchemaType());
+                result[pos]=IndexField.of((TitanKey)entry.getSchemaType());
             }
-            fields=f;
+            fields=result;
         }
-        assert fields!=null;
-        return fields;
+        assert result!=null;
+        return result;
+    }
+
+    @Override
+    public void resetCache() {
+        super.resetCache();
+        fields = null;
     }
 
     @Override

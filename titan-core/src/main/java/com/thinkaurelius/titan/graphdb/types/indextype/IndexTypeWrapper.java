@@ -62,13 +62,21 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public IndexField getField(TitanKey key) {
-        if (fieldMap==null) {
+        Map<TitanKey,IndexField> result = fieldMap;
+        if (result==null) {
             ImmutableMap.Builder<TitanKey,IndexField> b = ImmutableMap.builder();
             for (IndexField f : getFieldKeys()) b.put(f.getFieldKey(),f);
-            fieldMap=b.build();
+            result=b.build();
+            fieldMap=result;
         }
-        assert fieldMap!=null;
-        return fieldMap.get(key);
+        assert result!=null;
+        return result.get(key);
+    }
+
+    @Override
+    public void resetCache() {
+        base.resetCache();
+        fieldMap=null;
     }
 
     @Override

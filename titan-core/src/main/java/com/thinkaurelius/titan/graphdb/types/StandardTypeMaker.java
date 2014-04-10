@@ -79,7 +79,7 @@ public abstract class StandardTypeMaker implements TypeMaker {
         checkSignature(signature);
         Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(sortKey), Sets.newHashSet(signature)).isEmpty(),
                 "Signature and sort key must be disjoined");
-        Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained (simple) edge labels");
+        Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained edge labels");
     }
 
     private long[] checkSortKey(List<TitanType> sig) {

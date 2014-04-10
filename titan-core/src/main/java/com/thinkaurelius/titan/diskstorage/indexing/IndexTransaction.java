@@ -44,7 +44,7 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
         Preconditions.checkNotNull(indexTx);
         this.mutationAttempts = mutationAttempts;
         this.attemptWaitTime = attemptWaitTime;
-        this.mutations = null;
+        this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
     }
 
     public void add(String store, String docid, String key, Object value, boolean isNew) {
@@ -56,7 +56,6 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     }
 
     private IndexMutation getIndexMutation(String store, String docid, boolean isNew, boolean isDeleted) {
-        if (mutations==null) mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
         Map<String,IndexMutation> storeMutations = mutations.get(store);
         if (storeMutations==null) {
             storeMutations = new HashMap<String,IndexMutation>(DEFAULT_INNER_MAP_SIZE);
