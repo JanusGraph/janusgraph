@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.astyanax.*;
+import com.netflix.astyanax.connectionpool.Host;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.RetryBackoffStrategy;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
@@ -38,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
@@ -110,6 +113,14 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             ConfigOption.Type.MASKABLE, "RING_DESCRIBE");
 //    public static final String NODE_DISCOVERY_TYPE_DEFAULT = "RING_DESCRIBE";
 //    public static final String NODE_DISCOVERY_TYPE_KEY = "node-discovery-type";
+
+    /**
+     * Astyanax specific host supplier useful only when discovery type set to DISCOVERY_SERVICE or TOKEN_AWARE.
+     * Excepts fully qualified class name which extends google.common.base.Supplier<List<Host>>.
+     */
+    public static final ConfigOption<String> HOST_SUPPLIER = new ConfigOption<String>(STORAGE_NS, "host-supplier",
+            "Host supplier to use when discovery type is set to DISCOVERY_SERVICE or TOKEN_AWARE",
+            ConfigOption.Type.MASKABLE, String.class);
 
     /**
      * Astyanax's connection pooler implementation. This must be one of the
@@ -474,12 +485,31 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
         }
 
-        return new AstyanaxContext.Builder()
-                        .forCluster(clusterName)
-                        .forKeyspace(keySpaceName)
-                        .withAstyanaxConfiguration(aconf)
-                        .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
+        AstyanaxContext.Builder ctxBuilder = new AstyanaxContext.Builder();
+
+        // Standard context builder options
+        ctxBuilder
+            .forCluster(clusterName)
+            .forKeyspace(keySpaceName)
+            .withAstyanaxConfiguration(aconf)
+            .withConnectionPoolConfiguration(cpool)
+            .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
+
+        // Conditional context builder option: host supplier
+        if (config.has(HOST_SUPPLIER)) {
+            String hostSupplier = config.get(HOST_SUPPLIER);
+            Supplier<List<Host>> supplier = null;
+            if (hostSupplier != null) {
+                try {
+                    supplier = (Supplier<List<Host>>) Class.forName(hostSupplier).newInstance();
+                    ctxBuilder.withHostSupplier(supplier);
+                } catch (Exception e) {
+                    log.warn("Problem with host supplier class " + hostSupplier + ", going to use default.", e);
+                }
+            }
+        }
+
+        return ctxBuilder;
     }
 
     private void ensureKeyspaceExists(Cluster cl) throws StorageException {

@@ -64,6 +64,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      */
     public static final int MIN_REGION_COUNT = 3;
 
+    public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =  new ConfigOption<Boolean>(STORAGE_NS,"skip-schema-check",
+            "Assume that Titan's HBase table and column families already exist",
+            ConfigOption.Type.MASKABLE, false);
+
     /**
      * The total number of HBase regions to create with Titan's table. This
      * setting only effects table creation; this normally happens just once when
@@ -152,6 +156,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final HConnection cnx;
     private final org.apache.hadoop.conf.Configuration hconf;
     private final boolean shortCfNames;
+    private final boolean skipSchemaCheck;
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -162,11 +167,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         checkConfigDeprecation(config);
 
         this.tableName = config.get(HBASE_TABLE);
-
         this.compression = config.get(COMPRESSION);
-
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
+        this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
 
         /*
          * Specifying both region count options is permitted but may be
@@ -296,8 +300,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             store = openStores.putIfAbsent(longName, newStore); // nothing bad happens if we loose to other thread
 
-            if (store == null) { // ensure that CF exists only first time somebody tries to open it
-                ensureColumnFamilyExists(tableName, cfName);
+            if (store == null ) {
+                if (!skipSchemaCheck) {
+                    ensureColumnFamilyExists(tableName, cfName);
+                }
+
                 store = newStore;
             }
         }
