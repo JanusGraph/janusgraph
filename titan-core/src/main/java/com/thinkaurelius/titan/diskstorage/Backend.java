@@ -136,7 +136,7 @@ public class Backend {
         persistAttemptWaittime = configuration.get(STORAGE_ATTEMPT_WAITTIME);
 
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
-            int poolsize = Math.min(1, Runtime.getRuntime().availableProcessors()) * THREAD_POOL_SIZE_SCALE_FACTOR;
+            int poolsize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolsize);
             log.info("Initiated backend operations thread pool of size {}", poolsize);
         } else {
