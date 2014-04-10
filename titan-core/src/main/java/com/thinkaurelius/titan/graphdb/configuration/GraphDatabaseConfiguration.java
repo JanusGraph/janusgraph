@@ -1160,7 +1160,9 @@ public class GraphDatabaseConfiguration {
                     StoreFeatures f = storeManager.getFeatures();
                     boolean part = f.isDistributed() && f.isKeyOrdered();
                     globalWrite.set(IDS_PARTITION, part);
-                    log.info("Set ID partition mode to {}", part);
+                    log.info("Enabled ID partitioning", part);
+                } else {
+                    log.info("Disabled ID partitioning");
                 }
 
                 globalWrite.freezeConfiguration();
