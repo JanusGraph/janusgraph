@@ -63,7 +63,6 @@ import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 @PreInitializeConfigOptions
@@ -476,7 +475,7 @@ public class ElasticSearchIndex implements IndexProvider {
                         .ignoreUnmapped(true));
             }
         }
-        srb.setFrom(query.getOffset());
+        srb.setFrom(0);
         if (query.hasLimit()) srb.setSize(query.getLimit());
         else srb.setSize(maxResultsSize);
         srb.setNoFields();
@@ -500,7 +499,7 @@ public class ElasticSearchIndex implements IndexProvider {
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.queryString(query.getQuery()));
 
-        srb.setFrom(query.getOffset());
+        srb.setFrom(0);
         if (query.hasLimit()) srb.setSize(query.getLimit());
         else srb.setSize(maxResultsSize);
         srb.setNoFields();

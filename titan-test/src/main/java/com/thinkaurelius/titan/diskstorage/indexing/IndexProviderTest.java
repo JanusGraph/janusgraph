@@ -29,7 +29,6 @@ import static org.junit.Assert.fail;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public abstract class IndexProviderTest {
@@ -287,14 +286,6 @@ public abstract class IndexProviderTest {
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN, 10.0))));
             assertEquals(ImmutableSet.of("doc1", "doc4"), ImmutableSet.copyOf(result));
 
-            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN, 10.0)), 0, 1));
-            assertEquals(1, result.size());
-            assertTrue(result.contains("doc1") || result.contains("doc4"));
-
-            result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN, 10.0)), 1, 1));
-            assertEquals(1, result.size());
-            assertTrue(result.contains("doc1") || result.contains("doc4"));
-
             result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of("blah", Cmp.GREATER_THAN, 10.0))));
             assertEquals(0, result.size());
 
@@ -326,12 +317,10 @@ public abstract class IndexProviderTest {
         int oldresultSize = result.size();
         System.out.println(result.size() + " vs " + (numDoc / 1000 * 2.4622623015));
         System.out.println("Query time on " + numDoc + " docs (ms): " + (System.currentTimeMillis() - time));
-        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), 0, numDoc / 1000));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000));
         assertEquals(numDoc / 1000, result.size());
-        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), 0, numDoc / 1000 * 100));
+        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000 * 100));
         assertEquals(oldresultSize, result.size());
-        result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), 10, numDoc));
-        assertEquals(oldresultSize, result.size() + 10);
     }
 
     private void initialize(String store) throws StorageException {

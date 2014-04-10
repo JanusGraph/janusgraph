@@ -22,11 +22,6 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
- */
-
 public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
 
     private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
@@ -188,7 +183,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         if (returnType == RelationType.PROPERTY && hasTypes() && tx.getConfiguration().hasPropertyPrefetching()) {
             vertex.query().includeHidden().properties().iterator().hasNext();
         }
-        return new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getOffset(), vq.getLimit());
+        return new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());
     }
 
     private Iterable<TitanRelation> relations(RelationType returnType) {

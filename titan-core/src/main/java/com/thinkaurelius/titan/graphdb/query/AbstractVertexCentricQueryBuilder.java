@@ -23,11 +23,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 
-/**
- * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
- */
-
 abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
@@ -44,7 +39,6 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
 
     protected boolean includeHidden = false;
     protected int limit = Query.NO_LIMIT;
-    protected int offset = Query.NO_OFFSET;
 
 
     public AbstractVertexCentricQueryBuilder(final StandardTitanTx tx, final EdgeSerializer serializer) {
@@ -163,13 +157,6 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder offset(int offset) {
-        assert offset >= 0;
-        this.offset = offset;
-        return this;
-    }
-
-    @Override
     public AbstractVertexCentricQueryBuilder limit(int limit) {
         assert limit >= 0;
         this.limit = limit;
@@ -259,7 +246,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                 if (!includeHidden && (returnType == RelationType.PROPERTY || returnType == RelationType.RELATION))
                     sliceLimit += 3;
             }
-            query.getBackendQuery().setOffset(offset).setLimit(computeLimit(conditions,sliceLimit));
+            query.getBackendQuery().setLimit(computeLimit(conditions,sliceLimit));
             queries = ImmutableList.of(query);
             //Add remaining conditions that only apply if no type is defined
             if (!includeHidden)
@@ -318,7 +305,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
                         boolean isFitted = !remainingConditions.hasChildren()
                                 && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
                         SliceQuery q = serializer.getQuery(type, dir, sortConstraints, vertexCon);
-                        q.setOffset(offset).setLimit(computeLimit(remainingConditions, sliceLimit));
+                        q.setLimit(computeLimit(remainingConditions, sliceLimit));
                         queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, null));
                     }
                 }
@@ -329,7 +316,7 @@ abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
             conditions.add(getTypeCondition(ts));
         }
 
-        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, offset, limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
     }
 
     public EdgeSerializer.TypedInterval[] getFittingKeyConstraints(InternalType type) {

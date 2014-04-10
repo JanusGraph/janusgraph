@@ -14,7 +14,6 @@ import com.tinkerpop.blueprints.Vertex;
  * been defined for the keys. See {@link KeyMaker#indexed(Class)} and {@link KeyMaker#indexed(String, Class)}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  * @since 0.3.0
  */
 
@@ -77,14 +76,6 @@ public interface TitanGraphQuery extends GraphQuery {
      */
     public Iterable<Edge> edges();
 
-
-    /**
-     * Sets the retrieval offset for the returned result set
-     *
-     * @param offset The offset to start from
-     * @return This query
-     */
-    public TitanGraphQuery offset(final int offset);
 
     /**
      * Limits the size of the returned result set

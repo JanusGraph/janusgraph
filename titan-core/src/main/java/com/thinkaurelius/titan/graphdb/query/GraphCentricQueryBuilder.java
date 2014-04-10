@@ -28,7 +28,6 @@ import java.util.concurrent.Callable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class GraphCentricQueryBuilder implements TitanGraphQuery {
@@ -39,7 +38,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     private final IndexSerializer serializer;
     private List<PredicateCondition<String, TitanElement>> constraints;
     private OrderList orders = new OrderList();
-    private int offset = Query.NO_OFFSET;
     private int limit = Query.NO_LIMIT;
 
     public GraphCentricQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
@@ -107,13 +105,6 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     public <T extends Comparable<?>> TitanGraphQuery interval(String s, T t1, T t2) {
         has(s, Cmp.GREATER_THAN_EQUAL, t1);
         return has(s, Cmp.LESS_THAN, t2);
-    }
-
-    @Override
-    public TitanGraphQuery offset(final int offset) {
-        Preconditions.checkArgument(offset >= 0, "Non-negative offset expected: %s", offset);
-        this.offset = offset;
-        return this;
     }
 
     @Override
@@ -232,7 +223,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
             query = new BackendQueryHolder<JointIndexQuery>(new JointIndexQuery(), false, false, null);
         }
 
-        return new GraphCentricQuery(resultType, conditions, orders, query, offset, limit);
+        return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
     private static final boolean indexCoversOrder(String index, OrderList orders, ElementType resultType) {

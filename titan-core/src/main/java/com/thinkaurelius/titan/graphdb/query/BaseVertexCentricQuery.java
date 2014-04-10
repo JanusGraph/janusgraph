@@ -12,7 +12,6 @@ import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 class BaseVertexCentricQuery extends BaseQuery {
@@ -24,13 +23,12 @@ class BaseVertexCentricQuery extends BaseQuery {
 
     public BaseVertexCentricQuery(Condition<TitanRelation> condition, Direction direction,
                                   List<BackendQueryHolder<SliceQuery>> queries,
-                                  int offset, int limit) {
-        super(offset, limit);
+                                  int limit) {
+        super(limit);
         Preconditions.checkNotNull(condition);
         Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition));
         Preconditions.checkNotNull(queries);
         Preconditions.checkNotNull(direction);
-        Preconditions.checkArgument(offset >= 0);
         Preconditions.checkArgument(limit >= 0);
         this.condition = condition;
         this.queries = queries;
@@ -38,11 +36,11 @@ class BaseVertexCentricQuery extends BaseQuery {
     }
 
     protected BaseVertexCentricQuery(BaseVertexCentricQuery query) {
-        this(query.getCondition(), query.getDirection(), query.getQueries(), query.getOffset(), query.getLimit());
+        this(query.getCondition(), query.getDirection(), query.getQueries(), query.getLimit());
     }
 
     protected BaseVertexCentricQuery() {
-        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0,0);
+        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0);
     }
 
     public static BaseVertexCentricQuery emptyQuery() {

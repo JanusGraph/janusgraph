@@ -14,7 +14,6 @@ import java.util.concurrent.Callable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
- * @author Daniel Kuppitz <daniel at thinkaurelius.com>
  */
 
 public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery> {
@@ -76,16 +75,9 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     }
 
     @Override
-    public JointIndexQuery updateOffset(int newOffset) {
-        JointIndexQuery ji = new JointIndexQuery(Lists.newArrayList(indexes), Lists.newArrayList(queries));
-        ji.setOffset(newOffset).setLimit(this.getLimit());
-        return ji;
-    }
-
-    @Override
     public JointIndexQuery updateLimit(int newLimit) {
         JointIndexQuery ji = new JointIndexQuery(Lists.newArrayList(indexes), Lists.newArrayList(queries));
-        ji.setOffset(this.getOffset()).setLimit(newLimit);
+        ji.setLimit(newLimit);
         return ji;
     }
 }
