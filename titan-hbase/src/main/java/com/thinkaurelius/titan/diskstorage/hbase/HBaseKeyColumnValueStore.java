@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -45,32 +44,28 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     private static final Logger logger = LoggerFactory.getLogger(HBaseKeyColumnValueStore.class);
 
     private final String tableName;
-    private final HTablePool pool;
     private final HBaseStoreManager storeManager;
 
     // When using shortened CF names, columnFamily is the shortname and storeName is the longname
     // When not using shortened CF names, they are the same
-    private final String columnFamily;
+    //private final String columnFamily;
     private final String storeName;
     // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
 
-    HBaseKeyColumnValueStore(HBaseStoreManager storeManager,  HTablePool pool, String tableName, String columnFamily, String storeName) {
+    private final HConnection cnx;
+
+    HBaseKeyColumnValueStore(HBaseStoreManager storeManager, HConnection cnx, String tableName, String columnFamily, String storeName) {
         this.storeManager = storeManager;
+        this.cnx = cnx;
         this.tableName = tableName;
-        this.pool = pool;
-        this.columnFamily = columnFamily;
+        //this.columnFamily = columnFamily;
         this.storeName = storeName;
         this.columnFamilyBytes = columnFamily.getBytes();
     }
 
     @Override
     public void close() throws StorageException {
-        try {
-            pool.close();
-        } catch (IOException e) {
-            throw new TemporaryStorageException(e);
-        }
     }
 
     @Override
@@ -88,7 +83,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             HTableInterface table = null;
 
             try {
-                table = pool.getTable(tableName);
+                table = cnx.getTable(tableName);
                 return table.exists(g);
             } finally {
                 IOUtils.closeQuietly(table);
@@ -109,7 +104,44 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return getHelper(keys, getFilter(query));
     }
 
-    public static Filter getFilter(SliceQuery query) {
+    @Override
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
+        mutateMany(mutations, txh);
+    }
+
+    @Override
+    public void acquireLock(StaticBuffer key,
+                            StaticBuffer column,
+                            StaticBuffer expectedValue,
+                            StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
+                query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
+                new FilterList(FilterList.Operator.MUST_PASS_ALL),
+                query);
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return storeManager.getLocalKeyPartition();
+    }
+
+    @Override
+    public String getName() {
+        return storeName;
+    }
+
+    @Override
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
+    }
+
+    private static Filter getFilter(SliceQuery query) {
         byte[] colStartBytes = query.getSliceEnd().length() > 0 ? query.getSliceStart().as(StaticBuffer.ARRAY_FACTORY) : null;
         byte[] colEndBytes = query.getSliceEnd().length() > 0 ? query.getSliceEnd().as(StaticBuffer.ARRAY_FACTORY) : null;
 
@@ -120,6 +152,8 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                     filter,
                     new ColumnPaginationFilter(query.getLimit(), 0));
         }
+
+        logger.debug("Generated HBase Filter {}", filter);
 
         return filter;
     }
@@ -145,7 +179,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             Result[] results = null;
 
             try {
-                table = pool.getTable(tableName);
+                table = cnx.getTable(tableName);
                 results = table.get(requests);
             } finally {
                 IOUtils.closeQuietly(table);
@@ -171,43 +205,15 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-
-    @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
-        Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
-        mutateMany(mutations, txh);
-    }
-
-    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
+    private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
         storeManager.mutateMany(ImmutableMap.of(storeName, mutations), txh);
     }
 
-    @Override
-    public void acquireLock(StaticBuffer key,
-                            StaticBuffer column,
-                            StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
-        return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
-                query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
-                new FilterList(FilterList.Operator.MUST_PASS_ALL),
-                query);
-    }
-
-    @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
-    }
-
-    public KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
+    private KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
         return executeKeySliceQuery(null, null, filters, columnSlice);
     }
 
-    public KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
+    private KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
                                             @Nullable byte[] endKey,
                                             FilterList filters,
                                             @Nullable SliceQuery columnSlice) throws StorageException {
@@ -229,30 +235,26 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             filters.addFilter(getFilter(columnSlice));
         }
 
+        HTableInterface table = null;
+
         try {
-            return new RowIterator(pool.getTable(tableName).getScanner(scan.setFilter(filters)));
+            table = cnx.getTable(tableName);
+            return new RowIterator(table, table.getScanner(scan.setFilter(filters)));
         } catch (IOException e) {
+            IOUtils.closeQuietly(table);
             throw new PermanentStorageException(e);
         }
     }
 
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return storeManager.getLocalKeyPartition();
-    }
-
-    @Override
-    public String getName() {
-        return storeName;
-    }
-
     private class RowIterator implements KeyIterator {
+        private final HTableInterface table;
         private final Iterator<Result> rows;
 
         private Result currentRow;
         private boolean isClosed;
 
-        public RowIterator(ResultScanner rows) {
+        public RowIterator(HTableInterface table, ResultScanner rows) {
+            this.table = table;
             this.rows = Iterators.filter(rows.iterator(), new Predicate<Result>() {
                 @Override
                 public boolean apply(@Nullable Result result) {
@@ -319,7 +321,9 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public void close() {
+            IOUtils.closeQuietly(table);
             isClosed = true;
+            logger.debug("RowIterator closed table {}", table);
         }
 
         @Override

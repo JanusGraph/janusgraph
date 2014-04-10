@@ -6,7 +6,17 @@ import java.util.Collection;
 
 public class NetworkUtil {
     public static String getLoopbackAddress() {
-        return InetAddress.getLoopbackAddress().getHostAddress();
+        // InetAddress.getLoopbackAddress() is @since 1.7
+        //
+        // Aside from that, getLoopbackAddress() seems preferable to
+        // InetAddress.getByName("localhost") since the former doesn't seem to
+        // require the local resolver to be sane.
+        //return InetAddress.getLoopbackAddress().getHostAddress();
+        try {
+            return InetAddress.getByName("localhost").getHostAddress();
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static InetAddress getLocalHost() {

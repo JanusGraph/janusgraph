@@ -61,8 +61,12 @@ public class BackendOperation {
             try {
                 return exe.call();
             } catch (StorageException e) {
-                if (e instanceof TemporaryStorageException) lastException = e;
-                else throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+                if (e instanceof TemporaryStorageException) {
+                    lastException = e;
+                    log.debug("Temporary exception during backend operation", e);
+                } else {
+                    throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+                }
             } catch (Throwable e) {
                 throw new TitanException("Unexpected exception during backend operation",e);
             }

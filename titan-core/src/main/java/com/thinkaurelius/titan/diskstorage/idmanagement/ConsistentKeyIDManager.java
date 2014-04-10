@@ -186,7 +186,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                         if (exhausted.size() == randomUniqueIDLimit)
                             throw new IDPoolExhaustedException(String.format("Exhausted %d partition.uniqueid pair(s): %s", exhausted.size(), Joiner.on(",").join(exhausted)));
                         else
-                            throw new TemporaryStorageException(
+                            throw new UniqueIDExhaustedException(
                                     String.format("Exhausted ID partition %d with uniqueid %d (uniqueid attempt %d/%d)",
                                             partition, uniqueID, exhausted.size(), randomUniqueIDLimit));
                     }
@@ -292,6 +292,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                         }
                     }
                 }
+            } catch (UniqueIDExhaustedException e) {
+                // No need to increment the backoff wait time or to sleep
+                log.warn(e.getMessage());
             } catch (TemporaryStorageException e) {
                 backoffMS = Math.min(backoffMS * 2, idApplicationWaitMS * 32L);
                 log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", backoffMS, e);
@@ -332,5 +335,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         } catch (InterruptedException e) {
             throw new PermanentStorageException(e);
         }
+    }
+
+    private static class UniqueIDExhaustedException extends StorageException {
+
+        private static final long serialVersionUID = 1L;
+
+        public UniqueIDExhaustedException(String msg) {
+            super(msg);
+        }
+
     }
 }

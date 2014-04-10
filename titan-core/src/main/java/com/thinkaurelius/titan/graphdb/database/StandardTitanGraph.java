@@ -84,11 +84,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     //Log
     private final ManagementLogger mgmtLogger;
 
-    private boolean isOpen;
+    private volatile boolean isOpen = true;
     private AtomicLong txCounter;
 
     private Set<StandardTitanTx> openTransactions;
-
 
     public StandardTitanGraph(GraphDatabaseConfiguration configuration) {
         this.config = configuration;
@@ -118,6 +117,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
         mgmtLog.registerReader(mgmtLogger);
+
+        Runtime.getRuntime().addShutdownHook(new ShutdownThread(this));
     }
 
     @Override
@@ -128,10 +129,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     @Override
     public synchronized void shutdown() throws TitanException {
         if (!isOpen) return;
-        //Unregister instance
-        ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
-        globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
         try {
+            //Unregister instance
+            ModifiableConfiguration globalConfig = GraphDatabaseConfiguration.getGlobalSystemConfig(backend);
+            globalConfig.remove(REGISTRATION_TIME,config.getUniqueGraphId());
+
             super.shutdown();
             idAssigner.close();
             backend.close();
@@ -527,4 +529,19 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     }
 
+    private static class ShutdownThread extends Thread {
+        private final StandardTitanGraph graph;
+
+        public ShutdownThread(StandardTitanGraph graph) {
+            this.graph = graph;
+        }
+
+        @Override
+        public void start() {
+            if (graph.isOpen && log.isDebugEnabled())
+                log.debug("Shutting down graph {} using built-in shutdown hook.", graph);
+
+            graph.shutdown();
+        }
+    }
 }

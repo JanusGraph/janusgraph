@@ -9,7 +9,6 @@ import java.io.IOException;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -52,7 +51,7 @@ public class CassandraStorageSetup {
 
     public static ModifiableConfiguration getEmbeddedCassandraPartitionConfiguration(String ks) {
         ModifiableConfiguration config = getEmbeddedConfiguration(ks);
-        config.set(IDS_PARTITION, IDPartitionMode.ENABLED);
+        config.set(IDS_PARTITION, true);
         config.set(IDS_FLUSH,false);
 //        config.subset(GraphDatabaseConfiguration.METRICS_NAMESPACE).addProperty(GraphDatabaseConfiguration.METRICS_CONSOLE_INTERVAL, 3000L);
         return config;

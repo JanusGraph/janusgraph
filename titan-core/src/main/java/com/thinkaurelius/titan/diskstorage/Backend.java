@@ -151,7 +151,7 @@ public class Backend implements LockerProvider {
         }
 
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
-            int poolsize = Math.min(1, Runtime.getRuntime().availableProcessors()) * THREAD_POOL_SIZE_SCALE_FACTOR;
+            int poolsize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolsize);
             log.info("Initiated backend operations thread pool of size {}", poolsize);
         } else {
@@ -498,7 +498,6 @@ public class Backend implements LockerProvider {
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("persistit", "com.thinkaurelius.titan.diskstorage.persistit.PersistitStoreManager");
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
@@ -512,7 +511,6 @@ public class Backend implements LockerProvider {
 
     public static final Map<String, ConfigOption> REGISTERED_STORAGE_MANAGERS_SHORTHAND = new HashMap<String, ConfigOption>() {{
         put("berkeleyje", STORAGE_DIRECTORY);
-        put("persistit", STORAGE_DIRECTORY);
         put("hazelcast", STORAGE_DIRECTORY);
         put("hazelcastcache", STORAGE_DIRECTORY);
         put("infinispan", STORAGE_DIRECTORY);

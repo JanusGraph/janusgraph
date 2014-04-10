@@ -351,6 +351,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             StoreTransaction newTx = overrideTimestamp(txh, before);
             store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), newTx);
         } catch (StorageException e) {
+            log.debug("Lock write attempt failed with exception", e);
             t = e;
         }
         final long after = times.getTime();

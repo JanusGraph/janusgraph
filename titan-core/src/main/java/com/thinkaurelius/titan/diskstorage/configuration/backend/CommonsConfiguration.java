@@ -81,7 +81,9 @@ public class CommonsConfiguration implements WriteConfiguration {
         try {
             Constructor<O> ctor = datatype.getConstructor(String.class);
             return ctor.newInstance(arg);
-        } catch (ReflectiveOperationException e) {
+        // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
+        //} catch (ReflectiveOperationException e) {
+        } catch (Exception e) {
             log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, datatype, e);
             throw new RuntimeException(e);
         }

@@ -15,6 +15,7 @@
         <hadoop.version>1.0.4</hadoop.version>
         <jruby.version>1.6.5</jruby.version>
         <hadoop.profile>1.0</hadoop.profile>
+        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
     
     <dependencies>
@@ -161,7 +162,7 @@
             <properties>
                 <hbase.version>0.94.12-mapr-1310</hbase.version>
                 <hadoop.version>1.0.3-mapr-3.0.2</hadoop.version>
-                <zookeeper.version>3.3.6</zookeeper.version>
+                <zookeeper.version>3.4.5</zookeeper.version>
                 <titan.hbase.mvn.opts.extra>-Dzookeeper.version=${zookeeper.version}</titan.hbase.mvn.opts.extra>
             </properties>
             <repositories>

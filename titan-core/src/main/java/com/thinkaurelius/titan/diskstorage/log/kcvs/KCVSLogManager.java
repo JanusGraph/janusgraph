@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -85,7 +87,11 @@ public class KCVSLogManager implements LogManager {
 
     @Override
     public synchronized void close() throws StorageException {
-        for (KCVSLog log : openLogs.values()) log.close();
+        /* Copying the map is necessary to avoid ConcurrentModificationException.
+         * The path to ConcurrentModificationException in the absence of a copy is
+         * log.close() -> manager.closedLog(log) -> openLogs.remove(log.getName()).
+         */
+        for (KCVSLog log : ImmutableMap.copyOf(openLogs).values()) log.close();
     }
 
 }

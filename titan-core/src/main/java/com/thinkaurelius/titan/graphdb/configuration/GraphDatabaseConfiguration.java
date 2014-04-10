@@ -39,7 +39,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPartitionMode;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -633,9 +632,9 @@ public class GraphDatabaseConfiguration {
      * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
      * of de-congesting a single id pool in the database.
      */
-    public static final ConfigOption<IDPartitionMode> IDS_PARTITION = new ConfigOption<IDPartitionMode>(IDS_NS,"partition",
+    public static final ConfigOption<Boolean> IDS_PARTITION = new ConfigOption<Boolean>(IDS_NS,"partition",
             "Whether the id space should be partitioned for equal distribution of keys",
-            ConfigOption.Type.FIXED, IDPartitionMode.DEFAULT);
+            ConfigOption.Type.FIXED, false);
 //    public static final String IDS_PARTITION_KEY = "partition";
 //    public static final boolean IDS_PARTITION_DEFAULT = false;
 
@@ -1156,6 +1155,14 @@ public class GraphDatabaseConfiguration {
                 Preconditions.checkArgument(!globalWrite.has(INITIAL_TITAN_VERSION),"Database has already been initialized but not frozen");
                 globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
 
+                // If partitioning is unspecified, specify it now
+                if (!localbc.has(IDS_PARTITION)) {
+                    StoreFeatures f = storeManager.getFeatures();
+                    boolean part = f.isDistributed() && f.isKeyOrdered();
+                    globalWrite.set(IDS_PARTITION, part);
+                    log.info("Set ID partition mode to {}", part);
+                }
+
                 globalWrite.freezeConfiguration();
             } else {
                 String version = globalWrite.get(INITIAL_TITAN_VERSION);
@@ -1438,7 +1445,7 @@ public class GraphDatabaseConfiguration {
 
     public String getBackendDescription() {
         String clazzname = configuration.get(STORAGE_BACKEND);
-        if (clazzname.equalsIgnoreCase("berkeleyje") || clazzname.equalsIgnoreCase("persistit")) {
+        if (clazzname.equalsIgnoreCase("berkeleyje")) {
             return clazzname + ":" + configuration.get(STORAGE_DIRECTORY);
         } else {
             return clazzname + ":" + Arrays.toString(configuration.get(STORAGE_HOSTS));
