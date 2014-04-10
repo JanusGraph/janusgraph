@@ -218,13 +218,6 @@ public class Backend implements LockerProvider {
             edgeStore = storeManagerLocking.openDatabase(EDGESTORE_NAME);
             indexStore = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
-
-            boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
-            if (hashPrefixIndex) {
-                log.info("Wrapping index store with HashPrefix");
-                indexStore = new HashPrefixKeyColumnValueStore(indexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
-            }
-
             if (reportMetrics) {
                 edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsStoreName("edgeStore"));
                 indexStore = new MetricInstrumentedStore(indexStore, getMetricsStoreName("vertexIndexStore"));
@@ -258,6 +251,12 @@ public class Backend implements LockerProvider {
             } else {
                 edgeStore = new NoKCVSCache(edgeStore);
                 indexStore = new NoKCVSCache(indexStore);
+            }
+
+            boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
+            if (hashPrefixIndex) {
+                log.info("Wrapping index store with HashPrefix");
+                indexStore = new HashPrefixKeyColumnValueStore(indexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
             }
 
             //Just open them so that they are cached
