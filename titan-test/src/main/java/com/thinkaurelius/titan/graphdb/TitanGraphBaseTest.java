@@ -69,7 +69,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     public void close() {
-        if (mgmt!=null) mgmt.rollback();
+        if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
         if (null != tx && tx.isOpen())
             tx.commit();
 
@@ -86,7 +86,7 @@ public abstract class TitanGraphBaseTest {
 
     public void clopen(Object... settings) {
         config = getConfiguration();
-        if (mgmt!=null) mgmt.rollback();
+        if (mgmt!=null && mgmt.isOpen()) mgmt.rollback();
         if (null != tx && tx.isOpen()) tx.commit();
         if (settings!=null && settings.length>0) {
             //Parse settings

@@ -643,7 +643,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
-        addProperty(type, SystemKey.TypeName, name);
+        if (typeCategory.hasName()) addProperty(type, SystemKey.TypeName, name);
         addProperty(type, SystemKey.VertexExists, Boolean.TRUE);
         addProperty(type, SystemKey.TypeCategory, typeCategory);
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {

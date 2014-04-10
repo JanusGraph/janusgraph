@@ -136,9 +136,15 @@ public class ManagementSystem implements TitanManagement {
 
     @Override
     public synchronized void rollback() {
+        ensureOpen();
         transactionalConfig.rollback();
         transaction.rollback();
         close();
+    }
+
+    @Override
+    public boolean isOpen() {
+        return isOpen;
     }
 
     private void close() {
