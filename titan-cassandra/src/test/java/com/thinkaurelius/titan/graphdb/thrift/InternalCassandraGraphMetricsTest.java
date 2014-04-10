@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 public class InternalCassandraGraphMetricsTest extends TitanNonTransactionalGraphMetricsTest {
 

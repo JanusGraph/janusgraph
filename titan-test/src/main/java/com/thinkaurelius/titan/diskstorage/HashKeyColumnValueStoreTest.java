@@ -11,7 +11,7 @@ public abstract class HashKeyColumnValueStoreTest extends KeyColumnValueStoreTes
 
     @Override
     public void open() throws StorageException {
-        manager = new HashPrefixStoreManager(openStorageManager(), HashPrefixKeyColumnValueStore.HashLength.LONG);
+        manager = new HashPrefixStoreManager(openStorageManager(), HashPrefixKeyColumnValueStore.HashLength.SHORT);
         store = manager.openDatabase(storeName);
         tx = startTx();
     }

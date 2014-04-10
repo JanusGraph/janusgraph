@@ -71,4 +71,6 @@ public interface TitanManagement extends TitanConfiguration {
 
     public void rollback();
 
+    public boolean isOpen();
+
 }

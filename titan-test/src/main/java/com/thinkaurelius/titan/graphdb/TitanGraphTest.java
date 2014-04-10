@@ -43,6 +43,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanKey weight = tx.makeKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
         TitanVertex n1 = tx.addVertex();
         n1.addProperty(weight, 10.5);
+        assertTrue(tx.containsType("weight"));
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));

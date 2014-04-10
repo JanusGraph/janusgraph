@@ -98,8 +98,8 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
                 assert oth instanceof TitanSchemaVertex;
                 TypeDefinitionDescription desc = edge.getProperty(SystemKey.TypeDefinitionDesc);
                 Object modifier = null;
-                if (def.hasDataType()) {
-                    assert desc.getModifier()!=null && desc.getModifier().getClass().equals(def.getDataType());
+                if (desc.getCategory().hasDataType()) {
+                    assert desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType());
                     modifier = desc.getModifier();
                 }
                 b.put(desc.getCategory(), new Entry((TitanSchemaVertex) oth, modifier));
