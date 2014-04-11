@@ -21,10 +21,10 @@ public class InMemoryIDAllocationTest extends IDAllocationTest {
         return new InMemoryStoreManager();
     }
 
-//    @Override
-//    public void testMultiIDAcquisition() {
-//        //DO nothing - TODO: should this work??
-//    }
+    @Override
+    public void testMultiIDAcquisition() {
+        //DO nothing - TODO: should this work??
+    }
 
 
 }
