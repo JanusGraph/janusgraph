@@ -178,7 +178,7 @@ public abstract class LogTest {
         }
         for (long i=1;i<=numMessages;i++) {
             log1.add(BufferUtil.getLongBuffer(i));
-            System.out.println("Wrote message: " + i);
+//            System.out.println("Wrote message: " + i);
             Thread.sleep(delayMS);
         }
         Thread.sleep(11000);
@@ -196,6 +196,7 @@ public abstract class LogTest {
 
         private AtomicLong totalMsg=new AtomicLong(0);
         private AtomicLong totalValue=new AtomicLong(0);
+        private long lastMessageValue = 0;
 
         @Override
         public void read(Message message) {
@@ -206,7 +207,8 @@ public abstract class LogTest {
             assertNotNull(content);
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            System.out.println("Read message: " + value);
+            assertTrue("Message out of order: "+value, lastMessageValue<value);
+            lastMessageValue = value;
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);
         }
