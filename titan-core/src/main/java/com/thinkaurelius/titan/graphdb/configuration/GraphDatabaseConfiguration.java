@@ -1180,13 +1180,8 @@ public class GraphDatabaseConfiguration {
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
 
-        if (!combinedConfig.has(UNIQUE_INSTANCE_ID)) {
-            this.uniqueGraphId = computeUniqueInstanceId(combinedConfig);
-            log.info("Setting unique instance id: {}",uniqueGraphId);
-            overwrite.set(UNIQUE_INSTANCE_ID,uniqueGraphId);
-        } else {
-            this.uniqueGraphId = combinedConfig.get(UNIQUE_INSTANCE_ID);
-        }
+        this.uniqueGraphId = getOrGenerateUniqueInstanceId(combinedConfig);
+        overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
 
         this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();
@@ -1211,6 +1206,17 @@ public class GraphDatabaseConfiguration {
             throw new TitanConfigurationException("Cannot determine local host", e);
         }
         return new String(Hex.encodeHex(addrBytes)) + suffix;
+    }
+
+    public static String getOrGenerateUniqueInstanceId(Configuration config) {
+        String uid;
+        if (!config.has(UNIQUE_INSTANCE_ID)) {
+            uid = computeUniqueInstanceId(config);
+            log.info("Generated {}={}", UNIQUE_INSTANCE_ID.getName(), uid);
+        } else {
+            uid = config.get(UNIQUE_INSTANCE_ID);
+        }
+        return uid;
     }
 
     public static final ModifiableConfiguration buildConfiguration() {

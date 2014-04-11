@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import java.io.IOException;
 
@@ -21,7 +22,7 @@ public class HBaseIDAllocationTest extends IDAllocationTest {
         HBaseStorageSetup.startHBase();
     }
 
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         return new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
     }
 }
