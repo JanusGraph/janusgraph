@@ -55,7 +55,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     public static final ConfigOption<String> COMPRESSION = new ConfigOption<String>(STORAGE_NS,"compression-algorithm",
             "An HBase Compression.Algorithm enum string which will be applied to newly created column families",
-            ConfigOption.Type.MASKABLE, COMPRESSION_DEFAULT);
+            ConfigOption.Type.MASKABLE, "GZ");
 
     /**
      * Related bug fixed in 0.98.0, 0.94.7, 0.95.0:
@@ -679,7 +679,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 adm.disableTable(tableName);
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
                 if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
-                    HBaseSupport.setCompression(cdesc, compression);
+                    HBaseCompatLoader.getCompat().setCompression(cdesc, compression);
                 adm.addColumn(tableName, cdesc);
 
                 try {
