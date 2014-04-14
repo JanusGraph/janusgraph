@@ -6,7 +6,6 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
@@ -58,7 +57,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -440,7 +438,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
 
         // 8) Commit changes
-        boolean success = false;
+        boolean success=true;
         try {
             if (commit) mutator.commit();
             else if (hasMutations) mutator.flush();
@@ -505,7 +503,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
         if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
             try {
-                final Log txLog = backend.getTransactionLog(logTxIdentifier);
+                final Log txLog = backend.getTriggerLog(logTxIdentifier);
                 final long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
                 DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
                 out.putLong(timestamp);

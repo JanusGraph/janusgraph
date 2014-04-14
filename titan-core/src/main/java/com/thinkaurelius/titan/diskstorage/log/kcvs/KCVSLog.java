@@ -26,8 +26,33 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Implementation of {@link Log} wrapped around a {@link KeyColumnValueStore}. Each message is written as a column-value pair ({@link Entry})
+ * into a timeslice slot. A timeslice slot is uniquely identified by:
+ * <ul>
+ *     <li>The partition id: On storage backends that are key-ordered, a partition bit width can be configured which configures the number of
+ *     first bits that comprise the partition id. On unordered storage backends, this is always 0</li>
+ *     <li>A bucket id: The number of parallel buckets that should be maintained is configured by
+ *     {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
+ *     in round-robin fashion and each bucket is identified by a bucket id.
+ *     Having multiple buckets per timeslice allows for load balancing across multiple keys in the storage backend.</li>
+ *     <li>The start time of the timeslice: Each time slice is {@link #TIMESLICE_INTERVAL} microseconds long. And all messages that are added between
+ *     start-time and start-time+{@link #TIMESLICE_INTERVAL} end up in the same timeslice. For high throughput logs that might be more messages
+ *     than the underlying storage backend can handle per key. In that case, ensure that (2^(partition-bit-width) x (num-bucekts) is large enough
+ *     to distribute the load.</li>
+ * </ul>
  *
- * All time values in this class are in mircoseconds.
+ * Each message is uniquely identified by its timestamp, sender id (which uniquely identifies a particular instance of {@link KCVSLogManager}), and the
+ * message id (which is auto-incrementing). These three data points comprise the column of a log message. The actual content of the message
+ * is written into the value.
+ * </p>
+ * When {@link MessageReader} are registered, one reader thread per partition id and bucket is created which periodically (as configured) checks for
+ * new messages in the storage backend and invokes the reader. </br>
+ * Read-markers are maintained (for each partition-id & bucket id combination) under a dedicated key in the same {@link KeyColumnValueStoreManager} as the
+ * log messages. The read markers are updated to the current position before each new iteration of reading messages from the log. If the system fails
+ * while reading a batch of messages, a subsequently restarted log reader may therefore read messages twice. Hence, {@link MessageReader} implementations
+ * should exhibit correct behavior for the (rare) circumstance that messages are read twice.
+ *
+ * Note: All time values in this class are in mircoseconds. Hence, there are many cases where milliseconds are converted to microseconds.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -38,19 +63,20 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     //########## Configuration Options #############
 
     public static final ConfigOption<Integer> LOG_MAX_WRITE_TIME = new ConfigOption<Integer>(LOG_NS,"max-write-time",
-            "Maximum time in ms to try persisting log messages against the backend",
+            "Maximum time in ms to try persisting log messages against the backend before failing.",
             ConfigOption.Type.MASKABLE, 10000, ConfigOption.positiveInt());
 
     public static final ConfigOption<Integer> LOG_MAX_READ_TIME = new ConfigOption<Integer>(LOG_NS,"max-read-time",
-            "Maximum time in ms to try reading log messages from the backend",
+            "Maximum time in ms to try reading log messages from the backend before failing.",
             ConfigOption.Type.MASKABLE, 4000, ConfigOption.positiveInt());
 
     public static final ConfigOption<Integer> LOG_READ_LAG_TIME = new ConfigOption<Integer>(LOG_NS,"read-lag-time",
-            "Maximum time in ms that it may take for reads to appear in the backend",
+            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
+                    "visible in the storage backend in this amount of time, a log reader might miss the message.",
             ConfigOption.Type.MASKABLE, 500, ConfigOption.positiveInt());
 
     public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<Boolean>(LOG_NS,"key-consistent",
-            "Whether to require consistency for log reads and writes",
+            "Whether to require consistency for log reading and writing messages to the storage backend",
             ConfigOption.Type.MASKABLE, false);
 
     //########## INTERNAL CONSTANTS #############
@@ -162,9 +188,13 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private MessagePuller[] msgPullers;
 
     /**
-     * Counter used to write messages in a round-robin fashion
+     * Counter used to write messages to different buckets in a round-robin fashion
      */
     private final AtomicLong numBucketCounter;
+    /**
+     * Counter used to write messages to different partitions (identified by id - {@link KCVSLogManager#defaultWritePartitionIds}) in a round-robin fashion
+     */
+    private final AtomicLong numPartitionCounter;
     /**
      * Counter for the message ids of this sender
      */
@@ -200,7 +230,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         maxReadTime = config.get(LOG_MAX_READ_TIME)*MS_TO_MICRO;
 
 
-        if (maxSendDelay>=MIN_DELIVERY_DELAY) {
+        if (maxSendDelay>=MIN_DELIVERY_DELAY) { //No need to locally queue messages since they will be send immediately
             outgoingMsg = new ArrayBlockingQueue<MessageEnvelope>(sendBatchSize*BATCH_SIZE_MULTIPLIER);
             sendThread = new SendThread();
             sendThread.start();
@@ -215,6 +245,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         this.numMsgCounter = new AtomicLong(readSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, 0));
         this.numBucketCounter = new AtomicLong(0);
+        this.numPartitionCounter = new AtomicLong(0);
         this.readers = new ArrayList<MessageReader>();
         this.isOpen = true;
     }
@@ -224,6 +255,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         return name;
     }
 
+    /**
+     * Closes the log by terminating all threads and waiting for their termination.
+     *
+     * @throws StorageException
+     */
     @Override
     public synchronized void close() throws StorageException {
         this.isOpen = false;
@@ -309,13 +345,13 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public Future<Message> add(StaticBuffer content) {
-        return add(content,manager.defaultPartitionId);
+        return add(content,manager.defaultWritePartitionIds[(int)numPartitionCounter.incrementAndGet()%manager.defaultWritePartitionIds.length]);
     }
 
     @Override
     public Future<Message> add(StaticBuffer content, StaticBuffer key) {
         int partitionId = 0;
-        //Get first 4 byte if exist in key
+        //Get first 4 byte if exist in key...
         for (int i=0;i<4;i++) {
             int b;
             if (key.length()>i) b = key.getByte(i) & 0xFF;
@@ -323,12 +359,13 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             partitionId = (partitionId<<8) + b;
         }
         assert manager.partitionBitWidth>=0 && manager.partitionBitWidth<=32;
+        //and then extract the number of partitions bits
         partitionId = partitionId>>>(32-manager.partitionBitWidth);
         return add(content, partitionId);
     }
 
     /**
-     * Adds the given message (content) to the partition identified by the provided partitionId.
+     * Adds the given message (content) to the timeslice for the partition identified by the provided partitionId.
      *
      * @param content
      * @param partitionId
@@ -373,6 +410,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         }
     }
 
+    /**
+     * Sends a batch of messages by persisting them to the storage backend.
+     *
+     * @param msgEnvelopes
+     */
     private void sendMessages(final List<MessageEnvelope> msgEnvelopes) {
         try {
             boolean success=BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
@@ -406,6 +448,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         }
     }
 
+    /**
+     * This background thread only gets started when messages are locally queued for up to a maximum number of microseconds
+     * or until the maximum number of local messages is reached.
+     * This thread waits for either event and then triggers {@link #sendMessages(java.util.List)} call to persist the messages.
+     */
     private class SendThread extends BackgroundThread {
 
         private List<MessageEnvelope> toSend;
@@ -507,6 +554,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         return this.readers.remove(reader);
     }
 
+    /**
+     * Thread which runs to read all messages from a particular partition id and bucket up to the next timeslice
+     * or current timestamp minus the configured read lag time {@link #LOG_READ_LAG_TIME}.
+     * The read marker is used to initialize the start time to read from. If a read marker is configured, then
+     * the read marker time is looked up for initialization.
+     */
     private class MessagePuller implements Runnable {
 
         private final int bucketId;
@@ -539,7 +592,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
                 prepareMessageProcessing(entries);
                 if (entries.size()>=maxReadMsg) {
-                    //Adjust maxTime to next timepoint
+                    /*Read another set of messages to ensure that we have exhausted all messages to the next timestamp.
+                    Since we have reached the request limit, it may be possible that there are additional messages
+                    with the same timestamp which we would miss on subsequent iterations */
                     Entry lastEntry = entries.get(entries.size()-1);
                     maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
