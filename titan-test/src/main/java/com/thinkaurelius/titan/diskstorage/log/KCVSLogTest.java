@@ -8,6 +8,9 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
+ * Implemention of the {@link LogTest} for {@link KCVSLogManager} based log implementations.
+ * This test only requires getting instances of {@link KeyColumnValueStoreManager}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class KCVSLogTest extends LogTest {

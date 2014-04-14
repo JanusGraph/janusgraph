@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
@@ -21,7 +21,8 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
 
 /**
- * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}.
+ * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
+ * which wrap around a {@link KeyColumnValueStore}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -32,21 +33,59 @@ public class KCVSLogManager implements LogManager {
                     "This can cause imbalanced loads and should only be used on low volume logs",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
 
+    /**
+     * Configuration of this log manager
+     */
     private final Configuration configuration;
+    /**
+     * Store Manager against which to open the {@link KeyColumnValueStore}s to wrap the {@link KCVSLog} around.
+     */
     final KeyColumnValueStoreManager storeManager;
+    /**
+     * Id which uniquely identifies this instance. Also see {@link GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID}.
+     */
     final String senderId;
 
+    /**
+     * The number of first bits of the key that identifies a partition. If this number is X then there are 2^X different
+     * partition blocks each of which is identified by a partition id.
+     */
     final int partitionBitWidth;
+    /**
+     * A collection of partition ids to which the logs write in round-robin fashion.
+     */
     final int[] defaultWritePartitionIds;
+    /**
+     * A collection of partition ids from which the readers will read concurrently.
+     */
     final int[] readPartitionIds;
+    /**
+     * Serializer used to (de)-serialize the log messages
+     */
     final Serializer serializer;
 
+    /**
+     * Keeps track of all open logs
+     */
     private final Map<String,KCVSLog> openLogs;
 
+    /**
+     * Opens a log manager against the provided KCVS store with the given configuration.
+     * @param storeManager
+     * @param config
+     */
     public KCVSLogManager(final KeyColumnValueStoreManager storeManager, final Configuration config) {
         this(storeManager, config, null);
     }
 
+    /**
+     * Opens a log manager against the provided KCVS store with the given configuration. Also provided is a list
+     * of read-partition-ids. These only apply when readers are registered against an opened log. In that case,
+     * the readers only read from the provided list of partition ids.
+     * @param storeManager
+     * @param config
+     * @param readPartitionIds
+     */
     public KCVSLogManager(final KeyColumnValueStoreManager storeManager, final Configuration config,
                           final int[] readPartitionIds) {
         Preconditions.checkArgument(storeManager!=null && config!=null);
