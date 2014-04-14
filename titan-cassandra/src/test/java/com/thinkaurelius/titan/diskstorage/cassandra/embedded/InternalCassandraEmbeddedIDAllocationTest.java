@@ -5,7 +5,6 @@ import com.thinkaurelius.titan.diskstorage.IDAllocationTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.apache.commons.configuration.Configuration;
 
 public class InternalCassandraEmbeddedIDAllocationTest extends IDAllocationTest {
 
@@ -14,7 +13,7 @@ public class InternalCassandraEmbeddedIDAllocationTest extends IDAllocationTest 
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
         return new CassandraEmbeddedStoreManager(CassandraStorageSetup.getEmbeddedConfiguration(getClass().getSimpleName()));
     }
 }

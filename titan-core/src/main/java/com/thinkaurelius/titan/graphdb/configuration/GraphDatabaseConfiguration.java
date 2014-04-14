@@ -1163,7 +1163,9 @@ public class GraphDatabaseConfiguration {
                     StoreFeatures f = storeManager.getFeatures();
                     boolean part = f.isDistributed() && f.isKeyOrdered();
                     globalWrite.set(IDS_PARTITION, part);
-                    log.info("Set ID partition mode to {}", part);
+                    log.info("Enabled ID partitioning", part);
+                } else {
+                    log.info("Disabled ID partitioning");
                 }
 
                 globalWrite.freezeConfiguration();
@@ -1181,15 +1183,9 @@ public class GraphDatabaseConfiguration {
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
 
-
         //Compute unique instance id
-        if (!combinedConfig.has(UNIQUE_INSTANCE_ID)) {
-            this.uniqueGraphId = computeUniqueInstanceId(combinedConfig);
-            log.info("Setting unique instance id: {}",uniqueGraphId);
-            overwrite.set(UNIQUE_INSTANCE_ID,uniqueGraphId);
-        } else {
-            this.uniqueGraphId = combinedConfig.get(UNIQUE_INSTANCE_ID);
-        }
+        this.uniqueGraphId = getOrGenerateUniqueInstanceId(combinedConfig);
+        overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
 
         //Default log configuration for system and tx log
         //send_delay=0 for tx log
@@ -1232,6 +1228,17 @@ public class GraphDatabaseConfiguration {
             throw new TitanConfigurationException("Cannot determine local host", e);
         }
         return new String(Hex.encodeHex(addrBytes)) + suffix;
+    }
+
+    public static String getOrGenerateUniqueInstanceId(Configuration config) {
+        String uid;
+        if (!config.has(UNIQUE_INSTANCE_ID)) {
+            uid = computeUniqueInstanceId(config);
+            log.info("Generated {}={}", UNIQUE_INSTANCE_ID.getName(), uid);
+        } else {
+            uid = config.get(UNIQUE_INSTANCE_ID);
+        }
+        return uid;
     }
 
     public static final ModifiableConfiguration buildConfiguration() {

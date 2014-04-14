@@ -98,4 +98,9 @@ public class MockIDAuthority implements IDAuthority {
     public void close() throws StorageException {
 
     }
+
+    @Override
+    public String getUniqueID() {
+        return "";
+    }
 }
