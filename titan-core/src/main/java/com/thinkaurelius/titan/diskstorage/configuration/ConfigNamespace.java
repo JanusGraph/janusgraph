@@ -22,8 +22,22 @@ public class ConfigNamespace extends ConfigElement {
         this(parent,name,description,false);
     }
 
+    /**
+     * Wether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
+     * @return
+     */
     public boolean isUmbrella() {
         return isUmbrella;
+    }
+
+    /**
+     * Whether this namespace or any parent namespace is an umbrella namespace.
+     * @return
+     */
+    public boolean hasUmbrella() {
+        if (isUmbrella()) return true;
+        if (isRoot()) return false;
+        return getNamespace().hasUmbrella();
     }
 
     @Override

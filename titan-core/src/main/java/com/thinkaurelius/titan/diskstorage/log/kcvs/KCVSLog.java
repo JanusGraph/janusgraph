@@ -162,9 +162,13 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private MessagePuller[] msgPullers;
 
     /**
-     * Counter used to write messages in a round-robin fashion
+     * Counter used to write messages to different buckets in a round-robin fashion
      */
     private final AtomicLong numBucketCounter;
+    /**
+     * Counter used to write messages to different partitions (identified by id - {@link KCVSLogManager#defaultWritePartitionIds}) in a round-robin fashion
+     */
+    private final AtomicLong numPartitionCounter;
     /**
      * Counter for the message ids of this sender
      */
@@ -215,6 +219,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         this.numMsgCounter = new AtomicLong(readSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, 0));
         this.numBucketCounter = new AtomicLong(0);
+        this.numPartitionCounter = new AtomicLong(0);
         this.readers = new ArrayList<MessageReader>();
         this.isOpen = true;
     }
@@ -309,7 +314,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public Future<Message> add(StaticBuffer content) {
-        return add(content,manager.defaultPartitionId);
+        return add(content,manager.defaultWritePartitionIds[(int)numPartitionCounter.incrementAndGet()%manager.defaultWritePartitionIds.length]);
     }
 
     @Override

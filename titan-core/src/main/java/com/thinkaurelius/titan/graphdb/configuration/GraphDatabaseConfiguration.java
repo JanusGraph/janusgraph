@@ -8,6 +8,8 @@ import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfigurati
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
@@ -715,6 +717,7 @@ public class GraphDatabaseConfiguration {
 
     public static final String MANAGEMENT_LOG = "titan";
     public static final String TRANSACTION_LOG = "tx";
+    public static final String TRIGGER_LOG = "trigger";
 
     public static final ConfigOption<String> LOG_BACKEND = new ConfigOption<String>(LOG_NS,"backend",
             "Define the log backed to use",
@@ -1178,6 +1181,8 @@ public class GraphDatabaseConfiguration {
         }
         Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
 
+
+        //Compute unique instance id
         if (!combinedConfig.has(UNIQUE_INSTANCE_ID)) {
             this.uniqueGraphId = computeUniqueInstanceId(combinedConfig);
             log.info("Setting unique instance id: {}",uniqueGraphId);
@@ -1185,6 +1190,24 @@ public class GraphDatabaseConfiguration {
         } else {
             this.uniqueGraphId = combinedConfig.get(UNIQUE_INSTANCE_ID);
         }
+
+        //Default log configuration for system and tx log
+        //send_delay=0 for tx log
+        Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
+                combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG)==0,"Send delay must be 0 for transaction log.");
+        overwrite.set(LOG_SEND_DELAY,0,TRANSACTION_LOG);
+        //backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true for system log
+        Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),
+                "Must use default log backend for system log");
+        Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,MANAGEMENT_LOG) ||
+                combinedConfig.get(LOG_SEND_DELAY,MANAGEMENT_LOG)==0,"Send delay must be 0 for system log.");
+        overwrite.set(LOG_SEND_DELAY, 0, MANAGEMENT_LOG);
+        Preconditions.checkArgument(!combinedConfig.has(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
+                combinedConfig.get(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management log must be configured to be key-consistent");
+        overwrite.set(KCVSLog.LOG_KEY_CONSISTENT,true,MANAGEMENT_LOG);
+        Preconditions.checkArgument(!combinedConfig.has(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG)
+                || combinedConfig.get(KCVSLogManager.LOG_FIXED_PARTITION,MANAGEMENT_LOG),"Fixed partitions must be enabled for management log");
+        overwrite.set(KCVSLogManager.LOG_FIXED_PARTITION,true,MANAGEMENT_LOG);
 
         this.configuration = new MergedConfiguration(overwrite,combinedConfig);
         preLoadConfiguration();

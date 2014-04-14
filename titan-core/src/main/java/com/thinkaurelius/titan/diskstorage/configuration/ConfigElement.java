@@ -143,6 +143,7 @@ public abstract class ConfigElement {
             path = parent.getName() + SEPARATOR + path;
             element = parent;
         }
+        //Don't make this check so that we can still access more general config items
         Preconditions.checkArgument(umbrellaPos<0,"Found unused umbrella element: %s",umbrellaPos<0?null:umbrellaElements[umbrellaPos]);
         return path;
     }
