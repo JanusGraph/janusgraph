@@ -10,7 +10,24 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.log.Log;
+import com.thinkaurelius.titan.diskstorage.log.Message;
+import com.thinkaurelius.titan.diskstorage.log.MessageReader;
+import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
@@ -26,6 +43,8 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
@@ -64,9 +83,103 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
+    public void simpleLogTest() throws InterruptedException {
+        final String triggerName = "test";
+        final Serializer serializer = graph.getDataSerializer();
+        final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
+        final TimeUnit unit = graph.getConfiguration().getTimestampProvider().getUnit();
+        final long startTime = Timestamps.MILLI.getTime();
+//        System.out.println(startTime);
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
+        testBasic();
+        //Transaction with custom triggerName
+        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v1 = tx2.addVertex();
+        v1.setProperty("weight",111.1);
+        tx2.commit();
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v2 = tx2.addVertex();
+        v2.setProperty("weight",222.2);
+        tx2.commit();
+        //Only read tx
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        v1 = tx2.getVertex(v1.getID());
+        assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
+        assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
+        tx2.commit();
+        close();
+
+        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        txlog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                int msgid = txMsgCounter.get()+1;
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, unit);
+                TransactionLogHeader header = txEntry.getHeader();
+//                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
+                if (msgid%2==0) {
+                    assertFalse(txEntry.hasContent());
+                    assertEquals(LogTxStatus.SUCCESS,header.getStatus());
+                } else {
+                    assertTrue(txEntry.hasContent());
+                    assertEquals(LogTxStatus.PRECOMMIT,header.getStatus());
+                    //TODO: Verify content parses correctly
+                }
+                txMsgCounter.incrementAndGet();
+            }
+        });
+        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
+        triggerLog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                StaticBuffer content = message.getContent();
+                assertTrue(content!=null && content.length()>0);
+                ReadBuffer read = content.asReadBuffer();
+                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
+                assertTrue(txTime<=msgTime);
+                assertTrue(txTime>=startTime);
+                for (String type : new String[]{"add","del"}) {
+                    long num = VariableLong.readPositive(read);
+                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
+                    if (type.equals("add")) {
+                        assertEquals(2,num);
+                    } else {
+                        assertEquals(0,num);
+                    }
+                    for (int i=0; i<num;i++) {
+                        Entry entry = BufferUtil.readEntry(read);
+                        assertNotNull(entry);
+                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
+                    }
+                }
+                triggerMsgCounter.incrementAndGet();
+            }
+        });
+        Thread.sleep(2000);
+        assertEquals(8, txMsgCounter.get());
+        assertEquals(2,triggerMsgCounter.get());
+    }
+
+    @Test
+    public void triggerLogTest() {
+
+    }
+
+
+    @Test
     public void testTypes() {
-        clopen(option(GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
-                option(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
+        clopen(option(CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
+                option(CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
 
         TitanLabel friend = mgmt.makeLabel("friend").directed().make();
 

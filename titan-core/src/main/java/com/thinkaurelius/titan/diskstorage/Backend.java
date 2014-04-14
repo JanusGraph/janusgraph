@@ -334,7 +334,7 @@ public class Backend implements LockerProvider {
         return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
-    private static LogManager getLogManager(Configuration config, String logName, KeyColumnValueStoreManager sm) {
+    public static LogManager getLogManager(Configuration config, String logName, KeyColumnValueStoreManager sm) {
         Configuration logConfig = config.restrictTo(logName);
         String backend = logConfig.get(LOG_BACKEND);
         if (backend.equalsIgnoreCase(LOG_BACKEND.getDefaultValue())) {

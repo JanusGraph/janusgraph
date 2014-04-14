@@ -21,6 +21,7 @@ import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementLogger;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
@@ -110,7 +111,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
-        globalConfig.set(REGISTRATION_TIME, Timestamps.MILLI.getTime(), uniqueInstanceId);
+        globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
@@ -428,10 +429,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //7) Log transaction
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
-        final long txId = txCounter.incrementAndGet();
-        final long timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
+                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
         if (logTransaction) {
-            DataOutput out = getTxLogHeader(txId,timestamp, LogTxStatus.PRECOMMIT);
+            DataOutput out = txLogHeader.serializeHeader(serializer,256);
             mutator.logMutations(out);
             txLog.add(out.getStaticBuffer());
         }
@@ -447,28 +448,18 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             throw e;
         } finally {
             if (logTransaction) {
-                DataOutput out = getTxLogHeader(txId,timestamp,success?LogTxStatus.SUCCESS:LogTxStatus.FAILURE);
+                txLogHeader.setStatus(success?LogTxStatus.SUCCESS:LogTxStatus.FAILURE);
+                DataOutput out = txLogHeader.serializeHeader(serializer,20);
                 txLog.add(out.getStaticBuffer());
             }
         }
 
-
-
-
-    }
-
-    private final DataOutput getTxLogHeader(final long txId, final long txTimestamp, LogTxStatus status) {
-        DataOutput out = serializer.getDataOutput(128);
-        out.putLong(txTimestamp);
-        VariableLong.writePositive(out, txId);
-        out.writeObjectNotNull(status);
-        return out;
     }
 
     private static final Predicate<InternalRelation> SYSTEMTYPES_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return internalRelation instanceof SystemType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
+            return internalRelation.getType() instanceof SystemType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
         }
     };
 
@@ -519,12 +510,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
-        out.putInt(relations.size());
+        VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
             Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }
-
     }
 
     private static class ShutdownThread extends Thread {

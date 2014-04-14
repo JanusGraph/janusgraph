@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.log.kcvs;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.attribute.StringX;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -323,7 +324,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         DataOutput out = manager.serializer.getDataOutput(8 + 8 + manager.senderId.length() + 2 + content.length());
         Preconditions.checkArgument(msg.getTimestampMicro()>0);
         out.putLong(msg.getTimestampMicro());
-        out.writeObjectNotNull(manager.senderId);
+        out.writeObjectNotNull(new StringX(manager.senderId));
         out.putLong(numMsgCounter.incrementAndGet());
         final int valuePos = out.getPosition();
         out.putBytes(content);
@@ -333,8 +334,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private KCVSMessage parseMessage(Entry msg) {
         ReadBuffer r = msg.asReadBuffer();
         long timestamp = r.getLong();
-        String senderId = manager.serializer.readObjectNotNull(r,String.class);
-        return new KCVSMessage(msg.getValue(),timestamp,senderId);
+        StringX senderId = manager.serializer.readObjectNotNull(r,StringX.class);
+        return new KCVSMessage(msg.getValue(),timestamp,senderId.getString());
     }
 
     /**

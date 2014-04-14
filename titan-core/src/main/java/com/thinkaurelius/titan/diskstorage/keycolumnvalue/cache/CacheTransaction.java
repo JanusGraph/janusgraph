@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.StringX;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -183,7 +184,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         Preconditions.checkArgument(!continuousPersistence,"Cannot log entire mutation set when continuous persistence is enabled");
         VariableLong.writePositive(out,mutations.size());
         for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
-            out.writeObjectNotNull(storeMuts.getKey().getName());
+            out.writeObjectNotNull(new StringX(storeMuts.getKey().getName()));
             VariableLong.writePositive(out,storeMuts.getValue().size());
             for (Map.Entry<StaticBuffer,KCVMutation> muts : storeMuts.getValue().entrySet()) {
                 BufferUtil.writeBuffer(out,muts.getKey());

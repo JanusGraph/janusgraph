@@ -740,7 +740,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, 1000, ConfigOption.nonnegativeInt());
 
     public static final ConfigOption<Integer> LOG_READ_INTERVAL = new ConfigOption<Integer>(LOG_NS,"read-interval",
-            "Time in ms between message readings from the backend for thos logging implementations that read message in batch",
+            "Time in ms between message readings from the backend for this logging implementations that read message in batch",
             ConfigOption.Type.MASKABLE, 5000, ConfigOption.nonnegativeInt());
 
     public static final ConfigOption<Integer> LOG_READ_THREADS = new ConfigOption<Integer>(LOG_NS,"read-threads",
