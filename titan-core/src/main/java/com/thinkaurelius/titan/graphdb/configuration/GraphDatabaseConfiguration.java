@@ -1188,11 +1188,11 @@ public class GraphDatabaseConfiguration {
         overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
 
         //Default log configuration for system and tx log
-        //send_delay=0 for tx log
+        //TRANSACTION LOG: send_delay=0 for tx log
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG)==0,"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY,0,TRANSACTION_LOG);
-        //backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true for system log
+        //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
         Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),
                 "Must use default log backend for system log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,MANAGEMENT_LOG) ||
