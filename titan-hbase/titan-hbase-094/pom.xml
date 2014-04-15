@@ -54,10 +54,10 @@
     
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>../src/test/java</testSourceDirectory>
+        <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
             <testResource>
-                <directory>${project.basedir}/../src/test/resources</directory>
+                <directory>${project.basedir}/../common/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -83,6 +83,15 @@
                 <executions>
                     <execution>
                         <id>clean-hbase-files</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>

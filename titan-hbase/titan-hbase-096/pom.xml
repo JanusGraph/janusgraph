@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase-096</artifactId>
-    <name>Titan-HBase: Client for HBase 0.96</name>
+    <name>Titan-HBase: 0.96 Compatibility Shim</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
@@ -82,10 +82,10 @@
     
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>../src/test/java</testSourceDirectory>
+        <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
             <testResource>
-                <directory>${project.basedir}/../src/test/resources</directory>
+                <directory>${project.basedir}/../common/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -111,6 +111,15 @@
                 <executions>
                     <execution>
                         <id>clean-hbase-files</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -196,16 +205,19 @@
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-annotations</artifactId>
                     <version>${hadoop.version}</version>
+		    <optional>true</optional>
                 </dependency>
                 <dependency>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-hdfs</artifactId>
                     <version>${hadoop.version}</version>
+		    <optional>true</optional>
                 </dependency>
                 <dependency>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-client</artifactId>
                     <version>${hadoop.version}</version>
+		    <optional>true</optional>
                 </dependency>
             </dependencies>
         </profile>

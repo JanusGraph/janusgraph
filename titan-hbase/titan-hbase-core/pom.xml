@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase-core</artifactId>
-    <name>Titan-HBase: Common Components</name>
+    <name>Titan-HBase: Core Components</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
@@ -71,6 +71,17 @@
     
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
+	<plugins>
+	    <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+	</plugins>
     </build>
     
     <profiles>
