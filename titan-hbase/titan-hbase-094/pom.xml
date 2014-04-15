@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hbase-094</artifactId>
-    <name>Titan-HBase: Client for HBase 0.94</name>
+    <name>Titan-HBase: 0.94 Compatibility Shim</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <properties>
@@ -19,6 +19,17 @@
     </properties>
     
     <dependencies>
+        <dependency>
+	    <groupId>${project.groupId}</groupId>
+	    <artifactId>titan-hbase-core</artifactId>
+	    <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-net</artifactId>
+                    <groupId>commons-net</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
@@ -43,10 +54,10 @@
     
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>../src/test/java</testSourceDirectory>
+        <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
             <testResource>
-                <directory>${project.basedir}/../src/test/resources</directory>
+                <directory>${project.basedir}/../common/test/resources</directory>
                 <filtering>true</filtering>
             </testResource>
         </testResources>
@@ -68,19 +79,19 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>include-common-hbase-sources</id>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>clean-hbase-files</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>

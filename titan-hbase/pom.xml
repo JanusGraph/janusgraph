@@ -8,10 +8,12 @@
     </parent>
     <artifactId>titan-hbase</artifactId>
     <packaging>pom</packaging>
-    <name>Titan-HBase: Distributed Graph Database</name>
+    <name>Titan-HBase: Parent Module</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
     <modules>
+        <module>titan-hbase-core</module>
+        <module>titan-hbase-jar</module>
         <module>titan-hbase-094</module>
         <module>titan-hbase-096</module>
     </modules>
@@ -92,7 +94,7 @@
                                 </delimiters>
                                 <resources>
                                     <resource>
-                                        <directory>${project.basedir}/../src/test/conf/</directory>
+                                        <directory>${project.basedir}/../common/test/conf/</directory>
                                         <filtering>true</filtering>
                                     </resource>
                                 </resources>
@@ -117,27 +119,8 @@
                                 <attach>false</attach>
                                 <outputDirectory>${project.basedir}/bin</outputDirectory>
                                 <descriptors>
-                                    <descriptor>${project.basedir}/../src/test/binassembly.xml</descriptor>
+                                    <descriptor>${project.basedir}/../common/test/binassembly.xml</descriptor>
                                 </descriptors>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>include-common-hbase-sources</id>
-                            <phase>process-sources</phase>
-                            <goals>
-                                <goal>add-source</goal>
-                            </goals>
-                            <configuration>
-                                <sources>
-                                    <source>../src/main/java</source>
-                                </sources>
                             </configuration>
                         </execution>
                     </executions>

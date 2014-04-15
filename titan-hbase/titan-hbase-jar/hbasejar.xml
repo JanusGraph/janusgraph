@@ -1,0 +1,25 @@
+<assembly>
+    <id>titan-hbase</id>
+    <baseDirectory>/</baseDirectory>
+
+    <formats>
+        <format>jar</format>
+    </formats>
+
+    <dependencySets>
+      <dependencySet>
+	<useProjectArtifact>false</useProjectArtifact>
+	<unpack>true</unpack>
+	<unpackOptions>
+	  <includes>
+	    <include>**/*.class</include>
+	  </includes>
+	</unpackOptions>
+	<includes>
+	  <include>com.thinkaurelius.titan:titan-hbase-core</include>
+	  <include>com.thinkaurelius.titan:titan-hbase-094</include>
+	  <include>com.thinkaurelius.titan:titan-hbase-096</include>
+	</includes>
+      </dependencySet>
+    </dependencySets>
+</assembly>
