@@ -115,7 +115,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         txlog.registerReader(new MessageReader() {
             @Override
             public void read(Message message) {
-                int msgid = txMsgCounter.get()+1;
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
                 assertTrue(msgTime>=startTime);
                 assertNotNull(message.getSenderId());
@@ -124,11 +123,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
-                if (msgid%2==0) {
-                    assertFalse(txEntry.hasContent());
+                if (!txEntry.hasContent()) {
                     assertEquals(LogTxStatus.SUCCESS,header.getStatus());
                 } else {
-                    assertTrue(txEntry.hasContent());
                     assertEquals(LogTxStatus.PRECOMMIT,header.getStatus());
                     //TODO: Verify content parses correctly
                 }

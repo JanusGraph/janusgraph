@@ -3,11 +3,14 @@ package com.thinkaurelius.titan.graphdb.database.log;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,6 +44,13 @@ public class TransactionLogHeader {
 
     public LogTxStatus getStatus() {
         return status;
+    }
+
+    public StaticBuffer getLogKey() {
+        ByteBuffer b = ByteBuffer.allocate(8);
+        b.order(ByteOrder.LITTLE_ENDIAN);
+        b.putLong(transactionId);
+        return new StaticArrayBuffer(b.array());
     }
 
     public void setStatus(LogTxStatus status) {

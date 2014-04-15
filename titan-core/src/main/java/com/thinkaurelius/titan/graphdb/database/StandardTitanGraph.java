@@ -434,6 +434,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (logTransaction) {
             DataOutput out = txLogHeader.serializeHeader(serializer,256);
             mutator.logMutations(out);
+//            txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
             txLog.add(out.getStaticBuffer());
         }
 
@@ -450,6 +451,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (logTransaction) {
                 txLogHeader.setStatus(success?LogTxStatus.SUCCESS:LogTxStatus.FAILURE);
                 DataOutput out = txLogHeader.serializeHeader(serializer,20);
+//                txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
                 txLog.add(out.getStaticBuffer());
             }
         }

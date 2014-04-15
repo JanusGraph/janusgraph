@@ -135,6 +135,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private final static StaticBuffer MESSAGE_COUNTER_COLUMN = new WriteByteBuffer(1).putByte(MESSAGE_COUNTER).getStaticBuffer();
 
+    private static final Random random = new Random();
+
     /**
      * Associated {@link LogManager}
      */
@@ -193,10 +195,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private final AtomicLong numBucketCounter;
     /**
-     * Counter used to write messages to different partitions (identified by id - {@link KCVSLogManager#defaultWritePartitionIds}) in a round-robin fashion
-     */
-    private final AtomicLong numPartitionCounter;
-    /**
      * Counter for the message ids of this sender
      */
     private final AtomicLong numMsgCounter;
@@ -246,7 +244,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         this.numMsgCounter = new AtomicLong(readSetting(manager.senderId, MESSAGE_COUNTER_COLUMN, 0));
         this.numBucketCounter = new AtomicLong(0);
-        this.numPartitionCounter = new AtomicLong(0);
         this.readers = new ArrayList<MessageReader>();
         this.isOpen = true;
     }
@@ -346,11 +343,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public Future<Message> add(StaticBuffer content) {
-        return add(content,manager.defaultWritePartitionIds[(int)numPartitionCounter.incrementAndGet()%manager.defaultWritePartitionIds.length]);
+        return add(content,manager.defaultWritePartitionIds[random.nextInt(manager.defaultWritePartitionIds.length)]);
     }
 
     @Override
     public Future<Message> add(StaticBuffer content, StaticBuffer key) {
+        Preconditions.checkArgument(key!=null && key.length()>0,"Invalid key provided: %s",key);
         int partitionId = 0;
         //Get first 4 byte if exist in key...
         for (int i=0;i<4;i++) {
