@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-import static org.apache.cassandra.db.Table.SYSTEM_KS;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

@@ -133,7 +133,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      */
     public static final int PORT_DEFAULT = 9160;
 
-
+    public static final String SYSTEM_KS = "system";
 
 //    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
 //    public static final int REPLICATION_FACTOR_DEFAULT = 1;
