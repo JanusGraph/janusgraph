@@ -30,4 +30,8 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
         return true;
     }
 
+    @Override
+    public Integer getTtl() {
+        return null;
+    }
 }

@@ -21,13 +21,14 @@ public enum TypeAttributeType {
     DATATYPE(Class.class),
     UNIDIRECTIONAL(Boolean.class),
     SORT_ORDER(Order.class),
+    TTL(Integer.class),
     INDEX_PARAMETERS(IndexParameters[].class);
 
     static final Set<TypeAttributeType> PROPERTY_KEY_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
             HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, INDEXES, INDEX_PARAMETERS, DATATYPE);
 
     static final Set<TypeAttributeType> EDGE_LABEL_TYPES = ImmutableSet.of(UNIQUENESS, UNIQUENESS_LOCK,
-            HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, UNIDIRECTIONAL);
+            HIDDEN, MODIFIABLE, SORT_KEY, SORT_ORDER, SIGNATURE, TTL, UNIDIRECTIONAL);
 
     private final Class attributeClass;
 

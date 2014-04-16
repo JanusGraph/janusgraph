@@ -86,5 +86,8 @@ public class SystemKey extends SystemType implements TitanKey {
         return false;
     }
 
-
+    @Override
+    public Integer getTtl() {
+        return null;
+    }
 }

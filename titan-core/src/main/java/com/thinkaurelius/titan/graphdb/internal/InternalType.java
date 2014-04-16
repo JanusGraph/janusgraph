@@ -22,4 +22,6 @@ public interface InternalType extends TitanType, InternalVertex {
 
     public Order getSortOrder();
 
+    public Integer getTtl();
+
 }

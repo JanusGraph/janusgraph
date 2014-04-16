@@ -115,7 +115,7 @@ public class EdgeSerializer implements RelationReader {
 
         long relationIdDiff, vertexIdDiff = 0;
         if (titanType.isUnique(dir)) {
-            assert data.getValuePosition()==in.getPosition();
+            assert data.getValuePosition() == in.getPosition();
             if (rtype == RelationType.EDGE)
                 vertexIdDiff = VariableLong.read(in);
             relationIdDiff = VariableLong.read(in);
@@ -127,11 +127,11 @@ public class EdgeSerializer implements RelationReader {
             if (rtype == RelationType.EDGE)
                 vertexIdDiff = VariableLong.readBackward(in);
 
-            if (!excludeProperties && keysig.length>0) { //Read sort key which only exists if type is not unique in this direction
-                int keyLength = in.getPosition()+1-startKeyPos; //after reading the ids, we are on the last byte of the key
+            if (!excludeProperties && keysig.length > 0) { //Read sort key which only exists if type is not unique in this direction
+                int keyLength = in.getPosition() + 1 - startKeyPos; //after reading the ids, we are on the last byte of the key
                 in.movePositionTo(startKeyPos);
                 ReadBuffer inkey = in;
-                if (def.getSortOrder()==Order.DESC) inkey = in.subrange(keyLength,true);
+                if (def.getSortOrder() == Order.DESC) inkey = in.subrange(keyLength, true);
                 readInlineTypes(keysig, properties, inkey, tx);
             }
 
@@ -265,6 +265,9 @@ public class EdgeSerializer implements RelationReader {
         if (relation.isEdge()) {
             vertexIdDiff = relation.getVertex((position + 1) % 2).getID() - relation.getVertex(position).getID();
             ttl = relation.getProperty(Titan.TTL);
+            if (null == ttl) {
+                ttl = definition.getTtl();
+            }
         }
 
         if (type.isUnique(dir)) {
@@ -322,12 +325,12 @@ public class EdgeSerializer implements RelationReader {
             }
         }
 
-        assert valuePosition>0;
-        assert writeValue || valuePosition==out.getPosition();
+        assert valuePosition > 0;
+        assert writeValue || valuePosition == out.getPosition();
 
-        return new StaticArrayEntry(((InternalType)type).getSortOrder()==Order.DESC?
-                                    out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
-                                    out.getStaticBuffer(),valuePosition,ttl);
+        return new StaticArrayEntry(((InternalType) type).getSortOrder() == Order.DESC ?
+                out.getStaticBufferFlipBytes(keyStartPos, keyEndPos) :
+                out.getStaticBuffer(), valuePosition, ttl);
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {
@@ -370,7 +373,7 @@ public class EdgeSerializer implements RelationReader {
         if (dir == Direction.BOTH) {
             sliceStart = IDHandler.getEdgeType(type.getID(), getDirID(Direction.OUT, rt));
             sliceEnd = IDHandler.getEdgeType(type.getID(), getDirID(Direction.IN, rt));
-            assert sliceStart.compareTo(sliceEnd)<0;
+            assert sliceStart.compareTo(sliceEnd) < 0;
             sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
             int dirID = getDirID(dir, rt);
@@ -412,16 +415,17 @@ public class EdgeSerializer implements RelationReader {
                             break;
 
                         case DESC:
-                            sliceEnd = colStart.getStaticBufferFlipBytes(startPosition,colStart.getPosition());
-                            sliceStart = colEnd.getStaticBufferFlipBytes(startPosition,colEnd.getPosition());
+                            sliceEnd = colStart.getStaticBufferFlipBytes(startPosition, colStart.getPosition());
+                            sliceStart = colEnd.getStaticBufferFlipBytes(startPosition, colEnd.getPosition());
                             if (interval.startInclusive()) sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
                             if (!interval.endInclusive()) sliceStart = BufferUtil.nextBiggerBuffer(sliceStart);
                             break;
 
-                        default: throw new AssertionError(type.getSortOrder().toString());
+                        default:
+                            throw new AssertionError(type.getSortOrder().toString());
                     }
 
-                    assert sliceStart.compareTo(sliceEnd)<=0;
+                    assert sliceStart.compareTo(sliceEnd) <= 0;
                     wroteInterval = true;
                     break;
                 }
@@ -450,10 +454,11 @@ public class EdgeSerializer implements RelationReader {
                         break;
 
                     case DESC:
-                        sliceStart = colStart.getStaticBufferFlipBytes(startPosition,endPosition);
+                        sliceStart = colStart.getStaticBufferFlipBytes(startPosition, endPosition);
                         break;
 
-                    default: throw new AssertionError(type.getSortOrder().toString());
+                    default:
+                        throw new AssertionError(type.getSortOrder().toString());
                 }
                 sliceEnd = BufferUtil.nextBiggerBuffer(sliceStart);
             }

@@ -84,5 +84,8 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
         return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
     }
 
-
+    @Override
+    public Integer getTtl() {
+        return getDefinition().getValue(TypeAttributeType.TTL, Integer.class);
+    }
 }

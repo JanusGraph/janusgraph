@@ -95,6 +95,12 @@ public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker 
     }
 
     @Override
+    public LabelMaker ttl(int seconds) {
+        super.ttl(seconds);
+        return this;
+    }
+
+    @Override
     public StandardLabelMaker hidden() {
         super.hidden();
         return this;

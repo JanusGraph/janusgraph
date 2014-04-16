@@ -112,4 +112,8 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         return result;
     }
 
+    @Override
+    public Integer getTtl() {
+        return null;
+    }
 }
