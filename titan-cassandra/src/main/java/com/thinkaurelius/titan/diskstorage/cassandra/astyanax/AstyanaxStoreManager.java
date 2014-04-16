@@ -353,7 +353,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                     upds.setTimestamp(timestamp.additionTime);
 
                     for (Entry e : titanMutation.getAdditions())
-                        upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
+                        upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), e.getTtl());
                 }
             }
         }

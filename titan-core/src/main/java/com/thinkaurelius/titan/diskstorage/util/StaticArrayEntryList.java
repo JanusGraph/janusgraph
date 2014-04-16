@@ -125,6 +125,11 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             caches[currentIndex]=cache;
         }
 
+        @Override
+        public Integer getTtl() {
+            return null;
+        }
+
         //####### COPIED FROM StaticArrayEntry
 
         @Override

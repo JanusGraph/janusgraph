@@ -189,7 +189,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
                         QueryPath path = new QueryPath(columnFamily, null, e.getColumnAs(StaticBuffer.BB_FACTORY));
-                        rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime);
+                        rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime, e.getTtl());
                     }
                 }
 

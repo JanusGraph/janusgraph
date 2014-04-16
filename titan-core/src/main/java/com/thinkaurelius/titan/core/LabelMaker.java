@@ -138,6 +138,14 @@ public interface LabelMaker extends TypeMaker {
     public LabelMaker sortOrder(Order order);
 
     /**
+     * Configures the time to live, in seconds, of edges with this label.
+     *
+     * @param seconds
+     * @return
+     */
+    public LabelMaker ttl(int seconds);
+
+    /**
      * Configures the signature of this label.
      * <p/>
      * Specifying the signature of a type tells the graph database to <i>expect</i> that relations of this type

@@ -195,6 +195,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
                         column.setTimestamp(timestamp.additionTime);
+                        if (null != ent.getTtl()) {
+                            column.setTtl(ent.getTtl());
+                        }
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setColumn_or_supercolumn(cosc);

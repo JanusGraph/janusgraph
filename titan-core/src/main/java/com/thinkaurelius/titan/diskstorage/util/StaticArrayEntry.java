@@ -25,8 +25,8 @@ public class StaticArrayEntry extends BaseStaticArrayEntry {
         super(array, valuePosition);
     }
 
-    public StaticArrayEntry(StaticBuffer buffer, int valuePosition) {
-        super(buffer, valuePosition);
+    public StaticArrayEntry(StaticBuffer buffer, int valuePosition, Integer ttl) {
+        super(buffer, valuePosition, ttl);
     }
 
     /**
@@ -49,7 +49,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry {
     //########### CONSTRUCTORS AND UTILITIES ###########
 
     public static Entry of(StaticBuffer buffer) {
-        return new StaticArrayEntry(buffer,buffer.length());
+        return new StaticArrayEntry(buffer,buffer.length(),null);
     }
 
     public static final<E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
@@ -156,12 +156,14 @@ public class StaticArrayEntry extends BaseStaticArrayEntry {
 class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
 
     private final int valuePosition;
+    private final Integer ttl;
 
     public BaseStaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array,offset,limit);
         Preconditions.checkArgument(valuePosition>0);
         Preconditions.checkArgument(valuePosition<=length());
         this.valuePosition=valuePosition;
+        ttl = null;
     }
 
     public BaseStaticArrayEntry(byte[] array, int limit, int valuePosition) {
@@ -172,13 +174,18 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
         this(array, 0, array.length, valuePosition);
     }
 
-    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition) {
+    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition, Integer ttl) {
         super(buffer);
         Preconditions.checkArgument(valuePosition>0);
         Preconditions.checkArgument(valuePosition<=length());
         this.valuePosition=valuePosition;
+        this.ttl = ttl;
     }
 
+    @Override
+    public Integer getTtl() {
+        return ttl;
+    }
 
     @Override
     public int getValuePosition() {

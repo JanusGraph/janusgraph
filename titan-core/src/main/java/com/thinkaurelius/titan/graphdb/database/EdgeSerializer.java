@@ -260,9 +260,12 @@ public class EdgeSerializer implements RelationReader {
         int keyEndPos = out.getPosition();
 
         long vertexIdDiff = 0;
+        Integer ttl = null;
         long relationIdDiff = relation.getID() - relation.getVertex(position).getID();
-        if (relation.isEdge())
+        if (relation.isEdge()) {
             vertexIdDiff = relation.getVertex((position + 1) % 2).getID() - relation.getVertex(position).getID();
+            ttl = relation.getProperty(Titan.TTL);
+        }
 
         if (type.isUnique(dir)) {
             valuePosition = out.getPosition();
@@ -324,7 +327,7 @@ public class EdgeSerializer implements RelationReader {
 
         return new StaticArrayEntry(((InternalType)type).getSortOrder()==Order.DESC?
                                     out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
-                                    out.getStaticBuffer(),valuePosition);
+                                    out.getStaticBuffer(),valuePosition,ttl);
     }
 
     private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {
