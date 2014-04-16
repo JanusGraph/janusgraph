@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.BiMap;
@@ -194,6 +195,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             if (entry.getValue()==null) continue;
             hconf.set(entry.getKey(), entry.getValue().toString());
             keysLoaded++;
+        }
+        
+        // Special case for STORAGE_HOSTS
+        if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
+            String zkQuorumKey = "hbase.zookeeper.quorum";
+            String csHostList = Joiner.on(",").join(config.get(GraphDatabaseConfiguration.STORAGE_HOSTS));
+            hconf.set(zkQuorumKey, csHostList);
+            logger.info("Copied host list from {} to {}: {}", GraphDatabaseConfiguration.STORAGE_HOSTS, zkQuorumKey, csHostList);
         }
 
         logger.debug("HBase configuration: set a total of {} configuration values", keysLoaded);
@@ -833,12 +842,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
-        if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
-            logger.warn(
-                    "The configuration property {} is ignored for HBase. Set hbase.zookeeper.quorum in hbase-site.xml or {}.hbase.zookeeper.quorum in Titan's configuration file.",
-                    GraphDatabaseConfiguration.STORAGE_HOSTS, HBASE_CONFIGURATION_NAMESPACE);
-        }
-
         if (config.has(GraphDatabaseConfiguration.PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
                     GraphDatabaseConfiguration.PORT, HBASE_CONFIGURATION_NAMESPACE);
