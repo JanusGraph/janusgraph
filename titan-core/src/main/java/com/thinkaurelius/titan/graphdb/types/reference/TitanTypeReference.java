@@ -75,6 +75,11 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
     }
 
     @Override
+    public Integer getTtl() {
+        return getDefinition().getValue(TypeAttributeType.TTL, Integer.class);
+    }
+
+    @Override
     public boolean isModifiable() {
         return getDefinition().getValue(TypeAttributeType.MODIFIABLE, boolean.class);
     }
@@ -82,10 +87,5 @@ public abstract class TitanTypeReference extends EmptyVertex implements Internal
     @Override
     public boolean isHidden() {
         return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
-    }
-
-    @Override
-    public Integer getTtl() {
-        return getDefinition().getValue(TypeAttributeType.TTL, Integer.class);
     }
 }

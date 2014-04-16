@@ -104,5 +104,4 @@ public abstract class TitanTypeVertex extends CacheVertex implements InternalTyp
     public boolean isHidden() {
         return getDefinition().getValue(TypeAttributeType.HIDDEN, boolean.class);
     }
-
 }

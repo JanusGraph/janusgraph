@@ -32,6 +32,6 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
 
     @Override
     public Integer getTtl() {
-        return null;
+        return getDefinition().getValue(TypeAttributeType.TTL,Integer.class);
     }
 }

@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationType;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 
@@ -102,6 +103,4 @@ public abstract class SystemType extends EmptyVertex implements InternalVertex, 
     public void setID(long id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
     }
-
-
 }
