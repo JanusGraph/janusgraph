@@ -49,11 +49,11 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(Precision.class, new Precision.PrecisionSerializer());
         registerClass(Character.class, new CharacterSerializer());
         registerClass(Boolean.class, new BooleanSerializer());
-        registerClass(String.class, new StringSerializer());
+        registerClass(CString.class, new CStringSerializer());
         registerClass(Date.class, new DateSerializer());
 
         registerClass(Geoshape.class, new Geoshape.GeoshapeSerializer());
-        registerClass(StringX.class, new StringXSerializer()); //supports null serialization
+        registerClass(String.class, new StringSerializer()); //supports null serialization
         registerClass(Float.class, new FloatSerializer());
         registerClass(Double.class, new DoubleSerializer());
 

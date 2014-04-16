@@ -7,6 +7,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.CString;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
@@ -182,6 +183,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         TitanKey id = makeVertexIndexedUniqueKey("uid",String.class);
 
+        TitanKey name = makeKey("name",CString.class);
+
         TitanKey weight = makeKey("weight",Decimal.class);
 
         TitanKey someid = makeVertexIndexedKey("someid",Object.class);
@@ -259,7 +262,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         boolval = tx.getPropertyKey("boolval");
         assertEquals(Boolean.class, boolval.getDataType());
 
-
+        name = tx.getPropertyKey("name");
         //Failures
         try {
             tx.makeKey("fid").make();
@@ -274,7 +277,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.makeLabel("test").make();
         try {
             tx.makeLabel("link2").unidirected().
-                    sortKey(id, weight).signature(id).make();
+                    sortKey(name, weight).signature(name).make();
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            tx.makeLabel("link2").unidirected().
+                    sortKey(id, weight).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -284,7 +293,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
-        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(id, weight).make();
+        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(name, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();

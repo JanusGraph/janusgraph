@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.StringX;
 import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -125,10 +124,10 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     public void logMutations(DataOutput out) {
         VariableLong.writePositive(out,mutations.size());
         for (Map.Entry<String,Map<String,IndexMutation>> store : mutations.entrySet()) {
-            out.writeObjectNotNull(new StringX(store.getKey()));
+            out.writeObjectNotNull(store.getKey());
             VariableLong.writePositive(out,store.getValue().size());
             for (Map.Entry<String,IndexMutation> doc : store.getValue().entrySet()) {
-                out.writeObjectNotNull(new StringX(doc.getKey()));
+                out.writeObjectNotNull(doc.getKey());
                 IndexMutation mut = doc.getValue();
                 out.putByte((byte)(mut.isNew()?1:(mut.isDeleted()?2:0)));
                 List<IndexEntry> adds = mut.getAdditions();
@@ -142,7 +141,7 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     }
 
     private void writeIndexEntry(DataOutput out, IndexEntry entry) {
-        out.writeObjectNotNull(new StringX(entry.field));
+        out.writeObjectNotNull(entry.field);
         out.writeClassAndObject(entry.value);
     }
 

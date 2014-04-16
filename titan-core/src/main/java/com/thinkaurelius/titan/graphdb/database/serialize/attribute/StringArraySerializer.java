@@ -8,7 +8,6 @@ import java.lang.reflect.Array;
 
 public class StringArraySerializer extends ArraySerializer implements AttributeSerializer<String[]> {
 
-    //TODO: use StringX here
     private static final StringSerializer stringSerializer = new StringSerializer();
 
     @Override
