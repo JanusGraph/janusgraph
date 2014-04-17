@@ -1,12 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class resolves lock contention between two transactions on the same JVM.
@@ -53,7 +55,7 @@ public class LocalLockMediator<T> {
      * <p/>
      * For any particular key-column, whatever value of {@code requestor} is
      * passed to this method must also be passed to the associated later call to
-     * {@link #unlock(com.thinkaurelius.titan.diskstorage.util.KeyColumn, Object)}.
+     * {@link #unlock(KeyColumn, ExpectedValueCheckingTransaction)}.
      * <p/>
      * If some requestor {@code r} calls this method on a KeyColumn {@code k}
      * and this method returns true, then subsequent calls to this method by
@@ -66,21 +68,27 @@ public class LocalLockMediator<T> {
      * have expired and the calling context should assume it no longer holds the
      * lock specified by {@code kc}.
      * <p/>
+     * The number of nanoseconds elapsed since the UNIX Epoch is not readily
+     * available within the JVM. When reckoning expiration times, this method
+     * uses the approximation implemented by
+     * {@link com.thinkaurelius.titan.diskstorage.util.NanoTime#getApproxNSSinceEpoch(false)}.
+     * <p/>
      * The current implementation of this method returns true when given an
      * {@code expiresAt} argument in the past. Future implementations may return
      * false instead.
      *
      * @param kc        lock identifier
      * @param requestor the object locking {@code kc}
-     * @param expires   the absolute time since the UNIX epoch at which this lock will automatically expire in timeunit {@link Timestamps#SYSTEM}
+     * @param expires   the absolute time since the UNIX epoch at which this lock will automatically expire
+     * @param tu        the units of {@code expires}
      * @return true if the lock is acquired, false if it was not acquired
      */
     public boolean lock(KeyColumn kc, T requestor,
-                        long expires) {
+                        long expires, TimeUnit tu) {
         assert null != kc;
         assert null != requestor;
 
-        AuditRecord<T> audit = new AuditRecord<T>(requestor, expires);
+        AuditRecord<T> audit = new AuditRecord<T>(requestor, TimeUnit.NANOSECONDS.convert(expires, tu));
         AuditRecord<T> inmap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
@@ -108,7 +116,7 @@ public class LocalLockMediator<T> {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= Timestamps.SYSTEM().getTime()) {
+        } else if (inmap.expires <= Timestamps.NANO.getTime()) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {
@@ -186,8 +194,9 @@ public class LocalLockMediator<T> {
          */
         private final T holder;
         /**
-         * The expiration time of a the lock in time from the epoch as returned by
-         * {@link Timestamps#SYSTEM#getTime()}.
+         * The expiration time of a the lock. Conventionally, this is in
+         * nanoseconds from the epoch as returned by
+         * {@link NanoTime#getTime()}.
          */
         private final long expires;
         /**

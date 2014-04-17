@@ -14,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConcurrentWriteConfigur
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
@@ -33,14 +32,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class KCVSConfiguration implements ConcurrentWriteConfiguration {
-
-    private static final long MAX_OPERATION_TIME_DEFAULT = Timestamps.SYSTEM().convert(10, TimeUnit.SECONDS);
 
     private final BackendOperation.TransactionalProvider txProvider;
     private final KeyColumnValueStore store;
@@ -48,7 +44,8 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final StaticBuffer rowKey;
     private final StandardSerializer serializer;
 
-    private long maxOperationWaitTime = MAX_OPERATION_TIME_DEFAULT;
+    private boolean closeManager = false;
+    private long maxOperationWaitTime = 10000;
 
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, KeyColumnValueStore store,
@@ -62,9 +59,9 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         this.serializer = new StandardSerializer();
     }
 
-    public void setMaxOperationWaitTime(long waitTime, TimeUnit unit) {
-        Preconditions.checkArgument(waitTime>0,"Invalid wait time: %s",waitTime);
-        this.maxOperationWaitTime=Timestamps.SYSTEM().convert(waitTime,unit);
+    public void setMaxOperationWaitTime(long waitTimeMS) {
+        Preconditions.checkArgument(waitTimeMS>0,"Invalid wait time: %s",waitTimeMS);
+        this.maxOperationWaitTime=waitTimeMS;
     }
 
 

@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
  */
 public class KCVSMessage extends AbstractMessage {
 
-    public KCVSMessage(StaticBuffer payload, long timestamp, String senderId) {
-        super(payload, timestamp, senderId);
+    public KCVSMessage(StaticBuffer payload, long timestampMirco, String senderId) {
+        super(payload, timestampMirco, senderId);
     }
 }

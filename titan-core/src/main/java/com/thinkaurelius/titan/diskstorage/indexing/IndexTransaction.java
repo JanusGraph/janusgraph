@@ -30,12 +30,12 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private final KeyInformation.IndexRetriever keyInformations;
 
     private final int mutationAttempts;
-    private final long attemptWaitTime;
+    private final int attemptWaitTime;
 
     private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
-                            int mutationAttempts, long attemptWaitTime) throws StorageException {
+                            int mutationAttempts, int attemptWaitTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);
         this.index=index;

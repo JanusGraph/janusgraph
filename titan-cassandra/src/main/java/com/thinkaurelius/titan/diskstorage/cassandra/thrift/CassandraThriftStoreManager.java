@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
@@ -68,7 +67,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
 
-        long thriftTimeoutMS = super.getConnectionTimeout(TimeUnit.MILLISECONDS);
+        /*
+         * This is eventually passed to Thrift's TSocket constructor. The
+         * constructor parameter is of type int.
+         */
+        int thriftTimeoutMS = config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_MS).intValue();
 
         int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
 

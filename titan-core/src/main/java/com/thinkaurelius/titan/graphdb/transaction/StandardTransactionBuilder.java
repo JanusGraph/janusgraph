@@ -2,9 +2,10 @@ package com.thinkaurelius.titan.graphdb.transaction;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
 
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
@@ -13,13 +14,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-
-import java.util.concurrent.TimeUnit;
-
 
 /**
  * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -65,6 +62,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final StandardTitanGraph graph;
 
+    private final TimeUnit graphTimeUnit;
+
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
      */
@@ -72,6 +71,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         this.graph = graph;
+        this.graphTimeUnit = graphConfig.getTimestampProvider().getUnit();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
@@ -120,7 +120,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit) {
-        this.timestamp = Timestamps.SYSTEM().convert(timestampSinceEpoch,unit);
+        this.timestamp = graphTimeUnit.convert(timestampSinceEpoch, unit);
         return this;
     }
 
@@ -148,7 +148,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
-                hasTimestamp(), timestamp,
+                timestamp,
                 indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
@@ -231,11 +231,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public boolean hasTimestamp() {
-        return timestamp != null;
-    }
-
-    @Override
     public String getMetricsPrefix() {
         return metricsPrefix;
     }
@@ -246,8 +241,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public long getTimestamp() {
-        Preconditions.checkState(timestamp != null, "A timestamp has not been configured");
+    public Long getTimestamp() {
         return timestamp;
     }
 
@@ -288,7 +282,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, boolean hasTimestamp, Long timestamp,
+                boolean isThreadBound, Long timestamp,
                 long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
@@ -383,12 +377,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public boolean hasTimestamp() {
-            return handleConfig.hasTimestamp();
-        }
-
-        @Override
-        public long getTimestamp() {
+        public Long getTimestamp() {
             return handleConfig.getTimestamp();
         }
 

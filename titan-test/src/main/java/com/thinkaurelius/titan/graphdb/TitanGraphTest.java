@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.core.attribute.CString;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -18,9 +19,9 @@ import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
@@ -87,6 +88,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final String triggerName = "test";
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
+        final TimeUnit unit = graph.getConfiguration().getTimestampProvider().getUnit();
         final long startTime = Timestamps.MILLI.getTime();
 //        System.out.println(startTime);
         clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
@@ -117,7 +119,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
                 assertTrue(msgTime>=startTime);
                 assertNotNull(message.getSenderId());
-                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer);
+                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, unit);
                 TransactionLogHeader header = txEntry.getHeader();
 //                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
@@ -141,7 +143,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 StaticBuffer content = message.getContent();
                 assertTrue(content!=null && content.length()>0);
                 ReadBuffer read = content.asReadBuffer();
-                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),Timestamps.SYSTEM().getUnit());
+                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
                 assertTrue(txTime<=msgTime);
                 assertTrue(txTime>=startTime);
                 for (String type : new String[]{"add","del"}) {

@@ -13,7 +13,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -52,12 +53,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -69,6 +72,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final Backend backend;
     private final IDManager idManager;
     private final VertexIDAssigner idAssigner;
+    private final TimestampProvider times;
 
     //Serializers
     protected final IndexSerializer indexSerializer;
@@ -101,6 +105,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.times = configuration.getTimestampProvider();
+
         isOpen = true;
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100,0.75f,1));
@@ -111,7 +117,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
-        globalConfig.set(REGISTRATION_TIME, Timestamps.SYSTEM().getTime(), uniqueInstanceId);
+        globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
@@ -429,10 +435,17 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //7) Log transaction
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
+
+        Long timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
+        if (null == timestamp) {
+            timestamp = times.getTime();
+        }
+
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
-                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), LogTxStatus.PRECOMMIT);
+                timestamp, config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
+
         if (logTransaction) {
-            DataOutput out = txLogHeader.serializeHeader(serializer, 256);
+            DataOutput out = txLogHeader.serializeHeader(serializer,256);
             mutator.logMutations(out);
 //            txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
             txLog.add(out.getStaticBuffer());
@@ -497,7 +510,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
             try {
                 final Log txLog = backend.getTriggerLog(logTxIdentifier);
-                final long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                Long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                if (null == timestamp) {
+                    timestamp = times.getTime();
+                }
                 DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
                 out.putLong(timestamp);
                 logRelations(out,addedRelations,tx);
@@ -512,7 +528,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
-        VariableLong.writePositive(out, relations.size());
+        VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
             Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);

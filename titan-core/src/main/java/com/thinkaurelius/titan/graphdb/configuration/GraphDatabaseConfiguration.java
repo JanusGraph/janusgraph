@@ -10,7 +10,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -26,7 +27,6 @@ import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
@@ -128,6 +128,12 @@ public class GraphDatabaseConfiguration {
 
     public static final String UKNOWN_FIELD_NAME = "unknown_key";
 
+
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(TITAN_NS, "timestamps",
+            "The timestamp resolution to use when writing to storage and indices",
+            ConfigOption.Type.FIXED, Timestamps.MICRO);
+
+
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TITAN_NS,"log-tx",
             "Whether transaction mutations should be logged to Titan's system log",
             ConfigOption.Type.GLOBAL, true);
@@ -183,7 +189,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
 //    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
     public static final ConfigOption<Integer> DB_CACHE_CLEAN_WAIT = new ConfigOption<Integer>(CACHE_NS,"db-cache-clean-wait",
-            "How long database level cache will keep items expired while they are being persisted (in ms)",
+            "How long database level cache will keep items expired while they are being persisted",
             ConfigOption.Type.GLOBAL_OFFLINE, 50);
 
     /**
@@ -195,7 +201,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
 //    public static final long DB_CACHE_TIME_DEFAULT = 10000;
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
-            "Default expiration time in ms for cached elements. Set to 0 to cache until change.",
+            "Default expiration time for cached elements. Set to 0 to cache until change.",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
 
     /**
@@ -309,9 +315,9 @@ public class GraphDatabaseConfiguration {
     /**
      * Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying.
      */
-    public static final ConfigOption<Long> STORAGE_ATTEMPT_WAITTIME = new ConfigOption<Long>(STORAGE_NS,"attempt-wait",
+    public static final ConfigOption<Integer> STORAGE_ATTEMPT_WAITTIME = new ConfigOption<Integer>(STORAGE_NS,"attempt-wait",
             "Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying",
-            ConfigOption.Type.MASKABLE, 250l, ConfigOption.positiveLong());
+            ConfigOption.Type.MASKABLE, 250, ConfigOption.positiveInt());
 //    public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
 //    public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
 
@@ -360,9 +366,9 @@ public class GraphDatabaseConfiguration {
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
      * This value should be a small multiple of the average consistent write time.
      */
-    public static final ConfigOption<Long> LOCK_WAIT = new ConfigOption<Long>(STORAGE_NS,"lock-wait-time",
+    public static final ConfigOption<Integer> LOCK_WAIT = new ConfigOption<Integer>(STORAGE_NS,"lock-wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, 100l, ConfigOption.positiveLong());
+            ConfigOption.Type.GLOBAL_OFFLINE, 100);
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
 //    public static final long LOCK_WAIT_MS_DEFAULT = 100;
 
@@ -403,7 +409,7 @@ public class GraphDatabaseConfiguration {
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
      * Also, the time waited after the application before verifying that the application was successful.
      */
-    public static final ConfigOption<Integer> IDAUTHORITY_WAIT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-wait-time",
+    public static final ConfigOption<Integer> IDAUTHORITY_WAIT_MS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-wait-time",
             "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, 300);
 //    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
@@ -562,9 +568,9 @@ public class GraphDatabaseConfiguration {
      * Default timeout when connecting to a remote database instance
      * <p/>
      */
-    public static final ConfigOption<Integer> CONNECTION_TIMEOUT = new ConfigOption<Integer>(STORAGE_NS,"connection-timeout",
-            "Default timeout in ms when connecting to a remote database instance",
-            ConfigOption.Type.MASKABLE, 10000);
+    public static final ConfigOption<Long> CONNECTION_TIMEOUT_MS = new ConfigOption<Long>(STORAGE_NS,"connection-timeout",
+            "Default timeout, in milliseconds, when connecting to a remote database instance",
+            ConfigOption.Type.MASKABLE, 10000L);
 //    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
 //    public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
@@ -649,7 +655,7 @@ public class GraphDatabaseConfiguration {
      * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
      * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
      */
-    public static final ConfigOption<Integer> IDS_RENEW_TIMEOUT = new ConfigOption<Integer>(IDS_NS,"renew-timeout",
+    public static final ConfigOption<Integer> IDS_RENEW_TIMEOUT_MS = new ConfigOption<Integer>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
             ConfigOption.Type.MASKABLE, 60 * 1000);
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
@@ -1114,8 +1120,6 @@ public class GraphDatabaseConfiguration {
     private boolean logTransactions;
     private String metricsPrefix;
     private String unknownIndexKeydName;
-    private long storageWaitTime;
-    private int storageWriteAttempts;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1267,8 +1271,6 @@ public class GraphDatabaseConfiguration {
         else propertyPrefetching = null;
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
-        storageWriteAttempts = configuration.get(WRITE_ATTEMPTS);
-        storageWaitTime = Timestamps.SYSTEM().convert(configuration.get(STORAGE_ATTEMPT_WAITTIME), TimeUnit.MILLISECONDS);
 
         unknownIndexKeydName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UKNOWN_FIELD_NAME : null;
 
@@ -1407,15 +1409,19 @@ public class GraphDatabaseConfiguration {
     }
 
     public int getWriteAttempts() {
-        return storageWriteAttempts;
+        return configuration.get(WRITE_ATTEMPTS);
     }
 
     public boolean hasLogTransactions() {
         return logTransactions;
     }
 
-    public long getStorageWaittime() {
-        return storageWaitTime;
+    public int getStorageWaittime() {
+        return configuration.get(STORAGE_ATTEMPT_WAITTIME);
+    }
+
+    public TimestampProvider getTimestampProvider() {
+        return configuration.get(TIMESTAMP_PROVIDER);
     }
 
     public static List<RegisteredAttributeClass<?>> getRegisteredAttributeClasses(Configuration configuration) {
@@ -1509,6 +1515,7 @@ public class GraphDatabaseConfiguration {
         if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedSchemaCache(retriever);
         else return new StandardSchemaCache(retriever);
     }
+
 
 
 	/* ----------------------------------------

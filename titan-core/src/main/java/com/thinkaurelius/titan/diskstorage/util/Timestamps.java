@@ -1,13 +1,11 @@
-package com.thinkaurelius.titan.diskstorage.time;
+package com.thinkaurelius.titan.diskstorage.util;
 
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum Timestamps implements TimestampProvider {
-
     NANO {
 
         // This is the value of System.nanoTime() at startup
@@ -69,11 +67,6 @@ public enum Timestamps implements TimestampProvider {
         public TimeUnit getUnit() {
             return TimeUnit.NANOSECONDS;
         }
-
-        @Override
-        public String getUnitName() {
-            return "ns";
-        }
     },
 
     MICRO {
@@ -88,8 +81,17 @@ public enum Timestamps implements TimestampProvider {
         }
 
         @Override
-        public String getUnitName() {
-            return "us";
+        public long sleepPast(long time, final TimeUnit unit) throws InterruptedException {
+            /*
+             * Sleep for at least a millisecond.
+             */
+            if (unit.equals(TimeUnit.NANOSECONDS) || unit.equals(TimeUnit.MICROSECONDS)) {
+                return unit.convert(
+                   super.sleepPast(TimeUnit.MILLISECONDS.convert(time, unit) + 1, TimeUnit.MILLISECONDS),
+                   TimeUnit.MILLISECONDS);
+            } else {
+                return super.sleepPast(time, unit);
+            }
         }
     },
 
@@ -103,30 +105,22 @@ public enum Timestamps implements TimestampProvider {
         public TimeUnit getUnit() {
             return TimeUnit.MILLISECONDS;
         }
-        @Override
-        public String getUnitName() {
-            return "ms";
-        }
     };
 
     private static final Logger log =
             LoggerFactory.getLogger(Timestamps.class);
 
     @Override
-    public long sleepPast(final long time) throws InterruptedException {
+    public long sleepPast(final long time, final TimeUnit unit) throws InterruptedException {
 
         // All long variables are times in parameter unit
 
         long now;
 
-        while ((now = getTime()) <= time) {
+        while ((now = unit.convert(getTime(), getUnit())) <= time) {
             long delta = time - now;
             if (0L == delta)
                 delta = 1L;
-
-            //Make sure we sleep for at least one millisecond
-            delta = Math.max(delta,getUnit().convert(1,TimeUnit.MILLISECONDS));
-
             /*
              * TimeUnit#sleep(long) internally preserves the nanoseconds parts
              * of the argument, if applicable, and passes both milliseconds and
@@ -134,9 +128,9 @@ public enum Timestamps implements TimestampProvider {
              */
             if (log.isDebugEnabled()) {
                 log.debug("Sleeping: now={} targettime={} delta={} (unit={})",
-                        new Object[] { now, time, delta, getUnit() });
+                        new Object[] { now, time, delta, unit });
             }
-            getUnit().sleep(delta);
+            unit.sleep(delta);
         }
 
         assert time < now;
@@ -145,31 +139,7 @@ public enum Timestamps implements TimestampProvider {
     }
 
     @Override
-    public void sleepFor(long duration) throws InterruptedException {
-        Preconditions.checkArgument(duration>=0,"Sleep time must be positive: %s",duration);
-        getUnit().sleep(duration);
-    }
-
-    @Override
-    public long convert(long sourceDuration, TimeUnit sourceUnit) {
-        return getUnit().convert(sourceDuration,sourceUnit);
-    }
-
-    @Override
     public String toString() {
         return "Timestamps[" + getUnit() + "]";
     }
-
-    // ========================= ACCESS ==================
-
-    static TimestampProvider SYSTEM_TIMESTAMP = MICRO;
-
-    public static final TimestampProvider SYSTEM() {
-        return SYSTEM_TIMESTAMP;
-    }
-
-
-
-
-
 }

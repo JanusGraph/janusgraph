@@ -51,7 +51,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
     private final KeyColumnValueStore indexStore;
 
     private final int maxReadRetryAttempts;
-    private final long retryStorageWaitTime;
+    private final int retryStorageWaitTime;
 
     private final Executor threadPool;
 
@@ -59,7 +59,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
 
     public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
                               StoreFeatures features, KeyColumnValueStore edgeStore, KeyColumnValueStore indexStore,
-                              int maxReadRetryAttempts, long retryStorageWaitTime,
+                              int maxReadRetryAttempts, int retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;

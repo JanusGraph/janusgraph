@@ -2,11 +2,8 @@ package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -18,7 +15,6 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +32,12 @@ public class StandardIDPool implements IDPool {
 
     private static final int RENEW_ID_COUNT = 100;
 
-    private static final long RENEW_WAIT_INTERVAL = 1000;
-
-
     private final IDAuthority idAuthority;
     private final long idUpperBound; //exclusive
     private final int partitionID;
 
     private final long renewTimeout;
+    private final TimeUnit renewTimeoutUnit;
     private final double renewBufferPercentage;
 
     private long nextID;
@@ -57,14 +51,15 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, long renewTimeout, TimeUnit unit, double renewBufferPercentage) {
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, long renewTimeout, TimeUnit renewTimeoutUnit, double renewBufferPercentage) {
         Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
         Preconditions.checkArgument(partitionID<(1l<<32));
         this.partitionID = (int) partitionID;
         this.idUpperBound = idUpperBound;
-        Preconditions.checkArgument(renewTimeout>0,"Renew-timeout must be positive");
-        this.renewTimeout = Timestamps.SYSTEM().convert(renewTimeout,unit);
+        Preconditions.checkArgument(renewTimeout > 0,"Renew-timeout must be positive");
+        this.renewTimeout = renewTimeout;
+        this.renewTimeoutUnit = renewTimeoutUnit;
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
         this.renewBufferPercentage = renewBufferPercentage;
 
@@ -93,20 +88,20 @@ public class StandardIDPool implements IDPool {
         Stopwatch sw = new Stopwatch().start();
         if (null != idBlockFuture) {
             try {
-                idBlockFuture.get(renewTimeout, Timestamps.SYSTEM().getUnit());
+                idBlockFuture.get(renewTimeout, renewTimeoutUnit);
             } catch (ExecutionException e) {
-                String msg = String.format("ID block allocation on partition %d failed with an exception in %d",
-                        partitionID, sw.stop().elapsed(Timestamps.SYSTEM().getUnit()));
+                String msg = String.format("ID block allocation on partition %d failed with an exception in %s",
+                        partitionID, sw.stop());
                 throw new TitanException(msg, e);
             } catch (TimeoutException e) {
                 // Attempt to cancel the renewer
                 idBlockFuture.cancel(true);
-                String msg = String.format("ID block allocation on partition %d timed out in %d",
-                        partitionID, sw.stop().elapsed(Timestamps.SYSTEM().getUnit()));
+                String msg = String.format("ID block allocation on partition %d timed out in %s",
+                        partitionID, sw.stop());
                 throw new TitanException(msg, e);
             } catch (CancellationException e) {
-                String msg = String.format("ID block allocation on partition %d was cancelled after %d",
-                        partitionID, sw.stop().elapsed(Timestamps.SYSTEM().getUnit()));
+                String msg = String.format("ID block allocation on partition %d was cancelled after %s",
+                        partitionID, sw.stop());
                 throw new TitanException(msg, e);
             } finally {
                 idBlockFuture = null;
@@ -146,7 +141,7 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
         try {
             Stopwatch sw = new Stopwatch().start();
-            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout, Timestamps.SYSTEM().getUnit());
+            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout, renewTimeoutUnit);
             log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];

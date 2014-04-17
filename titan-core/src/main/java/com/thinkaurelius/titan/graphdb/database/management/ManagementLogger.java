@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -30,8 +30,8 @@ public class ManagementLogger implements MessageReader {
     private static final Logger log =
             LoggerFactory.getLogger(ManagementLogger.class);
 
-    private static final long SLEEP_INTERVAL =  Timestamps.SYSTEM().convert(100,TimeUnit.MILLISECONDS);
-    private static final long MAX_WAIT_TIME = Timestamps.SYSTEM().convert(60,TimeUnit.SECONDS);
+    private static final int SLEEP_INTERVAL_MICRO =  100000;
+    private static final int MAX_WAIT_TIME_MICRO = 60000000; //60 seconds
 
 
     private final StandardTitanGraph graph;
@@ -110,7 +110,7 @@ public class ManagementLogger implements MessageReader {
             this.updatedTypeTriggers = updatedTypeTriggers;
             this.openInstances = ImmutableSet.copyOf(openInstances);
             this.ackCounter = new AtomicInteger(openInstances.size());
-            this.startTime = Timestamps.SYSTEM().getTime();
+            this.startTime = Timestamps.MICRO.getTime();
         }
 
         void receivedAcknowledgement(String senderId) {
@@ -146,7 +146,7 @@ public class ManagementLogger implements MessageReader {
 
         @Override
         public void run() {
-            long startTime = Timestamps.SYSTEM().getTime();
+            long startTime = Timestamps.MICRO.getTime();
             while (true) {
                 boolean txStillOpen = false;
                 Iterator<? extends TitanTransaction> iter = openTx.iterator();
@@ -166,13 +166,13 @@ public class ManagementLogger implements MessageReader {
                     sysLog.add(out.getStaticBuffer());
                     break;
                 }
-                if (Timestamps.SYSTEM().getTime()-startTime>MAX_WAIT_TIME) {
+                if (Timestamps.MICRO.getTime()-startTime>MAX_WAIT_TIME_MICRO) {
                     //Break out if waited too long
                     log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
                     break;
                 }
                 try {
-                    Timestamps.SYSTEM().sleepFor(SLEEP_INTERVAL);
+                    Timestamps.MICRO.sleepPast(SLEEP_INTERVAL_MICRO, TimeUnit.MICROSECONDS);
                 } catch (InterruptedException e) {
                     log.error("Interrupted eviction ack thread for "+getId(),e);
                     break;

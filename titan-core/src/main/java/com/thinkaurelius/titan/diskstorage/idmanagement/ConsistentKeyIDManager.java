@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -16,6 +15,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 
+import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,9 +38,12 @@ import java.util.concurrent.TimeUnit;
  * The partition id is used as the key and since key operations are considered
  * consistent, this protocol guarantees unique id block assignments.
  * <p/>
- * This class uses system time ({@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()} internally, both for
+ * This class uses {@code System#currentTimeMillis()} internally, both for
  * timing writes and for the timestamp values written to the storage backend
- * during the lock application process.
+ * during the lock application process. It always uses
+ * {@code currentTimeMillis()} no matter what
+ * {@link GraphDatabaseConfiguration#TIMESTAMP_PROVIDER} has been configured in
+ * the enclosing graph.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -52,19 +55,18 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(16);
     private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(16);
 
-    private static final long ROLLBACK_WAITTIME_MS = 200;
-
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
     private final StandardTransactionConfig.Builder storeTxConfigBuilder;
 
     private final int rollbackAttempts = 5;
-    private final long rollbackWaitTime = Timestamps.SYSTEM().convert(ROLLBACK_WAITTIME_MS,TimeUnit.MILLISECONDS);
+    private final int rollbackWaitTime = 200;
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
     private final int uniqueId;
     private final boolean randomizeUniqueId;
+    //private final ConsistencyLevel consistencLevel;
 
     private final Random random = new Random();
 
@@ -166,7 +168,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
         final List<String> exhausted = new ArrayList<String>(randomUniqueIDLimit);
 
-        long backoffTime = idApplicationWait;
+        long backoffMS = idApplicationWaitMS;
 
         Preconditions.checkArgument(idBlockUpperBound>blockSize,
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
@@ -200,7 +202,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
-                    long before = Timestamps.SYSTEM().getTime();
+                    long before = System.currentTimeMillis();
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
                         public Boolean call(StoreTransaction txh) throws StorageException {
@@ -208,10 +210,10 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             return true;
                         }
                     },this);
-                    long after = Timestamps.SYSTEM().getTime();
+                    long after = System.currentTimeMillis();
 
-                    if (idApplicationWait < after - before) {
-                        throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in [" + (after - before) + "] "+Timestamps.SYSTEM().getUnitName()+" => too slow, threshold is: " + idApplicationWait);
+                    if (idApplicationWaitMS < after - before) {
+                        throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (after - before) + " ms => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
 
                         assert 0 != target.length();
@@ -222,7 +224,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          * the same id block from another machine
                          */
 
-                        sleepAndConvertInterrupts(after + idApplicationWait);
+                        sleepAndConvertInterrupts(after + idApplicationWaitMS);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -283,10 +285,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
                                 break;
                             } catch (StorageException e) {
-                                log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime);
-                                log.warn("Exception stack trace for old block application deletion: ",e);
+                                log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
                                 if (rollbackWaitTime > 0)
-                                    sleepAndConvertInterrupts(Timestamps.SYSTEM().getTime() + rollbackWaitTime);
+                                    sleepAndConvertInterrupts(System.currentTimeMillis() + rollbackWaitTime);
                             }
                         }
                     }
@@ -295,10 +296,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
             } catch (TemporaryStorageException e) {
-                backoffTime = Math.min(backoffTime * 2, idApplicationWait * 32L);
-                log.warn("Temporary storage exception while acquiring id block - retrying in {}", backoffTime);
-                log.warn("Temporary storage exception stack trace: ",e);
-                sleepAndConvertInterrupts(Timestamps.SYSTEM().getTime() + backoffTime);
+                backoffMS = Math.min(backoffMS * 2, idApplicationWaitMS * 32L);
+                log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", backoffMS, e);
+                sleepAndConvertInterrupts(System.currentTimeMillis() + backoffMS);
             }
         }
 
@@ -320,7 +320,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                         + 8 // time in ms
                         + uidBytes.length);
 
-        bb.putLong(-blockValue).putLong(Timestamps.SYSTEM().getTime());
+        bb.putLong(-blockValue).putLong(System.currentTimeMillis());
         WriteBufferUtil.put(bb, uidBytes);
         return bb.getStaticBuffer();
     }
@@ -329,9 +329,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return -column.getLong(0);
     }
 
-    private static void sleepAndConvertInterrupts(final long sleepTime) throws StorageException {
+    private static void sleepAndConvertInterrupts(final long millis) throws StorageException {
         try {
-            Timestamps.SYSTEM().sleepPast(sleepTime);
+            Timestamps.MILLI.sleepPast(millis, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             throw new PermanentStorageException(e);
         }

@@ -17,7 +17,7 @@ public class FakeLock implements TransactionLock {
     private FakeLock() {}
 
     @Override
-    public void lock(long maxTime) {
+    public void lock(long timeMillisecond) {
     }
 
     @Override

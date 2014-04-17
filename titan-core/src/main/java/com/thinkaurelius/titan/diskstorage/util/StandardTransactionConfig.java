@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -13,15 +12,12 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public class StandardTransactionConfig implements TransactionHandleConfig {
 
-    private Long timestamp = null;
-
+    private final Long timestamp;
     private final String metricsPrefix;
     private final Configuration customOptions;
 
     @Override
-    public long getTimestamp() {
-        if (timestamp==null) setTimestamp();
-        assert timestamp!=null;
+    public Long getTimestamp() {
         return timestamp;
     }
 
@@ -33,11 +29,6 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     @Override
     public String getMetricsPrefix() {
         return metricsPrefix;
-    }
-
-    @Override
-    public boolean hasTimestamp() {
-        return null != timestamp;
     }
 
     @Override
@@ -60,14 +51,6 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         public Builder(TransactionHandleConfig template, Long ts) {
             customOptions(template.getCustomOptions());
             metricsPrefix(template.getMetricsPrefix());
-
-            /*
-             * Copying template.getTimestamp() would be an error because
-             * non-null values are ambiguous. Is it the product of lazy
-             * initialization, or was it explicitly specified before
-             * construction? Impossible to tell without introducing a new field
-             * and interface method.
-             */
             timestamp(ts);
         }
 
@@ -75,7 +58,6 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
             metricsPrefix = s;
             return this;
         }
-
 
         public Builder timestamp(Long ts) {
             timestamp = ts;
@@ -89,8 +71,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         }
 
         public StandardTransactionConfig build() {
-            return new StandardTransactionConfig(metricsPrefix,
-                    timestamp, customOptions);
+            return new StandardTransactionConfig(metricsPrefix, timestamp, customOptions);
         }
     }
 
@@ -102,16 +83,11 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         return new Builder().customOptions(customOptions).build();
     }
 
-    private StandardTransactionConfig(String metricsPrefix, Long timestamp,
+    private StandardTransactionConfig(String metricsPrefix,
+            Long timestamp,
             Configuration customOptions) {
         this.metricsPrefix = metricsPrefix;
         this.timestamp = timestamp;
         this.customOptions = customOptions;
-    }
-
-    private StandardTransactionConfig setTimestamp() {
-        Preconditions.checkState(timestamp==null,"Timestamp has already been set");
-        this.timestamp = Timestamps.SYSTEM().getTime();
-        return this;
     }
 }

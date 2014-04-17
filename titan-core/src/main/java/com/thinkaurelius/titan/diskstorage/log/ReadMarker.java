@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,14 +11,11 @@ import java.util.concurrent.TimeUnit;
 public class ReadMarker {
 
     private final String identifier;
-    /**
-     * Timeunit is {@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()}
-     */
-    private final long startTime;
+    private final long startTimeMicro;
 
-    private ReadMarker(String identifier, long startTime) {
+    private ReadMarker(String identifier, long startTimeMicro) {
         this.identifier = identifier;
-        this.startTime = startTime;
+        this.startTimeMicro = startTimeMicro;
     }
 
     /**
@@ -39,26 +36,16 @@ public class ReadMarker {
     }
 
     /**
-     * Returns the start time of this marker in the given time unit
-     *
-     * @param unit {@link TimeUnit} to return the start time in.
+     * Returns the start time of this marker in microseconds
      * @return
      */
-    public long getStartTime(TimeUnit unit) {
-        return unit.convert(startTime,Timestamps.SYSTEM().getUnit());
-    }
-
-    /**
-     * Returns the start time of this marker in system time ({@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()}).
-     * @return
-     */
-    public long getSystemStartTime() {
-        return startTime;
+    public long getStartTimeMicro() {
+        return startTimeMicro;
     }
 
 
-    private static long convertToSystem(long time, TimeUnit unit) {
-        return Timestamps.SYSTEM().convert(time,unit);
+    private static long convertToMirco(long time, TimeUnit unit) {
+        return TimeUnit.MICROSECONDS.convert(time,unit);
     }
 
     /**
@@ -67,7 +54,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, Timestamps.SYSTEM().getTime());
+        return new ReadMarker(null, Timestamps.MICRO.getTime());
     }
 
     /**
@@ -76,7 +63,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromTime(long timestamp, TimeUnit unit) {
-        return new ReadMarker(null, convertToSystem(timestamp, unit));
+        return new ReadMarker(null,convertToMirco(timestamp,unit));
     }
 
     /**
@@ -93,7 +80,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromIdentifierOrTime(String id, long timestamp, TimeUnit unit) {
-        return new ReadMarker(id, convertToSystem(timestamp, unit));
+        return new ReadMarker(id,convertToMirco(timestamp,unit));
     }
 
     /**
@@ -104,7 +91,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromIdentifierOrNow(String id) {
-        return new ReadMarker(id,Timestamps.SYSTEM().getTime());
+        return new ReadMarker(id,Timestamps.MICRO.getTime());
     }
 
 

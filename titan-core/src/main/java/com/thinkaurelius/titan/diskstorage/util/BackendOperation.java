@@ -5,12 +5,10 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -21,11 +19,11 @@ public class BackendOperation {
     private static final Logger log =
             LoggerFactory.getLogger(BackendOperation.class);
 
-    private static final long BASE_REATTEMPT_TIME= Timestamps.SYSTEM().convert(50, TimeUnit.MILLISECONDS);
+    private static final long BASE_REATTEMPT_TIME_MS=50;
 
-    public static final<V> V execute(Callable<V> exe, long maxDelay) throws TitanException {
-        long waitTime = BASE_REATTEMPT_TIME;
-        long endTime = Timestamps.SYSTEM().getTime()+maxDelay;
+    public static final<V> V execute(Callable<V> exe, long maxTimeMS) throws TitanException {
+        long waitTime = BASE_REATTEMPT_TIME_MS;
+        long maxTime = System.currentTimeMillis()+maxTimeMS;
         StorageException lastException = null;
         do {
             try {
@@ -38,17 +36,17 @@ public class BackendOperation {
             }
             //Wait and retry
             Preconditions.checkNotNull(lastException);
-            if (Timestamps.SYSTEM().getTime()+waitTime<endTime) {
+            if (System.currentTimeMillis()+waitTime<maxTime) {
                 log.info("Temporary storage exception during backend operation. Attempting backoff retry",exe.toString(),lastException);
                 try {
-                    Timestamps.SYSTEM().sleepFor(waitTime);
+                    Thread.sleep(waitTime);
                 } catch (InterruptedException r) {
                     throw new TitanException("Interrupted while waiting to retry failed storage operation", r);
                 }
             }
             waitTime*=2; //Exponential backoff
-        } while (Timestamps.SYSTEM().getTime()<endTime);
-        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxDelay+" " + Timestamps.SYSTEM().getUnitName(),lastException);
+        } while (System.currentTimeMillis()<maxTime);
+        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxTimeMS+" ms",lastException);
     }
 
     private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;
@@ -80,7 +78,7 @@ public class BackendOperation {
                 Preconditions.checkArgument(waitTime>=0,"Invalid wait time: %s",waitTime);
                 log.info("Temporary storage exception during backend operation [{}]. Attempting incremental retry",exe.toString(),lastException);
                 try {
-                    Timestamps.SYSTEM().sleepFor(waitTime);
+                    Thread.sleep(waitTime);
                 } catch (InterruptedException r) {
                     throw new TitanException("Interrupted while waiting to retry failed backend operation", r);
                 }
@@ -103,7 +101,7 @@ public class BackendOperation {
         }
     }
 
-    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, long maxTime) throws TitanException {
+    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, long maxTimeMS) throws TitanException {
         return execute(new Callable<R>() {
             @Override
             public R call() throws Exception {
@@ -113,7 +111,7 @@ public class BackendOperation {
             public String toString() {
                 return exe.toString();
             }
-        },maxTime);
+        },maxTimeMS);
     }
 
 

@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.core;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-
 import java.util.concurrent.TimeUnit;
+
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
  * Constructor returned by {@link com.thinkaurelius.titan.core.TitanGraph#buildTransaction()} to build a new transaction.
@@ -47,10 +46,15 @@ public interface TransactionBuilder {
     public TransactionBuilder checkInternalVertexExistence();
 
     /**
-     * Sets the timestamp for this transaction in the given time unit. The transaction will be recorded with this timestamp
-     * in those storage backends where the timestamp is recorded.
+     * Sets the timestamp for this transaction. The transaction will be recorded
+     * with this timestamp in those storage backends where the timestamp is
+     * recorded.
      *
-     * @param timestampSinceEpoch
+     * @param timestamp
+     *            number of units elapsed since the UNIX Epoch, that is,
+     *            00:00:00 UTC, Thursday, 1 January 1970
+     * @param unit
+     *            units of the {@code timestamp argument}
      * @return
      */
     public TransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit);

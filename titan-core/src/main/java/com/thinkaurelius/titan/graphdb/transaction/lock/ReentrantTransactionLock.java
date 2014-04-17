@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.transaction.lock;
 
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +16,10 @@ public class ReentrantTransactionLock extends ReentrantLock implements Transacti
     private static final Logger log = LoggerFactory.getLogger(ReentrantTransactionLock.class);
 
     @Override
-    public void lock(long maxTime) {
+    public void lock(long timeMillisecond) {
         boolean success = false;
         try {
-            success = super.tryLock(maxTime, Timestamps.SYSTEM().getUnit());
+            success = super.tryLock(timeMillisecond, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             log.warn("Interrupted waiting for lock: {}",e);
         }

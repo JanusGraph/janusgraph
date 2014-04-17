@@ -5,13 +5,12 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -48,12 +47,14 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
     protected final String[] hostnames;
     protected final int port;
-    private final long connectionTimeout;
+    protected final long connectionTimeoutMS;
     protected final int connectionPoolSize;
     protected final int pageSize;
 
     protected final String username;
     protected final String password;
+
+    protected final TimestampProvider times;
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
@@ -61,10 +62,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
         else this.port = portDefault;
-        this.connectionTimeout = Timestamps.SYSTEM().convert(storageConfig.get(CONNECTION_TIMEOUT), TimeUnit.MILLISECONDS);
+        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT_MS).intValue();
         this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
-
+        this.times = storageConfig.get(TIMESTAMP_PROVIDER);
 
         if (storageConfig.has(AUTH_USERNAME)) {
             this.username = storageConfig.get(AUTH_USERNAME);
@@ -73,10 +74,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
             this.username=null;
             this.password=null;
         }
-    }
-
-    public long getConnectionTimeout(TimeUnit unit) {
-        return unit.convert(connectionTimeout,Timestamps.SYSTEM().getUnit());
     }
 
     /**
@@ -211,7 +208,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return
      */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        long time = txh.getConfiguration().getTimestamp();
+        Long time = txh.getConfiguration().getTimestamp();
+        if (null == time) {
+            time = times.getTime();
+        }
         time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
         return new Timestamp(time | 1L, time);
     }
@@ -219,7 +219,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
         assert mustPass.deletionTime < mustPass.additionTime;
         try {
-            Timestamps.SYSTEM().sleepPast(mustPass.additionTime);
+            times.sleepPast(mustPass.additionTime, times.getUnit());
         } catch (InterruptedException e) {
             throw new PermanentStorageException("Unexpected interrupt", e);
         }

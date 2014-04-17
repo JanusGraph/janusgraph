@@ -5,7 +5,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -77,9 +76,10 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTimestampSetting() {
-        TimeUnit unit = TimeUnit.SECONDS;
+        final TimeUnit unit = TimeUnit.SECONDS;
+
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
-        TitanTransaction tx1 = graph.buildTransaction().setTimestamp(100,unit).start();
+        TitanTransaction tx1 = graph.buildTransaction().setTimestamp(100, unit).start();
         String name = "name";
         String age = "age";
         String address = "address";
@@ -98,7 +98,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
-        TitanTransaction tx2 = graph.buildTransaction().setTimestamp(1000,unit).start();
+        TitanTransaction tx2 = graph.buildTransaction().setTimestamp(1000, unit).start();
         v1 = tx2.getVertex(id1);
         v2 = tx2.getVertex(id2);
         v1.removeProperty(name);
@@ -121,7 +121,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
-        TitanTransaction tx3 = graph.buildTransaction().setTimestamp(200,unit).start();
+        TitanTransaction tx3 = graph.buildTransaction().setTimestamp(200, unit).start();
         v1 = tx3.getVertex(id1);
         v1.removeProperty(address);
         tx3.commit();
@@ -132,7 +132,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("xyz", afterTx3.getProperty(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
-        TitanTransaction tx4 = graph.buildTransaction().setTimestamp(2000,unit).start();
+        TitanTransaction tx4 = graph.buildTransaction().setTimestamp(2000, unit).start();
         v2 = tx4.getVertex(id2);
         v2.setProperty(age, "15");
         tx4.removeEdge(tx4.getEdge(edgeId));
@@ -147,7 +147,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertNull(graph.getEdge(edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
-        TitanTransaction tx5 = graph.buildTransaction().setTimestamp(1500,unit).start();
+        TitanTransaction tx5 = graph.buildTransaction().setTimestamp(1500, unit).start();
         v2 = tx5.getVertex(id2);
         v2.setProperty(age, "16");
         tx5.commit();
@@ -385,11 +385,10 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     }
 
 
-    public void testCacheExpiration(final long timeOutTimeMS, final int waitTimeMS) throws InterruptedException {
-        Preconditions.checkArgument(timeOutTimeMS==0 || timeOutTimeMS<waitTimeMS);
+    public void testCacheExpiration(final int timeOutTime, final int waitTime) throws InterruptedException {
+        Preconditions.checkArgument(timeOutTime==0 || timeOutTime<waitTime);
         metricsPrefix="evgt2";
-        final long cleanTime = Timestamps.SYSTEM().convert(400,TimeUnit.MILLISECONDS);
-        final long timeOutTime = Timestamps.SYSTEM().convert(timeOutTimeMS,TimeUnit.MILLISECONDS);
+        final int cleanTime = 400;
         final int numV = 10;
         final int edgePerV = 10;
         Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
@@ -468,7 +467,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         graph.commit();
 
         //Time the cache out
-        Thread.sleep(waitTimeMS);
+        Thread.sleep(waitTime);
         for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
         if (timeOutTime==0)
             verifyEdgeCache(calls*3 + labelcalls, calls + labelcalls);

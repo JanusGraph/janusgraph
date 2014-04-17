@@ -10,20 +10,11 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 public interface TransactionHandleConfig {
 
     /**
-     * Whether a timestamp has been configured for this transaction
+     * Returns the timestamp of this transaction if one has been set.
      *
-     * @return
+     * @return custom timestamp for this tx, or null if none is set
      */
-    public boolean hasTimestamp();
-
-    /**
-     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception.
-     * The timestamp is in {@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()}.
-     *
-     * @return
-     * @see #hasTimestamp()
-     */
-    public long getTimestamp();
+    public Long getTimestamp();
 
     /**
      * Returns the (possibly null) metrics prefix for this transaction.
@@ -37,7 +28,19 @@ public interface TransactionHandleConfig {
      */
     public boolean hasMetricsPrefix();
 
+    /**
+     * Get an arbitrary transaction-specific option.
+     *
+     * @param opt option for which to return a value
+     * @return value of the option
+     */
     public <V> V getCustomOption(ConfigOption<V> opt);
 
+    /**
+     * Return any transaction-specific options.
+     *
+     * @see #getCustomOption(ConfigOption)
+     * @return options for this tx
+     */
     public Configuration getCustomOptions();
 }

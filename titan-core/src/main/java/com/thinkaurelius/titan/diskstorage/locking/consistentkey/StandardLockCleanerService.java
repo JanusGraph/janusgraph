@@ -64,7 +64,6 @@ public class StandardLockCleanerService implements LockCleanerService {
         this (store, serializer, getDefaultExecutor(), COOLDOWN_TIME, COOLDOWN_UNIT);
     }
 
-    @Override
     public void clean(KeyColumn target, long cutoff, StoreTransaction tx) {
         Long b = blocked.putIfAbsent(target, cutoff);
         if (null == b) {
