@@ -1,15 +1,10 @@
 package com.thinkaurelius.titan.graphdb;
 
 
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.attribute.Decimal;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.Configuration;
-import org.junit.After;
-import org.junit.Before;
 
 public abstract class TitanGraphTestCommon extends TitanGraphBaseTest {
 

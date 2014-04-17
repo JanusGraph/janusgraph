@@ -53,7 +53,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Default name for the Cassandra cluster
      * <p/>
      */
-    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(STORAGE_NS,"cluster-name",
+    public static final ConfigOption<String> CLUSTER_NAME = new ConfigOption<String>(STORAGE_NS, "cluster-name",
             "Default name for the Cassandra cluster",
             ConfigOption.Type.MASKABLE, "Titan Cluster");
 
@@ -61,7 +61,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Maximum pooled connections per host.
      * <p/>
      */
-    public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS,"max-connections-per-host",
+    public static final ConfigOption<Integer> MAX_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS, "max-connections-per-host",
             "Maximum pooled connections per host",
             ConfigOption.Type.MASKABLE, 32);
 //    public static final int MAX_CONNECTIONS_PER_HOST_DEFAULT = 32;
@@ -71,7 +71,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Maximum open connections allowed in the pool (counting all hosts).
      * <p/>
      */
-    public static final ConfigOption<Integer> MAX_CONNECTIONS = new ConfigOption<Integer>(STORAGE_NS,"max-connections",
+    public static final ConfigOption<Integer> MAX_CONNECTIONS = new ConfigOption<Integer>(STORAGE_NS, "max-connections",
             "Maximum open connections allowed in the pool (counting all hosts)",
             ConfigOption.Type.MASKABLE, -1);
 //    public static final int MAX_CONNECTIONS_DEFAULT = -1;
@@ -81,9 +81,9 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * Maximum number of operations allowed per connection before the connection is closed.
      * <p/>
      */
-    public static final ConfigOption<Integer> MAX_OPERATIONS_PER_CONNECTION = new ConfigOption<Integer>(STORAGE_NS,"max-operations-per-connection",
+    public static final ConfigOption<Integer> MAX_OPERATIONS_PER_CONNECTION = new ConfigOption<Integer>(STORAGE_NS, "max-operations-per-connection",
             "Maximum number of operations allowed per connection before the connection is closed",
-            ConfigOption.Type.MASKABLE, 100*1000);
+            ConfigOption.Type.MASKABLE, 100 * 1000);
 //    public static final int MAX_OPERATIONS_PER_CONNECTION_DEFAULT = 100 * 1000;
 //    public static final String MAX_OPERATIONS_PER_CONNECTION_KEY = "max-operations-per-connection";
 
@@ -94,7 +94,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * (like creating keyspaces).  Titan doesn't need many of these connections
      * in ordinary operation.
      */
-    public static final ConfigOption<Integer> MAX_CLUSTER_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS,"max-cluster-connections-per-host",
+    public static final ConfigOption<Integer> MAX_CLUSTER_CONNECTIONS_PER_HOST = new ConfigOption<Integer>(STORAGE_NS, "max-cluster-connections-per-host",
             "Maximum pooled \"cluster\" connections per host",
             ConfigOption.Type.MASKABLE, 3);
 //    public static final int MAX_CLUSTER_CONNECTIONS_PER_HOST_DEFAULT = 3;
@@ -105,7 +105,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * values of the Astyanax NodeDiscoveryType enum.
      * <p/>
      */
-    public static final ConfigOption<String> NODE_DISCOVERY_TYPE = new ConfigOption<String>(STORAGE_NS,"node-discovery-type",
+    public static final ConfigOption<String> NODE_DISCOVERY_TYPE = new ConfigOption<String>(STORAGE_NS, "node-discovery-type",
             "How Astyanax discovers Cassandra cluster nodes",
             ConfigOption.Type.MASKABLE, "RING_DESCRIBE");
 //    public static final String NODE_DISCOVERY_TYPE_DEFAULT = "RING_DESCRIBE";
@@ -116,7 +116,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * values of the Astyanax ConnectionPoolType enum.
      * <p/>
      */
-    public static final ConfigOption<String> CONNECTION_POOL_TYPE = new ConfigOption<String>(STORAGE_NS,"connection-pool-type",
+    public static final ConfigOption<String> CONNECTION_POOL_TYPE = new ConfigOption<String>(STORAGE_NS, "connection-pool-type",
             "Astyanax's connection pooler implementation",
             ConfigOption.Type.MASKABLE, "TOKEN_AWARE");
 //    public static final String CONNECTION_POOL_TYPE_DEFAULT = "TOKEN_AWARE";
@@ -128,7 +128,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
      * operations. RetryBackoffStrategy is for retrying attempts to talk to
      * uncommunicative hosts. This config option controls RetryPolicy.
      */
-    public static final ConfigOption<String> RETRY_POLICY = new ConfigOption<String>(STORAGE_NS,"retry-policy",
+    public static final ConfigOption<String> RETRY_POLICY = new ConfigOption<String>(STORAGE_NS, "retry-policy",
             "Astyanax's retry policy implementation with configuration parameters",
             ConfigOption.Type.MASKABLE, "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8");
 //    public static final String RETRY_POLICY_DEFAULT = "com.netflix.astyanax.retry.BoundedExponentialBackoff,100,25000,8";
@@ -352,8 +352,13 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
                     upds.setTimestamp(timestamp.additionTime);
 
-                    for (Entry e : titanMutation.getAdditions())
-                        upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), e.getTtl());
+                    for (Entry e : titanMutation.getAdditions()) {
+                        if (null != e.getTtl() && e.getTtl() > 0) {
+                            upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), e.getTtl());
+                        } else {
+                            upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
+                        }
+                    }
                 }
             }
         }
@@ -475,11 +480,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         }
 
         return new AstyanaxContext.Builder()
-                        .forCluster(clusterName)
-                        .forKeyspace(keySpaceName)
-                        .withAstyanaxConfiguration(aconf)
-                        .withConnectionPoolConfiguration(cpool)
-                        .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
+                .forCluster(clusterName)
+                .forKeyspace(keySpaceName)
+                .withAstyanaxConfiguration(aconf)
+                .withConnectionPoolConfiguration(cpool)
+                .withConnectionPoolMonitor(new CountingConnectionPoolMonitor());
     }
 
     private void ensureKeyspaceExists(Cluster cl) throws StorageException {
@@ -500,7 +505,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         try {
 
             Map<String, String> stratops = ImmutableMap.of(
-                "replication_factor", String.valueOf(replicationFactor));
+                    "replication_factor", String.valueOf(replicationFactor));
 
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)

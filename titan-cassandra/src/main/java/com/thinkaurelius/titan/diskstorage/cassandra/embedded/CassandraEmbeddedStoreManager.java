@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -189,7 +190,11 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
                         QueryPath path = new QueryPath(columnFamily, null, e.getColumnAs(StaticBuffer.BB_FACTORY));
-                        rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime, e.getTtl());
+                        if (null != e.getTtl() && e.getTtl() > 0) {
+                            rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime, e.getTtl());
+                        } else {
+                            rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime);
+                        }
                     }
                 }
 

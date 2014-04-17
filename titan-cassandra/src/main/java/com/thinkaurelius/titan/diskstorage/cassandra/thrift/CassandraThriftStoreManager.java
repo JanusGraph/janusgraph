@@ -195,7 +195,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
                         column.setTimestamp(timestamp.additionTime);
-                        if (null != ent.getTtl()) {
+                        if (null != ent.getTtl() && ent.getTtl() > 0) {
                             column.setTtl(ent.getTtl());
                         }
                         cosc.setColumn(column);

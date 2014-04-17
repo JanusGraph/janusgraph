@@ -34,7 +34,7 @@ abstract class StandardTypeMaker implements TypeMaker {
     private boolean isModifiable;
     private List<TitanType> sortKey;
     private Order sortOrder;
-    private Integer ttl;
+    private int ttl;
     private List<TitanType> signature;
 
     public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
@@ -54,6 +54,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         isModifiable = true;
         sortKey = new ArrayList<TitanType>(4);
         sortOrder = Order.ASC;
+        ttl = 0;
         signature = new ArrayList<TitanType>(4);
     }
 
@@ -113,9 +114,7 @@ abstract class StandardTypeMaker implements TypeMaker {
         def.setValue(MODIFIABLE, isModifiable);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
         def.setValue(SORT_ORDER, sortOrder);
-        if (null != ttl) {
-            def.setValue(TTL, ttl);
-        }
+        def.setValue(TTL, ttl);
         def.setValue(SIGNATURE, checkSignature(signature));
         return def;
     }
