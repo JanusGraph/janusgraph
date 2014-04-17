@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.time.TestTimestamps;
+import com.thinkaurelius.titan.diskstorage.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import org.easymock.EasyMock;
@@ -141,6 +143,8 @@ public class ConsistentKeyLockerTest {
          */
         ctrl = EasyMock.createStrictControl();
         times = ctrl.createMock(TimestampProvider.class);
+        //Use this to register a mock TimestampProvider
+        TestTimestamps.setTestTimestampProvider(times);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
         lockState = ctrl.createMock(LockerState.class);

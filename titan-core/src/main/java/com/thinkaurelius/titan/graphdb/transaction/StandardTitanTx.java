@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
@@ -83,7 +84,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
-    private static final long LOCK_TIMEOUT_MS = 5000;
+    private static final long LOCK_TIMEOUT = Timestamps.SYSTEM().convert(5,TimeUnit.SECONDS);
 
     private final StandardTitanGraph graph;
     private final TransactionConfiguration config;
@@ -493,7 +494,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkNotNull(label);
         Multiplicity multiplicity = label.getMultiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalType) label,inVertex);
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -552,7 +553,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalType) key, normalizedValue);
         //Add locks for unique indexes
         for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple));
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -594,7 +595,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             if (config.hasVerifyUniqueness()) {
                 //Acquire uniqueness lock, remove and add
                 uniqueLock = getLock(vertex, key, Direction.OUT);
-                uniqueLock.lock(LOCK_TIMEOUT_MS);
+                uniqueLock.lock(LOCK_TIMEOUT);
                 vertex.removeProperty(key);
             } else {
                 //Only delete in-memory

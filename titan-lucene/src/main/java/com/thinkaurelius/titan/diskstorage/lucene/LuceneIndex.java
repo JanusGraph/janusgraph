@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
@@ -272,9 +273,9 @@ public class LuceneIndex implements IndexProvider {
         try {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
             if (searcher == null) return ImmutableList.of(); //Index does not yet exist
-            long time = System.currentTimeMillis();
+            long time = Timestamps.SYSTEM().getTime();
             TopDocs docs = searcher.search(new MatchAllDocsQuery(), q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1, getSortOrder(query));
-            log.debug("Executed query [{}] in {} ms", q, System.currentTimeMillis() - time);
+            log.debug("Executed query [{}] in {}", q, Timestamps.SYSTEM().getTime() - time);
             List<String> result = new ArrayList<String>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue());
@@ -396,9 +397,9 @@ public class LuceneIndex implements IndexProvider {
             IndexSearcher searcher = ((Transaction) tx).getSearcher(query.getStore());
             if (searcher == null) return ImmutableList.of(); //Index does not yet exist
 
-            long time = System.currentTimeMillis();
+            long time = Timestamps.SYSTEM().getTime();
             TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1);
-            log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
+            log.debug("Executed query [{}] in {}",q, Timestamps.SYSTEM().getTime() - time);
             List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
             for (int i = 0; i < docs.scoreDocs.length; i++) {
                 result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));

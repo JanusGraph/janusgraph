@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.astyanax.locking;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +22,6 @@ import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
 
@@ -45,7 +44,7 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
 
         public AstyanaxRecipeLocker build() {
             super.preBuild();
-            return new AstyanaxRecipeLocker(rid, times, serializer, llm, lockState, lockExpire, log, ks, cf);
+            return new AstyanaxRecipeLocker(rid, serializer, llm, lockState, lockExpire, log, ks, cf);
         }
 
         @Override
@@ -59,13 +58,13 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
         }
     }
 
-    private AstyanaxRecipeLocker(StaticBuffer rid, TimestampProvider times,
+    private AstyanaxRecipeLocker(StaticBuffer rid,
                                  ConsistentKeyLockerSerializer serializer,
                                  LocalLockMediator<StoreTransaction> llm,
                                  LockerState<AstyanaxLockStatus> lockState, long lockExpireNS,
                                  Logger log, Keyspace lockKeyspace,
                                  ColumnFamily<ByteBuffer, String> lockColumnFamily) {
-        super(rid, times, serializer, llm, lockState, lockExpireNS, log);
+        super(rid, serializer, llm, lockState, lockExpireNS, log);
         this.lockKeyspace = lockKeyspace;
         this.lockColumnFamily = lockColumnFamily;
     }
@@ -73,18 +72,18 @@ public class AstyanaxRecipeLocker extends AbstractLocker<AstyanaxLockStatus> {
     @Override
     protected AstyanaxLockStatus writeSingleLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
-        long curTime = times.getTime();
+        long curTime = Timestamps.SYSTEM().getTime();
 
         ByteBuffer keyToLock = serializer.toLockKey(lockID.getKey(), lockID.getColumn()).asByteBuffer();
 
         ColumnPrefixDistributedRowLock<ByteBuffer> lock =
                 new ColumnPrefixDistributedRowLock<ByteBuffer>(
-                        lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpire, times.getUnit()).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
+                        lockKeyspace, lockColumnFamily, keyToLock).expireLockAfter(lockExpire, Timestamps.SYSTEM().getUnit()).withConsistencyLevel(ConsistencyLevel.CL_QUORUM);
 
         try {
             lock.acquire();
             log.debug("Locked {} in store {}", lockID, lockColumnFamily.getName());
-            return new AstyanaxLockStatus(curTime, TimeUnit.NANOSECONDS, lock);
+            return new AstyanaxLockStatus(curTime, lock);
         } catch (StaleLockException e) {
             throw new TemporaryLockingException(e); // TODO handle gracefully?
         } catch (BusyLockException e) {

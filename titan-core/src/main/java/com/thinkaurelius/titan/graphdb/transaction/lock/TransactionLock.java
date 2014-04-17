@@ -8,7 +8,12 @@ import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
  */
 public interface TransactionLock {
 
-    public void lock(long timeMillisecond);
+    /**
+     * Lock this lock but wait at most the given time to do so.
+     * Time unit is {@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()}
+     * @param maxTime
+     */
+    public void lock(long maxTime);
 
     public void unlock();
 

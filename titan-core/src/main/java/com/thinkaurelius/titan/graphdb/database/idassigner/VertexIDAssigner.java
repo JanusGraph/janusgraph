@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -63,7 +65,7 @@ public class VertexIDAssigner {
     private final IDPlacementStrategy placementStrategy;
 
     //For StandardIDPool
-    private final long renewTimeoutMS;
+    private final long renewTimeout;
     private final double renewBufferPercentage;
 
     private final int partitionIdBound;
@@ -99,7 +101,7 @@ public class VertexIDAssigner {
         long baseBlockSize = config.get(IDS_BLOCK_SIZE);
         idAuthority.setIDBlockSizer(new SimpleVertexIDBlockSizer(baseBlockSize));
 
-        renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
+        renewTimeout = Timestamps.SYSTEM().convert(config.get(IDS_RENEW_TIMEOUT), TimeUnit.MILLISECONDS);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
         idPools = new OpenIntObjectHashMap();
@@ -282,7 +284,7 @@ public class VertexIDAssigner {
                 if (idPools.containsKey(partitionID)) {
                     poolObj = idPools.get(partitionID);
                 } else {
-                    poolObj = new PartitionPool(partitionID, idAuthority, idManager, partitionID == DEFAULT_PARTITION, renewTimeoutMS, renewBufferPercentage);
+                    poolObj = new PartitionPool(partitionID, idAuthority, idManager, partitionID == DEFAULT_PARTITION, renewTimeout, renewBufferPercentage);
                     idPools.put(partitionID, poolObj);
                 }
             } finally {
@@ -307,7 +309,6 @@ public class VertexIDAssigner {
                 } else {
                     id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
                 }
-                pool.accessed();
             } catch (IDPoolExhaustedException e) {
                 log.debug("Pool exhausted for partition id {}", partitionID);
                 placementStrategy.exhaustedPartition(partitionID);
@@ -378,14 +379,12 @@ public class VertexIDAssigner {
         final IDPool relationType;
         final IDPool genericType;
 
-        long lastAccess;
-
-        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, long renewTimeoutMS, double renewBufferPercentage) {
-            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeoutMS, renewBufferPercentage);
-            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, renewBufferPercentage);
+        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, long renewTimeout, double renewBufferPercentage) {
+            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeout, Timestamps.SYSTEM().getUnit(), renewBufferPercentage);
+            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeout, Timestamps.SYSTEM().getUnit(), renewBufferPercentage);
             if (includeType) {
-                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
-                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
+                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeout, Timestamps.SYSTEM().getUnit(), renewBufferPercentage);
+                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeout, Timestamps.SYSTEM().getUnit(), renewBufferPercentage);
             } else {
                 relationType = null;
                 genericType = null;
@@ -397,10 +396,6 @@ public class VertexIDAssigner {
             relation.close();
             if (relationType != null) relationType.close();
             if (genericType != null) genericType.close();
-        }
-
-        public void accessed() {
-            lastAccess = System.currentTimeMillis();
         }
 
     }

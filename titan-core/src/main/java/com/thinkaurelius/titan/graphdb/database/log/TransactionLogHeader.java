@@ -20,17 +20,15 @@ public class TransactionLogHeader {
 
     private final long transactionId;
     private final long txTimestamp;
-    private final TimeUnit timeUnit;
     private LogTxStatus status;
 
-    public TransactionLogHeader(long transactionId, long txTimestamp, TimeUnit timeUnit, LogTxStatus status) {
+    public TransactionLogHeader(long transactionId, long txTimestamp, LogTxStatus status) {
         Preconditions.checkArgument(transactionId>0);
         Preconditions.checkArgument(txTimestamp>0);
-        Preconditions.checkArgument(status!=null && timeUnit!=null);
+        Preconditions.checkArgument(status!=null);
         this.transactionId = transactionId;
         this.txTimestamp = txTimestamp;
         this.status = status;
-        this.timeUnit = timeUnit;
     }
 
 
@@ -39,7 +37,7 @@ public class TransactionLogHeader {
     }
 
     public long getTimestamp(TimeUnit unit) {
-        return unit.convert(txTimestamp,timeUnit);
+        return unit.convert(txTimestamp,TimeUnit.MICROSECONDS);
     }
 
     public LogTxStatus getStatus() {
@@ -66,12 +64,11 @@ public class TransactionLogHeader {
         return out;
     }
 
-    public static Entry parse(StaticBuffer buffer, Serializer serializer, TimeUnit unit) {
+    public static Entry parse(StaticBuffer buffer, Serializer serializer) {
         ReadBuffer read = buffer.asReadBuffer();
         long txTimestamp = read.getLong();
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
-                txTimestamp,unit,
-                serializer.readObjectNotNull(read,LogTxStatus.class));
+                txTimestamp,serializer.readObjectNotNull(read,LogTxStatus.class));
         if (read.hasRemaining()) {
             StaticBuffer content = read.subrange(read.getPosition(),read.length()-read.getPosition());
             return new Entry(header,content);

@@ -13,10 +13,12 @@ import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -59,8 +61,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String metricsPrefix;
 
-    private TimestampProvider timestampProvider;
-
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
@@ -77,7 +77,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.metricsPrefix = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.timestampProvider = graphConfig.getTimestampProvider();
         this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
@@ -120,8 +119,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public StandardTransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit) {
+        this.timestamp = Timestamps.SYSTEM().convert(timestampSinceEpoch,unit);
         return this;
     }
 
@@ -149,7 +148,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
-                hasTimestamp(), timestamp, timestampProvider,
+                hasTimestamp(), timestamp,
                 indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
@@ -237,11 +236,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public TimestampProvider getTimestampProvider() {
-        return timestampProvider;
-    }
-
-    @Override
     public String getMetricsPrefix() {
         return metricsPrefix;
     }
@@ -294,7 +288,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, boolean hasTimestamp, Long timestamp, TimestampProvider timestampProvider,
+                boolean isThreadBound, boolean hasTimestamp, Long timestamp,
                 long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
@@ -313,7 +307,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionConfig.Builder()
-                    .timestampProvider(timestampProvider).timestamp(timestamp)
+                    .timestamp(timestamp)
                     .metricsPrefix(metricsPrefix)
                     .customOptions(storageConfiguration).build();
         }
@@ -396,11 +390,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public long getTimestamp() {
             return handleConfig.getTimestamp();
-        }
-
-        @Override
-        public TimestampProvider getTimestampProvider() {
-            return handleConfig.getTimestampProvider();
         }
 
         @Override

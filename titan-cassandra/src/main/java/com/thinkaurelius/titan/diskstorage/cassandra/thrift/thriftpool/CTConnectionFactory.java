@@ -38,7 +38,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
     private final AtomicReference<Config> cfgRef;
 
-    public CTConnectionFactory(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+    public CTConnectionFactory(String[] hostnames, int port, String username, String password, long timeoutMS, int frameSize) {
         this.cfgRef = new AtomicReference<Config>(new Config(hostnames, port, username, password, timeoutMS, frameSize));
     }
 
@@ -79,7 +79,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         if (log.isDebugEnabled())
             log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
 
-        TTransport transport = new TFramedTransport(new TSocket(hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
+        TTransport transport = new TFramedTransport(new TSocket(hostname, cfg.port, (int)cfg.timeoutMS), cfg.frameSize);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
@@ -268,12 +268,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         private final String[] hostnames;
         private final int port;
-        private final int timeoutMS;
+        private final long timeoutMS;
         private final int frameSize;
         private final String username;
         private final String password;
 
-        public Config(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+        public Config(String[] hostnames, int port, String username, String password, long timeoutMS, int frameSize) {
             this.hostnames = hostnames;
             this.port = port;
             this.username = username;

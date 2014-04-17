@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import java.util.List;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,14 +81,7 @@ public class StandardLockCleanerRunnable implements Runnable {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (int) (cutoff ^ (cutoff >>> 32));
-        result = prime * result + ((serializer == null) ? 0 : serializer.hashCode());
-        result = prime * result + ((store == null) ? 0 : store.hashCode());
-        result = prime * result + ((target == null) ? 0 : target.hashCode());
-        result = prime * result + ((tx == null) ? 0 : tx.hashCode());
-        return result;
+        return new HashCodeBuilder().append(cutoff).append(serializer).append(store).append(target).append(tx).toHashCode();
     }
 
     @Override

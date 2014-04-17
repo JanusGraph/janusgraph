@@ -30,12 +30,12 @@ public class LocalLockMediatorTest {
         LocalLockMediator<ExpectedValueCheckingTransaction> llm =
                 new LocalLockMediator<ExpectedValueCheckingTransaction>(LOCK_NAMESPACE);
 
-        assertTrue(llm.lock(kc, mockTx1, 0, TimeUnit.NANOSECONDS));
-        assertTrue(llm.lock(kc, mockTx2, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
+        assertTrue(llm.lock(kc, mockTx1, 0));
+        assertTrue(llm.lock(kc, mockTx2, Long.MAX_VALUE));
 
         llm = new LocalLockMediator<ExpectedValueCheckingTransaction>(LOCK_NAMESPACE);
 
-        assertTrue(llm.lock(kc, mockTx1, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
-        assertFalse(llm.lock(kc, mockTx2, Long.MAX_VALUE, TimeUnit.NANOSECONDS));
+        assertTrue(llm.lock(kc, mockTx1, Long.MAX_VALUE));
+        assertFalse(llm.lock(kc, mockTx2, Long.MAX_VALUE));
     }
 }

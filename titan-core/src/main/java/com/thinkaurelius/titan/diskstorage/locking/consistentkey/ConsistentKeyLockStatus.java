@@ -1,32 +1,32 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
-
-import java.util.concurrent.TimeUnit;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 
 /**
- * The timestamp and checked-ness of a held {@link ConsistentKeyLock}
+ * The timestamp and checked-ness of a held {@link ConsistentKeyLocker}.
+ * All timestamps are in default system time {@link Timestamps#SYSTEM}.
  * 
  * {@see ConsistentKeyLockStore}
  */
 public class ConsistentKeyLockStatus implements LockStatus {
-    private long writeNS;
-    private long expireNS;
+    private long writeTime;
+    private long expireTime;
     private boolean checked;
 
-    public ConsistentKeyLockStatus(long writeTimestamp, TimeUnit writeUnits, long expireTimestamp, TimeUnit expireUnits) {
-        this.writeNS =  TimeUnit.NANOSECONDS.convert(writeTimestamp, writeUnits);
-        this.expireNS = TimeUnit.NANOSECONDS.convert(expireTimestamp,  expireUnits);
+    public ConsistentKeyLockStatus(long writeTimestamp, long expireTimestamp) {
+        this.writeTime =  writeTimestamp;
+        this.expireTime = expireTimestamp;
         this.checked = false;
     }
 
     @Override
-    public long getExpirationTimestamp(TimeUnit tu) {
-        return tu.convert(expireNS, TimeUnit.NANOSECONDS);
+    public long getExpirationTimestamp() {
+        return writeTime;
     }
     
-    public long getWriteTimestamp(TimeUnit tu) {
-        return tu.convert(writeNS, TimeUnit.NANOSECONDS);
+    public long getWriteTimestamp() {
+        return expireTime;
     }
 
     public boolean isChecked() {
@@ -42,7 +42,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
         final int prime = 31;
         int result = 1;
         result = prime * result + (checked ? 1231 : 1237);
-        result = prime * result + (int) (expireNS ^ (expireNS >>> 32));
+        result = prime * result + (int) (expireTime ^ (expireTime >>> 32));
         return result;
     }
 
@@ -57,7 +57,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
         ConsistentKeyLockStatus other = (ConsistentKeyLockStatus) obj;
         if (checked != other.checked)
             return false;
-        if (expireNS != other.expireNS)
+        if (expireTime != other.expireTime)
             return false;
         return true;
     }

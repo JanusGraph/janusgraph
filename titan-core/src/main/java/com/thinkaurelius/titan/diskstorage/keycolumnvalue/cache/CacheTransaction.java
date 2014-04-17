@@ -31,18 +31,18 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final boolean continuousPersistence;
     private final int persistChunkSize;
     private final int mutationAttempts;
-    private final int attemptWaitTime;
+    private final long attemptWaitTime;
 
     private int numMutations;
     private final Map<KCVSCache, Map<StaticBuffer, KCVMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
-                             int persistChunkSize, int attempts, int waitTime, boolean continuousPersistence) {
+                             int persistChunkSize, int attempts, long waitTime, boolean continuousPersistence) {
         this(tx, manager, persistChunkSize, attempts, waitTime, continuousPersistence, 2);
     }
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize,
-                            int attempts, int waitTime, boolean continuousPersistence, int expectedNumStores) {
+                            int attempts, long waitTime, boolean continuousPersistence, int expectedNumStores) {
         Preconditions.checkArgument(tx != null && manager != null && persistChunkSize > 0);
         this.tx = tx;
         this.manager = manager;

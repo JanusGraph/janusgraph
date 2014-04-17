@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -460,8 +461,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         .setRetryDelaySlice(retryDelaySlice)
                         .setRetryMaxDelaySlice(retryMaxDelaySlice)
                         .setRetrySuspendWindow(retrySuspendWindow)
-                        .setSocketTimeout(connectionTimeout)
-                        .setConnectTimeout(connectionTimeout)
+                        .setSocketTimeout((int)getConnectionTimeout(TimeUnit.MILLISECONDS))
+                        .setConnectTimeout((int)getConnectionTimeout(TimeUnit.MILLISECONDS))
                         .setSeeds(StringUtils.join(hostnames, ","));
 
         if (null != retryBackoffStrategy) {

@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -19,10 +18,10 @@ public class CombinerLock implements TransactionLock {
     }
 
     @Override
-    public void lock(long timeMillisecond) {
-        long start = Timestamps.MILLI.getTime();
-        first.lock(timeMillisecond);
-        long remaining = Math.max(0,timeMillisecond - (start-Timestamps.MILLI.getTime()));
+    public void lock(long maxTime) {
+        long start = Timestamps.SYSTEM().getTime();
+        first.lock(maxTime);
+        long remaining = Math.max(0,maxTime - (start-Timestamps.SYSTEM().getTime()));
         try {
             second.lock(remaining);
         } catch (RuntimeException e) {

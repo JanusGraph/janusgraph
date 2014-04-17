@@ -4,9 +4,12 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
@@ -27,7 +30,7 @@ public abstract class AbstractIDManager implements IDAuthority {
       */
     protected static final long BASE_ID = 1;
 
-    protected final long idApplicationWaitMS;
+    protected final long idApplicationWait;
     protected final int randomUniqueIDLimit;
 
     protected final String uid;
@@ -45,8 +48,8 @@ public abstract class AbstractIDManager implements IDAuthority {
 
         this.isActive = false;
 
-        this.idApplicationWaitMS =
-                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS);
+        this.idApplicationWait = Timestamps.SYSTEM().convert
+                        (config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT), TimeUnit.MILLISECONDS);
 
         this.randomUniqueIDLimit =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);

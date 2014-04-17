@@ -13,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.*;
 import com.thinkaurelius.titan.diskstorage.log.util.FutureMessage;
 import com.thinkaurelius.titan.diskstorage.log.util.ProcessMessageJob;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -87,14 +88,14 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      * This setting is not configurable. If too many messages end up under one key, please
      * configure either 1) the number of buckets or 2) introduce partitioning.
      */
-    public static final long TIMESLICE_INTERVAL = 100L * 1000 * 1000 ; //100 seconds
+    public static final long TIMESLICE_INTERVAL = Timestamps.SYSTEM().convert(100,TimeUnit.SECONDS);
 
     /**
      * For batch sending to make sense against a KCVS, the maximum send/delivery delay must be at least
      * this number. If the delivery delay is configured to be smaller than this time interval, messages
      * will be send immediately since batching will likely be ineffective.
      */
-    private final static int MIN_DELIVERY_DELAY = 10 * 1000; //10ms
+    private final static long MIN_DELIVERY_DELAY = Timestamps.SYSTEM().convert(10,TimeUnit.MILLISECONDS);
 
     /**
      * Multiplier for the maximum number of messages to hold in the outgoing message queue before producing back pressure.
@@ -105,13 +106,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * Wait time after close() is called for all ongoing jobs to finish and shut down.
      */
-    private final static int CLOSE_DOWN_WAIT = 10000 * 1000; // 10 seconds
+    private final static long CLOSE_DOWN_WAIT = Timestamps.SYSTEM().convert(10, TimeUnit.SECONDS);
     /**
      * Time before a registered reader starts processing messages
      */
-    private final static int INITIAL_READER_DELAY = 100*1000; //100 ms
-
-    private final static long MS_TO_MICRO = 1000;
+    private final static long INITIAL_READER_DELAY = Timestamps.SYSTEM().convert(100,TimeUnit.MILLISECONDS);
 
     //########## INTERNAL SETTING MANAGEMENT #############
 
@@ -218,14 +217,15 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(numBuckets>=1 && numBuckets<=Integer.MAX_VALUE);
 
         sendBatchSize = config.get(LOG_SEND_BATCH_SIZE);
-        maxSendDelay = config.get(LOG_SEND_DELAY)*MS_TO_MICRO;
-        maxWriteTime = config.get(LOG_MAX_WRITE_TIME)*MS_TO_MICRO;
+        maxSendDelay = Timestamps.SYSTEM().convert(config.get(LOG_SEND_DELAY),TimeUnit.MICROSECONDS);
+        maxWriteTime = Timestamps.SYSTEM().convert(config.get(LOG_MAX_WRITE_TIME),TimeUnit.MICROSECONDS);
 
         numReadThreads = config.get(LOG_READ_THREADS);
         maxReadMsg = config.get(LOG_READ_BATCH_SIZE);
-        readPollingInterval = config.get(LOG_READ_INTERVAL)*MS_TO_MICRO;
-        readLagTime = config.get(LOG_READ_LAG_TIME)*MS_TO_MICRO+maxSendDelay;
-        maxReadTime = config.get(LOG_MAX_READ_TIME)*MS_TO_MICRO;
+        readPollingInterval = Timestamps.SYSTEM().convert(config.get(LOG_READ_INTERVAL),TimeUnit.MICROSECONDS);
+        readLagTime = Timestamps.SYSTEM().convert(config.get(LOG_READ_LAG_TIME),TimeUnit.MICROSECONDS)
+                            +maxSendDelay;
+        maxReadTime = Timestamps.SYSTEM().convert(config.get(LOG_MAX_READ_TIME),TimeUnit.MICROSECONDS);
 
 
         if (maxSendDelay>=MIN_DELIVERY_DELAY) { //No need to locally queue messages since they will be send immediately
@@ -261,7 +261,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     public synchronized void close() throws StorageException {
         this.isOpen = false;
         if (readExecutor!=null) readExecutor.shutdown();
-        if (sendThread!=null) sendThread.close(CLOSE_DOWN_WAIT,TimeUnit.MICROSECONDS);
+        if (sendThread!=null) sendThread.close(CLOSE_DOWN_WAIT,Timestamps.SYSTEM().getUnit());
         if (readExecutor!=null) {
             try {
                 readExecutor.awaitTermination(1,TimeUnit.SECONDS);
@@ -318,8 +318,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     private Entry writeMessage(KCVSMessage msg) {
         StaticBuffer content = msg.getContent();
         DataOutput out = manager.serializer.getDataOutput(8 + 8 + manager.senderId.length() + 2 + content.length());
-        Preconditions.checkArgument(msg.getTimestampMicro()>0);
-        out.putLong(msg.getTimestampMicro());
+        Preconditions.checkArgument(msg.getSystemTimestamp()>0);
+        out.putLong(msg.getSystemTimestamp());
         out.writeObjectNotNull(manager.senderId);
         out.putLong(numMsgCounter.incrementAndGet());
         final int valuePos = out.getPosition();
@@ -373,7 +373,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
         Preconditions.checkArgument(content!=null && content.length()>0,"Content is empty");
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
-        long timestamp = Timestamps.MICRO.getTime();
+        long timestamp = Timestamps.SYSTEM().getTime();
         KCVSMessage msg = new KCVSMessage(content,timestamp,manager.senderId);
         FutureMessage fmsg = new FutureMessage(msg);
 
@@ -461,7 +461,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         }
 
         private long timeSinceFirstMsg() {
-            if (!toSend.isEmpty()) return Math.max(0,Timestamps.MICRO.getTime()-toSend.get(0).message.getMessage().getTimestampMicro());
+            if (!toSend.isEmpty()) return Math.max(0,Timestamps.SYSTEM().getTime()-toSend.get(0).message.getMessage().getSystemTimestamp());
             else return 0;
         }
 
@@ -472,7 +472,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
         @Override
         protected void waitCondition() throws InterruptedException {
-            MessageEnvelope msg = outgoingMsg.poll(maxWaitTime(), TimeUnit.MICROSECONDS);
+            MessageEnvelope msg = outgoingMsg.poll(maxWaitTime(), Timestamps.SYSTEM().getUnit());
             if (msg!=null) toSend.add(msg);
         }
 
@@ -570,9 +570,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             this.bucketId = bucketId;
             this.partitionId = partitionId;
             if (!readMarker.hasIdentifier()) {
-                this.nextTimestamp = readMarker.getStartTimeMicro();
+                this.nextTimestamp = readMarker.getSystemStartTime();
             } else {
-                this.nextTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),readMarker.getStartTimeMicro());
+                this.nextTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),readMarker.getSystemStartTime());
             }
         }
 
@@ -581,7 +581,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             if (allowReadMarkerRecovery) setReadMarker();
             try {
                 final int timeslice = getTimeSlice(nextTimestamp);
-                long maxTime = Math.min(Timestamps.MICRO.getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
+                long maxTime = Math.min(Timestamps.SYSTEM().getTime() - readLagTime, (timeslice + 1) * TIMESLICE_INTERVAL);
                 // maxTime must be at least nextTimestamp, or else we will have a slice start after slice end
                 maxTime = Math.max(maxTime, nextTimestamp);
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
@@ -594,7 +594,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     Since we have reached the request limit, it may be possible that there are additional messages
                     with the same timestamp which we would miss on subsequent iterations */
                     Entry lastEntry = entries.get(entries.size()-1);
-                    maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
+                    maxTime = lastEntry.getLong(0)+2; //Adding 2 time units (=> very few extra messages), not adding one to avoid that the slice is possibly empty
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
                     query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
                     List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);

@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -111,7 +111,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (globalConfig.has(REGISTRATION_TIME,uniqueInstanceId)) {
             throw new TitanException(String.format("A Titan graph with the same instance id [%s] is already open. Might required forced shutdown.",uniqueInstanceId));
         }
-        globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
+        globalConfig.set(REGISTRATION_TIME, Timestamps.SYSTEM().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
@@ -430,9 +430,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
-                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
+                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), LogTxStatus.PRECOMMIT);
         if (logTransaction) {
-            DataOutput out = txLogHeader.serializeHeader(serializer,256);
+            DataOutput out = txLogHeader.serializeHeader(serializer, 256);
             mutator.logMutations(out);
 //            txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
             txLog.add(out.getStaticBuffer());
@@ -512,7 +512,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
-        VariableLong.writePositive(out,relations.size());
+        VariableLong.writePositive(out, relations.size());
         for (InternalRelation rel : relations) {
             Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);

@@ -7,6 +7,7 @@ import com.google.common.cache.Weigher;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,24 +43,24 @@ public class ExpirationKCVSCache extends KCVSCache {
     private final Cache<KeySliceQuery,EntryList> cache;
     private final ConcurrentHashMap<StaticBuffer,Long> expiredKeys;
 
-    private final long cacheTimeMS;
-    private final long expirationGracePeriodMS;
+    private final long cacheTime;
+    private final long expirationGracePeriod;
     private final CleanupThread cleanupThread;
 
 
-    public ExpirationKCVSCache(final KeyColumnValueStore store, String metricsName, final long cacheTimeMS, final long expirationGracePeriodMS, final long maximumByteSize) {
+    public ExpirationKCVSCache(final KeyColumnValueStore store, String metricsName, final long cacheTime, final long expirationGracePeriod, final long maximumByteSize) {
         super(store, metricsName);
-        Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
-        Preconditions.checkArgument(System.currentTimeMillis()+1000l*3600*24*365*100+cacheTimeMS>0,"Cache expiration time too large, overflow may occur: %s",cacheTimeMS);
-        this.cacheTimeMS = cacheTimeMS;
+        Preconditions.checkArgument(cacheTime > 0, "Cache expiration must be positive: %s", cacheTime);
+        Preconditions.checkArgument(Timestamps.SYSTEM().getTime()+1000l*3600*24*365*100+cacheTime>0,"Cache expiration time too large, overflow may occur: %s",cacheTime);
+        this.cacheTime = cacheTime;
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
-        Preconditions.checkArgument(expirationGracePeriodMS>=0,"Invalid expiration grace peiod: %s",expirationGracePeriodMS);
-        this.expirationGracePeriodMS = expirationGracePeriodMS;
+        Preconditions.checkArgument(expirationGracePeriod>=0,"Invalid expiration grace peiod: %s",expirationGracePeriod);
+        this.expirationGracePeriod = expirationGracePeriod;
         CacheBuilder<KeySliceQuery,EntryList> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)
                 .concurrencyLevel(concurrencyLevel)
                 .initialCapacity(1000)
-                .expireAfterWrite(cacheTimeMS, TimeUnit.MILLISECONDS)
+                .expireAfterWrite(cacheTime, Timestamps.SYSTEM().getUnit())
                 .weigher(new Weigher<KeySliceQuery, EntryList>() {
                     @Override
                     public int weigh(KeySliceQuery keySliceQuery, EntryList entries) {
@@ -163,15 +164,15 @@ public class ExpirationKCVSCache extends KCVSCache {
     }
 
     private final long getExpirationTime() {
-        return System.currentTimeMillis()+cacheTimeMS;
+        return Timestamps.SYSTEM().getTime()+cacheTime;
     }
 
     private final boolean isBeyondExpirationTime(long until) {
-        return until<System.currentTimeMillis();
+        return until<Timestamps.SYSTEM().getTime();
     }
 
     private final long getAge(long until) {
-        long age = System.currentTimeMillis() - (until-cacheTimeMS);
+        long age = Timestamps.SYSTEM().getTime() - (until-cacheTime);
         assert age>=0;
         return age;
     }
@@ -201,7 +202,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                 for (Map.Entry<StaticBuffer,Long> expKey : expiredKeys.entrySet()) {
                     if (isBeyondExpirationTime(expKey.getValue()))
                         expiredKeys.remove(expKey.getKey(), expKey.getValue());
-                    else if (getAge(expKey.getValue())>=expirationGracePeriodMS)
+                    else if (getAge(expKey.getValue())>=expirationGracePeriod)
                         expiredKeysCopy.put(expKey.getKey(),expKey.getValue());
                 }
                 for (KeySliceQuery ksq : cache.asMap().keySet()) {

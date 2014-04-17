@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
+import com.thinkaurelius.titan.diskstorage.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
@@ -82,7 +83,7 @@ public class Backend implements LockerProvider {
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
-    private static final long ETERNAL_CACHE_EXPIRATION = 1000l*3600*24*365*200; //200 years
+    private static final long ETERNAL_CACHE_EXPIRATION = Timestamps.SYSTEM().convert(200*365,TimeUnit.DAYS);
 
     public static final int THREAD_POOL_SIZE_SCALE_FACTOR = 2;
 
@@ -111,7 +112,7 @@ public class Backend implements LockerProvider {
     private final int bufferSize;
     private final int writeAttempts;
     private final int readAttempts;
-    private final int persistAttemptWaittime;
+    private final long persistAttemptWaittime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 
@@ -144,7 +145,7 @@ public class Backend implements LockerProvider {
 
         writeAttempts = configuration.get(WRITE_ATTEMPTS);
         readAttempts = configuration.get(READ_ATTEMPTS);
-        persistAttemptWaittime = configuration.get(STORAGE_ATTEMPT_WAITTIME);
+        persistAttemptWaittime = Timestamps.SYSTEM().convert(configuration.get(STORAGE_ATTEMPT_WAITTIME),TimeUnit.MILLISECONDS);
 
         if (!storeFeatures.hasLocking()) {
             Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
@@ -228,7 +229,7 @@ public class Backend implements LockerProvider {
 
             //Configure caches
             if (cacheEnabled) {
-                long expirationTime = configuration.get(DB_CACHE_TIME);
+                long expirationTime = Timestamps.SYSTEM().convert(configuration.get(DB_CACHE_TIME),TimeUnit.MILLISECONDS);
                 Preconditions.checkArgument(expirationTime>=0,"Invalid cache expiration time: %s",expirationTime);
                 if (expirationTime==0) expirationTime=ETERNAL_CACHE_EXPIRATION;
 
@@ -244,7 +245,7 @@ public class Backend implements LockerProvider {
                     cacheSizeBytes = (long)cachesize;
                 }
                 log.info("Configuring total store cache size: {}",cacheSizeBytes);
-                long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
+                long cleanWaitTime = Timestamps.SYSTEM().convert(configuration.get(DB_CACHE_CLEAN_WAIT),TimeUnit.MILLISECONDS);
                 Preconditions.checkArgument(EDGESTORE_CACHE_PERCENT + INDEXSTORE_CACHE_PERCENT == 1.0,"Cache percentages don't add up!");
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
@@ -367,7 +368,7 @@ public class Backend implements LockerProvider {
                                                                      final Configuration config) {
         try {
             KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,store,SYSTEM_CONFIGURATION_IDENTIFIER);
-            kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
+            kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME),TimeUnit.MILLISECONDS);
             return kcvsConfig;
         } catch (StorageException e) {
             throw new TitanException("Could not open global configuration",e);

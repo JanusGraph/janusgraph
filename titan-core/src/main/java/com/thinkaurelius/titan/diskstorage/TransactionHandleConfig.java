@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -18,14 +17,13 @@ public interface TransactionHandleConfig {
     public boolean hasTimestamp();
 
     /**
-     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception
+     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception.
+     * The timestamp is in {@link com.thinkaurelius.titan.diskstorage.time.Timestamps#SYSTEM()}.
      *
      * @return
      * @see #hasTimestamp()
      */
     public long getTimestamp();
-
-    public TimestampProvider getTimestampProvider();
 
     /**
      * Returns the (possibly null) metrics prefix for this transaction.

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package com.thinkaurelius.titan.diskstorage.time;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,21 +26,40 @@ public interface TimestampProvider {
     public TimeUnit getUnit();
 
     /**
+     * Convenience method for {@code getUnit().convert}.
+     *
+     * @param sourceDuration
+     * @param sourceUnit
+     * @return
+     */
+    public long convert(long sourceDuration, TimeUnit sourceUnit);
+
+    /**
+     * Returns a (shorthand) string representation of the time unit
+     */
+    public String getUnitName();
+
+    /**
      * Block until the current time as returned by {@link #getTime()} is greater
-     * than the parameters. If the parameter {@code unit} and {@link #getUnit()}
-     * are different, then this method internally converts between them as
-     * necessary for comparison.
+     * than the provided epochTime, where it is assumed that epochTime is given
+     * in the same time unit as {@link #getUnit()}.
      *
      * @param epochTime
      *            the timestamp to exceed before returning
-     * @param unit
-     *            units associated with the time parameter
      *
-     * @return the current time in the same units as the {@code unit} argument
+     * @return the current time in the same units {@link #getUnit()}
      * @throws InterruptedException
      *             if externally interrupted
      */
-    public long sleepPast(long epochTime, TimeUnit unit)
+    public long sleepPast(long epochTime)
             throws InterruptedException;
+
+    /**
+     * Sleeps for the given interval of time where the time unit is {@link #getUnit()}
+     *
+     * @param duration
+     * @throws InterruptedException
+     */
+    public void sleepFor(long duration) throws InterruptedException;
 
 }
