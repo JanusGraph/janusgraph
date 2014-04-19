@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -19,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.QueryExecutor;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
@@ -46,13 +48,13 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraExecutor.class);
 
-    private static final int QUEUE_SZIE = 1000;
-    private static final int TIMEOUT_MS = 60000; // 60 seconds
+    private static final int QUEUE_SIZE = 1000;
+    private static final int TIMEOUT_MS = 10000; // 60 seconds
     private static final int NUM_VERTEX_DEFAULT = 10000;
 
     private final SliceQuery[] queries;
     private final List<BlockingQueue<QueryResult>> dataQueues;
-    private final Thread[] pullThreads;
+    private final DataPuller[] pullThreads;
     private final ExecutorService processor;
     private final StandardTitanTx tx;
     private final OLAPJob job;
@@ -75,12 +77,12 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         BackendTransaction btx = tx.getTxHandle();
 
         dataQueues = new ArrayList<BlockingQueue<QueryResult>>(sliceQueries.size());
-        pullThreads = new Thread[sliceQueries.size()];
+        pullThreads = new DataPuller[sliceQueries.size()];
         for (int i = 0; i < sliceQueries.size(); i++) {
             SliceQuery sq = queries[i];
-            BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SZIE);
+            BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
             dataQueues.add(queue);
-            pullThreads[i]=new Thread(new DataPuller(queue,btx.edgeStoreKeys(sq)));
+            pullThreads[i]=new DataPuller(queue,btx.edgeStoreKeys(sq));
             pullThreads[i].start();
         }
         //Prepare vertex state
@@ -94,7 +96,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             }
         }
 
-        processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SZIE));
+        processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
     }
 
     S getVertexState(long vertexId) {
@@ -112,7 +114,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
 
     private boolean allPullingThreadsDone() {
         for (int i = 0; i < pullThreads.length; i++) {
-            if (pullThreads[i].isAlive()) return false;
+            if (!pullThreads[i].isFinished()) return false;
         }
         return true;
     }
@@ -144,6 +146,10 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             processor.shutdown();
             processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
             if (!processor.isTerminated()) throw new TitanException("Timed out waiting for vertex processors");
+            for (int i = 0; i < pullThreads.length; i++) {
+                pullThreads[i].join(10);
+                if (pullThreads[i].isAlive()) throw new TitanException("Could not join data pulling thread");
+            }
             set(vertexStates);
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
@@ -221,14 +227,16 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         }
     }
 
-    private static class DataPuller implements Runnable {
+    private static class DataPuller extends Thread {
 
         private final BlockingQueue<QueryResult> queue;
         private final KeyIterator keyIter;
+        private volatile boolean finished;
 
         private DataPuller(BlockingQueue<QueryResult> queue, KeyIterator keyIter) {
             this.queue = queue;
             this.keyIter = keyIter;
+            this.finished = false;
         }
 
         @Override
@@ -238,6 +246,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                     StaticBuffer key = keyIter.next();
                     RecordIterator<Entry> entries = keyIter.getEntries();
                     long vertexId = IDHandler.getKeyID(key);
+                    if (IDManager.VertexIDType.Hidden.is(vertexId)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     try {
                         queue.put(new QueryResult(vertexId,entryList));
@@ -246,6 +255,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                         break;
                     }
                 }
+                finished = true;
             } catch (Throwable e) {
                 log.error("Could not load data from storage: {}",e);
             } finally {
@@ -255,6 +265,10 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                     log.warn("Could not close storage iterator ", e);
                 }
             }
+        }
+
+        public boolean isFinished() {
+            return finished;
         }
     }
 

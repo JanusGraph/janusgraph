@@ -77,17 +77,6 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
     }
 
     @Override
-    public FulgoraBuilder<S> setInitialState(final S defaultValue) {
-        setInitializer(new StateInitializer<S>() {
-            @Override
-            public S initialState() {
-                return defaultValue;
-            }
-        });
-        return this;
-    }
-
-    @Override
     public FulgoraBuilder<S> setInitializer(StateInitializer<S> initial) {
         Preconditions.checkNotNull(initial);
         this.initializer=initial;
