@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -315,7 +315,7 @@ public abstract class IDAllocationTest {
         final IDAuthority targetAuthority = idAuthorities[0];
         targetAuthority.setIDBlockSizer(new InnerIDBlockSizer());
         final int targetPartition = 0;
-        final ConcurrentLinkedDeque<Long> blocks = new ConcurrentLinkedDeque<Long>();
+        final ConcurrentLinkedQueue<Long> blocks = new ConcurrentLinkedQueue<Long>();
         final int blocksPerThread = 40;
         Assert.assertTrue(0 < blocksPerThread);
         List <Future<Void>> futures = new ArrayList<Future<Void>>(CONCURRENCY);
