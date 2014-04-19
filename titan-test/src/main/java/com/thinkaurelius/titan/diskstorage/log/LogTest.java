@@ -139,7 +139,7 @@ public abstract class LogTest {
 
     @Test
     public void testFuzzMessages() throws Exception {
-        final int maxLen = 1024 * 1024 * 4;
+        final int maxLen = 1024 * 4;
         final int rounds = 32;
 
         StoringReader reader = new StoringReader();

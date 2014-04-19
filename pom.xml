@@ -93,7 +93,7 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hbase</module>
+        <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
         <module>titan-rexster</module>

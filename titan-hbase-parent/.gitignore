@@ -4,3 +4,7 @@
 /titan-hbase-*/bin/
 /titan-hbase-*/conf/
 /titan-hbase-*/logs/
+*~
+.classpath
+.project
+.settings/
