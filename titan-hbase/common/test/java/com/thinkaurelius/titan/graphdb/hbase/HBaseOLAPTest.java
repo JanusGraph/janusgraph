@@ -7,7 +7,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 
-public class HBaseGraphTest extends FulgoraOLAPTest {
+public class HBaseOLAPTest extends FulgoraOLAPTest {
     @BeforeClass
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
