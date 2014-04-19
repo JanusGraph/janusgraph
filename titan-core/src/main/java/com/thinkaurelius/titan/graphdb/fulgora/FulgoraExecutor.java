@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
@@ -24,9 +25,11 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.QueryExecutor;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
+import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.VertexFactory;
+import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.slf4j.Logger;
@@ -49,13 +52,13 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             LoggerFactory.getLogger(FulgoraExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
-    private static final int TIMEOUT_MS = 10000; // 60 seconds
+    private static final int TIMEOUT_MS = 60000; // 60 seconds
     private static final int NUM_VERTEX_DEFAULT = 10000;
 
     private final SliceQuery[] queries;
     private final List<BlockingQueue<QueryResult>> dataQueues;
     private final DataPuller[] pullThreads;
-    private final ExecutorService processor;
+    private final ThreadPoolExecutor processor;
     private final StandardTitanTx tx;
     private final OLAPJob job;
 
@@ -73,16 +76,18 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         this.stateKey = stateKey;
         this.job = job;
         this.initializer = initializer;
-        this.queries = sliceQueries.toArray(new SliceQuery[sliceQueries.size()]);
         BackendTransaction btx = tx.getTxHandle();
 
-        dataQueues = new ArrayList<BlockingQueue<QueryResult>>(sliceQueries.size());
-        pullThreads = new DataPuller[sliceQueries.size()];
-        for (int i = 0; i < sliceQueries.size(); i++) {
-            SliceQuery sq = queries[i];
+        //The first (0th) query is the grounding query
+        dataQueues = new ArrayList<BlockingQueue<QueryResult>>(sliceQueries.size()+1);
+        pullThreads = new DataPuller[sliceQueries.size()+1];
+        queries = new SliceQuery[sliceQueries.size()+1];
+        for (int i = 0; i <= sliceQueries.size(); i++) {
+            if (i==0) queries[i]=new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
+            else queries[i]=sliceQueries.get(i-1);
             BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
             dataQueues.add(queue);
-            pullThreads[i]=new DataPuller(queue,btx.edgeStoreKeys(sq));
+            pullThreads[i]=new DataPuller(queue,btx.edgeStoreKeys(queries[i]));
             pullThreads[i].start();
         }
         //Prepare vertex state
@@ -97,6 +102,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         }
 
         processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
+        processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
     }
 
     S getVertexState(long vertexId) {
@@ -122,26 +128,47 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
     @Override
     public void run() {
         try {
-            mainloop:
+            QueryResult[] currentResults = new QueryResult[queries.length];
             while (true) {
-                if (dataQueues.get(0).isEmpty()) {
-                    if (allPullingThreadsDone() && dataQueues.get(0).isEmpty()) break mainloop;
-                }
-                FulgoraVertex vertex = null;
                 for (int i = 0; i < queries.length; i++) {
+                    if (currentResults[i]!=null) continue;
                     BlockingQueue<QueryResult> queue = dataQueues.get(i);
-                    QueryResult qr = queue.poll(TIMEOUT_MS,TimeUnit.MILLISECONDS);
+
+                    QueryResult qr = queue.poll(10,TimeUnit.MILLISECONDS); //Try very short time to see if we are done
                     if (qr==null) {
-                        if (vertex==null && allPullingThreadsDone()) break mainloop;
-                        throw new TitanException("Timed out waiting for next vertex data - storage error likely");
+                        if (pullThreads[i].isFinished()) continue; //No more data to be expected
+                        qr = queue.poll(TIMEOUT_MS,TimeUnit.MILLISECONDS); //otherwise, give it more time
+                        if (qr==null && !pullThreads[i].isFinished())
+                            throw new TitanException("Timed out waiting for next vertex data - storage error likely");
                     }
-                    assert qr!=null;
-                    if (vertex==null) vertex = new FulgoraVertex(tx,qr.vertexId,this);
-                    else Preconditions.checkState(vertex.getID()==qr.vertexId,"Vertex id mismatch %s<>%s",vertex.getID(),qr.vertexId);
-                    vertex.addToQueryCache(queries[i],qr.entries);
+                    currentResults[i]=qr;
                 }
-                assert vertex!=null;
-                processor.submit(new VertexProcessor<S>(vertex));
+                QueryResult conditionQuery = currentResults[0];
+                currentResults[0]=null;
+                if (conditionQuery==null) break; //Termination condition - primary query has no more data
+
+                //First, check if this is a valid (non-deleted) vertex
+                assert conditionQuery.entries.size()==1;
+                RelationCache relCache = tx.getEdgeSerializer().parseRelation(
+                                        conditionQuery.vertexId,conditionQuery.entries.get(0),true,tx);
+                if (relCache.typeId != SystemKey.VertexExists.getID()) {
+                    log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
+                    for (int i=1;i<currentResults.length;i++) {
+                        if (currentResults[i]!=null && currentResults[i].vertexId==conditionQuery.vertexId) {
+                            currentResults[i]=null;
+                        }
+                    }
+                } else {
+                    FulgoraVertex vertex = new FulgoraVertex(tx,conditionQuery.vertexId,this);
+                    for (int i=1;i<currentResults.length;i++) {
+                        if (currentResults[i]!=null && currentResults[i].vertexId==vertex.getID()) {
+                            vertex.addToQueryCache(queries[i],currentResults[i].entries);
+                            currentResults[i]=null;
+                        }
+                    }
+                    processor.submit(new VertexProcessor<S>(vertex));
+
+                }
             }
             processor.shutdown();
             processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
@@ -150,6 +177,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 pullThreads[i].join(10);
                 if (pullThreads[i].isAlive()) throw new TitanException("Could not join data pulling thread");
             }
+            tx.rollback();
             set(vertexStates);
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
