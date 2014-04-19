@@ -11,6 +11,10 @@
     <name>Titan-HBase: Jar with Core and Compat Shims</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     
+    <properties>
+        <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
