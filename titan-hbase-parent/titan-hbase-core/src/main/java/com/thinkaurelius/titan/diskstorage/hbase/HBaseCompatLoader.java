@@ -30,8 +30,14 @@ public class HBaseCompatLoader {
                     compat = (HBaseCompat)Class.forName(className).newInstance();
                     log.info("Instantiated HBase {} compatibility layer for runtime HBase version {}: {}",
                             supportedVersion, hbaseVersion, compat);
-                } catch (ReflectiveOperationException e) {
-                    String errMsg = "Unable to load HBase " + hbaseVersion + " compatibility class " + className;
+                } catch (IllegalAccessException e) {
+                    String errMsg = "IllegalAccessException when HBase " + hbaseVersion + " compatibility class " + className;
+                    throw new RuntimeException(errMsg, e);
+                } catch (InstantiationException e) {
+                    String errMsg = "InstantiationException when loading HBase " + hbaseVersion + " compatibility class " + className;
+                    throw new RuntimeException(errMsg, e);
+                } catch (ClassNotFoundException e) {
+                    String errMsg = "ClassNotFoundException when HBase " + hbaseVersion + " compatibility class " + className;
                     throw new RuntimeException(errMsg, e);
                 }
             }
