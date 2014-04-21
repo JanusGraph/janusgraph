@@ -118,13 +118,6 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         vertexStates.put(vertexId,state);
     }
 
-    private boolean allPullingThreadsDone() {
-        for (int i = 0; i < pullThreads.length; i++) {
-            if (!pullThreads[i].isFinished()) return false;
-        }
-        return true;
-    }
-
     @Override
     public void run() {
         try {
