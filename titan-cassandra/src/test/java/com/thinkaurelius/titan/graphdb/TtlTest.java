@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.After;
@@ -99,7 +100,7 @@ public abstract class TtlTest extends TitanGraphBaseTest {
 
     @Test
     public void testPerLabelTtl() throws Exception {
-        ((TitanGraph) graph).makeLabel("likes").ttl(1).make();
+        graph.makeLabel("likes").ttl(1).make();
         graph.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -119,7 +120,7 @@ public abstract class TtlTest extends TitanGraphBaseTest {
     @Test
     public void testPerEdgeTtlOverridesPerLabelTtl() throws Exception {
         // timeout of 1 second by label
-        ((TitanGraph) graph).makeLabel("likes").ttl(1).make();
+        graph.makeLabel("likes").ttl(1).make();
         graph.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -152,26 +153,35 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
     }
 
-    /*
-    @Before
-    public void startUp() {
-        generateGraph();
+    @Test
+    public void testKeyindexWithTtl() throws Exception {
+        graph.createKeyIndex("edge-name", Edge.class);
+        graph.createKeyIndex("edge-id", Edge.class);
+        graph.makeKey("edge-name").dataType(String.class).indexed(Edge.class);
+        graph.commit();
+
+        graph.makeLabel("likes").ttl(1).make();
+        graph.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        Edge e = graph.addEdge(null, v1, v2, "likes");
+        e.setProperty("edge-name", "v1-likes-v2");
+        e.setProperty("edge-id", "v1lv2");
+
+        graph.commit();
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+        assertTrue(graph.getEdges("edge-id", "v1lv2").iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        graph.rollback();
+
+        // the edge is gone not only from its previous endpoints, but also from key indices
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+        assertFalse(graph.getEdges("edge-id", "v1lv2").iterator().hasNext());
     }
-
-    @After
-    public void shutDown() throws StorageException {
-        cleanUp();
-    }
-
-    public Graph generateGraph() {
-        graph = TitanFactory.open(getConfiguration());
-        return graph;
-    }
-
-    public void cleanUp() throws StorageException {
-        StandardTitanGraph graph = (StandardTitanGraph) generateGraph();
-        graph.getConfiguration().getBackend().clearStorage();
-        graph.shutdown();
-    }*/
-
 }
