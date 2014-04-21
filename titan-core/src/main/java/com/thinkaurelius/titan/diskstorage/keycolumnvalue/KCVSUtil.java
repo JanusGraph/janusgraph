@@ -64,7 +64,7 @@ public class KCVSUtil {
      * @return keys returned by the store.getKeys call
      * @throws StorageException unexpected failure
      */
-    public static RecordIterator<StaticBuffer> getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
+    public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
         SliceQuery slice = new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1);
         if (features.hasUnorderedScan()) {
             return store.getKeys(slice, txh);
