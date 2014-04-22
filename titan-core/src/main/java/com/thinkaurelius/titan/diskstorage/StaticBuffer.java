@@ -17,6 +17,8 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public byte getByte(int position);
 
+    public boolean getBoolean(int position);
+
     public short getShort(int position);
 
     public int getInt(int position);

@@ -17,6 +17,7 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     private final String metricsName;
     private final boolean validateKeysOnly = true;
+    private final boolean bufferEnabled = true;
 
     protected final KeyColumnValueStore store;
 
@@ -44,10 +45,9 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         assert txh instanceof CacheTransaction;
-        ((CacheTransaction) txh).expireMutations(this, key, additions, deletions);
-        store.mutate(key, additions, deletions, getTx(txh));
+        ((CacheTransaction) txh).mutate(this, key, additions, deletions);
+        if (!bufferEnabled) store.mutate(key, additions, deletions, getTx(txh));
     }
-
 
     //############### SIMPLE PROXY ###########
 

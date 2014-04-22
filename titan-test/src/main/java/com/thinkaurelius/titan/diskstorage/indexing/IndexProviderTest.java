@@ -86,7 +86,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever);
+        tx = new IndexTransaction(index, indexRetriever, 2, 1000);
     }
 
     @After
@@ -340,7 +340,7 @@ public abstract class IndexProviderTest {
     private void remove(String store, String docid, Map<String, Object> doc, boolean deleteAll) {
         for (Map.Entry<String, Object> kv : doc.entrySet()) {
             if (index.supports(allKeys.get(kv.getKey()))) {
-                tx.delete(store, docid, kv.getKey(), deleteAll);
+                tx.delete(store, docid, kv.getKey(), kv.getValue(), deleteAll);
             }
         }
     }

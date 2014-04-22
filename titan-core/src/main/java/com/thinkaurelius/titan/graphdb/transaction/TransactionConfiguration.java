@@ -23,6 +23,14 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      */
     public boolean hasAssignIDsImmediately();
 
+
+    /**
+     * Whether this transaction should be optimized for batch-loading, i.e. ingestion of lots of data.
+     *
+     * @return
+     */
+    public boolean hasEnabledBatchLoading();
+
     /**
      * Whether the graph transaction is configured to verify that a vertex with the id GIVEN BY THE USER actually exists
      * in the database or not.
@@ -106,5 +114,13 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      * @return
      */
     public long getIndexCacheWeight();
+
+    /**
+     * The name of the log to be used for logging the mutations in this transaction.
+     * If the identifier is NULL the mutations will not be logged.
+     *
+     * @return
+     */
+    public String getLogIdentifier();
 
 }

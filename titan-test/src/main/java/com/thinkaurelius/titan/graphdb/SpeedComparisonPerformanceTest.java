@@ -5,9 +5,7 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -27,7 +25,9 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
 
     @Test
     public void compare() {
-        graph.createKeyIndex("uid", Vertex.class);
+        makeVertexIndexedUniqueKey("uid", Long.class);
+        finishSchema();
+
         Vertex vertices[] = new TitanVertex[numVertices];
         for (int i = 0; i < numVertices; i++) {
             vertices[i] = graph.addVertex(null);
@@ -84,19 +84,20 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
 
     @Test
     public void testIncrementalSpeed() {
-        TitanKey payload = graph.makeKey("payload").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        TitanKey uid = graph.makeKey("uid").dataType(Long.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).unique(TypeMaker.UniquenessConsistency.NO_LOCK).indexed(Vertex.class).make();
-        TitanLabel activity = graph.makeLabel("activity").manyToMany().make();
+        mgmt.makeKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        makeVertexIndexedUniqueKey("uid", Long.class);
+        mgmt.makeLabel("activity").multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
 
         final int numV = 20;
         final int numA = 500;
         for (int i=1;i<=numV;i++) {
             TitanVertex v = graph.addVertex(null);
-            v.setProperty(uid,i);
+            v.setProperty("uid",i);
             for (int j=1;j<=numA;j++) {
                 TitanVertex a = graph.addVertex(null);
-                a.setProperty(payload, RandomStringUtils.randomAlphabetic(100));
-                v.addEdge(activity,a);
+                a.setProperty("payload", RandomStringUtils.randomAlphabetic(100));
+                v.addEdge("activity",a);
             }
         }
 

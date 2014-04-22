@@ -4,8 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.*;
@@ -15,9 +16,7 @@ import com.tinkerpop.blueprints.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -56,7 +55,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
      * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
@@ -180,72 +179,62 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public <T extends Element> void createKeyIndex(String key, Class<T> elementClass, Parameter... indexParameters) {
-        Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(elementClass == Element.class || elementClass == Vertex.class || elementClass == Edge.class,
-                "Expected vertex, edge or element");
-
-        if (indexParameters == null || indexParameters.length == 0) {
-            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX, "")};
-        }
-
-        if (containsType(key)) {
-            TitanType type = getType(key);
-            if (!type.isPropertyKey())
-                throw new IllegalArgumentException("Key string does not denote a property key but a label");
-            List<String> indexes = new ArrayList<String>(indexParameters.length);
-            for (Parameter p : indexParameters) {
-                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
-                indexes.add((String) p.getKey());
-            }
-            boolean indexesCovered;
-            if (elementClass == Element.class) {
-                indexesCovered = hasIndexes((TitanKey) type, Vertex.class, indexes) &&
-                        hasIndexes((TitanKey) type, Edge.class, indexes);
-            } else {
-                indexesCovered = hasIndexes((TitanKey) type, elementClass, indexes);
-            }
-            if (!indexesCovered)
-                throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
-        } else {
-            KeyMaker tm = makeKey(key).dataType(Object.class);
-            for (Parameter p : indexParameters) {
-                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
-                tm.indexed((String) p.getKey(), elementClass);
-            }
-            tm.make();
-        }
+        throw new UnsupportedOperationException("Use Titan's Management API to create indices");
+//        Preconditions.checkNotNull(key);
+//        Preconditions.checkArgument(elementClass == Element.class || elementClass == Vertex.class || elementClass == Edge.class,
+//                "Expected vertex, edge or element");
+//
+//        if (indexParameters == null || indexParameters.length == 0) {
+//            indexParameters = new Parameter[]{new Parameter(Titan.Token.STANDARD_INDEX, "")};
+//        }
+//
+//        if (containsType(key)) {
+//            TitanType type = getType(key);
+//            if (!type.isPropertyKey())
+//                throw new IllegalArgumentException("Key string does not denote a property key but a label");
+//            List<String> indexes = new ArrayList<String>(indexParameters.length);
+//            for (Parameter p : indexParameters) {
+//                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
+//                indexes.add((String) p.getKey());
+//            }
+//            boolean indexesCovered;
+//            if (elementClass == Element.class) {
+//                indexesCovered = hasIndexes((TitanKey) type, Vertex.class, indexes) &&
+//                        hasIndexes((TitanKey) type, Edge.class, indexes);
+//            } else {
+//                indexesCovered = hasIndexes((TitanKey) type, elementClass, indexes);
+//            }
+//            if (!indexesCovered)
+//                throw new UnsupportedOperationException("Cannot add an index to an already existing property key: " + type.getName());
+//        } else {
+//            KeyMaker tm = makeKey(key).dataType(Object.class);
+//            for (Parameter p : indexParameters) {
+//                Preconditions.checkArgument(p.getKey() instanceof String, "Invalid index argument: " + p);
+//                tm.indexed((String) p.getKey(), elementClass);
+//            }
+//            tm.make();
+//        }
     }
 
-    private static final boolean hasIndexes(TitanKey key, Class<? extends Element> elementClass, List<String> indexes) {
-        for (String index : indexes) {
-            if (!Iterables.contains(key.getIndexes(elementClass), index)) return false;
-        }
-        return true;
-    }
+//    private static final boolean hasIndexes(TitanKey key, Class<? extends Element> elementClass, List<String> indexes) {
+//        for (String index : indexes) {
+//            if (!Iterables.contains(key.getIndexes(elementClass), index)) return false;
+//        }
+//        return true;
+//    }
 
     @Override
     public <T extends Element> Set<String> getIndexedKeys(Class<T> elementClass) {
         Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
-        for (TitanKey k : getTypes(TitanKey.class)) {
-            if (!Iterables.isEmpty(k.getIndexes(elementClass))) indexedkeys.add(k.getName());
+        for (TitanVertex k : getVertices(SystemKey.TypeCategory, TitanSchemaCategory.KEY)) {
+            assert k instanceof InternalType;
+            if (!Iterables.isEmpty(((InternalType) k).getKeyIndexes())) indexedkeys.add(((TitanKey)k).getName());
         }
         return indexedkeys;
     }
 
-    @Override
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
-        Preconditions.checkNotNull(clazz);
-        Iterable<TitanVertex> types = null;
-        if (TitanKey.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeClass, TitanTypeClass.KEY);
-        } else if (TitanLabel.class.equals(clazz)) {
-            types = getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL);
-        } else if (TitanType.class.equals(clazz)) {
-            types = Iterables.concat(getVertices(SystemKey.TypeClass, TitanTypeClass.KEY), getVertices(SystemKey.TypeClass, TitanTypeClass.LABEL));
-        } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(types, clazz);
-    }
+
 
 }

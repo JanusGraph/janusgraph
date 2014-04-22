@@ -30,7 +30,7 @@ public class ProcessMessageJob implements Runnable {
         try {
             reader.read(message);
         } catch (Throwable e) {
-            log.error("Encountered exception when processing message [{}] by reader [{}]: {}",message, reader, e);
+            log.error("Encountered exception when processing message ["+message+"] by reader ["+reader+"]:",e);
         }
     }
 }

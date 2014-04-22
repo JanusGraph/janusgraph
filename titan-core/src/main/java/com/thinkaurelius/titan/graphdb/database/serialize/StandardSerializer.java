@@ -18,7 +18,7 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
     private final KryoSerializer backupSerializer;
 
     public StandardSerializer(boolean allowCustomSerialization) {
-        if (allowCustomSerialization) backupSerializer = new KryoSerializer();
+        if (allowCustomSerialization) backupSerializer = new KryoSerializer(DEFAULT_REGISTRATIONS);
         else backupSerializer = null;
     }
 
@@ -120,6 +120,12 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
         @Override
         public DataOutput putShort(short val) {
             super.putShort(val);
+            return this;
+        }
+
+        @Override
+        public WriteBuffer putBoolean(boolean val) {
+            super.putBoolean(val);
             return this;
         }
 

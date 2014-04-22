@@ -9,6 +9,6 @@ public interface WriteConfiguration extends ReadConfiguration {
 
     public void remove(String key);
 
-    public WriteConfiguration clone();
+    public WriteConfiguration copy();
 
 }

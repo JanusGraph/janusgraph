@@ -4,7 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.EnumMap;
@@ -19,7 +19,7 @@ public class RelationQueryCache {
     private final Cache<Long,CacheEntry> cache;
     private final EdgeSerializer edgeSerializer;
 
-    private final EnumMap<RelationType,SliceQuery> relationTypes;
+    private final EnumMap<RelationCategory,SliceQuery> relationTypes;
 
     public RelationQueryCache(EdgeSerializer edgeSerializer) {
         this(edgeSerializer,256);
@@ -29,13 +29,13 @@ public class RelationQueryCache {
         this.edgeSerializer = edgeSerializer;
         this.cache = CacheBuilder.newBuilder().maximumSize(capacity*3/2).initialCapacity(capacity)
                 .concurrencyLevel(2).build();
-        relationTypes = new EnumMap<RelationType, SliceQuery>(RelationType.class);
-        for (RelationType rt : RelationType.values()) {
+        relationTypes = new EnumMap<RelationCategory, SliceQuery>(RelationCategory.class);
+        for (RelationCategory rt : RelationCategory.values()) {
             relationTypes.put(rt,edgeSerializer.getQuery(rt));
         }
     }
 
-    public SliceQuery getQuery(RelationType type) {
+    public SliceQuery getQuery(RelationCategory type) {
         return relationTypes.get(type);
     }
 
@@ -68,7 +68,7 @@ public class RelationQueryCache {
 
         public CacheEntry(EdgeSerializer edgeSerializer, InternalType t) {
             if (t.isPropertyKey()) {
-                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[0],null);
+                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
                 in = out;
                 both = out;
             } else {

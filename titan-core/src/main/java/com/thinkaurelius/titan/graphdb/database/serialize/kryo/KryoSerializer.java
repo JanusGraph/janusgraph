@@ -9,37 +9,21 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.StandardAttributeHandling;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.*;
+import com.tinkerpop.blueprints.Direction;
 
-import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
 public class KryoSerializer {
 
     private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
-
-    private static final List<Class<? extends Object>> DEFAULT_REGISTRATIONS =
-            ImmutableList.of(
-            //General
-                    ArrayList.class, HashMap.class, Object.class,
-            //Titan specific
-                    TypeAttributeType.class, TypeAttribute.class, TitanTypeClass.class,
-                    IndexType.class, IndexType[].class, Parameter.class, Parameter[].class,
-                    IndexParameters.class, IndexParameters[].class, Order.class
-            );
 
     public static final int KRYO_ID_OFFSET = 50;
 
@@ -57,11 +41,11 @@ public class KryoSerializer {
     };
 
 
-    public KryoSerializer() {
+    public KryoSerializer(final List<Class<? extends Object>> defaultRegistrations) {
         this.registerRequired=false;
         this.registrations = new HashMap<Integer,TypeRegistration>();
 
-        for (Class clazz : DEFAULT_REGISTRATIONS) {
+        for (Class clazz : defaultRegistrations) {
             Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
             objectVerificationCache.put(clazz,Boolean.TRUE);
         }
@@ -71,8 +55,8 @@ public class KryoSerializer {
                 Kryo k = new Kryo();
                 k.setRegistrationRequired(registerRequired);
                 k.register(Class.class,new DefaultSerializers.ClassSerializer());
-                for (int i=0;i<DEFAULT_REGISTRATIONS.size();i++) {
-                    Class clazz = DEFAULT_REGISTRATIONS.get(i);
+                for (int i=0;i<defaultRegistrations.size();i++) {
+                    Class clazz = defaultRegistrations.get(i);
                     k.register(clazz, KRYO_ID_OFFSET + i);
                 }
                 return k;

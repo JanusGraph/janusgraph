@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
@@ -28,6 +28,8 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 
     private boolean isReadOnly = false;
+
+    private boolean hasEnabledBatchLoading = false;
 
     private boolean assignIDsImmediately = false;
 
@@ -51,6 +53,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private long indexCacheWeight;
 
+    private String logIdentifier;
+
     private Long timestamp = null;
 
     private String metricsPrefix;
@@ -71,9 +75,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.timestampProvider = graphConfig.getTimestampProvider();
-        this.storageConfiguration = TitanFactory.buildConfiguration();
+        this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
         if (graphConfig.isReadOnly()) readOnly();
         setCacheSize(graphConfig.getTxCacheSize());
         if (graphConfig.isBatchLoading()) enableBatchLoading();
@@ -93,6 +98,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder enableBatchLoading() {
+        hasEnabledBatchLoading = true;
         verifyUniqueness = false;
         verifyExternalVertexExistence = false;
         acquireLocks = false;
@@ -126,6 +132,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public StandardTransactionBuilder setLogIdentifier(String logName) {
+        this.logIdentifier = logName;
+        return this;
+    }
+
+    @Override
     public TransactionBuilder setCustomOption(String k, Object v) {
         storageConfiguration.set(k, v);
         return this;
@@ -133,12 +145,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public TitanTransaction start() {
-        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly,
+        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
                 hasTimestamp(), timestamp, timestampProvider,
-                indexCacheWeight, vertexCacheSize, metricsPrefix,
+                indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
@@ -158,6 +170,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
+    }
+
+    @Override
+    public boolean hasEnabledBatchLoading() {
+        return hasEnabledBatchLoading;
     }
 
     @Override
@@ -210,6 +227,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public String getLogIdentifier() {
+        return logIdentifier;
+    }
+
+    @Override
     public boolean hasTimestamp() {
         return timestamp != null;
     }
@@ -249,6 +271,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private static class ImmutableTxCfg implements TransactionConfiguration {
 
         private final boolean isReadOnly;
+        private final boolean hasEnabledBatchLoading;
         private final boolean hasAssignIDsImmediately;
         private final boolean hasVerifyExternalVertexExistence;
         private final boolean hasVerifyInternalVertexExistence;
@@ -259,21 +282,24 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isThreadBound;
         private final long indexCacheWeight;
         private final int vertexCacheSize;
+        private final String logIdentifier;
         private final DefaultTypeMaker defaultTypeMaker;
 
         private final TransactionHandleConfig handleConfig;
 
         public ImmutableTxCfg(boolean isReadOnly,
+                boolean hasEnabledBatchLoading,
                 boolean hasAssignIDsImmediately,
                 boolean hasVerifyExternalVertexExistence,
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound, boolean hasTimestamp, Long timestamp, TimestampProvider timestampProvider,
-                long indexCacheWeight, int vertexCacheSize,
+                long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
+            this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
             this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
             this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
@@ -284,11 +310,17 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isThreadBound = isThreadBound;
             this.indexCacheWeight = indexCacheWeight;
             this.vertexCacheSize = vertexCacheSize;
+            this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionConfig.Builder()
                     .timestampProvider(timestampProvider).timestamp(timestamp)
                     .metricsPrefix(metricsPrefix)
                     .customOptions(storageConfiguration).build();
+        }
+
+        @Override
+        public boolean hasEnabledBatchLoading() {
+            return hasEnabledBatchLoading;
         }
 
         @Override
@@ -349,6 +381,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public long getIndexCacheWeight() {
             return indexCacheWeight;
+        }
+
+        @Override
+        public String getLogIdentifier() {
+            return logIdentifier;
         }
 
         @Override

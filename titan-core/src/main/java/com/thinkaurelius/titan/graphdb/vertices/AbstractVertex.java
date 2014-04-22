@@ -4,9 +4,9 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 import com.tinkerpop.blueprints.Direction;
@@ -68,16 +68,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public synchronized void remove() {
         if (it().isRemoved()) return;
-        //TODO: It's Blueprints semantics to remove all edges - is this correct?
         Iterator<TitanRelation> iter = it().getRelations().iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();
         }
         //Finally remove internal/hidden relations
-        for (TitanRelation r : QueryUtil.queryAll(it())) {
-            if (r.getType().equals(SystemKey.VertexState)) r.remove();
-            else throw new IllegalStateException("Cannot remove vertex since it is still connected");
+        for (TitanProperty r : it().query().type(SystemKey.VertexExists).properties()) {
+            r.remove();
         }
     }
 
@@ -102,8 +100,11 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(TitanKey key) {
-        Iterator<TitanProperty> iter = query().type(key).includeHidden().properties().iterator();
-        if (key.isUnique(Direction.OUT)) {
+        if (!((InternalType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
+            getProperties().iterator().hasNext();
+        }
+        Iterator<TitanProperty> iter = query().type(key).properties().iterator();
+        if (key.getCardinality()==Cardinality.SINGLE) {
             if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
         } else {
@@ -245,29 +246,5 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public <O> O removeProperty(String key) {
         if (!tx().containsType(key)) return null;
         else return removeProperty(tx().getPropertyKey(key));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == null)
-            return false;
-
-        if (this == other)
-            return true;
-
-        try {
-            return id == ((AbstractVertex) other).id;
-        } catch (ClassCastException e) {
-            return super.equals(other);
-        }
-    }
-    
-    /*
-     * This silences a static analysis warning about overridding equals without
-     * overridding hashcode.
-     */
-    @Override
-    public int hashCode() {
-        return super.hashCode();
     }
 }

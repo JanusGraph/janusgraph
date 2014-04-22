@@ -71,10 +71,6 @@ public class TitanFactory {
         return open(new CommonsConfiguration(configuration));
     }
 
-    public static TitanGraph open(UserModifiableConfiguration configuration) {
-        return open(configuration.getConfiguration());
-    }
-
     public static TitanGraph open(BasicConfiguration configuration) {
         return open(configuration.getConfiguration());
     }
@@ -83,6 +79,34 @@ public class TitanFactory {
         preloadConfigOptions();
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
+
+    public static Builder build() {
+        return new Builder();
+    }
+
+    //--------------------- BUILDER -------------------------------------------
+
+    public static class Builder extends UserModifiableConfiguration {
+
+        public Builder() {
+            super(GraphDatabaseConfiguration.buildConfiguration());
+        }
+
+        public Builder set(String path, Object value) {
+            super.set(path,value);
+            return this;
+        }
+
+        public TitanGraph open() {
+            return TitanFactory.open(super.getConfiguration());
+        }
+
+
+    }
+
+    //###################################
+    //          HELPER METHODS
+    //###################################
 
     private synchronized static void preloadConfigOptions() {
 
@@ -128,21 +152,6 @@ public class TitanFactory {
         log.debug("Preloaded {} config options via reflections in {} ms",
                 preloaded, sw.stop().elapsed(TimeUnit.MILLISECONDS));
     }
-
-
-    //----------------------------------------------------------------
-
-    public static UserModifiableConfiguration buildConfiguration() {
-        return new UserModifiableConfiguration(new ModifiableConfiguration(TITAN_NS,
-                new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE));
-    }
-
-    //###################################
-    //          HELPER METHODS
-    //###################################
-
-
 
     private static ReadConfiguration getLocalConfiguration(String shortcutOrFile) {
         File file = new File(shortcutOrFile);

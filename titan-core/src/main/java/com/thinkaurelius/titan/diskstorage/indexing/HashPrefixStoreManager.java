@@ -1,8 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
@@ -12,6 +15,8 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreMan
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+
+import javax.annotation.Nullable;
 
 /**
  * See {@link HashPrefixKeyColumnValueStore}.
@@ -68,7 +73,15 @@ public class HashPrefixStoreManager implements KeyColumnValueStoreManager {
     public void mutateMany(
             Map<String, Map<StaticBuffer, KCVMutation>> mutations,
             StoreTransaction txh) throws StorageException {
-        wrapped.mutateMany(mutations, txh);
+        Map<String, Map<StaticBuffer, KCVMutation>> newMutations = new HashMap<String, Map<StaticBuffer, KCVMutation>>(mutations.size());
+        for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> muts : mutations.entrySet()) {
+            Map<StaticBuffer, KCVMutation> newMuts = new HashMap<StaticBuffer, KCVMutation>(muts.getValue().size());
+            newMutations.put(muts.getKey(),newMuts);
+            for (Map.Entry<StaticBuffer,KCVMutation> m : muts.getValue().entrySet()) {
+                newMuts.put(HashPrefixKeyColumnValueStore.prefixKey(hashPrefixLen,m.getKey()),m.getValue());
+            }
+        }
+        wrapped.mutateMany(newMutations, txh);
     }
 
 }

@@ -76,6 +76,13 @@ public interface TitanGraphQuery extends GraphQuery {
      */
     public Iterable<Edge> edges();
 
+    /**
+     * Returns all properties that match the conditions
+     *
+     * @return
+     */
+    public Iterable<TitanProperty> properties();
+
 
     /**
      * Limits the size of the returned result set

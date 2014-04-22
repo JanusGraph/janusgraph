@@ -55,6 +55,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public int getLen() {
+        assert !type.isUnidirected(Direction.IN);
         return isUnidirected()?1:2;
     }
 
@@ -83,7 +84,7 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public boolean isDirected() {
-        return !isUnidirected();
+        return ((TitanLabel)type).isDirected();
     }
 
     @Override

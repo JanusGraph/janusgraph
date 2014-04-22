@@ -4,9 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.*;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -228,22 +226,25 @@ public class Schema {
     public void makeTypes(TitanGraph g) {
         Preconditions.checkArgument(edgeLabels <= edgePropKeys);
 
-        TitanTransaction tx = g.newTransaction();
+        TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
-            tx.makeKey(getVertexPropertyName(i)).dataType(Integer.class).indexed(Vertex.class).single().make();
+            TitanKey key = mgmt.makeKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            mgmt.createInternalIndex("v-"+getVertexPropertyName(i),Vertex.class,key);
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            tx.makeKey(getEdgePropertyName(i)).dataType(Integer.class).indexed(Edge.class).single().make();
+            TitanKey key = mgmt.makeKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            mgmt.createInternalIndex("e-"+getEdgePropertyName(i),Edge.class,key);
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
             String pkName = getSortKeyForLabel(labelName);
-            TitanKey pk = tx.getPropertyKey(pkName);
-            tx.makeLabel(getEdgeLabelName(i)).sortKey(pk).make();
+            TitanKey pk = mgmt.getPropertyKey(pkName);
+            mgmt.makeLabel(getEdgeLabelName(i)).sortKey(pk).make();
         }
 
-        tx.makeKey(UID_PROP).dataType(Long.class).indexed(Vertex.class).single().unique().make();
-        tx.commit();
+        TitanKey uid = mgmt.makeKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.createInternalIndex("v-uid",Vertex.class,true,uid);
+        mgmt.commit();
     }
 
     private String[] generateNames(String prefix, int count) {

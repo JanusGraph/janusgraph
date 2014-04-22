@@ -1,18 +1,15 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.core.TitanGraphIndex;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.TitanManagement;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Graph;
-import com.tinkerpop.blueprints.KeyIndexableGraph;
-import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -125,9 +122,9 @@ public abstract class TtlTest extends TitanGraphBaseTest {
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
-        // explicit, per-edge TTL of 3s
+        // explicit, per-edge TTL of 5s
         Edge e1 = graph.addEdge(null, v1, v2, "likes");
-        e1.setProperty(Titan.TTL, 3);
+        e1.setProperty(Titan.TTL, 5);
 
         // implicit, per-label TTL of 1s
         graph.addEdge(null, v2, v1, "likes");
@@ -141,11 +138,11 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         Thread.sleep(start + 1001 - System.currentTimeMillis());
         graph.rollback();
 
-        // 1s edge has expired, 3s edge still here
+        // 1s edge has expired, 5s edge still here
         assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
         assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
 
-        Thread.sleep(start + 3001 - System.currentTimeMillis());
+        Thread.sleep(start + 5001 - System.currentTimeMillis());
         graph.rollback();
 
         // both edges expired
@@ -155,10 +152,10 @@ public abstract class TtlTest extends TitanGraphBaseTest {
 
     @Test
     public void testKeyindexWithTtl() throws Exception {
-        graph.createKeyIndex("edge-name", Edge.class);
-        graph.createKeyIndex("edge-id", Edge.class);
-        graph.makeKey("edge-name").dataType(String.class).indexed(Edge.class);
-        graph.commit();
+        TitanManagement tm = graph.getManagementSystem();
+        TitanKey key = tm.makeKey("edge-name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        tm.createInternalIndex("edge-name", Edge.class, true, key);
+        tm.commit();
 
         graph.makeLabel("likes").ttl(1).make();
         graph.commit();
@@ -167,13 +164,11 @@ public abstract class TtlTest extends TitanGraphBaseTest {
 
         Edge e = graph.addEdge(null, v1, v2, "likes");
         e.setProperty("edge-name", "v1-likes-v2");
-        e.setProperty("edge-id", "v1lv2");
 
         graph.commit();
 
         assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertTrue(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
-        assertTrue(graph.getEdges("edge-id", "v1lv2").iterator().hasNext());
 
         Thread.sleep(1001);
 
@@ -182,6 +177,5 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         // the edge is gone not only from its previous endpoints, but also from key indices
         assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
-        assertFalse(graph.getEdges("edge-id", "v1lv2").iterator().hasNext());
     }
 }

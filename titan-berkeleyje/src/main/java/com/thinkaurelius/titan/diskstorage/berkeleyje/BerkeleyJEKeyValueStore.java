@@ -95,7 +95,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         if (getTransaction(txh) == null) {
-            log.info("Attempt to acquire lock with transactions disabled");
+            log.warn("Attempt to acquire lock with transactions disabled");
         } //else we need no locking
     }
 

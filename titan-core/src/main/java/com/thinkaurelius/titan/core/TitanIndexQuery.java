@@ -56,6 +56,13 @@ public interface TitanIndexQuery {
     public Iterable<Result<Edge>> edges();
 
     /**
+     * Returns all properties that match the query in the indexing backend.
+     *
+     * @return
+     */
+    public Iterable<Result<TitanProperty>> properties();
+
+    /**
      * Container of a query result with its score.
      * @param <V>
      */

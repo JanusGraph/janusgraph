@@ -241,14 +241,6 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanLabel getEdgeLabel(String name);
 
     /**
-     * @param clazz
-     * @param <T>
-     * @return
-     * @see TitanGraph#getTypes(Class)
-     */
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
-
-    /**
      * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.

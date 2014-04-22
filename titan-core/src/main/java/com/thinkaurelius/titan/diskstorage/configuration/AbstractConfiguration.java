@@ -85,12 +85,18 @@ public abstract class AbstractConfiguration implements Configuration {
 
             @Override
             public boolean has(ConfigOption option, String... umbrellaElements) {
-                return config.has(option,concat(umbrellaElements));
+                if (option.getNamespace().hasUmbrella())
+                    return config.has(option,concat(umbrellaElements));
+                else
+                    return config.has(option);
             }
 
             @Override
             public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-                return config.get(option,concat(umbrellaElements));
+                if (option.getNamespace().hasUmbrella())
+                    return config.get(option,concat(umbrellaElements));
+                else
+                    return config.get(option);
             }
 
             @Override

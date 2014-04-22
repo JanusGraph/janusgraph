@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -62,6 +66,36 @@ public class BufferUtil {
 
     public static final StaticBuffer emptyBuffer() {
         return fillBuffer(0,(byte)0);
+    }
+
+    /* ################
+     * Buffer I/O
+     * ################
+     */
+
+    public static void writeEntry(DataOutput out, Entry entry) {
+        VariableLong.writePositive(out,entry.getValuePosition());
+        writeBuffer(out,entry);
+    }
+
+    public static void writeBuffer(DataOutput out, StaticBuffer buffer) {
+        VariableLong.writePositive(out,buffer.length());
+        out.putBytes(buffer);
+    }
+
+    public static Entry readEntry(ScanBuffer in) {
+        long valuePosition = VariableLong.readPositive(in);
+        Preconditions.checkArgument(valuePosition>0 && valuePosition<=Integer.MAX_VALUE);
+        StaticBuffer buffer = readBuffer(in);
+        return new StaticArrayEntry(buffer,(int)valuePosition,null);
+    }
+
+    public static StaticBuffer readBuffer(ScanBuffer in) {
+        long length = VariableLong.readPositive(in);
+        Preconditions.checkArgument(length>=0 && length<=Integer.MAX_VALUE);
+        byte[] data = in.getBytes((int)length);
+        assert data.length==length;
+        return new StaticArrayBuffer(data);
     }
 
     /* ################

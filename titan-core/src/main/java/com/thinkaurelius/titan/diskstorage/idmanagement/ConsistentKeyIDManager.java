@@ -137,7 +137,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return latest;
     }
 
-    private int getUniqueID() {
+    private int getUniquePartitionID() {
         int id;
         if (randomizeUniqueId) {
             id = random.nextInt(uniqueIDUpperBound);
@@ -153,7 +153,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     }
 
     @Override
-    public long[] getIDBlock(final int partition, final long timeout, final TimeUnit unit) throws StorageException {
+    public synchronized long[] getIDBlock(final int partition, final long timeout, final TimeUnit unit) throws StorageException {
         //partition id can be any integer, even negative, its only a partition identifier
 
         final Stopwatch methodTime = new Stopwatch().start();
@@ -174,21 +174,21 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
 
         while (methodTime.elapsed(unit) <= timeout) {
-            final int uniqueID = getUniqueID();
-            final StaticBuffer partitionKey = getPartitionKey(partition,uniqueID);
+            final int uniquePID = getUniquePartitionID();
+            final StaticBuffer partitionKey = getPartitionKey(partition,uniquePID);
             try {
                 long nextStart = getCurrentID(partitionKey);
                 if (idBlockUpperBound - blockSize <= nextStart) {
                     log.info("ID overflow detected on partition {} with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
-                            partition, uniqueID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
+                            partition, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
                     if (randomizeUniqueId) {
-                        exhausted.add(partition + "." + uniqueID);
+                        exhausted.add(partition + "." + uniquePID);
                         if (exhausted.size() == randomUniqueIDLimit)
                             throw new IDPoolExhaustedException(String.format("Exhausted %d partition.uniqueid pair(s): %s", exhausted.size(), Joiner.on(",").join(exhausted)));
                         else
                             throw new UniqueIDExhaustedException(
                                     String.format("Exhausted ID partition %d with uniqueid %d (uniqueid attempt %d/%d)",
-                                            partition, uniqueID, exhausted.size(), randomUniqueIDLimit));
+                                            partition, uniquePID, exhausted.size(), randomUniqueIDLimit));
                     }
                     throw new IDPoolExhaustedException("Exhausted id block for partition ["+partition+"] with upper bound: " + idBlockUpperBound);
                 }
@@ -249,13 +249,13 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
                             if (log.isDebugEnabled()) {
                                 log.debug("Acquired ID block [{},{}) on partition {} (my rid is {})",
-                                        new Object[]{nextStart, nextEnd, partition, new String(Hex.encodeHex(rid))});
+                                        new Object[]{nextStart, nextEnd, partition, new String(uid)});
                             }
 
                             success = true;
                             //Pad ids
                             for (int i=0;i<result.length;i++) {
-                                result[i] = (((long)uniqueID)<<bitOffset) + result[i];
+                                result[i] = (((long)uniquePID)<<bitOffset) + result[i];
                             }
                             return result;
                         } else {
@@ -279,6 +279,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                     public StoreTransaction openTx() throws StorageException {
                                         return manager.beginTransaction(storeTxConfigBuilder.build());
                                     }
+                                    @Override
+                                    public void close() {}
                                 });
 
                                 break;
@@ -316,10 +318,10 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
-                        + rid.length);
+                        + uidBytes.length);
 
         bb.putLong(-blockValue).putLong(System.currentTimeMillis());
-        WriteBufferUtil.put(bb, rid);
+        WriteBufferUtil.put(bb, uidBytes);
         return bb.getStaticBuffer();
     }
 

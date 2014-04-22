@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableSet;
-import com.thinkaurelius.titan.core.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -90,12 +89,12 @@ public class ConfigurationTest {
         try {
             userconfig.set("storage.bits",6);
         } catch (IllegalArgumentException e) {}
-        userconfig.set("storage.bits",6,"force");
+        userconfig.set("storage.bits",6);
         try {
             userconfig.set("storage.locktime",1221);
         } catch (IllegalArgumentException e) {}
         try {
-            userconfig.set("storage.locktime",1221,"force");
+            userconfig.set("storage.locktime",1221);
         } catch (IllegalArgumentException e) {}
         userconfig.set("indexes.find.name","lulu");
 

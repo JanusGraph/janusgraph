@@ -3,11 +3,12 @@ package com.thinkaurelius.titan.diskstorage.idmanagement;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 
 /**
@@ -29,7 +30,8 @@ public abstract class AbstractIDManager implements IDAuthority {
     protected final long idApplicationWaitMS;
     protected final int randomUniqueIDLimit;
 
-    protected final byte[] rid;
+    protected final String uid;
+    protected final byte[] uidBytes;
 
     protected final String metricsPrefix;
 
@@ -37,7 +39,9 @@ public abstract class AbstractIDManager implements IDAuthority {
     private volatile boolean isActive;
 
     public AbstractIDManager(Configuration config) {
-        this.rid = DistributedStoreManager.getRid(config);
+        this.uid = config.get(UNIQUE_INSTANCE_ID);
+
+        this.uidBytes = uid.getBytes();
 
         this.isActive = false;
 
@@ -55,6 +59,11 @@ public abstract class AbstractIDManager implements IDAuthority {
         Preconditions.checkNotNull(sizer);
         if (isActive) throw new IllegalStateException("IDBlockSizer cannot be changed after IDAuthority is in use");
         this.blockSizer = sizer;
+    }
+
+    @Override
+    public String getUniqueID() {
+        return uid;
     }
 
     /**

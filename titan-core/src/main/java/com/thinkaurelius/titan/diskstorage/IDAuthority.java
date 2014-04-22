@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
 import java.util.List;
@@ -63,6 +64,19 @@ public interface IDAuthority {
      * @throws StorageException
      */
     public void close() throws StorageException;
+
+    /**
+     * Return the globally unique string used by this {@code IDAuthority}
+     * instance to recognize its ID allocations and distinguish its allocations
+     * from those belonging to other {@code IDAuthority} instances.
+     *
+     * This should normally be the value of
+     * {@link GraphDatabaseConfiguration#UNIQUE_INSTANCE_ID}, though that's not
+     * strictly technically necessary.
+     *
+     * @return unique ID string
+     */
+    public String getUniqueID();
 
 
 }

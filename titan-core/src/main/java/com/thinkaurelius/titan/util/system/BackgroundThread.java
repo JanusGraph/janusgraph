@@ -13,8 +13,8 @@ public abstract class BackgroundThread extends Thread {
     private static final Logger log =
             LoggerFactory.getLogger(BackgroundThread.class);
 
-    private volatile boolean stop = false;
-    private boolean waiting = false;
+    private volatile boolean interruptible = true;
+    private volatile boolean softInterrupted = false;
 
     /**
      *
@@ -25,36 +25,59 @@ public abstract class BackgroundThread extends Thread {
      * @param daemon
      */
     public BackgroundThread(String name, boolean daemon) {
-        this.setName(name + getId());
+        this.setName(name + ":" + getId());
         this.setDaemon(daemon);
     }
 
     @Override
     public void run() {
-        while (true) {
+
+        /* We use interrupted() instead of isInterrupted() to guarantee that the
+         * interrupt flag is cleared when we exit this loop. cleanup() can then
+         * run blocking operations without failing due to interruption.
+         */
+        while (!interrupted() && !softInterrupted) {
+
             try {
-                synchronized (this) {
-                    if (stop) break;
-                    waiting=true;
-                }
                 waitCondition();
-                synchronized (this) {
-                    waiting=false;
-                }
             } catch (InterruptedException e) {
-                if (stop) break;
-                else throw new RuntimeException(getName() + " thread got interrupted",e);
+                log.debug("Interrupted in background thread wait condition", e);
+                break;
             }
+
+            /* This check could be removed without affecting correctness. At
+             * worst, removing it should just reduce shutdown responsiveness in
+             * a couple of corner cases:
+             *
+             * 1. Rare interruptions are those that occur while this thread is
+             * in the RUNNABLE state
+             *
+             * 2. Odd waitCondition() implementations that swallow an
+             * InterruptedException and set the interrupt status instead of just
+             * propagating the InterruptedException to us
+             */
+            if (interrupted())
+                break;
+
+            interruptible = false;
             try {
                 action();
             } catch (Throwable e) {
-                log.error("Exception while executing action on background thread " + getName(),e);
+                log.error("Exception while executing action on background thread",e);
+            } finally {
+                /*
+                 * This doesn't really need to be in a finally block as long as
+                 * we catch Throwable, but it's here as future-proofing in case
+                 * the catch-clause type is narrowed in future revisions.
+                 */
+                interruptible = true;
             }
         }
+
         try {
             cleanup();
         } catch (Throwable e) {
-            log.error("Exception while executing cleanup on background thread " + getName(),e);
+            log.error("Exception while executing cleanup on background thread",e);
         }
 
     }
@@ -73,7 +96,7 @@ public abstract class BackgroundThread extends Thread {
      * The action taken by this background thread when the wait condition is met.
      * This action should execute swiftly to ensure that this thread can be closed in a reasonable amount of time.
      *
-     * This action will not be interrupted.
+     * This action will not be interrupted by {@link #close(long, TimeUnit)}.
      */
     protected abstract void action();
 
@@ -84,24 +107,27 @@ public abstract class BackgroundThread extends Thread {
         //Do nothing by default
     }
 
-    @Override
-    public void interrupt() {
-        throw new UnsupportedOperationException("Use close() to properly terminate this thread");
-    }
-
     public void close(long maxWait, TimeUnit unit) {
-        synchronized (this) {
-            stop = true;
-            if (waiting) super.interrupt();
+
+        if (!isAlive()) {
+            log.warn("Already closed: {}", this);
+            return;
         }
-        final long maxWaitMs = TimeUnit.MILLISECONDS.convert(maxWait,unit);
+
+        final long maxWaitMs = TimeUnit.MILLISECONDS.convert(maxWait, unit);
+
+        softInterrupted = true;
+
+        if (interruptible)
+            interrupt();
+
         try {
-            super.join(maxWaitMs);
+            join(maxWaitMs);
         } catch (InterruptedException e) {
             log.error("Interrupted while waiting for thread {} to join",e);
         }
-        if (super.isAlive()) {
-            log.error("Thread {} did not terminate in time [{}]. This could mean that important clean up functions could not be called.",super.getName(),maxWaitMs);
+        if (isAlive()) {
+            log.error("Thread {} did not terminate in time [{}]. This could mean that important clean up functions could not be called.", getName(), maxWaitMs);
         }
     }
 

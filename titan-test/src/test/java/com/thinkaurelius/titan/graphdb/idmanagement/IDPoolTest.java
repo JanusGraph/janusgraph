@@ -116,14 +116,14 @@ public class IDPoolTest {
     @Test
     public void testPoolExhaustion1() {
         MockIDAuthority idauth = new MockIDAuthority(200);
-        int maxID = 10000;
-        StandardIDPool pool = new StandardIDPool(idauth, 0, maxID, 2000, 0.2);
-        for (int i = 1; i < maxID * 2; i++) {
+        int idUpper = 10000;
+        StandardIDPool pool = new StandardIDPool(idauth, 0, idUpper, 2000, 0.2);
+        for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
-                assertTrue(id <= maxID);
+                assertTrue(id < idUpper);
             } catch (IDPoolExhaustedException e) {
-                assertEquals(maxID + 1, i);
+                assertEquals(idUpper, i);
                 break;
             }
         }
@@ -131,15 +131,15 @@ public class IDPoolTest {
 
     @Test
     public void testPoolExhaustion2() {
-        int maxID = 10000;
-        MockIDAuthority idauth = new MockIDAuthority(200, maxID + 1);
+        int idUpper = 10000;
+        MockIDAuthority idauth = new MockIDAuthority(200, idUpper);
         StandardIDPool pool = new StandardIDPool(idauth, 0, Integer.MAX_VALUE, 2000, 0.2);
-        for (int i = 1; i < maxID * 2; i++) {
+        for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
-                assertTrue(id <= maxID);
+                assertTrue(id < idUpper);
             } catch (IDPoolExhaustedException e) {
-                assertEquals(maxID + 1, i);
+                assertEquals(idUpper, i);
                 break;
             }
         }

@@ -27,6 +27,9 @@ import static org.junit.Assert.assertTrue;
 public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     public static final String INDEX = "index";
+    public static final String VINDEX = "vindex";
+    public static final String EINDEX = "eindex";
+
 
     public final boolean supportsGeoPoint;
     public final boolean supportsNumeric;
@@ -46,8 +49,11 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testSimpleUpdate() {
-        TitanKey text = tx.makeKey("name").single()
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).make();
+        TitanKey text = makeKey("name",String.class);
+        mgmt.createInternalIndex("namev",Vertex.class,false,text);
+        mgmt.createInternalIndex("namee",Edge.class,false,text);
+        finishSchema();
+
         Vertex v = tx.addVertex();
         v.setProperty("name", "Marko Rodriguez");
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
@@ -65,19 +71,30 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexing() {
-        TitanKey text = tx.makeKey("text").single()
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(String.class).make();
-        TitanKey location = tx.makeKey("location").single()
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Geoshape.class).make();
-        TitanKey time = tx.makeKey("time").single()
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Long.class).make();
-        TitanKey category = tx.makeKey("category").single()
-                .indexed(Vertex.class).indexed(Edge.class).dataType(Integer.class).make();
-        TitanKey group = tx.makeKey("group").single()
-                .indexed(INDEX, Vertex.class).indexed(INDEX, Edge.class).dataType(Byte.class).make();
-        TitanKey id = tx.makeKey("uid").single().unique()
-                .indexed(Vertex.class).dataType(Integer.class).make();
-        TitanLabel knows = tx.makeLabel("knows").sortKey(time).signature(location).make();
+
+        TitanKey text = makeKey("text",String.class);
+        createExternalVertexIndex(text,INDEX);
+        createExternalEdgeIndex(text,INDEX);
+
+        TitanKey location = makeKey("location",Geoshape.class);
+        createExternalVertexIndex(location,INDEX);
+        createExternalEdgeIndex(location,INDEX);
+
+        TitanKey time = makeKey("time",Long.class);
+        createExternalVertexIndex(time,INDEX);
+        createExternalEdgeIndex(time,INDEX);
+
+        TitanKey category = makeKey("category",Integer.class);
+        mgmt.createInternalIndex("vcategory",Vertex.class,category);
+        mgmt.createInternalIndex("ecategory",Edge.class,category);
+
+        TitanKey group = makeKey("group",Byte.class);
+        createExternalVertexIndex(group,INDEX);
+        createExternalEdgeIndex(group,INDEX);
+
+        TitanKey id = makeVertexIndexedKey("uid",Integer.class);
+        TitanLabel knows = mgmt.makeLabel("knows").sortKey(time).signature(location).make();
+        finishSchema();
 
         clopen();
         String[] words = {"world", "aurelius", "titan", "graph"};
@@ -249,9 +266,16 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     }
 
     private void setupChainGraph(int numV, String[] strs) {
-        TitanKey name = graph.makeKey("name").dataType(String.class).indexed(INDEX, Element.class, Parameter.of(Mapping.MAPPING_PREFIX,Mapping.STRING)).single().make();
-        TitanKey text = graph.makeKey("text").dataType(String.class).indexed(INDEX, Element.class, Parameter.of(Mapping.MAPPING_PREFIX,Mapping.TEXT)).single().make();
-        graph.makeLabel("knows").sortKey(name).sortOrder(Order.DESC).make();
+        TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
+        TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
+        TitanKey name = makeKey("name",String.class);
+        mgmt.addIndexKey(vindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
+        mgmt.addIndexKey(eindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
+        TitanKey text = makeKey("text",String.class);
+        mgmt.addIndexKey(vindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
+        mgmt.addIndexKey(eindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
+        mgmt.makeLabel("knows").signature(name).make();
+        finishSchema();
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
             TitanVertex v = graph.addVertex(null);
@@ -339,26 +363,28 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         setupChainGraph(numV,strs);
         clopen();
 
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:ducks").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry)").vertices()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"v.text:(beautiful are ducks)").vertices()));
-        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:ducks").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry)").vertices()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
 
         //Same queries for edges
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry)").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(INDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(INDEX,"e.text:(beautiful are ducks)").edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(INDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:ducks").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry)").edges()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").edges()));
+        assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
 
     }
 
     @Test
     public void testIndexIteration() {
-        graph.makeKey("objectType").dataType(String.class).indexed(INDEX, Vertex.class).single().make();
-        graph.makeKey("uid").dataType(Long.class).indexed(INDEX, Vertex.class).single().make();
-        graph.commit();
+        TitanKey objectType = makeKey("objectType",String.class);
+        createExternalVertexIndex(objectType,INDEX);
+        TitanKey uid = makeKey("uid",Long.class);
+        createExternalVertexIndex(uid,INDEX);
+        finishSchema();
         Vertex v = graph.addVertex(null);
         ElementHelper.setProperties(v, "uid", 167774517, "ipv4Addr", "10.0.9.53", "cid", 2, "objectType", "NetworkSensor", "observationDomain", 0);
         assertNotNull(v.getProperty("uid"));

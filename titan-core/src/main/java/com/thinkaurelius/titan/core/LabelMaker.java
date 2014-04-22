@@ -8,78 +8,10 @@ package com.thinkaurelius.titan.core;
 public interface LabelMaker extends TypeMaker {
 
     /**
-     * Configures the label to allow at most one incoming edge of this label
-     * for each vertex in the graph. For instance, the label "fatherOf" is
-     * biologically a oneToMany edge label.
-     * </p>
-     * This consistency constraint is enforced by the database at runtime.
-     * The consistency parameter specifies how this constraint is ensured.
-     *
-     * @param consistency
+     * Sets the multiplicity of this label. The default multiplicity is {@link Multiplicity#MULTI}.
      * @return
      */
-    public LabelMaker oneToMany(UniquenessConsistency consistency);
-
-    /**
-     * As {@link #oneToMany(com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)} with
-     * the default consistency {@link UniquenessConsistency#LOCK}
-     *
-     * @return
-     */
-    public LabelMaker oneToMany();
-
-
-    /**
-     * Configures the label to allow at most one outgoing edge of this label
-     * for each vertex in the graph. For instance, the label "sonOf" is
-     * biologically a manyToOne edge label.
-     * </p>
-     * This consistency constraint is enforced by the database at runtime.
-     * The consistency parameter specifies how this constraint is ensured.
-     *
-     * @param consistency
-     * @return
-     */
-    public LabelMaker manyToOne(UniquenessConsistency consistency);
-
-    /**
-     * As {@link #manyToOne(com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)} with
-     * the default consistency {@link UniquenessConsistency#LOCK}
-     *
-     * @return
-     */
-
-    public LabelMaker manyToOne();
-
-
-    /**
-     * Configures the label to allow at most one outgoing and one incoming edge
-     * of this label for each vertex in the graph.
-     * </p>
-     * This consistency constraint is enforced by the database at runtime.
-     * The consistency parameter specifies how this constraint is ensured.
-     *
-     * @param consistency
-     * @return
-     */
-    public LabelMaker oneToOne(UniquenessConsistency consistency);
-
-    /**
-     * As {@link #oneToOne(com.thinkaurelius.titan.core.TypeMaker.UniquenessConsistency)} with
-     * the default consistency {@link UniquenessConsistency#LOCK}
-     *
-     * @return
-     */
-    public LabelMaker oneToOne();
-
-    /**
-     * Configures the label to allow arbitrarily many in- and outgoing edges
-     * of this label per vertex. This is the default configuration for a label.
-     *
-     * @return
-     */
-    public LabelMaker manyToMany();
-
+    public LabelMaker multiplicity(Multiplicity multiplicity);
 
     /**
      * Configures the label to be directed.

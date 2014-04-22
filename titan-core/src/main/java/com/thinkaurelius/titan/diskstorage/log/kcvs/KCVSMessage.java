@@ -4,6 +4,8 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
 
 /**
+ * Implementation of {@link AbstractMessage} for {@link KCVSLog}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class KCVSMessage extends AbstractMessage {

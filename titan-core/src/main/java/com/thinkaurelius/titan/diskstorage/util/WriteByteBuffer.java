@@ -62,6 +62,11 @@ public class WriteByteBuffer implements WriteBuffer {
     }
 
     @Override
+    public WriteBuffer putBoolean(boolean val) {
+        return putByte((byte)(val?1:0));
+    }
+
+    @Override
     public WriteBuffer putByte(byte val) {
         require(BYTE_LEN);
         buffer.put(val);

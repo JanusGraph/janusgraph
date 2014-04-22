@@ -54,7 +54,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (dirCompare != 0) return dirCompare;
 
         // Breakout: If type&direction are the same and the type is unique in the direction it follows that the relations are the same
-        if (t1.isUnique(dir1)) return 0;
+        if (t1.getMultiplicity().isUnique(dir1)) return 0;
 
         // 3) Compare sort key values
         for (long typeid : t1.getSortKey()) {

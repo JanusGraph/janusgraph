@@ -128,11 +128,6 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
 //        return StringFactory.graphString(this,config.getBackendDescription());
     }
 
-    @Override
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
-        return getAutoStartTx().getTypes(clazz);
-    }
-
     // ########## INDEX HANDLING ###########################
 
     @Override

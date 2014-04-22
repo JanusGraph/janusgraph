@@ -26,7 +26,7 @@ public interface LogManager {
     public Log openLog(String name, ReadMarker readMarker) throws StorageException;
 
     /**
-     * Closes the log manager and all open logs
+     * Closes the log manager and all open logs (if they haven't already been explicitly closed)
      *
      * @throws StorageException
      */

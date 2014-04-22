@@ -2,78 +2,52 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
-import com.thinkaurelius.titan.graphdb.types.TitanTypeClass;
-import com.thinkaurelius.titan.graphdb.types.TypeAttribute;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
-import com.tinkerpop.blueprints.Element;
-import com.tinkerpop.blueprints.Vertex;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.tinkerpop.blueprints.Direction;
 
-import java.util.Map;
+import java.util.Collections;
 
 public class SystemKey extends SystemType implements TitanKey {
 
+    private enum Index { NONE, STANDARD, UNIQUE }
+
+    //We rely on the vertex-existence property to be the smallest (in byte-order) when iterating over the entire graph
+    public static final SystemKey VertexExists =
+            new SystemKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
+
     public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 1, true, new boolean[]{true, true}, false);
+            new SystemKey("TypeName", String.class, 2, Index.UNIQUE, Cardinality.SINGLE);
 
-    public static final SystemKey TypeDefinition =
-            new SystemKey("TypeDefinition", TypeAttribute.class, 2, false, new boolean[]{false, false}, false);
+    public static final SystemKey TypeDefinitionProperty =
+            new SystemKey("TypeDefinitionProperty", Object.class, 3, Index.NONE, Cardinality.LIST);
 
-    public static final SystemKey TypeClass =
-            new SystemKey("TypeClass", TitanTypeClass.class, 3, true, new boolean[]{true, false}, false);
+    public static final SystemKey TypeCategory =
+            new SystemKey("TypeCategory", TitanSchemaCategory.class, 4, Index.STANDARD, Cardinality.SINGLE);
 
-    public static final SystemKey VertexState =
-            new SystemKey("VertexState", Byte.class, 4, false, new boolean[]{true, false}, true);
+    public static final SystemKey TypeDefinitionDesc =
+            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 5, Index.NONE, Cardinality.SINGLE);
 
-    public enum VertexStates {
-        DEFAULT(0);
-
-        private byte value;
-
-        VertexStates(int value) {
-            Preconditions.checkArgument(value >= 0 && value <= Byte.MAX_VALUE);
-            this.value = (byte) value;
-        }
-
-        public byte getValue() {
-            return value;
-        }
-    }
-
-    public static final Map<String, SystemKey> KEY_MAP = ImmutableMap.of(TypeDefinition.getName(), TypeDefinition,
-            TypeName.getName(), TypeName, TypeClass.getName(), TypeClass, VertexState.getName(), VertexState);
 
     private final Class<?> dataType;
-    private final boolean index;
+    private final Index index;
+    private final Cardinality cardinality;
 
-    private SystemKey(String name, Class<?> dataType, int id) {
-        this(name, dataType, id, false, new boolean[]{true, false}, false);
-    }
-
-    private SystemKey(String name, Class<?> dataType, int id, boolean index, boolean[] uniqueness, boolean modifiable) {
-        super(name, id, RelationType.PROPERTY, uniqueness, modifiable);
+    private SystemKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
+        super(name, id, RelationCategory.PROPERTY);
+        Preconditions.checkArgument(index!=null && cardinality!=null);
         this.dataType = dataType;
         this.index = index;
+        this.cardinality = cardinality;
     }
-
 
     @Override
     public Class<?> getDataType() {
         return dataType;
-    }
-
-    @Override
-    public Iterable<String> getIndexes(Class<? extends Element> elementType) {
-        if (index && elementType == Vertex.class) return ImmutableList.of(Titan.Token.STANDARD_INDEX);
-        else return IterablesUtil.emptyIterable();
-    }
-
-    @Override
-    public boolean hasIndex(String name, Class<? extends Element> elementType) {
-        return elementType == Vertex.class && index && Titan.Token.STANDARD_INDEX.equals(name);
     }
 
     @Override
@@ -87,7 +61,104 @@ public class SystemKey extends SystemType implements TitanKey {
     }
 
     @Override
+    public Multiplicity getMultiplicity() {
+        return Multiplicity.convert(getCardinality());
+    }
+
+    @Override
+    public boolean isUnidirected(Direction dir) {
+        return dir==Direction.OUT;
+    }
+
+    @Override
     public Integer getTtl() {
         return null;
     }
+
+    public Cardinality getCardinality() {
+        return cardinality;
+    }
+
+    @Override
+    public Iterable<IndexType> getKeyIndexes() {
+        if (index==Index.NONE) return Collections.EMPTY_LIST;
+        return ImmutableList.of((IndexType)indexDef);
+    }
+
+    private final InternalIndexType indexDef = new InternalIndexType() {
+
+        private final IndexField[] fields = {IndexField.of(SystemKey.this)};
+//        private final Set<TitanKey> fieldSet = ImmutableSet.of((TitanKey)SystemKey.this);
+
+        @Override
+        public long getID() {
+            return SystemKey.this.getID();
+        }
+
+        @Override
+        public IndexField[] getFieldKeys() {
+            return fields;
+        }
+
+        @Override
+        public IndexField getField(TitanKey key) {
+            if (key.equals(SystemKey.this)) return fields[0];
+            else return null;
+        }
+
+        @Override
+        public boolean indexesKey(TitanKey key) {
+            return getField(key)!=null;
+        }
+
+        @Override
+        public Cardinality getCardinality() {
+            switch(index) {
+                case UNIQUE: return Cardinality.SINGLE;
+                case STANDARD: return Cardinality.SET;
+                default: throw new AssertionError();
+            }
+        }
+
+        @Override
+        public ConsistencyModifier getConsistencyModifier() {
+            return ConsistencyModifier.LOCK;
+        }
+
+        @Override
+        public ElementCategory getElement() {
+            return ElementCategory.VERTEX;
+        }
+
+        @Override
+        public boolean isInternalIndex() {
+            return true;
+        }
+
+        @Override
+        public boolean isExternalIndex() {
+            return false;
+        }
+
+        @Override
+        public String getBackingIndexName() {
+            return Token.INTERNAL_INDEX_NAME;
+        }
+
+        @Override
+        public String getName() {
+            return "SystemIndex#"+getID();
+        }
+
+        @Override
+        public SchemaStatus getStatus() {
+            return SchemaStatus.ENABLED;
+        }
+
+        @Override
+        public void resetCache() {}
+
+        //Use default hashcode and equals
+    };
+
 }

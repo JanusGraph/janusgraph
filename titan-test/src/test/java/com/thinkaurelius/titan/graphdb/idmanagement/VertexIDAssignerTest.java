@@ -37,7 +37,7 @@ public class VertexIDAssignerTest {
         configurations.add(new Object[]{false, Integer.MAX_VALUE, null});
 
         for (int max : new int[]{Integer.MAX_VALUE, 100}) {
-            for (int[] local : new int[][]{null, {0, 2000}, {-100000, -1}, {-10000, 10000}}) {
+            for (int[] local : new int[][]{null, {0, 2000}, {-100000, -1}, {10000, -10000}}) {
                 configurations.add(new Object[]{true, max, local});
             }
         }
@@ -102,7 +102,7 @@ public class VertexIDAssignerTest {
                 if (!flush) idAssigner.assignIDs(relations);
                 if (trial == -1) {
                     for (TitanVertex v : vertices) {
-                        System.out.println(idAssigner.getIDManager().getPartitionID(v.getID()));
+                        System.out.println(idAssigner.getIDManager().getPartitionId(v.getID()));
                     }
                     System.out.println("_____________________________________________");
                 }

@@ -2,7 +2,10 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
@@ -55,10 +58,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        Assert.assertTrue(manager.getFeatures().hasBatchMutation());
-        tx = new BufferTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0);
-        store1 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName1), true);
-        store2 = new BufferedKeyColumnValueStore(manager.openDatabase(storeName2), true);
+        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0, true);
+        store1 = new NoKCVSCache(manager.openDatabase(storeName1));
+        store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
     }
 
@@ -76,7 +78,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void newTx() throws StorageException {
         if (tx!=null) tx.commit();
-        tx = new BufferTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0);
+        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0, true);
     }
 
     @Test
@@ -86,9 +88,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
         Assert.assertNull(KCVSUtil.get(store1, b1, b1, tx));
 
-        List<Entry> additions = Arrays.<Entry>asList(StaticArrayEntry.of(b1, b1));
+        List<Entry> additions = Lists.newArrayList(StaticArrayEntry.of(b1, b1));
 
-        List<StaticBuffer> deletions = Arrays.asList(b1);
+        List<StaticBuffer> deletions = Lists.newArrayList(b1);
 
         Map<StaticBuffer, KCVMutation> combination = new HashMap<StaticBuffer, KCVMutation>(1);
         Map<StaticBuffer, KCVMutation> deleteOnly = new HashMap<StaticBuffer, KCVMutation>(1);
@@ -148,8 +150,8 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         final StoreTransaction directTx = manager.beginTransaction(StandardTransactionConfig.of());
 
         KCVMutation km = new KCVMutation(
-                ImmutableList.<Entry>of(StaticArrayEntry.of(col, val)),
-                ImmutableList.<StaticBuffer>of());
+                Lists.newArrayList(StaticArrayEntry.of(col, val)),
+                Lists.<StaticBuffer>newArrayList());
 
         Map<StaticBuffer, KCVMutation> keyColumnAndValue = ImmutableMap.of(key, km);
 

@@ -361,7 +361,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {
         if (offset+length<=data.length) return data;
-        byte[] newdata = new byte[data.length*2];
+        byte[] newdata = new byte[Math.max(data.length*2,offset+length)];
         System.arraycopy(data,0,newdata,0,offset);
         return newdata;
     }
@@ -369,7 +369,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
     //Copy-pasted from above replacing byte->long
     private static long[] ensureSpace(long[] data, int offset, int length) {
         if (offset+length<=data.length) return data;
-        long[] newdata = new long[data.length*2];
+        long[] newdata = new long[Math.max(data.length*2,offset+length)];
         System.arraycopy(data,0,newdata,0,offset);
         return newdata;
     }

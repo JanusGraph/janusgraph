@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb.util;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -12,32 +15,34 @@ import java.util.NoSuchElementException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class VertexCentricEdgeIterable implements Iterable<Edge> {
+public class VertexCentricEdgeIterable<R extends TitanRelation> implements Iterable<R> {
 
-    private final Iterable<Vertex> vertices;
+    private final Iterable<InternalVertex> vertices;
+    private final RelationCategory relationCategory;
 
-    public VertexCentricEdgeIterable(Iterable<Vertex> vertices) {
-        Preconditions.checkNotNull(vertices);
+    public VertexCentricEdgeIterable(final Iterable<InternalVertex> vertices, final RelationCategory relationCategory) {
+        Preconditions.checkArgument(vertices!=null && relationCategory!=null);
         this.vertices = vertices;
+        this.relationCategory = relationCategory;
     }
 
 
     @Override
-    public Iterator<Edge> iterator() {
-        return new EdgeIterator(vertices.iterator());
+    public Iterator<R> iterator() {
+        return new EdgeIterator();
     }
 
 
-    private static class EdgeIterator implements Iterator<Edge> {
+    private class EdgeIterator implements Iterator<R> {
 
-        private final Iterator<Vertex> vertexIter;
-        private Iterator<Edge> currentOutEdges;
-        private Edge nextEdge = null;
+        private final Iterator<InternalVertex> vertexIter;
+        private Iterator<TitanRelation> currentOutEdges;
+        private TitanRelation nextEdge = null;
 
-        public EdgeIterator(Iterator<Vertex> vertexIter) {
-            this.vertexIter = vertexIter;
+        public EdgeIterator() {
+            this.vertexIter = vertices.iterator();
             if (vertexIter.hasNext()) {
-                currentOutEdges = vertexIter.next().getEdges(Direction.OUT).iterator();
+                currentOutEdges = relationCategory.executeQuery(vertexIter.next().query().direction(Direction.OUT)).iterator();
                 getNextEdge();
             }
         }
@@ -50,7 +55,7 @@ public class VertexCentricEdgeIterable implements Iterable<Edge> {
                     nextEdge = currentOutEdges.next();
                     break;
                 } else if (vertexIter.hasNext()) {
-                    currentOutEdges = vertexIter.next().getEdges(Direction.OUT).iterator();
+                    currentOutEdges = relationCategory.executeQuery(vertexIter.next().query().direction(Direction.OUT)).iterator();
                 } else break;
             }
         }
@@ -61,11 +66,11 @@ public class VertexCentricEdgeIterable implements Iterable<Edge> {
         }
 
         @Override
-        public Edge next() {
+        public R next() {
             if (nextEdge == null) throw new NoSuchElementException();
-            Edge returnEdge = nextEdge;
+            TitanRelation returnEdge = nextEdge;
             getNextEdge();
-            return returnEdge;
+            return (R)returnEdge;
         }
 
         @Override
