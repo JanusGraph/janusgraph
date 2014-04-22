@@ -277,7 +277,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         TitanKey text = makeKey("text",String.class);
         mgmt.addIndexKey(vindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
         mgmt.addIndexKey(eindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
-        mgmt.makeLabel("knows").sortKey(name).sortOrder(Order.DESC).make();
+        mgmt.makeLabel("knows").signature(name).make();
         finishSchema();
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {

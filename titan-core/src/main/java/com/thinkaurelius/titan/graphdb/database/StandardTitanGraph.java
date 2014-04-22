@@ -87,6 +87,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     //Log
     private final ManagementLogger mgmtLogger;
 
+    //Shutdown hook
+    private final ShutdownThread shutdownHook;
+
     private volatile boolean isOpen = true;
     private AtomicLong txCounter;
 
@@ -123,7 +126,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
         mgmtLog.registerReader(mgmtLogger);
 
-        Runtime.getRuntime().addShutdownHook(new ShutdownThread(this));
+        shutdownHook = new ShutdownThread(this);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
     @Override
@@ -143,6 +147,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             idAssigner.close();
             backend.close();
             queryCache.close();
+
+            // Remove shutdown hook to avoid reference retention
+            Runtime.getRuntime().removeShutdownHook(shutdownHook);
         } catch (StorageException e) {
             throw new TitanException("Could not close storage backend", e);
         } finally {

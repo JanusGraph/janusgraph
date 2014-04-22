@@ -16,20 +16,22 @@ public class SystemKey extends SystemType implements TitanKey {
 
     private enum Index { NONE, STANDARD, UNIQUE }
 
+    //We rely on the vertex-existence property to be the smallest (in byte-order) when iterating over the entire graph
+    public static final SystemKey VertexExists =
+            new SystemKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
+
     public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 1, Index.UNIQUE, Cardinality.SINGLE);
+            new SystemKey("TypeName", String.class, 2, Index.UNIQUE, Cardinality.SINGLE);
 
     public static final SystemKey TypeDefinitionProperty =
-            new SystemKey("TypeDefinitionProperty", Object.class, 2, Index.NONE, Cardinality.LIST);
+            new SystemKey("TypeDefinitionProperty", Object.class, 3, Index.NONE, Cardinality.LIST);
 
     public static final SystemKey TypeCategory =
-            new SystemKey("TypeCategory", TitanSchemaCategory.class, 3, Index.STANDARD, Cardinality.SINGLE);
+            new SystemKey("TypeCategory", TitanSchemaCategory.class, 4, Index.STANDARD, Cardinality.SINGLE);
 
     public static final SystemKey TypeDefinitionDesc =
-            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 4, Index.NONE, Cardinality.SINGLE);
+            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 5, Index.NONE, Cardinality.SINGLE);
 
-    public static final SystemKey VertexExists =
-            new SystemKey("VertexExists", Boolean.class, 7, Index.NONE, Cardinality.SINGLE);
 
     private final Class<?> dataType;
     private final Index index;

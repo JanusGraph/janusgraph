@@ -228,10 +228,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentStorageException("This operation is only allowed when byte-ordered partitioner is used.");
 
         try {
-            SliceQuery columnSlice = new SliceQuery(
-                    keyRangeQuery.getSliceStart(), keyRangeQuery.getSliceEnd());
-
-            return new KeyRangeIterator<Token<?>>(partitioner, columnSlice, storeManager.getPageSize(),
+            return new KeyRangeIterator<Token<?>>(partitioner, keyRangeQuery, storeManager.getPageSize(),
                     keyRangeQuery.getKeyStart().asByteBuffer(),
                     keyRangeQuery.getKeyEnd().asByteBuffer());
         } catch (Exception e) {

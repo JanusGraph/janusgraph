@@ -6,6 +6,9 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
 
 /**
+ * Builds a vertex-centric query to define the edges and/or properties that will be accessible during the execution
+ * of an {@link OLAPJob} as defined through the associated {@link OLAPQueryBuilder}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface OLAPQueryBuilder<S> extends BaseVertexQuery {

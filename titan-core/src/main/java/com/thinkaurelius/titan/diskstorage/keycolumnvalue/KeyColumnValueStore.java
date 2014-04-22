@@ -127,7 +127,7 @@ public interface KeyColumnValueStore {
      * <p/>
      * Implementations which don't support locking should throw
      * {@link UnsupportedOperationException}.
-     * 
+     *
      * @param key
      *            the key on which to lock
      * @param column
@@ -172,13 +172,14 @@ public interface KeyColumnValueStore {
 
 
     /**
-     * Returns an array that describes the key boundaries of the locally hosted partition of this store.
-     * <p/>
-     * The array has two entries: the first marks the lower bound for the keys stored locally (inclusive) and the other
-     * marks the upper bound (exclusive).
+     * Returns {@code KeyRange}s locally hosted on this machine. The start of
+     * each {@code KeyRange} is inclusive. The end is exclusive. The start and
+     * end must each be at least 4 bytes in length.
      *
-     * @return An array with two entries describing the locally hosted partition of this store.
-     * @throws UnsupportedOperationException if the underlying store does not support this operation. Check {@link StoreFeatures#hasLocalKeyPartition()} first.
+     * @return A list of local key ranges
+     * @throws UnsupportedOperationException
+     *             if the underlying store does not support this operation.
+     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
     public List<KeyRange> getLocalKeyPartition() throws StorageException;
 
