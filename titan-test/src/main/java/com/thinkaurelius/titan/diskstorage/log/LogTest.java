@@ -164,6 +164,28 @@ public abstract class LogTest {
         assertEquals(expected, reader.msgs);
     }
 
+    @Test
+    public void testUnregisterReader() throws Exception {
+        Log log = manager.openLog("test1", ReadMarker.fromNow());
+
+        // Register two readers and verify they receive messages.
+        CountingReader reader1 = new CountingReader(1, true);
+        CountingReader reader2 = new CountingReader(2, true);
+        log.registerReader(reader1, reader2);
+        log.add(BufferUtil.getLongBuffer(1L));
+        reader1.await(TIMEOUT_MS);
+
+        // Unregister one reader. It should no longer receive messages. The other reader should
+        // continue to receive messages.
+        log.unregisterReader(reader1);
+        log.add(BufferUtil.getLongBuffer(2L));
+        reader2.await(TIMEOUT_MS);
+        assertEquals(1, reader1.totalMsg.get());
+        assertEquals(1, reader1.totalValue.get());
+        assertEquals(2, reader2.totalMsg.get());
+        assertEquals(3, reader2.totalValue.get());
+    }
+
     private void simpleSendReceive(int numMessages, int delayMS) throws Exception {
         sendReceive(1, numMessages, delayMS);
     }
