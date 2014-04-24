@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -19,18 +20,18 @@ import java.util.concurrent.TimeUnit;
 public class TransactionLogHeader {
 
     private final long transactionId;
-    private final long txTimestamp;
-    private final TimeUnit timeUnit;
+    private final Timepoint txTimestamp;
+    private final TimeUnit backendTimeUnit;
     private LogTxStatus status;
 
-    public TransactionLogHeader(long transactionId, long txTimestamp, TimeUnit timeUnit, LogTxStatus status) {
-        Preconditions.checkArgument(transactionId>0);
-        Preconditions.checkArgument(txTimestamp>0);
-        Preconditions.checkArgument(status!=null && timeUnit!=null);
+    public TransactionLogHeader(long transactionId, Timepoint txTimestamp, TimeUnit backendTimeUnit, LogTxStatus status) {
         this.transactionId = transactionId;
         this.txTimestamp = txTimestamp;
+        this.backendTimeUnit = backendTimeUnit;
         this.status = status;
-        this.timeUnit = timeUnit;
+        Preconditions.checkArgument(this.transactionId > 0);
+        Preconditions.checkNotNull(this.txTimestamp);
+        Preconditions.checkNotNull(this.status);
     }
 
 
@@ -39,7 +40,7 @@ public class TransactionLogHeader {
     }
 
     public long getTimestamp(TimeUnit unit) {
-        return unit.convert(txTimestamp,timeUnit);
+        return txTimestamp.getTime(unit);
     }
 
     public LogTxStatus getStatus() {
@@ -60,17 +61,17 @@ public class TransactionLogHeader {
 
     public DataOutput serializeHeader(Serializer serializer, int capacity) {
         DataOutput out = serializer.getDataOutput(capacity);
-        out.putLong(txTimestamp);
+        out.putLong(txTimestamp.getTime(backendTimeUnit));
         VariableLong.writePositive(out, transactionId);
         out.writeObjectNotNull(status);
         return out;
     }
 
-    public static Entry parse(StaticBuffer buffer, Serializer serializer, TimeUnit unit) {
+    public static Entry parse(StaticBuffer buffer, Serializer serializer, TimeUnit backendTimeUnit) {
         ReadBuffer read = buffer.asReadBuffer();
-        long txTimestamp = read.getLong();
+        Timepoint txTimestamp = new Timepoint(read.getLong(), backendTimeUnit);
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
-                txTimestamp,unit,
+                txTimestamp, backendTimeUnit,
                 serializer.readObjectNotNull(read,LogTxStatus.class));
         if (read.hasRemaining()) {
             StaticBuffer content = read.subrange(read.getPosition(),read.length()-read.getPosition());

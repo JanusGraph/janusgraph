@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -33,11 +34,9 @@ public interface IDAuthority {
      *            When a call to this method is unable to return a id block
      *            before this timeout elapses, the implementation must give up
      *            and throw a {@code StorageException} ASAP
-     * @param TimeUnit
-     *            Units associated with the {@code timeout} parameter
      * @return a range of ids for the {@code partition} parameter
      */
-    public long[] getIDBlock(int partition, long timeout, TimeUnit unit)
+    public long[] getIDBlock(int partition, Duration timout)
             throws StorageException;
 
     /**

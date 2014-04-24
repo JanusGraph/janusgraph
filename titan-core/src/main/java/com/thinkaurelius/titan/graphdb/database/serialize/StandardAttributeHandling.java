@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
@@ -69,6 +71,9 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(boolean[].class, new BooleanArraySerializer());
         registerClass(String[].class, new StringArraySerializer());
 
+//        // Time
+//        registerClass(SimpleDuration.class, new SimpleDurationSerializer());
+//        registerClass(Timepoint.class, new TimepointSerializer());
     }
 
     @Override

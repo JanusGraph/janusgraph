@@ -1,16 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -47,7 +50,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
     protected final String[] hostnames;
     protected final int port;
-    protected final long connectionTimeoutMS;
+    protected final Duration connectionTimeoutMS;
     protected final int connectionPoolSize;
     protected final int pageSize;
 
@@ -62,7 +65,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
         else this.port = portDefault;
-        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT_MS).intValue();
+        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT_MS);
         this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
         this.times = storageConfig.get(TIMESTAMP_PROVIDER);
@@ -208,18 +211,19 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return
      */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        Long time = txh.getConfiguration().getTimestamp();
-        if (null == time) {
-            time = times.getTime();
+        Timepoint txTime = txh.getConfiguration().getTimestamp();
+        if (null == txTime) {
+            txTime = times.getTime();
         }
-        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
-        return new Timestamp(time | 1L, time);
+//        txTime = txTime & 0xFFFFFFFFFFFFFFFEL; //remove last bit
+//        return new Timestamp(txTime | 1L, txTime);
+        return new Timestamp(txTime);
     }
 
     protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
-        assert mustPass.deletionTime < mustPass.additionTime;
+        assert mustPass.getDeletionTime(times.getUnit()) < mustPass.getAdditionTime(times.getUnit());
         try {
-            times.sleepPast(mustPass.additionTime, times.getUnit());
+            times.sleepPast(mustPass.getAdditionTime());
         } catch (InterruptedException e) {
             throw new PermanentStorageException("Unexpected interrupt", e);
         }
@@ -231,14 +235,27 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * some storage backends use the time to resolve conflicts.
      */
     public static class Timestamp {
-        public final long additionTime;
-        public final long deletionTime;
 
-        private Timestamp(long additionTime, long deletionTime) {
-            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
-            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
-            this.additionTime = additionTime;
-            this.deletionTime = deletionTime;
+        private final Timepoint t;
+
+        private Timestamp(Timepoint t) {
+            this.t = t;
+        }
+
+        public long getDeletionTime(TimeUnit unit) {
+            return t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL;
+        }
+
+        public Timepoint getDeletionTime() {
+            return new Timepoint(getDeletionTime(t.getNativeUnit()), t.getNativeUnit());
+        }
+
+        public long getAdditionTime(TimeUnit unit) {
+            return (t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L;
+        }
+
+        public Timepoint getAdditionTime() {
+            return new Timepoint(getAdditionTime(t.getNativeUnit()), t.getNativeUnit());
         }
     }
 }

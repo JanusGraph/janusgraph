@@ -3,17 +3,21 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.Timer;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,21 +34,27 @@ public class ManagementLogger implements MessageReader {
     private static final Logger log =
             LoggerFactory.getLogger(ManagementLogger.class);
 
-    private static final int SLEEP_INTERVAL_MICRO =  100000;
-    private static final int MAX_WAIT_TIME_MICRO = 60000000; //60 seconds
-
+    private static final Duration SLEEP_INTERVAL_MICRO = new SimpleDuration(100L, TimeUnit.MILLISECONDS);
+    private static final Duration MAX_WAIT_TIME_MICRO = new SimpleDuration(60L, TimeUnit.SECONDS);
 
     private final StandardTitanGraph graph;
     private final SchemaCache schemaCache;
     private final Log sysLog;
 
+    /**
+     * This belongs in TitanConfig.
+     */
+    private final TimestampProvider times;
+
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
     private final ConcurrentMap<Long,EvictionTrigger> evictionTriggerMap = new ConcurrentHashMap<Long,EvictionTrigger>();
 
-    public ManagementLogger(StandardTitanGraph graph, Log sysLog, SchemaCache schemaCache) {
+    public ManagementLogger(StandardTitanGraph graph, Log sysLog, SchemaCache schemaCache, TimestampProvider times) {
         this.graph = graph;
         this.schemaCache = schemaCache;
         this.sysLog = sysLog;
+        this.times = times;
+        Preconditions.checkNotNull(times);
     }
 
     @Override
@@ -101,16 +111,13 @@ public class ManagementLogger implements MessageReader {
         final long evictionId;
         final Set<Callable<Boolean>> updatedTypeTriggers;
         final ImmutableSet<String> openInstances;
-
         final AtomicInteger ackCounter;
-        final long startTime;
 
         private EvictionTrigger(long evictionId, Set<Callable<Boolean>> updatedTypeTriggers, Set<String> openInstances) {
             this.evictionId = evictionId;
             this.updatedTypeTriggers = updatedTypeTriggers;
             this.openInstances = ImmutableSet.copyOf(openInstances);
             this.ackCounter = new AtomicInteger(openInstances.size());
-            this.startTime = Timestamps.MICRO.getTime();
         }
 
         void receivedAcknowledgement(String senderId) {
@@ -146,7 +153,8 @@ public class ManagementLogger implements MessageReader {
 
         @Override
         public void run() {
-            long startTime = Timestamps.MICRO.getTime();
+//            long startTime = Timestamps.MICRO.getTime();
+            Timer t = new Timer(times).start();
             while (true) {
                 boolean txStillOpen = false;
                 Iterator<? extends TitanTransaction> iter = openTx.iterator();
@@ -166,13 +174,15 @@ public class ManagementLogger implements MessageReader {
                     sysLog.add(out.getStaticBuffer());
                     break;
                 }
-                if (Timestamps.MICRO.getTime()-startTime>MAX_WAIT_TIME_MICRO) {
+//                if (Timestamps.MICRO.getTime()-startTime>MAX_WAIT_TIME_MICRO) {
+                if (MAX_WAIT_TIME_MICRO.compareTo(t.elapsed()) < 0) {
                     //Break out if waited too long
                     log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
                     break;
                 }
                 try {
-                    Timestamps.MICRO.sleepPast(SLEEP_INTERVAL_MICRO, TimeUnit.MICROSECONDS);
+                    // TODO
+                    times.sleepPast(times.getTime().add(SLEEP_INTERVAL_MICRO));
                 } catch (InterruptedException e) {
                     log.error("Interrupted eviction ack thread for "+getId(),e);
                     break;

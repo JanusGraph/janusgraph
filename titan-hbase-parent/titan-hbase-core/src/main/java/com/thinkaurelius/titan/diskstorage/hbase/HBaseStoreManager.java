@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
@@ -30,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -196,7 +199,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             hconf.set(entry.getKey(), entry.getValue().toString());
             keysLoaded++;
         }
-        
+
         // Special case for STORAGE_HOSTS
         if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
             String zkQuorumKey = "hbase.zookeeper.quorum";
@@ -262,7 +265,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
         // http://hbase.apache.org/book/versions.html#d244e4250
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.additionTime, timestamp.deletionTime);
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.getAdditionTime(times.getUnit()), timestamp.getDeletionTime(times.getUnit()));
 
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -744,7 +747,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         logger.debug("Guessed timestamp provider " + prov);
 
-        return prov.getTime();
+        return prov.getTime(prov.getUnit());
     }
 
     private HBaseAdmin getAdminInterface() {

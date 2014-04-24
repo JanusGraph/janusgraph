@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -33,7 +34,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -66,7 +66,7 @@ public class VertexIDAssigner {
     private final IDPlacementStrategy placementStrategy;
 
     //For StandardIDPool
-    private final long renewTimeoutMS;
+    private final Duration renewTimeoutMS;
     private final double renewBufferPercentage;
 
     private final int partitionIdBound;
@@ -383,12 +383,12 @@ public class VertexIDAssigner {
 
         long lastAccess;
 
-        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, long renewTimeoutMS, double renewBufferPercentage) {
-            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeoutMS, TimeUnit.MILLISECONDS, renewBufferPercentage);
-            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, TimeUnit.MILLISECONDS, renewBufferPercentage);
+        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, Duration renewTimeoutMS, double renewBufferPercentage) {
+            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeoutMS, renewBufferPercentage);
+            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, renewBufferPercentage);
             if (includeType) {
-                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, TimeUnit.MILLISECONDS, renewBufferPercentage);
-                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, TimeUnit.MILLISECONDS, renewBufferPercentage);
+                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
+                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
             } else {
                 relationType = null;
                 genericType = null;

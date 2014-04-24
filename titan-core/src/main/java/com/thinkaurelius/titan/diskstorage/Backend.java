@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -111,7 +112,7 @@ public class Backend implements LockerProvider {
     private final int bufferSize;
     private final int writeAttempts;
     private final int readAttempts;
-    private final int persistAttemptWaittime;
+    private final Duration persistAttemptWaittime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 

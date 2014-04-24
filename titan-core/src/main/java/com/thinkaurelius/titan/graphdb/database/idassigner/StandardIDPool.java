@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 
@@ -27,6 +28,9 @@ public class StandardIDPool implements IDPool {
     private static final Logger log =
             LoggerFactory.getLogger(StandardIDPool.class);
 
+    private static final TimeUnit SCHEDULING_TIME_UNIT =
+            TimeUnit.MILLISECONDS; // TODO
+
     private static final long BUFFER_EMPTY = -1;
     private static final long BUFFER_POOL_EXHAUSTION = -100;
 
@@ -36,8 +40,7 @@ public class StandardIDPool implements IDPool {
     private final long idUpperBound; //exclusive
     private final int partitionID;
 
-    private final long renewTimeout;
-    private final TimeUnit renewTimeoutUnit;
+    private final Duration renewTimeout;
     private final double renewBufferPercentage;
 
     private long nextID;
@@ -51,15 +54,14 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, long renewTimeout, TimeUnit renewTimeoutUnit, double renewBufferPercentage) {
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
         Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
         Preconditions.checkArgument(partitionID<(1l<<32));
         this.partitionID = (int) partitionID;
         this.idUpperBound = idUpperBound;
-        Preconditions.checkArgument(renewTimeout > 0,"Renew-timeout must be positive");
+        Preconditions.checkArgument(!renewTimeout.isZeroLength(), "Renew-timeout must be positive");
         this.renewTimeout = renewTimeout;
-        this.renewTimeoutUnit = renewTimeoutUnit;
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
         this.renewBufferPercentage = renewBufferPercentage;
 
@@ -88,7 +90,7 @@ public class StandardIDPool implements IDPool {
         Stopwatch sw = new Stopwatch().start();
         if (null != idBlockFuture) {
             try {
-                idBlockFuture.get(renewTimeout, renewTimeoutUnit);
+                idBlockFuture.get(renewTimeout.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
             } catch (ExecutionException e) {
                 String msg = String.format("ID block allocation on partition %d failed with an exception in %s",
                         partitionID, sw.stop());
@@ -141,7 +143,7 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
         try {
             Stopwatch sw = new Stopwatch().start();
-            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout, renewTimeoutUnit);
+            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout);
             log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];

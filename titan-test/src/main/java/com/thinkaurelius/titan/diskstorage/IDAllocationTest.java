@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -46,7 +48,7 @@ public abstract class IDAllocationTest {
     public static final int CONCURRENCY = 8;
     public static final String DB_NAME = "test";
 
-    public static final long GET_ID_BLOCK_TIMEOUT_MS = 300000L;
+    public static final Duration GET_ID_BLOCK_TIMEOUT = new SimpleDuration(300000L, TimeUnit.MILLISECONDS);
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
@@ -62,7 +64,7 @@ public abstract class IDAllocationTest {
 
         c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
-        c.set(IDAUTHORITY_WAIT_MS,10);
+        c.set(IDAUTHORITY_WAIT_MS, new SimpleDuration(10L, TimeUnit.MILLISECONDS));
         c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
         c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
         configurations.add(new Object[]{c.getConfiguration()});
@@ -73,7 +75,7 @@ public abstract class IDAllocationTest {
     public static ModifiableConfiguration getBasicConfig() {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
-        c.set(IDAUTHORITY_WAIT_MS,100);
+        c.set(IDAUTHORITY_WAIT_MS, new SimpleDuration(100L, TimeUnit.MILLISECONDS));
         c.set(IDS_BLOCK_SIZE,400);
         return c;
     }
@@ -199,7 +201,7 @@ public abstract class IDAllocationTest {
         List<Long> ids = Lists.newArrayList();
         long previous = 0;
         for (int i=0;i<100;i++) {
-            long[] block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            long[] block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT);
             Assert.assertEquals(block[1], block[0] + blockSize);
             ids.add(block[0]);
             if (hasFixedUid) {
@@ -228,19 +230,19 @@ public abstract class IDAllocationTest {
         idAuthorities[0].setIDBlockSizer(blockSizer);
         if (hasFixedUid) {
             for (int i=0;i<chunks;i++) {
-                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
             }
             try {
-                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
         } else {
             for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)/10));i++) {
-                idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
             }
             try {
                 for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)*9/10));i++) {
-                    idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                    idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
                 }
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
@@ -336,7 +338,7 @@ public abstract class IDAllocationTest {
                 private void getBlock() throws StorageException {
                     for (int i = 0; i < blocksPerThread; i++) {
                         long block[] = targetAuthority.getIDBlock(targetPartition,
-                                GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                               GET_ID_BLOCK_TIMEOUT);
                         Assert.assertNotNull(block);
                         blocks.add(block[0]);
                     }
@@ -434,7 +436,7 @@ public abstract class IDAllocationTest {
 
             long[] block;
             try {
-                block = authority.getIDBlock(partitionIndex, GET_ID_BLOCK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                block = authority.getIDBlock(partitionIndex,GET_ID_BLOCK_TIMEOUT);
             } catch (StorageException e) {
                 log.error("Unexpected exception while getting ID block", e);
                 return null;

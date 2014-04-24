@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -12,12 +13,12 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public class StandardTransactionConfig implements TransactionHandleConfig {
 
-    private final Long timestamp;
+    private final Timepoint timestamp;
     private final String metricsPrefix;
     private final Configuration customOptions;
 
     @Override
-    public Long getTimestamp() {
+    public Timepoint getTimestamp() {
         return timestamp;
     }
 
@@ -42,16 +43,15 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     }
 
     public static class Builder {
-        private Long timestamp = null;
+        private Timepoint timestamp = null;
         private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
 
-        public Builder(TransactionHandleConfig template, Long ts) {
+        public Builder(TransactionHandleConfig template) {
             customOptions(template.getCustomOptions());
             metricsPrefix(template.getMetricsPrefix());
-            timestamp(ts);
         }
 
         public Builder metricsPrefix(String s) {
@@ -59,8 +59,8 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
             return this;
         }
 
-        public Builder timestamp(Long ts) {
-            timestamp = ts;
+        public Builder timestamp(Timepoint i) {
+            timestamp = i;
             return this;
         }
 
@@ -84,7 +84,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     }
 
     private StandardTransactionConfig(String metricsPrefix,
-            Long timestamp,
+            Timepoint timestamp,
             Configuration customOptions) {
         this.metricsPrefix = metricsPrefix;
         this.timestamp = timestamp;

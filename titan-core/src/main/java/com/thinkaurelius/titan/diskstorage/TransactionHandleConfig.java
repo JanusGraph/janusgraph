@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
@@ -14,7 +15,7 @@ public interface TransactionHandleConfig {
      *
      * @return custom timestamp for this tx, or null if none is set
      */
-    public Long getTimestamp();
+    public Timepoint getTimestamp();
 
     /**
      * Returns the (possibly null) metrics prefix for this transaction.

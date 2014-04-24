@@ -5,6 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
@@ -13,8 +15,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -60,7 +60,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 public class StandardTitanGraph extends TitanBlueprintsGraph {
 
@@ -123,7 +122,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
-        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
+        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
         mgmtLog.registerReader(mgmtLogger);
 
         shutdownHook = new ShutdownThread(this);
@@ -443,13 +442,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
 
-        Long timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
+        Timepoint timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
         if (null == timestamp) {
             timestamp = times.getTime();
         }
 
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
-                timestamp, config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
+                timestamp, times.getUnit(), LogTxStatus.PRECOMMIT);
 
         if (logTransaction) {
             DataOutput out = txLogHeader.serializeHeader(serializer,256);
@@ -517,12 +516,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
             try {
                 final Log txLog = backend.getTriggerLog(logTxIdentifier);
-                Long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                Timepoint timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
                 if (null == timestamp) {
                     timestamp = times.getTime();
                 }
                 DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
-                out.putLong(timestamp);
+                out.putLong(timestamp.getTime(times.getUnit()));
                 logRelations(out,addedRelations,tx);
                 logRelations(out, deletedRelations,tx);
                 txLog.add(out.getStaticBuffer());

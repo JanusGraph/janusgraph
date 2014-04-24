@@ -42,6 +42,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -353,7 +354,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
-                    dels.setTimestamp(timestamp.deletionTime);
+                    dels.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
 
                     for (StaticBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
@@ -361,7 +362,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
-                    upds.setTimestamp(timestamp.additionTime);
+                    upds.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
 
                     for (Entry e : titanMutation.getAdditions())
                         upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
@@ -460,8 +461,8 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                         .setRetryDelaySlice(retryDelaySlice)
                         .setRetryMaxDelaySlice(retryMaxDelaySlice)
                         .setRetrySuspendWindow(retrySuspendWindow)
-                        .setSocketTimeout((int)connectionTimeoutMS)
-                        .setConnectTimeout((int)connectionTimeoutMS)
+                        .setSocketTimeout((int)connectionTimeoutMS.getLength(TimeUnit.MILLISECONDS))
+                        .setConnectTimeout((int)connectionTimeoutMS.getLength(TimeUnit.MILLISECONDS))
                         .setSeeds(StringUtils.join(hostnames, ","));
 
         if (null != retryBackoffStrategy) {

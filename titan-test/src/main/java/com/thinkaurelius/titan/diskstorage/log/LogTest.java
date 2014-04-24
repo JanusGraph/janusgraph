@@ -115,7 +115,7 @@ public abstract class LogTest {
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
-        Thread.sleep(SLEEP_TIME_MS);
+        Thread.sleep(SLEEP_TIME_MS * 3);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
     }
@@ -187,7 +187,7 @@ public abstract class LogTest {
         Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < counts.length; i++) {
             CountingReader count = counts[i];
-            assertEquals("counter index " + i + " message count mismatch", numMessages,count.totalMsg.get());
+            assertEquals("counter index " + i + " message count mismatch", numMessages, count.totalMsg.get());
             assertEquals("counter index " + i + " value mismatch", numMessages*(numMessages+1)/2,count.totalValue.get());
             assertTrue(log1.unregisterReader(count));
         }
@@ -196,6 +196,9 @@ public abstract class LogTest {
     }
 
     private static class CountingReader implements MessageReader {
+
+        private static final Logger log =
+                LoggerFactory.getLogger(CountingReader.class);
 
         private AtomicLong totalMsg=new AtomicLong(0);
         private AtomicLong totalValue=new AtomicLong(0);
@@ -210,7 +213,8 @@ public abstract class LogTest {
             assertNotNull(content);
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            assertTrue("Message out of order: "+value, lastMessageValue<value);
+            log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
+            assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
             lastMessageValue = value;
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);

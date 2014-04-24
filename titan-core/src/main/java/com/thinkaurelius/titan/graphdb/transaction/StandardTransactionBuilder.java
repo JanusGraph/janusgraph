@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -54,15 +55,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String logIdentifier;
 
-    private Long timestamp = null;
+    private Timepoint timestamp = null;
 
     private String metricsPrefix;
 
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
-
-    private final TimeUnit graphTimeUnit;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -71,7 +70,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
         this.graph = graph;
-        this.graphTimeUnit = graphConfig.getTimestampProvider().getUnit();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.metricsPrefix = graphConfig.getMetricsPrefix();
@@ -120,7 +118,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit) {
-        this.timestamp = graphTimeUnit.convert(timestampSinceEpoch, unit);
+        this.timestamp = new Timepoint(timestampSinceEpoch, unit);
         return this;
     }
 
@@ -241,7 +239,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Long getTimestamp() {
+    public Timepoint getTimestamp() {
         return timestamp;
     }
 
@@ -282,7 +280,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, Long timestamp,
+                boolean isThreadBound, Timepoint timestamp,
                 long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
@@ -377,7 +375,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public Long getTimestamp() {
+        public Timepoint getTimestamp() {
             return handleConfig.getTimestamp();
         }
 

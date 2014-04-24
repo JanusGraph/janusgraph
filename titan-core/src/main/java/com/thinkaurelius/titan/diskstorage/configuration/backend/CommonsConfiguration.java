@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
@@ -14,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link ReadConfiguration} wrapper for Apache Configuration
@@ -74,6 +77,14 @@ public class CommonsConfiguration implements WriteConfiguration {
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
         } else if (datatype==Object.class) {
             return (O)config.getProperty(key);
+        } else if (Duration.class.isAssignableFrom(datatype)) {
+            // This is a conceptual leak; the config layer should ideally only handle standard library types
+            Object o = config.getProperty(key);
+            if (Duration.class.isInstance(o)) {
+                return (O)o;
+            } else {
+                return (O)new SimpleDuration(Long.valueOf(o.toString()), TimeUnit.MILLISECONDS);
+            }
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 
