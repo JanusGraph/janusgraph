@@ -65,7 +65,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
         else this.port = portDefault;
-        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT_MS);
+        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT);
         this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
         this.times = storageConfig.get(TIMESTAMP_PROVIDER);

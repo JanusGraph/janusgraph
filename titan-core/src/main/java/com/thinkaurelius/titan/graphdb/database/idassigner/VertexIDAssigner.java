@@ -102,7 +102,7 @@ public class VertexIDAssigner {
         long baseBlockSize = config.get(IDS_BLOCK_SIZE);
         idAuthority.setIDBlockSizer(new SimpleVertexIDBlockSizer(baseBlockSize));
 
-        renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT_MS);
+        renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
         idPools = new OpenIntObjectHashMap();

@@ -34,8 +34,8 @@ public class ManagementLogger implements MessageReader {
     private static final Logger log =
             LoggerFactory.getLogger(ManagementLogger.class);
 
-    private static final Duration SLEEP_INTERVAL_MICRO = new SimpleDuration(100L, TimeUnit.MILLISECONDS);
-    private static final Duration MAX_WAIT_TIME_MICRO = new SimpleDuration(60L, TimeUnit.SECONDS);
+    private static final Duration SLEEP_INTERVAL = new SimpleDuration(100L, TimeUnit.MILLISECONDS);
+    private static final Duration MAX_WAIT_TIME = new SimpleDuration(60L, TimeUnit.SECONDS);
 
     private final StandardTitanGraph graph;
     private final SchemaCache schemaCache;
@@ -174,13 +174,13 @@ public class ManagementLogger implements MessageReader {
                     sysLog.add(out.getStaticBuffer());
                     break;
                 }
-                if (MAX_WAIT_TIME_MICRO.compareTo(t.elapsed()) < 0) {
+                if (MAX_WAIT_TIME.compareTo(t.elapsed()) < 0) {
                     //Break out if waited too long
                     log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
                     break;
                 }
                 try {
-                    times.sleepPast(times.getTime().add(SLEEP_INTERVAL_MICRO));
+                    times.sleepPast(times.getTime().add(SLEEP_INTERVAL));
                 } catch (InterruptedException e) {
                     log.error("Interrupted eviction ack thread for "+getId(),e);
                     break;

@@ -64,7 +64,7 @@ public abstract class IDAllocationTest {
 
         c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
-        c.set(IDAUTHORITY_WAIT_MS, new SimpleDuration(10L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, new SimpleDuration(10L, TimeUnit.MILLISECONDS));
         c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
         c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
         configurations.add(new Object[]{c.getConfiguration()});
@@ -75,7 +75,7 @@ public abstract class IDAllocationTest {
     public static ModifiableConfiguration getBasicConfig() {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
-        c.set(IDAUTHORITY_WAIT_MS, new SimpleDuration(100L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, new SimpleDuration(100L, TimeUnit.MILLISECONDS));
         c.set(IDS_BLOCK_SIZE,400);
         return c;
     }

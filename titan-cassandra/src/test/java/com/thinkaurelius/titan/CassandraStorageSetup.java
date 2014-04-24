@@ -39,7 +39,7 @@ public class CassandraStorageSetup {
         ModifiableConfiguration config = buildConfiguration();
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         config.set(PAGE_SIZE,500);
-        config.set(CONNECTION_TIMEOUT_MS, new SimpleDuration(60L, TimeUnit.SECONDS));
+        config.set(CONNECTION_TIMEOUT, new SimpleDuration(60L, TimeUnit.SECONDS));
         config.set(STORAGE_BACKEND, backend);
         return config;
     }

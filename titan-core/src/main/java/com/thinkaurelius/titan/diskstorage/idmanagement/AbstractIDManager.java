@@ -47,7 +47,7 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.isActive = false;
 
         this.idApplicationWaitMS =
-                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS);
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
 
         this.randomUniqueIDLimit =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);

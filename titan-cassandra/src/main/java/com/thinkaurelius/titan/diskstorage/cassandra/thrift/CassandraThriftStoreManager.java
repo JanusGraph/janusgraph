@@ -71,7 +71,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
          * This is eventually passed to Thrift's TSocket constructor. The
          * constructor parameter is of type int.
          */
-        int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT_MS).getLength(TimeUnit.MILLISECONDS);
+        int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
 
         int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
 

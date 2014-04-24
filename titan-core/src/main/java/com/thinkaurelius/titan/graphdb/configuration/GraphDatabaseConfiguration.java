@@ -414,7 +414,7 @@ public class GraphDatabaseConfiguration {
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
      * Also, the time waited after the application before verifying that the application was successful.
      */
-    public static final ConfigOption<Duration> IDAUTHORITY_WAIT_MS = new ConfigOption<Duration>(STORAGE_NS,"idauthority-wait-time",
+    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(STORAGE_NS,"idauthority-wait-time",
             "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
             ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new SimpleDuration(300L, TimeUnit.MILLISECONDS));
 //    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
@@ -573,7 +573,7 @@ public class GraphDatabaseConfiguration {
      * Default timeout when connecting to a remote database instance
      * <p/>
      */
-    public static final ConfigOption<Duration> CONNECTION_TIMEOUT_MS = new ConfigOption<Duration>(STORAGE_NS,"connection-timeout",
+    public static final ConfigOption<Duration> CONNECTION_TIMEOUT = new ConfigOption<Duration>(STORAGE_NS,"connection-timeout",
             "Default timeout, in milliseconds, when connecting to a remote database instance",
             ConfigOption.Type.MASKABLE, Duration.class, new SimpleDuration(10000L, TimeUnit.MILLISECONDS));
 //    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
@@ -660,7 +660,7 @@ public class GraphDatabaseConfiguration {
      * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
      * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
      */
-    public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT_MS = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
+    public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
             ConfigOption.Type.MASKABLE, Duration.class, new SimpleDuration(60000L, TimeUnit.MILLISECONDS));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";

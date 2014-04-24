@@ -70,7 +70,7 @@ public class VertexIDAssignerTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, false);
-        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS, new SimpleDuration(1L, TimeUnit.MILLISECONDS));
+        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, new SimpleDuration(1L, TimeUnit.MILLISECONDS));
         return TitanFactory.open(config);
     }
 
