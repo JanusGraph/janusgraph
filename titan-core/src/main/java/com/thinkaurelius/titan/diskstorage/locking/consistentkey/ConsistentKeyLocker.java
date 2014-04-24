@@ -259,10 +259,6 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         this.cleanerService = cleanerService;
     }
 
-//    private long getLockWait(TimeUnit tu) {
-//        return tu.convert(lockWait, timeUnit);
-//    }
-
     /**
      * Try to write a lock record remotely up to the configured number of
      *  times. If the store produces
@@ -509,31 +505,17 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     private static class WriteResult {
-//        private final long before;
-//        private final long after;
         private final Duration duration;
         private final Timepoint writeTimestamp;
-//        private final TimeUnit timeUnit;
         private final StaticBuffer lockCol;
         private final Throwable throwable;
 
-//        public WriteResult(long before, long after, TimeUnit timeUnit, StaticBuffer lockCol, Throwable throwable) {
-//            this.before = before;
-//            this.after = after;
-//            this.timeUnit = timeUnit;
-//            this.lockCol = lockCol;
-//            this.throwable = throwable;
-//        }
         public WriteResult(Duration duration, Timepoint writeTimestamp, StaticBuffer lockCol, Throwable throwable) {
             this.duration = duration;
             this.writeTimestamp = writeTimestamp;
             this.lockCol = lockCol;
             this.throwable = throwable;
         }
-//
-//        public long getBefore(TimeUnit tu) {
-//            return tu.convert(before, timeUnit);
-//        }
 
         public Duration getDuration() {
             return duration;
@@ -542,14 +524,6 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         public Timepoint getWriteTimestamp() {
             return writeTimestamp;
         }
-//
-//        public long getWriteTimestamp(TimeUnit unit) {
-//            return writeTimestamp.getTime(unit);
-//        }
-
-//        public long getDuration(TimeUnit tu) {
-//            return tu.convert(after - before, timeUnit);
-//        }
 
         public boolean isSuccessful() {
             return null == throwable;

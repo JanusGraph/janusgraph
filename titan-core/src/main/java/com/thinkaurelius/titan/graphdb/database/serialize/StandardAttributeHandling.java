@@ -70,10 +70,6 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(char[].class, new CharArraySerializer());
         registerClass(boolean[].class, new BooleanArraySerializer());
         registerClass(String[].class, new StringArraySerializer());
-
-//        // Time
-//        registerClass(SimpleDuration.class, new SimpleDurationSerializer());
-//        registerClass(Timepoint.class, new TimepointSerializer());
     }
 
     @Override

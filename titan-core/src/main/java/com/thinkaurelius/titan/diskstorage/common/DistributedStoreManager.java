@@ -215,8 +215,6 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         if (null == txTime) {
             txTime = times.getTime();
         }
-//        txTime = txTime & 0xFFFFFFFFFFFFFFFEL; //remove last bit
-//        return new Timestamp(txTime | 1L, txTime);
         return new Timestamp(txTime);
     }
 
@@ -243,7 +241,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         public long getDeletionTime(TimeUnit unit) {
-            return t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL;
+            return t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
         }
 
         public Timepoint getDeletionTime() {
@@ -251,7 +249,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         public long getAdditionTime(TimeUnit unit) {
-            return (t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L;
+            return (t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
         }
 
         public Timepoint getAdditionTime() {

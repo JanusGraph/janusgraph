@@ -174,14 +174,12 @@ public class ManagementLogger implements MessageReader {
                     sysLog.add(out.getStaticBuffer());
                     break;
                 }
-//                if (Timestamps.MICRO.getTime()-startTime>MAX_WAIT_TIME_MICRO) {
                 if (MAX_WAIT_TIME_MICRO.compareTo(t.elapsed()) < 0) {
                     //Break out if waited too long
                     log.error("Evicted [{}] from cache but waiting too long for transactions to close. Stale transaction alert on: {}",getId(),openTx);
                     break;
                 }
                 try {
-                    // TODO
                     times.sleepPast(times.getTime().add(SLEEP_INTERVAL_MICRO));
                 } catch (InterruptedException e) {
                     log.error("Interrupted eviction ack thread for "+getId(),e);

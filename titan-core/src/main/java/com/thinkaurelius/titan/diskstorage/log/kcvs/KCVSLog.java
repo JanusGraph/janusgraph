@@ -240,8 +240,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         readLagTime = config.get(LOG_READ_LAG_TIME).add(maxSendDelay);
         maxReadTime = config.get(LOG_MAX_READ_TIME);
 
-
-//        if (maxSendDelay>=MIN_DELIVERY_DELAY) {
         if (MIN_DELIVERY_DELAY.compareTo(maxSendDelay) <= 0) { // No need to locally queue messages since they will be sent immediately
             outgoingMsg = new ArrayBlockingQueue<MessageEnvelope>(sendBatchSize*BATCH_SIZE_MULTIPLIER);
             sendThread = new SendThread();
@@ -517,7 +515,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 toSend.add(msg);
             }
             //Evaluate send condition: 1) Is the oldest message waiting longer than the delay? or 2) Do we have enough messages to send?
-//            if (!toSend.isEmpty() && (timeSinceFirstMsg()>=maxSendDelay || toSend.size()>=sendBatchSize)) {
             if (!toSend.isEmpty() && (maxSendDelay.compareTo(timeSinceFirstMsg()) <= 0 || toSend.size() >= sendBatchSize)) {
                 sendMessages(toSend);
                 toSend.clear();

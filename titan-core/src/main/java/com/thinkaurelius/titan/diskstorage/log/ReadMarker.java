@@ -79,16 +79,4 @@ public class ReadMarker {
         return new ReadMarker(id, new Timepoint(timestamp, unit));
     }
 
-//    /**
-//     * Identical to {@link #fromIdentifierOrTime(String, long, TimeUnit)} but uses now as the start point instead of a timestamp in case
-//     * the id has not be previously defined for this log.
-//     *
-//     * @param id
-//     * @return
-//     */
-//    public static ReadMarker fromIdentifierOrNow(String id) {
-//        return new ReadMarker(id,Timestamps.MICRO.getTime());
-//    }
-
-
 }

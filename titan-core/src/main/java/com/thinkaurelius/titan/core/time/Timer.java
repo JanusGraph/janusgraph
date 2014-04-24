@@ -58,34 +58,4 @@ public class Timer {
         TimeUnit u = times.getUnit();
         return String.format("%d %s", stop.getTime(u) - start.getTime(u), u);
     }
-
-//    private static class LongsDuration implements Duration {
-//
-//        private final long begin;
-//        private final long end;
-//        private final TimeUnit unit;
-//
-//        private LongsDuration(long begin, long end, TimeUnit unit) {
-//            this.begin = begin;
-//            this.end = end;
-//            this.unit = unit;
-//        }
-//
-//        @Override
-//        public int compareTo(Duration o) {
-//            final long mine = getLength(unit);
-//            final long theirs = o.getLength(unit);
-//            if (mine < theirs) {
-//                return -1;
-//            } else if (theirs < mine) {
-//                return 1;
-//            }
-//            return 0;
-//        }
-//
-//        @Override
-//        public long getLength(TimeUnit output) {
-//            return output.convert(end - begin, unit);
-//        }
-//    }
 }
