@@ -115,7 +115,7 @@ public abstract class LogTest {
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
-        Thread.sleep(SLEEP_TIME_MS * 3);
+        Thread.sleep(SLEEP_TIME_MS * 10);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
     }

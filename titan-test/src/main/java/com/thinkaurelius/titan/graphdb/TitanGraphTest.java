@@ -165,7 +165,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 triggerMsgCounter.incrementAndGet();
             }
         });
-        Thread.sleep(2000);
+        Thread.sleep(20000);
         assertEquals(8, txMsgCounter.get());
         assertEquals(2,triggerMsgCounter.get());
     }
