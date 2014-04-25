@@ -15,12 +15,12 @@ public class DisableDefaultTypeMaker implements DefaultTypeMaker {
 
     @Override
     public TitanLabel makeLabel(LabelMaker factory) {
-        throw new IllegalArgumentException("Label with given name does not exist");
+        throw new IllegalArgumentException("Label with given name does not exist: " + factory.getName());
     }
 
     @Override
     public TitanKey makeKey(KeyMaker factory) {
-        throw new IllegalArgumentException("Key with given name does not exist");
+        throw new IllegalArgumentException("Key with given name does not exist: " + factory.getName());
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

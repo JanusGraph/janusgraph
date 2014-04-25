@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -415,19 +417,37 @@ public abstract class KeyColumnValueStoreTest {
         if (manager.getFeatures().hasScan()) {
             String[][] values = generateValues();
             loadValues(values);
-            RecordIterator<StaticBuffer> iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator0));
+            KeyIterator iterator0 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            verifyIterator(iterator0,numKeys,1);
             clopen();
-            RecordIterator<StaticBuffer> iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            RecordIterator<StaticBuffer> iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            KeyIterator iterator1 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            KeyIterator iterator2 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
             // The idea is to open an iterator without using it
             // to make sure that closing a transaction will clean it up.
             // (important for BerkeleyJE where leaving cursors open causes exceptions)
             @SuppressWarnings("unused")
-            RecordIterator<StaticBuffer> iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator1));
-            Assert.assertEquals(numKeys, KeyValueStoreUtil.count(iterator2));
+            KeyIterator iterator3 = KCVSUtil.getKeys(store, storeFeatures(), 8, 4, tx);
+            verifyIterator(iterator1,numKeys,1);
+            verifyIterator(iterator2,numKeys,1);
         }
+    }
+
+    private void verifyIterator(KeyIterator iter, int expectedKeys, int exepctedCols) {
+        int keys = 0;
+        while (iter.hasNext()) {
+            StaticBuffer b = iter.next();
+            assertTrue(b!=null && b.length()>0);
+            keys++;
+            RecordIterator<Entry> entries = iter.getEntries();
+            int cols = 0;
+            while (entries.hasNext()) {
+                Entry e = entries.next();
+                assertTrue(e!=null && e.length()>0);
+                cols++;
+            }
+            assertEquals(exepctedCols,cols);
+        }
+        assertEquals(expectedKeys,keys);
     }
 
     /**

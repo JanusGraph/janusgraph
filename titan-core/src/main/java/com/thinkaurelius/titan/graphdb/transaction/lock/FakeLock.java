@@ -1,10 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
+import com.thinkaurelius.titan.core.time.Duration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -17,7 +13,7 @@ public class FakeLock implements TransactionLock {
     private FakeLock() {}
 
     @Override
-    public void lock(long timeMillisecond) {
+    public void lock(Duration timeout) {
     }
 
     @Override

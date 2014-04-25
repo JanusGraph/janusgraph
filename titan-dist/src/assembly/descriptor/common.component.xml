@@ -18,7 +18,7 @@
 
     <files>
         <file>
-            <source>src/assembly/static/conf/log4j.properties</source>
+            <source>src/assembly/static/conf/log4j-gremlin.properties</source>
             <outputDirectory>/conf</outputDirectory>
         </file>
     </files>

@@ -191,13 +191,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime);
+                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.getAdditionTime(times.getUnit()));
+
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.deletionTime);
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.getDeletionTime(times.getUnit()));
                     }
                 }
 

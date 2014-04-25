@@ -1,29 +1,48 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Stopwatch;
-import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.*;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-
-import org.apache.commons.codec.binary.Hex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_RANDOMIZE_UNIQUE_ID;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_UNIQUE_ID;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_UNIQUE_ID_BITS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_USE_LOCAL_CONSISTENCY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.Durations;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.Timer;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 
 /**
  * {@link com.thinkaurelius.titan.diskstorage.IDAuthority} implementation
@@ -58,9 +77,13 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
     private final StandardTransactionConfig.Builder storeTxConfigBuilder;
+    /**
+     * This belongs in TitanConfig.
+     */
+    private final TimestampProvider times;
 
     private final int rollbackAttempts = 5;
-    private final int rollbackWaitTime = 200;
+    private final Duration rollbackWaitTime = new SimpleDuration(200L, TimeUnit.MILLISECONDS);
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
@@ -75,6 +98,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;
         this.idStore = idStore;
+        this.times = config.get(TIMESTAMP_PROVIDER);
+        Preconditions.checkNotNull(times);
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
@@ -87,14 +112,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
             uniqueId = -1;
-            storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
+            storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
         } else {
             randomizeUniqueId = false;
             if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
                 Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
-                storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig());
             } else {
-                storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig()).timestampProvider(config.get(TIMESTAMP_PROVIDER));
+                storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
             }
             uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
@@ -153,10 +178,10 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     }
 
     @Override
-    public synchronized long[] getIDBlock(final int partition, final long timeout, final TimeUnit unit) throws StorageException {
+    public synchronized long[] getIDBlock(final int partition, Duration timeout) throws StorageException {
         //partition id can be any integer, even negative, its only a partition identifier
 
-        final Stopwatch methodTime = new Stopwatch().start();
+        final Timer methodTime = new Timer(times).start();
 
         final long blockSize = getBlockSize(partition);
         final long idUpperBound = getIdUpperBound(partition);
@@ -168,12 +193,12 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
         final List<String> exhausted = new ArrayList<String>(randomUniqueIDLimit);
 
-        long backoffMS = idApplicationWaitMS;
+        Duration backoffMS = idApplicationWaitMS;
 
         Preconditions.checkArgument(idBlockUpperBound>blockSize,
                 "Block size [%s] is larger than upper bound [%s] for bit width [%s]",blockSize,idBlockUpperBound,uniqueIdBitWidth);
 
-        while (methodTime.elapsed(unit) <= timeout) {
+        while (methodTime.elapsed().compareTo(timeout) < 0) {
             final int uniquePID = getUniquePartitionID();
             final StaticBuffer partitionKey = getPartitionKey(partition,uniquePID);
             try {
@@ -202,7 +227,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
-                    long before = System.currentTimeMillis();
+                    Timer writeTimer = new Timer(times).start();
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
                         public Boolean call(StoreTransaction txh) throws StorageException {
@@ -210,10 +235,11 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             return true;
                         }
                     },this);
-                    long after = System.currentTimeMillis();
+                    writeTimer.stop();
 
-                    if (idApplicationWaitMS < after - before) {
-                        throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (after - before) + " ms => too slow, threshold is: " + idApplicationWaitMS);
+                    Duration writeElapsed = writeTimer.elapsed();
+                    if (idApplicationWaitMS.compareTo(writeElapsed) < 0) {
+                        throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
 
                         assert 0 != target.length();
@@ -224,7 +250,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          * the same id block from another machine
                          */
 
-                        sleepAndConvertInterrupts(after + idApplicationWaitMS);
+                        sleepAndConvertInterrupts(idApplicationWaitMS);
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -285,9 +311,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
                                 break;
                             } catch (StorageException e) {
-                                log.warn("Storage exception while deleting old block application - retrying in {} ms", rollbackWaitTime, e);
-                                if (rollbackWaitTime > 0)
-                                    sleepAndConvertInterrupts(System.currentTimeMillis() + rollbackWaitTime);
+                                log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
+                                if (!rollbackWaitTime.isZeroLength())
+                                    sleepAndConvertInterrupts(rollbackWaitTime);
                             }
                         }
                     }
@@ -296,14 +322,14 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
             } catch (TemporaryStorageException e) {
-                backoffMS = Math.min(backoffMS * 2, idApplicationWaitMS * 32L);
-                log.warn("Temporary storage exception while acquiring id block - retrying in {} ms: {}", backoffMS, e);
-                sleepAndConvertInterrupts(System.currentTimeMillis() + backoffMS);
+                backoffMS = Durations.min(backoffMS.mult(2), idApplicationWaitMS.mult(32));
+                log.warn("Temporary storage exception while acquiring id block - retrying in {}: {}", backoffMS, e);
+                sleepAndConvertInterrupts(backoffMS);
             }
         }
 
-        throw new TemporaryLockingException(String.format("Exceeded timeout of %d %s (%s elapsed) when attempting to allocate id block on partition %d",
-                timeout, unit, methodTime.toString(), partition));
+        throw new TemporaryLockingException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition %d",
+                timeout, methodTime.toString(), partition));
     }
 
 
@@ -329,9 +355,9 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return -column.getLong(0);
     }
 
-    private static void sleepAndConvertInterrupts(final long millis) throws StorageException {
+    private void sleepAndConvertInterrupts(Duration d) throws StorageException {
         try {
-            Timestamps.MILLI.sleepPast(millis, TimeUnit.MILLISECONDS);
+            times.sleepPast(times.getTime().add(d));
         } catch (InterruptedException e) {
             throw new PermanentStorageException(e);
         }

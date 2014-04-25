@@ -16,5 +16,7 @@ package com.thinkaurelius.titan.core;
  */
 public interface TypeMaker {
 
+    public String getName();
+
     public TitanType make();
 }

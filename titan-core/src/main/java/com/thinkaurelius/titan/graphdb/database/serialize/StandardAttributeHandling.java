@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
@@ -49,11 +51,11 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(Precision.class, new Precision.PrecisionSerializer());
         registerClass(Character.class, new CharacterSerializer());
         registerClass(Boolean.class, new BooleanSerializer());
-        registerClass(String.class, new StringSerializer());
+        registerClass(CString.class, new CStringSerializer());
         registerClass(Date.class, new DateSerializer());
 
         registerClass(Geoshape.class, new Geoshape.GeoshapeSerializer());
-        registerClass(StringX.class, new StringXSerializer()); //supports null serialization
+        registerClass(String.class, new StringSerializer()); //supports null serialization
         registerClass(Float.class, new FloatSerializer());
         registerClass(Double.class, new DoubleSerializer());
 
@@ -68,7 +70,6 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(char[].class, new CharArraySerializer());
         registerClass(boolean[].class, new BooleanArraySerializer());
         registerClass(String[].class, new StringArraySerializer());
-
     }
 
     @Override

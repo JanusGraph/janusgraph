@@ -5,8 +5,6 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
@@ -65,7 +63,7 @@ public class SerializerTest {
     }
 
     @Test
-    public void stringSerialization() {
+    public void comparableStringSerialization() {
         //Characters
         DataOutput out = serialize.getDataOutput(((int) Character.MAX_VALUE) * 2 + 8);
         for (char c = Character.MIN_VALUE; c < Character.MAX_VALUE; c++) {
@@ -81,14 +79,14 @@ public class SerializerTest {
         for (int t = 0; t < 10000; t++) {
             DataOutput out1 = serialize.getDataOutput(32 + 5);
             DataOutput out2 = serialize.getDataOutput(32 + 5);
-            String s1 = RandomGenerator.randomString(1, 32);
-            String s2 = RandomGenerator.randomString(1, 32);
+            CString s1 = new CString(RandomGenerator.randomString(1, 32));
+            CString s2 = new CString(RandomGenerator.randomString(1, 32));
             out1.writeObjectNotNull(s1);
             out2.writeObjectNotNull(s2);
             StaticBuffer b1 = out1.getStaticBuffer();
             StaticBuffer b2 = out2.getStaticBuffer();
-            assertEquals(s1, serialize.readObjectNotNull(b1.asReadBuffer(), String.class));
-            assertEquals(s2, serialize.readObjectNotNull(b2.asReadBuffer(), String.class));
+            assertEquals(s1, serialize.readObjectNotNull(b1.asReadBuffer(), CString.class));
+            assertEquals(s2, serialize.readObjectNotNull(b2.asReadBuffer(), CString.class));
             assertEquals(s1 + " vs " + s2, Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)));
         }
     }
@@ -320,54 +318,53 @@ public class SerializerTest {
         return "ReadBuffer length: " + b.length();
     }
 
-    private StaticBuffer getStringXBuffer(String value) {
-        StringX x = new StringX(value);
+    private StaticBuffer getStringBuffer(String value) {
         DataOutput o = serialize.getDataOutput(value.length()+10);
-        o.writeObject(x,StringX.class);
+        o.writeObject(value,String.class);
         return o.getStaticBuffer();
     }
 
     @Test
-    public void testStringX() {
+    public void testStringCompression() {
         //ASCII encoding
         for (int t = 0; t < 100; t++) {
-            String x = getRandomString(StringXSerializer.TEXT_COMRPESSION_THRESHOLD-1,ASCII_VALUE);
-            assertEquals(x.length()+1,getStringXBuffer(x).length());
+            String x = getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD-1,ASCII_VALUE);
+            assertEquals(x.length()+1, getStringBuffer(x).length());
         }
 
         //SMAZ Encoding
-        String[] texts = {
-                "To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name. In his eyes she eclipses and predominates the whole of her sex.",
-                "His manner was not effusive. It seldom was; but he was glad, I think, to see me. With hardly a word spoken, but with a kindly eye, he waved me to an armchair",
-                "I could not help laughing at the ease with which he explained his process of deduction.",
-                "A man entered who could hardly have been less than six feet six inches in height, with the chest and limbs of a Hercules. His dress was rich with a richness which would, in England"
-        };
-        for (String text : texts) {
-            assertTrue(text.length()>StringXSerializer.TEXT_COMRPESSION_THRESHOLD);
-            StaticBuffer s = getStringXBuffer(text);
-//            System.out.println(String.format("String length [%s] -> byte size [%s]",text.length(),s.length()));
-            assertTrue(text.length()>s.length()); //Test that actual compression is happening
-        }
+//        String[] texts = {
+//                "To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name. In his eyes she eclipses and predominates the whole of her sex.",
+//                "His manner was not effusive. It seldom was; but he was glad, I think, to see me. With hardly a word spoken, but with a kindly eye, he waved me to an armchair",
+//                "I could not help laughing at the ease with which he explained his process of deduction.",
+//                "A man entered who could hardly have been less than six feet six inches in height, with the chest and limbs of a Hercules. His dress was rich with a richness which would, in England"
+//        };
+//        for (String text : texts) {
+//            assertTrue(text.length()> StringSerializer.TEXT_COMRPESSION_THRESHOLD);
+//            StaticBuffer s = getStringBuffer(text);
+////            System.out.println(String.format("String length [%s] -> byte size [%s]",text.length(),s.length()));
+//            assertTrue(text.length()>s.length()); //Test that actual compression is happening
+//        }
 
         //Gzip Encoding
         String[] patterns = { "aQd>@!as/df5h", "sdfodoiwk", "sdf", "ab", "asdfwewefefwdfkajhqwkdhj"};
-        int targetLength = StringXSerializer.LONG_COMPRESSION_THRESHOLD*5;
+        int targetLength = StringSerializer.LONG_COMPRESSION_THRESHOLD*5;
         for (String pattern : patterns) {
             StringBuilder sb = new StringBuilder(targetLength);
             for (int i=0; i<targetLength/pattern.length(); i++) sb.append(pattern);
             String text = sb.toString();
-            assertTrue(text.length()>StringXSerializer.LONG_COMPRESSION_THRESHOLD);
-            StaticBuffer s = getStringXBuffer(text);
+            assertTrue(text.length()> StringSerializer.LONG_COMPRESSION_THRESHOLD);
+            StaticBuffer s = getStringBuffer(text);
 //            System.out.println(String.format("String length [%s] -> byte size [%s]",text.length(),s.length()));
             assertTrue(text.length()>s.length()*10); //Test that radical compression is happening
         }
 
         for (int t = 0; t < 10000; t++) {
-            StringX x = STRINGX_FACTORY.newInstance();
+            String x = STRING_FACTORY.newInstance();
             DataOutput o = serialize.getDataOutput(64);
-            o.writeObject(x,StringX.class);
+            o.writeObject(x,String.class);
             ReadBuffer r = o.getStaticBuffer().asReadBuffer();
-            StringX y = serialize.readObject(r, StringX.class);
+            String y = serialize.readObject(r, String.class);
             assertEquals(x,y);
         }
 
@@ -470,15 +467,15 @@ public class SerializerTest {
     }
 
 
-    public static final Factory<StringX> STRINGX_FACTORY = new Factory<StringX>() {
+    public static final Factory<String> STRING_FACTORY = new Factory<String>() {
         @Override
-        public StringX newInstance() {
+        public String newInstance() {
             if (random.nextDouble()>0.1) {
-                return new StringX(getRandomString(StringXSerializer.TEXT_COMRPESSION_THRESHOLD*2,
-                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE));
+                return getRandomString(StringSerializer.TEXT_COMRPESSION_THRESHOLD*2,
+                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
             } else {
-                return new StringX(getRandomString(StringXSerializer.LONG_COMPRESSION_THRESHOLD*4,
-                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE));
+                return getRandomString(StringSerializer.LONG_COMPRESSION_THRESHOLD*4,
+                        random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
             }
         }
     };
@@ -536,10 +533,10 @@ public class SerializerTest {
                 return new Precision(random.nextInt()*1.0/1000000.0);
             }
         });
-        put(String.class, new Factory<String>() {
+        put(CString.class, new Factory<CString>() {
             @Override
-            public String newInstance() {
-                return getRandomString(128,random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE);
+            public CString newInstance() {
+                return new CString(getRandomString(128,random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE));
             }
         });
         put(Date.class, new Factory<Date>() {
@@ -569,7 +566,7 @@ public class SerializerTest {
                     return Geoshape.circle(randomGeoPoint(),randomGeoPoint(),random.nextInt(100)+1);
             }
         });
-        put(StringX.class, STRINGX_FACTORY);
+        put(String.class, STRING_FACTORY);
         put(boolean[].class,getArrayFactory(boolean.class,get(Boolean.class)));
         put(byte[].class,getArrayFactory(byte.class,get(Byte.class)));
         put(short[].class,getArrayFactory(short.class,get(Short.class)));

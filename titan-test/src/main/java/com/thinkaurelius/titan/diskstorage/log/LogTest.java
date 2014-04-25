@@ -31,6 +31,7 @@ public abstract class LogTest {
 
     public static final String DEFAULT_SENDER_ID = "sender";
 
+    private static final long SLEEP_TIME_MS = 22000;
 
     public abstract LogManager openLogManager(String senderId) throws StorageException;
 
@@ -74,7 +75,7 @@ public abstract class LogTest {
         CountingReader count = new CountingReader();
         log1.registerReader(count);
         log1.add(BufferUtil.getLongBuffer(2L));
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         assertEquals(1, count.totalMsg.get());
         assertEquals(2, count.totalValue.get());
     }
@@ -86,18 +87,18 @@ public abstract class LogTest {
         Log l;
         l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
         l.add(BufferUtil.getLongBuffer(1L));
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         manager.close();
 
         l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
         l.add(BufferUtil.getLongBuffer(2L));
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         l.close();
 
         l = manager.openLog("durable", ReadMarker.fromTime(past, TimeUnit.MILLISECONDS));
         CountingReader count = new CountingReader();
         l.registerReader(count);
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         assertEquals(2, count.totalMsg.get());
         assertEquals(3L, count.totalValue.get());
     }
@@ -114,7 +115,7 @@ public abstract class LogTest {
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS * 10);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
     }
@@ -130,7 +131,7 @@ public abstract class LogTest {
             logs[i].registerReader(counts[i]);
             logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
         }
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < n; i++) {
             assertEquals(1L << (i + 1), counts[i].totalValue.get());
             assertEquals(1, counts[i].totalMsg.get());
@@ -139,7 +140,7 @@ public abstract class LogTest {
 
     @Test
     public void testFuzzMessages() throws Exception {
-        final int maxLen = 1024 * 1024 * 4;
+        final int maxLen = 1024 * 4;
         final int rounds = 32;
 
         StoringReader reader = new StoringReader();
@@ -160,7 +161,7 @@ public abstract class LogTest {
             expected.add(sb);
             Thread.sleep(50L);
         }
-        Thread.sleep(11000L);
+        Thread.sleep(SLEEP_TIME_MS);
         assertEquals(rounds, reader.msgCount);
         assertEquals(expected, reader.msgs);
     }
@@ -183,10 +184,10 @@ public abstract class LogTest {
 //            System.out.println("Wrote message: " + i);
             Thread.sleep(delayMS);
         }
-        Thread.sleep(11000);
+        Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < counts.length; i++) {
             CountingReader count = counts[i];
-            assertEquals("counter index " + i + " message count mismatch", numMessages,count.totalMsg.get());
+            assertEquals("counter index " + i + " message count mismatch", numMessages, count.totalMsg.get());
             assertEquals("counter index " + i + " value mismatch", numMessages*(numMessages+1)/2,count.totalValue.get());
             assertTrue(log1.unregisterReader(count));
         }
@@ -195,6 +196,9 @@ public abstract class LogTest {
     }
 
     private static class CountingReader implements MessageReader {
+
+        private static final Logger log =
+                LoggerFactory.getLogger(CountingReader.class);
 
         private AtomicLong totalMsg=new AtomicLong(0);
         private AtomicLong totalValue=new AtomicLong(0);
@@ -209,7 +213,8 @@ public abstract class LogTest {
             assertNotNull(content);
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            assertTrue("Message out of order: "+value, lastMessageValue<value);
+            log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
+            assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
             lastMessageValue = value;
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);

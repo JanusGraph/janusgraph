@@ -2,20 +2,21 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.attribute.StringX;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -32,18 +33,18 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final boolean continuousPersistence;
     private final int persistChunkSize;
     private final int mutationAttempts;
-    private final int attemptWaitTime;
+    private final Duration attemptWaitTime;
 
     private int numMutations;
     private final Map<KCVSCache, Map<StaticBuffer, KCVMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
-                             int persistChunkSize, int attempts, int waitTime, boolean continuousPersistence) {
+                             int persistChunkSize, int attempts, Duration waitTime, boolean continuousPersistence) {
         this(tx, manager, persistChunkSize, attempts, waitTime, continuousPersistence, 2);
     }
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize,
-                            int attempts, int waitTime, boolean continuousPersistence, int expectedNumStores) {
+                            int attempts, Duration waitTime, boolean continuousPersistence, int expectedNumStores) {
         Preconditions.checkArgument(tx != null && manager != null && persistChunkSize > 0);
         this.tx = tx;
         this.manager = manager;
@@ -184,7 +185,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         Preconditions.checkArgument(!continuousPersistence,"Cannot log entire mutation set when continuous persistence is enabled");
         VariableLong.writePositive(out,mutations.size());
         for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
-            out.writeObjectNotNull(new StringX(storeMuts.getKey().getName()));
+            out.writeObjectNotNull(storeMuts.getKey().getName());
             VariableLong.writePositive(out,storeMuts.getValue().size());
             for (Map.Entry<StaticBuffer,KCVMutation> muts : storeMuts.getValue().entrySet()) {
                 BufferUtil.writeBuffer(out,muts.getKey());

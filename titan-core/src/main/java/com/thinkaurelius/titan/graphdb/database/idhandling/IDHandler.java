@@ -78,7 +78,7 @@ public class IDHandler {
         }
 
         public int getPrefix(boolean hidden) {
-            return ((hidden?1:0)<<2) + getRelationType();
+            return ((hidden?0:1)<<2) + getRelationType();
         }
 
         private static DirectionID getDirectionID(int relationType, int direction) {

@@ -7,9 +7,11 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.CString;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -19,8 +21,8 @@ import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
@@ -36,6 +38,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +91,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final Serializer serializer = graph.getDataSerializer();
         final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
         final TimeUnit unit = graph.getConfiguration().getTimestampProvider().getUnit();
-        final long startTime = Timestamps.MILLI.getTime();
+        final long startTime = Timestamps.MILLI.getTime().getTime(TimeUnit.MILLISECONDS);
 //        System.out.println(startTime);
         clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
         testBasic();
@@ -162,7 +165,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 triggerMsgCounter.incrementAndGet();
             }
         });
-        Thread.sleep(2000);
+        Thread.sleep(20000);
         assertEquals(8, txMsgCounter.get());
         assertEquals(2,triggerMsgCounter.get());
     }
@@ -181,6 +184,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanLabel friend = mgmt.makeLabel("friend").directed().make();
 
         TitanKey id = makeVertexIndexedUniqueKey("uid",String.class);
+
+        TitanKey name = makeKey("name",CString.class);
 
         TitanKey weight = makeKey("weight",Decimal.class);
 
@@ -259,7 +264,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         boolval = tx.getPropertyKey("boolval");
         assertEquals(Boolean.class, boolval.getDataType());
 
-
+        name = tx.getPropertyKey("name");
         //Failures
         try {
             tx.makeKey("fid").make();
@@ -274,7 +279,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx.makeLabel("test").make();
         try {
             tx.makeLabel("link2").unidirected().
-                    sortKey(id, weight).signature(id).make();
+                    sortKey(name, weight).signature(name).make();
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            tx.makeLabel("link2").unidirected().
+                    sortKey(id, weight).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -284,7 +295,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
-        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(id, weight).make();
+        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(name, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();

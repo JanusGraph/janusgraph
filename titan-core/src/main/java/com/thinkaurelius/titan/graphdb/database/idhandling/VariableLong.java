@@ -152,8 +152,9 @@ public class VariableLong {
         } else {
             valueLen += (7-mod);
         }
-        if (valueLen==0) {
-            //Add stop mask
+        assert valueLen>=0;
+        if (valueLen>0) {
+            //Add continue mask to indicate reading further
             first = (byte) ( first | (1<<(deltaLen-1)));
         }
         out.putByte(first);
@@ -176,7 +177,7 @@ public class VariableLong {
         int deltaLen = 8 - prefixBitLen;
         long prefix = first>>deltaLen;
         long value =  first & ((1<<(deltaLen-1))-1);
-        if ( ((first>>>(deltaLen-1)) & 1) == 0) { //No stop mask
+        if ( ((first>>>(deltaLen-1)) & 1) == 1) { //Continue mask
             int deltaPos = in.getPosition();
             long remainder = readUnsigned(in);
             deltaPos = in.getPosition()-deltaPos;

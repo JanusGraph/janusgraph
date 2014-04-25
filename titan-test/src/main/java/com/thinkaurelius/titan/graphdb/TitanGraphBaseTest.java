@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
@@ -19,11 +20,13 @@ import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.junit.After;
 import org.junit.Before;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
@@ -190,7 +193,7 @@ public abstract class TitanGraphBaseTest {
         try {
             ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.copy(), BasicConfiguration.Restriction.NONE);
             configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "reader");
-            configuration.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, 500, logManagerName);
+            configuration.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new SimpleDuration(500L, TimeUnit.MILLISECONDS), logManagerName);
             if (logStoreManager==null) {
                 logStoreManager = Backend.getStorageManager(configuration);
             }

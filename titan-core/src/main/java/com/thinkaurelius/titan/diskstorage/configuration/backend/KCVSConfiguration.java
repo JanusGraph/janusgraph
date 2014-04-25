@@ -6,17 +6,18 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConcurrentWriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -31,7 +32,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -45,7 +46,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final StandardSerializer serializer;
 
     private boolean closeManager = false;
-    private long maxOperationWaitTime = 10000;
+    private Duration maxOperationWaitTime = new SimpleDuration(10000L, TimeUnit.MILLISECONDS);
 
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, KeyColumnValueStore store,
@@ -59,9 +60,11 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         this.serializer = new StandardSerializer();
     }
 
-    public void setMaxOperationWaitTime(long waitTimeMS) {
-        Preconditions.checkArgument(waitTimeMS>0,"Invalid wait time: %s",waitTimeMS);
-        this.maxOperationWaitTime=waitTimeMS;
+    public void setMaxOperationWaitTime(Duration waitTime) {
+
+        Preconditions.checkArgument(ZeroDuration.INSTANCE.compareTo(waitTime) < 0,
+                "Wait time must be nonnegative: %s", waitTime);
+        this.maxOperationWaitTime = waitTime;
     }
 
 

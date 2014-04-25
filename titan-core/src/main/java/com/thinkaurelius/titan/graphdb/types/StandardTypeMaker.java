@@ -51,7 +51,7 @@ public abstract class StandardTypeMaker implements TypeMaker {
     }
 
 
-    protected String getName() {
+    public String getName() {
         return this.name;
     }
 

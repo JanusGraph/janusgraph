@@ -38,7 +38,7 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hbase-096</artifactId>
+            <artifactId>titan-hbase</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
