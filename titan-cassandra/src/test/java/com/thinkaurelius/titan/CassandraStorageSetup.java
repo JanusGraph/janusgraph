@@ -5,7 +5,9 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -37,7 +39,7 @@ public class CassandraStorageSetup {
         ModifiableConfiguration config = buildConfiguration();
         config.set(CASSANDRA_KEYSPACE, cleanKeyspaceName(ks));
         config.set(PAGE_SIZE,500);
-        config.set(CONNECTION_TIMEOUT, 60000);
+        config.set(CONNECTION_TIMEOUT, new SimpleDuration(60L, TimeUnit.SECONDS));
         config.set(STORAGE_BACKEND, backend);
         return config;
     }

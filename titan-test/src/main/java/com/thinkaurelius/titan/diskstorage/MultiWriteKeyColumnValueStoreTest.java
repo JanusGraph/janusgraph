@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.core.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
@@ -58,7 +59,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0, true);
+        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, ZeroDuration.INSTANCE, true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
         store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
@@ -78,7 +79,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void newTx() throws StorageException {
         if (tx!=null) tx.commit();
-        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, 0, true);
+        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionConfig.of()), manager, bufferSize, 1, ZeroDuration.INSTANCE, true);
     }
 
     @Test

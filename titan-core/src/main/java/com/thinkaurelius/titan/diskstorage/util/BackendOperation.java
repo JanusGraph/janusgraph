@@ -2,13 +2,16 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -52,7 +55,8 @@ public class BackendOperation {
     private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;
     private static final double WAITTIME_PERTURBATION_PERCENTAGE_HALF = WAITTIME_PERTURBATION_PERCENTAGE/2;
 
-    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, long retryWaittime) throws TitanException {
+    public static final<V> V execute(Callable<V> exe, int maxRetryAttempts, Duration waitBetweenRetries) throws TitanException {
+        long retryWaittime = waitBetweenRetries.getLength(TimeUnit.MILLISECONDS);
         Preconditions.checkArgument(maxRetryAttempts>0,"Retry attempts must be positive");
         Preconditions.checkArgument(retryWaittime>=0,"Retry wait time must be non-negative");
         int retryAttempts = 0;
@@ -101,7 +105,8 @@ public class BackendOperation {
         }
     }
 
-    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, long maxTimeMS) throws TitanException {
+    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, Duration maxTime) throws TitanException {
+        long maxTimeMS = maxTime.getLength(TimeUnit.MILLISECONDS);
         return execute(new Callable<R>() {
             @Override
             public R call() throws Exception {

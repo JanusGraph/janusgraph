@@ -1,16 +1,19 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -47,12 +50,14 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
     protected final String[] hostnames;
     protected final int port;
-    protected final int connectionTimeout;
+    protected final Duration connectionTimeoutMS;
     protected final int connectionPoolSize;
     protected final int pageSize;
 
     protected final String username;
     protected final String password;
+
+    protected final TimestampProvider times;
 
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
@@ -60,10 +65,10 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
         if (storageConfig.has(PORT)) this.port = storageConfig.get(PORT);
         else this.port = portDefault;
-        this.connectionTimeout = storageConfig.get(CONNECTION_TIMEOUT);
+        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT);
         this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
         this.pageSize = storageConfig.get(PAGE_SIZE);
-
+        this.times = storageConfig.get(TIMESTAMP_PROVIDER);
 
         if (storageConfig.has(AUTH_USERNAME)) {
             this.username = storageConfig.get(AUTH_USERNAME);
@@ -206,20 +211,17 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return
      */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        long time = txh.getConfiguration().getTimestamp();
-        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
-        return new Timestamp(time | 1L, time);
+        Timepoint txTime = txh.getConfiguration().getTimestamp();
+        if (null == txTime) {
+            txTime = times.getTime();
+        }
+        return new Timestamp(txTime);
     }
 
     protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
-        TimestampProvider p = txh.getConfiguration().getTimestampProvider();
-        assert mustPass.deletionTime < mustPass.additionTime;
+        assert mustPass.getDeletionTime(times.getUnit()) < mustPass.getAdditionTime(times.getUnit());
         try {
-            if (null != p) {
-                p.sleepPast(mustPass.additionTime, p.getUnit());
-            } else {
-                Thread.sleep(1L); // fall back to 1 ms
-            }
+            times.sleepPast(mustPass.getAdditionTime());
         } catch (InterruptedException e) {
             throw new PermanentStorageException("Unexpected interrupt", e);
         }
@@ -231,14 +233,27 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * some storage backends use the time to resolve conflicts.
      */
     public static class Timestamp {
-        public final long additionTime;
-        public final long deletionTime;
 
-        private Timestamp(long additionTime, long deletionTime) {
-            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
-            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
-            this.additionTime = additionTime;
-            this.deletionTime = deletionTime;
+        private final Timepoint t;
+
+        private Timestamp(Timepoint t) {
+            this.t = t;
+        }
+
+        public long getDeletionTime(TimeUnit unit) {
+            return t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+        }
+
+        public Timepoint getDeletionTime() {
+            return new Timepoint(getDeletionTime(t.getNativeUnit()), t.getNativeUnit());
+        }
+
+        public long getAdditionTime(TimeUnit unit) {
+            return (t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
+        }
+
+        public Timepoint getAdditionTime() {
+            return new Timepoint(getAdditionTime(t.getNativeUnit()), t.getNativeUnit());
         }
     }
 }

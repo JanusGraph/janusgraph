@@ -60,6 +60,10 @@ public class ConfigOption<O> extends ConfigElement {
         this(parent,name,description,type,datatype,null,verificationFct);
     }
 
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue) {
+        this(parent,name,description,type,datatype,defaultValue,disallowEmpty(datatype));
+    }
+
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> datatype, O defaultValue, Predicate<O> verificationFct) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
