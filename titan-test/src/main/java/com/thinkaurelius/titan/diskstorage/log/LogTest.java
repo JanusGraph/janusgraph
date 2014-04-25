@@ -108,14 +108,14 @@ public abstract class LogTest {
         final int nl = 3;
         Log logs[] = new Log[nl];
         long value = 1L;
-        CountingReader count = new CountingReader();
+        CountingReader count = new CountingReader(false);
         for (int i = 0; i < nl; i++) {
             logs[i] = manager.openLog("ml" + i, ReadMarker.fromNow());
             logs[i].registerReader(count);
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
-        Thread.sleep(SLEEP_TIME_MS * 10);
+        Thread.sleep(SLEEP_TIME_MS);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
     }
@@ -200,9 +200,19 @@ public abstract class LogTest {
         private static final Logger log =
                 LoggerFactory.getLogger(CountingReader.class);
 
-        private AtomicLong totalMsg=new AtomicLong(0);
-        private AtomicLong totalValue=new AtomicLong(0);
+        private final AtomicLong totalMsg=new AtomicLong(0);
+        private final AtomicLong totalValue=new AtomicLong(0);
+        private final boolean expectIncreasingValues;
+
         private long lastMessageValue = 0;
+
+        private CountingReader(boolean expectIncreasingValues) {
+            this.expectIncreasingValues = expectIncreasingValues;
+        }
+
+        private CountingReader() {
+            this(true);
+        }
 
         @Override
         public void read(Message message) {
@@ -214,8 +224,10 @@ public abstract class LogTest {
             assertEquals(8,content.length());
             long value = content.getLong(0);
             log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
-            assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
-            lastMessageValue = value;
+            if (expectIncreasingValues) {
+                assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
+                lastMessageValue = value;
+            }
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);
         }
