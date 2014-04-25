@@ -544,6 +544,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 KeyRange kr = new KeyRange(startBuf, endBuf);
                 b.put(kr, e.getValue());
+                logger.debug("Found HRegionInfo with non-null end and start keys on server {}: {}", e.getValue(), regionInfo);
             }
         }
 
