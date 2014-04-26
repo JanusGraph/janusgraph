@@ -290,7 +290,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertex getVertex(final long vertexid) {
         verifyOpen();
 
-        if (vertexid <= 0 || !(idInspector.isRelationTypeId(vertexid) || idInspector.isVertexId(vertexid)))
+        if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid)))
             return null;
 
         if (null != config.getMetricsPrefix()) {
@@ -329,10 +329,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             InternalVertex vertex = null;
             if (idInspector.isRelationTypeId(vertexid)) {
                 if (idInspector.isPropertyKeyId(vertexid)) {
-                    vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                        vertex = SystemTypeManager.getSystemType(vertexid);
+                    } else {
+                        vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    }
                 } else {
-                    Preconditions.checkArgument(idInspector.isEdgeLabelId(vertexid));
-                    vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    assert idInspector.isEdgeLabelId(vertexid);
+                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                        vertex = SystemTypeManager.getSystemType(vertexid);
+                    } else {
+                        vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    }
                 }
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
@@ -632,10 +640,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         TitanSchemaVertex type;
         if (typeCategory.isRelationType()) {
             if (typeCategory == TitanSchemaCategory.KEY) {
-                type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
+                type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserPropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
             } else {
                 assert typeCategory == TitanSchemaCategory.LABEL;
-                type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
+                type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
             }
         } else {
             type = new TitanSchemaVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.GenericSchemaType,temporaryIds.nextID()), ElementLifeCycle.New);
@@ -690,14 +698,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanType getExistingType(long typeid) {
         assert idInspector.isRelationTypeId(typeid);
-
-        SystemType st = SystemTypeManager.getSystemType(typeid);
-        if (st!=null) return st;
-
-        InternalVertex v = getExistingVertex(typeid);
-        assert v instanceof TitanType;
-
-        return (TitanType) v;
+        if (idInspector.isSystemRelationTypeId(typeid)) {
+            return SystemTypeManager.getSystemType(typeid);
+        } else {
+            InternalVertex v = getExistingVertex(typeid);
+            assert v instanceof TitanType;
+            return (TitanType) v;
+        }
     }
 
     @Override

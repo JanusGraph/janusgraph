@@ -21,16 +21,16 @@ public class SystemKey extends SystemType implements TitanKey {
             new SystemKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
 
     public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 2, Index.UNIQUE, Cardinality.SINGLE);
+            new SystemKey("TypeName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
 
     public static final SystemKey TypeDefinitionProperty =
-            new SystemKey("TypeDefinitionProperty", Object.class, 3, Index.NONE, Cardinality.LIST);
+            new SystemKey("TypeDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
 
     public static final SystemKey TypeCategory =
-            new SystemKey("TypeCategory", TitanSchemaCategory.class, 4, Index.STANDARD, Cardinality.SINGLE);
+            new SystemKey("TypeCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
 
     public static final SystemKey TypeDefinitionDesc =
-            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 5, Index.NONE, Cardinality.SINGLE);
+            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
 
 
     private final Class<?> dataType;

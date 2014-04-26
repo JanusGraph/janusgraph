@@ -75,11 +75,18 @@ public class IDManagementTest {
         id = eid.getRelationID(count, partition);
         assertEquals(eid.getPartitionId(id), partition);
 
-        id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey, count);
+        id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
         assertTrue(isp.isPropertyKeyId(id));
         assertTrue(isp.isRelationTypeId(id));
+        assertFalse(isp.isSystemRelationTypeId(id));
 
-        id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+        id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
+        assertTrue(isp.isPropertyKeyId(id));
+        assertTrue(isp.isRelationTypeId(id));
+        assertTrue(isp.isSystemRelationTypeId(id));
+
+
+        id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
         assertTrue(isp.isEdgeLabelId(id));
         assertTrue(isp.isRelationTypeId(id));
 
@@ -87,9 +94,9 @@ public class IDManagementTest {
         assertTrue(id<0);
         assertTrue(IDManager.VertexIDType.Vertex.is(id));
 
-        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,2);
+        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,2);
         assertTrue(id<0);
-        assertTrue(IDManager.VertexIDType.EdgeLabel.is(id));
+        assertTrue(IDManager.VertexIDType.UserEdgeLabel.is(id));
 
         id = IDManager.getTemporaryRelationID(101);
         assertTrue(id<0);
@@ -120,8 +127,9 @@ public class IDManagementTest {
             IDHandler.DirectionID dirID;
             RelationCategory type;
             if (Math.random() < 0.5) {
-                id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+                id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
                 assertTrue(isp.isEdgeLabelId(id));
+                assertFalse(isp.isSystemRelationTypeId(id));
                 type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.DirectionID.EDGE_IN_DIR;
@@ -129,8 +137,9 @@ public class IDManagementTest {
                     dirID = IDHandler.DirectionID.EDGE_OUT_DIR;
             } else {
                 type = RelationCategory.PROPERTY;
-                id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey,count);
+                id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
                 assertTrue(isp.isPropertyKeyId(id));
+                assertFalse(isp.isSystemRelationTypeId(id));
                 dirID = IDHandler.DirectionID.PROPERTY_DIR;
             }
             assertTrue(isp.isRelationTypeId(id));

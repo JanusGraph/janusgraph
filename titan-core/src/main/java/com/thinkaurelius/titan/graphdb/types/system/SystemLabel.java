@@ -8,7 +8,7 @@ import com.tinkerpop.blueprints.Direction;
 public class SystemLabel extends SystemType implements TitanLabel {
 
     public static final SystemLabel TypeDefinitionEdge =
-            new SystemLabel("TypeRelated", 6);
+            new SystemLabel("TypeRelated", 36);
 
     private SystemLabel(String name, int id) {
         super(name, id, RelationCategory.EDGE);

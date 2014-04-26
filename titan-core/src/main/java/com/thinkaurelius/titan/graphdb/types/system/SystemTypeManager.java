@@ -8,9 +8,7 @@ import java.util.Set;
 
 public abstract class SystemTypeManager {
 
-    public static final String systemETprefix = "#System#";
-
-    public static final int SYSTEM_RELATIONTYPE_OFFSET = 8;
+    public static final String systemETprefix = "System%&%";
 
     private volatile static Map<Long, SystemType> SYSTEM_TYPES_BY_ID;
     private volatile static Map<String, SystemType> SYSTEM_TYPES_BY_NAME;

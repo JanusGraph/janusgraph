@@ -299,9 +299,9 @@ public class VertexIDAssigner {
                 if (vertex instanceof InternalRelation) {
                     id = idManager.getRelationID(pool.relation.nextID(), partitionID);
                 } else if (vertex instanceof TitanKey) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.PropertyKey,pool.relationType.nextID()+SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
+                    id = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,pool.relationType.nextID());
                 } else if (vertex instanceof TitanLabel) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.EdgeLabel, pool.relationType.nextID() + SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET);
+                    id = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, pool.relationType.nextID());
                 } else if (vertex instanceof TitanSchemaVertex) {
                     id = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,pool.genericType.nextID()<<1);
                 } else {
@@ -385,7 +385,7 @@ public class VertexIDAssigner {
             relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, renewBufferPercentage);
             if (includeType) {
                 relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
-                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
+                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getGenericTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
             } else {
                 relationType = null;
                 genericType = null;

@@ -21,13 +21,12 @@ public abstract class SystemType extends EmptyType implements InternalType {
 
     static long getSystemTypeId(long id, RelationCategory type) {
         Preconditions.checkArgument(id > 0);
-        Preconditions.checkArgument(id < SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET, "System id [%s] is too large", id);
         Preconditions.checkArgument(type.isProper());
         switch (type) {
             case EDGE:
-                return IDManager.getSchemaId(IDManager.VertexIDType.EdgeLabel,id);
+                return IDManager.getSchemaId(IDManager.VertexIDType.SystemEdgeLabel,id);
             case PROPERTY:
-                return IDManager.getSchemaId(IDManager.VertexIDType.PropertyKey,id);
+                return IDManager.getSchemaId(IDManager.VertexIDType.SystemPropertyKey,id);
             default:
                 throw new AssertionError("Illegal condition: " + type);
         }
