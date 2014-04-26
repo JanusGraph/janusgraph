@@ -1,8 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +38,8 @@ public class LocalLockMediator<T> {
      */
     private final String name;
 
+    private final TimestampProvider times;
+
     /**
      * Maps a ({@code key}, {@code column}) pair to the local transaction
      * holding a lock on that pair. Values in this map may have already expired
@@ -43,10 +48,12 @@ public class LocalLockMediator<T> {
      */
     private final ConcurrentHashMap<KeyColumn, AuditRecord<T>> locks = new ConcurrentHashMap<KeyColumn, AuditRecord<T>>();
 
-    public LocalLockMediator(String name) {
+    public LocalLockMediator(String name, TimestampProvider times) {
         this.name = name;
+        this.times = times;
 
-        assert null != this.name;
+        Preconditions.checkNotNull(name);
+        Preconditions.checkNotNull(times);
     }
 
     /**
@@ -79,16 +86,14 @@ public class LocalLockMediator<T> {
      *
      * @param kc        lock identifier
      * @param requestor the object locking {@code kc}
-     * @param expires   the absolute time since the UNIX epoch at which this lock will automatically expire
-     * @param tu        the units of {@code expires}
+     * @param expires   instant at which this lock will automatically expire
      * @return true if the lock is acquired, false if it was not acquired
      */
-    public boolean lock(KeyColumn kc, T requestor,
-                        long expires, TimeUnit tu) {
+    public boolean lock(KeyColumn kc, T requestor, Timepoint expires) {
         assert null != kc;
         assert null != requestor;
 
-        AuditRecord<T> audit = new AuditRecord<T>(requestor, TimeUnit.NANOSECONDS.convert(expires, tu));
+        AuditRecord<T> audit = new AuditRecord<T>(requestor, expires);
         AuditRecord<T> inmap = locks.putIfAbsent(kc, audit);
 
         boolean success = false;
@@ -116,7 +121,7 @@ public class LocalLockMediator<T> {
                                     audit.expires});
                 }
             }
-        } else if (inmap.expires <= Timestamps.NANO.getTime()) {
+        } else if (0 > inmap.expires.compareTo(times.getTime())) {
             // the recorded lock has expired; replace it
             success = locks.replace(kc, inmap, audit);
             if (log.isTraceEnabled()) {
@@ -150,7 +155,7 @@ public class LocalLockMediator<T> {
             return false;
         }
 
-        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, 0);
+        AuditRecord<T> unlocker = new AuditRecord<T>(requestor, null);
 
         AuditRecord<T> holder = locks.get(kc);
 
@@ -194,17 +199,15 @@ public class LocalLockMediator<T> {
          */
         private final T holder;
         /**
-         * The expiration time of a the lock. Conventionally, this is in
-         * nanoseconds from the epoch as returned by
-         * {@link NanoTime#getTime()}.
+         * The expiration time of a the lock.
          */
-        private final long expires;
+        private final Timepoint expires;
         /**
          * Cached hashCode.
          */
         private int hashCode;
 
-        private AuditRecord(T holder, long expires) {
+        private AuditRecord(T holder, Timepoint expires) {
             this.holder = holder;
             this.expires = expires;
         }

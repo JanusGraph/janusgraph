@@ -10,6 +10,9 @@ import com.google.common.cache.Weigher;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -84,7 +87,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
-    private static final long LOCK_TIMEOUT_MS = 5000;
+    private static final Duration LOCK_TIMEOUT = new SimpleDuration(5000L, TimeUnit.MILLISECONDS);
 
     private final StandardTitanGraph graph;
     private final TransactionConfiguration config;
@@ -148,6 +151,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
     private final IDPool temporaryIds;
 
+    /**
+     * This belongs in TitanConfig.
+     */
+    private final TimestampProvider times;
 
     /**
      * Whether or not this transaction is open
@@ -165,6 +172,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkNotNull(config);
         Preconditions.checkNotNull(txHandle);
         this.graph = graph;
+        this.times = graph.getConfiguration().getTimestampProvider();
         this.config = config;
         this.idInspector = graph.getIDInspector();
         this.attributeHandler = graph.getDataSerializer();
@@ -484,7 +492,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     if (multiplicity.isUnique(dir)) {
                         TransactionLock lock = getLock(dir == Direction.OUT ? out : in, type, dir);
                         if (uniqueLock==null) uniqueLock=lock;
-                        else uniqueLock=new CombinerLock(uniqueLock,lock);
+                        else uniqueLock=new CombinerLock(uniqueLock,lock,times);
                     }
                 }
             }
@@ -502,7 +510,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkNotNull(label);
         Multiplicity multiplicity = label.getMultiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalType) label,inVertex);
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -561,8 +569,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalType) key, normalizedValue);
         //Add locks for unique indexes
-        for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple));
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple),times);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -604,7 +612,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             if (config.hasVerifyUniqueness()) {
                 //Acquire uniqueness lock, remove and add
                 uniqueLock = getLock(vertex, key, Direction.OUT);
-                uniqueLock.lock(LOCK_TIMEOUT_MS);
+                uniqueLock.lock(LOCK_TIMEOUT);
                 vertex.removeProperty(key);
             } else {
                 //Only delete in-memory

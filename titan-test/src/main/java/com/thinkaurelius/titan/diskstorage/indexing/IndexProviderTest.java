@@ -8,10 +8,12 @@ import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +89,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever, 2, 1000);
+        tx = new IndexTransaction(index, indexRetriever, 2, new SimpleDuration(1000L, TimeUnit.MILLISECONDS));
     }
 
     @After

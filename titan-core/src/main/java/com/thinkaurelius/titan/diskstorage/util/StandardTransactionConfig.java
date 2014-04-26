@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -12,16 +13,12 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public class StandardTransactionConfig implements TransactionHandleConfig {
 
-    private Long timestamp = null;
-
+    private final Timepoint timestamp;
     private final String metricsPrefix;
-    private final TimestampProvider timestampProvider;
     private final Configuration customOptions;
 
     @Override
-    public long getTimestamp() {
-        if (timestamp==null) setTimestamp();
-        assert timestamp!=null;
+    public Timepoint getTimestamp() {
         return timestamp;
     }
 
@@ -36,16 +33,6 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     }
 
     @Override
-    public boolean hasTimestamp() {
-        return null != timestamp;
-    }
-
-    @Override
-    public TimestampProvider getTimestampProvider() {
-        return timestampProvider;
-    }
-
-    @Override
     public <V> V getCustomOption(ConfigOption<V> opt) {
         return customOptions.get(opt);
     }
@@ -56,26 +43,15 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
     }
 
     public static class Builder {
-        private Long timestamp = null;
+        private Timepoint timestamp = null;
         private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
-        private TimestampProvider timestampProvider = GraphDatabaseConfiguration.TIMESTAMP_PROVIDER.getDefaultValue();
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
 
-        public Builder(TransactionHandleConfig template, Long ts) {
-            timestampProvider(template.getTimestampProvider());
+        public Builder(TransactionHandleConfig template) {
             customOptions(template.getCustomOptions());
             metricsPrefix(template.getMetricsPrefix());
-
-            /*
-             * Copying template.getTimestamp() would be an error because
-             * non-null values are ambiguous. Is it the product of lazy
-             * initialization, or was it explicitly specified before
-             * construction? Impossible to tell without introducing a new field
-             * and interface method.
-             */
-            timestamp(ts);
         }
 
         public Builder metricsPrefix(String s) {
@@ -83,13 +59,8 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
             return this;
         }
 
-        public Builder timestampProvider(TimestampProvider p) {
-            timestampProvider = p;
-            return this;
-        }
-
-        public Builder timestamp(Long ts) {
-            timestamp = ts;
+        public Builder timestamp(Timepoint i) {
+            timestamp = i;
             return this;
         }
 
@@ -100,12 +71,7 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         }
 
         public StandardTransactionConfig build() {
-            // Must have either a timestamp or a provider to lazily initialize timestamp
-            // Supplying both simultaneously is allowed but unnecessary
-            Preconditions.checkArgument(null != timestamp || null != timestampProvider);
-
-            return new StandardTransactionConfig(metricsPrefix,
-                    timestampProvider, timestamp, customOptions);
+            return new StandardTransactionConfig(metricsPrefix, timestamp, customOptions);
         }
     }
 
@@ -113,28 +79,15 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         return new Builder().build();
     }
 
-    public static StandardTransactionConfig of(TimestampProvider timestampProvider) {
-        return new Builder().timestampProvider(timestampProvider).build();
-    }
-
     public static StandardTransactionConfig of(Configuration customOptions) {
         return new Builder().customOptions(customOptions).build();
     }
 
     private StandardTransactionConfig(String metricsPrefix,
-            TimestampProvider timestampProvider, Long timestamp,
+            Timepoint timestamp,
             Configuration customOptions) {
         this.metricsPrefix = metricsPrefix;
-        this.timestampProvider = timestampProvider;
         this.timestamp = timestamp;
         this.customOptions = customOptions;
-    }
-
-    private StandardTransactionConfig setTimestamp() {
-        Preconditions.checkState(timestamp==null,"Timestamp has already been set");
-        Preconditions.checkState(null != timestampProvider,
-                "Timestamp provider must be set for lazy timestamp initialization");
-        this.timestamp = timestampProvider.getTime();
-        return this;
     }
 }

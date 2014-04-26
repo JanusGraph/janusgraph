@@ -108,7 +108,7 @@ public abstract class LogTest {
         final int nl = 3;
         Log logs[] = new Log[nl];
         long value = 1L;
-        CountingReader count = new CountingReader();
+        CountingReader count = new CountingReader(false);
         for (int i = 0; i < nl; i++) {
             logs[i] = manager.openLog("ml" + i, ReadMarker.fromNow());
             logs[i].registerReader(count);
@@ -187,7 +187,7 @@ public abstract class LogTest {
         Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < counts.length; i++) {
             CountingReader count = counts[i];
-            assertEquals("counter index " + i + " message count mismatch", numMessages,count.totalMsg.get());
+            assertEquals("counter index " + i + " message count mismatch", numMessages, count.totalMsg.get());
             assertEquals("counter index " + i + " value mismatch", numMessages*(numMessages+1)/2,count.totalValue.get());
             assertTrue(log1.unregisterReader(count));
         }
@@ -197,9 +197,22 @@ public abstract class LogTest {
 
     private static class CountingReader implements MessageReader {
 
-        private AtomicLong totalMsg=new AtomicLong(0);
-        private AtomicLong totalValue=new AtomicLong(0);
+        private static final Logger log =
+                LoggerFactory.getLogger(CountingReader.class);
+
+        private final AtomicLong totalMsg=new AtomicLong(0);
+        private final AtomicLong totalValue=new AtomicLong(0);
+        private final boolean expectIncreasingValues;
+
         private long lastMessageValue = 0;
+
+        private CountingReader(boolean expectIncreasingValues) {
+            this.expectIncreasingValues = expectIncreasingValues;
+        }
+
+        private CountingReader() {
+            this(true);
+        }
 
         @Override
         public void read(Message message) {
@@ -210,8 +223,11 @@ public abstract class LogTest {
             assertNotNull(content);
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            assertTrue("Message out of order: "+value, lastMessageValue<value);
-            lastMessageValue = value;
+            log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
+            if (expectIncreasingValues) {
+                assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
+                lastMessageValue = value;
+            }
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);
         }

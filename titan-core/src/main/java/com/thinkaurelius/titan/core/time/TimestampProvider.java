@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.diskstorage.util;
+package com.thinkaurelius.titan.core.time;
 
 import java.util.concurrent.TimeUnit;
 
@@ -11,9 +11,13 @@ public interface TimestampProvider {
      * Return the current time since the UNIX epoch in the units specified by
      * {@link TimestampProvider#getUnit()} on this instance.
      *
+     * @param unit
+     *            time units of the returned scalar
      * @return current time
      */
-    public long getTime();
+    public long getTime(TimeUnit unit);
+
+    public Timepoint getTime();
 
     /**
      * Return the units of {@link #getTime()}. This method's return value must
@@ -40,7 +44,6 @@ public interface TimestampProvider {
      * @throws InterruptedException
      *             if externally interrupted
      */
-    public long sleepPast(long epochTime, TimeUnit unit)
-            throws InterruptedException;
+    public Timepoint sleepPast(Timepoint futureTime) throws InterruptedException;
 
 }

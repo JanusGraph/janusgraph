@@ -2,11 +2,15 @@ package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +56,13 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     private final void updateElement(int index) {
         Preconditions.checkArgument(localPartitionIdRanges!=null && !localPartitionIdRanges.isEmpty(),"Local partition id ranges have not been initialized");
         currentPartitions[index] = localPartitionIdRanges.get(random.nextInt(localPartitionIdRanges.size())).getRandomID();
+        if (log.isDebugEnabled()) {
+            BaseEncoding be = BaseEncoding.base16();
+            // TODO assuming 30 bit partition width here (it's implicit in "<< 2"), code will break if partition width changes
+            byte[] pbuf = BufferUtil.getIntBuffer(currentPartitions[index] << 2).as(StaticBuffer.ARRAY_FACTORY);
+            String hex = be.encode(pbuf);
+            log.debug("Initialized ID partition {}: keyprefix=0x{} intvalue={} ", index, hex, currentPartitions[index]);
+        }
     }
 
     @Override

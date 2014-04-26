@@ -5,6 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
@@ -51,6 +53,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -68,6 +71,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final Backend backend;
     private final IDManager idManager;
     private final VertexIDAssigner idAssigner;
+    private final TimestampProvider times;
 
     //Serializers
     protected final IndexSerializer indexSerializer;
@@ -103,6 +107,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.times = configuration.getTimestampProvider();
+
         isOpen = true;
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100,0.75f,1));
@@ -116,7 +122,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
-        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
+        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
         mgmtLog.registerReader(mgmtLogger);
 
         shutdownHook = new ShutdownThread(this);
@@ -435,8 +441,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //7) Log transaction
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
+
+        Timepoint timestamp = mutator.getStoreTransactionHandle().getConfiguration().getTimestamp();
+        if (null == timestamp) {
+            timestamp = times.getTime();
+        }
+
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
-                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
+                timestamp, times.getUnit(), LogTxStatus.PRECOMMIT);
+
         if (logTransaction) {
             DataOutput out = txLogHeader.serializeHeader(serializer,256);
             mutator.logMutations(out);
@@ -503,9 +516,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
             try {
                 final Log txLog = backend.getTriggerLog(logTxIdentifier);
-                final long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                Timepoint timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
+                if (null == timestamp) {
+                    timestamp = times.getTime();
+                }
                 DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
-                out.putLong(timestamp);
+                out.putLong(timestamp.getTime(times.getUnit()));
                 logRelations(out,addedRelations,tx);
                 logRelations(out, deletedRelations,tx);
                 txLog.add(out.getStaticBuffer());

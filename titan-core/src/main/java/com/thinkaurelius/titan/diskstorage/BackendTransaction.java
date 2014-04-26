@@ -1,28 +1,34 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 /**
  * Bundles all transaction handles from the various backend systems and provides a proxy for some of their
@@ -51,7 +57,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
     private final KeyColumnValueStore indexStore;
 
     private final int maxReadRetryAttempts;
-    private final int retryStorageWaitTime;
+    private final Duration retryStorageWaitTime;
 
     private final Executor threadPool;
 
@@ -59,7 +65,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
 
     public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
                               StoreFeatures features, KeyColumnValueStore edgeStore, KeyColumnValueStore indexStore,
-                              int maxReadRetryAttempts, int retryStorageWaitTime,
+                              int maxReadRetryAttempts, Duration retryStorageWaitTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;

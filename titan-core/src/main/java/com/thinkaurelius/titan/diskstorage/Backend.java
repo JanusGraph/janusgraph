@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -111,7 +112,7 @@ public class Backend implements LockerProvider {
     private final int bufferSize;
     private final int writeAttempts;
     private final int readAttempts;
-    private final int persistAttemptWaittime;
+    private final Duration persistAttemptWaittime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 
@@ -516,9 +517,10 @@ public class Backend implements LockerProvider {
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
-        put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        //put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
+        //put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
         put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");
         put("inmemory", "com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager");

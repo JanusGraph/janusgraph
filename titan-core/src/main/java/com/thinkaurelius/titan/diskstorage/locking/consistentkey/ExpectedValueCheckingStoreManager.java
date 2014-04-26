@@ -61,7 +61,6 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         TransactionHandleConfig consistentTxCfg = new StandardTransactionConfig.Builder()
                 .metricsPrefix(configuration.getMetricsPrefix())
                 .customOptions(customOptions)
-                .timestampProvider(configuration.getTimestampProvider())
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
         StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);

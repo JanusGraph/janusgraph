@@ -9,6 +9,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
@@ -38,7 +40,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public static final int CONCURRENCY = 8;
     public static final int NUM_TX = 2;
     public static final String DB_NAME = "test";
-    protected static final long EXPIRE_MS = 5000;
+    protected static final long EXPIRE_MS = 5000L;
 
     /*
      * Don't change these back to static. We can run test classes concurrently
@@ -97,7 +99,7 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
-            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, EXPIRE_MS);
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new SimpleDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
 
             if (!storeFeatures.hasLocking()) {
                 Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");

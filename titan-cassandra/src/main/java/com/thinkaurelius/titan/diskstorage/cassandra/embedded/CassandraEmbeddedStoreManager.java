@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -23,6 +24,7 @@ import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
+import org.apache.cassandra.db.filter.NamesQueryFilter;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
@@ -37,6 +39,7 @@ import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,7 +151,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     List<KeyRange> getLocalKeyPartition() throws StorageException {
-        Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges();
+        Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
         for (Range<Token> range : ranges) {
@@ -188,15 +191,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, e.getColumnAs(StaticBuffer.BB_FACTORY));
-                        rm.add(path, e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.additionTime);
+                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.getAdditionTime(times.getUnit()));
+
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, col.as(StaticBuffer.BB_FACTORY));
-                        rm.delete(path, timestamp.deletionTime);
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.getDeletionTime(times.getUnit()));
                     }
                 }
 
@@ -256,7 +258,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     private void ensureKeyspaceExists(String keyspaceName) throws StorageException {
 
-        if (null != Schema.instance.getTableInstance(keyspaceName))
+        if (null != Schema.instance.getKeyspaceInstance(keyspaceName))
             return;
 
         // Keyspace not found; create it
@@ -372,14 +374,11 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         while (System.currentTimeMillis() < limit) {
             try {
-                StorageProxy.read(
-                    ImmutableList.<ReadCommand> of(
-                        new SliceByNamesReadCommand(
-                            ks,
-                            ByteBufferUtil.zeroByteBuffer(1),
-                            new ColumnParent(cf),
-                            ImmutableList.of(ByteBufferUtil.zeroByteBuffer(1)))),
-                    ConsistencyLevel.QUORUM);
+                SortedSet<ByteBuffer> ss = new TreeSet<ByteBuffer>();
+                ss.add(ByteBufferUtil.zeroByteBuffer(1));
+                NamesQueryFilter nqf = new NamesQueryFilter(ss);
+                SliceByNamesReadCommand cmd = new SliceByNamesReadCommand(ks, ByteBufferUtil.zeroByteBuffer(1), cf, 1L, nqf);
+                StorageProxy.read(ImmutableList.<ReadCommand> of(cmd), ConsistencyLevel.QUORUM);
                 log.info("Read on CF {} in KS {} succeeded", cf, ks);
                 return;
             } catch (Throwable t) {

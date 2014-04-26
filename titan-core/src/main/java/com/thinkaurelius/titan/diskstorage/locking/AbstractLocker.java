@@ -1,27 +1,26 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.stats.MetricManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Abstract base class for building lockers. Implements locking between threads
@@ -89,7 +88,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
      * after writing a lock before it is considered to be invalid and
      * automatically unlocked.
      */
-    protected final long lockExpire;
+    protected final Duration lockExpire;
 
     protected final Logger log;
 
@@ -119,8 +118,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         protected ConsistentKeyLockerSerializer serializer;
         protected LocalLockMediator<StoreTransaction> llm;
         protected LockerState<S> lockState;
-        protected long lockExpire;
-        protected TimeUnit lockExpireUnit;
+        protected Duration lockExpire;
         protected Logger log;
 
         public Builder() {
@@ -130,7 +128,6 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockState = new LockerState<S>();
             this.lockExpire = GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue();
-            this.lockExpireUnit = TimeUnit.MILLISECONDS;
             this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }
 
@@ -169,7 +166,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
          */
         public B mediatorName(String name) {
             Preconditions.checkNotNull(name);
-            mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(name));
+            Preconditions.checkNotNull(times, "Timestamp provider must be set before initializing local lock mediator");
+            mediator(LocalLockMediators.INSTANCE.<StoreTransaction>get(name, times));
             return self();
         }
 
@@ -178,9 +176,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             return self();
         }
 
-        public B lockExpire(long exp, TimeUnit unit) {
-            this.lockExpire = exp;
-            this.lockExpireUnit = unit;
+        public B lockExpire(Duration d) {
+            this.lockExpire = d;
             return self();
         }
 
@@ -221,7 +218,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     public AbstractLocker(StaticBuffer rid, TimestampProvider times,
             ConsistentKeyLockerSerializer serializer,
             LocalLockMediator<StoreTransaction> llm, LockerState<S> lockState,
-            long lockExpire, Logger log) {
+            Duration lockExpire, Logger log) {
         this.rid = rid;
         this.times = times;
         this.timeUnit = times.getUnit();
@@ -301,7 +298,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             boolean ok = false;
             try {
                 S stat = writeSingleLock(lockID, tx);
-                lockLocally(lockID, stat.getExpirationTimestamp(timeUnit), tx); // update local lock expiration time
+                lockLocally(lockID, stat.getExpirationTimestamp(), tx); // update local lock expiration time
                 lockState.take(tx, lockID, stat);
                 ok = true;
             } catch (TemporaryStorageException tse) {
@@ -394,11 +391,11 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     }
 
     private boolean lockLocally(KeyColumn lockID, StoreTransaction tx) {
-        return lockLocally(lockID, times.getTime() + lockExpire, tx);
+        return lockLocally(lockID, times.getTime().add(lockExpire), tx);
     }
 
-    private boolean lockLocally(KeyColumn lockID, long expire, StoreTransaction tx) {
-        return llm.lock(lockID, tx, expire, timeUnit);
+    private boolean lockLocally(KeyColumn lockID, Timepoint expire, StoreTransaction tx) {
+        return llm.lock(lockID, tx, expire);
     }
 
     private void unlockLocally(KeyColumn lockID, StoreTransaction txh) {

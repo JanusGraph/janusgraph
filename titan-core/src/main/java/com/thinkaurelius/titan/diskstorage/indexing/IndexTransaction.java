@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -30,12 +31,12 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private final KeyInformation.IndexRetriever keyInformations;
 
     private final int mutationAttempts;
-    private final int attemptWaitTime;
+    private final Duration attemptWaitTime;
 
     private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
-                            int mutationAttempts, int attemptWaitTime) throws StorageException {
+                            int mutationAttempts, Duration attemptWaitTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);
         this.index=index;

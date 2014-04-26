@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-import static org.apache.cassandra.db.Table.SYSTEM_KS;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -9,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
@@ -30,7 +30,6 @@ import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +66,11 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public CassandraThriftStoreManager(Configuration config) throws StorageException {
         super(config);
 
-        int thriftTimeoutMS = config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT);
+        /*
+         * This is eventually passed to Thrift's TSocket constructor. The
+         * constructor parameter is of type int.
+         */
+        int thriftTimeoutMS = (int)config.get(GraphDatabaseConfiguration.CONNECTION_TIMEOUT).getLength(TimeUnit.MILLISECONDS);
 
         int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
 
@@ -165,7 +168,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         SlicePredicate sp = new SlicePredicate();
                         sp.addToColumn_names(buf.as(StaticBuffer.BB_FACTORY));
                         d.setPredicate(sp);
-                        d.setTimestamp(timestamp.deletionTime);
+                        d.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setDeletion(d);
                         thriftMutation.add(m);
@@ -177,7 +180,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
-                        column.setTimestamp(timestamp.additionTime);
+                        column.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setColumn_or_supercolumn(cosc);
