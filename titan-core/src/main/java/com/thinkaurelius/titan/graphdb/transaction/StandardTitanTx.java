@@ -46,7 +46,8 @@ import com.thinkaurelius.titan.graphdb.transaction.lock.*;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
@@ -367,7 +368,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } else if (config.hasAssignIDsImmediately()) {
             graph.assignID(vertex);
         }
-        addProperty(vertex, SystemKey.VertexExists, Boolean.TRUE);
+        addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         vertexCache.add(vertex, vertex.getID());
         return vertex;
 
@@ -545,6 +546,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     public TitanProperty addPropertyInternal(TitanVertex vertex, final TitanKey key, Object value) {
         verifyWriteAccess(vertex);
+        Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.getName());
         vertex = ((InternalVertex) vertex).it();
         Preconditions.checkNotNull(key);
         final Object normalizedValue = verifyAttribute(key, value);
@@ -651,12 +653,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
-        if (typeCategory.hasName()) addProperty(type, SystemKey.TypeName, name);
-        addProperty(type, SystemKey.VertexExists, Boolean.TRUE);
-        addProperty(type, SystemKey.TypeCategory, typeCategory);
+        if (typeCategory.hasName()) addProperty(type, BaseKey.TypeName, name);
+        addProperty(type, BaseKey.VertexExists, Boolean.TRUE);
+        addProperty(type, BaseKey.TypeCategory, typeCategory);
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
-            TitanProperty p = addProperty(type,SystemKey.TypeDefinitionProperty,def.getValue());
-            p.setProperty(SystemKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
+            TitanProperty p = addProperty(type, BaseKey.TypeDefinitionProperty,def.getValue());
+            p.setProperty(BaseKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(type, type.getID());
         if (typeCategory.hasName()) newTypeCache.put(name, type.getID());

@@ -7,10 +7,9 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
@@ -111,10 +110,10 @@ public class StandardSchemaCache implements SchemaCache {
 
         long typeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
-        if (type==SystemLabel.TypeDefinitionEdge) systemTypeId=0;
-        else if (type==SystemKey.TypeName) systemTypeId=1;
-        else if (type==SystemKey.TypeCategory) systemTypeId=2;
-        else if (type==SystemKey.TypeDefinitionProperty) systemTypeId=3;
+        if (type== BaseLabel.TypeDefinitionEdge) systemTypeId=0;
+        else if (type== BaseKey.TypeName) systemTypeId=1;
+        else if (type== BaseKey.TypeCategory) systemTypeId=2;
+        else if (type== BaseKey.TypeDefinitionProperty) systemTypeId=3;
         else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.getName());
 
         //Ensure that there is enough padding

@@ -12,33 +12,33 @@ import com.tinkerpop.blueprints.Direction;
 
 import java.util.Collections;
 
-public class SystemKey extends SystemType implements TitanKey {
+public class BaseKey extends BaseType implements TitanKey {
 
     private enum Index { NONE, STANDARD, UNIQUE }
 
     //We rely on the vertex-existence property to be the smallest (in byte-order) when iterating over the entire graph
-    public static final SystemKey VertexExists =
-            new SystemKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
+    public static final BaseKey VertexExists =
+            new BaseKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
 
-    public static final SystemKey TypeName =
-            new SystemKey("TypeName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
+    public static final BaseKey TypeName =
+            new BaseKey("TypeName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
 
-    public static final SystemKey TypeDefinitionProperty =
-            new SystemKey("TypeDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
+    public static final BaseKey TypeDefinitionProperty =
+            new BaseKey("TypeDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
 
-    public static final SystemKey TypeCategory =
-            new SystemKey("TypeCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
+    public static final BaseKey TypeCategory =
+            new BaseKey("TypeCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
 
-    public static final SystemKey TypeDefinitionDesc =
-            new SystemKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
+    public static final BaseKey TypeDefinitionDesc =
+            new BaseKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
 
 
     private final Class<?> dataType;
     private final Index index;
     private final Cardinality cardinality;
 
-    private SystemKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
-        super(name, id, RelationCategory.PROPERTY);
+    private BaseKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
+        super(name, id, TitanSchemaCategory.KEY);
         Preconditions.checkArgument(index!=null && cardinality!=null);
         this.dataType = dataType;
         this.index = index;
@@ -83,12 +83,12 @@ public class SystemKey extends SystemType implements TitanKey {
 
     private final InternalIndexType indexDef = new InternalIndexType() {
 
-        private final IndexField[] fields = {IndexField.of(SystemKey.this)};
+        private final IndexField[] fields = {IndexField.of(BaseKey.this)};
 //        private final Set<TitanKey> fieldSet = ImmutableSet.of((TitanKey)SystemKey.this);
 
         @Override
         public long getID() {
-            return SystemKey.this.getID();
+            return BaseKey.this.getID();
         }
 
         @Override
@@ -98,7 +98,7 @@ public class SystemKey extends SystemType implements TitanKey {
 
         @Override
         public IndexField getField(TitanKey key) {
-            if (key.equals(SystemKey.this)) return fields[0];
+            if (key.equals(BaseKey.this)) return fields[0];
             else return null;
         }
 

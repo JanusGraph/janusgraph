@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -74,7 +74,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             iter.remove();
         }
         //Finally remove internal/hidden relations
-        for (TitanProperty r : it().query().type(SystemKey.VertexExists).properties()) {
+        for (TitanProperty r : it().query().type(BaseKey.VertexExists).properties()) {
             r.remove();
         }
     }

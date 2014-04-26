@@ -45,12 +45,12 @@ public class IDHandler {
             this.id = id;
         }
 
-        public int getId() {
-            return id;
+        private int getRelationType() {
+            return id >>> 1;
         }
 
-        public int getRelationType() {
-            return id >>> 1;
+        private int getDirectionInt() {
+            return id & 1;
         }
 
         public RelationCategory getRelationCategory() {
@@ -62,10 +62,6 @@ public class IDHandler {
                     return RelationCategory.EDGE;
                 default: throw new AssertionError();
             }
-        }
-
-        public int getDirectionInt() {
-            return id & 1;
         }
 
         public Direction getDirection() {
@@ -81,7 +77,7 @@ public class IDHandler {
 
         private int getPrefix(boolean hidden, boolean systemType) {
             assert !systemType || hidden; // systemType implies hidden
-            return ((systemType?0:hidden?2:1)<<2) + getRelationType();
+            return ((systemType?0:hidden?2:1)<<1) + getRelationType();
         }
 
         private int getPrefix() {
@@ -123,8 +119,8 @@ public class IDHandler {
     public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean hidden) {
         assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
 
-        etid = (IDManager.stripEntireRelationTypePadding(etid) << 1) + dirID.getDirectionInt();
-        VariableLong.writePositiveWithPrefix(out, etid, dirID.getPrefix(hidden, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
+        long strippedId = (IDManager.stripEntireRelationTypePadding(etid) << 1) + dirID.getDirectionInt();
+        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(hidden, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
     }
 
     public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean hidden) {
