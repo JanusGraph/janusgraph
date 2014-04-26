@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.tinkerpop.blueprints.Direction;
@@ -40,6 +42,22 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
         } else {
             this.id=-1;
         }
+    }
+
+
+    public<O> O computeProperty(InternalElement e) {
+        if (this==ID) {
+            return (O)Long.valueOf(e.getID());
+        } else if (this==LABEL) {
+            if (e instanceof TitanEdge) {
+                return (O)((TitanEdge) e).getLabel();
+            }
+        } else if (this==TIMESTAMP || this==VISIBILITY) {
+            if (e instanceof InternalRelation) {
+                ((InternalRelation) e).getPropertyDirect(this);
+            }
+        } else throw new AssertionError("Unexpected instance: " + this.getName());
+        return null;
     }
 
 

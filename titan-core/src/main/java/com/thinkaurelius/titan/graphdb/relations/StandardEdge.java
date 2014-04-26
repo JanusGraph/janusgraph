@@ -50,7 +50,7 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
 
     @Override
     public void setPropertyDirect(TitanType type, Object value) {
-        Preconditions.checkArgument(!(type instanceof ImplicitKey) && type.hasId(),"Cannot use implicit type [%s] when setting property",type.getName());
+        Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.getName());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
                 properties = new HashMap<TitanType, Object>(5);
