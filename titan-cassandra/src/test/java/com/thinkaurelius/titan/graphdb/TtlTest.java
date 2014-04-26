@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanGraphIndex;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanManagement;
@@ -12,6 +13,9 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.Test;
 
+import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -177,5 +181,34 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         // the edge is gone not only from its previous endpoints, but also from key indices
         assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+    }
+
+    /*
+    @Test
+    public void testVerticesIsolatedByTtlAreRemoved() throws Exception {
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
+
+        Edge e1 = graph.addEdge(null, v1, v2, "likes");
+        Edge e2 = graph.addEdge(null, v2, v1, "likes");
+        Edge e3 = graph.addEdge(null, v1, v3, "likes");
+        e3.setProperty(Titan.TTL, 1);
+
+        assertEquals(3, lengthOf(graph.getVertices().iterator()));
+
+        graph.commit();
+        assertEquals(3, lengthOf(graph.getVertices().iterator()));
+
+        Thread.sleep(1001);
+
+        assertEquals(3, lengthOf(graph.getVertices().iterator()));
+        graph.rollback();
+
+        assertEquals(2, lengthOf(graph.getVertices().iterator()));
+    }*/
+
+    public long lengthOf(final Iterator iter) {
+        long count = 0;
+        for (; iter.hasNext(); ++count) iter.next();
+        return count;
     }
 }
