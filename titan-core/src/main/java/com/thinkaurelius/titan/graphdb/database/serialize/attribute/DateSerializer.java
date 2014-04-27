@@ -7,9 +7,9 @@ import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSeriali
 
 import java.util.Date;
 
-public class DateSerializer implements AttributeSerializer<Date>, OrderPreservingSerializer {
+public class DateSerializer implements OrderPreservingSerializer<Date> {
 
-    private final LongSerializer ls = new LongSerializer();
+    private final LongSerializer ls = LongSerializer.INSTANCE;
 
     @Override
     public Date read(ScanBuffer buffer) {
@@ -19,9 +19,19 @@ public class DateSerializer implements AttributeSerializer<Date>, OrderPreservin
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Date attribute) {
+    public void write(WriteBuffer out, Date attribute) {
         long utc = attribute.getTime();
-        ls.writeObjectData(out,utc);
+        ls.write(out, utc);
+    }
+
+    @Override
+    public Date readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Date attribute) {
+        write(buffer,attribute);
     }
 
     @Override

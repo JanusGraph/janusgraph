@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.attribute.LongSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -129,18 +130,18 @@ public class EdgeSerializer implements RelationReader {
             in.movePositionTo(startKeyPos);
             ReadBuffer inkey = in;
             if (def.getSortOrder()==Order.DESC) inkey = in.subrange(keyLength,true);
-            readInlineTypes(keysig, properties, inkey, tx);
+            readInlineTypes(keysig, properties, inkey, tx, InlineType.KEY);
             in.movePositionTo(currentPos);
         }
 
         if (!excludeProperties) {
             //read value signature
-            readInlineTypes(def.getSignature(), properties, in, tx);
+            readInlineTypes(def.getSignature(), properties, in, tx, InlineType.SIGNATURE);
 
             //Third: read rest
             while (in.hasRemaining()) {
                 TitanType type = tx.getExistingType(IDHandler.readInlineEdgeType(in));
-                Object pvalue = readInline(in, type);
+                Object pvalue = readInline(in, type, InlineType.NORMAL);
                 assert pvalue != null;
                 properties.put(type.getID(), pvalue);
             }
@@ -148,29 +149,42 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] typeids, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx) {
+    private void readInlineTypes(long[] typeids, LongObjectOpenHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
         for (long typeid : typeids) {
             TitanType keyType = tx.getExistingType(typeid);
-            Object value = readInline(in, keyType);
+            Object value = readInline(in, keyType, inlineType);
             if (value != null) properties.put(typeid, value);
         }
     }
 
-    private Object readInline(ReadBuffer read, TitanType type) {
+    private Object readInline(ReadBuffer read, TitanType type, InlineType inlineType) {
         if (type.isPropertyKey()) {
             TitanKey key = ((TitanKey) type);
-            return readPropertyValue(read,key);
+            return readPropertyValue(read,key, inlineType);
         } else {
             assert type.isEdgeLabel();
-            long id = VariableLong.readPositive(read);
+            long id;
+            if (inlineType.writeByteOrdered())
+                id = LongSerializer.INSTANCE.readByteOrder(read);
+            else
+                id = VariableLong.readPositive(read);
             return id == 0 ? null : id;
         }
     }
 
     private Object readPropertyValue(ReadBuffer read, TitanKey key) {
-        return AttributeUtil.hasGenericDataType(key)
-                ? serializer.readClassAndObject(read)
-                : serializer.readObject(read, key.getDataType());
+        return readPropertyValue(read,key,InlineType.NORMAL);
+    }
+
+    private Object readPropertyValue(ReadBuffer read, TitanKey key, InlineType inlineType) {
+        if (AttributeUtil.hasGenericDataType(key)) {
+            return serializer.readClassAndObject(read);
+        } else {
+            if (inlineType.writeByteOrdered())
+                return serializer.readObjectByteOrder(read, key.getDataType());
+            else
+                return serializer.readObject(read, key.getDataType());
+        }
     }
 
     private static DirectionID getDirID(Direction dir, RelationCategory rt) {
@@ -196,15 +210,8 @@ public class EdgeSerializer implements RelationReader {
         }
     }
 
-    private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, TypeInspector tx) {
-        for (long typeid : typeids) {
-            TitanType t = tx.getExistingType(typeid);
-            writeInline(out, t, relation.getProperty(t), false);
-        }
-    }
-
     public Entry writeRelation(InternalRelation relation, int position, TypeInspector tx) {
-        return writeRelation(relation, (InternalType) relation.getType(),position,tx);
+        return writeRelation(relation, (InternalType) relation.getType(), position, tx);
     }
 
     public Entry writeRelation(InternalRelation relation, InternalType type, int position, TypeInspector tx) {
@@ -223,7 +230,7 @@ public class EdgeSerializer implements RelationReader {
         assert !multiplicity.isConstrained() || sortKey.length==0: type.getName();
         int keyStartPos = out.getPosition();
         if (!multiplicity.isConstrained()) {
-            writeInlineTypes(sortKey, relation, out, tx);
+            writeInlineTypes(sortKey, relation, out, tx, InlineType.KEY);
         }
         int keyEndPos = out.getPosition();
 
@@ -273,7 +280,7 @@ public class EdgeSerializer implements RelationReader {
 
         //Write signature
         long[] signature = type.getSignature();
-        writeInlineTypes(signature, relation, out, tx);
+        writeInlineTypes(signature, relation, out, tx, InlineType.SIGNATURE);
 
         //Write remaining properties
         LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
@@ -293,7 +300,7 @@ public class EdgeSerializer implements RelationReader {
         Arrays.sort(remaining);
         for (long tid : remaining) {
             TitanType t = tx.getExistingType(tid);
-            writeInline(out, t, relation.getProperty(t), true);
+            writeInline(out, t, relation.getProperty(t), InlineType.NORMAL);
         }
         assert valuePosition>0;
 
@@ -302,32 +309,56 @@ public class EdgeSerializer implements RelationReader {
                                     out.getStaticBuffer(),valuePosition);
     }
 
-    private void writeInline(DataOutput out, TitanType type, Object value, boolean writeEdgeType) {
-        Preconditions.checkArgument(!(type.isPropertyKey() && !writeEdgeType) || !AttributeUtil.hasGenericDataType((TitanKey) type));
+    private enum InlineType {
 
-        if (writeEdgeType) {
+        KEY, SIGNATURE, NORMAL;
+
+        public boolean writeEdgeType() {
+            return this==NORMAL;
+        }
+
+        public boolean writeByteOrdered() {
+            return this==KEY;
+        }
+
+    }
+
+    private void writeInlineTypes(long[] typeids, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
+        for (long typeid : typeids) {
+            TitanType t = tx.getExistingType(typeid);
+            writeInline(out, t, relation.getProperty(t), inlineType);
+        }
+    }
+
+    private void writeInline(DataOutput out, TitanType type, Object value, InlineType inlineType) {
+        assert !(type.isPropertyKey() && !inlineType.writeEdgeType()) || !AttributeUtil.hasGenericDataType((TitanKey) type);
+
+        if (inlineType.writeEdgeType()) {
             IDHandler.writeInlineEdgeType(out, type.getID());
         }
 
         if (type.isPropertyKey()) {
-            writePropertyValue(out,(TitanKey)type,value);
+            writePropertyValue(out,(TitanKey)type,value, inlineType);
         } else {
-            assert type.isEdgeLabel();
-            Preconditions.checkArgument(((TitanLabel) type).isUnidirected());
-            if (value == null) {
-                VariableLong.writePositive(out, 0);
-            } else {
-                VariableLong.writePositive(out, ((InternalVertex) value).getID());
-            }
+            assert type.isEdgeLabel() && ((TitanLabel) type).isUnidirected();
+            long id = (value==null?0:((InternalVertex) value).getID());
+            if (inlineType.writeByteOrdered()) LongSerializer.INSTANCE.writeByteOrder(out,id);
+            else VariableLong.writePositive(out,id);
         }
     }
 
     private void writePropertyValue(DataOutput out, TitanKey key, Object value) {
+        writePropertyValue(out,key,value,InlineType.NORMAL);
+    }
+
+    private void writePropertyValue(DataOutput out, TitanKey key, Object value, InlineType inlineType) {
         if (AttributeUtil.hasGenericDataType(key)) {
+            assert !inlineType.writeByteOrdered();
             out.writeClassAndObject(value);
         } else {
             assert value==null || value.getClass().equals(key.getDataType());
-            out.writeObject(value, key.getDataType());
+            if (inlineType.writeByteOrdered()) out.writeObjectByteOrder(value, key.getDataType());
+            else out.writeObject(value, key.getDataType());
         }
     }
 
@@ -374,13 +405,13 @@ public class EdgeSerializer implements RelationReader {
                 }
                 Preconditions.checkArgument(t.getID() == sortKeyIDs[i]);
                 if (interval.isPoint()) {
-                    writeInline(colStart, t, interval.getStart(), false);
-                    writeInline(colEnd, t, interval.getEnd(), false);
+                    writeInline(colStart, t, interval.getStart(), InlineType.KEY);
+                    writeInline(colEnd, t, interval.getEnd(), InlineType.KEY);
                 } else {
                     if (interval.getStart() != null)
-                        writeInline(colStart, t, interval.getStart(), false);
+                        writeInline(colStart, t, interval.getStart(), InlineType.KEY);
                     if (interval.getEnd() != null)
-                        writeInline(colEnd, t, interval.getEnd(), false);
+                        writeInline(colEnd, t, interval.getEnd(), InlineType.KEY);
 
                     switch (type.getSortOrder()) {
                         case ASC:

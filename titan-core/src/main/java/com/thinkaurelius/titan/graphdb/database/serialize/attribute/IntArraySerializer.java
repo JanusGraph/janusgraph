@@ -38,7 +38,7 @@ public class IntArraySerializer extends ArraySerializer implements AttributeSeri
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, int[] attribute) {
+    public void write(WriteBuffer buffer, int[] attribute) {
         writeLength(buffer,attribute);
         if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putInt(attribute[i]);
     }

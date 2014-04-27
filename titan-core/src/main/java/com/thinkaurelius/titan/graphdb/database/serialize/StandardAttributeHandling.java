@@ -51,7 +51,6 @@ public class StandardAttributeHandling implements AttributeHandling {
         registerClass(Precision.class, new Precision.PrecisionSerializer());
         registerClass(Character.class, new CharacterSerializer());
         registerClass(Boolean.class, new BooleanSerializer());
-        registerClass(CString.class, new CStringSerializer());
         registerClass(Date.class, new DateSerializer());
 
         registerClass(Geoshape.class, new Geoshape.GeoshapeSerializer());

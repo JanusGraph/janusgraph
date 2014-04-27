@@ -8,8 +8,6 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
 
-import static com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer.BYTE_LEN;
-
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -35,10 +33,27 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
         return getSerializer(type) instanceof SupportsNullSerializer;
     }
 
+
+    @Override
+    public <T> T readObjectByteOrder(ReadBuffer buffer, Class<T> type) {
+        return readObjectInternal(buffer,type,true);
+    }
+
     @Override
     public <T> T readObject(ReadBuffer buffer, Class<T> type) {
+        return readObjectInternal(buffer,type,false);
+    }
+
+    @Override
+    public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type) {
+        return readObjectNotNullInternal(buffer,type,false);
+    }
+
+    private <T> T readObjectInternal(ReadBuffer buffer, Class<T> type, boolean byteOrder) {
         if (supportsNullSerialization(type)) {
-            return getSerializer(type).read(buffer);
+            AttributeSerializer<T> s = getSerializer(type);
+            if (byteOrder) return ((OrderPreservingSerializer<T>)s).readByteOrder(buffer);
+            else return s.read(buffer);
         } else {
             //Read flag for null or not
             byte flag = buffer.getByte();
@@ -46,16 +61,20 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
                 return null;
             } else {
                 Preconditions.checkArgument(flag==0,"Invalid flag encountered in serialization: %s. Corrupted data.",flag);
-                return readObjectNotNull(buffer,type);
+                return readObjectNotNullInternal(buffer,type,byteOrder);
             }
         }
     }
 
-    @Override
-    public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type) {
+    private <T> T readObjectNotNullInternal(ReadBuffer buffer, Class<T> type, boolean byteOrder) {
         AttributeSerializer<T> s = getSerializer(type);
-        if (s!=null) return s.read(buffer);
-        else return getBackupSerializer().readObjectNotNull(buffer,type);
+        if (byteOrder) {
+            Preconditions.checkArgument(s!=null && s instanceof OrderPreservingSerializer,"Invalid serializer for class: %s",type);
+            return ((OrderPreservingSerializer<T>)s).readByteOrder(buffer);
+        } else {
+            if (s!=null) return s.read(buffer);
+            else return getBackupSerializer().readObjectNotNull(buffer,type);
+        }
     }
 
     @Override
@@ -75,27 +94,48 @@ public class StandardSerializer extends StandardAttributeHandling implements Ser
         }
 
         @Override
+        public DataOutput writeObjectByteOrder(Object object, Class type) {
+            Preconditions.checkArgument(StandardSerializer.this.isOrderPreservingDatatype(type),"Invalid serializer for class: %s",type);
+            return writeObjectInternal(object,type,true);
+        }
+
+        @Override
         public DataOutput writeObject(Object object, Class type) {
-            if (supportsNullSerialization(type))
-                getSerializer(type).writeObjectData(this,object);
-            else {
+            return writeObjectInternal(object,type,false);
+        }
+
+        @Override
+        public DataOutput writeObjectNotNull(Object object) {
+            return writeObjectNotNullInternal(object,false);
+        }
+
+        private DataOutput writeObjectInternal(Object object, Class type, boolean byteOrder) {
+            if (supportsNullSerialization(type)) {
+                AttributeSerializer s = getSerializer(type);
+                if (byteOrder) ((OrderPreservingSerializer)s).writeByteOrder(this,object);
+                else s.write(this, object);
+            } else {
                 //write flag for null or not
                 if (object==null) {
                     putByte((byte)-1);
                 } else {
                     putByte((byte)0);
-                    writeObjectNotNull(object);
+                    writeObjectNotNullInternal(object,byteOrder);
                 }
             }
             return this;
         }
 
-        @Override
-        public DataOutput writeObjectNotNull(Object object) {
+        private DataOutput writeObjectNotNullInternal(Object object, boolean byteOrder) {
             Preconditions.checkNotNull(object);
             AttributeSerializer s = getSerializer(object.getClass());
-            if (s!=null) s.writeObjectData(this,object);
-            else getBackupSerializer().writeObjectNotNull(this,object);
+            if (byteOrder) {
+                Preconditions.checkArgument(s!=null && s instanceof OrderPreservingSerializer,"Invalid serializer for class: %s",object.getClass());
+                ((OrderPreservingSerializer)s).writeByteOrder(this,object);
+            } else {
+                if (s!=null) s.write(this, object);
+                else getBackupSerializer().writeObjectNotNull(this,object);
+            }
             return this;
         }
 

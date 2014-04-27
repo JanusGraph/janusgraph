@@ -47,7 +47,7 @@ public class BooleanArraySerializer extends ArraySerializer implements Attribute
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, boolean[] attribute) {
+    public void write(WriteBuffer buffer, boolean[] attribute) {
         writeLength(buffer,attribute);
         if (attribute==null) return;
         byte b = 0;

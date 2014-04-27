@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class ShortSerializer implements AttributeSerializer<Short>, OrderPreservingSerializer {
+public class ShortSerializer implements OrderPreservingSerializer<Short>  {
 
     private static final long serialVersionUID = 117423419862504186L;
 
@@ -15,8 +15,18 @@ public class ShortSerializer implements AttributeSerializer<Short>, OrderPreserv
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Short object) {
+    public void write(WriteBuffer out, Short object) {
         out.putShort((short)(object.shortValue() - Short.MIN_VALUE));
+    }
+
+    @Override
+    public Short readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Short attribute) {
+        write(buffer,attribute);
     }
 
     /*

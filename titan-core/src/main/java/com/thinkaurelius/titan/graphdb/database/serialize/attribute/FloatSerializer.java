@@ -32,7 +32,7 @@ public class FloatSerializer implements AttributeSerializer<Float> {
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, Float attribute) {
+    public void write(WriteBuffer buffer, Float attribute) {
         buffer.putFloat(attribute.floatValue());
     }
 }

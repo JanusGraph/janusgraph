@@ -120,7 +120,7 @@ public abstract class AbstractDecimal extends Number implements Comparable<Abstr
         return Double.compare(doubleValue(),o.doubleValue());
     }
 
-    public abstract static class AbstractDecimalSerializer<V extends AbstractDecimal> implements AttributeSerializer<V>, OrderPreservingSerializer {
+    public abstract static class AbstractDecimalSerializer<V extends AbstractDecimal> implements OrderPreservingSerializer<V> {
 
         private final int decimals;
         private final Class<V> type;
@@ -143,10 +143,20 @@ public abstract class AbstractDecimal extends Number implements Comparable<Abstr
         }
 
         @Override
-        public void writeObjectData(WriteBuffer buffer, V attribute) {
+        public void write(WriteBuffer buffer, V attribute) {
             AbstractDecimal d = attribute;
             Preconditions.checkArgument(d.decimals==decimals,"Invalid argument provided: %s",attribute);
-            ls.writeObjectData(buffer,d.format);
+            ls.write(buffer, d.format);
+        }
+
+        @Override
+        public V readByteOrder(ScanBuffer buffer) {
+            return read(buffer);
+        }
+
+        @Override
+        public void writeByteOrder(WriteBuffer buffer, V attribute) {
+            write(buffer,attribute);
         }
 
         @Override
