@@ -1,0 +1,24 @@
+==============================================================
+ Faunus: Graph Analytics Engine
+ Copyright 2012-2013 Aurelius
+==============================================================
+
+This product includes software developed by Aurelius (http://thinkaurelius.com/) and the following individuals:
+
+ * Marko A. Rodriguez
+ * Stephen Mallette
+ * Matthias Broecheler
+
+It also includes software from other open source projects including, but not limited to:
+
+ * Apache Hadoop [http://hadoop.apache.org/]
+ * TinkerPop Blueprints [http://blueprints.tinkerpop.com]
+ * TinkerPop Gremlin [http://gremlin.tinkerpop.com]
+ * TinkerPop Rexster [http://rexster.tinkerpop.com]
+ * Aurelius Titan [http://thinkaurelius.github.com/titan/]
+ * Apache Cassandra [http://cassandra.apache.org/]
+ * Apache HBase [http://hbase.apache.org/]
+ * Codehaus Groovy [http://groovy.codehaus.org/]
+ * OpenRDF [http://www.openrdf.org/]
+ * Apache MRUnit [http://mrunit.apache.org/]
+ * JUnit [http://www.junit.org/]
