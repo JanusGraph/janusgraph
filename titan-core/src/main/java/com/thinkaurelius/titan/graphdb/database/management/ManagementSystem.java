@@ -95,7 +95,10 @@ public class ManagementSystem implements TitanManagement {
                 Set<String> openInstances = getOpenInstances();
                 assert openInstances.size()>0;
                 Preconditions.checkArgument(openInstances.size()<2,"Cannot change offline config option [%s] since multiple instances are currently open: %s",option,openInstances);
-                Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),"Only one open instance but its not the current one: %s",openInstances);
+                Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
+                        "Only one open instance ("
+                        + openInstances.iterator().next() + "), but it's not the current one ("
+                        + graph.getConfiguration().getUniqueGraphId() + ")");
                 //Indicate that this graph must be closed
                 graphShutdownRequired = true;
             }
