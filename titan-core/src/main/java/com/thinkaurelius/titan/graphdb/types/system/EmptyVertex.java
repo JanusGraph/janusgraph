@@ -61,12 +61,14 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public <O> O getProperty(TitanKey key) {
+        if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return null;
     }
 
     @Override
     public <O> O getProperty(String key) {
-        return null;
+        if (!tx().containsType(key)) return null;
+        else return getProperty(tx().getPropertyKey(key));
     }
 
 

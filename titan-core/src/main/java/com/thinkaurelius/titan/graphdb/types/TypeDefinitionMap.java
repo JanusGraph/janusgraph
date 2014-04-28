@@ -1,13 +1,8 @@
 
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
 
-import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Set;
 

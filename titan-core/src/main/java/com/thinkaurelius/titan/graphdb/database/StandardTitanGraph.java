@@ -41,7 +41,7 @@ import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
@@ -104,7 +104,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.serializer = config.getSerializer();
         this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
-        this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
+        this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
         this.times = configuration.getTimestampProvider();
@@ -241,7 +241,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public Long retrieveTypeByName(String typeName, StandardTitanTx tx) {
-            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(SystemKey.TypeName, typeName),null);
+            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.TypeName, typeName),null);
             return v!=null?v.getID():null;
         }
 

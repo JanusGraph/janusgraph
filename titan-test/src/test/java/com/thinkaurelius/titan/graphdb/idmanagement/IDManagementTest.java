@@ -4,6 +4,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -11,7 +12,9 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.types.system.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
+import com.tinkerpop.blueprints.Direction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +28,8 @@ import static org.junit.Assert.*;
 public class IDManagementTest {
 
     private static final Logger log = LoggerFactory.getLogger(IDManagementTest.class);
+
+    private static final Random random = new Random();
 
     @Before
     public void setUp() throws Exception {
@@ -75,11 +80,18 @@ public class IDManagementTest {
         id = eid.getRelationID(count, partition);
         assertEquals(eid.getPartitionId(id), partition);
 
-        id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey, count);
+        id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
         assertTrue(isp.isPropertyKeyId(id));
         assertTrue(isp.isRelationTypeId(id));
+        assertFalse(isp.isSystemRelationTypeId(id));
 
-        id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+        id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
+        assertTrue(isp.isPropertyKeyId(id));
+        assertTrue(isp.isRelationTypeId(id));
+        assertTrue(isp.isSystemRelationTypeId(id));
+
+
+        id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
         assertTrue(isp.isEdgeLabelId(id));
         assertTrue(isp.isRelationTypeId(id));
 
@@ -87,9 +99,9 @@ public class IDManagementTest {
         assertTrue(id<0);
         assertTrue(IDManager.VertexIDType.Vertex.is(id));
 
-        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,2);
+        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,2);
         assertTrue(id<0);
-        assertTrue(IDManager.VertexIDType.EdgeLabel.is(id));
+        assertTrue(IDManager.VertexIDType.UserEdgeLabel.is(id));
 
         id = IDManager.getTemporaryRelationID(101);
         assertTrue(id<0);
@@ -120,8 +132,9 @@ public class IDManagementTest {
             IDHandler.DirectionID dirID;
             RelationCategory type;
             if (Math.random() < 0.5) {
-                id = eid.getSchemaId(IDManager.VertexIDType.EdgeLabel,count);
+                id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
                 assertTrue(isp.isEdgeLabelId(id));
+                assertFalse(isp.isSystemRelationTypeId(id));
                 type = RelationCategory.EDGE;
                 if (Math.random() < 0.5)
                     dirID = IDHandler.DirectionID.EDGE_IN_DIR;
@@ -129,8 +142,9 @@ public class IDManagementTest {
                     dirID = IDHandler.DirectionID.EDGE_OUT_DIR;
             } else {
                 type = RelationCategory.PROPERTY;
-                id = eid.getSchemaId(IDManager.VertexIDType.PropertyKey,count);
+                id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
                 assertTrue(isp.isPropertyKeyId(id));
+                assertFalse(isp.isSystemRelationTypeId(id));
                 dirID = IDHandler.DirectionID.PROPERTY_DIR;
             }
             assertTrue(isp.isRelationTypeId(id));
@@ -166,6 +180,29 @@ public class IDManagementTest {
         }
     }
 
+    private static final SystemType[] SYSTEM_TYPES = {BaseKey.VertexExists, BaseKey.TypeDefinitionProperty,
+            BaseLabel.TypeDefinitionEdge, ImplicitKey.VISIBILITY, ImplicitKey.TIMESTAMP};
+
+    @Test
+    public void writingInlineEdgeTypes() {
+        int numTries = 100;
+        WriteBuffer out = new WriteByteBuffer(8*numTries);
+        for (SystemType t : SYSTEM_TYPES) {
+            IDHandler.writeInlineEdgeType(out,t.getID());
+        }
+        for (long i=1;i<=numTries;i++) {
+            IDHandler.writeInlineEdgeType(out,IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,i*1000));
+        }
+
+        ReadBuffer in = out.getStaticBuffer().asReadBuffer();
+        for (SystemType t : SYSTEM_TYPES) {
+            assertEquals(t, SystemTypeManager.getSystemType(IDHandler.readInlineEdgeType(in)));
+        }
+        for (long i=1;i<=numTries;i++) {
+            assertEquals(i * 1000, IDManager.stripEntireRelationTypePadding(IDHandler.readInlineEdgeType(in)));
+        }
+    }
+
     @Test
     public void testDirectionPrefix() {
         for (RelationCategory type : RelationCategory.values()) {
@@ -173,12 +210,37 @@ public class IDManagementTest {
             assertEquals(1,bounds[0].length());
             assertEquals(1,bounds[1].length());
             assertTrue(bounds[0].compareTo(bounds[1])<0);
+            assertTrue(bounds[1].compareTo(BufferUtil.oneBuffer(1))<0);
+        }
+    }
+
+    @Test
+    public void testEdgeTypeWriting() {
+        for (SystemType t : SYSTEM_TYPES) {
+            testEdgeTypeWriting(t.getID());
+        }
+        for (int i=0;i<1000;i++) {
+            IDManager.VertexIDType type = random.nextDouble()<0.5? IDManager.VertexIDType.UserPropertyKey: IDManager.VertexIDType.UserEdgeLabel;
+            testEdgeTypeWriting(IDManager.getSchemaId(type,random.nextInt(1000000000)));
+        }
+    }
+
+    public void testEdgeTypeWriting(long etid) {
+        IDHandler.DirectionID[] dir = IDManager.VertexIDType.EdgeLabel.is(etid)?
+                    new IDHandler.DirectionID[]{IDHandler.DirectionID.EDGE_IN_DIR, IDHandler.DirectionID.EDGE_OUT_DIR}:
+                    new IDHandler.DirectionID[]{IDHandler.DirectionID.PROPERTY_DIR};
+        RelationCategory relCat = IDManager.VertexIDType.EdgeLabel.is(etid)?RelationCategory.EDGE:RelationCategory.PROPERTY;
+        boolean hidden = IDManager.isSystemRelationTypeId(etid);
+        for (IDHandler.DirectionID d : dir) {
+            StaticBuffer b = IDHandler.getEdgeType(etid,d,hidden);
+            IDHandler.EdgeTypeParse parse = IDHandler.readEdgeType(b.asReadBuffer());
+            assertEquals(d,parse.dirID);
+            assertEquals(etid,parse.typeId);
         }
     }
 
     @Test
     public void keyTest() {
-        Random random = new Random();
         for (int t = 0; t < 1000000; t++) {
             long i = Math.abs(random.nextLong());
             assertEquals(i, IDHandler.getKeyID(IDHandler.getKey(i)));

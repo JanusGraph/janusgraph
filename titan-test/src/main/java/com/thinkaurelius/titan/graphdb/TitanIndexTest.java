@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.CString;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
@@ -271,7 +270,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     private void setupChainGraph(int numV, String[] strs) {
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
-        TitanKey name = makeKey("name",CString.class);
+        TitanKey name = makeKey("name",String.class);
         mgmt.addIndexKey(vindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
         mgmt.addIndexKey(eindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
         TitanKey text = makeKey("text",String.class);

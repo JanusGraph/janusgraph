@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.*;
 import com.tinkerpop.blueprints.Parameter;
@@ -228,7 +228,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
-        for (TitanVertex k : getVertices(SystemKey.TypeCategory, TitanSchemaCategory.KEY)) {
+        for (TitanVertex k : getVertices(BaseKey.TypeCategory, TitanSchemaCategory.KEY)) {
             assert k instanceof InternalType;
             if (!Iterables.isEmpty(((InternalType) k).getKeyIndexes())) indexedkeys.add(((TitanKey)k).getName());
         }

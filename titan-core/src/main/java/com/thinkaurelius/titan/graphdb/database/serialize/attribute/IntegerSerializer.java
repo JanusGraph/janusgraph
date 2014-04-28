@@ -1,22 +1,36 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class IntegerSerializer implements AttributeSerializer<Integer>, OrderPreservingSerializer {
+public class IntegerSerializer implements OrderPreservingSerializer<Integer> {
 
     private static final long serialVersionUID = 1174998819862504186L;
 
     @Override
     public Integer read(ScanBuffer buffer) {
+        long l = VariableLong.read(buffer);
+        Preconditions.checkArgument(l>=Integer.MIN_VALUE && l<=Integer.MAX_VALUE,"Invalid serialization [%s]",l);
+        return (int)l;
+    }
+
+    @Override
+    public void write(WriteBuffer out, Integer attribute) {
+        VariableLong.write(out,attribute);
+    }
+
+    @Override
+    public Integer readByteOrder(ScanBuffer buffer) {
         return Integer.valueOf(buffer.getInt() + Integer.MIN_VALUE);
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Integer object) {
-        out.putInt(object.intValue() - Integer.MIN_VALUE);
+    public void writeByteOrder(WriteBuffer out, Integer attribute) {
+        out.putInt(attribute.intValue() - Integer.MIN_VALUE);
     }
 
     /*

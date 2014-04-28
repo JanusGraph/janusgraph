@@ -44,6 +44,6 @@ public interface AttributeSerializer<V> extends AttributeHandler<V> {
      * @param buffer    WriteBuffer to write attribute to
      * @param attribute Attribute to write to WriteBuffer
      */
-    public void writeObjectData(WriteBuffer buffer, V attribute);
+    public void write(WriteBuffer buffer, V attribute);
 
 }

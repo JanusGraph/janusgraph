@@ -79,14 +79,14 @@ public class SerializerTest {
         for (int t = 0; t < 10000; t++) {
             DataOutput out1 = serialize.getDataOutput(32 + 5);
             DataOutput out2 = serialize.getDataOutput(32 + 5);
-            CString s1 = new CString(RandomGenerator.randomString(1, 32));
-            CString s2 = new CString(RandomGenerator.randomString(1, 32));
-            out1.writeObjectNotNull(s1);
-            out2.writeObjectNotNull(s2);
+            String s1 = RandomGenerator.randomString(1, 32);
+            String s2 = RandomGenerator.randomString(1, 32);
+            out1.writeObjectByteOrder(s1,String.class);
+            out2.writeObjectByteOrder(s2,String.class);
             StaticBuffer b1 = out1.getStaticBuffer();
             StaticBuffer b2 = out2.getStaticBuffer();
-            assertEquals(s1, serialize.readObjectNotNull(b1.asReadBuffer(), CString.class));
-            assertEquals(s2, serialize.readObjectNotNull(b2.asReadBuffer(), CString.class));
+            assertEquals(s1, serialize.readObjectByteOrder(b1.asReadBuffer(), String.class));
+            assertEquals(s2, serialize.readObjectByteOrder(b2.asReadBuffer(), String.class));
             assertEquals(s1 + " vs " + s2, Integer.signum(s1.compareTo(s2)), Integer.signum(b1.compareTo(b2)));
         }
     }
@@ -419,11 +419,15 @@ public class SerializerTest {
             Map.Entry<Class,Factory> type = Iterables.get(sortTypes.entrySet(),random.nextInt(sortTypes.size()));
             Comparable c1 = (Comparable)type.getValue().newInstance();
             Comparable c2 = (Comparable)type.getValue().newInstance();
-            o1.writeObject(c1,type.getKey());
-            o2.writeObject(c2,type.getKey());
+            o1.writeObjectByteOrder(c1,type.getKey());
+            o2.writeObjectByteOrder(c2,type.getKey());
             StaticBuffer s1 = o1.getStaticBuffer();
             StaticBuffer s2 = o2.getStaticBuffer();
             assertEquals(Math.signum(c1.compareTo(c2)),Math.signum(s1.compareTo(s2)),0.0);
+            Object c1o = serialize.readObjectByteOrder(s1.asReadBuffer(),type.getKey());
+            Object c2o = serialize.readObjectByteOrder(s2.asReadBuffer(),type.getKey());
+            assertEquals(c1,c1o);
+            assertEquals(c2,c2o);
         }
 
 
@@ -531,12 +535,6 @@ public class SerializerTest {
             @Override
             public Precision newInstance() {
                 return new Precision(random.nextInt()*1.0/1000000.0);
-            }
-        });
-        put(CString.class, new Factory<CString>() {
-            @Override
-            public CString newInstance() {
-                return new CString(getRandomString(128,random.nextDouble()>0.5?ASCII_VALUE:MAX_CHAR_VALUE));
             }
         });
         put(Date.class, new Factory<Date>() {

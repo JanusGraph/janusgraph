@@ -7,8 +7,9 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
@@ -28,12 +29,11 @@ public class StandardSchemaCache implements SchemaCache {
     private static final int CACHE_RELATION_MULTIPLIER = 3; // 1) type-name, 2) type-definitions, 3) modifying edges [index, lock]
     private static final int CONCURRENCY_LEVEL = 2;
 
-    private static final int SCHEMAID_FORW_SHIFT = 4; //Number of bits at the end to append the id of the system type
-    private static final int SCHEMAID_TOTALFORW_SHIFT = SCHEMAID_FORW_SHIFT +1; //Total number of bits appended - the 1 is for the 1 bit direction
+//    private static final int SCHEMAID_FORW_SHIFT = 4; //Number of bits at the end to append the id of the system type
+    private static final int SCHEMAID_TOTALFORW_SHIFT = 3; //Total number of bits appended - the 1 is for the 1 bit direction
     private static final int SCHEMAID_BACK_SHIFT = 2; //Number of bits to remove from end of schema id since its just the padding
     {
         assert IDManager.VertexIDType.Schema.removePadding(1l<<SCHEMAID_BACK_SHIFT)==1;
-        assert SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET <= (1<< SCHEMAID_FORW_SHIFT);
         assert SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT>=0;
     }
 
@@ -104,16 +104,33 @@ public class StandardSchemaCache implements SchemaCache {
         return id;
     }
 
+    private long getIdentifier(final long schemaId, final SystemType type, final Direction dir) {
+        int edgeDir = EdgeDirection.position(dir);
+        assert edgeDir==0 || edgeDir==1;
+
+        long typeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
+        int systemTypeId;
+        if (type== BaseLabel.TypeDefinitionEdge) systemTypeId=0;
+        else if (type== BaseKey.TypeName) systemTypeId=1;
+        else if (type== BaseKey.TypeCategory) systemTypeId=2;
+        else if (type== BaseKey.TypeDefinitionProperty) systemTypeId=3;
+        else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.getName());
+
+        //Ensure that there is enough padding
+        assert (systemTypeId<(1<<2));
+        return (((typeid<<2)+systemTypeId)<<1)+edgeDir;
+    }
+
     @Override
     public EntryList getTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
-        assert IDManager.getRelationTypeIdCount(type.getID())<SystemTypeManager.SYSTEM_RELATIONTYPE_OFFSET;
+        assert IDManager.isSystemRelationTypeId(type.getID()) && type.getID()>0;
         Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
 
         int edgeDir = EdgeDirection.position(dir);
         assert edgeDir==0 || edgeDir==1;
 
-        final long typePlusRelation = ((((schemaId >>> SCHEMAID_BACK_SHIFT) << 1) + edgeDir) << SCHEMAID_FORW_SHIFT) + IDManager.getRelationTypeIdCount(type.getID());
+        final long typePlusRelation = getIdentifier(schemaId,type,dir);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         EntryList entries;
         if (types==null) {

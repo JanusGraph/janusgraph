@@ -15,6 +15,8 @@ public interface IDInspector {
 
     public boolean isPropertyKeyId(long id);
 
+    public boolean isSystemRelationTypeId(long id);
+
     public boolean isGenericSchemaVertexId(long id);
 
     public boolean isVertexId(long id);

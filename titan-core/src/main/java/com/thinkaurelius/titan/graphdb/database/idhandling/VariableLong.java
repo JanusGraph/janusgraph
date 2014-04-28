@@ -127,7 +127,7 @@ public class VariableLong {
         writeUnsigned(out, convert2Unsigned(value));
     }
 
-    public static long read(ReadBuffer in) {
+    public static long read(ScanBuffer in) {
         return convertFromUnsigned(readUnsigned(in));
     }
 

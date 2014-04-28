@@ -25,10 +25,6 @@ public class RelationTypeCondition<E extends TitanElement> extends Literal<E> {
         return relationType.equals(((TitanRelation)element).getType());
     }
 
-    public TitanType getRelationType() {
-        return relationType;
-    }
-
     @Override
     public int hashCode() {
         return new HashCodeBuilder().append(getType()).append(relationType).toHashCode();

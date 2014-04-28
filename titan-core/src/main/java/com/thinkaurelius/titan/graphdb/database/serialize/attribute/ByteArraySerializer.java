@@ -42,7 +42,7 @@ public class ByteArraySerializer extends ArraySerializer implements AttributeSer
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, byte[] attribute) {
+    public void write(WriteBuffer buffer, byte[] attribute) {
         writeLength(buffer,attribute);
         if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putByte(attribute[i]);
     }

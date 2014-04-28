@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ public class StandardProperty extends AbstractProperty implements StandardRelati
 
     @Override
     public void setPropertyDirect(TitanType type, Object value) {
+        Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.getName());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
                 properties = new HashMap<TitanType, Object>(5);

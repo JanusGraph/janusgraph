@@ -34,6 +34,8 @@ public interface DataOutput extends WriteBuffer {
 
     public DataOutput writeObject(Object object, Class<?> type);
 
+    public DataOutput writeObjectByteOrder(Object object, Class<?> type);
+
     public DataOutput writeObjectNotNull(Object object);
 
     public DataOutput writeClassAndObject(Object object);

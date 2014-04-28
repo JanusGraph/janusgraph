@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -29,7 +27,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.VertexFactory;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.slf4j.Logger;
@@ -144,7 +142,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 assert conditionQuery.entries.size()==1;
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
                                         conditionQuery.vertexId,conditionQuery.entries.get(0),true,tx);
-                if (relCache.typeId != SystemKey.VertexExists.getID()) {
+                if (relCache.typeId != BaseKey.VertexExists.getID()) {
                     log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
                     for (int i=1;i<currentResults.length;i++) {
                         if (currentResults[i]!=null && currentResults[i].vertexId==conditionQuery.vertexId) {

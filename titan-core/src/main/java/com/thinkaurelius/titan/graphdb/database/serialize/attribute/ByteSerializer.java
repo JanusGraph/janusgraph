@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class ByteSerializer implements AttributeSerializer<Byte>, OrderPreservingSerializer {
+public class ByteSerializer implements OrderPreservingSerializer<Byte> {
 
     private static final long serialVersionUID = 117423419883604186L;
 
@@ -15,8 +15,18 @@ public class ByteSerializer implements AttributeSerializer<Byte>, OrderPreservin
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Byte object) {
+    public void write(WriteBuffer out, Byte object) {
         out.putByte((byte)(object.byteValue() - Byte.MIN_VALUE));
+    }
+
+    @Override
+    public Byte readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Byte attribute) {
+        write(buffer,attribute);
     }
 
     /*

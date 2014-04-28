@@ -7,12 +7,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.CString;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.time.Timestamps;
-import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -21,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.log.MessageReader;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -185,7 +182,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         TitanKey id = makeVertexIndexedUniqueKey("uid",String.class);
 
-        TitanKey name = makeKey("name",CString.class);
+        TitanKey name = makeKey("name",String.class);
 
         TitanKey weight = makeKey("weight",Decimal.class);
 
@@ -285,7 +282,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         try {
             tx.makeLabel("link2").unidirected().
-                    sortKey(id, weight).make();
+                    sortKey(tx.getPropertyKey("int"), weight).make();
             fail();
         } catch (IllegalArgumentException e) {
         }

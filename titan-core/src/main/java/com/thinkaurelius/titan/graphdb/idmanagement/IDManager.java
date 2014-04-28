@@ -20,8 +20,12 @@ public class IDManager {
      *     01 -     + Schema related vertices
      *    101 -         + Schema Type vertices
      *   0101 -             + Relation Type vertices
-     *  00101 -                 * Property Key
-     *  10101 -                 * Edge Label
+     *  00101 -                 + Property Key
+     * 000101 -                     * User Property Key
+     * 100101 -                     * System Property Key
+     *  10101 -                 + Edge Label
+     * 010101 -                     * User Edge Label
+     * 110101 -                     * System Edge Label
      *   1101 -             Other Type vertices
      *  01101 -                   Vertex Type (future???)
      *    001 -         Non-Type vertices
@@ -141,6 +145,38 @@ public class IDManager {
 
             @Override
             final boolean isProper() {
+                return false;
+            }
+        },
+        UserPropertyKey {
+            @Override
+            final long offset() {
+                return 6l;
+            }
+
+            @Override
+            final long suffix() {
+                return 5l;
+            }    // 000101b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+        SystemPropertyKey {
+            @Override
+            final long offset() {
+                return 6l;
+            }
+
+            @Override
+            final long suffix() {
+                return 37l;
+            }    // 100101b
+
+            @Override
+            final boolean isProper() {
                 return true;
             }
         },
@@ -154,6 +190,38 @@ public class IDManager {
             final long suffix() {
                 return 21l;
             } // 10101b
+
+            @Override
+            final boolean isProper() {
+                return false;
+            }
+        },
+        UserEdgeLabel {
+            @Override
+            final long offset() {
+                return 6l;
+            }
+
+            @Override
+            final long suffix() {
+                return 21l;
+            } // 010101b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+        SystemEdgeLabel {
+            @Override
+            final long offset() {
+                return 6l;
+            }
+
+            @Override
+            final long suffix() {
+                return 53l;
+            } // 110101b
 
             @Override
             final boolean isProper() {
@@ -308,6 +376,7 @@ public class IDManager {
 
     /* --- TitanRelation Type id bit format ---
       *  [ 0 | count | ID padding ]
+      *  (there is no partition)
      */
 
     private static long getSchemaIdBound(VertexIDType type) {
@@ -329,14 +398,29 @@ public class IDManager {
         return type.addPadding(count);
     }
 
-    public static long getSchemaIdCount(VertexIDType type, long id) {
-        Preconditions.checkArgument(type.is(id));
-        return type.removePadding(id);
+    private static boolean isProperRelationType(long id) {
+        return VertexIDType.UserEdgeLabel.is(id) || VertexIDType.SystemEdgeLabel.is(id)
+                || VertexIDType.UserPropertyKey.is(id) || VertexIDType.SystemPropertyKey.is(id);
     }
 
-    public static long getRelationTypeIdCount(long id) {
-        Preconditions.checkArgument(VertexIDType.RelationType.is(id));
-        return VertexIDType.EdgeLabel.removePadding(id);
+    public static long stripEntireRelationTypePadding(long id) {
+        Preconditions.checkArgument(isProperRelationType(id));
+        return VertexIDType.UserEdgeLabel.removePadding(id);
+    }
+
+    public static long stripRelationTypePadding(long id) {
+        Preconditions.checkArgument(isProperRelationType(id));
+        return VertexIDType.RelationType.removePadding(id);
+    }
+
+    public static long addRelationTypePadding(long id) {
+        long typeid = VertexIDType.RelationType.addPadding(id);
+        Preconditions.checkArgument(isProperRelationType(typeid));
+        return typeid;
+    }
+
+    public static boolean isSystemRelationTypeId(long id) {
+        return VertexIDType.SystemEdgeLabel.is(id) || VertexIDType.SystemPropertyKey.is(id);
     }
 
     public long getRelationCountBound() {
@@ -344,7 +428,7 @@ public class IDManager {
     }
 
     public long getRelationTypeCountBound() {
-        return getSchemaIdBound(VertexIDType.EdgeLabel);
+        return getSchemaIdBound(VertexIDType.UserEdgeLabel);
     }
 
     public long getGenericTypeCountBound() {
@@ -390,6 +474,11 @@ public class IDManager {
         @Override
         public final boolean isPropertyKeyId(long id) {
             return VertexIDType.PropertyKey.is(id);
+        }
+
+        @Override
+        public boolean isSystemRelationTypeId(long id) {
+            return IDManager.isSystemRelationTypeId(id);
         }
 
         @Override

@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class CharacterSerializer implements AttributeSerializer<Character>, OrderPreservingSerializer {
+public class CharacterSerializer implements OrderPreservingSerializer<Character>  {
 
     private final ShortSerializer ss = new ShortSerializer();
 
@@ -16,8 +16,18 @@ public class CharacterSerializer implements AttributeSerializer<Character>, Orde
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Character attribute) {
-        ss.writeObjectData(out, char2short(attribute.charValue()));
+    public void write(WriteBuffer out, Character attribute) {
+        ss.write(out, char2short(attribute.charValue()));
+    }
+
+    @Override
+    public Character readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Character attribute) {
+        write(buffer,attribute);
     }
 
     public static final short char2short(char c) {
