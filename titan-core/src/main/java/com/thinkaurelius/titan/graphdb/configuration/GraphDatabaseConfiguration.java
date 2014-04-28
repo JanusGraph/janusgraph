@@ -1235,9 +1235,6 @@ public class GraphDatabaseConfiguration {
             throw new TitanConfigurationException("Cannot determine local host", e);
         }
 
-        System.out.println("#### computeUniqueInstanceId(" + config + ") --> " + new String(Hex.encodeHex(addrBytes)) + suffix);
-        System.out.println("\t java.lang.management.ManagementFactory.getRuntimeMXBean().getName(): " +  java.lang.management.ManagementFactory.getRuntimeMXBean().getName());
-
         return new String(Hex.encodeHex(addrBytes)) + suffix;
     }
 
