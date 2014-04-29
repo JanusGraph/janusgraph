@@ -14,7 +14,7 @@ public abstract class ConfigElement {
 
     public static final char SEPARATOR = '.';
 
-    private static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR,' ','\t','#','@','<','>','?','/',';','"','\'',':','+','(',')','*','^','`','~','$','%','|','\\','{','[',']','}'};
+    public static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR,' ','\t','#','@','<','>','?','/',';','"','\'',':','+','(',')','*','^','`','~','$','%','|','\\','{','[',']','}'};
 
     private final ConfigNamespace namespace;
     private final String name;
@@ -137,7 +137,9 @@ public abstract class ConfigElement {
             ConfigNamespace parent = element.getNamespace();
             if (parent.isUmbrella()) {
                 Preconditions.checkArgument(umbrellaPos>=0,"Missing umbrella element path");
-                path = umbrellaElements[umbrellaPos] + SEPARATOR + path;
+                String umbrellaName = umbrellaElements[umbrellaPos];
+                Preconditions.checkArgument(!StringUtils.containsAny(umbrellaName,ILLEGAL_CHARS),"Invalid umbrella name provided: %s. Contains illegal chars",umbrellaName);
+                path = umbrellaName + SEPARATOR + path;
                 umbrellaPos--;
             }
             path = parent.getName() + SEPARATOR + path;
