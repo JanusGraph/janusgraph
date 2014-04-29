@@ -562,6 +562,14 @@
                 <version>1.0.5-M3</version>
             </dependency>
             <dependency>
+                <!-- Run the full test suite when changing the Guava version.
+                     The Guava team is deadly serious about their 18 month period from deprecation
+                     to feature deletion, and as a result, at least one of Titan's dependencies is
+                     likely to break whenever the Guava version changes.
+
+                     Example where blithely upgrading Guava introduced a linkage error in the past:
+                     https://issues.apache.org/jira/browse/HBASE-10174
+                -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>15.0</version>
