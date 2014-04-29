@@ -1,30 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
+        <groupId>com.thinkaurelius.titan</groupId>
+        <artifactId>titan</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <groupId>com.thinkaurelius.faunus</groupId>
-    <artifactId>faunus</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <url>http://thinkaurelius.github.com/faunus/</url>
-    <name>Faunus: Graph Analytics Engine</name>
-    <description>
-    </description>
+    <artifactId>titan-hadoop</artifactId>
+    <name>Titan-Hadoop: Faunus by another name</name>
+    <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <sesame.version>2.6.10</sesame.version>
         <tinkerpop.version>2.4.0</tinkerpop.version>
-        <titan.version>0.5.0-SNAPSHOT</titan.version>
-        <slf4j.version>1.7.5</slf4j.version>
         <skipCassandra>true</skipCassandra>
         <skipHBase>true</skipHBase>
         <skipPipeline>false</skipPipeline>
     </properties>
+
     <developers>
         <developer>
             <name>Marko A. Rodriguez</name>
@@ -32,6 +25,7 @@
             <url>http://markorodriguez.com</url>
         </developer>
     </developers>
+
     <contributors>
         <contributor>
             <name>Stephen Mallette</name>
@@ -51,26 +45,7 @@
             <url>http://www.opensource.org/licenses/Apache-2.0</url>
         </license>
     </licenses>
-    <scm>
-        <connection>scm:git:git@github.com:thinkaurelius/faunus.git</connection>
-        <developerConnection>scm:git:git@github.com:thinkaurelius/faunus.git</developerConnection>
-        <url>git@github.com:thinkaurelius/faunus.git</url>
-        <tag>HEAD</tag>
-    </scm>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-log4j12</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>com.tinkerpop.blueprints</groupId>
@@ -102,22 +77,23 @@
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
+	    <classifier></classifier>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-cassandra</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hbase</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-es</artifactId>
-            <version>${titan.version}</version>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
@@ -139,48 +115,41 @@
             <classifier>shaded03</classifier>
         </dependency>
 
+
         <!-- RDF PARSING -->
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-n3</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-ntriples</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-rdfxml</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-trig</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-trix</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-turtle</artifactId>
-            <version>${sesame.version}</version>
         </dependency>
         <!-- LOGGING -->
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
         </dependency>
         <!-- TESTING -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -191,13 +160,8 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>aduna-repo</id>
-            <name>Aduna repository</name>
-            <url>http://repo.aduna-software.org/maven2/releases</url>
-        </repository>
-    </repositories>
+
+
     <build>
         <!-- Used during release:perform to upload to S3 -->
         <extensions>
@@ -209,29 +173,36 @@
         </extensions>
 
         <directory>${basedir}/target</directory>
-        <finalName>${project.artifactId}-${project.version}
-        </finalName>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+
         <resources>
             <resource>
-                <directory>${basedir}/src/main/resources
-                </directory>
+                <directory>${basedir}/src/main/resources</directory>
                 <filtering>true</filtering>
             </resource>
         </resources>
         <testResources>
             <testResource>
-                <directory>${basedir}/src/test/resources
-                </directory>
+                <directory>${basedir}/src/test/resources</directory>
             </testResource>
         </testResources>
+
         <plugins>
+            <!-- Enforcer treats multiple occurrences of the same
+                 dependency with different versions and classifiers as
+                 a violation.  In this case, it's not.  We have both
+                 titan-core at ${project.version} and
+                 titan-core-shaded at a 0.3.x version.
+            -->
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
-                <configuration>
-                    <source>1.7</source>
-                    <target>1.7</target>
-                </configuration>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.3.1</version>
+                <executions>
+                    <execution>
+                        <id>enforce-dependency-convergence</id>
+			<phase>none</phase>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -281,58 +252,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
-                <executions>
-                    <execution>
-                        <id>build-detached-assemblies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <attach>false</attach>
-                            <descriptors>
-                                <descriptor>src/assembly/hadoop-job.xml</descriptor>
-                                <descriptor>src/assembly/standalone.xml</descriptor>
-                            </descriptors>
-                            <finalName>${project.artifactId}-${project.version}</finalName>
-                        </configuration>
-                    </execution>
-
-                    <!-- I would use maven-resources-plugin for
-                         this, but I need to retain the executable
-                         mode bits on some script resources and is
-                         http://jira.codehaus.org/browse/MRESOURCES-132
-                         not yet resolved. -->
-                    <execution>
-                        <id>filter-release-resources</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <attach>false</attach>
-                            <finalName>release</finalName>
-                            <descriptors>
-                                <descriptor>src/assembly/release-resources.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.4.1</version>
-                <configuration>
-                    <goals>deploy</goals>
-                    <pushChanges>false</pushChanges>
-                    <tagNameFormat>@{project.version}</tagNameFormat>
-                    <releaseProfiles>aurelius-release</releaseProfiles>
-                    <arguments>-DskipTests=true</arguments>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -433,195 +352,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>aurelius-release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <version>2.6</version>
-                        <executions>
-                            <!-- <execution>
-                                <id>filter-release-resources</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/release</outputDirectory>
-                                    <useDefaultDelimiters>false</useDefaultDelimiters>
-                                    <delimiters>
-                                        <delimiter>$MAVEN{*}</delimiter>
-                                    </delimiters>
-                                    <resources>
-                                        <resource>
-                                            <directory>src/release</directory>
-                                            <filtering>true</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution> -->
-                            <!-- Copy _Layout.html to doc -->
-                            <execution>
-                                <id>copy-gollum-site-layout</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.basedir}/doc</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${project.build.directory}/release-resources/</directory>
-                                            <includes>
-                                                <include>_Layout.html</include>
-                                            </includes>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.2.1</version>
-                        <executions>
-                            <execution>
-                                <id>git-submodule-prep</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>git</executable>
-                                    <arguments>
-                                        <argument>submodule</argument>
-                                        <argument>update</argument>
-                                        <argument>--init</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.basedir}</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <!-- Gollum doesn't understand submodules. It dies 
-                                    with a Grit [sic] error error when run on a submodule. This limitation is intrinsic 
-                                    to Gollum and not just a limitation of gollum-site. Poor submodule support has appeared 
-                                    in at least two Gollum issues:
-                                    
-                                    https://github.com/gollum/gollum/issues/151
-                                    https://github.com/gollum/gollum/issues/438 
-                                    
-                                    Gollum might eventually throw out Grit in favor of an alternative project called 
-                                    Rugged that supposedly handles submodules correctly:
-                                    
-                                    https://github.com/gollum/gollum-lib/pull/16 
-                                    
-                                    For now, we're hacking around Gollum's limitation. The doc submodule .git file usually 
-                                    contains this: gitdir: ../.git/modules/doc This is a sort of pretend symlink. Git 
-                                    is smart enough to handle an actual symlink in a way functionally identical to the 
-                                    gitdir: ... file, and making this a symlink placates Gollum and avoids the submodule 
-                                    Grit error that would otherwise kill it. -->
-                                <id>hack-submodule-gitdir-for-gollum</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>ln</executable>
-                                    <arguments>
-                                        <argument>-sf</argument>
-                                        <argument>../.git/modules/doc</argument>
-                                        <argument>.git</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.basedir}/doc</workingDirectory>
-                                </configuration>
-                            </execution>
-
-                            <execution>
-                                <id>gollum-site</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>${project.build.directory}/release-resources/gollum-site-wrapper.sh
-                                    </executable>
-                                    <workingDirectory>${project.basedir}</workingDirectory>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!--
-                       The distribution descriptor includes files written to the build
-                       directory by both the standalone and hadoop-job descriptors.
-                       That's why the execution for the distribution descriptor comes last.
-                    -->
-                    <plugin>
-                        <artifactId>maven-assembly-plugin</artifactId>
-                        <version>2.4</version>
-                        <executions>
-                            <execution>
-                                <id>build-attached-assemblies</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>single</goal>
-                                </goals>
-                                <configuration>
-                                    <attach>true</attach>
-                                    <finalName>${project.artifactId}</finalName>
-                                    <tarLongFileMode>gnu</tarLongFileMode>
-                                    <descriptors>
-                                        <descriptor>src/assembly/distribution.xml</descriptor>
-                                    </descriptors>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.4</version>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>wagon-maven-plugin</artifactId>
-                        <version>1.0-beta-4</version>
-                        <executions>
-                            <execution>
-                                <id>deploy-distribution-archives-to-s3</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>upload</goal>
-                                </goals>
-                                <configuration>
-                                    <fromDir>${project.build.directory}</fromDir>
-                                    <includes>
-                                        ${project.artifactId}-${project.version}.zip*,${project.artifactId}-${project.version}.tar.bz2*
-                                    </includes>
-                                    <serverId>aurelius.s3</serverId>
-                                    <!-- your ~/.m2/settings.xml must match -->
-                                    <url>s3://s3.thinkaurelius.com/downloads/faunus/</url>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

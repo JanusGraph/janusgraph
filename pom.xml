@@ -64,6 +64,7 @@
         <cassandra.version>2.0.6</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
+        <sesame.version>2.6.10</sesame.version>
         <slf4j.version>1.7.5</slf4j.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.1.2</jackson2.version>
@@ -93,6 +94,7 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
+        <module>titan-hadoop</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
@@ -472,6 +474,48 @@
                 <artifactId>jetty</artifactId>
                 <version>6.1.26</version>
             </dependency>
+	    <!-- Sesame -->
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-model</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-api</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-n3</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-ntriples</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-rdfxml</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-trig</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-trix</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-turtle</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+
             <!-- asm 3.x -->
             <dependency>
                 <groupId>asm</groupId>
