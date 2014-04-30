@@ -57,43 +57,6 @@ wait_for_cassandra() {
     return 1
 }
 
-wait_for_rexster() {
-    local now_s=`date '+%s'`
-    local stop_s=$(( $now_s + $REXSTER_STARTUP_TIMEOUT_S ))
-    local status=
-
-    while [ $now_s -le $stop_s ]; do
-        $BIN/checksocket.sh $REXSTER_IP $REXSTER_PORT >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            echo "Started Rexster (port $REXSTER_PORT is open)."
-            return 0
-        fi
-        sleep $SLEEP_INTERVAL_S
-        now_s=`date '+%s'`
-    done
-
-    echo "Rexster startup timeout exceeded ($REXSTER_STARTUP_TIMEOUT_S seconds)" >&2
-    return 1
-}
-
-wait_for_elasticsearch() {
-    local now_s=`date '+%s'`
-    local stop_s=$(( $now_s + $ELASTICSEARCH_STARTUP_TIMEOUT_S ))
-    local status=
-
-    while [ $now_s -le $stop_s ]; do
-        $BIN/checksocket.sh $ELASTICSEARCH_IP $ELASTICSEARCH_PORT >/dev/null 2>&1
-        if [ $? -eq 0 ]; then
-            echo "Started Elasticsearch (port $ELASTICSEARCH_PORT is open)."
-            return 0
-        fi
-        sleep $SLEEP_INTERVAL_S
-        now_s=`date '+%s'`
-    done
-
-    echo "Elasticsearch startup timeout exceeded ($ELASTICSEARCH_STARTUP_TIMEOUT_S seconds)" >&2
-    return 1
-}
 
 # wait_for_startup friendly_name host port timeout_s
 wait_for_startup() {
