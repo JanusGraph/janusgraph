@@ -18,6 +18,13 @@ public interface TitanIndexQuery {
     public TitanIndexQuery limit(int limit);
 
     /**
+     * Specifies the offset of the query. Query results will be retrieved starting at the given offset.
+     * @param offset
+     * @return
+     */
+    public TitanIndexQuery offset(int offset);
+
+    /**
      * Adds the given parameter to the list of parameters of this query.
      * Parameters are passed right through to the indexing backend to modify the query behavior.
      * @param para

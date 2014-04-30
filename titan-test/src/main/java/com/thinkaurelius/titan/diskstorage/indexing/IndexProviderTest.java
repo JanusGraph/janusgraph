@@ -246,9 +246,13 @@ public abstract class IndexProviderTest {
 
             if (supportsLuceneStyleQueries()) {
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:\"Hello Bob\"",NO_PARAS))));
+                assertEquals(0, Iterables.size(tx.query(new RawQuery(store,"text:\"Hello Bob\"",NO_PARAS).setOffset(1))));
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(world AND tomorrow)",NO_PARAS))));
 //                printResult(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS)));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1).setOffset(1))));
+                assertEquals(0, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1).setOffset(2))));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:\"world\"",NO_PARAS))));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"time:[1000 TO 1020]",NO_PARAS))));
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:world AND time:1001",NO_PARAS))));

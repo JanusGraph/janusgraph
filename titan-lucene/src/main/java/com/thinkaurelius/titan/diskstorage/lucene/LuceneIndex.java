@@ -397,10 +397,15 @@ public class LuceneIndex implements IndexProvider {
             if (searcher == null) return ImmutableList.of(); //Index does not yet exist
 
             long time = System.currentTimeMillis();
-            TopDocs docs = searcher.search(q, query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1);
+            //TODO: can we make offset more efficient in Lucene?
+            final int offset = query.getOffset();
+            int adjustedLimit = query.hasLimit() ? query.getLimit() : Integer.MAX_VALUE - 1;
+            if (adjustedLimit < Integer.MAX_VALUE-1-offset) adjustedLimit+=offset;
+            else adjustedLimit = Integer.MAX_VALUE-1;
+            TopDocs docs = searcher.search(q, adjustedLimit);
             log.debug("Executed query [{}] in {} ms",q, System.currentTimeMillis() - time);
             List<RawQuery.Result<String>> result = new ArrayList<RawQuery.Result<String>>(docs.scoreDocs.length);
-            for (int i = 0; i < docs.scoreDocs.length; i++) {
+            for (int i = offset; i < docs.scoreDocs.length; i++) {
                 result.add(new RawQuery.Result<String>(searcher.doc(docs.scoreDocs[i].doc).getField(DOCID).stringValue(),docs.scoreDocs[i].score));
             }
             return result;
