@@ -41,7 +41,16 @@ export CASSANDRA_INCLUDE="`dirname $0`/cassandra.in.sh"
 
 # Use JAVA_HOME if set, otherwise look for java in PATH
 if [ -n "$JAVA_HOME" ]; then
-    JAVA="$JAVA_HOME/bin/java"
+    # Why we can't have nice things: Solaris combines x86 and x86_64
+    # installations in the same tree, using an unconventional path for the
+    # 64bit JVM.  Since we prefer 64bit, search the alternate path first,
+    # (see https://issues.apache.org/jira/browse/CASSANDRA-4638).
+    for java in "$JAVA_HOME"/bin/amd64/java "$JAVA_HOME"/bin/java; do
+        if [ -x "$java" ]; then
+            JAVA="$java"
+            break
+        fi
+    done
 else
     JAVA=java
 fi
@@ -77,10 +86,10 @@ esac
 
 launch_service()
 {
-    pidpath=$1
-    foreground=$2
-    props=$3
-    class=$4
+    pidpath="$1"
+    foreground="$2"
+    props="$3"
+    class="$4"
     cassandra_parms="-Dlog4j.configuration=log4j-cassandra.properties -Dlog4j.defaultInitOverride=true"
 
     if [ "x$pidpath" != "x" ]; then
@@ -103,7 +112,7 @@ launch_service()
 }
 
 # Parse any command line options.
-args=`getopt vfhp:bD: "$@"`
+args=`getopt vfhp:bD:H:E: "$@"`
 eval set -- "$args"
 
 classname="org.apache.cassandra.service.CassandraDaemon"
@@ -119,7 +128,7 @@ while true; do
             shift
         ;;
         -h)
-            echo "Usage: $0 [-f] [-h] [-p pidfile]"
+            echo "Usage: $0 [-f] [-h] [-p pidfile] [-H dumpfile] [-E errorfile]"
             exit 0
         ;;
         -v)
@@ -128,6 +137,14 @@ while true; do
         ;;
         -D)
             properties="$properties -D$2"
+            shift 2
+        ;;
+        -H)
+            properties="$properties -XX:HeapDumpPath=$2"
+            shift 2
+        ;;
+        -E)
+            properties="$properties -XX:ErrorFile=$2"
             shift 2
         ;;
         --)

@@ -39,6 +39,7 @@ import javax.management.MBeanServerFactory;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1234,8 +1235,11 @@ public class GraphDatabaseConfiguration {
         } catch (UnknownHostException e) {
             throw new TitanConfigurationException("Cannot determine local host", e);
         }
-
-        return new String(Hex.encodeHex(addrBytes)) + suffix;
+        String uid = new String(Hex.encodeHex(addrBytes)) + suffix;
+        for (char c : ConfigElement.ILLEGAL_CHARS) {
+            uid = StringUtils.replaceChars(uid,c,'-');
+        }
+        return uid;
     }
 
     public static String getOrGenerateUniqueInstanceId(Configuration config) {
@@ -1246,6 +1250,7 @@ public class GraphDatabaseConfiguration {
         } else {
             uid = config.get(UNIQUE_INSTANCE_ID);
         }
+        Preconditions.checkArgument(!StringUtils.containsAny(uid,ConfigElement.ILLEGAL_CHARS),"Invalid unique identifier: %s",uid);
         return uid;
     }
 

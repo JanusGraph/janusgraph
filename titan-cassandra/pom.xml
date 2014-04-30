@@ -15,7 +15,7 @@
         <jamm.group>com.github.stephenc</jamm.group>
         <dependency.plugin.version>2.8</dependency.plugin.version>
         <test.extra.jvm.opts>-javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
-        <default.test.jvm.opts>-Xms256m -Xmx1280m -XX:+HeapDumpOnOutOfMemoryError -ea ${test.extra.jvm.opts}</default.test.jvm.opts>
+        <default.test.jvm.opts>-Xms256m -Xmx1280m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</default.test.jvm.opts>
         <mem.jvm.opts>-Xms256m -Xmx768m -ea -XX:+HeapDumpOnOutOfMemoryError ${test.extra.jvm.opts}</mem.jvm.opts>
         <top.level.basedir>${basedir}/..</top.level.basedir>
     </properties>
@@ -65,56 +65,11 @@
             <version>${jna.version}</version>
             <optional>true</optional>
         </dependency>
-        <!-- 
-            Temporary hack to work around the outdated 12.0 Guava pom.xml
-            dependency in Cassandra 1.2.2.  Cassandra 1.2.2 actually
-            requires Guava 13.0.1, judging from the distro tarball
-            and runtime NoClassDefFoundErrors looking for the class
-            com/google/common/util/concurrent/RateLimiter.
-        -->
         <dependency>
             <groupId>org.apache.cassandra</groupId>
             <artifactId>cassandra-all</artifactId>
-            <!-- The version is controlled in <dependencyManagement> -->
-            <!-- Using avro-ipc 1.5.3 caused the following when opening the graphdb:
-                 java.lang.NoSuchMethodError: org.apache.avro.io.DecoderFactory.configureDirectDecoder(Z)Lorg/apache/avro/io/DecoderFactory
-
-                 Stock avro 1.4.0 or 1.4.1 might work, but I'd like to see
-                 what customizations were made in the cassandra copy of avro
-                 before trying to drop it for the stock artifact...
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.cassandra.deps</groupId>
-                    <artifactId>avro</artifactId>
-                </exclusion>
-            </exclusions>
-            -->
+            <!-- The version is controlled in <dependencyManagement> in the parent pom -->
         </dependency>
-        <!--
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>1.4.0</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>netty</artifactId>
-                    <groupId>org.jboss.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>paranamer</artifactId>
-                    <groupId>com.thoughtworks.paranamer</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>paranamer-ant</artifactId>
-                    <groupId>com.thoughtworks.paranamer</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>velocity</artifactId>
-                    <groupId>org.apache.velocity</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        -->
         <dependency>
             <groupId>commons-pool</groupId>
             <artifactId>commons-pool</artifactId>
@@ -342,5 +297,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+      <profile>
+	<id>coverage</id>
+	<activation>
+	  <activeByDefault>false</activeByDefault>
+	</activation>
+
+	<properties>
+	  <test.extra.jvm.opts>${jacoco.opts} -javaagent:${basedir}/target/jamm-${jamm.version}.jar</test.extra.jvm.opts>
+	</properties>
+      </profile>
+    </profiles>
 </project>
 

@@ -24,8 +24,6 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
-// TODO remove test ignore annotations when the String / CString / sortkey / ES Mapping type issues are resolved
 public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     public static final String INDEX = "index";
@@ -45,11 +43,11 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     public abstract boolean supportsLuceneStyleQueries();
 
-    @Ignore @Test
+    @Test
     public void testOpenClose() {
     }
 
-    @Ignore @Test
+    @Test
     public void testSimpleUpdate() {
         TitanKey text = makeKey("name",String.class);
         mgmt.createInternalIndex("namev",Vertex.class,false,text);
@@ -71,7 +69,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     }
 
-    @Ignore @Test
+    @Test
     public void testIndexing() {
 
         TitanKey text = makeKey("text",String.class);
@@ -290,7 +288,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         }
     }
 
-    @Ignore @Test
+    @Test
     public void testIndexParameters() {
         int numV = 1000;
         String[] strs = {"Uncle Berry has a farm","and on his farm he has five ducks","ducks are beautiful animals","the sky is very blue today"};
@@ -356,7 +354,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     }
 
-    @Ignore @Test
+    @Test
     public void testRawQueries() {
         if (!supportsLuceneStyleQueries()) return;
 
@@ -369,18 +367,24 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry)").vertices()));
         assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(VINDEX,"v.text:(farm uncle berry) AND v.name:\"Uncle Berry has a farm\"").vertices()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").vertices()));
+        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(VINDEX,"v.text:(beautiful are ducks)").offset(10).vertices()));
         assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).vertices()));
+        assertEquals(10,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(10).vertices()));
+        assertEquals(0,Iterables.size(graph.indexQuery(VINDEX,"v.\"text\":(beautiful are ducks)").limit(10).offset(numV).vertices()));
 
         //Same queries for edges
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:ducks").edges()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry)").edges()));
         assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(EINDEX,"e.text:(farm uncle berry) AND e.name:\"Uncle Berry has a farm\"").edges()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").edges()));
+        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(EINDEX,"e.text:(beautiful are ducks)").offset(10).edges()));
         assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).edges()));
+        assertEquals(10,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
+        assertEquals(0,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
 
     }
 
-    @Ignore @Test
+    @Test
     public void testIndexIteration() {
         TitanKey objectType = makeKey("objectType",String.class);
         createExternalVertexIndex(objectType,INDEX);

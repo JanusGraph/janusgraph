@@ -512,6 +512,7 @@ public class IndexSerializer {
         log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
         RawQuery rawQuery=new RawQuery(index.getStoreName(),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
+        rawQuery.setOffset(query.getOffset());
         return Iterables.transform(backendTx.rawQuery(index.getBackingIndexName(), rawQuery), new Function<RawQuery.Result<String>, RawQuery.Result>() {
             @Nullable
             @Override
