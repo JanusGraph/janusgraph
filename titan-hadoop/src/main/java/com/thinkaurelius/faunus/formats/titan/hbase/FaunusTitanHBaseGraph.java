@@ -4,10 +4,10 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.FaunusTitanGraph;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
 import org.apache.hadoop.conf.Configuration;
 
 import java.util.Iterator;
@@ -60,7 +60,9 @@ public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
         @Override
         public Entry next() {
             final Map.Entry<byte[], NavigableMap<Long, byte[]>> entry = iterator.next();
-            return new StaticBufferEntry(new StaticByteBuffer(entry.getKey()), new StaticByteBuffer(entry.getValue().lastEntry().getValue()));
+            byte[] col = entry.getKey();
+            byte[] val = entry.getValue().lastEntry().getValue();
+            return StaticArrayEntry.of(new StaticArrayBuffer(col), new StaticArrayBuffer(val));
         }
 
         @Override

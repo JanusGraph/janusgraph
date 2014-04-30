@@ -4,10 +4,11 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.titan.FaunusTitanGraph;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
-import org.apache.cassandra.db.IColumn;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
+import org.apache.cassandra.db.Column;
 import org.apache.hadoop.conf.Configuration;
 
 import java.nio.ByteBuffer;
@@ -25,15 +26,15 @@ public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
         super(setup);
     }
 
-    public FaunusVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, IColumn> value) {
-        return super.readFaunusVertex(configuration, new StaticByteBuffer(key), new CassandraMapIterable(value));
+    public FaunusVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
+        return super.readFaunusVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
     }
 
     private static class CassandraMapIterable implements Iterable<Entry> {
 
-        private final SortedMap<ByteBuffer, IColumn> columnValues;
+        private final SortedMap<ByteBuffer, Column> columnValues;
 
-        public CassandraMapIterable(final SortedMap<ByteBuffer, IColumn> columnValues) {
+        public CassandraMapIterable(final SortedMap<ByteBuffer, Column> columnValues) {
             Preconditions.checkNotNull(columnValues);
             this.columnValues = columnValues;
         }
@@ -47,9 +48,9 @@ public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
 
     private static class CassandraMapIterator implements Iterator<Entry> {
 
-        private final Iterator<Map.Entry<ByteBuffer, IColumn>> iterator;
+        private final Iterator<Map.Entry<ByteBuffer, Column>> iterator;
 
-        public CassandraMapIterator(final Iterator<Map.Entry<ByteBuffer, IColumn>> iterator) {
+        public CassandraMapIterator(final Iterator<Map.Entry<ByteBuffer, Column>> iterator) {
             this.iterator = iterator;
         }
 
@@ -60,8 +61,10 @@ public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
 
         @Override
         public Entry next() {
-            final Map.Entry<ByteBuffer, IColumn> entry = iterator.next();
-            return new StaticBufferEntry(new StaticByteBuffer(entry.getKey()), new StaticByteBuffer(entry.getValue().value()));
+            final Map.Entry<ByteBuffer, Column> entry = iterator.next();
+            ByteBuffer col = entry.getKey();
+            ByteBuffer val = entry.getValue().value();
+            return StaticArrayEntry.of(StaticArrayBuffer.of(col), StaticArrayBuffer.of(val));
         }
 
         @Override

@@ -16,21 +16,23 @@ import com.thinkaurelius.faunus.FaunusPathElement.MicroElement;
 import com.thinkaurelius.faunus.formats.rexster.util.ElementIdHandler;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ReadByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.io.WritableUtils;
 
 import javax.annotation.Nullable;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -51,7 +53,8 @@ public class FaunusSerializer {
 
     public FaunusSerializer(final Configuration configuration) {
         Preconditions.checkNotNull(configuration);
-        this.serializer = new KryoSerializer(true);
+        // TODO titan05 integration -- formerly new KryoSerializer(true); is StandardSerializer substitution OK?
+        this.serializer = new StandardSerializer(true);
         this.types = FaunusType.DEFAULT_MANAGER;
         this.configuration = configuration;
         this.trackState = configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
@@ -152,7 +155,8 @@ public class FaunusSerializer {
                 if (schema == null) writeFaunusType(property.getType(), out);
                 else WritableUtils.writeVLong(out, schema.getTypeId(property.getType()));
                 //Value
-                final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serializer.getDataOutput(40, true);
+                // TODO titan05 integration -- this used to be getDataOutput(40, true), what happened to the true argument?
+                final com.thinkaurelius.titan.graphdb.database.serialize.DataOutput o = serializer.getDataOutput(40);
                 o.writeClassAndObject(property.getValue());
                 final StaticBuffer buffer = o.getStaticBuffer();
                 WritableUtils.writeVInt(out, buffer.length());
@@ -177,7 +181,7 @@ public class FaunusSerializer {
                 int byteLength = WritableUtils.readVInt(in);
                 byte[] bytes = new byte[byteLength];
                 in.readFully(bytes);
-                final ReadBuffer buffer = new ReadByteBuffer(bytes);
+                final ReadBuffer buffer = new ReadArrayBuffer(bytes);
                 Object value = serializer.readClassAndObject(buffer);
 
                 FaunusProperty property = new FaunusProperty(type, value);

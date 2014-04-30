@@ -10,13 +10,14 @@ import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetup;
 import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
+
 import org.apache.hadoop.conf.Configuration;
 
 /**

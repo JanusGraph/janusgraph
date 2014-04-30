@@ -2,6 +2,8 @@ package com.thinkaurelius.faunus.formats.titan.cassandra;
 
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
 import org.apache.cassandra.hadoop.ColumnFamilyRecordReader;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -37,6 +39,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Faunu
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
+            // TODO titan05 integration -- the duplicate() call may be unnecessary
             final FaunusVertex temp = this.graph.readFaunusVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
             if (null != temp) {
                 this.vertex = temp;
