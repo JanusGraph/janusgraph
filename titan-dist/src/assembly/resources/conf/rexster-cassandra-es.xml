@@ -93,10 +93,9 @@
             <graph-read-only>false</graph-read-only>
             <properties>
                 <storage.backend>cassandra</storage.backend>
-                <storage.index.search.backend>elasticsearch</storage.index.search.backend>
-                <storage.index.search.directory>../db/es</storage.index.search.directory>
-                <storage.index.search.client-only>false</storage.index.search.client-only>
-                <storage.index.search.local-mode>true</storage.index.search.local-mode>
+                <index.search.backend>elasticsearch</index.search.backend>
+                <index.search.hostname>127.0.0.1</index.search.hostname>
+                <index.search.client-only>true</index.search.client-only>
             </properties>
             <extensions>
               <allows>
