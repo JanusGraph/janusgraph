@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ `basename $0` = 'nodeprobe' ]; then
+if [ "`basename "$0"`" = 'nodeprobe' ]; then
     echo "***************************************************************" >&2
-    echo "WARNING: $0 is obsolete, use `dirname $0`/nodetool instead" >&2
+    echo "WARNING: $0 is obsolete, use `dirname "$0"`/nodetool instead" >&2
     echo "***************************************************************" >&2
 fi
 
@@ -25,29 +25,59 @@ export CASSANDRA_INCLUDE="`dirname $0`/cassandra.in.sh"
 . "$CASSANDRA_INCLUDE"
 
 # Use JAVA_HOME if set, otherwise look for java in PATH
-if [ -x $JAVA_HOME/bin/java ]; then
-    JAVA=$JAVA_HOME/bin/java
+if [ -x "$JAVA_HOME/bin/java" ]; then
+    JAVA="$JAVA_HOME/bin/java"
 else
     JAVA="`which java`"
 fi
 
-if [ -z $CASSANDRA_CONF -o -z $CLASSPATH ]; then
+if [ -z "$CASSANDRA_CONF" -o -z "$CLASSPATH" ]; then
     echo "You must set the CASSANDRA_CONF and CLASSPATH vars" >&2
     exit 1
 fi
 
+# Run cassandra-env.sh to pick up JMX_PORT
+if [ -f "$CASSANDRA_CONF/cassandra-env.sh" ]; then
+    . "$CASSANDRA_CONF/cassandra-env.sh"
+fi
+
+# JMX Port passed via cmd line args (-p 9999 / --port 9999 / --port=9999)
+# should override the value from cassandra-env.sh
+ARGS=""
+while true
+do
+  if [ ! $1 ]; then break; fi
+  case $1 in
+    -p)
+      JMX_PORT=$2
+      shift
+      ;;
+    --port=*)
+      JMX_PORT=$(echo $1 | cut -d '=' -f 2)
+      ;;
+    --port)
+      JMX_PORT=$2
+      shift
+      ;;
+    *)
+      ARGS="$ARGS $1"
+      ;;
+  esac
+  shift
+done
+
 # Special-case path variables.
 case "`uname`" in
     CYGWIN*) 
-        CLASSPATH=`cygpath -p -w "$CLASSPATH"`
-        CASSANDRA_CONF=`cygpath -p -w "$CASSANDRA_CONF"`
+        CLASSPATH="`cygpath -p -w "$CLASSPATH"`"
+        CASSANDRA_CONF="`cygpath -p -w "$CASSANDRA_CONF"`"
     ;;
 esac
 
-"$JAVA" -cp $CLASSPATH \
+"$JAVA" $JAVA_AGENT -cp "$CLASSPATH" \
       -Xmx32m \
       -Dlog4j.configuration=log4j-tools.properties \
-      -Dstorage-config=$CASSANDRA_CONF \
-      org.apache.cassandra.tools.NodeCmd $@
+      -Dstorage-config="$CASSANDRA_CONF" \
+      org.apache.cassandra.tools.NodeCmd -p $JMX_PORT $ARGS
 
 # vi:ai sw=4 ts=4 tw=0 et
