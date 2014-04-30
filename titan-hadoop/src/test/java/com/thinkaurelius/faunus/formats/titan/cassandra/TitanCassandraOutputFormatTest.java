@@ -1,11 +1,18 @@
 package com.thinkaurelius.faunus.formats.titan.cassandra;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import org.apache.commons.configuration.BaseConfiguration;
 
 /**
@@ -14,21 +21,31 @@ import org.apache.commons.configuration.BaseConfiguration;
 public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
     private static TitanGraph startUpCassandra() throws Exception {
-        BaseConfiguration configuration = new BaseConfiguration();
-        configuration.setProperty("storage.backend", "embeddedcassandra");
-        configuration.setProperty("storage.hostname", "localhost");
-        configuration.setProperty("storage.cassandra-config-dir", TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
-        configuration.setProperty("storage.db-cache", "false");
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(configuration);
-        graphconfig.getBackend().clearStorage();
+        ModifiableConfiguration configuration = GraphDatabaseConfiguration.buildConfiguration();
+        configuration.set(STORAGE_BACKEND,"embededcassandra");
+        configuration.set(STORAGE_HOSTS,new String[]{"localhost"});
+        configuration.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
+        configuration.set(DB_CACHE, false);
+        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        configuration.set(UNIQUE_INSTANCE_ID, "inst");
+        Backend backend = new Backend(configuration);
+        backend.initialize(configuration);
+        backend.clearStorage();
+
         return TitanFactory.open(configuration);
     }
 
     private static BaseConfiguration getConfiguration() throws Exception {
         BaseConfiguration configuration = new BaseConfiguration();
-        configuration.setProperty("storage.backend", "cassandrathrift");
-        configuration.setProperty("storage.hostname", "localhost");
-        configuration.setProperty("storage.db-cache", "false");
+
+        ModifiableConfiguration config = new ModifiableConfiguration(TITAN_NS,
+                new CommonsConfiguration(configuration),
+                BasicConfiguration.Restriction.NONE);
+
+        config.set(STORAGE_BACKEND,"cassandrathrift");
+        config.set(STORAGE_HOSTS,new String[]{"localhost"});
+        config.set(DB_CACHE, false);
+
         return configuration;
     }
 

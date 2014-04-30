@@ -2,11 +2,21 @@ package com.thinkaurelius.faunus.formats.titan.hbase;
 
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.formats.TitanOutputFormatTest;
+import com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.faunus.tinkerpop.gremlin.Imports;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -14,22 +24,32 @@ import org.apache.commons.configuration.BaseConfiguration;
 public class TitanHBaseOutputFormatTest extends TitanOutputFormatTest {
 
     private static TitanGraph startUpHBase() throws Exception {
-        BaseConfiguration configuration = new BaseConfiguration();
-        configuration.setProperty("storage.backend", "hbase");
-        configuration.setProperty("storage.hostname", "localhost");
-        configuration.setProperty("storage.port", "2181");
-        configuration.setProperty("storage.db-cache", "false");
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(configuration);
-        graphconfig.getBackend().clearStorage();
+        ModifiableConfiguration configuration = GraphDatabaseConfiguration.buildConfiguration();
+        configuration.set(STORAGE_BACKEND,"hbase");
+        configuration.set(STORAGE_HOSTS,new String[]{"localhost"});
+        configuration.set(STORAGE_PORT,2181);
+        configuration.set(DB_CACHE, false);
+        configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
+        configuration.set(UNIQUE_INSTANCE_ID, "inst");
+        Backend backend = new Backend(configuration);
+        backend.initialize(configuration);
+        backend.clearStorage();
+
         return TitanFactory.open(configuration);
     }
 
     private static BaseConfiguration getConfiguration() throws Exception {
         BaseConfiguration configuration = new BaseConfiguration();
-        configuration.setProperty("storage.backend", "hbase");
-        configuration.setProperty("storage.hostname", "localhost");
-        configuration.setProperty("storage.port", "2181");
-        configuration.setProperty("storage.db-cache", "false");
+
+        ModifiableConfiguration config = new ModifiableConfiguration(TITAN_NS,
+                new CommonsConfiguration(configuration),
+                BasicConfiguration.Restriction.NONE);
+
+        config.set(STORAGE_BACKEND,"hbase");
+        config.set(STORAGE_HOSTS,new String[]{"localhost"});
+        config.set(STORAGE_PORT,2181);
+        config.set(DB_CACHE, false);
+
         return configuration;
     }
 

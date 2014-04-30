@@ -3,10 +3,7 @@ package com.thinkaurelius.faunus.formats;
 import com.thinkaurelius.faunus.BaseTest;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusPipeline;
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -124,7 +121,7 @@ public class TitanOutputFormatTest extends BaseTest {
 
     public void testBulkVertexPropertyUpdates(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
         TitanGraph g = TitanFactory.open(configuration);
-        g.makeKey("name").dataType(String.class).list().make();
+        g.makeKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         g.commit();
 
         bulkLoadGraphOfTheGods(f1);

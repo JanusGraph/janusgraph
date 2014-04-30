@@ -1,12 +1,14 @@
 package com.thinkaurelius.faunus.formats.titan.input.current;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.faunus.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.faunus.formats.titan.input.TitanFaunusSetupCommon;
 import com.thinkaurelius.faunus.formats.titan.input.VertexReader;
 import com.thinkaurelius.faunus.formats.titan.util.ConfigurationUtil;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -15,11 +17,18 @@ import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
-import com.thinkaurelius.titan.graphdb.types.reference.TypeReferenceContainer;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.hadoop.conf.Configuration;
 
@@ -28,27 +37,31 @@ import org.apache.hadoop.conf.Configuration;
  */
 public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
 
-    private final GraphDatabaseConfiguration graphConfig;
+    private final StandardTitanGraph graph;
+    private final StandardTitanTx tx;
 
     public TitanFaunusSetupImpl(final Configuration config) {
         BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
-        graphConfig = new GraphDatabaseConfiguration(titan);
-    }
+        graph = (StandardTitanGraph)TitanFactory.open(titan);
+        tx = (StandardTitanTx)graph.buildTransaction().readOnly().setCacheSize(200).start();
+   }
 
     @Override
     public TypeInspector getTypeInspector() {
-        StandardTitanGraph graph = null;
-        TypeReferenceContainer types = null;
-        try {
-            graph = new StandardTitanGraph(graphConfig);
-            types = new TypeReferenceContainer(graph);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not read schema from TitanGraph", e);
-        } finally {
-            if (graph != null) graph.shutdown();
+        //Pre-load schema
+        for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
+            for (TitanVertex k : tx.getVertices(BaseKey.TypeCategory, sc)) {
+                assert k instanceof TitanSchemaVertex;
+                TitanSchemaVertex s = (TitanSchemaVertex)k;
+                String name = s.getName();
+                Preconditions.checkNotNull(name);
+                TypeDefinitionMap dm = s.getDefinition();
+                Preconditions.checkNotNull(dm);
+                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.OUT);
+                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.IN);
+            }
         }
-        Preconditions.checkNotNull(types);
-        return types;
+        return tx;
     }
 
     @Override
@@ -56,19 +69,21 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
         return new SystemTypeInspector() {
             @Override
             public boolean isSystemType(long typeid) {
-                return SystemTypeManager.isSystemRelationType(typeid);
+                return IDManager.isSystemRelationTypeId(typeid);
             }
 
             @Override
             public boolean isVertexExistsSystemType(long typeid) {
-                return typeid == SystemKey.VertexState.getID();
+                return typeid == BaseKey.VertexExists.getID();
             }
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == SystemKey.TypeClass.getID() ||
-                        typeid == SystemKey.TypeDefinition.getID() ||
-                        typeid == SystemKey.TypeName.getID();
+                return typeid == BaseKey.TypeCategory.getID() ||
+                        typeid == BaseKey.TypeDefinitionProperty.getID() ||
+                        typeid == BaseKey.TypeDefinitionDesc.getID() ||
+                        typeid == BaseKey.TypeName.getID() ||
+                        typeid == BaseLabel.TypeDefinitionEdge.getID();
             }
         };
     }
@@ -85,18 +100,22 @@ public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
 
     @Override
     public RelationReader getRelationReader() {
-        Serializer serializer = graphConfig.getSerializer();
-        EdgeSerializer reader = new EdgeSerializer(serializer);
-        return reader;
+        return graph.getEdgeSerializer();
     }
 
     @Override
     public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
         if (inputFilter.limit == 0) {
-            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationType.PROPERTY);
+            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY);
             return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
         } else {
             return super.inputSlice(inputFilter);
         }
+    }
+
+    @Override
+    public void close() {
+        tx.rollback();
+        graph.shutdown();
     }
 }

@@ -32,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.Backend.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
@@ -846,9 +845,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
-        if (config.has(GraphDatabaseConfiguration.PORT)) {
+        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
-                    GraphDatabaseConfiguration.PORT, HBASE_CONFIGURATION_NAMESPACE);
+                    GraphDatabaseConfiguration.STORAGE_PORT, HBASE_CONFIGURATION_NAMESPACE);
         }
     }
 }

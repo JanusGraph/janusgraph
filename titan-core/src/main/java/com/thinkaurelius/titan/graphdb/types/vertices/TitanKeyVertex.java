@@ -12,8 +12,6 @@ public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
         super(tx, id, lifecycle);
     }
 
-    //############## IDENTICAL TO TitanKeyReference
-
     @Override
     public Class<?> getDataType() {
         return getDefinition().getValue(TypeDefinitionCategory.DATATYPE,Class.class);
