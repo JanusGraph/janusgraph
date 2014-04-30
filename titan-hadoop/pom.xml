@@ -78,7 +78,7 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-	    <classifier></classifier>
+            <classifier/>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -89,6 +89,8 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hbase</artifactId>
             <version>${project.version}</version>
+            <type>jar</type>
+            <classifier/>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -207,7 +209,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
-                <version>2.2</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -220,7 +221,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.8.1</version>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -255,7 +255,6 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.4</version>
                 <executions>
                     <execution>
                         <id>build-detached-assemblies</id>
@@ -277,7 +276,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.4.2</version>
                 <configuration>
                     <excludes>
                         <exclude>**/*PipelineTest.java</exclude>
@@ -289,7 +287,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
-                <version>2.16</version>
                 <executions>
                     <execution>
                         <id>faunus-pipeline-test</id>
