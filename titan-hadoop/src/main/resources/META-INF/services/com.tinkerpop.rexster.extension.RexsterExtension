@@ -1,2 +1,2 @@
-com.thinkaurelius.faunus.formats.rexster.FaunusRexsterInputFormatExtension
-com.thinkaurelius.faunus.tinkerpop.rexster.FaunusRexsterExecutorExtension
+com.thinkaurelius.titan.hadoop.formats.rexster.FaunusRexsterInputFormatExtension
+com.thinkaurelius.titan.hadoop.tinkerpop.rexster.FaunusRexsterExecutorExtension

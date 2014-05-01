@@ -1,4 +1,4 @@
-import com.thinkaurelius.faunus.FaunusVertex
+import com.thinkaurelius.titan.hadoop.FaunusVertex
 import com.tinkerpop.blueprints.Edge
 
 import static com.tinkerpop.blueprints.Direction.IN

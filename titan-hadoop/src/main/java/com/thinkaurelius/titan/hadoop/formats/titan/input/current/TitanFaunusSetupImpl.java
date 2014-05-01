@@ -1,0 +1,122 @@
+package com.thinkaurelius.titan.hadoop.formats.titan.input.current;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.database.RelationReader;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
+import com.thinkaurelius.titan.graphdb.types.TypeInspector;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
+import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetupCommon;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
+import com.thinkaurelius.titan.hadoop.formats.titan.util.ConfigurationUtil;
+import com.tinkerpop.blueprints.Direction;
+
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.hadoop.conf.Configuration;
+
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
+
+    private final StandardTitanGraph graph;
+    private final StandardTitanTx tx;
+
+    public TitanFaunusSetupImpl(final Configuration config) {
+        BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
+        graph = (StandardTitanGraph)TitanFactory.open(titan);
+        tx = (StandardTitanTx)graph.buildTransaction().readOnly().setCacheSize(200).start();
+   }
+
+    @Override
+    public TypeInspector getTypeInspector() {
+        //Pre-load schema
+        for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
+            for (TitanVertex k : tx.getVertices(BaseKey.TypeCategory, sc)) {
+                assert k instanceof TitanSchemaVertex;
+                TitanSchemaVertex s = (TitanSchemaVertex)k;
+                String name = s.getName();
+                Preconditions.checkNotNull(name);
+                TypeDefinitionMap dm = s.getDefinition();
+                Preconditions.checkNotNull(dm);
+                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.OUT);
+                s.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.IN);
+            }
+        }
+        return tx;
+    }
+
+    @Override
+    public SystemTypeInspector getSystemTypeInspector() {
+        return new SystemTypeInspector() {
+            @Override
+            public boolean isSystemType(long typeid) {
+                return IDManager.isSystemRelationTypeId(typeid);
+            }
+
+            @Override
+            public boolean isVertexExistsSystemType(long typeid) {
+                return typeid == BaseKey.VertexExists.getID();
+            }
+
+            @Override
+            public boolean isTypeSystemType(long typeid) {
+                return typeid == BaseKey.TypeCategory.getID() ||
+                        typeid == BaseKey.TypeDefinitionProperty.getID() ||
+                        typeid == BaseKey.TypeDefinitionDesc.getID() ||
+                        typeid == BaseKey.TypeName.getID() ||
+                        typeid == BaseLabel.TypeDefinitionEdge.getID();
+            }
+        };
+    }
+
+    @Override
+    public VertexReader getVertexReader() {
+        return new VertexReader() {
+            @Override
+            public long getVertexId(StaticBuffer key) {
+                return IDHandler.getKeyID(key);
+            }
+        };
+    }
+
+    @Override
+    public RelationReader getRelationReader() {
+        return graph.getEdgeSerializer();
+    }
+
+    @Override
+    public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
+        if (inputFilter.limit == 0) {
+            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY);
+            return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
+        } else {
+            return super.inputSlice(inputFilter);
+        }
+    }
+
+    @Override
+    public void close() {
+        tx.rollback();
+        graph.shutdown();
+    }
+}

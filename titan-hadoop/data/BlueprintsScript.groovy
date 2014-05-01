@@ -1,13 +1,13 @@
-import com.thinkaurelius.faunus.FaunusEdge
-import com.thinkaurelius.faunus.FaunusVertex
+import com.thinkaurelius.titan.hadoop.FaunusEdge
+import com.thinkaurelius.titan.hadoop.FaunusVertex
 import com.tinkerpop.blueprints.Edge
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.Vertex
 import com.tinkerpop.gremlin.java.GremlinPipeline
 import org.apache.hadoop.mapreduce.Mapper
 
-import static com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce.Counters.*
-import static com.thinkaurelius.faunus.formats.BlueprintsGraphOutputMapReduce.LOGGER
+import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapReduce.Counters.*
+import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapReduce.LOGGER
 
 /**
  * This script is used to determine vertex and edge uniqueness within a pre-existing graph.
