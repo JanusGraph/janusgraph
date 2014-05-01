@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.FaunusTitanGraph;
+import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetup;
 
 import org.apache.cassandra.db.Column;
@@ -20,9 +20,9 @@ import java.util.SortedMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class FaunusTitanCassandraGraph extends FaunusTitanGraph {
+public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
 
-    public FaunusTitanCassandraGraph(TitanFaunusSetup setup) {
+    public TitanCassandraHadoopGraph(TitanFaunusSetup setup) {
         super(setup);
     }
 

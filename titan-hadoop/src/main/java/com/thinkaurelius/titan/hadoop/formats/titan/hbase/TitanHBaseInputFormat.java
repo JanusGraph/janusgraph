@@ -32,7 +32,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
-    private FaunusTitanHBaseGraph graph;
+    private TitanHBaseHadoopGraph graph;
 
 
     @Override
@@ -48,7 +48,7 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     @Override
     public void setConf(final Configuration config) {
         super.setConf(config);
-        this.graph = new FaunusTitanHBaseGraph(titanSetup);
+        this.graph = new TitanHBaseHadoopGraph(titanSetup);
 
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);

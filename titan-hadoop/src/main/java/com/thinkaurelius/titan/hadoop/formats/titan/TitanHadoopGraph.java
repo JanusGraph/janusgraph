@@ -27,14 +27,14 @@ import org.apache.hadoop.conf.Configuration;
  * @author Marko A. Rodriguez (marko@markorodriguez.com)
  */
 
-public class FaunusTitanGraph {
+public class TitanHadoopGraph {
 
     private final RelationReader relationReader;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
 
-    public FaunusTitanGraph(final TitanFaunusSetup setup) {
+    public TitanHadoopGraph(final TitanFaunusSetup setup) {
         this.relationReader = setup.getRelationReader();
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();

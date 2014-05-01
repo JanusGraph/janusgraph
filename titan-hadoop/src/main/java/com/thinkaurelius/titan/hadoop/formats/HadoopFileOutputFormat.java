@@ -18,7 +18,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusFileOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
+public abstract class HadoopFileOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
 
     public DataOutputStream getDataOuputStream(final TaskAttemptContext job) throws IOException, InterruptedException {
         final Configuration conf = job.getConfiguration();

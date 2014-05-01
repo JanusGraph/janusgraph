@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.hadoop.formats.graphson;
 
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -40,7 +39,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
         if (!this.lineRecordReader.nextKeyValue())
             return false;
 
-        this.vertex = FaunusGraphSONUtility.fromJSON(this.configuration, this.lineRecordReader.getCurrentValue().toString());
+        this.vertex = HadoopGraphSONUtility.fromJSON(this.configuration, this.lineRecordReader.getCurrentValue().toString());
         this.vertex.setConf(this.configuration);
         this.vertexQuery.defaultFilter(this.vertex);
         return true;

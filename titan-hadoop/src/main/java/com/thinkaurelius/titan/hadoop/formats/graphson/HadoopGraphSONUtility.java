@@ -36,7 +36,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class FaunusGraphSONUtility {
+public class HadoopGraphSONUtility {
 
     private static final String _OUT_E = "_outE";
     private static final String _IN_E = "_inE";
@@ -55,7 +55,7 @@ public class FaunusGraphSONUtility {
         final BufferedReader bfs = new BufferedReader(new InputStreamReader(in));
         String line = "";
         while ((line = bfs.readLine()) != null) {
-            vertices.add(FaunusGraphSONUtility.fromJSON(configuration, line));
+            vertices.add(HadoopGraphSONUtility.fromJSON(configuration, line));
         }
         bfs.close();
         return vertices;

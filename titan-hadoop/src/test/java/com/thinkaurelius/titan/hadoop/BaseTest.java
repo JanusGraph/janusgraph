@@ -1,11 +1,7 @@
 package com.thinkaurelius.titan.hadoop;
 
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.formats.graphson.FaunusGraphSONUtility;
+import com.thinkaurelius.titan.hadoop.formats.graphson.HadoopGraphSONUtility;
 import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -68,9 +64,9 @@ public abstract class BaseTest extends TestCase {
     public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
         final List<FaunusVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
-            vertices = new FaunusGraphSONUtility().fromJSON(configuration, FaunusGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
+            vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
-            vertices = new FaunusGraphSONUtility().fromJSON(configuration, FaunusGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
+            vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
         else {
             vertices = new ArrayList<FaunusVertex>();
             FaunusVertex saturn = new FaunusVertex(configuration, 4l);

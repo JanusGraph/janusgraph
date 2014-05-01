@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
@@ -19,12 +18,12 @@ import java.io.IOException;
 public class TitanCassandraRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private ColumnFamilyRecordReader reader;
-    private FaunusTitanCassandraGraph graph;
+    private TitanCassandraHadoopGraph graph;
     private VertexQueryFilter vertexQuery;
     private Configuration configuration;
     private FaunusVertex vertex;
 
-    public TitanCassandraRecordReader(final FaunusTitanCassandraGraph graph, final VertexQueryFilter vertexQuery, final ColumnFamilyRecordReader reader) {
+    public TitanCassandraRecordReader(final TitanCassandraHadoopGraph graph, final VertexQueryFilter vertexQuery, final ColumnFamilyRecordReader reader) {
         this.graph = graph;
         this.vertexQuery = vertexQuery;
         this.reader = reader;

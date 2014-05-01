@@ -18,13 +18,13 @@ import java.io.IOException;
 public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVertex> {
 
     private TableRecordReader reader;
-    private FaunusTitanHBaseGraph graph;
+    private TitanHBaseHadoopGraph graph;
     private VertexQueryFilter vertexQuery;
     private Configuration configuration;
 
     private FaunusVertex vertex;
 
-    public TitanHBaseRecordReader(final FaunusTitanHBaseGraph graph, final VertexQueryFilter vertexQuery, final TableRecordReader reader) {
+    public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final VertexQueryFilter vertexQuery, final TableRecordReader reader) {
         this.graph = graph;
         this.vertexQuery = vertexQuery;
         this.reader = reader;

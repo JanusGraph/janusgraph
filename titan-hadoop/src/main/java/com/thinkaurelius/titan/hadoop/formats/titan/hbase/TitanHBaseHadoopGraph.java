@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.titan.FaunusTitanGraph;
+import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetup;
 
 import org.apache.hadoop.conf.Configuration;
@@ -18,9 +18,9 @@ import java.util.NavigableMap;
  * (c) Matthias Broecheler (me@matthiasb.com)
  */
 
-public class FaunusTitanHBaseGraph extends FaunusTitanGraph {
+public class TitanHBaseHadoopGraph extends TitanHadoopGraph {
 
-    public FaunusTitanHBaseGraph(TitanFaunusSetup setup) {
+    public TitanHBaseHadoopGraph(TitanFaunusSetup setup) {
         super(setup);
     }
 
