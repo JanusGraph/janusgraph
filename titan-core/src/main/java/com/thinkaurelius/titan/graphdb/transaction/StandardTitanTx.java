@@ -1070,7 +1070,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanVertex getVertex(String key, Object attribute) {
         if (!containsType(key)) return null;
-        else return getVertex((TitanKey) getType(key), attribute);
+        else return getVertex(getPropertyKey(key), attribute);
     }
 
     @Override
