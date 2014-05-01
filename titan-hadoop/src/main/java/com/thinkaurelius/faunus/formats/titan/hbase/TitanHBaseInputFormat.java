@@ -4,7 +4,6 @@ import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.formats.VertexQueryFilter;
 import com.thinkaurelius.faunus.formats.titan.TitanInputFormat;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.hbase.HBaseKeyColumnValueStore;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
@@ -75,7 +74,8 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
     }
 
     private Filter getColumnFilter(VertexQueryFilter inputFilter) {
-        return HBaseKeyColumnValueStore.getFilter(titanSetup.inputSlice(inputFilter));
+        return null;
+        //TODO: return HBaseKeyColumnValueStore.getFilter(titanSetup.inputSlice(inputFilter));
     }
 
     @Override

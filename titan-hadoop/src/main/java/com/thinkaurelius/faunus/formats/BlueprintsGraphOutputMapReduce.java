@@ -1,5 +1,6 @@
 package com.thinkaurelius.faunus.formats;
 
+import com.thinkaurelius.faunus.FaunusEdge;
 import com.thinkaurelius.faunus.FaunusGraph;
 import com.thinkaurelius.faunus.FaunusVertex;
 import com.thinkaurelius.faunus.Holder;
@@ -13,6 +14,7 @@ import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.groovy.jsr223.GremlinGroovyScriptEngine;
+import groovy.lang.MissingMethodException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -25,6 +27,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import javax.script.Bindings;
+import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
@@ -58,7 +61,12 @@ public class BlueprintsGraphOutputMapReduce {
     }
 
     private static final String GET_OR_CREATE_VERTEX = "getOrCreateVertex(faunusVertex,graph,mapContext)";
+    private static final String GET_OR_CREATE_EDGE = "getOrCreateEdge(faunusEdge,blueprintsOutVertex,blueprintsInVertex,graph,mapContext)";
+
     private static final String FAUNUS_VERTEX = "faunusVertex";
+    private static final String FAUNUS_EDGE = "faunusEdge";
+    private static final String BLUEPRINTS_OUT_VERTEX = "blueprintsOutVertex";
+    private static final String BLUEPRINTS_IN_VERTEX = "blueprintsInVertex";
     private static final String GRAPH = "graph";
     private static final String MAP_CONTEXT = "mapContext";
 
@@ -103,22 +111,25 @@ public class BlueprintsGraphOutputMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
             final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
-            if (null == file)
-                this.loadingFromScratch = true;
-            else {
-                this.loadingFromScratch = false;
-                if (firstRead) {
-                    final FileSystem fs = FileSystem.get(context.getConfiguration());
+            if (null != file && firstRead) {
+                final FileSystem fs = FileSystem.get(context.getConfiguration());
+                try {
+                    engine = new GremlinGroovyScriptEngine();
+                    engine.eval(new InputStreamReader(fs.open(new Path(file))));
                     try {
-                        engine.eval(new InputStreamReader(fs.open(new Path(file))));
-                    } catch (Exception e) {
-                        throw new IOException(e.getMessage());
+                        engine.eval("getOrCreateVertex(null,null,null)");
+                    } catch (ScriptException se) {
+                        if (se.getCause().getCause() instanceof MissingMethodException)
+                            engine = null;
                     }
-                    firstRead = false;
+                } catch (Exception e) {
+                    throw new IOException(e.getMessage());
                 }
+                firstRead = false;
             }
             LOGGER.setLevel(Level.INFO);
         }
+
 
         @Override
         public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>>.Context context) throws IOException, InterruptedException {
@@ -222,12 +233,33 @@ public class BlueprintsGraphOutputMapReduce {
     // WRITE ALL THE EDGES CONNECTING THE VERTICES
     public static class EdgeMap extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
 
+        static GremlinGroovyScriptEngine engine = null;
+        static boolean firstRead = true;
         Graph graph;
-        private static final FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex(new EmptyConfiguration(), -1l);
+
+        private static final FaunusVertex DEAD_FAUNUS_VERTEX = new FaunusVertex();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
+            final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+            if (null != file && firstRead) {
+                final FileSystem fs = FileSystem.get(context.getConfiguration());
+                try {
+                    engine = new GremlinGroovyScriptEngine();
+                    engine.eval(new InputStreamReader(fs.open(new Path(file))));
+                    try {
+                        engine.eval("getOrCreateEdge(null,null,null,null,null)");
+                    } catch (ScriptException se) {
+                        if (se.getCause().getCause() instanceof MissingMethodException)
+                            engine = null;
+                    }
+                } catch (Exception e) {
+                    throw new IOException(e.getMessage());
+                }
+                firstRead = false;
+            }
+            LOGGER.setLevel(Level.INFO);
         }
 
         @Override
@@ -246,19 +278,14 @@ public class BlueprintsGraphOutputMapReduce {
                         if (null != otherId)
                             otherVertex = this.graph.getVertex(otherId);
                         if (null != otherVertex) {
-                            final Edge blueprintsEdge = this.graph.addEdge(null, blueprintsVertex, otherVertex, faunusEdge.getLabel());
-                            context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
-                            for (final String property : faunusEdge.getPropertyKeys()) {
-                                blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
-                                context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
-                            }
+                            this.getOrCreateEdge((FaunusEdge) faunusEdge, blueprintsVertex, otherVertex, context);
                         } else {
                             LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
                             context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
                     }
                 } else {
-                    LOGGER.warn("No source vertex: faunusVertex[" + value.getId() + "] blueprintsVertex[" + blueprintsId + "]");
+                    LOGGER.warn("No source vertex: faunusVertex[" + NullWritable.get() + "] blueprintsVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
                 // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
@@ -287,6 +314,31 @@ public class BlueprintsGraphOutputMapReduce {
                 }
             }
             this.graph.shutdown();
+        }
+
+        public Edge getOrCreateEdge(final FaunusEdge faunusEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws InterruptedException {
+            final Edge blueprintsEdge;
+            if (null == engine) {
+                blueprintsEdge = this.graph.addEdge(null, blueprintsOutVertex, blueprintsInVertex, faunusEdge.getLabel());
+                context.getCounter(Counters.EDGES_WRITTEN).increment(1l);
+                for (final String property : faunusEdge.getPropertyKeys()) {
+                    blueprintsEdge.setProperty(property, faunusEdge.getProperty(property));
+                    context.getCounter(Counters.EDGE_PROPERTIES_WRITTEN).increment(1l);
+                }
+            } else {
+                try {
+                    final Bindings bindings = engine.createBindings();
+                    bindings.put(FAUNUS_EDGE, faunusEdge);
+                    bindings.put(BLUEPRINTS_OUT_VERTEX, blueprintsOutVertex);
+                    bindings.put(BLUEPRINTS_IN_VERTEX, blueprintsInVertex);
+                    bindings.put(GRAPH, this.graph);
+                    bindings.put(MAP_CONTEXT, context);
+                    blueprintsEdge = (Edge) engine.eval(GET_OR_CREATE_EDGE, bindings);
+                } catch (Exception e) {
+                    throw new InterruptedException(e.getMessage());
+                }
+            }
+            return blueprintsEdge;
         }
     }
 
