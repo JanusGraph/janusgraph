@@ -7,9 +7,14 @@ import java.util.concurrent.TimeUnit;
  * clock.
  */
 public interface Duration extends Comparable<Duration> {
+
     public long getLength(TimeUnit unit);
+
     public boolean isZeroLength();
+
     public Duration sub(Duration subtrahend);
+
     public Duration add(Duration addend);
+
     public Duration mult(double multiplier);
 }

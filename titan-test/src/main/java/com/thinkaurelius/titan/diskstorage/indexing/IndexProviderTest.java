@@ -89,7 +89,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever, 2, new SimpleDuration(1000L, TimeUnit.MILLISECONDS));
+        tx = new IndexTransaction(index, indexRetriever, new SimpleDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After

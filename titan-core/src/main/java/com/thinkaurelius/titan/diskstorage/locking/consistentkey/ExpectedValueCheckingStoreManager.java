@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
@@ -20,17 +21,17 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     private final KeyColumnValueStoreManager storeManager;
     private final String lockStoreSuffix;
     private final LockerProvider lockerProvider;
-    private final int readAttempts;
+    private final Duration maxReadTime;
     private final StoreFeatures storeFeatures;
 
     private final Map<String,ExpectedValueCheckingStore> stores;
 
     public ExpectedValueCheckingStoreManager(KeyColumnValueStoreManager storeManager, String lockStoreSuffix,
-                                             LockerProvider lockerProvider, int readAttempts) {
+                                             LockerProvider lockerProvider, Duration maxReadTime) {
         this.storeManager = storeManager;
         this.lockStoreSuffix = lockStoreSuffix;
         this.lockerProvider = lockerProvider;
-        this.readAttempts = readAttempts;
+        this.maxReadTime = maxReadTime;
         this.storeFeatures = storeManager.getFeatures();
         this.stores = new HashMap<String,ExpectedValueCheckingStore>(6);
     }
@@ -63,7 +64,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
                 .customOptions(customOptions)
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
-        StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);
+        StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
         return wrappedTx;
     }
 

@@ -110,9 +110,8 @@ public class Backend implements LockerProvider {
     private final Map<String, IndexProvider> indexes;
 
     private final int bufferSize;
-    private final int writeAttempts;
-    private final int readAttempts;
-    private final Duration persistAttemptWaittime;
+    private final Duration maxWriteTime;
+    private final Duration maxReadTime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 
@@ -143,13 +142,12 @@ public class Backend implements LockerProvider {
             bufferSize = Integer.MAX_VALUE;
         } else bufferSize = bufferSizeTmp;
 
-        writeAttempts = configuration.get(WRITE_ATTEMPTS);
-        readAttempts = configuration.get(READ_ATTEMPTS);
-        persistAttemptWaittime = configuration.get(STORAGE_ATTEMPT_WAITTIME);
+        maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
+        maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
 
         if (!storeFeatures.hasLocking()) {
             Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
-            storeManagerLocking = new ExpectedValueCheckingStoreManager(storeManager,LOCK_STORE_SUFFIX,this,readAttempts);
+            storeManagerLocking = new ExpectedValueCheckingStoreManager(storeManager,LOCK_STORE_SUFFIX,this,maxReadTime);
         } else {
             storeManagerLocking = storeManager;
         }
@@ -459,17 +457,17 @@ public class Backend implements LockerProvider {
         StoreTransaction tx = storeManagerLocking.beginTransaction(configuration);
 
         // Cache
-        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, writeAttempts, persistAttemptWaittime, configuration.hasEnabledBatchLoading());
+        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), writeAttempts, persistAttemptWaittime));
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), maxWriteTime));
         }
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,
                 edgeStore, indexStore,
-                readAttempts, persistAttemptWaittime, indexTx, threadPool);
+                maxReadTime, indexTx, threadPool);
     }
 
     public void close() throws StorageException {

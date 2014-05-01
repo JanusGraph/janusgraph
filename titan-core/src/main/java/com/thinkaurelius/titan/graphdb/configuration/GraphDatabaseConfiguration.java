@@ -300,9 +300,9 @@ public class GraphDatabaseConfiguration {
      * temporary such as network failures. For temporary failures, Titan will re-attempt to persist the
      * state up to the number of times specified.
      */
-    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
-            "Number of attempts for write operations that might experience temporary failures",
-            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
+//    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
+//            "Number of attempts for write operations that might experience temporary failures",
+//            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
 //    public static final String WRITE_ATTEMPTS_KEY = "write-attempts";
 //    public static final int WRITE_ATTEMPTS_DEFAULT = 5;
 
@@ -312,20 +312,21 @@ public class GraphDatabaseConfiguration {
      * temporary such as network failures. For temporary failures, Titan will re-attempt to read the
      * state up to the number of times specified before failing the transaction
      */
-    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
-            "Number of attempts for read operations that might experience temporary failures",
-            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
+//    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
+//            "Number of attempts for read operations that might experience temporary failures",
+//            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
 //    public static final String READ_ATTEMPTS_KEY = "read-attempts";
 //    public static final int READ_ATTEMPTS_DEFAULT = 3;
 
-    /**
-     * Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying.
-     */
-    public static final ConfigOption<Duration> STORAGE_ATTEMPT_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"attempt-wait",
-            "Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying",
-            ConfigOption.Type.MASKABLE, new SimpleDuration(250L, TimeUnit.MILLISECONDS));
-//    public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
-//    public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
+    public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
+            "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
+            "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+            ConfigOption.Type.MASKABLE, new SimpleDuration(10000L, TimeUnit.MILLISECONDS));
+
+    public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
+            "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
+                    "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+            ConfigOption.Type.MASKABLE, new SimpleDuration(1000L, TimeUnit.MILLISECONDS));
 
 
     /**
@@ -1419,16 +1420,8 @@ public class GraphDatabaseConfiguration {
         return unknownIndexKeydName;
     }
 
-    public int getWriteAttempts() {
-        return configuration.get(WRITE_ATTEMPTS);
-    }
-
     public boolean hasLogTransactions() {
         return logTransactions;
-    }
-
-    public Duration getStorageWaittime() {
-        return configuration.get(STORAGE_ATTEMPT_WAITTIME);
     }
 
     public TimestampProvider getTimestampProvider() {

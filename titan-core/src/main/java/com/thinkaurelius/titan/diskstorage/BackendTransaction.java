@@ -56,8 +56,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
     private final KeyColumnValueStore edgeStore;
     private final KeyColumnValueStore indexStore;
 
-    private final int maxReadRetryAttempts;
-    private final Duration retryStorageWaitTime;
+    private final Duration maxReadTime;
 
     private final Executor threadPool;
 
@@ -65,15 +64,14 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
 
     public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
                               StoreFeatures features, KeyColumnValueStore edgeStore, KeyColumnValueStore indexStore,
-                              int maxReadRetryAttempts, Duration retryStorageWaitTime,
+                              Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.indexStore = indexStore;
-        this.maxReadRetryAttempts = maxReadRetryAttempts;
-        this.retryStorageWaitTime = retryStorageWaitTime;
+        this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
     }
@@ -277,10 +275,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         public void run() {
             try {
                 List<Entry> result;
-                if (maxReadRetryAttempts > 1)
-                    result = edgeStoreQuery(kq);
-                else //Premature optimization
-                    result = edgeStore.getSlice(kq, storeTx);
+                result = edgeStoreQuery(kq);
                 resultArray[resultPosition] = result;
             } catch (Exception e) {
                 failureCount.incrementAndGet();
@@ -389,7 +384,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
 
 
     private final <V> V executeRead(Callable<V> exe) throws TitanException {
-        return BackendOperation.execute(exe, maxReadRetryAttempts, retryStorageWaitTime);
+        return BackendOperation.execute(exe, maxReadTime);
     }
 
 

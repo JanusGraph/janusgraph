@@ -32,27 +32,25 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final KeyColumnValueStoreManager manager;
     private final boolean continuousPersistence;
     private final int persistChunkSize;
-    private final int mutationAttempts;
-    private final Duration attemptWaitTime;
+    private final Duration maxWriteTime;
 
     private int numMutations;
     private final Map<KCVSCache, Map<StaticBuffer, KCVMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
-                             int persistChunkSize, int attempts, Duration waitTime, boolean continuousPersistence) {
-        this(tx, manager, persistChunkSize, attempts, waitTime, continuousPersistence, 2);
+                             int persistChunkSize, Duration maxWriteTime, boolean continuousPersistence) {
+        this(tx, manager, persistChunkSize, maxWriteTime, continuousPersistence, 2);
     }
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize,
-                            int attempts, Duration waitTime, boolean continuousPersistence, int expectedNumStores) {
+                            Duration maxWriteTime, boolean continuousPersistence, int expectedNumStores) {
         Preconditions.checkArgument(tx != null && manager != null && persistChunkSize > 0);
         this.tx = tx;
         this.manager = manager;
         this.continuousPersistence=continuousPersistence;
         this.numMutations = 0;
         this.persistChunkSize = persistChunkSize;
-        this.mutationAttempts = attempts;
-        this.attemptWaitTime = waitTime;
+        this.maxWriteTime = maxWriteTime;
         this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVMutation>>(expectedNumStores);
     }
 
@@ -96,7 +94,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
             public String toString() {
                 return "CacheMutation";
             }
-        }, mutationAttempts, attemptWaitTime);
+        }, maxWriteTime);
         subMutations.clear();
         return 0;
     }
