@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -36,6 +37,15 @@ public class BackendOperation {
     }
 
     public static final<V> V execute(Callable<V> exe, Duration totalWaitTime) throws TitanException {
+        try {
+            return executeDirect(exe,totalWaitTime);
+        } catch (StorageException e) {
+            throw new TitanException("Could not execute operation due to backend",e);
+        }
+    }
+
+
+    public static final<V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws StorageException {
         Preconditions.checkArgument(!totalWaitTime.isZeroLength(),"Need to specify a positive waitTime: %s",totalWaitTime);
         long maxTime = System.currentTimeMillis()+totalWaitTime.getLength(TimeUnit.MILLISECONDS);
         Duration waitTime = pertubateTime(BASE_REATTEMPT_TIME);
@@ -47,26 +57,26 @@ public class BackendOperation {
                 if (e instanceof TemporaryStorageException) {
                     lastException = e;
                 } else {
-                    throw new TitanException("Permanent exception during backend operation",e); //Its permanent
+                    throw e;
                 }
             } catch (Throwable e) {
-                throw new TitanException("Unexpected exception during backend operation",e);
+                throw new PermanentStorageException("Unexpected exception while executing backend operation "+exe.toString(),e);
             }
             //Wait and retry
             Preconditions.checkNotNull(lastException);
             if (System.currentTimeMillis()+waitTime.getLength(TimeUnit.MILLISECONDS)<maxTime) {
-                log.info("Temporary storage exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
+                log.info("Temporary exception during backend operation ["+exe.toString()+"]. Attempting backoff retry.",lastException);
                 try {
                     Thread.sleep(waitTime.getLength(TimeUnit.MILLISECONDS));
                 } catch (InterruptedException r) {
-                    throw new TitanException("Interrupted while waiting to retry failed storage operation", r);
+                    throw new PermanentStorageException("Interrupted while waiting to retry failed backend operation", r);
                 }
             } else {
                 break;
             }
             waitTime = pertubateTime(waitTime.mult(2.0));
         }
-        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
+        throw new TemporaryStorageException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }
 
 //    private static final double WAITTIME_PERTURBATION_PERCENTAGE = 0.5;

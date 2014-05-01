@@ -100,7 +100,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     private void checkSingleExpectedValue(final KeyColumn kc,
                                           final StaticBuffer ev, final ExpectedValueCheckingStore store)
             throws StorageException {
-        BackendOperation.execute(new Callable<Boolean>() {
+        BackendOperation.executeDirect(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
                 checkSingleExpectedValueUnsafe(kc, ev, store);
