@@ -89,8 +89,6 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hbase</artifactId>
             <version>${project.version}</version>
-            <type>jar</type>
-            <classifier/>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
