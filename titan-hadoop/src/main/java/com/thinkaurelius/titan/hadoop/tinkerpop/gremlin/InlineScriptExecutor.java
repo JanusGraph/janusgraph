@@ -18,7 +18,7 @@ public class InlineScriptExecutor {
         if (args.length < 1 || args.length > 3 || (args.length == 1 && args[0].contains("-h"))) {
             System.out.println("Faunus Usage:");
             System.out.println("  arg1: Faunus graph configuration file (optional): defaults to bin/faunus.properties");
-            System.out.println("  arg2: FaunusGremlin script: 'g.V.step.step...'");
+            System.out.println("  arg2: HadoopGremlin script: 'g.V.step.step...'");
             System.out.println("  arg3: Overriding configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
             System.exit(-1);
         }

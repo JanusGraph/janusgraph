@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders
 
 import com.thinkaurelius.titan.hadoop.HadoopGraph
 import com.thinkaurelius.titan.hadoop.HadoopPipeline
-import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlin
+import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.HadoopGremlin
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
@@ -19,7 +19,7 @@ class GraphLoader {
                 return new HadoopPipeline((HadoopGraph) delegate).V();
             } else if (name.equals(E)) {
                 return new HadoopPipeline((HadoopGraph) delegate).E();
-            } else if (FaunusGremlin.isStep(name)) {
+            } else if (HadoopGremlin.isStep(name)) {
                 return new HadoopPipeline((HadoopGraph) delegate)."$name"();
             } else {
                 throw new MissingPropertyException(name, delegate.getClass());
@@ -27,7 +27,7 @@ class GraphLoader {
         }
 
         HadoopGraph.metaClass.methodMissing = { final String name, final def args ->
-            if (FaunusGremlin.isStep(name)) {
+            if (HadoopGremlin.isStep(name)) {
                 return new HadoopPipeline((HadoopGraph) delegate)."$name"(* args);
             } else {
                 throw new MissingMethodException(name, delegate.getClass());

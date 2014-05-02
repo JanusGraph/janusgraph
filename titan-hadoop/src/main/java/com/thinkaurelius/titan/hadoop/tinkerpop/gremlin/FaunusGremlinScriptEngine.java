@@ -19,7 +19,7 @@ public class FaunusGremlinScriptEngine extends GremlinGroovyScriptEngine {
 
     public FaunusGremlinScriptEngine() {
         super();
-        FaunusGremlin.load();
+        HadoopGremlin.load();
         final CompilerConfiguration conf = new CompilerConfiguration();
         conf.addCompilationCustomizers(FaunusGremlinScriptEngine.getImportCustomizer());
         this.loader = new GroovyClassLoader(getParentLoader(), conf);

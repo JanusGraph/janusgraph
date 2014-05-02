@@ -55,7 +55,7 @@ public class Console {
         }
 
         Gremlin.load();
-        FaunusGremlin.load();
+        HadoopGremlin.load();
 
         try {
             runner.run();
