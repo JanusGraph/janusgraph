@@ -23,6 +23,7 @@ h3. Version 0.5.0 (March X, 2014)
 * Elasticsearch 0.90.5
 * Lucene 4.4.0
 * Persistit 3.3.0
+* Hadoop 1.2.1
 * Java 1.7+ (partially compatible with Java 1.6)
 
 *Features:*
@@ -32,10 +33,29 @@ h3. Version 0.5.0 (March X, 2014)
 * Introduced a compressed String attribute called StringX which has a much smaller storage footprint than String.
 * Introduced native serialization for primitive arrays
 * Removed FullDouble and FullFloat: Double and Float are now serialized as full precision floating points. Introduced Decimal and Precision with a fixed number of decimals and order preserving binary representation
+* Migrated Faunus to a new package in Titan named Titan/Hadoop
+  * Isolated HadoopElement serialization into HadoopSerializer
+  * All HadoopVertex and HadoopEdge construction leverages Hadoop Configuration for deserialization rules
+  * Removed pathEnabled boolean from element serialization (now part of Configuration as trackPaths)
+  * Added state tracking for loaded, new, and deleted elements/properties (in Configuration via trackState)
+  * HadoopCompiler updates HadoopGraph configurations with global pipeline requirements
+  * Removed HadoopVertex.reuse() in support of short-lived HadoopVertex objects
+  * Updated ScriptInputFormat to use HadoopVertex.setId(long) to "reuse" vertices
+  * PropertyMapMap now includes Edge.getLabel() in the returned property map (via _label)
+  * Added TitanGraphOutputMapReduce@ to support Titan-specific features (e.g. multi-properties on vertices)
+  * TitanGraphOutputMapReduce respects state tracking and get/create/delete in outputting TitanGraph
+  * Added JUnit test support for executing local (non-pseudo-cluster) MapReduce jobs
+  * Provided MapReduce-based integration testing between Titan and Titan/Hadoop
+  * Provided MapReduce-based integration testing around HadoopPipeline
+  * Added error handling for invalid RDF parameters
+  * Added support for incremental edge loading with BlueprintsGraphOutputMapReduce
+
 
 *Bugfixes:*
 
 * Changed serialization order for Date.class - the byte serialization now matches Comparable
+* Fixed a SideEffectMap bug around edge processing (only out edges were being processed)
+
 
 h3. Version 0.4.2 (December 30, 2013)
 

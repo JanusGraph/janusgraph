@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop</artifactId>
-    <name>Titan-Hadoop: Faunus by another name</name>
+    <name>Titan-Hadoop: Distributed Graph Processing with Hadoop</name>
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
