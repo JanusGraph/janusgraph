@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
-        TransactionHandleConfig consistentTxCfg = new StandardTransactionConfig.Builder()
+        TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
                 .metricsPrefix(configuration.getMetricsPrefix())
                 .customOptions(customOptions)
                 .build();

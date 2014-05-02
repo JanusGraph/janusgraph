@@ -124,9 +124,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
                 if (!txEntry.hasContent()) {
-                    assertEquals(LogTxStatus.SUCCESS,header.getStatus());
+                    assertTrue(txEntry.getStatus().isSuccess());
                 } else {
-                    assertEquals(LogTxStatus.PRECOMMIT,header.getStatus());
+                    assertTrue(txEntry.getStatus().isPreCommit());
                     //TODO: Verify content parses correctly
                 }
                 txMsgCounter.incrementAndGet();
@@ -145,6 +145,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
                 assertTrue(txTime<=msgTime);
                 assertTrue(txTime>=startTime);
+                long txid = read.getLong();
+                assertTrue(txid>0);
                 for (String type : new String[]{"add","del"}) {
                     long num = VariableLong.readPositive(read);
                     assertTrue(num>=0 && num<Integer.MAX_VALUE);
@@ -165,11 +167,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Thread.sleep(20000);
         assertEquals(8, txMsgCounter.get());
         assertEquals(2,triggerMsgCounter.get());
-    }
-
-    @Test
-    public void triggerLogTest() {
-
     }
 
 

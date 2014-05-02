@@ -46,6 +46,10 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        int pp = 1759100286;
+        System.out.println(pp>>31);
+
+
         WriteBuffer out = new WriteByteBuffer(20);
         IDHandler.writeEdgeType(out, BaseKey.VertexExists.getID(),IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isHiddenType());
         StaticBuffer b = out.getStaticBuffer();

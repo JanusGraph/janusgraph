@@ -11,7 +11,6 @@ import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.core.time.Timer;
 import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.*;
@@ -23,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A global {@link Locker} that resolves inter-thread lock contention via
@@ -500,7 +498,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint t) throws StorageException {
-        StandardTransactionConfig newCfg = new StandardTransactionConfig.Builder(tx.getConfiguration()).timestamp(t).build();
+        StandardTransactionHandleConfig newCfg = new StandardTransactionHandleConfig.Builder(tx.getConfiguration()).timestamp(t).build();
         return manager.beginTransaction(newCfg);
     }
 

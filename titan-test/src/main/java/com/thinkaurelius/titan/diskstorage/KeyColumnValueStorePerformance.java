@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage;
 
 import com.carrotsearch.junitbenchmarks.BenchmarkRule;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 
@@ -51,7 +51,7 @@ public abstract class KeyColumnValueStorePerformance {
     }
 
     public StoreTransaction startTx() throws StorageException {
-        return manager.beginTransaction(StandardTransactionConfig.of());
+        return manager.beginTransaction(StandardTransactionHandleConfig.of());
     }
 
     public void clopen() throws StorageException {

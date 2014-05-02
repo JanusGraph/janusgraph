@@ -218,11 +218,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return
      */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        Timepoint txTime = txh.getConfiguration().getTimestamp();
-        if (null == txTime) {
-            txTime = times.getTime();
-        }
-        return new Timestamp(txTime);
+        return new Timestamp(txh.getConfiguration().getTimestamp());
     }
 
     protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {

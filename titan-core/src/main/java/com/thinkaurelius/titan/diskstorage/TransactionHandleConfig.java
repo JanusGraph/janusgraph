@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
@@ -11,11 +12,18 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 public interface TransactionHandleConfig {
 
     /**
-     * Returns the timestamp of this transaction if one has been set.
+     * Returns the timestamp of this transaction which is either a custom timestamp provided
+     * by the user or the commit time. If neither is defined, then this method throws an exception
      *
-     * @return custom timestamp for this tx, or null if none is set
+     * @return timestamp for this transaction
      */
     public Timepoint getTimestamp();
+
+    /**
+     * Sets the commit time of this transaction
+     * @param time
+     */
+    public void setCommitTime(Timepoint time);
 
     /**
      * Returns the (possibly null) metrics prefix for this transaction.

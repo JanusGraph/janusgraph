@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage;
 
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ConsistencyLevel;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVUtil;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
@@ -20,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
 
 public abstract class KeyValueStoreTest {
 
@@ -43,7 +41,7 @@ public abstract class KeyValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        tx = manager.beginTransaction(StandardTransactionConfig.of());
+        tx = manager.beginTransaction(StandardTransactionHandleConfig.of());
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;

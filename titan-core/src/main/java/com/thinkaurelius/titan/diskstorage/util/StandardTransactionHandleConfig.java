@@ -11,15 +11,32 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class StandardTransactionConfig implements TransactionHandleConfig {
+public class StandardTransactionHandleConfig implements TransactionHandleConfig {
 
-    private final Timepoint timestamp;
+    private final Timepoint userTimestamp;
+    private Timepoint commitTime;
     private final String metricsPrefix;
     private final Configuration customOptions;
 
+    private StandardTransactionHandleConfig(String metricsPrefix,
+                                            Timepoint userTimestamp,
+                                            Configuration customOptions) {
+        this.metricsPrefix = metricsPrefix;
+        this.userTimestamp = userTimestamp;
+        this.customOptions = customOptions;
+    }
+
     @Override
-    public Timepoint getTimestamp() {
-        return timestamp;
+    public synchronized Timepoint getTimestamp() {
+        if (userTimestamp!=null) return userTimestamp;
+        if (commitTime!=null) return commitTime;
+        throw new IllegalStateException("No transaction timestamp has been set");
+    }
+
+    @Override
+    public synchronized void setCommitTime(Timepoint time) {
+        Preconditions.checkArgument(commitTime==null,"A commit time has already been set");
+        this.commitTime=time;
     }
 
     @Override
@@ -42,8 +59,10 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
         return customOptions;
     }
 
+
+
     public static class Builder {
-        private Timepoint timestamp = null;
+        private Timepoint userTimestamp = null;
         private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
         private Configuration customOptions = Configuration.EMPTY;
 
@@ -54,13 +73,13 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
             metricsPrefix(template.getMetricsPrefix());
         }
 
-        public Builder metricsPrefix(String s) {
-            metricsPrefix = s;
+        public Builder metricsPrefix(String prefix) {
+            metricsPrefix = prefix;
             return this;
         }
 
-        public Builder timestamp(Timepoint i) {
-            timestamp = i;
+        public Builder timestamp(Timepoint time) {
+            userTimestamp = time;
             return this;
         }
 
@@ -70,24 +89,17 @@ public class StandardTransactionConfig implements TransactionHandleConfig {
             return this;
         }
 
-        public StandardTransactionConfig build() {
-            return new StandardTransactionConfig(metricsPrefix, timestamp, customOptions);
+        public StandardTransactionHandleConfig build() {
+            return new StandardTransactionHandleConfig(metricsPrefix, userTimestamp, customOptions);
         }
     }
 
-    public static StandardTransactionConfig of() {
+    public static StandardTransactionHandleConfig of() {
         return new Builder().build();
     }
 
-    public static StandardTransactionConfig of(Configuration customOptions) {
+    public static StandardTransactionHandleConfig of(Configuration customOptions) {
         return new Builder().customOptions(customOptions).build();
     }
 
-    private StandardTransactionConfig(String metricsPrefix,
-            Timepoint timestamp,
-            Configuration customOptions) {
-        this.metricsPrefix = metricsPrefix;
-        this.timestamp = timestamp;
-        this.customOptions = customOptions;
-    }
 }

@@ -30,7 +30,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
     private final StoreTransaction tx;
     private final KeyColumnValueStoreManager manager;
-    private final boolean continuousPersistence;
+    private final boolean batchLoading;
     private final int persistChunkSize;
     private final Duration maxWriteTime;
 
@@ -38,16 +38,16 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final Map<KCVSCache, Map<StaticBuffer, KCVMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
-                             int persistChunkSize, Duration maxWriteTime, boolean continuousPersistence) {
-        this(tx, manager, persistChunkSize, maxWriteTime, continuousPersistence, 2);
+                             int persistChunkSize, Duration maxWriteTime, boolean batchLoading) {
+        this(tx, manager, persistChunkSize, maxWriteTime, batchLoading, 2);
     }
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize,
-                            Duration maxWriteTime, boolean continuousPersistence, int expectedNumStores) {
+                            Duration maxWriteTime, boolean batchLoading, int expectedNumStores) {
         Preconditions.checkArgument(tx != null && manager != null && persistChunkSize > 0);
         this.tx = tx;
         this.manager = manager;
-        this.continuousPersistence=continuousPersistence;
+        this.batchLoading = batchLoading;
         this.numMutations = 0;
         this.persistChunkSize = persistChunkSize;
         this.maxWriteTime = maxWriteTime;
@@ -77,7 +77,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
         numMutations += m.getTotalMutations();
 
-        if (continuousPersistence && numMutations >= persistChunkSize) {
+        if (batchLoading && numMutations >= persistChunkSize) {
             flushInternal();
         }
     }
@@ -180,7 +180,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
     @Override
     public void logMutations(DataOutput out) {
-        Preconditions.checkArgument(!continuousPersistence,"Cannot log entire mutation set when continuous persistence is enabled");
+        Preconditions.checkArgument(!batchLoading,"Cannot log entire mutation set when batch-loading is enabled");
         VariableLong.writePositive(out,mutations.size());
         for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
             out.writeObjectNotNull(storeMuts.getKey().getName());

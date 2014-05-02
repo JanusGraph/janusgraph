@@ -23,7 +23,6 @@ import com.thinkaurelius.titan.diskstorage.util.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.util.system.BackgroundThread;
 
 import org.slf4j.Logger;
@@ -296,11 +295,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        StandardTransactionConfig config;
+        StandardTransactionHandleConfig config;
         if (keyConsistentOperations) {
-            config = StandardTransactionConfig.of(manager.storeManager.getFeatures().getKeyConsistentTxConfig());
+            config = StandardTransactionHandleConfig.of(manager.storeManager.getFeatures().getKeyConsistentTxConfig());
         } else {
-            config = StandardTransactionConfig.of();
+            config = StandardTransactionHandleConfig.of();
         }
         return manager.storeManager.beginTransaction(config);
     }
@@ -371,7 +370,8 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         }
         assert manager.partitionBitWidth>=0 && manager.partitionBitWidth<=32;
         //and then extract the number of partitions bits
-        partitionId = partitionId>>>(32-manager.partitionBitWidth);
+        if (manager.partitionBitWidth==0) partitionId=0;
+        else partitionId = partitionId>>>(32-manager.partitionBitWidth);
         return add(content, partitionId);
     }
 
@@ -516,8 +516,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             }
             //Evaluate send condition: 1) Is the oldest message waiting longer than the delay? or 2) Do we have enough messages to send?
             if (!toSend.isEmpty() && (maxSendDelay.compareTo(timeSinceFirstMsg()) <= 0 || toSend.size() >= sendBatchSize)) {
-                sendMessages(toSend);
-                toSend.clear();
+                try {
+                    sendMessages(toSend);
+                } finally {
+                    toSend.clear();
+                }
             }
         }
 
@@ -529,7 +532,15 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 toSend.addAll(outgoingMsg);
                 for (int i=0;i<toSend.size();i=i+sendBatchSize) {
                     List<MessageEnvelope> subset = toSend.subList(i,Math.min(toSend.size(),i+sendBatchSize));
-                    sendMessages(subset);
+                    try {
+                        sendMessages(subset);
+                    } catch (RuntimeException e) {
+                        //Fail all remaining messages
+                        for (int j=i+sendBatchSize;j<toSend.size();j++) {
+                            toSend.get(j).message.failed(e);
+                        }
+                        throw e;
+                    }
                 }
             }
         }

@@ -4,14 +4,13 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -22,16 +21,15 @@ public class TransactionLogHeader {
     private final long transactionId;
     private final Timepoint txTimestamp;
     private final TimeUnit backendTimeUnit;
-    private LogTxStatus status;
+    private final StaticBuffer logKey;
 
-    public TransactionLogHeader(long transactionId, Timepoint txTimestamp, TimeUnit backendTimeUnit, LogTxStatus status) {
+    public TransactionLogHeader(long transactionId, Timepoint txTimestamp, TimeUnit backendTimeUnit) {
         this.transactionId = transactionId;
         this.txTimestamp = txTimestamp;
         this.backendTimeUnit = backendTimeUnit;
-        this.status = status;
         Preconditions.checkArgument(this.transactionId > 0);
         Preconditions.checkNotNull(this.txTimestamp);
-        Preconditions.checkNotNull(this.status);
+        logKey = HashPrefixKeyColumnValueStore.prefixKey(HashPrefixKeyColumnValueStore.HashLength.SHORT,BufferUtil.getLongBuffer(transactionId));
     }
 
 
@@ -43,23 +41,12 @@ public class TransactionLogHeader {
         return txTimestamp.getTime(unit);
     }
 
-    public LogTxStatus getStatus() {
-        return status;
-    }
-
     public StaticBuffer getLogKey() {
-        ByteBuffer b = ByteBuffer.allocate(8);
-        b.order(ByteOrder.LITTLE_ENDIAN);
-        b.putLong(transactionId);
-        return new StaticArrayBuffer(b.array());
+        return logKey;
     }
 
-    public void setStatus(LogTxStatus status) {
-        Preconditions.checkArgument(status!=null);
-        this.status=status;
-    }
-
-    public DataOutput serializeHeader(Serializer serializer, int capacity) {
+    public DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status) {
+        Preconditions.checkArgument(status!=null,"Invalid status");
         DataOutput out = serializer.getDataOutput(capacity);
         out.putLong(txTimestamp.getTime(backendTimeUnit));
         VariableLong.writePositive(out, transactionId);
@@ -71,13 +58,13 @@ public class TransactionLogHeader {
         ReadBuffer read = buffer.asReadBuffer();
         Timepoint txTimestamp = new Timepoint(read.getLong(), backendTimeUnit);
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
-                txTimestamp, backendTimeUnit,
-                serializer.readObjectNotNull(read,LogTxStatus.class));
+                txTimestamp, backendTimeUnit);
+        LogTxStatus status = serializer.readObjectNotNull(read,LogTxStatus.class);
         if (read.hasRemaining()) {
             StaticBuffer content = read.subrange(read.getPosition(),read.length()-read.getPosition());
-            return new Entry(header,content);
+            return new Entry(header,content, status);
         } else {
-            return new Entry(header,null);
+            return new Entry(header,null, status);
         }
     }
 
@@ -85,12 +72,15 @@ public class TransactionLogHeader {
 
         private final TransactionLogHeader header;
         private final StaticBuffer content;
+        private final LogTxStatus status;
 
-        public Entry(TransactionLogHeader header, StaticBuffer content) {
+        public Entry(TransactionLogHeader header, StaticBuffer content, LogTxStatus status) {
+            Preconditions.checkNotNull(status);
             Preconditions.checkArgument(header!=null);
             Preconditions.checkArgument(content==null || content.length()>0);
             this.header = header;
             this.content = content;
+            this.status = status;
         }
 
         public TransactionLogHeader getHeader() {
@@ -99,6 +89,10 @@ public class TransactionLogHeader {
 
         public boolean hasContent() {
             return content!=null;
+        }
+
+        public LogTxStatus getStatus() {
+            return status;
         }
 
         public StaticBuffer getContent() {

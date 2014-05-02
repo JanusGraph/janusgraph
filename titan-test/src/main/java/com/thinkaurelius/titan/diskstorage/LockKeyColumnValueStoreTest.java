@@ -9,11 +9,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.core.time.SimpleDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
 import org.junit.After;
@@ -91,7 +90,7 @@ public abstract class LockKeyColumnValueStoreTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
-                tx[i][j] = manager[i].beginTransaction(StandardTransactionConfig.of());
+                tx[i][j] = manager[i].beginTransaction(StandardTransactionHandleConfig.of());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
@@ -107,15 +106,15 @@ public abstract class LockKeyColumnValueStoreTest {
                 ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore, manager[i]).fromConfig(sc).mediatorName(concreteClassName + i).build();
                 store[i] = new ExpectedValueCheckingStore(store[i], c);
                 for (int j = 0; j < NUM_TX; j++)
-                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(StandardTransactionConfig.of(manager[i].getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
+                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(StandardTransactionHandleConfig.of(manager[i].getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
             }
         }
     }
 
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
-        StoreTransaction transaction = manager.beginTransaction(StandardTransactionConfig.of());
+        StoreTransaction transaction = manager.beginTransaction(StandardTransactionHandleConfig.of());
         if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
-            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionHandleConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
         }
         return transaction;
     }

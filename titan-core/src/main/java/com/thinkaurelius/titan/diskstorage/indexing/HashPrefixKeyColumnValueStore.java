@@ -63,7 +63,7 @@ public class HashPrefixKeyColumnValueStore implements KeyColumnValueStore {
         return prefixKey(hashPrefixLen,key);
     }
 
-    static final StaticBuffer prefixKey(final HashLength hashPrefixLen, final StaticBuffer key) {
+    public static final StaticBuffer prefixKey(final HashLength hashPrefixLen, final StaticBuffer key) {
         final int prefixLen = hashPrefixLen.length();
         final StaticBuffer.Factory<HashCode> hashFactory;
         switch (hashPrefixLen) {

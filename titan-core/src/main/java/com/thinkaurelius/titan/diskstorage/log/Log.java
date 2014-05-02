@@ -16,6 +16,10 @@ public interface Log {
 
     /**
      * Attempts to add the given content to the log and returns a {@link Future} for this action.
+     * </p>
+     * If the log is configured for immediate sending, then any exception encountered during this process is thrown
+     * by this method. Otherwise, encountered exceptions are attached to the returned future.
+
      * @param content
      * @return
      */
@@ -24,6 +28,9 @@ public interface Log {
     /**
      * Attempts to add the given content to the log and returns a {@link Future} for this action.
      * In addition, a key is provided to signal the recipient of the log message in partitioned logging systems.
+     * </p>
+     * If the log is configured for immediate sending, then any exception encountered during this process is thrown
+     * by this method. Otherwise, encountered exceptions are attached to the returned future.
      *
      * @param content
      * @return

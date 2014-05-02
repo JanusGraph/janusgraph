@@ -9,13 +9,14 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
@@ -55,7 +56,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String logIdentifier;
 
-    private Timepoint timestamp = null;
+    private Timepoint userTimestamp = null;
 
     private String metricsPrefix;
 
@@ -118,7 +119,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit) {
-        this.timestamp = new Timepoint(timestampSinceEpoch, unit);
+        this.userTimestamp = new Timepoint(timestampSinceEpoch, unit);
         return this;
     }
 
@@ -146,7 +147,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
-                timestamp,
+                userTimestamp,
                 indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
@@ -240,7 +241,12 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public Timepoint getTimestamp() {
-        return timestamp;
+        return userTimestamp;
+    }
+
+    @Override
+    public void setCommitTime(Timepoint time) {
+        throw new UnsupportedOperationException("Cannot set commit time in builder");
     }
 
     @Override
@@ -280,7 +286,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, Timepoint timestamp,
+                boolean isThreadBound, Timepoint userTimestamp,
                 long indexCacheWeight, int vertexCacheSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
@@ -298,8 +304,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.vertexCacheSize = vertexCacheSize;
             this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
-            this.handleConfig = new StandardTransactionConfig.Builder()
-                    .timestamp(timestamp)
+            this.handleConfig = new StandardTransactionHandleConfig.Builder()
+                    .timestamp(userTimestamp)
                     .metricsPrefix(metricsPrefix)
                     .customOptions(storageConfiguration).build();
         }
@@ -377,6 +383,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public Timepoint getTimestamp() {
             return handleConfig.getTimestamp();
+        }
+
+        @Override
+        public void setCommitTime(Timepoint time) {
+            handleConfig.setCommitTime(time);
         }
 
         @Override

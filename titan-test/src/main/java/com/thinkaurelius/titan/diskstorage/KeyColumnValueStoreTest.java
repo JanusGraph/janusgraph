@@ -55,7 +55,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public StoreTransaction startTx() throws StorageException {
-        return manager.beginTransaction(StandardTransactionConfig.of());
+        return manager.beginTransaction(StandardTransactionHandleConfig.of());
     }
 
     public StoreFeatures storeFeatures() {

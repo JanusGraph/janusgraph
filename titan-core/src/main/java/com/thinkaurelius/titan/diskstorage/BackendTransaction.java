@@ -38,7 +38,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BackendTransaction implements TransactionHandle, LoggableTransaction {
+public class BackendTransaction implements LoggableTransaction {
 
     private static final Logger log =
             LoggerFactory.getLogger(BackendTransaction.class);
@@ -91,16 +91,30 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         return itx;
     }
 
+    public void commitStorage() throws StorageException {
+        storeTx.commit();
+    }
+
+    public Map<String,Throwable> commitIndexes() {
+        Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
+        for (Map.Entry<String,IndexTransaction> txentry : indexTx.entrySet()) {
+            try {
+                txentry.getValue().commit();
+            } catch (Throwable e) {
+                exceptions.put(txentry.getKey(),e);
+            }
+        }
+        return exceptions;
+    }
+
     @Override
     public void commit() throws StorageException {
         storeTx.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
 
-    @Override
-    public void rollback() throws StorageException {
-        storeTx.rollback();
-        for (IndexTransaction itx : indexTx.values()) itx.rollback();
+    public void flushStorage() throws StorageException {
+        storeTx.flush();
     }
 
     @Override
@@ -108,6 +122,29 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         storeTx.flush();
         for (IndexTransaction itx : indexTx.values()) itx.flush();
     }
+
+    /**
+     * Rolls back all transactions and makes sure that this does not get cut short
+     * by exceptions. If exceptions occur, the storage exception takes priority on re-throw.
+     * @throws StorageException
+     */
+    @Override
+    public void rollback() throws StorageException {
+        Throwable excep = null;
+        for (IndexTransaction itx : indexTx.values()) {
+            try {
+                itx.rollback();
+            } catch (Throwable e) {
+                excep = e;
+            }
+        }
+        storeTx.rollback();
+        if (excep!=null) { //throw any encountered index transaction rollback exceptions
+            if (excep instanceof StorageException) throw (StorageException)excep;
+            else throw new PermanentStorageException("Unexpected exception",excep);
+        }
+    }
+
 
     @Override
     public void logMutations(DataOutput out) {

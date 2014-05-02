@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +35,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.diskstorage.util.WriteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -76,7 +72,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
-    private final StandardTransactionConfig.Builder storeTxConfigBuilder;
+    private final StandardTransactionHandleConfig.Builder storeTxConfigBuilder;
     /**
      * This belongs in TitanConfig.
      */
@@ -104,7 +100,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-        storeTxConfigBuilder = new StandardTransactionConfig.Builder().metricsPrefix(metricsPrefix);
+        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().metricsPrefix(metricsPrefix);
 
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");
