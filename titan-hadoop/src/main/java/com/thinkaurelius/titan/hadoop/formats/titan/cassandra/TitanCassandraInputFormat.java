@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan.cassandra;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 
@@ -38,7 +38,7 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
     }
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<NullWritable, HadoopVertex> createRecordReader(final InputSplit inputSplit, final TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         return new TitanCassandraRecordReader(this.graph, this.vertexQuery, (ColumnFamilyRecordReader) this.columnFamilyInputFormat.createRecordReader(inputSplit, taskAttemptContext));
     }
 

@@ -1,12 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats.rexster;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.rexster.util.HttpHelper;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
@@ -22,12 +19,12 @@ import java.net.HttpURLConnection;
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class RexsterRecordReader extends RecordReader<NullWritable, HadoopVertex> {
 
     private final RexsterConfiguration rexsterConf;
     private VertexQueryFilter vertexQuery;
     private final NullWritable key = NullWritable.get();
-    private FaunusVertex vertex;
+    private HadoopVertex vertex;
     private DataInputStream rexsterInputStream;
     private long splitStart;
     private long splitEnd;
@@ -43,7 +40,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
         final RexsterInputSplit rexsterInputSplit = (RexsterInputSplit) inputSplit;
         this.splitEnd = rexsterInputSplit.getEnd();
         this.splitStart = rexsterInputSplit.getStart();
-        this.vertex = new FaunusVertex(taskAttemptContext.getConfiguration());
+        this.vertex = new HadoopVertex(taskAttemptContext.getConfiguration());
         this.openRexsterStream();
     }
 
@@ -69,7 +66,7 @@ public class RexsterRecordReader extends RecordReader<NullWritable, FaunusVertex
     }
 
     @Override
-    public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
+    public HadoopVertex getCurrentValue() throws IOException, InterruptedException {
         return this.vertex;
     }
 

@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
-import com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapReduce;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Graph;
@@ -39,17 +38,17 @@ import java.util.Set;
  */
 public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex> vertexMapReduceDriver;
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> edgeMapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex> vertexMapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> edgeMapReduceDriver;
 
     public void setUp() {
-        vertexMapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, LongWritable, Holder<FaunusVertex>, NullWritable, FaunusVertex>();
+        vertexMapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex>();
         vertexMapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.VertexMap());
         vertexMapReduceDriver.setReducer(new TinkerGraphOutputMapReduce.Reduce());
 
-        edgeMapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        edgeMapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         edgeMapReduceDriver.setMapper(new TinkerGraphOutputMapReduce.EdgeMap());
-        edgeMapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        edgeMapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testTinkerGraphIncrementalVertexLoading() throws Exception {
@@ -57,21 +56,21 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
         conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
         vertexMapReduceDriver.withConfiguration(conf);
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
-        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+        for (Map.Entry<Long, HadoopVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }
         edgeMapReduceDriver.run();
 
-        Map<Long, FaunusVertex> incrementalGraph = new HashMap<Long, FaunusVertex>();
+        Map<Long, HadoopVertex> incrementalGraph = new HashMap<Long, HadoopVertex>();
         // VERTICES
-        FaunusVertex marko1 = new FaunusVertex(conf, 11l);
+        HadoopVertex marko1 = new HadoopVertex(conf, 11l);
         marko1.setProperty("name", "marko");
         marko1.setProperty("height", "5'11");
-        FaunusVertex stephen1 = new FaunusVertex(conf, 22l);
+        HadoopVertex stephen1 = new HadoopVertex(conf, 22l);
         stephen1.setProperty("name", "stephen");
-        FaunusVertex vadas1 = new FaunusVertex(conf, 33l);
+        HadoopVertex vadas1 = new HadoopVertex(conf, 33l);
         vadas1.setProperty("name", "vadas");
         // EDGES
         marko1.addEdge(Direction.OUT, "worksWith", stephen1.getIdAsLong());
@@ -91,7 +90,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         vertexMapReduceDriver.withConfiguration(conf);
         graph = runWithGraph(incrementalGraph, vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
-        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+        for (Map.Entry<Long, HadoopVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }
         edgeMapReduceDriver.run();
@@ -203,20 +202,20 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
         conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
         vertexMapReduceDriver.withConfiguration(conf);
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
-        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+        for (Map.Entry<Long, HadoopVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }
         edgeMapReduceDriver.run();
 
-        Map<Long, FaunusVertex> incrementalGraph = new HashMap<Long, FaunusVertex>();
+        Map<Long, HadoopVertex> incrementalGraph = new HashMap<Long, HadoopVertex>();
         // VERTICES
-        FaunusVertex marko1 = new FaunusVertex(conf, 11l);
+        HadoopVertex marko1 = new HadoopVertex(conf, 11l);
         marko1.setProperty("name", "marko");
-        FaunusVertex lop1 = new FaunusVertex(conf, 22l);
+        HadoopVertex lop1 = new HadoopVertex(conf, 22l);
         lop1.setProperty("name", "lop");
-        FaunusVertex vadas1 = new FaunusVertex(conf, 33l);
+        HadoopVertex vadas1 = new HadoopVertex(conf, 33l);
         vadas1.setProperty("name", "vadas");
         // EDGES
         marko1.addEdge(Direction.OUT, "created", lop1.getIdAsLong()).setProperty("since", 2009);
@@ -233,7 +232,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         vertexMapReduceDriver.withConfiguration(conf);
         graph = runWithGraph(incrementalGraph, vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
-        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+        for (Map.Entry<Long, HadoopVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
         }
         edgeMapReduceDriver.run();
@@ -343,20 +342,20 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
         Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
         vertexMapReduceDriver.withConfiguration(conf);
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
         conf = BlueprintsGraphOutputMapReduce.createConfiguration();
         edgeMapReduceDriver.withConfiguration(conf);
         edgeMapReduceDriver.resetOutput();
-        edgeMapReduceDriver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
+        edgeMapReduceDriver.getConfiguration().setBoolean(HadoopCompiler.TESTING, true);
         assertEquals(graph.size(), 6);
         int counter = 0;
-        for (Map.Entry<Long, FaunusVertex> entry : graph.entrySet()) {
+        for (Map.Entry<Long, HadoopVertex> entry : graph.entrySet()) {
             edgeMapReduceDriver.withInput(NullWritable.get(), entry.getValue());
             counter++;
         }
         assertEquals(counter, 6);
         counter = 0;
-        for (Pair<NullWritable, FaunusVertex> entry : edgeMapReduceDriver.run()) {
+        for (Pair<NullWritable, HadoopVertex> entry : edgeMapReduceDriver.run()) {
             counter++;
             // THIS IS THE DEAD_VERTEX (NOTHING EMITTED TO HDFS)
             assertEquals(count(entry.getSecond().getEdges(Direction.IN)), 0);

@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusPathElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopPathElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -36,7 +35,7 @@ public class DuplicateFilterMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private boolean isVertex;
         private boolean trackPaths;
@@ -48,12 +47,12 @@ public class DuplicateFilterMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     if (this.trackPaths) {
-                        final List<FaunusPathElement.MicroElement> path = value.getPaths().get(0);
+                        final List<HadoopPathElement.MicroElement> path = value.getPaths().get(0);
                         value.clearPaths();
                         value.addPath(path, false);
                     } else {
@@ -65,10 +64,10 @@ public class DuplicateFilterMap {
             } else {
                 long counter = 0;
                 for (final Edge e : value.getEdges(Direction.BOTH)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         if (this.trackPaths) {
-                            final List<FaunusPathElement.MicroElement> path = edge.getPaths().get(0);
+                            final List<HadoopPathElement.MicroElement> path = edge.getPaths().get(0);
                             edge.clearPaths();
                             edge.addPath(path, false);
                         } else {

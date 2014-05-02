@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -21,7 +21,7 @@ public class SafeReducerOutputs {
     public SafeReducerOutputs(final Reducer.Context context) {
         this.context = context;
         this.outputs = new MultipleOutputs(this.context);
-        this.testing = this.context.getConfiguration().getBoolean(FaunusCompiler.TESTING, false);
+        this.testing = this.context.getConfiguration().getBoolean(HadoopCompiler.TESTING, false);
     }
 
     public void write(final String type, final Writable key, final Writable value) throws IOException, InterruptedException {

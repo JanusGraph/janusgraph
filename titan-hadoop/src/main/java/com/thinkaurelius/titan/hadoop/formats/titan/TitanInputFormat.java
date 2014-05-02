@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetup;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
 
 import org.apache.hadoop.conf.Configurable;
@@ -15,7 +15,7 @@ import org.apache.hadoop.mapreduce.InputFormat;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
+public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopVertex> implements Configurable {
 
     public static final String FAUNUS_GRAPH_INPUT_TITAN = "faunus.graph.input.titan";
     public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME = FAUNUS_GRAPH_INPUT_TITAN + ".storage.hostname";
@@ -25,12 +25,12 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, FaunusV
     public static final String FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT = "current";
 
     private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.titan.input.";
-    private static final String SETUP_CLASS_NAME = ".TitanFaunusSetupImpl";
+    private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
 
 
     protected VertexQueryFilter vertexQuery;
     protected boolean trackPaths;
-    protected TitanFaunusSetup titanSetup;
+    protected TitanHadoopSetup titanSetup;
 
     @Override
     public void setConf(final Configuration config) {

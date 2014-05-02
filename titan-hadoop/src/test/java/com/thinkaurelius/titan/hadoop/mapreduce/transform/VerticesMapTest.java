@@ -1,11 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.VerticesMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -21,25 +19,25 @@ import java.util.Map;
  */
 public class VerticesMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new VerticesMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testVerticesWithNoPaths() throws Exception {
         Configuration config = new Configuration();
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((FaunusEdge) edge).pathCount(), 0);
+                assertEquals(((HadoopEdge) edge).pathCount(), 0);
             }
 
             try {
@@ -62,15 +60,15 @@ public class VerticesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 1);
             assertEquals(vertex.getPaths().get(0).size(), 1);
             assertEquals(vertex.getPaths().get(0).get(0).getId(), vertex.getId());
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                assertEquals(((FaunusEdge) edge).pathCount(), 0);
+                assertEquals(((HadoopEdge) edge).pathCount(), 0);
             }
         }
 

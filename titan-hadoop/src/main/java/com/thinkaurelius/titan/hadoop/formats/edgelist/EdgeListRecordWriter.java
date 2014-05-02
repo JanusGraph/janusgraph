@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -16,7 +16,7 @@ import java.io.UnsupportedEncodingException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class EdgeListRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+public class EdgeListRecordWriter extends RecordWriter<NullWritable, HadoopVertex> {
     protected DataOutputStream out;
     private static final String UTF8 = "UTF-8";
     private static final byte[] NEWLINE;
@@ -36,7 +36,7 @@ public class EdgeListRecordWriter extends RecordWriter<NullWritable, FaunusVerte
     }
 
     @Override
-    public void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
+    public void write(final NullWritable key, final HadoopVertex vertex) throws IOException {
         if (null != vertex) {
             final byte[] id = vertex.getId().toString().getBytes(UTF8);
             for (final Edge edge : vertex.getEdges(Direction.OUT)) {

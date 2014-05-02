@@ -4,9 +4,9 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanHadoopGraph;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetup;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 
 import org.apache.cassandra.db.Column;
 import org.apache.hadoop.conf.Configuration;
@@ -22,11 +22,11 @@ import java.util.SortedMap;
 
 public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
 
-    public TitanCassandraHadoopGraph(TitanFaunusSetup setup) {
+    public TitanCassandraHadoopGraph(TitanHadoopSetup setup) {
         super(setup);
     }
 
-    public FaunusVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
+    public HadoopVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
         return super.readFaunusVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
     }
 

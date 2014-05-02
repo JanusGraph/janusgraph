@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.hadoop.formats;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopPipeline;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
@@ -23,11 +23,11 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(true);
     }
 
-    public void bulkLoadGraphOfTheGods(final FaunusGraph f) throws Exception {
-        new FaunusPipeline(f)._().submit();
+    public void bulkLoadGraphOfTheGods(final HadoopGraph f) throws Exception {
+        new HadoopPipeline(f)._().submit();
     }
 
-    public void testBulkLoading(final BaseConfiguration configuration, final FaunusGraph f1) throws Exception {
+    public void testBulkLoading(final BaseConfiguration configuration, final HadoopGraph f1) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         TitanGraph g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
@@ -53,36 +53,36 @@ public class TitanOutputFormatTest extends BaseTest {
         assertTrue(names.contains("cerberus"));
     }
 
-    public void testBulkElementDeletions(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testBulkElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         TitanGraph g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
-        new FaunusPipeline(f2).V().drop().submit();
+        new HadoopPipeline(f2).V().drop().submit();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
         bulkLoadGraphOfTheGods(f1);
         g = TitanFactory.open(configuration);
-        new FaunusPipeline(f2).E().drop().submit();
+        new HadoopPipeline(f2).E().drop().submit();
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
 
-        new FaunusPipeline(f2).V().drop().submit();
+        new HadoopPipeline(f2).V().drop().submit();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
     }
 
-    public void testFewElementDeletions(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testFewElementDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
         TitanGraph g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
 
-        new FaunusPipeline(f2).E().has("label", "battled").drop().submit();
+        new HadoopPipeline(f2).E().has("label", "battled").drop().submit();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(14, new GremlinPipeline(g).E().count());
@@ -90,7 +90,7 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(1, new GremlinPipeline(g).E().has("label", "mother").count());
         assertEquals(2, new GremlinPipeline(g).E().has("label", "father").count());
 
-        new FaunusPipeline(f2).V().has("name", "hercules").drop().submit();
+        new HadoopPipeline(f2).V().has("name", "hercules").drop().submit();
         g = TitanFactory.open(configuration);
         assertEquals(11, new GremlinPipeline(g).V().count());
         assertEquals(12, new GremlinPipeline(g).E().count());
@@ -99,9 +99,9 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(1, new GremlinPipeline(g).E().has("label", "father").count());
     }
 
-    public void testBulkVertexPropertyDeletions(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testBulkVertexPropertyDeletions(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        new FaunusPipeline(f2).V().sideEffect("{it.removeProperty('name')}").submit();
+        new HadoopPipeline(f2).V().sideEffect("{it.removeProperty('name')}").submit();
         TitanGraph g = TitanFactory.open(configuration);
 
         assertEquals(12, new GremlinPipeline(g).V().count());
@@ -120,13 +120,13 @@ public class TitanOutputFormatTest extends BaseTest {
         }).iterate();
     }
 
-    public void testBulkVertexPropertyUpdates(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testBulkVertexPropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         TitanGraph g = TitanFactory.open(configuration);
         g.makeKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         g.commit();
 
         bulkLoadGraphOfTheGods(f1);
-        new FaunusPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
+        new HadoopPipeline(f2).V().sideEffect("{it.name = 'marko' + it.name}").submit();
         g = TitanFactory.open(configuration);
         assertEquals(12, new GremlinPipeline(g).V().count());
         assertEquals(17, new GremlinPipeline(g).E().count());
@@ -144,7 +144,7 @@ public class TitanOutputFormatTest extends BaseTest {
             }
         }).iterate();
 
-        new FaunusPipeline(f2).V().drop().submit();
+        new HadoopPipeline(f2).V().drop().submit();
         g = TitanFactory.open(configuration);
         assertEquals(0, new GremlinPipeline(g).V().count());
         assertEquals(0, new GremlinPipeline(g).E().count());
@@ -156,7 +156,7 @@ public class TitanOutputFormatTest extends BaseTest {
 
         int counter = 0;
         g = TitanFactory.open(configuration);
-        new FaunusPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
+        new HadoopPipeline(f2).V().has("name", "saturn").sideEffect("{it.addProperty('name','chronos')}").submit();
         TitanVertex v = (TitanVertex) g.getVertices("name", "saturn").iterator().next();
         for (Object property : new GremlinPipeline(v).transform(new PipeFunction<TitanVertex, Iterable<TitanProperty>>() {
             @Override
@@ -171,9 +171,9 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(counter, 2);
     }
 
-    public void testBulkEdgeDerivations(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testBulkEdgeDerivations(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        new FaunusPipeline(f2).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
+        new HadoopPipeline(f2).V().as("x").out("father").out("father").linkIn("grandfather", "x").submit();
         TitanGraph g = TitanFactory.open(configuration);
 
         assertEquals(12, new GremlinPipeline(g).V().count());
@@ -184,9 +184,9 @@ public class TitanOutputFormatTest extends BaseTest {
                 new GremlinPipeline(g).V("name", "hercules").out("grandfather")));
     }
 
-    public void testBulkEdgePropertyUpdates(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testBulkEdgePropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         bulkLoadGraphOfTheGods(f1);
-        new FaunusPipeline(f2).E().has("label", "battled").sideEffect("{it.time = it.time+1}").submit();
+        new HadoopPipeline(f2).E().has("label", "battled").sideEffect("{it.time = it.time+1}").submit();
         TitanGraph g = TitanFactory.open(configuration);
 
         assertEquals(12, new GremlinPipeline(g).V().count());
@@ -213,7 +213,7 @@ public class TitanOutputFormatTest extends BaseTest {
         assertEquals(5, new GremlinPipeline(g).V("name", "hercules").out().count());
     }
 
-    public void testUnidirectionEdges(final BaseConfiguration configuration, final FaunusGraph f1, final FaunusGraph f2) throws Exception {
+    public void testUnidirectionEdges(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         TitanGraph g = TitanFactory.open(configuration);
         g.makeLabel("father").unidirected().make();
         g.commit();

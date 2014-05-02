@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.hadoop.formats.graphson.HadoopGraphSONUtility;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -45,77 +45,77 @@ public abstract class BaseTest extends TestCase {
         return list;
     }
 
-    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example) throws Exception {
+    public static Map<Long, HadoopVertex> generateGraph(final ExampleGraph example) throws Exception {
         Configuration configuration = new Configuration();
         configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
         return generateGraph(example, configuration);
     }
 
-    public FaunusGraph createFaunusGraph(final InputStream inputStream) throws Exception {
+    public HadoopGraph createFaunusGraph(final InputStream inputStream) throws Exception {
         Configuration configuration = new Configuration();
         Properties properties = new Properties();
         properties.load(inputStream);
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             configuration.set(entry.getKey().toString(), entry.getValue().toString());
         }
-        return new FaunusGraph(configuration);
+        return new HadoopGraph(configuration);
     }
 
-    public static Map<Long, FaunusVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
-        final List<FaunusVertex> vertices;
+    public static Map<Long, HadoopVertex> generateGraph(final ExampleGraph example, final Configuration configuration) throws Exception {
+        final List<HadoopVertex> vertices;
         if (ExampleGraph.TINKERGRAPH.equals(example))
             vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-example-1.json"));
         else if (ExampleGraph.GRAPH_OF_THE_GODS.equals(example))
             vertices = new HadoopGraphSONUtility().fromJSON(configuration, HadoopGraphSONUtility.class.getResourceAsStream("graph-of-the-gods.json"));
         else {
-            vertices = new ArrayList<FaunusVertex>();
-            FaunusVertex saturn = new FaunusVertex(configuration, 4l);
+            vertices = new ArrayList<HadoopVertex>();
+            HadoopVertex saturn = new HadoopVertex(configuration, 4l);
             vertices.add(saturn);
             saturn.setProperty("name", "saturn");
             saturn.setProperty("age", 10000);
             saturn.setProperty("type", "titan");
 
-            FaunusVertex sky = new FaunusVertex(configuration, 8l);
+            HadoopVertex sky = new HadoopVertex(configuration, 8l);
             vertices.add(sky);
             ElementHelper.setProperties(sky, "name", "sky", "type", "location");
 
-            FaunusVertex sea = new FaunusVertex(configuration, 12l);
+            HadoopVertex sea = new HadoopVertex(configuration, 12l);
             vertices.add(sea);
             ElementHelper.setProperties(sea, "name", "sea", "type", "location");
 
-            FaunusVertex jupiter = new FaunusVertex(configuration, 16l);
+            HadoopVertex jupiter = new HadoopVertex(configuration, 16l);
             vertices.add(jupiter);
             ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000, "type", "god");
 
-            FaunusVertex neptune = new FaunusVertex(configuration, 20l);
+            HadoopVertex neptune = new HadoopVertex(configuration, 20l);
             vertices.add(neptune);
             ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500, "type", "god");
 
-            FaunusVertex hercules = new FaunusVertex(configuration, 24l);
+            HadoopVertex hercules = new HadoopVertex(configuration, 24l);
             vertices.add(hercules);
             ElementHelper.setProperties(hercules, "name", "hercules", "age", 30, "type", "demigod");
 
-            FaunusVertex alcmene = new FaunusVertex(configuration, 28l);
+            HadoopVertex alcmene = new HadoopVertex(configuration, 28l);
             vertices.add(alcmene);
             ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45, "type", "human");
 
-            FaunusVertex pluto = new FaunusVertex(configuration, 32l);
+            HadoopVertex pluto = new HadoopVertex(configuration, 32l);
             vertices.add(pluto);
             ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000, "type", "god");
 
-            FaunusVertex nemean = new FaunusVertex(configuration, 36l);
+            HadoopVertex nemean = new HadoopVertex(configuration, 36l);
             vertices.add(nemean);
             ElementHelper.setProperties(nemean, "name", "nemean", "type", "monster");
 
-            FaunusVertex hydra = new FaunusVertex(configuration, 40l);
+            HadoopVertex hydra = new HadoopVertex(configuration, 40l);
             vertices.add(hydra);
             ElementHelper.setProperties(hydra, "name", "hydra", "type", "monster");
 
-            FaunusVertex cerberus = new FaunusVertex(configuration, 44l);
+            HadoopVertex cerberus = new HadoopVertex(configuration, 44l);
             vertices.add(cerberus);
             ElementHelper.setProperties(cerberus, "name", "cerberus", "type", "monster");
 
-            FaunusVertex tartarus = new FaunusVertex(configuration, 48l);
+            HadoopVertex tartarus = new HadoopVertex(configuration, 48l);
             vertices.add(tartarus);
             ElementHelper.setProperties(tartarus, "name", "tartarus", "type", "location");
 
@@ -145,28 +145,28 @@ public abstract class BaseTest extends TestCase {
         }
 
 
-        /*for (final FaunusVertex vertex : vertices) {
+        /*for (final HadoopVertex vertex : vertices) {
             vertex.setConf(configuration);
             for (final Edge edge : vertex.getEdges(Direction.BOTH)) {
-                ((FaunusEdge) edge).setConf(configuration);
+                ((HadoopEdge) edge).setConf(configuration);
             }
         }*/
 
-        final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
-        for (final FaunusVertex vertex : vertices) {
+        final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
+        for (final HadoopVertex vertex : vertices) {
             map.put(vertex.getIdAsLong(), vertex);
         }
         return map;
     }
 
-    public static Map<Long, FaunusVertex> startPath(final Map<Long, FaunusVertex> graph, final Class<? extends Element> klass, final long... ids) {
+    public static Map<Long, HadoopVertex> startPath(final Map<Long, HadoopVertex> graph, final Class<? extends Element> klass, final long... ids) {
         if (ids.length == 0) {
-            for (FaunusVertex vertex : graph.values()) {
+            for (HadoopVertex vertex : graph.values()) {
                 if (klass.equals(Vertex.class)) {
                     vertex.startPath();
                 } else if (klass.equals(Edge.class)) {
                     for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                        ((FaunusEdge) edge).startPath();
+                        ((HadoopEdge) edge).startPath();
                     }
                 } else {
                     throw new IllegalArgumentException("It can only be either edge or vertex, not both");
@@ -186,35 +186,35 @@ public abstract class BaseTest extends TestCase {
         return graph;
     }
 
-    public static Map<Long, FaunusVertex> runWithGraph(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
+    public static Map<Long, HadoopVertex> runWithGraph(final Map<Long, HadoopVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         driver.resetExpectedCounters();
-        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
-        for (final FaunusVertex vertex : graph.values()) {
+        driver.getConfiguration().setBoolean(HadoopCompiler.TESTING, true);
+        for (final HadoopVertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
         }
 
-        final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+        final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         for (final Object pair : driver.run()) {
-            map.put(((Pair<NullWritable, FaunusVertex>) pair).getSecond().getIdAsLong(), ((Pair<NullWritable, FaunusVertex>) pair).getSecond());
+            map.put(((Pair<NullWritable, HadoopVertex>) pair).getSecond().getIdAsLong(), ((Pair<NullWritable, HadoopVertex>) pair).getSecond());
         }
         return map;
     }
 
-    public static List runWithGraphNoIndex(final Map<Long, FaunusVertex> graph, final MapReduceDriver driver) throws IOException {
+    public static List runWithGraphNoIndex(final Map<Long, HadoopVertex> graph, final MapReduceDriver driver) throws IOException {
         driver.resetOutput();
         driver.resetExpectedCounters();
-        driver.getConfiguration().setBoolean(FaunusCompiler.TESTING, true);
+        driver.getConfiguration().setBoolean(HadoopCompiler.TESTING, true);
         for (final Vertex vertex : graph.values()) {
             driver.withInput(NullWritable.get(), vertex);
         }
         return driver.run();
     }
 
-    public static Map<Long, FaunusVertex> run(final MapReduceDriver driver) throws IOException {
-        final Map<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+    public static Map<Long, HadoopVertex> run(final MapReduceDriver driver) throws IOException {
+        final Map<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         for (final Object object : driver.run()) {
-            Pair<NullWritable, FaunusVertex> pair = (Pair<NullWritable, FaunusVertex>) object;
+            Pair<NullWritable, HadoopVertex> pair = (Pair<NullWritable, HadoopVertex>) object;
             map.put(pair.getSecond().getIdAsLong(), pair.getSecond());
         }
         return map;
@@ -233,13 +233,13 @@ public abstract class BaseTest extends TestCase {
     }
 
     // TODO: Remove the body of this with VertexHelper.areEqual() with the release of TinkerPop 2.3.2
-    public static void identicalStructure(final Map<Long, FaunusVertex> vertices, final ExampleGraph exampleGraph) throws Exception {
-        Map<Long, FaunusVertex> otherVertices = generateGraph(exampleGraph, new Configuration());
+    public static void identicalStructure(final Map<Long, HadoopVertex> vertices, final ExampleGraph exampleGraph) throws Exception {
+        Map<Long, HadoopVertex> otherVertices = generateGraph(exampleGraph, new Configuration());
         assertEquals(vertices.size(), otherVertices.size());
         for (long id : vertices.keySet()) {
             assertNotNull(otherVertices.get(id));
-            FaunusVertex v1 = vertices.get(id);
-            FaunusVertex v2 = otherVertices.get(id);
+            HadoopVertex v1 = vertices.get(id);
+            HadoopVertex v2 = otherVertices.get(id);
             ElementHelper.areEqual(v1, v2);
 
             assertEquals(v1.getProperties().size(), v2.getProperties().size());
@@ -281,14 +281,14 @@ public abstract class BaseTest extends TestCase {
         return temp;
     }
 
-    public static void noPaths(final Map<Long, FaunusVertex> graph, final Class<? extends Element> klass) {
-        for (FaunusVertex vertex : graph.values()) {
+    public static void noPaths(final Map<Long, HadoopVertex> graph, final Class<? extends Element> klass) {
+        for (HadoopVertex vertex : graph.values()) {
             if (klass.equals(Vertex.class)) {
                 assertFalse(vertex.hasPaths());
                 assertEquals(vertex.pathCount(), 0);
             } else {
                 for (Edge e : vertex.getEdges(Direction.BOTH)) {
-                    FaunusEdge edge = (FaunusEdge) e;
+                    HadoopEdge edge = (HadoopEdge) e;
                     assertFalse(edge.hasPaths());
                     assertEquals(edge.pathCount(), 0);
                 }

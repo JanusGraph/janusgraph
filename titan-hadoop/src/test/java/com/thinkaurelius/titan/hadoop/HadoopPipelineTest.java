@@ -1,17 +1,15 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.tinkerpop.pipes.transform.TransformPipe;
 
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusPipelineTest extends BaseTest {
+public class HadoopPipelineTest extends BaseTest {
 
     public void testElementTypeUpdating() {
-        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
+        HadoopPipeline pipe = new HadoopPipeline(new HadoopGraph());
         try {
             pipe.outE();
             assertTrue(false);
@@ -19,7 +17,7 @@ public class FaunusPipelineTest extends BaseTest {
             assertTrue(true);
         }
         pipe.v(1, 2, 3, 4).outE("knows").inV().property("key");
-        pipe = new FaunusPipeline(new FaunusGraph());
+        pipe = new HadoopPipeline(new HadoopGraph());
         pipe.V().E().V().E();
 
 
@@ -46,7 +44,7 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineLocking() {
-        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
+        HadoopPipeline pipe = new HadoopPipeline(new HadoopGraph());
         pipe.V().out().property("name");
 
         try {
@@ -65,9 +63,9 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineLockingWithMapReduceOutput() throws Exception {
-        FaunusGraph graph = new FaunusGraph();
+        HadoopGraph graph = new HadoopGraph();
         graph.setGraphOutputFormat(TitanCassandraOutputFormat.class);
-        FaunusPipeline pipe = new FaunusPipeline(graph);
+        HadoopPipeline pipe = new HadoopPipeline(graph);
         assertFalse(pipe.state.isLocked());
         try {
             pipe.V().out().count().submit();
@@ -78,7 +76,7 @@ public class FaunusPipelineTest extends BaseTest {
     }
 
     public void testPipelineStepIncr() {
-        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
+        HadoopPipeline pipe = new HadoopPipeline(new HadoopGraph());
         assertEquals(pipe.state.getStep(), -1);
         pipe.V();
         assertEquals(pipe.state.getStep(), 0);

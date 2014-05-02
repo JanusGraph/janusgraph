@@ -14,7 +14,7 @@ import java.util.List;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class FaunusPathElement extends FaunusElement implements WritableComparable<FaunusElement>, Configurable {
+public abstract class HadoopPathElement extends HadoopElement implements WritableComparable<HadoopElement>, Configurable {
 
     protected List<List<MicroElement>> paths = null;
     protected MicroElement microVersion = null;
@@ -22,14 +22,14 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     protected long pathCounter = 0;
     protected Configuration configuration = EmptyConfiguration.immutable();
 
-    public FaunusPathElement(final Configuration configuration, final long id) {
+    public HadoopPathElement(final Configuration configuration, final long id) {
         super(id);
         this.setConf(configuration);
     }
 
     @Override
-    protected <T> T getImplicitProperty(final FaunusType type) {
-        if (type.equals(FaunusType.COUNT))
+    protected <T> T getImplicitProperty(final HadoopType type) {
+        if (type.equals(HadoopType.COUNT))
             return (T) Long.valueOf(this.pathCount());
         else return super.getImplicitProperty(type);
     }
@@ -51,7 +51,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
         this.trackPaths = trackPaths;
         if (this.trackPaths) {
             if (null == this.microVersion)
-                this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
+                this.microVersion = (this instanceof HadoopVertex) ? new HadoopVertex.MicroVertex(this.id) : new HadoopEdge.MicroEdge(this.id);
             if (null == this.paths)
                 this.paths = new ArrayList<List<MicroElement>>();
         }
@@ -87,12 +87,12 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
             throw new IllegalStateException("Path calculations are not enabled");
     }
 
-    public void getPaths(final FaunusElement element, final boolean append) {
-        Preconditions.checkArgument(element instanceof FaunusPathElement);
+    public void getPaths(final HadoopElement element, final boolean append) {
+        Preconditions.checkArgument(element instanceof HadoopPathElement);
         if (this.trackPaths) {
-            this.addPaths(((FaunusPathElement) element).getPaths(), append);
+            this.addPaths(((HadoopPathElement) element).getPaths(), append);
         } else {
-            this.pathCounter = this.pathCounter + ((FaunusPathElement) element).pathCount();
+            this.pathCounter = this.pathCounter + ((HadoopPathElement) element).pathCount();
         }
     }
 
@@ -114,7 +114,7 @@ public abstract class FaunusPathElement extends FaunusElement implements Writabl
     public void clearPaths() {
         if (this.trackPaths) {
             this.paths = new ArrayList<List<MicroElement>>();
-            this.microVersion = (this instanceof FaunusVertex) ? new FaunusVertex.MicroVertex(this.id) : new FaunusEdge.MicroEdge(this.id);
+            this.microVersion = (this instanceof HadoopVertex) ? new HadoopVertex.MicroVertex(this.id) : new HadoopEdge.MicroEdge(this.id);
         } else
             this.pathCounter = 0;
     }

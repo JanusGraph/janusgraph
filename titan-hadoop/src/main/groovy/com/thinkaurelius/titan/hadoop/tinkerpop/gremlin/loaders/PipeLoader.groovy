@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders
 
-import com.thinkaurelius.titan.hadoop.FaunusPipeline
+import com.thinkaurelius.titan.hadoop.HadoopPipeline
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlin
 
 /**
@@ -9,12 +9,12 @@ import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlin
 class PipeLoader {
 
     public static void load() {
-        FaunusPipeline.metaClass.propertyMissing = { final String name ->
+        HadoopPipeline.metaClass.propertyMissing = { final String name ->
             if (FaunusGremlin.isStep(name)) {
                 return delegate."$name"();
             } else {
-                FaunusPipeline.metaClass."$name" = { ((FaunusPipeline) delegate).property(name); }
-                return ((FaunusPipeline) delegate).property(name);
+                HadoopPipeline.metaClass."$name" = { ((HadoopPipeline) delegate).property(name); }
+                return ((HadoopPipeline) delegate).property(name);
             }
         }
     }

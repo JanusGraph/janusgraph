@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin;
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopPipeline;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -61,10 +61,10 @@ public class InlineScriptExecutor {
         }
 
         final FaunusGremlinScriptEngine scriptEngine = new FaunusGremlinScriptEngine();
-        scriptEngine.put("g", new FaunusGraph(conf));
+        scriptEngine.put("g", new HadoopGraph(conf));
         Object result = scriptEngine.eval(script);
-        if (result.getClass().equals(FaunusPipeline.class))
-            ((FaunusPipeline) result).submit(script, true);
+        if (result.getClass().equals(HadoopPipeline.class))
+            ((HadoopPipeline) result).submit(script, true);
         System.exit(0);
     }
 }

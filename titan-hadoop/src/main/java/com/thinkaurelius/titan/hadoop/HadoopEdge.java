@@ -20,32 +20,32 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusEdge extends FaunusPathElement implements Edge {
+public class HadoopEdge extends HadoopPathElement implements Edge {
 
     protected long outVertex;
     protected long inVertex;
-    private FaunusType label;
+    private HadoopType label;
 
-    public FaunusEdge() {
+    public HadoopEdge() {
         this(EmptyConfiguration.immutable());
     }
 
-    public FaunusEdge(final Configuration configuration) {
+    public HadoopEdge(final Configuration configuration) {
         super(configuration, -1l);
-        this.label = FaunusType.LINK;
+        this.label = HadoopType.LINK;
 
     }
 
-    public FaunusEdge(final Configuration configuration, final DataInput in) throws IOException {
+    public HadoopEdge(final Configuration configuration, final DataInput in) throws IOException {
         super(configuration, -1l);
         this.readFields(in);
     }
 
-    public FaunusEdge(final Configuration configuration, final long outVertex, final long inVertex, final String label) {
+    public HadoopEdge(final Configuration configuration, final long outVertex, final long inVertex, final String label) {
         this(configuration, -1l, outVertex, inVertex, label);
     }
 
-    public FaunusEdge(final Configuration configuration, final long id, final long outVertex, final long inVertex, final String label) {
+    public HadoopEdge(final Configuration configuration, final long id, final long outVertex, final long inVertex, final String label) {
         super(configuration, id);
         this.outVertex = outVertex;
         this.inVertex = inVertex;
@@ -53,7 +53,7 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     }
 
     @Override
-    void updateSchema(final FaunusSerializer.Schema schema) {
+    void updateSchema(final HadoopSerializer.Schema schema) {
         super.updateSchema(schema);
         schema.add(label);
     }
@@ -61,9 +61,9 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     @Override
     public Vertex getVertex(final Direction direction) {
         if (OUT.equals(direction)) {
-            return new FaunusVertex(this.configuration, this.outVertex);
+            return new HadoopVertex(this.configuration, this.outVertex);
         } else if (IN.equals(direction)) {
-            return new FaunusVertex(this.configuration, this.inVertex);
+            return new HadoopVertex(this.configuration, this.inVertex);
         } else {
             throw ExceptionFactory.bothIsNotSupported();
         }
@@ -84,17 +84,17 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
         return label.getName();
     }
 
-    public FaunusType getType() {
+    public HadoopType getType() {
         return label;
     }
 
-    final void setLabel(FaunusType label) {
+    final void setLabel(HadoopType label) {
         Preconditions.checkNotNull(label);
         this.label = label;
     }
 
     final void setLabel(String label) {
-        setLabel(FaunusType.DEFAULT_MANAGER.get(label));
+        setLabel(HadoopType.DEFAULT_MANAGER.get(label));
     }
 
     //##################################
@@ -102,11 +102,11 @@ public class FaunusEdge extends FaunusPathElement implements Edge {
     //##################################
 
     public void write(final DataOutput out) throws IOException {
-        new FaunusSerializer(this.getConf()).writeEdge(this, out);
+        new HadoopSerializer(this.getConf()).writeEdge(this, out);
     }
 
     public void readFields(final DataInput in) throws IOException {
-        new FaunusSerializer(this.getConf()).readEdge(this, in);
+        new HadoopSerializer(this.getConf()).readEdge(this, in);
 
     }
 

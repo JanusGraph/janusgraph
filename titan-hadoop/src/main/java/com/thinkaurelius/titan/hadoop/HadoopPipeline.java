@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop;
 
 import com.thinkaurelius.titan.hadoop.formats.EdgeCopyMapReduce;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.mapreduce.IdentityMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.filter.BackFilterMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.filter.CyclicPathFilterMap;
@@ -61,19 +61,19 @@ import static com.tinkerpop.blueprints.Direction.*;
 
 
 /**
- * A FaunusPipeline defines a breadth-first traversal through a property graph representation.
- * Gremlin/Faunus compiles down to a FaunusPipeline which is ultimately a series of MapReduce jobs.
+ * A HadoopPipeline defines a breadth-first traversal through a property graph representation.
+ * Gremlin/Faunus compiles down to a HadoopPipeline which is ultimately a series of MapReduce jobs.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusPipeline {
+public class HadoopPipeline {
 
     // used to validate closure parse tree
     protected static final ScriptEngine engine = new GroovyScriptEngineImpl();
     public static final String PIPELINE_IS_LOCKED = "No more steps are possible as pipeline is locked";
 
-    protected final FaunusCompiler compiler;
-    protected final FaunusGraph graph;
+    protected final HadoopCompiler compiler;
+    protected final HadoopGraph graph;
     protected final State state;
 
     protected final List<String> stringRepresentation = new ArrayList<String>();
@@ -191,13 +191,13 @@ public class FaunusPipeline {
     ////////////////////////////////
 
     /**
-     * Construct a FaunusPipeline
+     * Construct a HadoopPipeline
      *
-     * @param graph the FaunusGraph that is the source of the traversal
+     * @param graph the HadoopGraph that is the source of the traversal
      */
-    public FaunusPipeline(final FaunusGraph graph) {
+    public HadoopPipeline(final HadoopGraph graph) {
         this.graph = graph;
-        this.compiler = new FaunusCompiler(this.graph);
+        this.compiler = new HadoopCompiler(this.graph);
         this.state = new State();
 
         if (MapReduceFormat.class.isAssignableFrom(this.graph.getGraphInputFormat())) {
@@ -216,7 +216,7 @@ public class FaunusPipeline {
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
-                    FaunusVertex.class,
+                    HadoopVertex.class,
                     EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
@@ -227,13 +227,13 @@ public class FaunusPipeline {
      * The identity step does not alter the graph in anyway.
      * It has the benefit of emitting various useful graph statistic counters.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline _() {
+    public HadoopPipeline _() {
         this.state.assertNotLocked();
         this.compiler.addMap(IdentityMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 IdentityMap.createConfiguration());
         makeMapReduceString(IdentityMap.class);
         return this;
@@ -243,15 +243,15 @@ public class FaunusPipeline {
      * Apply the provided closure to the current element and emit the result.
      *
      * @param closure the closure to apply to the element
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline transform(final String closure) {
+    public HadoopPipeline transform(final String closure) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(TransformMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 TransformMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
 
         this.state.lock();
@@ -262,16 +262,16 @@ public class FaunusPipeline {
     /**
      * Start a traversal at all vertices in the graph.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline V() {
+    public HadoopPipeline V() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.set(Vertex.class);
 
         this.compiler.addMap(VerticesMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 VerticesMap.createConfiguration(this.state.incrStep() != 0));
 
         makeMapReduceString(VerticesMap.class);
@@ -281,16 +281,16 @@ public class FaunusPipeline {
     /**
      * Start a traversal at all edges in the graph.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline E() {
+    public HadoopPipeline E() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.set(Edge.class);
 
         this.compiler.addMap(EdgesMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 EdgesMap.createConfiguration(this.state.incrStep() != 0));
 
         makeMapReduceString(EdgesMap.class);
@@ -301,9 +301,9 @@ public class FaunusPipeline {
      * Start a traversal at the vertices identified by the provided ids.
      *
      * @param ids the long ids of the vertices to start the traversal from
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline v(final long... ids) {
+    public HadoopPipeline v(final long... ids) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -312,7 +312,7 @@ public class FaunusPipeline {
 
         this.compiler.addMap(VertexMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 VertexMap.createConfiguration(ids));
 
         makeMapReduceString(VertexMap.class);
@@ -323,9 +323,9 @@ public class FaunusPipeline {
      * Take outgoing labeled edges to adjacent vertices.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline out(final String... labels) {
+    public HadoopPipeline out(final String... labels) {
         return this.inOutBoth(OUT, labels);
     }
 
@@ -333,9 +333,9 @@ public class FaunusPipeline {
      * Take incoming labeled edges to adjacent vertices.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline in(final String... labels) {
+    public HadoopPipeline in(final String... labels) {
         return this.inOutBoth(IN, labels);
     }
 
@@ -343,13 +343,13 @@ public class FaunusPipeline {
      * Take both incoming and outgoing labeled edges to adjacent vertices.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline both(final String... labels) {
+    public HadoopPipeline both(final String... labels) {
         return this.inOutBoth(BOTH, labels);
     }
 
-    private FaunusPipeline inOutBoth(final Direction direction, final String... labels) {
+    private HadoopPipeline inOutBoth(final Direction direction, final String... labels) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.assertAtVertex();
@@ -362,7 +362,7 @@ public class FaunusPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 VerticesVerticesMapReduce.createConfiguration(direction, labels));
         this.state.set(Vertex.class);
         makeMapReduceString(VerticesVerticesMapReduce.class, direction.name(), Arrays.asList(labels));
@@ -374,9 +374,9 @@ public class FaunusPipeline {
      * Take outgoing labeled edges to incident edges.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline outE(final String... labels) {
+    public HadoopPipeline outE(final String... labels) {
         return this.inOutBothE(OUT, labels);
     }
 
@@ -384,9 +384,9 @@ public class FaunusPipeline {
      * Take incoming labeled edges to incident edges.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline inE(final String... labels) {
+    public HadoopPipeline inE(final String... labels) {
         return this.inOutBothE(IN, labels);
     }
 
@@ -394,13 +394,13 @@ public class FaunusPipeline {
      * Take both incoming and outgoing labeled edges to incident edges.
      *
      * @param labels the labels of the edges to traverse over
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline bothE(final String... labels) {
+    public HadoopPipeline bothE(final String... labels) {
         return this.inOutBothE(BOTH, labels);
     }
 
-    private FaunusPipeline inOutBothE(final Direction direction, final String... labels) {
+    private HadoopPipeline inOutBothE(final Direction direction, final String... labels) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.assertAtVertex();
@@ -413,7 +413,7 @@ public class FaunusPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 VerticesEdgesMapReduce.createConfiguration(direction, labels));
         this.state.set(Edge.class);
         makeMapReduceString(VerticesEdgesMapReduce.class, direction.name(), Arrays.asList(labels));
@@ -423,31 +423,31 @@ public class FaunusPipeline {
     /**
      * Go to the outgoing/tail vertex of the edge.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline outV() {
+    public HadoopPipeline outV() {
         return this.inOutBothV(OUT);
     }
 
     /**
      * Go to the incoming/head vertex of the edge.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline inV() {
+    public HadoopPipeline inV() {
         return this.inOutBothV(IN);
     }
 
     /**
      * Go to both the incoming/head and outgoing/tail vertices of the edge.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline bothV() {
+    public HadoopPipeline bothV() {
         return this.inOutBothV(BOTH);
     }
 
-    private FaunusPipeline inOutBothV(final Direction direction) {
+    private HadoopPipeline inOutBothV(final Direction direction) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.assertAtEdge();
@@ -455,7 +455,7 @@ public class FaunusPipeline {
 
         this.compiler.addMap(EdgesVerticesMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 EdgesVerticesMap.createConfiguration(direction));
         this.state.set(Vertex.class);
         makeMapReduceString(EdgesVerticesMap.class, direction.name());
@@ -467,9 +467,9 @@ public class FaunusPipeline {
      *
      * @param key  the key identifying the property
      * @param type the class of the property value (so Hadoop can intelligently handle the result)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline property(final String key, final Class type) {
+    public HadoopPipeline property(final String key, final Class type) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.setProperty(key, type);
@@ -480,18 +480,18 @@ public class FaunusPipeline {
      * Emit the property value of an element.
      *
      * @param key the key identifying the property
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline property(final String key) {
+    public HadoopPipeline property(final String key) {
         return this.property(key, String.class);
     }
 
     /**
      * Emit a string representation of the property map.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline map() {
+    public HadoopPipeline map() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -507,9 +507,9 @@ public class FaunusPipeline {
     /**
      * Emit the label of the current edge.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline label() {
+    public HadoopPipeline label() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.assertAtEdge();
@@ -521,9 +521,9 @@ public class FaunusPipeline {
     /**
      * Emit the path taken from start to current element.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline path() {
+    public HadoopPipeline path() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -542,9 +542,9 @@ public class FaunusPipeline {
      *
      * @param order      increasing and descending order
      * @param elementKey the key of the element to associate it with
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline order(final TransformPipe.Order order, final String elementKey) {
+    public HadoopPipeline order(final TransformPipe.Order order, final String elementKey) {
         this.state.assertNotLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null != pair) {
@@ -569,9 +569,9 @@ public class FaunusPipeline {
      * Order the previous property value results.
      *
      * @param order increasing and descending order
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline order(final TransformPipe.Order order) {
+    public HadoopPipeline order(final TransformPipe.Order order) {
         return this.order(order, Tokens.ID);
     }
 
@@ -581,9 +581,9 @@ public class FaunusPipeline {
      *
      * @param order      increasing and descending order
      * @param elementKey the key of the element to associate it with
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline order(final com.tinkerpop.gremlin.Tokens.T order, final String elementKey) {
+    public HadoopPipeline order(final com.tinkerpop.gremlin.Tokens.T order, final String elementKey) {
         return this.order(com.tinkerpop.gremlin.Tokens.mapOrder(order), elementKey);
     }
 
@@ -591,9 +591,9 @@ public class FaunusPipeline {
      * Order the previous property value results.
      *
      * @param order increasing and descending order
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline order(final com.tinkerpop.gremlin.Tokens.T order) {
+    public HadoopPipeline order(final com.tinkerpop.gremlin.Tokens.T order) {
         return this.order(com.tinkerpop.gremlin.Tokens.mapOrder(order));
     }
 
@@ -604,15 +604,15 @@ public class FaunusPipeline {
      * Emit or deny the current element based upon the provided boolean-based closure.
      *
      * @param closure return true to emit and false to remove.
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline filter(final String closure) {
+    public HadoopPipeline filter(final String closure) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(FilterMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 FilterMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
         makeMapReduceString(FilterMap.class);
         return this;
@@ -624,9 +624,9 @@ public class FaunusPipeline {
      * @param key     the property key of the element
      * @param compare the comparator
      * @param values  the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline has(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
+    public HadoopPipeline has(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
         return this.has(key, convert(compare), values);
     }
 
@@ -636,9 +636,9 @@ public class FaunusPipeline {
      * @param key     the property key of the element
      * @param compare the comparator (will be not'd)
      * @param values  the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline hasNot(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
+    public HadoopPipeline hasNot(final String key, final com.tinkerpop.gremlin.Tokens.T compare, final Object... values) {
         return this.hasNot(key, convert(compare), values);
     }
 
@@ -648,15 +648,15 @@ public class FaunusPipeline {
      * @param key     the property key of the element
      * @param compare the comparator
      * @param values  the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline has(final String key, final Compare compare, final Object... values) {
+    public HadoopPipeline has(final String key, final Compare compare, final Object... values) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(PropertyFilterMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 PropertyFilterMap.createConfiguration(this.state.getElementType(), key, compare, values));
         makeMapReduceString(PropertyFilterMap.class, compare.name(), Arrays.asList(values));
         return this;
@@ -668,9 +668,9 @@ public class FaunusPipeline {
      * @param key     the property key of the element
      * @param compare the comparator (will be not'd)
      * @param values  the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline hasNot(final String key, final Compare compare, final Object... values) {
+    public HadoopPipeline hasNot(final String key, final Compare compare, final Object... values) {
         return this.has(key, compare.opposite(), values);
     }
 
@@ -679,9 +679,9 @@ public class FaunusPipeline {
      *
      * @param key    the property key of the element
      * @param values the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline has(final String key, final Object... values) {
+    public HadoopPipeline has(final String key, final Object... values) {
         return (values.length == 0) ? this.has(key, Compare.NOT_EQUAL, new Object[]{null}) : this.has(key, Compare.EQUAL, values);
     }
 
@@ -690,9 +690,9 @@ public class FaunusPipeline {
      *
      * @param key    the property key of the element
      * @param values the values to compare against where only one needs to succeed (or'd)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline hasNot(final String key, final Object... values) {
+    public HadoopPipeline hasNot(final String key, final Object... values) {
         return (values.length == 0) ? this.has(key, Compare.EQUAL, new Object[]{null}) : this.has(key, Compare.NOT_EQUAL, values);
     }
 
@@ -702,15 +702,15 @@ public class FaunusPipeline {
      * @param key        the property key of the element
      * @param startValue the start of the range (inclusive)
      * @param endValue   the end of the range (exclusive)
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline interval(final String key, final Object startValue, final Object endValue) {
+    public HadoopPipeline interval(final String key, final Object startValue, final Object endValue) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(IntervalFilterMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 IntervalFilterMap.createConfiguration(this.state.getElementType(), key, startValue, endValue));
         makeMapReduceString(IntervalFilterMap.class, key, startValue, endValue);
         return this;
@@ -719,15 +719,15 @@ public class FaunusPipeline {
     /**
      * Remove any duplicate traversers at a single element.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline dedup() {
+    public HadoopPipeline dedup() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(DuplicateFilterMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 DuplicateFilterMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(DuplicateFilterMap.class);
         return this;
@@ -738,9 +738,9 @@ public class FaunusPipeline {
      * Currently only backing up to vertices is supported.
      *
      * @param step the name of the step to back up to
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline back(final String step) {
+    public HadoopPipeline back(final String step) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -750,13 +750,13 @@ public class FaunusPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 BackFilterMapReduce.createConfiguration(this.state.getElementType(), this.state.getStep(step)));
         makeMapReduceString(BackFilterMapReduce.class, step);
         return this;
     }
 
-    /*public FaunusPipeline back(final int numberOfSteps) {
+    /*public HadoopPipeline back(final int numberOfSteps) {
         this.state.assertNotLocked();
         this.compiler.backFilterMapReduce(this.state.getElementType(), this.state.getStep() - numberOfSteps);
         this.compiler.setPathEnabled(true);
@@ -767,15 +767,15 @@ public class FaunusPipeline {
     /**
      * Emit the element only if it was arrived at via a path that does not have cycles in it.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline simplePath() {
+    public HadoopPipeline simplePath() {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(CyclicPathFilterMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 CyclicPathFilterMap.createConfiguration(this.state.getElementType()));
         makeMapReduceString(CyclicPathFilterMap.class);
         return this;
@@ -788,15 +788,15 @@ public class FaunusPipeline {
      * For example, mutate the properties of the element.
      *
      * @param closure the sideeffect closure whose results are ignored.
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline sideEffect(final String closure) {
+    public HadoopPipeline sideEffect(final String closure) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
         this.compiler.addMap(SideEffectMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 SideEffectMap.createConfiguration(this.state.getElementType(), this.validateClosure(closure)));
 
         makeMapReduceString(SideEffectMap.class);
@@ -807,9 +807,9 @@ public class FaunusPipeline {
      * Name a step in order to reference it later in the expression.
      *
      * @param name the string representation of the name
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline as(final String name) {
+    public HadoopPipeline as(final String name) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -828,9 +828,9 @@ public class FaunusPipeline {
      * @param step           the name of the step where the source vertices were
      * @param label          the label of the edge to project
      * @param mergeWeightKey the property key to use for weight
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline linkIn(final String label, final String step, final String mergeWeightKey) {
+    public HadoopPipeline linkIn(final String label, final String step, final String mergeWeightKey) {
         return this.link(IN, label, step, mergeWeightKey);
     }
 
@@ -839,9 +839,9 @@ public class FaunusPipeline {
      *
      * @param step  the name of the step where the source vertices were
      * @param label the label of the edge to project
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline linkIn(final String label, final String step) {
+    public HadoopPipeline linkIn(final String label, final String step) {
         return this.link(IN, label, step, null);
     }
 
@@ -853,9 +853,9 @@ public class FaunusPipeline {
      * @param step           the name of the step where the source vertices were
      * @param label          the label of the edge to project
      * @param mergeWeightKey the property key to use for weight
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline linkOut(final String label, final String step, final String mergeWeightKey) {
+    public HadoopPipeline linkOut(final String label, final String step, final String mergeWeightKey) {
         return link(OUT, label, step, mergeWeightKey);
     }
 
@@ -864,13 +864,13 @@ public class FaunusPipeline {
      *
      * @param step  the name of the step where the source vertices were
      * @param label the label of the edge to project
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline linkOut(final String label, final String step) {
+    public HadoopPipeline linkOut(final String label, final String step) {
         return this.link(OUT, label, step, null);
     }
 
-    private FaunusPipeline link(final Direction direction, final String label, final String step, final String mergeWeightKey) {
+    private HadoopPipeline link(final Direction direction, final String label, final String step, final String mergeWeightKey) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -881,7 +881,7 @@ public class FaunusPipeline {
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 LinkMapReduce.createConfiguration(direction, label, this.state.getStep(step), mergeWeightKey));
 
         if (null != mergeWeightKey)
@@ -895,9 +895,9 @@ public class FaunusPipeline {
      * Count the number of times the previous element (or property) has been traversed to.
      * The results are stored in the jobs sideeffect file in HDFS.
      *
-     * @return the extended FaunusPipeline.
+     * @return the extended HadoopPipeline.
      */
-    public FaunusPipeline groupCount() {
+    public HadoopPipeline groupCount() {
         this.state.assertNotLocked();
         final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
         if (null == pair) {
@@ -921,9 +921,9 @@ public class FaunusPipeline {
      * The value of the count is incremented by 1
      * The results are stored in the jobs sideeffect file in HDFS.
      *
-     * @return the extended FaunusPipeline.
+     * @return the extended HadoopPipeline.
      */
-    public FaunusPipeline groupCount(final String keyClosure) {
+    public HadoopPipeline groupCount(final String keyClosure) {
         return this.groupCount(keyClosure, null);
     }
 
@@ -932,9 +932,9 @@ public class FaunusPipeline {
      * Then apply the value closure to the current element to determine the count increment.
      * The results are stored in the jobs sideeffect file in HDFS.
      *
-     * @return the extended FaunusPipeline.
+     * @return the extended HadoopPipeline.
      */
-    public FaunusPipeline groupCount(final String keyClosure, final String valueClosure) {
+    public HadoopPipeline groupCount(final String keyClosure, final String valueClosure) {
         this.state.assertNotLocked();
 
 
@@ -953,7 +953,7 @@ public class FaunusPipeline {
     }
 
 
-    private FaunusPipeline commit(final Tokens.Action action) {
+    private HadoopPipeline commit(final Tokens.Action action) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
@@ -965,13 +965,13 @@ public class FaunusPipeline {
                     LongWritable.class,
                     Holder.class,
                     NullWritable.class,
-                    FaunusVertex.class,
+                    HadoopVertex.class,
                     CommitVerticesMapReduce.createConfiguration(action));
             makeMapReduceString(CommitVerticesMapReduce.class, action.name());
         } else {
             this.compiler.addMap(CommitEdgesMap.Map.class,
                     NullWritable.class,
-                    FaunusVertex.class,
+                    HadoopVertex.class,
                     CommitEdgesMap.createConfiguration(action));
             makeMapReduceString(CommitEdgesMap.class, action.name());
         }
@@ -981,29 +981,29 @@ public class FaunusPipeline {
     /**
      * Drop all the elements of respective type at the current step. Keep all others.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline drop() {
+    public HadoopPipeline drop() {
         return this.commit(Tokens.Action.DROP);
     }
 
     /**
      * Keep all the elements of the respetive type at the current step. Drop all others.
      *
-     * @return the extended FaunusPipeline
+     * @return the extended HadoopPipeline
      */
-    public FaunusPipeline keep() {
+    public HadoopPipeline keep() {
         return this.commit(Tokens.Action.KEEP);
     }
 
-    public FaunusPipeline script(final String scriptUri, final String... args) {
+    public HadoopPipeline script(final String scriptUri, final String... args) {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
         this.state.assertAtVertex();
 
         this.compiler.addMap(ScriptMap.Map.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 ScriptMap.createConfiguration(scriptUri, args));
         makeMapReduceString(CommitEdgesMap.class, scriptUri);
         // this.state.lock();
@@ -1017,7 +1017,7 @@ public class FaunusPipeline {
      *
      * @return the count
      */
-    public FaunusPipeline count() {
+    public HadoopPipeline count() {
         this.state.assertNotLocked();
         this.compiler.addMapReduce(CountMapReduce.Map.class,
                 CountMapReduce.Combiner.class,
@@ -1036,7 +1036,7 @@ public class FaunusPipeline {
         return this.stringRepresentation.toString();
     }
 
-    private FaunusPipeline done() {
+    private HadoopPipeline done() {
         if (!this.state.isLocked()) {
             final Pair<String, Class<? extends WritableComparable>> pair = this.state.popProperty();
             if (null != pair) {
@@ -1052,7 +1052,7 @@ public class FaunusPipeline {
     }
 
     /**
-     * Submit the FaunusPipeline to the Hadoop cluster.
+     * Submit the HadoopPipeline to the Hadoop cluster.
      *
      * @throws Exception
      */
@@ -1061,7 +1061,7 @@ public class FaunusPipeline {
     }
 
     /**
-     * Submit the FaunusPipeline to the Hadoop cluster and ensure that a header is emitted in the logs.
+     * Submit the HadoopPipeline to the Hadoop cluster and ensure that a header is emitted in the logs.
      *
      * @param script     the Gremlin script
      * @param showHeader the Faunus header
@@ -1078,15 +1078,15 @@ public class FaunusPipeline {
     }
 
     /**
-     * Get a reference to the graph currently being used in this FaunusPipeline.
+     * Get a reference to the graph currently being used in this HadoopPipeline.
      *
-     * @return the FaunusGraph
+     * @return the HadoopGraph
      */
-    public FaunusGraph getGraph() {
+    public HadoopGraph getGraph() {
         return this.graph;
     }
 
-    public FaunusCompiler getCompiler() {
+    public HadoopCompiler getCompiler() {
         return this.compiler;
     }
 

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -31,7 +31,7 @@ public class VerticesMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private boolean processEdges;
 
@@ -41,12 +41,12 @@ public class VerticesMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             value.startPath();
             long edgesProcessed = 0;
             if (this.processEdges) {
                 for (final Edge edge : value.getEdges(Direction.BOTH)) {
-                    ((FaunusEdge) edge).clearPaths();
+                    ((HadoopEdge) edge).clearPaths();
                     edgesProcessed++;
                 }
 

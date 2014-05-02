@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.filter.FilterMap;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -20,19 +19,19 @@ import java.util.Map;
  */
 public class FilterMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new FilterMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testVerticesOnName() throws Exception {
         Configuration config = FilterMap.createConfiguration(Vertex.class, "{it -> it.name.startsWith('v')}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -52,15 +51,15 @@ public class FilterMapTest extends BaseTest {
         Configuration config = FilterMap.createConfiguration(Edge.class, "{it -> it.weight > 0.19 && it.weight < 0.21}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         long counter = 0;
-        for (FaunusVertex vertex : results.values()) {
+        for (HadoopVertex vertex : results.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).hasPaths()) {
-                    counter = counter + ((FaunusEdge) edge).pathCount();
+                if (((HadoopEdge) edge).hasPaths()) {
+                    counter = counter + ((HadoopEdge) edge).pathCount();
                     assertEquals(edge.getProperty("weight"), 0.2d);
                 }
             }

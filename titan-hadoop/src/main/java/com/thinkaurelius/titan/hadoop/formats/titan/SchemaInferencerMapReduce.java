@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -34,18 +34,18 @@ public class SchemaInferencerMapReduce {
         return new EmptyConfiguration();
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, HadoopVertex> {
 
-        private FaunusVertex funnyVertex;
+        private HadoopVertex funnyVertex;
         private final LongWritable longWritable = new LongWritable();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.funnyVertex = new FaunusVertex(context.getConfiguration(), funnyLong);
+            this.funnyVertex = new HadoopVertex(context.getConfiguration(), funnyLong);
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             for (final String property : value.getPropertyKeys()) {
                 this.funnyVertex.setProperty("t" + property, Object.class.getName());
                 // TODO: Automated type inference
@@ -69,12 +69,12 @@ public class SchemaInferencerMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             context.write(funnyKey, this.funnyVertex);
         }
     }
 
-    public static class Reduce extends org.apache.hadoop.mapreduce.Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Reduce extends org.apache.hadoop.mapreduce.Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private TitanGraph graph;
 
@@ -84,10 +84,10 @@ public class SchemaInferencerMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<FaunusVertex> value, final Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<HadoopVertex> value, final Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             if (key.get() == funnyLong) {
                 final DefaultTypeMaker typeMaker = BlueprintsDefaultTypeMaker.INSTANCE;
-                for (final FaunusVertex vertex : value) {
+                for (final HadoopVertex vertex : value) {
                     for (final String property : vertex.getPropertyKeys()) {
                         final String property2 = property.substring(1);
                         if (property.startsWith("t")) {
@@ -107,14 +107,14 @@ public class SchemaInferencerMapReduce {
                     }
                 }
             } else {
-                for (final FaunusVertex vertex : value) {
+                for (final HadoopVertex vertex : value) {
                     context.write(NullWritable.get(), vertex);
                 }
             }
         }
 
         @Override
-        public void cleanup(final Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             this.graph.commit();
             this.graph.shutdown();
         }

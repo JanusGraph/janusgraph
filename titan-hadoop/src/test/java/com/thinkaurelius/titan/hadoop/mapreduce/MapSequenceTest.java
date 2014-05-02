@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.IdentityMap;
-import com.thinkaurelius.titan.hadoop.mapreduce.MapSequence;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Writable;
@@ -29,7 +27,7 @@ public class MapSequenceTest extends BaseTest {
         Configuration config = new Configuration();
         config.setStrings(MapSequence.MAP_CLASSES, IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName(), IdentityMap.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
-        final Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        final Map<Long, HadoopVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
         assertEquals(results.size(), 6);
         identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }
@@ -39,7 +37,7 @@ public class MapSequenceTest extends BaseTest {
         config.setStrings(MapSequence.MAP_CLASSES, VerticesVerticesMapReduce.Map.class.getName());
         this.mapReduceDriver.withConfiguration(config);
         this.mapReduceDriver.setReducer((Reducer) new VerticesVerticesMapReduce.Reduce());
-        final Map<Long, FaunusVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
+        final Map<Long, HadoopVertex> results = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);
         assertEquals(results.size(), 6);
         identicalStructure(results, ExampleGraph.TINKERGRAPH);
     }*/

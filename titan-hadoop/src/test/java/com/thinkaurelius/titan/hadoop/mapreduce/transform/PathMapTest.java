@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.PathMap;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -23,10 +21,10 @@ import java.util.Map;
  */
 public class PathMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text>();
         mapReduceDriver.setMapper(new PathMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }
@@ -35,12 +33,12 @@ public class PathMapTest extends BaseTest {
         Configuration config = PathMap.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
-        graph.get(1l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(1l)), false);
-        graph.get(2l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(2l), new FaunusVertex.MicroVertex(2l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
-        graph.get(3l).addPath((List) Arrays.asList(new FaunusVertex.MicroVertex(1l), new FaunusVertex.MicroVertex(3l)), false);
+        graph.get(1l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(1l)), false);
+        graph.get(2l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(2l), new HadoopVertex.MicroVertex(2l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(3l)), false);
+        graph.get(3l).addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(3l)), false);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);

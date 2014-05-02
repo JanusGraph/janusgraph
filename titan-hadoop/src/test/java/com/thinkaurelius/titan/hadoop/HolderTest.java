@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.hadoop;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import junit.framework.TestCase;
@@ -20,8 +18,8 @@ import java.io.IOException;
 public class HolderTest extends TestCase {
 
     public void testRawComparison() throws IOException {
-        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', new FaunusVertex(EmptyConfiguration.immutable(), 10));
-        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>('b', new FaunusVertex(EmptyConfiguration.immutable(), 11));
+        Holder<HadoopVertex> holder1 = new Holder<HadoopVertex>('a', new HadoopVertex(EmptyConfiguration.immutable(), 10));
+        Holder<HadoopVertex> holder2 = new Holder<HadoopVertex>('b', new HadoopVertex(EmptyConfiguration.immutable(), 11));
 
         ByteArrayOutputStream bytes1 = new ByteArrayOutputStream();
         holder1.write(new DataOutputStream(bytes1));
@@ -34,15 +32,15 @@ public class HolderTest extends TestCase {
     }
 
     public void testSerialization1() throws IOException {
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
-        Holder<FaunusVertex> holder1 = new Holder<FaunusVertex>('a', vertex);
+        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
+        Holder<HadoopVertex> holder1 = new Holder<HadoopVertex>('a', vertex);
         assertEquals(holder1.get(), vertex);
         assertEquals(holder1.getTag(), 'a');
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         holder1.write(new DataOutputStream(bytes));
-        Holder<FaunusVertex> holder2 = new Holder<FaunusVertex>(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
+        Holder<HadoopVertex> holder2 = new Holder<HadoopVertex>(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(holder1, holder2);
         assertEquals(holder2.get(), vertex);

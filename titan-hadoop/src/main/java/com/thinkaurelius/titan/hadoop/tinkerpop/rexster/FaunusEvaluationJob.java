@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.rexster;
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopPipeline;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 import com.tinkerpop.rexster.RexsterApplicationGraph;
 
@@ -50,7 +50,7 @@ public class FaunusEvaluationJob {
     public void performJob() {
         try {
             logger.info(String.format("Submit Faunus job [%s]", jobId));
-            ((FaunusPipeline) getScriptEngine(rag, configOverrides).eval(script)).submit();
+            ((HadoopPipeline) getScriptEngine(rag, configOverrides).eval(script)).submit();
         } catch (Exception ex) {
             logger.error(String.format("Error running Faunus job [%s].", jobId), ex);
             if (ex.getCause() != null) {
@@ -83,7 +83,7 @@ public class FaunusEvaluationJob {
 
         writeConfigurationToLog(configuration);
 
-        final FaunusGraph graph = new FaunusGraph(configuration);
+        final HadoopGraph graph = new HadoopGraph(configuration);
         engine.put("g", graph);
         return engine;
     }

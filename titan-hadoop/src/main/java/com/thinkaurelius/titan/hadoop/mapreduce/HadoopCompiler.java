@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.formats.FormatTools;
 import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
@@ -40,16 +40,16 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusCompiler extends Configured implements Tool {
+public class HadoopCompiler extends Configured implements Tool {
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
     private static final String MAPRED_JAR = "mapred.jar";
 
-    public static final String TESTING = Tokens.makeNamespace(FaunusCompiler.class) + ".testing";
-    public static final Logger logger = Logger.getLogger(FaunusCompiler.class);
+    public static final String TESTING = Tokens.makeNamespace(HadoopCompiler.class) + ".testing";
+    public static final Logger logger = Logger.getLogger(HadoopCompiler.class);
 
-    private FaunusGraph graph;
+    private HadoopGraph graph;
 
     protected final List<Job> jobs = new ArrayList<Job>();
 
@@ -69,7 +69,7 @@ public class FaunusCompiler extends Configured implements Tool {
     private boolean trackPaths = false;
     private boolean trackState = false;
 
-    public FaunusCompiler(final FaunusGraph graph) {
+    public HadoopCompiler(final HadoopGraph graph) {
         this.graph = graph;
         this.setConf(new Configuration());
         this.addConfiguration(this.graph.getConf());
@@ -173,7 +173,7 @@ public class FaunusCompiler extends Configured implements Tool {
                 throw new RuntimeException(e.getMessage(), e);
             }
 
-            job.setJarByClass(FaunusCompiler.class);
+            job.setJarByClass(HadoopCompiler.class);
             job.setMapperClass(MapSequence.Map.class);
             if (null != this.reduceClass) {
                 job.setReducerClass(this.reduceClass);
@@ -278,11 +278,11 @@ public class FaunusCompiler extends Configured implements Tool {
             if (i == this.jobs.size() - 1) {
                 LazyOutputFormat.setOutputFormatClass(job, this.graph.getGraphOutputFormat());
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, FaunusVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, this.graph.getGraphOutputFormat(), NullWritable.class, HadoopVertex.class);
             } else {
                 LazyOutputFormat.setOutputFormatClass(job, INTERMEDIATE_OUTPUT_FORMAT);
                 MultipleOutputs.addNamedOutput(job, Tokens.SIDEEFFECT, this.graph.getSideEffectOutputFormat(), job.getOutputKeyClass(), job.getOutputKeyClass());
-                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, FaunusVertex.class);
+                MultipleOutputs.addNamedOutput(job, Tokens.GRAPH, INTERMEDIATE_OUTPUT_FORMAT, NullWritable.class, HadoopVertex.class);
             }
         }
     }

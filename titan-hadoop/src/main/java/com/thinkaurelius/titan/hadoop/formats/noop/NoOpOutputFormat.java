@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.noop;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.RecordWriter;
@@ -14,10 +14,10 @@ import java.io.IOException;
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class NoOpOutputFormat extends FileOutputFormat<NullWritable, FaunusVertex> {
+public class NoOpOutputFormat extends FileOutputFormat<NullWritable, HadoopVertex> {
 
     @Override
-    public final RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
+    public final RecordWriter<NullWritable, HadoopVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new NoOpRecordWriter();
     }
 }

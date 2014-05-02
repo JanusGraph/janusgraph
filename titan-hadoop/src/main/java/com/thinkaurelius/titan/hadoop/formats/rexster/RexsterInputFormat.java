@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.rexster;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configurable;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
-public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> implements Configurable {
+public class RexsterInputFormat extends InputFormat<NullWritable, HadoopVertex> implements Configurable {
 
     private long estimatedVertexCount;
 
@@ -52,7 +52,7 @@ public class RexsterInputFormat extends InputFormat<NullWritable, FaunusVertex> 
     }
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
+    public RecordReader<NullWritable, HadoopVertex> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         return new RexsterRecordReader(this.rexsterConf, this.vertexQuery);
     }
 

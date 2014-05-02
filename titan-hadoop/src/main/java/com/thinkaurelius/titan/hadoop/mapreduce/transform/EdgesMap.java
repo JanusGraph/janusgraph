@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -32,7 +32,7 @@ public class EdgesMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private boolean processVertices;
 
@@ -42,7 +42,7 @@ public class EdgesMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.processVertices) {
                 value.clearPaths();
@@ -51,14 +51,14 @@ public class EdgesMap {
 
             long edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.IN)) {
-                ((FaunusEdge) edge).startPath();
+                ((HadoopEdge) edge).startPath();
                 edgesProcessed++;
             }
             context.getCounter(Counters.IN_EDGES_PROCESSED).increment(edgesProcessed);
 
             edgesProcessed = 0;
             for (final Edge edge : value.getEdges(Direction.OUT)) {
-                ((FaunusEdge) edge).startPath();
+                ((HadoopEdge) edge).startPath();
                 edgesProcessed++;
             }
             context.getCounter(Counters.OUT_EDGES_PROCESSED).increment(edgesProcessed);

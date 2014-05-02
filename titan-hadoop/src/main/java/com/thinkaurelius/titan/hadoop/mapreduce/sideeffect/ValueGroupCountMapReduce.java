@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
@@ -46,7 +46,7 @@ public class ValueGroupCountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, WritableComparable, LongWritable> {
 
         private String property;
         private WritableHandler handler;
@@ -69,7 +69,7 @@ public class ValueGroupCountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 if (value.hasPaths()) {
@@ -78,7 +78,7 @@ public class ValueGroupCountMapReduce {
                 }
             } else {
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         this.map.incr(ElementPicker.getProperty(edge, this.property), edge.pathCount());
                         context.getCounter(Counters.PROPERTIES_COUNTED).increment(1l);
@@ -97,7 +97,7 @@ public class ValueGroupCountMapReduce {
 
         private final LongWritable longWritable = new LongWritable();
 
-        public void dischargeMap(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void dischargeMap(final Mapper<NullWritable, HadoopVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.longWritable.set(entry.getValue());
                 context.write(this.handler.set(entry.getKey()), this.longWritable);
@@ -106,7 +106,7 @@ public class ValueGroupCountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, WritableComparable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.dischargeMap(context);
             this.outputs.close();
         }

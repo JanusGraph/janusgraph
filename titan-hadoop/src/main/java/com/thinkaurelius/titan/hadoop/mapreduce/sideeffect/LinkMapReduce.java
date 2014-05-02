@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusPathElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopPathElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -56,12 +55,12 @@ public class LinkMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, LongWritable, Holder> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, LongWritable, Holder> {
 
         private Direction direction;
         private String label;
         private int step;
-        private final Holder<FaunusPathElement> holder = new Holder<FaunusPathElement>();
+        private final Holder<HadoopPathElement> holder = new Holder<HadoopPathElement>();
         private final LongWritable longWritable = new LongWritable();
         private boolean mergeDuplicates;
         private String mergeWeightKey;
@@ -79,23 +78,23 @@ public class LinkMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             final long valueId = value.getIdAsLong();
 
             if (value.hasPaths()) {
                 long edgesCreated = 0;
                 if (this.mergeDuplicates) {
                     final CounterMap<Long> map = new CounterMap<Long>();
-                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
+                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
                         map.incr(path.get(this.step).getId(), 1);
                     }
                     for (java.util.Map.Entry<Long, Long> entry : map.entrySet()) {
                         final long linkElementId = entry.getKey();
-                        final FaunusEdge edge;
+                        final HadoopEdge edge;
                         if (this.direction.equals(IN))
-                            edge = new FaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
+                            edge = new HadoopEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
-                            edge = new FaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
+                            edge = new HadoopEdge(context.getConfiguration(), valueId, linkElementId, this.label);
 
                         if (!this.mergeWeightKey.equals(NO_WEIGHT_KEY))
                             edge.setProperty(this.mergeWeightKey, entry.getValue());
@@ -106,13 +105,13 @@ public class LinkMapReduce {
                         context.write(this.longWritable, this.holder.set('e', edge));
                     }
                 } else {
-                    for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
+                    for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
                         final long linkElementId = path.get(this.step).getId();
-                        final FaunusEdge edge;
+                        final HadoopEdge edge;
                         if (this.direction.equals(IN))
-                            edge = new FaunusEdge(context.getConfiguration(), linkElementId, valueId, this.label);
+                            edge = new HadoopEdge(context.getConfiguration(), linkElementId, valueId, this.label);
                         else
-                            edge = new FaunusEdge(context.getConfiguration(), valueId, linkElementId, this.label);
+                            edge = new HadoopEdge(context.getConfiguration(), valueId, linkElementId, this.label);
 
                         value.addEdge(this.direction, edge);
                         edgesCreated++;
@@ -142,23 +141,23 @@ public class LinkMapReduce {
             this.direction = this.direction.opposite();
         }
 
-        private final Holder<FaunusVertex> holder = new Holder<FaunusVertex>();
+        private final Holder<HadoopVertex> holder = new Holder<HadoopVertex>();
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, LongWritable, Holder>.Context context) throws IOException, InterruptedException {
             long edgesCreated = 0;
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
+            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
             char outTag = 'x';
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((HadoopVertex) holder.get());
                     outTag = 'v';
                 } else if (tag == 'e') {
-                    vertex.addEdge(this.direction, (FaunusEdge) holder.get());
+                    vertex.addEdge(this.direction, (HadoopEdge) holder.get());
                     edgesCreated++;
                 } else {
-                    vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
+                    vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());
                 }
             }
 
@@ -172,7 +171,7 @@ public class LinkMapReduce {
 
     }
 
-    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, FaunusVertex> {
+    public static class Reduce extends Reducer<LongWritable, Holder, NullWritable, HadoopVertex> {
 
         private Direction direction;
 
@@ -183,18 +182,18 @@ public class LinkMapReduce {
         }
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void reduce(final LongWritable key, final Iterable<Holder> values, final Reducer<LongWritable, Holder, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             long edgesCreated = 0;
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
+            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
             for (final Holder holder : values) {
                 final char tag = holder.getTag();
                 if (tag == 'v') {
-                    vertex.addAll((FaunusVertex) holder.get());
+                    vertex.addAll((HadoopVertex) holder.get());
                 } else if (tag == 'e') {
-                    vertex.addEdge(this.direction, (FaunusEdge) holder.get());
+                    vertex.addEdge(this.direction, (HadoopEdge) holder.get());
                     edgesCreated++;
                 } else {
-                    vertex.addEdges(Direction.BOTH, (FaunusVertex) holder.get());
+                    vertex.addEdges(Direction.BOTH, (HadoopVertex) holder.get());
                 }
             }
             context.write(NullWritable.get(), vertex);

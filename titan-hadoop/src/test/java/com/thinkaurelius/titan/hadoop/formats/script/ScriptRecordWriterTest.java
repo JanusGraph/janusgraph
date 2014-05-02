@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.script.ScriptOutputFormat;
-import com.thinkaurelius.titan.hadoop.formats.script.ScriptRecordWriter;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -24,8 +22,8 @@ public class ScriptRecordWriterTest extends BaseTest {
         Configuration conf = new Configuration();
         conf.setStrings(ScriptOutputFormat.FAUNUS_GRAPH_OUTPUT_SCRIPT_FILE, ScriptRecordWriterTest.class.getResource("ScriptOutput.groovy").getFile());
         ScriptRecordWriter writer = new ScriptRecordWriter(stream, conf);
-        Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
-        for (FaunusVertex vertex : graph.values()) {
+        Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
+        for (HadoopVertex vertex : graph.values()) {
             writer.write(NullWritable.get(), vertex);
         }
         String output = baos.toString();

@@ -10,24 +10,24 @@ import java.util.Set;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FaunusType {
+public class HadoopType {
 
     private enum TypeVisibility {NORMAL, HIDDEN, IMPLICIT}
 
-    public static final FaunusType COUNT = new FaunusType(Tokens._COUNT, TypeVisibility.IMPLICIT);
-    public static final FaunusType LINK = new FaunusType(Tokens._LINK, TypeVisibility.NORMAL);
+    public static final HadoopType COUNT = new HadoopType(Tokens._COUNT, TypeVisibility.IMPLICIT);
+    public static final HadoopType LINK = new HadoopType(Tokens._LINK, TypeVisibility.NORMAL);
 
 
-    private static final Set<FaunusType> PREDEFINED_TYPES = ImmutableSet.of(COUNT, LINK);
+    private static final Set<HadoopType> PREDEFINED_TYPES = ImmutableSet.of(COUNT, LINK);
 
     private final String name;
     private final TypeVisibility visibility;
 
-    public FaunusType(String name) {
+    public HadoopType(String name) {
         this(checkName(name), TypeVisibility.NORMAL);
     }
 
-    private FaunusType(String name, TypeVisibility visibility) {
+    private HadoopType(String name, TypeVisibility visibility) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Invalid type name: %s", name);
         Preconditions.checkNotNull(visibility);
 
@@ -71,22 +71,22 @@ public class FaunusType {
     public boolean equals(Object other) {
         if (other == this) return true;
         else if (other == null || !getClass().isInstance(other)) return false;
-        return name.equals(((FaunusType) other).name);
+        return name.equals(((HadoopType) other).name);
     }
 
-    public static final FaunusType.Manager DEFAULT_MANAGER = new FaunusType.Manager();
+    public static final HadoopType.Manager DEFAULT_MANAGER = new HadoopType.Manager();
 
 
-    public static class Manager extends HashMap<String, FaunusType> {
+    public static class Manager extends HashMap<String, HadoopType> {
 
         Manager() {
-            for (FaunusType type : PREDEFINED_TYPES) super.put(type.getName(), type);
+            for (HadoopType type : PREDEFINED_TYPES) super.put(type.getName(), type);
         }
 
-        public final FaunusType get(final String name) {
-            FaunusType type = super.get(name);
+        public final HadoopType get(final String name) {
+            HadoopType type = super.get(name);
             if (type == null) {
-                type = new FaunusType(name);
+                type = new HadoopType(name);
                 super.put(name, type);
             }
             return type;
@@ -94,15 +94,15 @@ public class FaunusType {
 
     }
 
-    public static class VertexSchema extends HashMap<FaunusType, Integer> {
+    public static class VertexSchema extends HashMap<HadoopType, Integer> {
 
-        public boolean add(FaunusType type) {
+        public boolean add(HadoopType type) {
             if (super.containsKey(type)) return false;
             super.put(type, super.size() + 1);
             return true;
         }
 
-        public int getTypeID(FaunusType type) {
+        public int getTypeID(HadoopType type) {
             Integer id = super.get(type);
             Preconditions.checkArgument(id != null, "Type is not part of this schema: " + type);
             return id;

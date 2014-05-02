@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.script.ScriptInputFormat;
-import com.thinkaurelius.titan.hadoop.formats.script.ScriptRecordReader;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 
@@ -29,7 +27,7 @@ public class ScriptRecordReaderTest extends BaseTest {
         int counter = 0;
         while (reader.nextKeyValue()) {
             assertEquals(reader.getCurrentKey(), NullWritable.get());
-            FaunusVertex vertex = reader.getCurrentValue();
+            HadoopVertex vertex = reader.getCurrentValue();
             long id = vertex.getIdAsLong();
             assertEquals(id, counter++);
             assertEquals(vertex.getPropertyKeys().size(), 0);

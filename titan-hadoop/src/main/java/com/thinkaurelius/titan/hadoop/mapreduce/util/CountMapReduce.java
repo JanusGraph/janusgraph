@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -34,7 +34,7 @@ public class CountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable> {
 
         private boolean isVertex;
         private final LongWritable longWritable = new LongWritable();
@@ -47,7 +47,7 @@ public class CountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 final long pathCount = value.pathCount();
@@ -58,7 +58,7 @@ public class CountMapReduce {
                 long edgesCounted = 0;
                 long pathCount = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         edgesCounted++;
                         pathCount = pathCount + edge.pathCount();
@@ -73,7 +73,7 @@ public class CountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, LongWritable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

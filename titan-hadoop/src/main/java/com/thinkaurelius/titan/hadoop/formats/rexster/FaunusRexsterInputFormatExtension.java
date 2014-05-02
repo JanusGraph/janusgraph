@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Streams the vertex list back in FaunusVertex binary format.
+ * Streams the vertex list back in HadoopVertex binary format.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */

@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.TransformMap;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -22,10 +20,10 @@ import java.util.List;
  */
 public class TransformMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, Text, NullWritable, Text>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, Text, NullWritable, Text>();
         mapReduceDriver.setMapper(new TransformMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, Text, NullWritable, Text>());
     }

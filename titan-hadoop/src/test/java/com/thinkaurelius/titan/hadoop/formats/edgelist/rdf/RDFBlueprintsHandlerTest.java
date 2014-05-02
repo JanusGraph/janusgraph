@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.Crc64;
-import com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFBlueprintsHandler;
-import com.thinkaurelius.titan.hadoop.formats.edgelist.rdf.RDFInputFormat;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 
 import junit.framework.TestCase;
 
@@ -51,17 +48,17 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#created> <http://tinkerpop.com#ripple> .");
         handler.next();
         handler.next();
-        assertEquals(((FaunusEdge) handler.next()).getLabel(), "created");
+        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com/created> <http://tinkerpop.com#ripple> .");
         handler.next();
         handler.next();
-        assertEquals(((FaunusEdge) handler.next()).getLabel(), "created");
+        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
 
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
         assertEquals(handler.next().getProperty("name"), "Abraham_Lincoln");
         assertEquals(handler.next().getProperty("name"), "Person");
-        assertEquals(((FaunusEdge) handler.next()).getLabel(), "type");
+        assertEquals(((HadoopEdge) handler.next()).getLabel(), "type");
         assertFalse(handler.hasNext());
     }
 
@@ -79,10 +76,10 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         assertTrue(handler.hasNext());
         handler.next();
         assertTrue(handler.hasNext());
-        assertEquals(((FaunusEdge) handler.next()).getLabel(), "created");
+        assertEquals(((HadoopEdge) handler.next()).getLabel(), "created");
         assertFalse(handler.hasNext());
         handler.parse("<http://dbpedia.org/resource/Abraham_Lincoln> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://dbpedia.org/ontology/Person> .");
-        FaunusVertex subject = (FaunusVertex) handler.next();
+        HadoopVertex subject = (HadoopVertex) handler.next();
         assertEquals(subject.getProperty("name"), "Abraham_Lincoln");
         assertEquals(subject.getProperty("type"), "Person");
         assertFalse(handler.hasNext());
@@ -97,7 +94,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         RDFBlueprintsHandler handler = new RDFBlueprintsHandler(config);
 
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
-        FaunusElement subject = handler.next();
+        HadoopElement subject = handler.next();
         assertEquals(subject.getProperty("name"), "josh");
         assertEquals(subject.getProperty("age"), 32);
         assertFalse(handler.hasNext());
@@ -144,17 +141,17 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> \"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#knows> <http://tinkerpop.com#marko> .");
 
-        FaunusVertex josh = (FaunusVertex) handler.next();
+        HadoopVertex josh = (HadoopVertex) handler.next();
         assertEquals(josh.getProperty("age"), 32);
         assertEquals(josh.getProperty("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 3);
-        josh = (FaunusVertex) handler.next();
+        josh = (HadoopVertex) handler.next();
         assertEquals(josh.getProperty("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 2);
-        FaunusVertex marko = (FaunusVertex) handler.next();
+        HadoopVertex marko = (HadoopVertex) handler.next();
         assertEquals(marko.getProperty("name"), "marko");
         assertEquals(marko.getPropertyKeys().size(), 2);
-        FaunusEdge knows = (FaunusEdge) handler.next();
+        HadoopEdge knows = (HadoopEdge) handler.next();
         assertEquals(knows.getLabel(), "knows");
         assertEquals(knows.getPropertyKeys().size(), 1);
         assertFalse(handler.hasNext());
@@ -172,7 +169,7 @@ public class RDFBlueprintsHandlerTest extends TestCase {
         handler.parse("<http://tinkerpop.com#josh> <http://tinkerpop.com#age> ");
         handler.parse("\"32\"^^<http://www.w3.org/2001/XMLSchema#int> .");
 
-        FaunusVertex josh = (FaunusVertex) handler.next();
+        HadoopVertex josh = (HadoopVertex) handler.next();
         assertEquals(josh.getProperty("age"), 32);
         assertEquals(josh.getProperty("name"), "josh");
         assertEquals(josh.getPropertyKeys().size(), 3);

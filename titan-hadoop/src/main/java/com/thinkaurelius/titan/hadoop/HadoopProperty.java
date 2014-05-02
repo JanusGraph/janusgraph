@@ -6,20 +6,20 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FaunusProperty extends FaunusElement {
+public class HadoopProperty extends HadoopElement {
 
-    private final FaunusType type;
+    private final HadoopType type;
     private final Object value;
 
-    public FaunusProperty(FaunusType type, Object value) {
+    public HadoopProperty(HadoopType type, Object value) {
         this(0l, type, value);
     }
 
-    public FaunusProperty(long id, String type, Object value) {
-        this(id, FaunusType.DEFAULT_MANAGER.get(type), value);
+    public HadoopProperty(long id, String type, Object value) {
+        this(id, HadoopType.DEFAULT_MANAGER.get(type), value);
     }
 
-    public FaunusProperty(long id, FaunusType type, Object value) {
+    public HadoopProperty(long id, HadoopType type, Object value) {
         super(id);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(value);
@@ -31,7 +31,7 @@ public class FaunusProperty extends FaunusElement {
         return type.getName();
     }
 
-    public FaunusType getType() {
+    public HadoopType getType() {
         return type;
     }
 
@@ -48,7 +48,7 @@ public class FaunusProperty extends FaunusElement {
     public boolean equals(Object oth) {
         if (this == oth) return true;
         else if (oth == null || !getClass().isInstance(oth)) return false;
-        FaunusProperty p = (FaunusProperty) oth;
+        HadoopProperty p = (HadoopProperty) oth;
         return type.equals(p.type) && value.equals(p.value);
     }
 
@@ -57,7 +57,7 @@ public class FaunusProperty extends FaunusElement {
         return type.toString() + "->" + value.toString();
     }
 
-    //########### Make FaunusProperty not accept meta-properties (yet) #######
+    //########### Make HadoopProperty not accept meta-properties (yet) #######
 
     @Override
     protected void initializeProperties() {

@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.sideeffect.CommitEdgesMap;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
@@ -20,19 +19,19 @@ import java.util.Map;
  */
 public class CommitEdgesMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new CommitEdgesMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testDropAllEdges() throws Exception {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
         assertEquals(graph.get(2l).pathCount(), 0);
@@ -41,7 +40,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
@@ -55,7 +54,7 @@ public class CommitEdgesMapTest extends BaseTest {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.KEEP);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
         assertEquals(graph.get(2l).pathCount(), 0);
@@ -64,7 +63,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(graph.get(5l).pathCount(), 0);
         assertEquals(graph.get(6l).pathCount(), 0);
 
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertTrue(vertex.getEdges(Direction.BOTH).iterator().hasNext());
         }
 
@@ -78,10 +77,10 @@ public class CommitEdgesMapTest extends BaseTest {
         Configuration config = CommitEdgesMap.createConfiguration(Tokens.Action.DROP);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        for (FaunusVertex vertex : graph.values()) {
+        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                ((FaunusEdge) edge).startPath();
+                ((HadoopEdge) edge).startPath();
             }
         }
         graph = runWithGraph(graph, mapReduceDriver);
@@ -94,7 +93,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(graph.get(6l).pathCount(), 0);
 
         int counter = 0;
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "created").iterator().hasNext());
             if (vertex.getEdges(Direction.BOTH, "knows").iterator().hasNext())
                 counter++;
@@ -113,10 +112,10 @@ public class CommitEdgesMapTest extends BaseTest {
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
-        for (FaunusVertex vertex : graph.values()) {
+        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH, "created")) {
-                ((FaunusEdge) edge).startPath();
+                ((HadoopEdge) edge).startPath();
             }
         }
         graph = runWithGraph(graph, mapReduceDriver);
@@ -129,7 +128,7 @@ public class CommitEdgesMapTest extends BaseTest {
         assertEquals(graph.get(6l).pathCount(), 0);
 
         int counter = 0;
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertFalse(vertex.getEdges(Direction.BOTH, "knows").iterator().hasNext());
             if (vertex.getEdges(Direction.BOTH, "created").iterator().hasNext())
                 counter++;

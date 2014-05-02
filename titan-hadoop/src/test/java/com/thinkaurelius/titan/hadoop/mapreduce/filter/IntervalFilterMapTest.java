@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.filter.IntervalFilterMap;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -20,19 +19,19 @@ import java.util.Map;
  */
 public class IntervalFilterMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new IntervalFilterMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testVerticesOnAge() throws Exception {
         Configuration config = IntervalFilterMap.createConfiguration(Vertex.class, "age", 10, 30);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
         assertEquals(graph.get(2l).pathCount(), 1);
@@ -50,14 +49,14 @@ public class IntervalFilterMapTest extends BaseTest {
     public void testEdgesOnWeight() throws Exception {
         Configuration config = IntervalFilterMap.createConfiguration(Edge.class, "weight", 0.3f, 0.45f);
         mapReduceDriver.withConfiguration(config);
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
         assertEquals(graph.size(), 6);
 
         long counter = 0;
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).hasPaths()) {
-                    counter = ((FaunusEdge) edge).pathCount() + counter;
+                if (((HadoopEdge) edge).hasPaths()) {
+                    counter = ((HadoopEdge) edge).pathCount() + counter;
                     assertEquals(edge.getProperty("weight"), 0.4d);
                 }
             }

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -50,8 +50,8 @@ public class HadoopGraphSONUtility {
     private static final GraphSONUtility graphson = new GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
             ElementPropertyConfig.ExcludeProperties(VERTEX_IGNORE, EDGE_IGNORE));
 
-    public static List<FaunusVertex> fromJSON(final Configuration configuration, final InputStream in) throws IOException {
-        final List<FaunusVertex> vertices = new LinkedList<FaunusVertex>();
+    public static List<HadoopVertex> fromJSON(final Configuration configuration, final InputStream in) throws IOException {
+        final List<HadoopVertex> vertices = new LinkedList<HadoopVertex>();
         final BufferedReader bfs = new BufferedReader(new InputStreamReader(in));
         String line = "";
         while ((line = bfs.readLine()) != null) {
@@ -62,13 +62,13 @@ public class HadoopGraphSONUtility {
 
     }
 
-    public static FaunusVertex fromJSON(final Configuration configuration, String line) throws IOException {
+    public static HadoopVertex fromJSON(final Configuration configuration, String line) throws IOException {
         elementFactory.setConf(configuration);
         try {
             final JSONObject json = new JSONObject(new JSONTokener(line));
             line = EMPTY_STRING; // clear up some memory
 
-            final FaunusVertex vertex = (FaunusVertex) graphson.vertexFromJson(json);
+            final HadoopVertex vertex = (HadoopVertex) graphson.vertexFromJson(json);
             vertex.setConf(configuration);
 
             fromJSONEdges(vertex, json.optJSONArray(_OUT_E), OUT);
@@ -82,21 +82,21 @@ public class HadoopGraphSONUtility {
         }
     }
 
-    private static void fromJSONEdges(final FaunusVertex vertex, final JSONArray edges, final Direction direction) throws JSONException, IOException {
+    private static void fromJSONEdges(final HadoopVertex vertex, final JSONArray edges, final Direction direction) throws JSONException, IOException {
         if (null != edges) {
             for (int i = 0; i < edges.length(); i++) {
                 final JSONObject edge = edges.optJSONObject(i);
-                FaunusEdge faunusEdge = null;
+                HadoopEdge hadoopEdge = null;
                 if (direction.equals(Direction.IN)) {
-                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, new FaunusVertex(vertex.getConf(), edge.optLong(GraphSONTokens._OUT_V)), vertex);
-                    faunusEdge.setConf(vertex.getConf());
+                    hadoopEdge = (HadoopEdge) graphson.edgeFromJson(edge, new HadoopVertex(vertex.getConf(), edge.optLong(GraphSONTokens._OUT_V)), vertex);
+                    hadoopEdge.setConf(vertex.getConf());
                 } else if (direction.equals(Direction.OUT)) {
-                    faunusEdge = (FaunusEdge) graphson.edgeFromJson(edge, vertex, new FaunusVertex(vertex.getConf(), edge.optLong(GraphSONTokens._IN_V)));
-                    faunusEdge.setConf(vertex.getConf());
+                    hadoopEdge = (HadoopEdge) graphson.edgeFromJson(edge, vertex, new HadoopVertex(vertex.getConf(), edge.optLong(GraphSONTokens._IN_V)));
+                    hadoopEdge.setConf(vertex.getConf());
                 }
 
-                if (faunusEdge != null) {
-                    vertex.addEdge(direction, faunusEdge);
+                if (hadoopEdge != null) {
+                    vertex.addEdge(direction, hadoopEdge);
                 }
             }
         }
@@ -152,7 +152,7 @@ public class HadoopGraphSONUtility {
         return elementPropertyKeys;
     }
 
-    private static class FaunusElementFactory implements ElementFactory<FaunusVertex, FaunusEdge>, Configurable {
+    private static class FaunusElementFactory implements ElementFactory<HadoopVertex, HadoopEdge>, Configurable {
 
         private Configuration configuration;
 
@@ -165,13 +165,13 @@ public class HadoopGraphSONUtility {
         }
 
         @Override
-        public FaunusEdge createEdge(final Object id, final FaunusVertex out, final FaunusVertex in, final String label) {
-            return new FaunusEdge(this.configuration, convertIdentifier(id), out.getIdAsLong(), in.getIdAsLong(), label);
+        public HadoopEdge createEdge(final Object id, final HadoopVertex out, final HadoopVertex in, final String label) {
+            return new HadoopEdge(this.configuration, convertIdentifier(id), out.getIdAsLong(), in.getIdAsLong(), label);
         }
 
         @Override
-        public FaunusVertex createVertex(final Object id) {
-            return new FaunusVertex(this.configuration, convertIdentifier(id));
+        public HadoopVertex createVertex(final Object id) {
+            return new HadoopVertex(this.configuration, convertIdentifier(id));
         }
 
         private long convertIdentifier(final Object id) {

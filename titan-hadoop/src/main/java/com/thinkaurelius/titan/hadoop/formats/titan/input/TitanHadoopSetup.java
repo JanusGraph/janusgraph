@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanFaunusSetup {
+public interface TitanHadoopSetup {
 
     public TypeInspector getTypeInspector();
 

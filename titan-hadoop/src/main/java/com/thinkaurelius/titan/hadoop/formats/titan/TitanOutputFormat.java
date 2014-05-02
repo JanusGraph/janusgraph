@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.noop.NoOpOutputFormat;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -18,15 +18,15 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
     public static final String FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "faunus.graph.output.titan.infer-schema";
 
     @Override
-    public void addMapReduceJobs(final FaunusCompiler compiler) {
+    public void addMapReduceJobs(final HadoopCompiler compiler) {
         if (compiler.getConf().getBoolean(FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true)) {
             compiler.addMapReduce(SchemaInferencerMapReduce.Map.class,
                     null,
                     SchemaInferencerMapReduce.Reduce.class,
                     LongWritable.class,
-                    FaunusVertex.class,
+                    HadoopVertex.class,
                     NullWritable.class,
-                    FaunusVertex.class,
+                    HadoopVertex.class,
                     SchemaInferencerMapReduce.createConfiguration());
         }
         compiler.addMapReduce(TitanGraphOutputMapReduce.VertexMap.class,
@@ -35,11 +35,11 @@ public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapR
                 LongWritable.class,
                 Holder.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 TitanGraphOutputMapReduce.createConfiguration());
         compiler.addMap(TitanGraphOutputMapReduce.EdgeMap.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 TitanGraphOutputMapReduce.createConfiguration());
     }
 }

@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.filter.PropertyFilterMap;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -21,19 +20,19 @@ import java.util.Map;
  */
 public class PropertyFilterMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new PropertyFilterMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     public void testNullValue1() throws Exception {
         Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "age", Compare.EQUAL, new Object[]{null});
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 0);
@@ -53,7 +52,7 @@ public class PropertyFilterMapTest extends BaseTest {
         Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "age", Compare.EQUAL, null, 29);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -73,7 +72,7 @@ public class PropertyFilterMapTest extends BaseTest {
         Configuration config = PropertyFilterMap.createConfiguration(Vertex.class, "name", Compare.EQUAL, "marko", "vadas");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -93,15 +92,15 @@ public class PropertyFilterMapTest extends BaseTest {
         Configuration config = PropertyFilterMap.createConfiguration(Edge.class, "weight", Compare.EQUAL, 0.2f);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Edge.class), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         long counter = 0;
-        for (FaunusVertex vertex : graph.values()) {
+        for (HadoopVertex vertex : graph.values()) {
             assertEquals(vertex.pathCount(), 0);
             for (Edge edge : vertex.getEdges(Direction.BOTH)) {
-                if (((FaunusEdge) edge).hasPaths()) {
-                    counter = counter + ((FaunusEdge) edge).pathCount();
+                if (((HadoopEdge) edge).hasPaths()) {
+                    counter = counter + ((HadoopEdge) edge).pathCount();
                     assertEquals(edge.getProperty("weight"), 0.2d);
                 }
             }

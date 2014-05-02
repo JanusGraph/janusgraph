@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configuration;
@@ -15,14 +15,14 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class TitanHBaseRecordReader extends RecordReader<NullWritable, HadoopVertex> {
 
     private TableRecordReader reader;
     private TitanHBaseHadoopGraph graph;
     private VertexQueryFilter vertexQuery;
     private Configuration configuration;
 
-    private FaunusVertex vertex;
+    private HadoopVertex vertex;
 
     public TitanHBaseRecordReader(final TitanHBaseHadoopGraph graph, final VertexQueryFilter vertexQuery, final TableRecordReader reader) {
         this.graph = graph;
@@ -39,7 +39,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
-            final FaunusVertex temp = this.graph.readFaunusVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
+            final HadoopVertex temp = this.graph.readFaunusVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
             if (null != temp) {
                 this.vertex = temp;
                 this.vertexQuery.defaultFilter(this.vertex);
@@ -55,7 +55,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, FaunusVer
     }
 
     @Override
-    public FaunusVertex getCurrentValue() throws IOException, InterruptedException {
+    public HadoopVertex getCurrentValue() throws IOException, InterruptedException {
         return this.vertex;
     }
 

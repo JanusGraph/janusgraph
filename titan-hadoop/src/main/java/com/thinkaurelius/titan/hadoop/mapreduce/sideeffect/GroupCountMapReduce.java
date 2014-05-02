@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CounterMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -52,7 +52,7 @@ public class GroupCountMapReduce {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, Text, LongWritable> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, Text, LongWritable> {
 
         private Closure keyClosure;
         private Closure valueClosure;
@@ -88,10 +88,10 @@ public class GroupCountMapReduce {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
-                    final Object object = (null == this.keyClosure) ? new FaunusVertex.MicroVertex(value.getIdAsLong()) : this.keyClosure.call(value);
+                    final Object object = (null == this.keyClosure) ? new HadoopVertex.MicroVertex(value.getIdAsLong()) : this.keyClosure.call(value);
                     final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(value);
                     this.map.incr(object, number.longValue() * value.pathCount());
                     context.getCounter(Counters.VERTICES_PROCESSED).increment(1l);
@@ -99,9 +99,9 @@ public class GroupCountMapReduce {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
-                        final Object object = (null == this.keyClosure) ? new FaunusEdge.MicroEdge(edge.getIdAsLong()) : this.keyClosure.call(edge);
+                        final Object object = (null == this.keyClosure) ? new HadoopEdge.MicroEdge(edge.getIdAsLong()) : this.keyClosure.call(edge);
                         final Number number = (null == this.valueClosure) ? 1 : (Number) this.valueClosure.call(edge);
                         this.map.incr(object, number.longValue() * edge.pathCount());
                         edgesProcessed++;
@@ -122,7 +122,7 @@ public class GroupCountMapReduce {
         private final Text textWritable = new Text();
         private final LongWritable longWritable = new LongWritable();
 
-        public void dischargeMap(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void dischargeMap(final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             for (final java.util.Map.Entry<Object, Long> entry : this.map.entrySet()) {
                 this.textWritable.set(null == entry.getKey() ? Tokens.NULL : entry.getKey().toString());
                 this.longWritable.set(entry.getValue());
@@ -132,7 +132,7 @@ public class GroupCountMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, Text, LongWritable>.Context context) throws IOException, InterruptedException {
             this.dischargeMap(context);
             this.outputs.close();
         }

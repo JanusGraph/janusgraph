@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.transform.PropertyMap;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -22,10 +21,10 @@ import java.util.Map;
  */
 public class PropertyMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, WritableComparable, NullWritable, WritableComparable> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, WritableComparable, NullWritable, WritableComparable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, WritableComparable, NullWritable, WritableComparable>();
         mapReduceDriver.setMapper(new PropertyMap.Map());
         mapReduceDriver.setReducer(new Reducer<NullWritable, WritableComparable, NullWritable, WritableComparable>());
     }
@@ -34,7 +33,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
+        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -63,7 +62,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
+        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 1);
@@ -93,7 +92,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "name", Text.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 2);
@@ -122,7 +121,7 @@ public class PropertyMapTest extends BaseTest {
         Configuration config = PropertyMap.createConfiguration(Vertex.class, "age", IntWritable.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
+        Map<Long, HadoopVertex> graph = startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 2, 3, 4);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).pathCount(), 2);

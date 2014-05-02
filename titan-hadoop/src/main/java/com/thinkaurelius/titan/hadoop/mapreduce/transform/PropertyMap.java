@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -42,7 +42,7 @@ public class PropertyMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable> {
 
         private String key;
         private boolean isVertex;
@@ -58,7 +58,7 @@ public class PropertyMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
 
             this.outputs.write(Tokens.GRAPH, NullWritable.get(), value);
 
@@ -73,7 +73,7 @@ public class PropertyMap {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         WritableComparable writable = this.handler.set(ElementPicker.getProperty(edge, this.key));
                         for (int i = 0; i < edge.pathCount(); i++) {
@@ -87,7 +87,7 @@ public class PropertyMap {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, WritableComparable>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

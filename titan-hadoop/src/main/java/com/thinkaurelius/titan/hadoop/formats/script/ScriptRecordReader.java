@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 
@@ -21,7 +21,7 @@ import java.io.InputStreamReader;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex> {
 
     private static final String READ_CALL = "read(vertex,line)";
     private static final String VERTEX = "vertex";
@@ -31,7 +31,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     private final VertexQueryFilter vertexQuery;
     private final Configuration configuration;
     private final LineRecordReader lineRecordReader;
-    private FaunusVertex vertex = new FaunusVertex();
+    private HadoopVertex vertex = new HadoopVertex();
 
     public ScriptRecordReader(final VertexQueryFilter vertexQuery, final TaskAttemptContext context) throws IOException {
         this.lineRecordReader = new LineRecordReader();
@@ -57,7 +57,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
             else {
                 try {
                     this.engine.put(LINE, this.lineRecordReader.getCurrentValue().toString());
-                    this.vertex = new FaunusVertex(this.configuration);
+                    this.vertex = new HadoopVertex(this.configuration);
                     this.engine.put(VERTEX, this.vertex);
                     if ((Boolean) engine.eval(READ_CALL)) {
                         this.vertexQuery.defaultFilter(this.vertex);
@@ -76,7 +76,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, FaunusVertex>
     }
 
     @Override
-    public FaunusVertex getCurrentValue() {
+    public HadoopVertex getCurrentValue() {
         return this.vertex;
     }
 

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configuration;
@@ -16,12 +16,12 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVertex> {
+public class GraphSONRecordReader extends RecordReader<NullWritable, HadoopVertex> {
 
     private Configuration configuration;
     private final LineRecordReader lineRecordReader;
     private final VertexQueryFilter vertexQuery;
-    private FaunusVertex vertex = null;
+    private HadoopVertex vertex = null;
 
     public GraphSONRecordReader(VertexQueryFilter vertexQuery) {
         this.lineRecordReader = new LineRecordReader();
@@ -51,7 +51,7 @@ public class GraphSONRecordReader extends RecordReader<NullWritable, FaunusVerte
     }
 
     @Override
-    public FaunusVertex getCurrentValue() {
+    public HadoopVertex getCurrentValue() {
         return this.vertex;
     }
 

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph
-import com.thinkaurelius.titan.hadoop.FaunusPipeline
+import com.thinkaurelius.titan.hadoop.HadoopGraph
+import com.thinkaurelius.titan.hadoop.HadoopPipeline
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlin
 
 /**
@@ -14,48 +14,48 @@ class GraphLoader {
 
     public static void load() {
 
-        FaunusGraph.metaClass.propertyMissing = { final String name ->
+        HadoopGraph.metaClass.propertyMissing = { final String name ->
             if (name.equals(V)) {
-                return new FaunusPipeline((FaunusGraph) delegate).V();
+                return new HadoopPipeline((HadoopGraph) delegate).V();
             } else if (name.equals(E)) {
-                return new FaunusPipeline((FaunusGraph) delegate).E();
+                return new HadoopPipeline((HadoopGraph) delegate).E();
             } else if (FaunusGremlin.isStep(name)) {
-                return new FaunusPipeline((FaunusGraph) delegate)."$name"();
+                return new HadoopPipeline((HadoopGraph) delegate)."$name"();
             } else {
                 throw new MissingPropertyException(name, delegate.getClass());
             }
         }
 
-        FaunusGraph.metaClass.methodMissing = { final String name, final def args ->
+        HadoopGraph.metaClass.methodMissing = { final String name, final def args ->
             if (FaunusGremlin.isStep(name)) {
-                return new FaunusPipeline((FaunusGraph) delegate)."$name"(* args);
+                return new HadoopPipeline((HadoopGraph) delegate)."$name"(* args);
             } else {
                 throw new MissingMethodException(name, delegate.getClass());
             }
         }
 
-        FaunusGraph.metaClass.v = { final long ... ids ->
-            return new FaunusPipeline((FaunusGraph) delegate).v(ids);
+        HadoopGraph.metaClass.v = { final long ... ids ->
+            return new HadoopPipeline((HadoopGraph) delegate).v(ids);
         }
 
-        FaunusGraph.metaClass.V = {->
-            return new FaunusPipeline((FaunusGraph) delegate).V();
+        HadoopGraph.metaClass.V = {->
+            return new HadoopPipeline((HadoopGraph) delegate).V();
         }
 
-        FaunusGraph.metaClass.V = { final String key, final Object value ->
-            return new FaunusPipeline((FaunusGraph) delegate).V().has(key, value);
+        HadoopGraph.metaClass.V = { final String key, final Object value ->
+            return new HadoopPipeline((HadoopGraph) delegate).V().has(key, value);
         }
 
-        FaunusGraph.metaClass.E = {->
-            return new FaunusPipeline((FaunusGraph) delegate).E();
+        HadoopGraph.metaClass.E = {->
+            return new HadoopPipeline((HadoopGraph) delegate).E();
         }
 
-        FaunusGraph.metaClass.E = { final String key, final Object value ->
-            return new FaunusPipeline((FaunusGraph) delegate).E().has(key, value);
+        HadoopGraph.metaClass.E = { final String key, final Object value ->
+            return new HadoopPipeline((HadoopGraph) delegate).E().has(key, value);
         }
 
-        FaunusGraph.metaClass._ = {->
-            return new FaunusPipeline((FaunusGraph) delegate)._();
+        HadoopGraph.metaClass._ = {->
+            return new HadoopPipeline((HadoopGraph) delegate)._();
         }
     }
 }

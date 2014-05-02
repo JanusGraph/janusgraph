@@ -1,5 +1,7 @@
-import com.thinkaurelius.titan.hadoop.FaunusEdge
-import com.thinkaurelius.titan.hadoop.FaunusVertex
+import com.thinkaurelius.titan.hadoop.HadoopEdge
+import com.thinkaurelius.titan.hadoop.HadoopVertex
+import com.thinkaurelius.titan.hadoop.HadoopEdge
+import com.thinkaurelius.titan.hadoop.HadoopVertex
 import com.tinkerpop.blueprints.Edge
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.Vertex
@@ -18,7 +20,7 @@ import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapRed
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Daniel Kuppitz (daniel at thinkaurelius.com)
  */
-def Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Graph graph, final Mapper.Context context) {
+def Vertex getOrCreateVertex(final HadoopVertex faunusVertex, final Graph graph, final Mapper.Context context) {
     final String uniqueKey = "name";
     final Object uniqueValue = faunusVertex.getProperty(uniqueKey);
     final Vertex blueprintsVertex;
@@ -45,7 +47,7 @@ def Vertex getOrCreateVertex(final FaunusVertex faunusVertex, final Graph graph,
     return blueprintsVertex;
 }
 
-def Edge getOrCreateEdge(final FaunusEdge faunusEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
+def Edge getOrCreateEdge(final HadoopEdge faunusEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
     final String edgeLabel = faunusEdge.getLabel();
     final GremlinPipeline blueprintsEdgePipe = blueprintsOutVertex.outE(edgeLabel).as("e").inV().retain([blueprintsInVertex]).range(0, 1).back("e")
     final Edge blueprintsEdge;

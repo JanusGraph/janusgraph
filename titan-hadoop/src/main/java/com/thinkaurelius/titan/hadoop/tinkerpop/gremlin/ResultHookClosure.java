@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin;
 
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
+import com.thinkaurelius.titan.hadoop.HadoopPipeline;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.hdfs.HDFSTools;
 import com.thinkaurelius.titan.hadoop.hdfs.TextFileLineIterator;
@@ -33,9 +33,9 @@ public class ResultHookClosure extends Closure {
     public Object call(final Object[] args) {
         final Object result = args[0];
         final Iterator itty;
-        if (result instanceof FaunusPipeline) {
+        if (result instanceof HadoopPipeline) {
             try {
-                final FaunusPipeline pipeline = (FaunusPipeline) result;
+                final HadoopPipeline pipeline = (HadoopPipeline) result;
                 pipeline.submit();
                 final FileSystem hdfs = FileSystem.get(pipeline.getGraph().getConf());
                 final Path output = HDFSTools.getOutputsFinalJob(hdfs, pipeline.getGraph().getOutputLocation().toString());

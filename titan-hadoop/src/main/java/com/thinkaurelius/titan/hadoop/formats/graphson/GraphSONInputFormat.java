@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configurable;
@@ -19,13 +19,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class GraphSONInputFormat extends FileInputFormat<NullWritable, FaunusVertex> implements Configurable {
+public class GraphSONInputFormat extends FileInputFormat<NullWritable, HadoopVertex> implements Configurable {
 
     private VertexQueryFilter vertexQuery;
     private Configuration config;
 
     @Override
-    public RecordReader<NullWritable, FaunusVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
+    public RecordReader<NullWritable, HadoopVertex> createRecordReader(final InputSplit split, final TaskAttemptContext context) {
         return new GraphSONRecordReader(this.vertexQuery);
     }
 

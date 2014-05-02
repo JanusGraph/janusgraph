@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.tinkerpop.gremlin
 
-import com.thinkaurelius.titan.hadoop.FaunusPipeline
+import com.thinkaurelius.titan.hadoop.HadoopPipeline
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders.GraphLoader
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders.HadoopLoader
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.loaders.PipeLoader
@@ -14,8 +14,8 @@ class FaunusGremlin {
 
     public static void load() {
 
-        FaunusPipeline.getMethods().each {
-            if (it.getReturnType().equals(FaunusPipeline.class)) {
+        HadoopPipeline.getMethods().each {
+            if (it.getReturnType().equals(HadoopPipeline.class)) {
                 FaunusGremlin.addStep(it.getName());
             }
         }

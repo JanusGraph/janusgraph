@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import org.apache.hadoop.conf.Configuration;
@@ -36,43 +36,43 @@ public class EdgeListInputMapReduce {
         return new EmptyConfiguration();
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex> {
 
-        private final HashMap<Long, FaunusVertex> map = new HashMap<Long, FaunusVertex>();
+        private final HashMap<Long, HadoopVertex> map = new HashMap<Long, HadoopVertex>();
         private static final int MAX_MAP_SIZE = 5000;
         private final LongWritable longWritable = new LongWritable();
         private int counter = 0;
 
         @Override
-        public void map(final NullWritable key, final FaunusElement value, final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            if (value instanceof FaunusEdge) {
-                final long outId = ((FaunusEdge) value).getVertexId(OUT);
-                final long inId = ((FaunusEdge) value).getVertexId(IN);
-                FaunusVertex vertex = this.map.get(outId);
+        public void map(final NullWritable key, final HadoopElement value, final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+            if (value instanceof HadoopEdge) {
+                final long outId = ((HadoopEdge) value).getVertexId(OUT);
+                final long inId = ((HadoopEdge) value).getVertexId(IN);
+                HadoopVertex vertex = this.map.get(outId);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(context.getConfiguration(), outId);
+                    vertex = new HadoopVertex(context.getConfiguration(), outId);
                     this.map.put(outId, vertex);
                 }
-                vertex.addEdge(OUT, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
+                vertex.addEdge(OUT, WritableUtils.clone((HadoopEdge) value, context.getConfiguration()));
                 this.counter++;
 
                 vertex = this.map.get(inId);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(context.getConfiguration(), inId);
+                    vertex = new HadoopVertex(context.getConfiguration(), inId);
                     this.map.put(inId, vertex);
                 }
-                vertex.addEdge(IN, WritableUtils.clone((FaunusEdge) value, context.getConfiguration()));
+                vertex.addEdge(IN, WritableUtils.clone((HadoopEdge) value, context.getConfiguration()));
                 context.getCounter(Counters.EDGES_PROCESSED).increment(1l);
                 this.counter++;
             } else {
                 final long id = value.getIdAsLong();
-                FaunusVertex vertex = this.map.get(id);
+                HadoopVertex vertex = this.map.get(id);
                 if (null == vertex) {
-                    vertex = new FaunusVertex(context.getConfiguration(), id);
+                    vertex = new HadoopVertex(context.getConfiguration(), id);
                     this.map.put(id, vertex);
                 }
                 vertex.addAllProperties(value.getProperties());
-                vertex.addEdges(BOTH, WritableUtils.clone((FaunusVertex) value, context.getConfiguration()));
+                vertex.addEdges(BOTH, WritableUtils.clone((HadoopVertex) value, context.getConfiguration()));
                 this.counter++;
             }
             if (this.counter > MAX_MAP_SIZE)
@@ -80,12 +80,12 @@ public class EdgeListInputMapReduce {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             this.flush(context);
         }
 
-        private void flush(final Mapper<NullWritable, FaunusElement, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            for (final FaunusVertex vertex : this.map.values()) {
+        private void flush(final Mapper<NullWritable, HadoopElement, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+            for (final HadoopVertex vertex : this.map.values()) {
                 this.longWritable.set(vertex.getIdAsLong());
                 context.write(this.longWritable, vertex);
                 context.getCounter(Counters.VERTICES_EMITTED).increment(1l);
@@ -95,12 +95,12 @@ public class EdgeListInputMapReduce {
         }
     }
 
-    public static class Combiner extends Reducer<LongWritable, FaunusVertex, LongWritable, FaunusVertex> {
+    public static class Combiner extends Reducer<LongWritable, HadoopVertex, LongWritable, HadoopVertex> {
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<FaunusVertex> values, final Reducer<LongWritable, FaunusVertex, LongWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
-            for (final FaunusVertex value : values) {
+        public void reduce(final LongWritable key, final Iterable<HadoopVertex> values, final Reducer<LongWritable, HadoopVertex, LongWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+            for (final HadoopVertex value : values) {
                 vertex.addEdges(BOTH, value);
                 vertex.addAllProperties(value.getProperties());
             }
@@ -108,13 +108,13 @@ public class EdgeListInputMapReduce {
         }
     }
 
-    public static class Reduce extends Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Reduce extends Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
 
         @Override
-        public void reduce(final LongWritable key, final Iterable<FaunusVertex> values, final Reducer<LongWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
-            final FaunusVertex vertex = new FaunusVertex(context.getConfiguration(), key.get());
-            for (final FaunusVertex value : values) {
+        public void reduce(final LongWritable key, final Iterable<HadoopVertex> values, final Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
+            final HadoopVertex vertex = new HadoopVertex(context.getConfiguration(), key.get());
+            for (final HadoopVertex value : values) {
                 vertex.addEdges(BOTH, value);
                 vertex.addAllProperties(value.getProperties());
             }

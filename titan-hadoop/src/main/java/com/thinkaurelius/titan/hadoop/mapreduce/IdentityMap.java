@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -31,10 +31,10 @@ public class IdentityMap {
         return new EmptyConfiguration();
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
 
             context.getCounter(Counters.VERTEX_COUNT).increment(1l);
             context.getCounter(Counters.VERTEX_PROPERTY_COUNT).increment(value.getProperties().size());
@@ -43,7 +43,7 @@ public class IdentityMap {
             long edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.IN)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((FaunusEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((HadoopEdge) edge).getProperties().size();
             }
             context.getCounter(Counters.IN_EDGE_COUNT).increment(edgeCount);
             context.getCounter(Counters.IN_EDGE_PROPERTY_COUNT).increment(edgePropertyCount);
@@ -52,7 +52,7 @@ public class IdentityMap {
             edgePropertyCount = 0;
             for (final Edge edge : value.getEdges(Direction.OUT)) {
                 edgeCount++;
-                edgePropertyCount = edgePropertyCount + ((FaunusEdge) edge).getProperties().size();
+                edgePropertyCount = edgePropertyCount + ((HadoopEdge) edge).getProperties().size();
             }
             context.getCounter(Counters.OUT_EDGE_COUNT).increment(edgeCount);
             context.getCounter(Counters.OUT_EDGE_PROPERTY_COUNT).increment(edgePropertyCount);

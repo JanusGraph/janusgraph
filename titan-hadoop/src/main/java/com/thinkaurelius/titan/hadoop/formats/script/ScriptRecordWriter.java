@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.FaunusGremlinScriptEngine;
 
 import org.apache.hadoop.conf.Configuration;
@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex> {
+public class ScriptRecordWriter extends RecordWriter<NullWritable, HadoopVertex> {
     protected final DataOutputStream out;
     private final ScriptEngine engine = new FaunusGremlinScriptEngine();
 
@@ -39,7 +39,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, FaunusVertex>
         }
     }
 
-    public void write(final NullWritable key, final FaunusVertex vertex) throws IOException {
+    public void write(final NullWritable key, final HadoopVertex vertex) throws IOException {
         if (null != vertex) {
             try {
                 this.engine.put(VERTEX, vertex);

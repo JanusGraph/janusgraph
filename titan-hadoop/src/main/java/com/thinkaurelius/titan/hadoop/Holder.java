@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Holder<T extends FaunusPathElement> extends GenericWritable implements WritableComparable<Holder<T>> {
+public class Holder<T extends HadoopPathElement> extends GenericWritable implements WritableComparable<Holder<T>> {
 
     protected char tag;
 
@@ -20,8 +20,8 @@ public class Holder<T extends FaunusPathElement> extends GenericWritable impleme
     }
 
     private static Class[] CLASSES = {
-            FaunusVertex.class,
-            FaunusEdge.class
+            HadoopVertex.class,
+            HadoopEdge.class
     };
 
     protected Class<T>[] getTypes() {
@@ -83,9 +83,9 @@ public class Holder<T extends FaunusPathElement> extends GenericWritable impleme
 
     @Override
     public int compareTo(final Holder<T> holder) {
-        final FaunusElement e1 = holder.get();
-        final FaunusElement e2 = this.get();
-        if (e1 instanceof FaunusVertex && e2 instanceof FaunusVertex)
+        final HadoopElement e1 = holder.get();
+        final HadoopElement e2 = this.get();
+        if (e1 instanceof HadoopVertex && e2 instanceof HadoopVertex)
             return e1.compareTo(e2);
         else
             return 0;

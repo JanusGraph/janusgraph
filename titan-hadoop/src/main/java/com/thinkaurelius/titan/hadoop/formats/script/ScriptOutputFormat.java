@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.script;
 
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.HadoopFileOutputFormat;
 
 import org.apache.hadoop.io.NullWritable;
@@ -17,7 +17,7 @@ public class ScriptOutputFormat extends HadoopFileOutputFormat {
     public static final String FAUNUS_GRAPH_OUTPUT_SCRIPT_FILE = "faunus.graph.output.script.file";
 
     @Override
-    public RecordWriter<NullWritable, FaunusVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
+    public RecordWriter<NullWritable, HadoopVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {
         return new ScriptRecordWriter(super.getDataOuputStream(job), job.getConfiguration());
     }
 }

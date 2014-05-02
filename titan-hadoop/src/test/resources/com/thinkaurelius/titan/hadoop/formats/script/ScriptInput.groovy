@@ -1,7 +1,7 @@
-import com.thinkaurelius.titan.hadoop.FaunusVertex
+import com.thinkaurelius.titan.hadoop.HadoopVertex
 import com.tinkerpop.blueprints.Direction
 
-def boolean read(FaunusVertex v, String line) {
+def boolean read(HadoopVertex v, String line) {
     parts = line.split(':');
     v.setId(Long.valueOf(parts[0]));
     if (parts.length == 2) {

@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -43,7 +43,7 @@ public class SideEffectMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private Closure closure;
         private boolean isVertex;
@@ -59,7 +59,7 @@ public class SideEffectMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             if (this.isVertex) {
                 if (value.hasPaths()) {
                     //for (int i = 0; i < value.pathCount(); i++) {
@@ -70,7 +70,7 @@ public class SideEffectMap {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.IN)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         edgesProcessed++;
                         //for (int i = 0; i < edge.pathCount(); i++) {
@@ -82,7 +82,7 @@ public class SideEffectMap {
 
                 edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
                         edgesProcessed++;
                         //for (int i = 0; i < edge.pathCount(); i++) {

@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanFaunusSetupCommon implements TitanFaunusSetup {
+public abstract class TitanHadoopSetupCommon implements TitanHadoopSetup {
 
     private static final StaticBuffer DEFAULT_COLUMN = StaticArrayBuffer.of(new byte[0]);
     private static final SliceQuery DEFAULT_SLICE_QUERY = new SliceQuery(DEFAULT_COLUMN, DEFAULT_COLUMN);

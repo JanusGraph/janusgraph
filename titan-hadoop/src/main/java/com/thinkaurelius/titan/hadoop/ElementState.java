@@ -5,9 +5,9 @@ package com.thinkaurelius.titan.hadoop;
  */
 public enum ElementState {
 
-    NEW, //The FaunusElement is new with respect to its base source
-    DELETED, //The FaunusElement has been deleted compared to its base source
-    LOADED; //The FaunusElement has been loaded from a base source
+    NEW, //The HadoopElement is new with respect to its base source
+    DELETED, //The HadoopElement has been deleted compared to its base source
+    LOADED; //The HadoopElement has been loaded from a base source
 
     public byte getByteValue() {
         return (byte) this.ordinal();

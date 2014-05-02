@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementPicker;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 
 import junit.framework.TestCase;
 
@@ -17,7 +14,7 @@ import java.util.Collection;
 public class ElementPickerTest extends TestCase {
 
     public void testPathCount() {
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 1l);
+        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 1l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens._COUNT), 0l);
         assertEquals(ElementPicker.getPropertyAsString(vertex, Tokens._COUNT), "0");
         vertex.incrPath(199);
@@ -28,7 +25,7 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testId() {
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens._ID), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens.ID), 10l);
         assertEquals(ElementPicker.getPropertyAsString(vertex, Tokens._ID), "10");
@@ -36,12 +33,12 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testLabel() {
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), null);
         vertex.setProperty(Tokens.LABEL, "aType");
         assertEquals(ElementPicker.getProperty(vertex, Tokens.LABEL), "aType");
 
-        FaunusEdge edge = new FaunusEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
+        HadoopEdge edge = new HadoopEdge(EmptyConfiguration.immutable(), 1l, 10l, 10l, "knows");
         assertEquals(ElementPicker.getProperty(edge, Tokens.LABEL), "knows");
         try {
             edge.setProperty(Tokens.LABEL, "self");
@@ -55,7 +52,7 @@ public class ElementPickerTest extends TestCase {
     }
 
     public void testMultiProperties() {
-        FaunusVertex vertex = new FaunusVertex(EmptyConfiguration.immutable(), 10l);
+        HadoopVertex vertex = new HadoopVertex(EmptyConfiguration.immutable(), 10l);
         vertex.addProperty("name","marko1");
         vertex.addProperty("name","marko2");
         assertEquals(vertex.getPropertyKeys().size(), 1);

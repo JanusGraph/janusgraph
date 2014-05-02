@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.util.CountMapReduce;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -23,10 +20,10 @@ import java.util.Map;
  */
 public class CountMapReduceTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, LongWritable, NullWritable, LongWritable> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, LongWritable, NullWritable, LongWritable> mapReduceDriver;
 
     public void setUp() throws Exception {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, LongWritable, NullWritable, LongWritable>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, LongWritable, NullWritable, LongWritable>();
         mapReduceDriver.setMapper(new CountMapReduce.Map());
         mapReduceDriver.setCombiner(new CountMapReduce.Combiner());
         mapReduceDriver.setReducer(new CountMapReduce.Reduce());
@@ -36,7 +33,7 @@ public class CountMapReduceTest extends BaseTest {
         Configuration config = CountMapReduce.createConfiguration(Vertex.class);
         mapReduceDriver.withConfiguration(config);
 
-        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
         final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Vertex.class), this.mapReduceDriver);
         assertEquals(results.size(), 1);
         for (final Pair<NullWritable, LongWritable> result : results) {
@@ -52,7 +49,7 @@ public class CountMapReduceTest extends BaseTest {
         Configuration config = CountMapReduce.createConfiguration(Edge.class);
         mapReduceDriver.withConfiguration(config);
 
-        final Map<Long, FaunusVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
+        final Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
         final List<Pair<NullWritable, LongWritable>> results = runWithGraphNoIndex(startPath(graph, Edge.class), this.mapReduceDriver);
         assertEquals(results.size(), 1);
         for (final Pair<NullWritable, LongWritable> result : results) {
@@ -69,7 +66,7 @@ public class CountMapReduceTest extends BaseTest {
         config.setClass(CountMapReduce.CLASS, Vertex.class, Element.class);
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
+        Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).incrPath(10), 10);

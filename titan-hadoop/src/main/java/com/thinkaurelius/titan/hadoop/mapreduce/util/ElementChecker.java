@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.util;
 
-import com.thinkaurelius.titan.hadoop.FaunusElement;
+import com.thinkaurelius.titan.hadoop.HadoopElement;
 import com.tinkerpop.blueprints.Compare;
 
 /**
@@ -18,7 +18,7 @@ public class ElementChecker {
         this.values = values;
     }
 
-    public boolean isLegal(final FaunusElement element) {
+    public boolean isLegal(final HadoopElement element) {
         Object elementValue = ElementPicker.getProperty(element, this.key);
         if (elementValue instanceof Number)
             elementValue = ((Number) elementValue).floatValue();

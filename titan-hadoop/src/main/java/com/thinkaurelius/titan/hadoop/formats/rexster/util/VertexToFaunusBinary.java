@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.rexster.util;
 
-import com.thinkaurelius.titan.hadoop.FaunusSerializer;
+import com.thinkaurelius.titan.hadoop.HadoopSerializer;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -33,7 +33,7 @@ public class VertexToFaunusBinary {
     }
 
     public void writeVertex(final Vertex vertex, final DataOutput out) throws IOException {
-        new FaunusSerializer(new EmptyConfiguration()).writeVertex(vertex, elementIdHandler, out);
+        new HadoopSerializer(new EmptyConfiguration()).writeVertex(vertex, elementIdHandler, out);
     }
 
 //        WritableUtils.writeVLong(out, elementIdHandler.convertIdentifier(vertex));

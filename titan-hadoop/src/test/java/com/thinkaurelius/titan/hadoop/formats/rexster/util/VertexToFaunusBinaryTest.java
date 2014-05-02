@@ -30,7 +30,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
 
         DataInput in = new DataInputStream(new ByteArrayInputStream(bytes1.toByteArray()));
 
-        FaunusVertex markoFaunus = new FaunusVertex(new EmptyConfiguration(), in);
+        HadoopVertex markoFaunus = new HadoopVertex(new EmptyConfiguration(), in);
         assertEquals(markoFaunus.getProperty("name"), "marko");
         assertEquals(markoFaunus.getProperty("age"), 32);
         assertEquals(markoFaunus.getPropertyKeys().size(), 2);
@@ -38,7 +38,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         assertFalse(markoFaunus.getEdges(Direction.IN).iterator().hasNext());
         assertTrue(markoFaunus.getEdges(Direction.OUT, "knows").iterator().hasNext());
         assertFalse(markoFaunus.getEdges(Direction.OUT, "blah").iterator().hasNext());
-        FaunusEdge edge = (FaunusEdge) markoFaunus.getEdges(Direction.OUT).iterator().next();
+        HadoopEdge edge = (HadoopEdge) markoFaunus.getEdges(Direction.OUT).iterator().next();
         assertEquals(edge.getLabel(), "knows");
         assertEquals(edge.getProperty("weight"), 0.2);
         assertEquals(edge.getProperty("type"), "coworker");
@@ -46,7 +46,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         assertEquals(edge.getVertex(Direction.IN).getId(), 3l);
         assertEquals(edge.getVertex(Direction.OUT).getId(), 1l);
 
-        FaunusVertex stephenFaunus = new FaunusVertex(new EmptyConfiguration(), in);
+        HadoopVertex stephenFaunus = new HadoopVertex(new EmptyConfiguration(), in);
         assertEquals(stephenFaunus.getProperty("name"), "stephen");
         assertEquals(stephenFaunus.getProperty("weight"), 160.42);
         assertTrue((Boolean) stephenFaunus.getProperty("male"));
@@ -55,7 +55,7 @@ public class VertexToFaunusBinaryTest extends BaseTest {
         assertFalse(stephenFaunus.getEdges(Direction.OUT).iterator().hasNext());
         assertTrue(stephenFaunus.getEdges(Direction.IN, "knows").iterator().hasNext());
         assertFalse(stephenFaunus.getEdges(Direction.IN, "blah").iterator().hasNext());
-        edge = (FaunusEdge) stephenFaunus.getEdges(Direction.IN).iterator().next();
+        edge = (HadoopEdge) stephenFaunus.getEdges(Direction.IN).iterator().next();
         assertEquals(edge.getLabel(), "knows");
         assertEquals(edge.getProperty("weight"), 0.2);
         assertEquals(edge.getProperty("type"), "coworker");

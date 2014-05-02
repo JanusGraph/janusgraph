@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.MapReduceFormat;
 import com.thinkaurelius.titan.hadoop.formats.edgelist.EdgeListInputMapReduce;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
+import com.thinkaurelius.titan.hadoop.mapreduce.HadoopCompiler;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -21,7 +21,7 @@ import java.io.IOException;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement> implements MapReduceFormat {
+public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement> implements MapReduceFormat {
 
     public static final String FAUNUS_GRAPH_INPUT_RDF_FORMAT = "faunus.graph.input.rdf.format";
     public static final String FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME = "faunus.graph.input.rdf.use-localname";
@@ -33,7 +33,7 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
     public static final String NAME = "name";
 
     @Override
-    public RecordReader<NullWritable, FaunusElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
+    public RecordReader<NullWritable, HadoopElement> createRecordReader(final InputSplit split, final TaskAttemptContext context) throws IOException {
         return new RDFRecordReader(context.getConfiguration());
     }
 
@@ -43,14 +43,14 @@ public class RDFInputFormat extends FileInputFormat<NullWritable, FaunusElement>
     }
 
     @Override
-    public void addMapReduceJobs(final FaunusCompiler compiler) {
+    public void addMapReduceJobs(final HadoopCompiler compiler) {
         compiler.addMapReduce(EdgeListInputMapReduce.Map.class,
                 EdgeListInputMapReduce.Combiner.class,
                 EdgeListInputMapReduce.Reduce.class,
                 LongWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 NullWritable.class,
-                FaunusVertex.class,
+                HadoopVertex.class,
                 EdgeListInputMapReduce.createConfiguration());
     }
 }

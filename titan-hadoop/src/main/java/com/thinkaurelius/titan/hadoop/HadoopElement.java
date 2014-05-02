@@ -21,30 +21,30 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public abstract class FaunusElement implements Element, Comparable<FaunusElement> {
+public abstract class HadoopElement implements Element, Comparable<HadoopElement> {
 
-    static final Multimap<FaunusType, FaunusProperty> NO_PROPERTIES = ImmutableListMultimap.of();
+    static final Multimap<HadoopType, HadoopProperty> NO_PROPERTIES = ImmutableListMultimap.of();
 
-    protected static final Predicate<FaunusProperty> FILTER_DELETED_PROPERTIES = new Predicate<FaunusProperty>() {
+    protected static final Predicate<HadoopProperty> FILTER_DELETED_PROPERTIES = new Predicate<HadoopProperty>() {
         @Override
-        public boolean apply(@Nullable FaunusProperty p) {
+        public boolean apply(@Nullable HadoopProperty p) {
             return !p.isDeleted();
         }
     };
 
-    protected static final Predicate<FaunusEdge> FILTER_DELETED_EDGES = new Predicate<FaunusEdge>() {
+    protected static final Predicate<HadoopEdge> FILTER_DELETED_EDGES = new Predicate<HadoopEdge>() {
         @Override
-        public boolean apply(@Nullable FaunusEdge e) {
+        public boolean apply(@Nullable HadoopEdge e) {
             return !e.isDeleted();
         }
     };
 
     protected long id;
-    protected Multimap<FaunusType, FaunusProperty> properties = NO_PROPERTIES;
+    protected Multimap<HadoopType, HadoopProperty> properties = NO_PROPERTIES;
     protected ElementState state = ElementState.NEW;
 
 
-    public FaunusElement(final long id) {
+    public HadoopElement(final long id) {
         this.id = id;
     }
 
@@ -67,7 +67,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         this.id = id;
     }
 
-    void updateSchema(FaunusSerializer.Schema schema) {
+    void updateSchema(HadoopSerializer.Schema schema) {
         schema.addAll(properties.keySet());
     }
 
@@ -93,7 +93,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
     }
 
     public boolean isModified() {
-        for (final FaunusProperty property : this.getPropertiesWithState()) {
+        for (final HadoopProperty property : this.getPropertiesWithState()) {
             if (property.isDeleted() || property.isNew())
                 return true;
         }
@@ -108,20 +108,20 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
         if (this.properties == NO_PROPERTIES) properties = HashMultimap.create();
     }
 
-    protected <T> T getImplicitProperty(final FaunusType type) {
+    protected <T> T getImplicitProperty(final HadoopType type) {
         assert type.isImplicit();
         return null;
     }
 
-    protected FaunusProperty addProperty(final FaunusProperty property) {
+    protected HadoopProperty addProperty(final HadoopProperty property) {
         Preconditions.checkNotNull(property);
         ElementHelper.validateProperty(this, property.getType().getName(), property.getValue());
         initializeProperties();
         if (properties.containsEntry(property.getType(), property)) {
             //Need to consolidate element states
-            final FaunusProperty old = Iterables.getOnlyElement(Iterables.filter(properties.get(property.getType()), new Predicate<FaunusProperty>() {
+            final HadoopProperty old = Iterables.getOnlyElement(Iterables.filter(properties.get(property.getType()), new Predicate<HadoopProperty>() {
                 @Override
-                public boolean apply(@Nullable FaunusProperty faunusProperty) {
+                public boolean apply(@Nullable HadoopProperty faunusProperty) {
                     return faunusProperty.equals(property);
                 }
             }));
@@ -139,25 +139,25 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
 
     @Override
     public void setProperty(final String key, final Object value) {
-        final FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
+        final HadoopType type = HadoopType.DEFAULT_MANAGER.get(key);
         //Mark all existing ones for the type as deleted
-        final Iterator<FaunusProperty> props = properties.get(type).iterator();
+        final Iterator<HadoopProperty> props = properties.get(type).iterator();
         while (props.hasNext()) {
-            FaunusProperty p = props.next();
+            HadoopProperty p = props.next();
             if (p.isNew()) props.remove();
             else p.setState(ElementState.DELETED);
         }
-        addProperty(new FaunusProperty(type, value));
+        addProperty(new HadoopProperty(type, value));
     }
 
     @Override
     public <T> T removeProperty(final String key) {
         if (properties.isEmpty()) return null;
-        final FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
-        final List<FaunusProperty> removed = Lists.newArrayList();
-        final Iterator<FaunusProperty> props = properties.get(type).iterator();
+        final HadoopType type = HadoopType.DEFAULT_MANAGER.get(key);
+        final List<HadoopProperty> removed = Lists.newArrayList();
+        final Iterator<HadoopProperty> props = properties.get(type).iterator();
         while (props.hasNext()) {
-            FaunusProperty p = props.next();
+            HadoopProperty p = props.next();
             if (!p.isDeleted()) removed.add(p);
             if (p.isNew()) props.remove();
             else p.setState(ElementState.DELETED);
@@ -170,11 +170,11 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
 
     @Override
     public <T> T getProperty(final String key) {
-        final FaunusType type = FaunusType.DEFAULT_MANAGER.get(key);
+        final HadoopType type = HadoopType.DEFAULT_MANAGER.get(key);
         if (type.isImplicit()) return getImplicitProperty(type);
 
         Object result = null;
-        for (final FaunusProperty p : properties.get(type)) {
+        for (final HadoopProperty p : properties.get(type)) {
             if (p.isDeleted()) continue;
             if (result != null)
                 throw new IllegalStateException("Use getProperties(String) method for multi-valued properties");
@@ -186,27 +186,27 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
     @Override
     public Set<String> getPropertyKeys() {
         final Set<String> result = Sets.newHashSet();
-        for (final FaunusProperty p : properties.values()) {
+        for (final HadoopProperty p : properties.values()) {
             if (!p.isDeleted() && !p.getType().isHidden()) result.add(p.getType().getName());
         }
         return result;
     }
 
-    public Collection<FaunusProperty> getProperties() {
-        final List<FaunusProperty> result = Lists.newArrayList(Iterables.filter(properties.values(), new Predicate<FaunusProperty>() {
+    public Collection<HadoopProperty> getProperties() {
+        final List<HadoopProperty> result = Lists.newArrayList(Iterables.filter(properties.values(), new Predicate<HadoopProperty>() {
             @Override
-            public boolean apply(@Nullable FaunusProperty property) {
+            public boolean apply(@Nullable HadoopProperty property) {
                 return !property.getType().isHidden() && !property.isDeleted();
             }
         }));
         return result;
     }
 
-    public void addAllProperties(final Iterable<FaunusProperty> properties) {
-        for (final FaunusProperty p : properties) addProperty(p);
+    public void addAllProperties(final Iterable<HadoopProperty> properties) {
+        for (final HadoopProperty p : properties) addProperty(p);
     }
 
-    public Collection<FaunusProperty> getPropertiesWithState() {
+    public Collection<HadoopProperty> getPropertiesWithState() {
         return this.properties.values();
     }
 
@@ -216,7 +216,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
 
     @Override
     public boolean equals(final Object other) {
-        return this.getClass().equals(other.getClass()) && this.id == ((FaunusElement) other).getIdAsLong();
+        return this.getClass().equals(other.getClass()) && this.id == ((HadoopElement) other).getIdAsLong();
     }
 
     @Override
@@ -225,7 +225,7 @@ public abstract class FaunusElement implements Element, Comparable<FaunusElement
     }
 
     @Override
-    public int compareTo(final FaunusElement other) {
+    public int compareTo(final HadoopElement other) {
         return new Long(this.id).compareTo((Long) other.getId());
     }
 

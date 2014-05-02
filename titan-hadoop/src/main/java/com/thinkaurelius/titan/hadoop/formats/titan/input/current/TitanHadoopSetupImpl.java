@@ -1,18 +1,13 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.input.current;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -25,7 +20,7 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetupCommon;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetupCommon;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
 import com.thinkaurelius.titan.hadoop.formats.titan.util.ConfigurationUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -36,12 +31,12 @@ import org.apache.hadoop.conf.Configuration;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanFaunusSetupImpl extends TitanFaunusSetupCommon {
+public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
     private final StandardTitanGraph graph;
     private final StandardTitanTx tx;
 
-    public TitanFaunusSetupImpl(final Configuration config) {
+    public TitanHadoopSetupImpl(final Configuration config) {
         BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
         graph = (StandardTitanGraph)TitanFactory.open(titan);
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().setCacheSize(200).start();

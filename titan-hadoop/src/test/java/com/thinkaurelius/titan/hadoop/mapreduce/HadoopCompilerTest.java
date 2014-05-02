@@ -1,13 +1,10 @@
 package com.thinkaurelius.titan.hadoop.mapreduce;
 
-import com.thinkaurelius.titan.hadoop.FaunusGraph;
-import com.thinkaurelius.titan.hadoop.FaunusPipeline;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopGraph;
+import com.thinkaurelius.titan.hadoop.HadoopPipeline;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanOutputFormat;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
-import com.thinkaurelius.titan.hadoop.mapreduce.IdentityMap;
-import com.thinkaurelius.titan.hadoop.mapreduce.MapSequence;
 import com.thinkaurelius.titan.hadoop.mapreduce.transform.VerticesMap;
 import com.thinkaurelius.titan.hadoop.mapreduce.transform.VerticesVerticesMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.CountMapReduce;
@@ -21,15 +18,15 @@ import org.apache.hadoop.mapreduce.Reducer;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusCompilerTest extends TestCase {
+public class HadoopCompilerTest extends TestCase {
 
     public void testGlobalConfigurations() {
-        FaunusGraph graph = new FaunusGraph();
+        HadoopGraph graph = new HadoopGraph();
         graph.getConf().setInt("a_property", 2);
-        FaunusCompiler compiler = new FaunusCompiler(graph);
+        HadoopCompiler compiler = new HadoopCompiler(graph);
         assertEquals(compiler.getConf().getInt("a_property", -1), 2);
         assertEquals(compiler.getConf().getInt("b_property", -1), -1);
-        compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMap(IdentityMap.Map.class, NullWritable.class, HadoopVertex.class, new Configuration());
         compiler.completeSequence();
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("a_property", -1), 2);
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("b_property", -1), -1);
@@ -38,22 +35,22 @@ public class FaunusCompilerTest extends TestCase {
     }
 
     public void testJobListSize() {
-        FaunusCompiler compiler = new FaunusCompiler(new FaunusGraph());
+        HadoopCompiler compiler = new HadoopCompiler(new HadoopGraph());
         assertEquals(compiler.jobs.size(), 0);
-        compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMap(IdentityMap.Map.class, NullWritable.class, HadoopVertex.class, new Configuration());
         assertEquals(compiler.jobs.size(), 0);
-        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, HadoopVertex.class, NullWritable.class, HadoopVertex.class, new Configuration());
         assertEquals(compiler.jobs.size(), 1);
-        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, HadoopVertex.class, NullWritable.class, HadoopVertex.class, new Configuration());
         assertEquals(compiler.jobs.size(), 2);
     }
 
     public void testJobOrder() throws Exception {
-        FaunusCompiler compiler = new FaunusCompiler(new FaunusGraph());
+        HadoopCompiler compiler = new HadoopCompiler(new HadoopGraph());
         assertEquals(compiler.jobs.size(), 0);
-        compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMap(IdentityMap.Map.class, NullWritable.class, HadoopVertex.class, new Configuration());
         assertEquals(compiler.jobs.size(), 0);
-        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, FaunusVertex.class, NullWritable.class, FaunusVertex.class, new Configuration());
+        compiler.addMapReduce(CountMapReduce.Map.class, null, CountMapReduce.Reduce.class, NullWritable.class, HadoopVertex.class, NullWritable.class, HadoopVertex.class, new Configuration());
         assertEquals(compiler.jobs.size(), 1);
 
         assertEquals(compiler.jobs.get(0).getMapperClass(), MapSequence.Map.class);
@@ -62,8 +59,8 @@ public class FaunusCompilerTest extends TestCase {
     }
 
     public void testJobOrder2() throws Exception {
-        FaunusPipeline pipe = new FaunusPipeline(new FaunusGraph());
-        FaunusCompiler compiler = pipe.getCompiler();
+        HadoopPipeline pipe = new HadoopPipeline(new HadoopGraph());
+        HadoopCompiler compiler = pipe.getCompiler();
         assertEquals(compiler.jobs.size(), 0);
         pipe.V().out("knows")._();
         compiler.completeSequence();
@@ -93,9 +90,9 @@ public class FaunusCompilerTest extends TestCase {
         Configuration conf = new Configuration();
         conf.setInt("mapred.reduce.tasks", 2);
         conf.setBoolean(TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, false);
-        FaunusGraph graph = new FaunusGraph(conf);
-        FaunusPipeline pipeline = new FaunusPipeline(graph);
-        FaunusCompiler compiler = pipeline.getCompiler();
+        HadoopGraph graph = new HadoopGraph(conf);
+        HadoopPipeline pipeline = new HadoopPipeline(graph);
+        HadoopCompiler compiler = pipeline.getCompiler();
         TitanOutputFormat outputFormat = new TitanCassandraOutputFormat();
 
         assertEquals(graph.getConf().getInt("mapred.reduce.tasks", -1), 2);
@@ -109,7 +106,7 @@ public class FaunusCompilerTest extends TestCase {
         assertEquals(graph.getConf().getInt("mapred.reduce.tasks", -1), 2);
         assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
 
-        compiler.addMap(IdentityMap.Map.class, NullWritable.class, FaunusVertex.class, IdentityMap.createConfiguration());
+        compiler.addMap(IdentityMap.Map.class, NullWritable.class, HadoopVertex.class, IdentityMap.createConfiguration());
         compiler.completeSequence();
         assertEquals(compiler.jobs.size(), 2);
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("mapred.reduce.tasks", -1), 2);

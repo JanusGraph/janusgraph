@@ -9,11 +9,11 @@ import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.hadoop.ElementState;
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusProperty;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopProperty;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
-import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanFaunusSetup;
+import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetup;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.util.ExceptionFactory;
@@ -34,17 +34,17 @@ public class TitanHadoopGraph {
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
 
-    public TitanHadoopGraph(final TitanFaunusSetup setup) {
+    public TitanHadoopGraph(final TitanHadoopSetup setup) {
         this.relationReader = setup.getRelationReader();
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
         this.vertexReader = setup.getVertexReader();
     }
 
-    protected FaunusVertex readFaunusVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
+    protected HadoopVertex readFaunusVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
         final long vertexId = this.vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
-        FaunusVertex vertex = new FaunusVertex(configuration, vertexId);
+        HadoopVertex vertex = new HadoopVertex(configuration, vertexId);
         vertex.setState(ElementState.LOADED);
         boolean isSystemType = false;
         boolean foundVertexState = false;
@@ -63,16 +63,16 @@ public class TitanHadoopGraph {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
                     Preconditions.checkNotNull(value);
-                    final FaunusProperty p = new FaunusProperty(relation.relationId, type.getName(), value);
+                    final HadoopProperty p = new HadoopProperty(relation.relationId, type.getName(), value);
                     p.setState(ElementState.LOADED);
                     vertex.addProperty(p);
                 } else {
                     assert type.isEdgeLabel();
-                    FaunusEdge edge;
+                    HadoopEdge edge;
                     if (relation.direction.equals(Direction.IN))
-                        edge = new FaunusEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
+                        edge = new HadoopEdge(configuration, relation.relationId, relation.getOtherVertexId(), vertexId, type.getName());
                     else if (relation.direction.equals(Direction.OUT))
-                        edge = new FaunusEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
+                        edge = new HadoopEdge(configuration, relation.relationId, vertexId, relation.getOtherVertexId(), type.getName());
                     else
                         throw ExceptionFactory.bothIsNotSupported();
                     edge.setState(ElementState.LOADED);
@@ -82,7 +82,7 @@ public class TitanHadoopGraph {
                             assert next.value != null;
                             edge.setProperty(typeManager.getExistingType(next.key).getName(), next.value);
                         }
-                        for (final FaunusProperty p : edge.getProperties())
+                        for (final HadoopProperty p : edge.getProperties())
                             p.setState(ElementState.LOADED);
                     }
                     vertex.addEdge(relation.direction, edge);

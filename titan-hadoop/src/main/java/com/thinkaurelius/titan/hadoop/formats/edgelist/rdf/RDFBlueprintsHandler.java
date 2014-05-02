@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.edgelist.rdf;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.impls.sail.SailTokens;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +31,7 @@ import java.util.Set;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement> {
+public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement> {
 
     private final Logger logger = Logger.getLogger(RDFBlueprintsHandler.class);
     private final boolean useFragments;
@@ -41,7 +41,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
     private static final String BASE_URI = "http://thinkaurelius.com#";
 
     private RDFParser parser;
-    private final Queue<FaunusElement> queue = new LinkedList<FaunusElement>();
+    private final Queue<HadoopElement> queue = new LinkedList<HadoopElement>();
     public static final Map<String, RDFFormat> formats = new HashMap<String, RDFFormat>();
 
     private static Map<String, Character> dataTypeToClass = new HashMap<String, Character>();
@@ -138,14 +138,14 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
 
     public void handleStatement(final Statement s) throws RDFHandlerException {
         if (this.asProperties.contains(s.getPredicate().toString())) {
-            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final HadoopVertex subject = new HadoopVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
-            final FaunusVertex subject = new FaunusVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
+            final HadoopVertex subject = new HadoopVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
@@ -153,20 +153,20 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
-            final FaunusVertex subject = new FaunusVertex(this.configuration, subjectId);
+            final HadoopVertex subject = new HadoopVertex(this.configuration, subjectId);
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
                 subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
-            final FaunusVertex object = new FaunusVertex(this.configuration, objectId);
+            final HadoopVertex object = new HadoopVertex(this.configuration, objectId);
             object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());
             if (this.useFragments)
                 object.setProperty(RDFInputFormat.NAME, postProcess(s.getObject()));
             this.queue.add(object);
 
-            final FaunusEdge predicate = new FaunusEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
+            final HadoopEdge predicate = new HadoopEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));
             predicate.setProperty(RDFInputFormat.URI, s.getPredicate().stringValue());
             if (null != s.getContext())
                 predicate.setProperty(RDFInputFormat.CONTEXT, s.getContext().stringValue());
@@ -191,7 +191,7 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<FaunusElement>
         }
     }
 
-    public FaunusElement next() {
+    public HadoopElement next() {
         if (this.queue.isEmpty())
             return null;
         else

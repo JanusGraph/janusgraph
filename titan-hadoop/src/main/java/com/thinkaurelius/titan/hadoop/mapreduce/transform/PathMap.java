@@ -1,10 +1,9 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.transform;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusPathElement;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopPathElement;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
-import com.thinkaurelius.titan.hadoop.mapreduce.FaunusCompiler;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.SafeMapperOutputs;
 import com.tinkerpop.blueprints.Direction;
@@ -39,7 +38,7 @@ public class PathMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, Text> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, Text> {
 
         private boolean isVertex;
         private final Text textWritable = new Text();
@@ -55,9 +54,9 @@ public class PathMap {
 
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             if (this.isVertex && value.hasPaths()) {
-                for (final List<FaunusPathElement.MicroElement> path : value.getPaths()) {
+                for (final List<HadoopPathElement.MicroElement> path : value.getPaths()) {
                     this.textWritable.set(path.toString());
                     this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                 }
@@ -65,9 +64,9 @@ public class PathMap {
             } else {
                 long edgesProcessed = 0;
                 for (final Edge e : value.getEdges(Direction.OUT)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths()) {
-                        for (final List<FaunusPathElement.MicroElement> path : edge.getPaths()) {
+                        for (final List<HadoopPathElement.MicroElement> path : edge.getPaths()) {
                             this.textWritable.set(path.toString());
                             this.outputs.write(Tokens.SIDEEFFECT, NullWritable.get(), this.textWritable);
                         }
@@ -81,7 +80,7 @@ public class PathMap {
         }
 
         @Override
-        public void cleanup(final Mapper<NullWritable, FaunusVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
+        public void cleanup(final Mapper<NullWritable, HadoopVertex, NullWritable, Text>.Context context) throws IOException, InterruptedException {
             this.outputs.close();
         }
     }

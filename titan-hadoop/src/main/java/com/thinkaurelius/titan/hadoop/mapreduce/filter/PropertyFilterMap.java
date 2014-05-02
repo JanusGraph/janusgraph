@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.filter;
 
-import com.thinkaurelius.titan.hadoop.FaunusEdge;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
+import com.thinkaurelius.titan.hadoop.HadoopEdge;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.ElementChecker;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -54,7 +54,7 @@ public class PropertyFilterMap {
         return configuration;
     }
 
-    public static class Map extends Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex> {
+    public static class Map extends Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex> {
 
         private boolean isVertex;
         private ElementChecker elementChecker;
@@ -92,7 +92,7 @@ public class PropertyFilterMap {
         }
 
         @Override
-        public void map(final NullWritable key, final FaunusVertex value, final Mapper<NullWritable, FaunusVertex, NullWritable, FaunusVertex>.Context context) throws IOException, InterruptedException {
+        public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
 
             if (this.isVertex) {
                 if (value.hasPaths() && !this.elementChecker.isLegal(value)) {
@@ -102,7 +102,7 @@ public class PropertyFilterMap {
             } else {
                 long edgesFiltered = 0;
                 for (Edge e : value.getEdges(Direction.BOTH)) {
-                    final FaunusEdge edge = (FaunusEdge) e;
+                    final HadoopEdge edge = (HadoopEdge) e;
                     if (edge.hasPaths() && !this.elementChecker.isLegal(edge)) {
                         edge.clearPaths();
                         edgesFiltered++;

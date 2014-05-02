@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.hadoop.mapreduce.sideeffect;
 
 import com.thinkaurelius.titan.hadoop.BaseTest;
-import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.mapreduce.sideeffect.SideEffectMap;
+import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.apache.hadoop.conf.Configuration;
@@ -17,12 +16,12 @@ import java.util.Map;
  */
 public class SideEffectMapTest extends BaseTest {
 
-    MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex> mapReduceDriver;
+    MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex> mapReduceDriver;
 
     public void setUp() {
-        mapReduceDriver = new MapReduceDriver<NullWritable, FaunusVertex, NullWritable, FaunusVertex, NullWritable, FaunusVertex>();
+        mapReduceDriver = new MapReduceDriver<NullWritable, HadoopVertex, NullWritable, HadoopVertex, NullWritable, HadoopVertex>();
         mapReduceDriver.setMapper(new SideEffectMap.Map());
-        mapReduceDriver.setReducer(new Reducer<NullWritable, FaunusVertex, NullWritable, FaunusVertex>());
+        mapReduceDriver.setReducer(new Reducer<NullWritable, HadoopVertex, NullWritable, HadoopVertex>());
     }
 
     /*
@@ -31,11 +30,11 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = new Configuration();
         config.setClass(SideEffectMap.CLASS, Vertex.class, Element.class);
         config.set(SideEffectMap.CLOSURE, "{it -> if(it.count) {it.count++} else {it.count=1}}");
-        config.setBoolean(FaunusCompiler.PATH_ENABLED, false);
+        config.setBoolean(HadoopCompiler.PATH_ENABLED, false);
 
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 1, 2, 3, 3), mapReduceDriver);
+        Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class, 1, 1, 1, 2, 3, 3), mapReduceDriver);
 
         assertEquals(graph.size(), 6);
         assertEquals(graph.get(1l).getProperty("count"), 3);
@@ -54,7 +53,7 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.outE().count()}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 3l);
@@ -74,7 +73,7 @@ public class SideEffectMapTest extends BaseTest {
         Configuration config = SideEffectMap.createConfiguration(Vertex.class, "{it -> it.degree = it.inE.count()}");
         mapReduceDriver.withConfiguration(config);
 
-        Map<Long, FaunusVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
+        Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
 
         assertEquals(results.size(), 6);
         assertEquals(results.get(1l).getProperty("degree"), 0l);
