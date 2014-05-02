@@ -24,8 +24,8 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
-import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
@@ -112,6 +112,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
         Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
         final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        final AtomicInteger triggerMeta = new AtomicInteger(0);
         txlog.registerReader(new MessageReader() {
             @Override
             public void read(Message message) {
@@ -123,10 +124,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
                 assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
+                assertNotNull(txEntry.getMetadata());
+                assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
                 if (!txEntry.hasContent()) {
                     assertTrue(txEntry.getStatus().isSuccess());
                 } else {
                     assertTrue(txEntry.getStatus().isPreCommit());
+                    Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
+                    if (logid!=null) {
+                        assertTrue(logid instanceof String);
+                        assertEquals(triggerName,logid);
+                        triggerMeta.incrementAndGet();
+                    }
                     //TODO: Verify content parses correctly
                 }
                 txMsgCounter.incrementAndGet();
@@ -167,6 +176,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Thread.sleep(20000);
         assertEquals(8, txMsgCounter.get());
         assertEquals(2,triggerMsgCounter.get());
+        assertEquals(2,triggerMeta.get());
     }
 
 

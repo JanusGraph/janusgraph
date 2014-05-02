@@ -91,7 +91,7 @@ public interface TransactionBuilder {
      *            Metric name prefix for this transaction
      * @return
      */
-    public TransactionBuilder setMetricsPrefix(String prefix);
+    public TransactionBuilder setGroupName(String prefix);
 
     /**
      * Name of the log to be used for logging the mutations in this transaction.

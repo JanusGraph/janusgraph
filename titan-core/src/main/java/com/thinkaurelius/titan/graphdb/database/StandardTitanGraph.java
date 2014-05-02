@@ -13,7 +13,6 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.log.Message;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
@@ -24,7 +23,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
-import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementLogger;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -47,7 +46,6 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 
@@ -60,7 +58,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
@@ -460,8 +457,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
-        final Timepoint commitTime = times.getTime();
-        tx.getConfiguration().setCommitTime(commitTime);
+        tx.getConfiguration().setCommitTime(times.getTime());
+        final Timepoint txTimestamp = tx.getConfiguration().getTimestamp();
         final long transactionId = txCounter.incrementAndGet();
 
         //2. Assign TitanVertex IDs
@@ -473,7 +470,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
-        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,commitTime, times.getUnit());
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times.getUnit());
 
         //3.1 Commit schema elements and their associated relations
         try {
@@ -483,11 +480,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 Preconditions.checkArgument(!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks,"Attempting to create schema elements in inconsistent state");
 
                 if (logTransaction) {
-                    //TODO: add transaction config
-                    DataOutput out = txLogHeader.serializeHeader(serializer,256, LogTxStatus.PREFLUSH_SYSTEM);
-                    mutator.logMutations(out);
                     //[FAILURE] If transaction logging fails immediately, abort - nothing persisted yet
-                    txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
+                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PREFLUSH_SYSTEM);
                 }
 
                 LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
@@ -514,11 +508,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (hasModifications) {
 
                 if (logTransaction) {
-                    //TODO: add transaction config
-                    DataOutput out = txLogHeader.serializeHeader(serializer,256, LogTxStatus.PRECOMMIT);
-                    mutator.logMutations(out);
                     //[FAILURE] If transaction logging fails, abort the non-system part - nothing persisted unless batch loading
-                    txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
+                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PRECOMMIT);
                 }
 
                 LogTxStatus status = LogTxStatus.SUCCESS;
@@ -593,6 +584,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (e instanceof RuntimeException) throw (RuntimeException)e;
             else throw new TitanException("Unexpected exception",e);
         }
+    }
+
+    private void logTransaction(Log txLog, BackendTransaction mutator, TransactionConfiguration txConfig,
+                                TransactionLogHeader txLogHeader, LogTxStatus status) {
+        DataOutput out = txLogHeader.serializeHeader(serializer,256, status,txConfig);
+
+        //TODO: add transaction config
+        mutator.logMutations(out);
+        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {

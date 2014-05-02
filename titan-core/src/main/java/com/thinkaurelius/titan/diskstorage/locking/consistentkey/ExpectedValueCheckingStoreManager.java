@@ -60,7 +60,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
         TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
-                .metricsPrefix(configuration.getMetricsPrefix())
+                .groupName(configuration.getGroupName())
                 .customOptions(customOptions)
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.database.management;
+package com.thinkaurelius.titan.graphdb.database.log;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)

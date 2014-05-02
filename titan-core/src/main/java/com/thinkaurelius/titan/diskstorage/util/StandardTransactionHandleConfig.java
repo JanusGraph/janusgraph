@@ -15,13 +15,13 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
 
     private final Timepoint userTimestamp;
     private Timepoint commitTime;
-    private final String metricsPrefix;
+    private final String groupName;
     private final Configuration customOptions;
 
-    private StandardTransactionHandleConfig(String metricsPrefix,
+    private StandardTransactionHandleConfig(String groupName,
                                             Timepoint userTimestamp,
                                             Configuration customOptions) {
-        this.metricsPrefix = metricsPrefix;
+        this.groupName = groupName;
         this.userTimestamp = userTimestamp;
         this.customOptions = customOptions;
     }
@@ -40,13 +40,13 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
     }
 
     @Override
-    public boolean hasMetricsPrefix() {
-        return metricsPrefix!=null;
+    public boolean hasGroupName() {
+        return groupName !=null;
     }
 
     @Override
-    public String getMetricsPrefix() {
-        return metricsPrefix;
+    public String getGroupName() {
+        return groupName;
     }
 
     @Override
@@ -63,18 +63,18 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
 
     public static class Builder {
         private Timepoint userTimestamp = null;
-        private String metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
+        private String groupName = GraphDatabaseConfiguration.getSystemMetricsPrefix();
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
 
         public Builder(TransactionHandleConfig template) {
             customOptions(template.getCustomOptions());
-            metricsPrefix(template.getMetricsPrefix());
+            groupName(template.getGroupName());
         }
 
-        public Builder metricsPrefix(String prefix) {
-            metricsPrefix = prefix;
+        public Builder groupName(String group) {
+            groupName = group;
             return this;
         }
 
@@ -90,7 +90,7 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
         }
 
         public StandardTransactionHandleConfig build() {
-            return new StandardTransactionHandleConfig(metricsPrefix, userTimestamp, customOptions);
+            return new StandardTransactionHandleConfig(groupName, userTimestamp, customOptions);
         }
     }
 

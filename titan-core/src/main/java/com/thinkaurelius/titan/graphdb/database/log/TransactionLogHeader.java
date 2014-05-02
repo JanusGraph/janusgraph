@@ -7,10 +7,11 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
-import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
+import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 
+import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,11 +47,29 @@ public class TransactionLogHeader {
     }
 
     public DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status) {
+        return serializeHeader(serializer, capacity, status, null);
+    }
+
+    public DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status, TransactionConfiguration txConfig) {
         Preconditions.checkArgument(status!=null,"Invalid status");
         DataOutput out = serializer.getDataOutput(capacity);
         out.putLong(txTimestamp.getTime(backendTimeUnit));
         VariableLong.writePositive(out, transactionId);
         out.writeObjectNotNull(status);
+        if (txConfig!=null) {
+            int metaSize = 0;
+            for (LogTxMeta meta: LogTxMeta.values()) if (meta.getValue(txConfig)!=null) metaSize++;
+            out.putByte(VariableLong.unsignedByte(metaSize));
+            for (LogTxMeta meta : LogTxMeta.values()) {
+                Object value = meta.getValue(txConfig);
+                if (value!=null) {
+                    out.putByte(VariableLong.unsignedByte(meta.ordinal()));
+                    out.writeObjectNotNull(value);
+                }
+            }
+        } else {
+            out.putByte(VariableLong.unsignedByte(0));
+        }
         return out;
     }
 
@@ -60,11 +79,17 @@ public class TransactionLogHeader {
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
                 txTimestamp, backendTimeUnit);
         LogTxStatus status = serializer.readObjectNotNull(read,LogTxStatus.class);
+        EnumMap<LogTxMeta,Object> metadata = new EnumMap<LogTxMeta, Object>(LogTxMeta.class);
+        int metaSize = VariableLong.unsignedByte(read.getByte());
+        for (int i=0;i<metaSize;i++) {
+            LogTxMeta meta = LogTxMeta.values()[VariableLong.unsignedByte(read.getByte())];
+            metadata.put(meta,serializer.readObjectNotNull(read,meta.dataType()));
+        }
         if (read.hasRemaining()) {
             StaticBuffer content = read.subrange(read.getPosition(),read.length()-read.getPosition());
-            return new Entry(header,content, status);
+            return new Entry(header,content, status,metadata);
         } else {
-            return new Entry(header,null, status);
+            return new Entry(header,null, status,metadata);
         }
     }
 
@@ -73,14 +98,17 @@ public class TransactionLogHeader {
         private final TransactionLogHeader header;
         private final StaticBuffer content;
         private final LogTxStatus status;
+        private final EnumMap<LogTxMeta,Object> metadata;
 
-        public Entry(TransactionLogHeader header, StaticBuffer content, LogTxStatus status) {
-            Preconditions.checkNotNull(status);
+        public Entry(TransactionLogHeader header, StaticBuffer content, LogTxStatus status,
+                     EnumMap<LogTxMeta,Object> metadata) {
+            Preconditions.checkArgument(status!=null && metadata!=null);
             Preconditions.checkArgument(header!=null);
             Preconditions.checkArgument(content==null || content.length()>0);
             this.header = header;
             this.content = content;
             this.status = status;
+            this.metadata=metadata;
         }
 
         public TransactionLogHeader getHeader() {
@@ -93,6 +121,10 @@ public class TransactionLogHeader {
 
         public LogTxStatus getStatus() {
             return status;
+        }
+
+        public EnumMap<LogTxMeta,Object> getMetadata() {
+            return metadata;
         }
 
         public StaticBuffer getContent() {

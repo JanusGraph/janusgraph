@@ -32,8 +32,8 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
         assert by>=1;
-        if (metricsName!=null && txh.getConfiguration().hasMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getMetricsPrefix(), metricsName, action.getName()).inc(by);
+        if (metricsName!=null && txh.getConfiguration().hasGroupName()) {
+            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
         }
     }
 

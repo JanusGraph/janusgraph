@@ -100,7 +100,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().metricsPrefix(metricsPrefix);
+        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix);
 
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");

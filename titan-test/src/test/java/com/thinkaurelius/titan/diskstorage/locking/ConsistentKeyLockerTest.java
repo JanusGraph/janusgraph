@@ -107,7 +107,7 @@ public class ConsistentKeyLockerTest {
         defaultTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
         defaultTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(defaultTx.getConfiguration()).andReturn(defaultTxCfg).anyTimes();
-        expect(defaultTxCfg.getMetricsPrefix()).andReturn("default").anyTimes();
+        expect(defaultTxCfg.getGroupName()).andReturn("default").anyTimes();
         expect(defaultTxCfg.getCustomOptions()).andReturn(defaultTxCustomOpts).anyTimes();
         Comparator<TransactionHandleConfig> defaultTxCfgChecker = new Comparator<TransactionHandleConfig>() {
             @Override
@@ -121,7 +121,7 @@ public class ConsistentKeyLockerTest {
         otherTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
         otherTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(otherTx.getConfiguration()).andReturn(otherTxCfg).anyTimes();
-        expect(otherTxCfg.getMetricsPrefix()).andReturn("other").anyTimes();
+        expect(otherTxCfg.getGroupName()).andReturn("other").anyTimes();
         expect(otherTxCfg.getCustomOptions()).andReturn(otherTxCustomOpts).anyTimes();
         Comparator<TransactionHandleConfig> otherTxCfgChecker = new Comparator<TransactionHandleConfig>() {
             @Override

@@ -285,8 +285,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     @Override
     public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
-        if (null != tx.getConfiguration().getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_WRITE, M_CALLS).inc();
+        if (null != tx.getConfiguration().getGroupName()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_CALLS).inc();
         }
 
         if (lockState.has(tx, lockID)) {
@@ -313,8 +313,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 if (!ok) {
                     // lockState.release(tx, lockID); // has no effect
                     unlockLocally(lockID, tx);
-                    if (null != tx.getConfiguration().getMetricsPrefix()) {
-                        MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_WRITE, M_EXCEPTIONS).inc();
+                    if (null != tx.getConfiguration().getGroupName()) {
+                        MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_EXCEPTIONS).inc();
                     }
                 }
             }
@@ -327,8 +327,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     @Override
     public void checkLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
-        if (null != tx.getConfiguration().getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_CHECK, M_CALLS).inc();
+        if (null != tx.getConfiguration().getGroupName()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
         }
 
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
@@ -356,16 +356,16 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
         } catch (Throwable t) {
             throw new PermanentLockingException(t);
         } finally {
-            if (!ok && null != tx.getConfiguration().getMetricsPrefix()) {
-                MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_CHECK, M_CALLS).inc();
+            if (!ok && null != tx.getConfiguration().getGroupName()) {
+                MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
             }
         }
     }
 
     @Override
     public void deleteLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
-        if (null != tx.getConfiguration().getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_DELETE, M_CALLS).inc();
+        if (null != tx.getConfiguration().getGroupName()) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
         }
 
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
@@ -380,8 +380,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 throw ae; // Concession to ease testing with mocks & behavior verification
             } catch (Throwable t) {
                 log.error("Exception while deleting lock on " + kc, t);
-                if (null != tx.getConfiguration().getMetricsPrefix()) {
-                    MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), M_LOCKS, M_DELETE, M_CALLS).inc();
+                if (null != tx.getConfiguration().getGroupName()) {
+                    MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
                 }
             }
             // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator

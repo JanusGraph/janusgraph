@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.idhandling;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -14,6 +15,11 @@ public class VariableLong {
 
     public static int unsignedByte(byte b) {
         return b < 0 ? b + 256 : b;
+    }
+
+    public static byte unsignedByte(int value) {
+        Preconditions.checkArgument(value>=0 && value<256,"Value overflow: %s",value);
+        return (byte)(value & 0xFF);
     }
 
     //Move stop bit back to front => rewrite prefix variable encoding by custom writing first byte

@@ -223,10 +223,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         deletedRelations = EMPTY_DELETED_RELATIONS;
 
         this.isOpen = true;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin").inc();
-            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>(config.getMetricsPrefix(), "graph", elementProcessorImpl);
-            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>(config.getMetricsPrefix(), "vertex", edgeProcessorImpl);
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
+            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>(config.getGroupName(), "graph", elementProcessorImpl);
+            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>(config.getGroupName(), "vertex", edgeProcessorImpl);
         } else {
             elementProcessor = elementProcessorImpl;
             edgeProcessor    = edgeProcessorImpl;
@@ -302,8 +302,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid)))
             return null;
 
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "db", "getVertexByID").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
         }
 
         InternalVertex v = vertexCache.get(vertexid, externalVertexRetriever);
@@ -1088,8 +1088,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
         }
         try {
             if (hasModifications()) {
@@ -1107,8 +1107,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit.exceptions").inc();
+            if (null != config.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
             }
         }
     }
@@ -1117,8 +1117,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
         }
         try {
             txHandle.rollback();
@@ -1127,8 +1127,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback.exceptions").inc();
+            if (null != config.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
             }
         }
     }

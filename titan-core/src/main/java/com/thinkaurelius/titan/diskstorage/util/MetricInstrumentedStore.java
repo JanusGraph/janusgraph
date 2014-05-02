@@ -162,8 +162,8 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             new StorageCallable<KeyIterator>() {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
-                    if (txh.getConfiguration().hasMetricsPrefix()) {
-                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getMetricsPrefix(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
+                    if (txh.getConfiguration().hasGroupName()) {
+                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
                     } else {
                         return ki;
                     }
@@ -178,8 +178,8 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             new StorageCallable<KeyIterator>() {
                 public KeyIterator call() throws StorageException {
                     KeyIterator ki = backend.getKeys(query, txh);
-                    if (txh.getConfiguration().hasMetricsPrefix()) {
-                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getMetricsPrefix(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
+                    if (txh.getConfiguration().hasGroupName()) {
+                        return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
                     } else {
                         return ki;
                     }
@@ -204,10 +204,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     private void recordSliceMetrics(StoreTransaction txh, List<Entry> row) {
-        if (!txh.getConfiguration().hasMetricsPrefix())
+        if (!txh.getConfiguration().hasGroupName())
             return;
 
-        String p = txh.getConfiguration().getMetricsPrefix();
+        String p = txh.getConfiguration().getGroupName();
         final MetricManager mgr = MetricManager.INSTANCE;
         mgr.getCounter(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_COUNT).inc(row.size());
         mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
@@ -215,10 +215,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
     static <T> T runWithMetrics(StoreTransaction txh, String storeName, String name, StorageCallable<T> impl) throws StorageException {
 
-        if (!txh.getConfiguration().hasMetricsPrefix()) {
+        if (!txh.getConfiguration().hasGroupName()) {
             return impl.call();
         }
-        String prefix = txh.getConfiguration().getMetricsPrefix();
+        String prefix = txh.getConfiguration().getGroupName();
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
 

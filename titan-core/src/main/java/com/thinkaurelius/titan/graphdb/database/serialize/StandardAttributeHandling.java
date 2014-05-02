@@ -2,17 +2,13 @@ package com.thinkaurelius.titan.graphdb.database.serialize;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;

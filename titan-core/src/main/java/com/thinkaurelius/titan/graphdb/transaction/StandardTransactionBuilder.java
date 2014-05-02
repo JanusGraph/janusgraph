@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -58,7 +57,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private Timepoint userTimestamp = null;
 
-    private String metricsPrefix;
+    private String groupName;
 
     private final UserModifiableConfiguration storageConfiguration;
 
@@ -73,7 +72,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.graph = graph;
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
-        this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
@@ -124,8 +123,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setMetricsPrefix(String p) {
-        this.metricsPrefix = p;
+    public StandardTransactionBuilder setGroupName(String p) {
+        this.groupName = p;
         return this;
     }
 
@@ -148,7 +147,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound,
                 userTimestamp,
-                indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
+                indexCacheWeight, vertexCacheSize, logIdentifier, groupName,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
@@ -230,13 +229,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public String getMetricsPrefix() {
-        return metricsPrefix;
+    public String getGroupName() {
+        return groupName;
     }
 
     @Override
-    public boolean hasMetricsPrefix() {
-        return null != metricsPrefix;
+    public boolean hasGroupName() {
+        return null != groupName;
     }
 
     @Override
@@ -288,7 +287,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound, Timepoint userTimestamp,
                 long indexCacheWeight, int vertexCacheSize, String logIdentifier,
-                String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
+                String groupName, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -306,7 +305,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
                     .timestamp(userTimestamp)
-                    .metricsPrefix(metricsPrefix)
+                    .groupName(groupName)
                     .customOptions(storageConfiguration).build();
         }
 
@@ -391,13 +390,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public String getMetricsPrefix() {
-            return handleConfig.getMetricsPrefix();
+        public String getGroupName() {
+            return handleConfig.getGroupName();
         }
 
         @Override
-        public boolean hasMetricsPrefix() {
-            return handleConfig.hasMetricsPrefix();
+        public boolean hasGroupName() {
+            return handleConfig.hasGroupName();
         }
 
         @Override
