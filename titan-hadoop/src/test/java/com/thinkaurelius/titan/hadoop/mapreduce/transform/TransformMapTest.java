@@ -43,7 +43,7 @@ public class TransformMapTest extends BaseTest {
 
     public void testVerticesPropertyKeySizeWithPaths() throws Exception {
         Configuration config = TransformMap.createConfiguration(Vertex.class, "{it -> it.propertyKeys.size()}");
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
 

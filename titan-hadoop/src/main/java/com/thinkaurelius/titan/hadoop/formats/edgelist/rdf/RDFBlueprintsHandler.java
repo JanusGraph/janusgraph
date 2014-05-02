@@ -75,12 +75,12 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
         this.configuration = configuration;
-        this.useFragments = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
-        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
-        for (final String property : configuration.getStringCollection(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
+        this.useFragments = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
+        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
+        for (final String property : configuration.getStringCollection(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
         }
-        this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.FAUNUS_GRAPH_INPUT_RDF_FORMAT)));
+        this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_FORMAT)));
         this.parser.setRDFHandler(this);
         this.parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
     }

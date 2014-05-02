@@ -34,7 +34,7 @@ public class PathMap {
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
-        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
         return configuration;
     }
 
@@ -48,7 +48,7 @@ public class PathMap {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
             this.outputs = new SafeMapperOutputs(context);
-            if (!context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false))
+            if (!context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false))
                 throw new IllegalStateException(PathMap.class.getSimpleName() + " requires that paths be enabled");
         }
 

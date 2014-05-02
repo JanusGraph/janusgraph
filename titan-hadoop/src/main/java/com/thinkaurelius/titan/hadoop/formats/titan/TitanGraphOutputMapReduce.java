@@ -69,7 +69,7 @@ public class TitanGraphOutputMapReduce {
     public static Graph generateGraph(final Configuration configuration) {
         final Class<? extends OutputFormat> format = configuration.getClass(HadoopGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return TitanFactory.open(ConfigurationUtil.extractConfiguration(configuration, TitanOutputFormat.FAUNUS_GRAPH_OUTPUT_TITAN));
+            return TitanFactory.open(ConfigurationUtil.extractConfiguration(configuration, TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN));
         } else {
             throw new RuntimeException("The provide graph output format is not a supported TitanOutputFormat: " + format.getName());
         }
@@ -94,7 +94,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = TitanGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.trackState = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+            this.trackState = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
 
@@ -218,7 +218,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = TitanGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.trackState = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+            this.trackState = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
 

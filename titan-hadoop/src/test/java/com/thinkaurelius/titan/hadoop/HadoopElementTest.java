@@ -133,7 +133,7 @@ public class HadoopElementTest extends TestCase {
 
     public void testPathIteratorRemove() {
         Configuration configuration = new EmptyConfiguration();
-        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
         HadoopVertex vertex1 = new HadoopVertex(configuration, 10);
         assertEquals(vertex1.pathCount(), 0);
         vertex1.addPath((List) Arrays.asList(new HadoopVertex.MicroVertex(1l), new HadoopVertex.MicroVertex(2l)), false);

@@ -52,8 +52,8 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         final SlicePredicate predicate = new SlicePredicate();
         predicate.setSlice_range(getSliceRange(this.vertexQuery, config.getInt("cassandra.range.batch.size", Integer.MAX_VALUE)));
         ConfigHelper.setInputSlicePredicate(config, predicate);
-        ConfigHelper.setInputInitialAddress(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        ConfigHelper.setInputRpcPort(config, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
+        ConfigHelper.setInputInitialAddress(config, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        ConfigHelper.setInputRpcPort(config, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT));
         // TODO config.set("storage.read-only", "true");
         config.set("autotype", "none");
 

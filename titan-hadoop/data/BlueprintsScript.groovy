@@ -20,12 +20,12 @@ import static com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapRed
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  * @author Daniel Kuppitz (daniel at thinkaurelius.com)
  */
-def Vertex getOrCreateVertex(final HadoopVertex faunusVertex, final Graph graph, final Mapper.Context context) {
+def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph, final Mapper.Context context) {
     final String uniqueKey = "name";
-    final Object uniqueValue = faunusVertex.getProperty(uniqueKey);
+    final Object uniqueValue = hadoopVertex.getProperty(uniqueKey);
     final Vertex blueprintsVertex;
     if (null == uniqueValue)
-        throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + faunusVertex);
+        throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + hadoopVertex);
 
     final Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
     if (itty.hasNext()) {
@@ -35,20 +35,20 @@ def Vertex getOrCreateVertex(final HadoopVertex faunusVertex, final Graph graph,
             LOGGER.error("The unique key is not unique as more than one vertex with the value: " + uniqueValue);
         }
     } else {
-        blueprintsVertex = graph.addVertex(faunusVertex.getIdAsLong());
+        blueprintsVertex = graph.addVertex(hadoopVertex.getIdAsLong());
         context.getCounter(VERTICES_WRITTEN).increment(1l);
     }
 
     // if vertex existed or not, add all the properties of the faunusVertex to the blueprintsVertex
-    for (final String property : faunusVertex.getPropertyKeys()) {
-        blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
+    for (final String property : hadoopVertex.getPropertyKeys()) {
+        blueprintsVertex.setProperty(property, hadoopVertex.getProperty(property));
         context.getCounter(VERTEX_PROPERTIES_WRITTEN).increment(1l);
     }
     return blueprintsVertex;
 }
 
-def Edge getOrCreateEdge(final HadoopEdge faunusEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
-    final String edgeLabel = faunusEdge.getLabel();
+def Edge getOrCreateEdge(final HadoopEdge hadoopEdge, final Vertex blueprintsOutVertex, final Vertex blueprintsInVertex, final Graph graph, final Mapper.Context context) {
+    final String edgeLabel = hadoopEdge.getLabel();
     final GremlinPipeline blueprintsEdgePipe = blueprintsOutVertex.outE(edgeLabel).as("e").inV().retain([blueprintsInVertex]).range(0, 1).back("e")
     final Edge blueprintsEdge;
 
@@ -63,8 +63,8 @@ def Edge getOrCreateEdge(final HadoopEdge faunusEdge, final Vertex blueprintsOut
     }
 
     // if edge existed or not, add all the properties of the faunusEdge to the blueprintsEdge
-    for (final String key : faunusEdge.getPropertyKeys()) {
-        blueprintsEdge.setProperty(key, faunusEdge.getProperty(key));
+    for (final String key : hadoopEdge.getPropertyKeys()) {
+        blueprintsEdge.setProperty(key, hadoopEdge.getProperty(key));
         context.getCounter(EDGE_PROPERTIES_WRITTEN).increment(1l);
     }
     return blueprintsEdge;

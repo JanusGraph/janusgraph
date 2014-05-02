@@ -56,7 +56,7 @@ public class VerticesMapTest extends BaseTest {
 
     public void testVerticesWithPaths() throws Exception {
         Configuration config = new Configuration();
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 

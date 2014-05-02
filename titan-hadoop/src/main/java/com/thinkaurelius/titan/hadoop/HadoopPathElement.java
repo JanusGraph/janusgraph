@@ -36,7 +36,7 @@ public abstract class HadoopPathElement extends HadoopElement implements Writabl
 
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
-        this.trackPaths(configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false));
+        this.trackPaths(configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false));
     }
 
     public Configuration getConf() {

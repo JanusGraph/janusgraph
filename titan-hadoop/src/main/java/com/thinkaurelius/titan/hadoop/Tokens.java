@@ -54,8 +54,8 @@ public class Tokens {
     public static final String NEWLINE = "\n";
     public static final String EMPTY_STRING = "";
 
-    public static final String FAUNUS_JOB_JAR = "titan-hadoop-" + VERSION + "-job.jar";
-    public static final String FAUNUS_HOME = "FAUNUS_HOME";
+    public static final String TITAN_HADOOP_JOB_JAR = "titan-hadoop-" + VERSION + "-job.jar";
+    public static final String TITAN_HADOOP_HOME = "TITAN_HADOOP_HOME";
 
     public static final String PART = "part";
     public static final String GRAPH = "graph";
@@ -65,8 +65,8 @@ public class Tokens {
     public static final String BZ2 = "bz2";
 
     public static int DEFAULT_MAP_SPILL_OVER = 500;
-    public static final String FAUNUS_PIPELINE_MAP_SPILL_OVER = "faunus.pipeline.map-spill-over";
-    public static final String FAUNUS_PIPELINE_TRACK_PATHS = "faunus.pipeline.track-paths";
-    public static final String FAUNUS_PIPELINE_TRACK_STATE = "faunus.pipeline.track-state";
+    public static final String HADOOP_PIPELINE_MAP_SPILL_OVER = "hadoop.pipeline.map-spill-over";
+    public static final String HADOOP_PIPELINE_TRACK_PATHS = "hadoop.pipeline.track-paths";
+    public static final String HADOOP_PIPELINE_TRACK_STATE = "hadoop.pipeline.track-state";
 
 }

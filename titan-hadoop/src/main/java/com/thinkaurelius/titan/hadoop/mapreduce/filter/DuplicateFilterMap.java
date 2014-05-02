@@ -43,7 +43,7 @@ public class DuplicateFilterMap {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.isVertex = context.getConfiguration().getClass(CLASS, Element.class, Element.class).equals(Vertex.class);
-            this.trackPaths = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
+            this.trackPaths = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
         }
 
         @Override

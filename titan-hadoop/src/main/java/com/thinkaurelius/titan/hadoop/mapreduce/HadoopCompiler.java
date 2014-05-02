@@ -96,10 +96,10 @@ public class HadoopCompiler extends Configured implements Tool {
 
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
-            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue())) {
+            if (entry.getKey().equals(Tokens.HADOOP_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue())) {
                 this.graph.setTrackPaths(this.trackPaths = true);
             }
-            if (entry.getKey().equals(Tokens.FAUNUS_PIPELINE_TRACK_STATE) & Boolean.valueOf(entry.getValue())) {
+            if (entry.getKey().equals(Tokens.HADOOP_PIPELINE_TRACK_STATE) & Boolean.valueOf(entry.getValue())) {
                 this.graph.setTrackState(this.trackState = true);
             }
             this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
@@ -216,24 +216,24 @@ public class HadoopCompiler extends Configured implements Tool {
 
         String hadoopFileJar = graph.getConf().get(MAPRED_JAR, null);
         if (null == hadoopFileJar) {
-            if (new File("target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
-                hadoopFileJar = "target/" + Tokens.FAUNUS_JOB_JAR;
+            if (new File("target/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
+                hadoopFileJar = "target/" + Tokens.TITAN_HADOOP_JOB_JAR;
                 logger.warn("Using the developer Faunus job jar: " + hadoopFileJar);
-            } else if (new File("../target/" + Tokens.FAUNUS_JOB_JAR).exists()) {
-                hadoopFileJar = "../target/" + Tokens.FAUNUS_JOB_JAR;
+            } else if (new File("../target/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
+                hadoopFileJar = "../target/" + Tokens.TITAN_HADOOP_JOB_JAR;
                 logger.warn("Using the developer Faunus job jar: " + hadoopFileJar);
-            } else if (new File("lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
-                hadoopFileJar = "lib/" + Tokens.FAUNUS_JOB_JAR;
+            } else if (new File("lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
+                hadoopFileJar = "lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
                 logger.warn("Using the distribution Faunus job jar: " + hadoopFileJar);
-            } else if (new File("../lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
-                hadoopFileJar = "../lib/" + Tokens.FAUNUS_JOB_JAR;
+            } else if (new File("../lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
+                hadoopFileJar = "../lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
                 logger.warn("Using the distribution Faunus job jar: " + hadoopFileJar);
             } else {
-                final String faunusHome = System.getenv(Tokens.FAUNUS_HOME);
+                final String faunusHome = System.getenv(Tokens.TITAN_HADOOP_HOME);
                 if (null == faunusHome || faunusHome.isEmpty())
-                    throw new IllegalStateException("FAUNUS_HOME must be set in order to locate the Faunus Hadoop job jar: " + Tokens.FAUNUS_JOB_JAR);
-                if (new File(faunusHome + "/lib/" + Tokens.FAUNUS_JOB_JAR).exists()) {
-                    hadoopFileJar = faunusHome + "/lib/" + Tokens.FAUNUS_JOB_JAR;
+                    throw new IllegalStateException("TITAN_HADOOP_HOME must be set in order to locate the Faunus Hadoop job jar: " + Tokens.TITAN_HADOOP_JOB_JAR);
+                if (new File(faunusHome + "/lib/" + Tokens.TITAN_HADOOP_JOB_JAR).exists()) {
+                    hadoopFileJar = faunusHome + "/lib/" + Tokens.TITAN_HADOOP_JOB_JAR;
                     logger.info("Using the distribution Faunus job jar: " + hadoopFileJar);
                 }
             }
@@ -241,7 +241,7 @@ public class HadoopCompiler extends Configured implements Tool {
             logger.info("Using the provided Faunus job jar: " + hadoopFileJar);
         }
         if (null == hadoopFileJar)
-            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.FAUNUS_JOB_JAR);
+            throw new IllegalStateException("The Faunus Hadoop job jar could not be found: " + Tokens.TITAN_HADOOP_JOB_JAR);
 
         if (this.trackPaths)
             logger.warn("Path tracking is enabled for this Faunus job (space and time expensive)");
@@ -256,8 +256,8 @@ public class HadoopCompiler extends Configured implements Tool {
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
-            job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, this.trackPaths);
-            job.getConfiguration().setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, this.trackState);
+            job.getConfiguration().setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, this.trackPaths);
+            job.getConfiguration().setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, this.trackState);
             job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 

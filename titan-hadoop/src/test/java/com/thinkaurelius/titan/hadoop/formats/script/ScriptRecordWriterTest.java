@@ -20,7 +20,7 @@ public class ScriptRecordWriterTest extends BaseTest {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream stream = new DataOutputStream(new PrintStream(baos));
         Configuration conf = new Configuration();
-        conf.setStrings(ScriptOutputFormat.FAUNUS_GRAPH_OUTPUT_SCRIPT_FILE, ScriptRecordWriterTest.class.getResource("ScriptOutput.groovy").getFile());
+        conf.setStrings(ScriptOutputFormat.HADOOP_GRAPH_OUTPUT_SCRIPT_FILE, ScriptRecordWriterTest.class.getResource("ScriptOutput.groovy").getFile());
         ScriptRecordWriter writer = new ScriptRecordWriter(stream, conf);
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
         for (HadoopVertex vertex : graph.values()) {

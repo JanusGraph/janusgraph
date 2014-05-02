@@ -17,12 +17,12 @@ import org.apache.hadoop.mapreduce.InputFormat;
  */
 public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopVertex> implements Configurable {
 
-    public static final String FAUNUS_GRAPH_INPUT_TITAN = "faunus.graph.input.titan";
-    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME = FAUNUS_GRAPH_INPUT_TITAN + ".storage.hostname";
-    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT = FAUNUS_GRAPH_INPUT_TITAN + ".storage.port";
+    public static final String HADOOP_GRAPH_INPUT_TITAN = "hadoop.graph.input.titan";
+    public static final String HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME = HADOOP_GRAPH_INPUT_TITAN + ".storage.hostname";
+    public static final String HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT = HADOOP_GRAPH_INPUT_TITAN + ".storage.port";
 
-    public static final String FAUNUS_GRAPH_INPUT_TITAN_VERION = FAUNUS_GRAPH_INPUT_TITAN + ".version";
-    public static final String FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT = "current";
+    public static final String HADOOP_GRAPH_INPUT_TITAN_VERION = HADOOP_GRAPH_INPUT_TITAN + ".version";
+    public static final String HADOOP_GRAPH_INPUT_TITAN_VERION_DEFAULT = "current";
 
     private static final String SETUP_PACKAGE_PREFIX = "com.thinkaurelius.titan.hadoop.formats.titan.input.";
     private static final String SETUP_CLASS_NAME = ".TitanHadoopSetupImpl";
@@ -35,9 +35,9 @@ public abstract class TitanInputFormat extends InputFormat<NullWritable, HadoopV
     @Override
     public void setConf(final Configuration config) {
         this.vertexQuery = VertexQueryFilter.create(config);
-        this.trackPaths = config.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
+        this.trackPaths = config.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
 
-        final String titanVersion = config.get(FAUNUS_GRAPH_INPUT_TITAN_VERION, FAUNUS_GRAPH_INPUT_TITAN_VERION_DEFAULT);
+        final String titanVersion = config.get(HADOOP_GRAPH_INPUT_TITAN_VERION, HADOOP_GRAPH_INPUT_TITAN_VERION_DEFAULT);
         final String className = SETUP_PACKAGE_PREFIX + titanVersion + SETUP_CLASS_NAME;
 
         this.titanSetup = ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});

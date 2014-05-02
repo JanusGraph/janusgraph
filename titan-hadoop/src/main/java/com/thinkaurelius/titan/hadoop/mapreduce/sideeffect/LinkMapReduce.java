@@ -51,7 +51,7 @@ public class LinkMapReduce {
             configuration.setBoolean(MERGE_DUPLICATES, true);
             configuration.set(MERGE_WEIGHT_KEY, mergeWeightKey);
         }
-        configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
         return configuration;
     }
 
@@ -73,7 +73,7 @@ public class LinkMapReduce {
             this.mergeDuplicates = context.getConfiguration().getBoolean(MERGE_DUPLICATES, false);
             this.mergeWeightKey = context.getConfiguration().get(MERGE_WEIGHT_KEY, NO_WEIGHT_KEY);
 
-            if (!context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false))
+            if (!context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false))
                 throw new IllegalStateException(LinkMapReduce.class.getSimpleName() + " requires that paths be enabled");
         }
 

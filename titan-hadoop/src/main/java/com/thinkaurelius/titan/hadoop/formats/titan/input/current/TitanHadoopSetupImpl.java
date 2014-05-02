@@ -37,7 +37,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     private final StandardTitanTx tx;
 
     public TitanHadoopSetupImpl(final Configuration config) {
-        BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.FAUNUS_GRAPH_INPUT_TITAN);
+        BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.HADOOP_GRAPH_INPUT_TITAN);
         graph = (StandardTitanGraph)TitanFactory.open(titan);
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().setCacheSize(200).start();
    }

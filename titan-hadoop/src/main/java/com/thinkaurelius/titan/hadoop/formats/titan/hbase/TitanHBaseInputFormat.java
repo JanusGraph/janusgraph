@@ -53,9 +53,9 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
         config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        if (config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_PORT));
+        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        if (config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT));
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();

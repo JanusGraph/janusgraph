@@ -125,19 +125,19 @@ public class HadoopGraph implements Configurable {
     }
 
     public void setTrackPaths(final boolean trackPaths) {
-        this.configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, trackPaths);
+        this.configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, trackPaths);
     }
 
     public boolean getTrackPaths() {
-        return this.configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, false);
+        return this.configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
     }
 
     public void setTrackState(final boolean trackState) {
-        this.configuration.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, trackState);
+        this.configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, trackState);
     }
 
     public boolean getTrackState() {
-        return this.configuration.getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+        return this.configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
     }
 
     public void shutdown() {

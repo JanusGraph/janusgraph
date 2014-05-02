@@ -146,7 +146,7 @@ public class CommitVerticesMapReduce {
 
         @Override
         public void setup(final Reducer.Context context) {
-            this.trackState = context.getConfiguration().getBoolean(Tokens.FAUNUS_PIPELINE_TRACK_STATE, false);
+            this.trackState = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
         }
 
         @Override

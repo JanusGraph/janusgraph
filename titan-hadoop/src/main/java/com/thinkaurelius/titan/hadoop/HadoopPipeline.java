@@ -208,7 +208,7 @@ public class HadoopPipeline {
             }
         }
 
-        if (null != this.graph.getConf().get(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
+        if (null != this.graph.getConf().get(EdgeCopyMapReduce.HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
                     null,
                     EdgeCopyMapReduce.Reduce.class,
@@ -217,7 +217,7 @@ public class HadoopPipeline {
                     Holder.class,
                     NullWritable.class,
                     HadoopVertex.class,
-                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.FAUNUS_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
+                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
 

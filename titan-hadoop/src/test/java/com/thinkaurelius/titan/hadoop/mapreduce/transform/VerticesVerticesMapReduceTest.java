@@ -121,7 +121,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
 
     public void testOutKnowsWithPaths() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "knows");
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -150,7 +150,7 @@ public class VerticesVerticesMapReduceTest extends BaseTest {
 
     public void testOutKnowsWithPathsOnlyMarko() throws Exception {
         Configuration config = VerticesVerticesMapReduce.createConfiguration(Direction.OUT, "created");
-        config.setBoolean(Tokens.FAUNUS_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 
