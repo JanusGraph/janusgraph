@@ -51,6 +51,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private int vertexCacheSize;
 
+    private int dirtyVertexSize;
+
     private long indexCacheWeight;
 
     private String logIdentifier;
@@ -69,6 +71,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardTitanGraph graph) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
+        if (graphConfig.isReadOnly()) readOnly();
+        if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
@@ -76,9 +80,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
-        if (graphConfig.isReadOnly()) readOnly();
-        setCacheSize(graphConfig.getTxCacheSize());
-        if (graphConfig.isBatchLoading()) enableBatchLoading();
+        setVertexCacheSize(graphConfig.getTxVertexCacheSize());
+        setDirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
     public StandardTransactionBuilder threadBound() {
@@ -103,10 +106,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setCacheSize(int size) {
+    public StandardTransactionBuilder setVertexCacheSize(int size) {
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
         this.indexCacheWeight = size / 2;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder setDirtyVertexSize(int size) {
+        this.dirtyVertexSize = size;
         return this;
     }
 
@@ -145,9 +154,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound,
-                timestamp,
-                indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
+                propertyPrefetching, singleThreaded, threadBound, timestamp,
+                indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
+                logIdentifier, metricsPrefix,
                 defaultTypeMaker, new BasicConfiguration(TITAN_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
@@ -219,6 +228,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public final int getDirtyVertexSize() {
+        return dirtyVertexSize;
+    }
+
+    @Override
     public final long getIndexCacheWeight() {
         return indexCacheWeight;
     }
@@ -268,6 +282,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isThreadBound;
         private final long indexCacheWeight;
         private final int vertexCacheSize;
+        private final int dirtyVertexSize;
         private final String logIdentifier;
         private final DefaultTypeMaker defaultTypeMaker;
 
@@ -281,7 +296,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound, Timepoint timestamp,
-                long indexCacheWeight, int vertexCacheSize, String logIdentifier,
+                long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
@@ -296,6 +311,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isThreadBound = isThreadBound;
             this.indexCacheWeight = indexCacheWeight;
             this.vertexCacheSize = vertexCacheSize;
+            this.dirtyVertexSize = dirtyVertexSize;
             this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionConfig.Builder()
@@ -362,6 +378,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public int getVertexCacheSize() {
             return vertexCacheSize;
+        }
+
+        @Override
+        public int getDirtyVertexSize() {
+            return dirtyVertexSize;
         }
 
         @Override

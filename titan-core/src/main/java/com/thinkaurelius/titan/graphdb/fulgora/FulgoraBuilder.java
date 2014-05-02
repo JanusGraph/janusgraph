@@ -114,13 +114,13 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
 
     @Override
     public OLAPQueryBuilder addQuery() {
-        return new QueryBuilder((StandardTitanTx)graph.buildTransaction().readOnly().setCacheSize(100).start());
+        return new QueryBuilder((StandardTitanTx)graph.buildTransaction().readOnly().setVertexCacheSize(100).start());
     }
 
     @Override
     public Future<Map<Long,S>> execute() {
         Preconditions.checkArgument(!queries.isEmpty(),"Need to register at least one query");
-        TransactionBuilder txBuilder = graph.buildTransaction().readOnly().setCacheSize(100);
+        TransactionBuilder txBuilder = graph.buildTransaction().readOnly().setVertexCacheSize(100);
         for (Map.Entry<String,Object> txOption : txOptions.entrySet())
             txBuilder.setCustomOption(txOption.getKey(),txOption.getValue());
         final StandardTitanTx tx = (StandardTitanTx)txBuilder.start();

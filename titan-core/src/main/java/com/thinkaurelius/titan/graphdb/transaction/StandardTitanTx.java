@@ -211,7 +211,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
         internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
 
-        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel);
+        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel,config.getDirtyVertexSize());
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<JointIndexQuery.Subquery, List<Object>>() {
             @Override
             public int weigh(JointIndexQuery.Subquery q, List<Object> r) {
