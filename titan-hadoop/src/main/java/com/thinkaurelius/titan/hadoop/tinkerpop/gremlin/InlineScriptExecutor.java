@@ -17,7 +17,7 @@ public class InlineScriptExecutor {
     public static void main(final String[] args) throws Exception {
         if (args.length < 1 || args.length > 3 || (args.length == 1 && args[0].contains("-h"))) {
             System.out.println("Faunus Usage:");
-            System.out.println("  arg1: Faunus graph configuration file (optional): defaults to bin/faunus.properties");
+            System.out.println("  arg1: Faunus graph configuration file (optional): defaults to bin/titan-hadoop.properties");
             System.out.println("  arg2: HadoopGremlin script: 'g.V.step.step...'");
             System.out.println("  arg3: Overriding configurations (optional): '-Dmapred.map.tasks=14 mapred.reduce.tasks=6'");
             System.exit(-1);
@@ -29,11 +29,11 @@ public class InlineScriptExecutor {
         final Properties commandLineConfiguration = new Properties();
         if (args.length == 1) {
             script = args[0];
-            file = "bin/faunus.properties";
+            file = "bin/titan-hadoop.properties";
         } else if (args.length == 2) {
             if (args[1].startsWith("-D")) {
                 script = args[0];
-                file = "bin/faunus.properties";
+                file = "bin/titan-hadoop.properties";
                 for (final String property : args[1].substring(2).trim().split(" ")) {
                     commandLineConfiguration.put(property.split("=")[0], property.split("=")[1]);
                 }
