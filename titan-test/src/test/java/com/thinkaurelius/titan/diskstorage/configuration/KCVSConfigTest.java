@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -27,7 +28,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
                 public void close() throws StorageException {
                     manager.close();
                 }
-            },manager.openDatabase("titan"),"general");
+            }, Timestamps.MICRO,manager.openDatabase("titan"),"general");
         } catch (StorageException e) {
             throw new RuntimeException(e);
         }

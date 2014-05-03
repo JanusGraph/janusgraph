@@ -447,7 +447,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 public String toString() {
                     return "messageSending";
                 }
-            },this, maxWriteTime);
+            },this, times, maxWriteTime);
             Preconditions.checkState(success);
             log.debug("Wrote {} messages to backend",msgEnvelopes.size());
             for (MessageEnvelope msgEnvelope : msgEnvelopes)
@@ -638,7 +638,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
                 KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
                 query.setLimit(maxReadMsg);
-                List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
+                List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                 prepareMessageProcessing(entries);
                 if (entries.size()>=maxReadMsg) {
                     /*Read another set of messages to ensure that we have exhausted all messages to the next timestamp.
@@ -648,7 +648,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
                     query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
-                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,maxReadTime);
+                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                     prepareMessageProcessing(extraEntries);
                 }
                 nextTimepoint = new Timepoint(maxTime, times.getUnit());
@@ -729,7 +729,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             public String toString() {
                 return "readingLogSetting";
             }
-        },this,maxReadTime);
+        },this,times,maxReadTime);
         if (value==null) return defaultValue;
         else {
             Preconditions.checkArgument(value.length()==8);
@@ -750,7 +750,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             public String toString() {
                 return "writingLogSetting";
             }
-        },this, maxWriteTime);
+        },this, times, maxWriteTime);
         Preconditions.checkState(status);
     }
 

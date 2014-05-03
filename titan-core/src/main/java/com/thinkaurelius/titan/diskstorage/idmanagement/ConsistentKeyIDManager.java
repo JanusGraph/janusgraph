@@ -144,7 +144,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
             public List<Entry> call(StoreTransaction txh) throws StorageException {
                 return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
             }
-        },this);
+        },this,times);
 
         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
         long latest = BASE_ID;
@@ -230,7 +230,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(target)), KeyColumnValueStore.NO_DELETIONS, txh);
                             return true;
                         }
-                    },this);
+                    },this,times);
                     writeTimer.stop();
 
                     Duration writeElapsed = writeTimer.elapsed();
@@ -254,7 +254,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                             public List<Entry> call(StoreTransaction txh) throws StorageException {
                                 return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
                             }
-                        },this);
+                        },this,times);
                         if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
                         if (blocks.isEmpty())
                             throw new PermanentStorageException("It seems there is a race-condition in the block application. " +
@@ -303,7 +303,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                                     }
                                     @Override
                                     public void close() {}
-                                });
+                                },times);
 
                                 break;
                             } catch (StorageException e) {

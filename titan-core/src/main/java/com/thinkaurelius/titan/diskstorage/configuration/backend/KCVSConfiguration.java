@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.core.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -40,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
     private final BackendOperation.TransactionalProvider txProvider;
+    private final TimestampProvider times;
     private final KeyColumnValueStore store;
     private final String identifier;
     private final StaticBuffer rowKey;
@@ -49,11 +51,12 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private Duration maxOperationWaitTime = new SimpleDuration(10000L, TimeUnit.MILLISECONDS);
 
 
-    public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, KeyColumnValueStore store,
-                             String identifier) throws StorageException {
-        Preconditions.checkArgument(txProvider!=null && store!=null);
+    public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, TimestampProvider times,
+                             KeyColumnValueStore store, String identifier) throws StorageException {
+        Preconditions.checkArgument(txProvider!=null && store!=null && times!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         this.txProvider = txProvider;
+        this.times = times;
         this.store = store;
         this.identifier = identifier;
         this.rowKey = string2StaticBuffer(this.identifier);
@@ -92,7 +95,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             public String toString() {
                 return "getConfiguration";
             }
-        }, txProvider, maxOperationWaitTime);
+        }, txProvider, times, maxOperationWaitTime);
         if (result==null) return null;
         return staticBuffer2Object(result, datatype);
     }
@@ -146,7 +149,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             public String toString() {
                 return "setConfiguration";
             }
-        }, txProvider, maxOperationWaitTime);
+        }, txProvider, times, maxOperationWaitTime);
     }
 
     @Override
@@ -171,7 +174,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             public String toString() {
                 return "setConfiguration";
             }
-        },txProvider, maxOperationWaitTime);
+        },txProvider, times, maxOperationWaitTime);
 
         for (Entry entry : result) {
             String key = staticBuffer2String(entry.getColumnAs(StaticBuffer.STATIC_FACTORY));

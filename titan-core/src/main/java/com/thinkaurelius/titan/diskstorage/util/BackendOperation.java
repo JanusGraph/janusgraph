@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -118,10 +119,11 @@ public class BackendOperation {
 //        throw new TitanException("Could not successfully complete backend operation due to repeated temporary exceptions after "+maxRetryAttempts+" attempts",lastException);
 //    }
 
-    public static<R> R execute(Transactional<R> exe, TransactionalProvider provider) throws StorageException {
+    public static<R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws StorageException {
         StoreTransaction txh = null;
         try {
             txh = provider.openTx();
+            txh.getConfiguration().setCommitTime(times.getTime());
             return exe.call(txh);
         } catch (StorageException e) {
             if (txh!=null) txh.rollback();
@@ -132,11 +134,11 @@ public class BackendOperation {
         }
     }
 
-    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, Duration maxTime) throws TitanException {
+    public static<R> R execute(final Transactional<R> exe, final TransactionalProvider provider, final TimestampProvider times, Duration maxTime) throws TitanException {
         return execute(new Callable<R>() {
             @Override
             public R call() throws Exception {
-                return execute(exe,provider);
+                return execute(exe,provider,times);
             }
             @Override
             public String toString() {

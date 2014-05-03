@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.core.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -360,7 +361,7 @@ public class Backend implements LockerProvider {
                                                                      final KeyColumnValueStore store,
                                                                      final Configuration config) {
         try {
-            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,store,SYSTEM_CONFIGURATION_IDENTIFIER);
+            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,config.get(TIMESTAMP_PROVIDER),store,SYSTEM_CONFIGURATION_IDENTIFIER);
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (StorageException e) {
