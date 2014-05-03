@@ -101,12 +101,19 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
     public boolean isThreadBound();
 
     /**
-     * The size of the vertex cache for this particular transaction, i.e. the maximum number
-     * of non-modified vertices that are kept in cache
+     * The maximum number of recently-used vertices to cache in this transaction.
+     * The recently-used vertex cache can include both clean and dirty vertices.
      *
      * @return
      */
     public int getVertexCacheSize();
+
+    /**
+     * The initial size of the dirty (modified) vertex map used by a transaction.
+     *
+     * @return
+     */
+    public int getDirtyVertexSize();
 
     /**
      * The maximum weight for the index cache store used in this particular transaction

@@ -211,17 +211,47 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
 
     /**
-     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
+     * Configures the maximum number of recently-used vertices cached by a transaction. The smaller the cache size, the
      * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
      * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
      * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
+     * <p/>
+     * The recently-used vertex cache can contain both dirty and clean vertices, that is, both vertices which have been
+     * created or updated in the current transaction and vertices which have only been read in the current transaction.
      */
 //    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
 //    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
     public static final ConfigOption<Integer> TX_CACHE_SIZE = new ConfigOption<Integer>(CACHE_NS,"tx-cache-size",
-            "Size of the transaction level cache",
+            "Maximum size of the transaction-level cache of recently-used vertices",
             ConfigOption.Type.MASKABLE, 20000);
+
+    /**
+     * Configures the initial size of the dirty (modified) vertex map used by a transaction.  All vertices created or
+     * updated by a transaction are held in that transaction's dirty vertex map until the transaction commits.
+     * This option sets the initial size of the dirty map.  Unlike {@link #TX_CACHE_SIZE}, this is not a maximum.
+     * The transaction will transparently allocate more space to store dirty vertices if this initial size hint
+     * is exceeded.  Transactions that know how many vertices they are likely to modify a priori can avoid resize
+     * costs associated with growing the dirty vertex data structure by setting this option.
+     */
+    public static final ConfigOption<Integer> TX_DIRTY_SIZE = new ConfigOption<Integer>(CACHE_NS, "tx-dirty-size",
+          "Initial size of the transaction-level cache of uncommitted dirty vertices",
+          ConfigOption.Type.MASKABLE, Integer.class);
+
+    /**
+     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is disabled.
+     * This value is only considered if the user does not specify a value for
+     * {@code #TX_DIRTY_CACHE_SIZE} explictly in either the graph or transaction config.
+     */
+    private static final int TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH = 32;
+
+    /**
+     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is enabled.
+     * This value is only considered if the user does not specify a value for
+     * {@code #TX_DIRTY_CACHE_SIZE} explictly in either the graph or transaction config.
+     */
+    private static final int TX_DIRTY_SIZE_DEFAULT_WITH_BATCH = 4096;
+
 
     // ################ STORAGE #######################
     // ################################################
@@ -531,7 +561,7 @@ public class GraphDatabaseConfiguration {
      * <p/>
      * Value = {@value}
      */
-    public static final ConfigOption<Integer> PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
+    public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
             "Configuration key for the port on which to connect to remote storage backend servers",
             ConfigOption.Type.LOCAL, Integer.class);
 
@@ -1122,7 +1152,8 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
-    private int txCacheSize;
+    private int txVertexCacheSize;
+    private int txDirtyVertexSize;
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
@@ -1275,10 +1306,19 @@ public class GraphDatabaseConfiguration {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         batchLoading = configuration.get(STORAGE_BATCH);
-        txCacheSize = configuration.get(TX_CACHE_SIZE);
         defaultTypeMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+
+        txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
+        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
+        if (configuration.has(TX_DIRTY_SIZE)) {
+            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
+        } else {
+            txDirtyVertexSize = batchLoading ?
+                    TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
+                    TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
+        }
 
         if (configuration.has(PROPERTY_PREFETCHING))
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
@@ -1384,8 +1424,12 @@ public class GraphDatabaseConfiguration {
         return flushIDs;
     }
 
-    public int getTxCacheSize() {
-        return txCacheSize;
+    public int getTxVertexCacheSize() {
+        return txVertexCacheSize;
+    }
+
+    public int getTxDirtyVertexSize() {
+        return txDirtyVertexSize;
     }
 
     public boolean isBatchLoading() {

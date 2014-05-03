@@ -34,7 +34,9 @@ public interface TransactionBuilder {
      * @param size
      * @return
      */
-    public TransactionBuilder setCacheSize(int size);
+    public TransactionBuilder setVertexCacheSize(int size);
+
+    public TransactionBuilder setDirtyVertexSize(int size);
 
     /**
      * Enables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
