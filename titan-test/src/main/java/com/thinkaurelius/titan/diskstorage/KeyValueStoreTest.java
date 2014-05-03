@@ -4,6 +4,7 @@ package com.thinkaurelius.titan.diskstorage;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import org.junit.After;
 import org.junit.Assert;
@@ -20,7 +21,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyVal
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
-public abstract class KeyValueStoreTest {
+public abstract class KeyValueStoreTest extends AbstractKCVSTest {
 
     private Logger log = LoggerFactory.getLogger(KeyValueStoreTest.class);
 
@@ -41,7 +42,7 @@ public abstract class KeyValueStoreTest {
     public void open() throws StorageException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
-        tx = manager.beginTransaction(StandardTransactionHandleConfig.of());
+        tx = manager.beginTransaction(getTxConfig());
     }
 
     public abstract OrderedKeyValueStoreManager openStorageManager() throws StorageException;

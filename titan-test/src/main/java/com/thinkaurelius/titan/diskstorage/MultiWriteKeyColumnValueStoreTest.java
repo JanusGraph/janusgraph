@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-public abstract class MultiWriteKeyColumnValueStoreTest {
+public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private Logger log = LoggerFactory.getLogger(MultiWriteKeyColumnValueStoreTest.class);
 
@@ -60,7 +60,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionHandleConfig.of()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
         store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
@@ -80,7 +80,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
 
     public void newTx() throws StorageException {
         if (tx!=null) tx.commit();
-        tx = new CacheTransaction(manager.beginTransaction(StandardTransactionHandleConfig.of()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
     }
 
     @Test
@@ -149,7 +149,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest {
         final StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong);
         final StaticBuffer nextCol = KeyColumnValueStoreUtil.longToByteBuffer(arbitraryLong + 1);
 
-        final StoreTransaction directTx = manager.beginTransaction(StandardTransactionHandleConfig.of());
+        final StoreTransaction directTx = manager.beginTransaction(getTxConfig());
 
         KCVMutation km = new KCVMutation(
                 Lists.newArrayList(StaticArrayEntry.of(col, val)),

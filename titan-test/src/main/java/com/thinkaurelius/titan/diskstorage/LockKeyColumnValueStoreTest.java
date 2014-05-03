@@ -31,7 +31,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public abstract class LockKeyColumnValueStoreTest {
+public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
@@ -90,7 +90,7 @@ public abstract class LockKeyColumnValueStoreTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
-                tx[i][j] = manager[i].beginTransaction(StandardTransactionHandleConfig.of());
+                tx[i][j] = manager[i].beginTransaction(getTxConfig());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
@@ -112,7 +112,7 @@ public abstract class LockKeyColumnValueStoreTest {
     }
 
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
-        StoreTransaction transaction = manager.beginTransaction(StandardTransactionHandleConfig.of());
+        StoreTransaction transaction = manager.beginTransaction(getTxConfig());
         if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
             transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionHandleConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
         }

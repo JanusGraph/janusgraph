@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.*;
 
 import org.junit.*;
@@ -24,7 +25,7 @@ import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 
-public abstract class KeyColumnValueStoreTest {
+public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Rule
     public TestName name = new TestName();
@@ -55,7 +56,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public StoreTransaction startTx() throws StorageException {
-        return manager.beginTransaction(StandardTransactionHandleConfig.of());
+        return manager.beginTransaction(getTxConfig());
     }
 
     public StoreFeatures storeFeatures() {

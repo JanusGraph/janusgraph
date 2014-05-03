@@ -287,7 +287,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     private long getTime(StoreTransaction txh) {
-        return txh.getConfiguration().getTimestamp().getTime(times.getUnit());
+        return times.getTime(times.getUnit());
     }
 
     private class RowIterator implements KeyIterator {
