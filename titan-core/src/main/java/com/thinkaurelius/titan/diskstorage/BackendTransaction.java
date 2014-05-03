@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +54,8 @@ public class BackendTransaction implements LoggableTransaction {
     private final TransactionHandleConfig txConfig;
     private final StoreFeatures storeFeatures;
 
-    private final KeyColumnValueStore edgeStore;
-    private final KeyColumnValueStore indexStore;
+    private final KCVSCache edgeStore;
+    private final KCVSCache indexStore;
 
     private final Duration maxReadTime;
 
@@ -63,7 +64,7 @@ public class BackendTransaction implements LoggableTransaction {
     private final Map<String, IndexTransaction> indexTx;
 
     public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
-                              StoreFeatures features, KeyColumnValueStore edgeStore, KeyColumnValueStore indexStore,
+                              StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
                               Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
@@ -168,8 +169,8 @@ public class BackendTransaction implements LoggableTransaction {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        edgeStore.mutate(key, additions, deletions, storeTx);
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        edgeStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**
@@ -180,8 +181,8 @@ public class BackendTransaction implements LoggableTransaction {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        indexStore.mutate(key, additions, deletions, storeTx);
+    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        indexStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**

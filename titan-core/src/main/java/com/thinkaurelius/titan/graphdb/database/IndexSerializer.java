@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.HashingUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
@@ -48,9 +49,14 @@ public class IndexSerializer {
     private final Serializer serializer;
     private final Map<String, ? extends IndexInformation> externalIndexes;
 
-    public IndexSerializer(Serializer serializer, Map<String, ? extends IndexInformation> indexes) {
+    private final boolean hashKeys;
+    private final HashingUtil.HashLength hashLength = HashingUtil.HashLength.SHORT;
+
+    public IndexSerializer(Serializer serializer, Map<String, ? extends IndexInformation> indexes, final boolean hashKeys) {
         this.serializer = serializer;
         this.externalIndexes = indexes;
+        this.hashKeys=hashKeys;
+        if (hashKeys) log.info("Hashing index keys");
     }
 
 
@@ -586,7 +592,9 @@ public class IndexSerializer {
             }
         }
         VariableLong.writePositiveBackward(out, index.getID());
-        return out.getStaticBuffer();
+        StaticBuffer key = out.getStaticBuffer();
+        if (hashKeys) key = HashingUtil.hashPrefixKey(hashLength,key);
+        return key;
     }
 
     private final Entry getIndexEntry(InternalIndexType index, RecordEntry[] record, TitanElement element) {

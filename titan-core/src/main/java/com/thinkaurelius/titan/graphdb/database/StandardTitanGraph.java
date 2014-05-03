@@ -103,7 +103,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.idManager = idAssigner.getIDManager();
 
         this.serializer = config.getSerializer();
-        this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
+        StoreFeatures storeFeatures = backend.getStoreFeatures();
+        this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation(),storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
@@ -390,7 +391,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             Preconditions.checkArgument(vertex.getID() > 0, "Vertex has no id: %s", vertex.getID());
             List<InternalRelation> edges = mutations.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
-            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
+            List<Entry> deletions = new ArrayList<Entry>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
                 InternalType baseType = (InternalType) edge.getType();
                 assert baseType.getBaseType()==null;
@@ -402,7 +403,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         if (edge.getVertex(pos).equals(vertex)) {
                             Entry entry = edgeSerializer.writeRelation(edge, pos, tx);
                             if (edge.isRemoved()) {
-                                deletions.add(entry.getColumn());
+                                deletions.add(entry);
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
                                 additions.add(entry);
@@ -422,9 +423,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (indexUpdate.isInternalIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
-                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
+                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()),ImmutableList.<Entry>of());
                 else
-                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry().getColumn()));
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
                 IndexTransaction itx = mutator.getIndexTransactionHandle(update.getIndex().getBackingIndexName());

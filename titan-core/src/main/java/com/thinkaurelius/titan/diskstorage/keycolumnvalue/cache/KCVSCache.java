@@ -43,6 +43,10 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException("Only supports mutateEntries()");
+    }
+
+    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws StorageException {
         assert txh instanceof CacheTransaction;
         ((CacheTransaction) txh).mutate(this, key, additions, deletions);
     }

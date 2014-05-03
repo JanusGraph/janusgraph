@@ -2,9 +2,12 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.core.time.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
@@ -35,7 +38,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final Duration maxWriteTime;
 
     private int numMutations;
-    private final Map<KCVSCache, Map<StaticBuffer, KCVMutation>> mutations;
+    private final Map<KCVSCache, Map<StaticBuffer, KCVEntryMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager,
                              int persistChunkSize, Duration maxWriteTime, boolean batchLoading) {
@@ -51,24 +54,24 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         this.numMutations = 0;
         this.persistChunkSize = persistChunkSize;
         this.maxWriteTime = maxWriteTime;
-        this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVMutation>>(expectedNumStores);
+        this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVEntryMutation>>(expectedNumStores);
     }
 
     public StoreTransaction getWrappedTransactionHandle() {
         return tx;
     }
 
-    void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
+    void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
         Preconditions.checkNotNull(store);
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
-        KCVMutation m = new KCVMutation(additions, deletions);
-        Map<StaticBuffer, KCVMutation> storeMutation = mutations.get(store);
+        KCVEntryMutation m = new KCVEntryMutation(additions, deletions);
+        Map<StaticBuffer, KCVEntryMutation> storeMutation = mutations.get(store);
         if (storeMutation == null) {
-            storeMutation = new HashMap<StaticBuffer, KCVMutation>();
+            storeMutation = new HashMap<StaticBuffer, KCVEntryMutation>();
             mutations.put(store, storeMutation);
         }
-        KCVMutation existingM = storeMutation.get(key);
+        KCVEntryMutation existingM = storeMutation.get(key);
         if (existingM != null) {
             existingM.merge(m);
         } else {
@@ -99,13 +102,13 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         return 0;
     }
 
-    private int mutationSize(Map<StaticBuffer, KCVMutation> mutation) {
+    private int mutationSize(Map<StaticBuffer, KCVEntryMutation> mutation) {
         int size = 0;
-        for (KCVMutation mut : mutation.values()) size+=mut.getTotalMutations();
+        for (KCVEntryMutation mut : mutation.values()) size+=mut.getTotalMutations();
         return size;
     }
 
-    private static final Function<Entry,StaticBuffer> CONSOLIDATION_FCT = new Function<Entry, StaticBuffer>() {
+    private static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = new Function<Entry, StaticBuffer>() {
         @Nullable
         @Override
         public StaticBuffer apply(@Nullable Entry entry) {
@@ -113,47 +116,48 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         }
     };
 
+    private KCVMutation convert(KCVEntryMutation mutation) {
+        assert !mutation.isEmpty();
+        if (!mutation.hasDeletions())
+            return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
+        else
+            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), ENTRY2COLUMN_FCT)));
+    }
+
     private void flushInternal() throws StorageException {
         if (numMutations > 0) {
             //Consolidate mutations
-            for (Map<StaticBuffer, KCVMutation> store : mutations.values()) {
-                for (KCVMutation mut : store.values()) mut.consolidate(CONSOLIDATION_FCT);
+            for (Map<StaticBuffer, KCVEntryMutation> store : mutations.values()) {
+                for (KCVEntryMutation mut : store.values()) mut.consolidate(ENTRY2COLUMN_FCT, ENTRY2COLUMN_FCT);
             }
 
-            //Chuck up mutations
+            //Chunk up mutations
             final Map<String, Map<StaticBuffer, KCVMutation>> subMutations = new HashMap<String, Map<StaticBuffer, KCVMutation>>(mutations.size());
             int numSubMutations = 0;
-            for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
-                int mutSize = mutationSize(storeMuts.getValue());
-                if (mutSize==0) continue;
-                if ((numSubMutations+mutSize)*3/2<= persistChunkSize) {
-                    subMutations.put(storeMuts.getKey().getName(),storeMuts.getValue());
-                    numSubMutations+=mutSize;
-                    if (numSubMutations>= persistChunkSize) numSubMutations = persist(subMutations);
-                } else { //Split it up
-                    Map<StaticBuffer, KCVMutation> sub = new HashMap<StaticBuffer, KCVMutation>();
-                    subMutations.put(storeMuts.getKey().getName(),sub);
-                    for (Map.Entry<StaticBuffer,KCVMutation> muts : storeMuts.getValue().entrySet()) {
-                        sub.put(muts.getKey(),muts.getValue());
-                        numSubMutations+=muts.getValue().getTotalMutations();
-                        if (numSubMutations>= persistChunkSize) {
-                            numSubMutations = persist(subMutations);
-                            sub.clear();
-                            subMutations.put(storeMuts.getKey().getName(),sub);
-                        }
+            for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVEntryMutation>> storeMuts : mutations.entrySet()) {
+                Map<StaticBuffer, KCVMutation> sub = new HashMap<StaticBuffer, KCVMutation>();
+                subMutations.put(storeMuts.getKey().getName(),sub);
+                for (Map.Entry<StaticBuffer,KCVEntryMutation> muts : storeMuts.getValue().entrySet()) {
+                    if (muts.getValue().isEmpty()) continue;
+                    sub.put(muts.getKey(), convert(muts.getValue()));
+                    numSubMutations+=muts.getValue().getTotalMutations();
+                    if (numSubMutations>= persistChunkSize) {
+                        numSubMutations = persist(subMutations);
+                        sub.clear();
+                        subMutations.put(storeMuts.getKey().getName(),sub);
                     }
                 }
             }
             if (numSubMutations>0) persist(subMutations);
 
 
-            for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
+            for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVEntryMutation>> storeMuts : mutations.entrySet()) {
                 KCVSCache cache = storeMuts.getKey();
-                for (Map.Entry<StaticBuffer,KCVMutation> muts : storeMuts.getValue().entrySet()) {
+                for (Map.Entry<StaticBuffer,KCVEntryMutation> muts : storeMuts.getValue().entrySet()) {
                     if (cache.hasValidateKeysOnly()) {
                         cache.invalidate(muts.getKey(), Collections.EMPTY_LIST);
                     } else {
-                        KCVMutation m = muts.getValue();
+                        KCVEntryMutation m = muts.getValue();
                         List<CachableStaticBuffer> entries = new ArrayList<CachableStaticBuffer>(m.getTotalMutations());
                         for (Entry e : m.getAdditions()) {
                             assert e instanceof CachableStaticBuffer;
@@ -172,7 +176,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     private void clear() {
-        for (Map.Entry<KCVSCache, Map<StaticBuffer, KCVMutation>> entry : mutations.entrySet()) {
+        for (Map.Entry<KCVSCache, Map<StaticBuffer, KCVEntryMutation>> entry : mutations.entrySet()) {
             entry.getValue().clear();
         }
         numMutations = 0;
@@ -182,20 +186,21 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     public void logMutations(DataOutput out) {
         Preconditions.checkArgument(!batchLoading,"Cannot log entire mutation set when batch-loading is enabled");
         VariableLong.writePositive(out,mutations.size());
-        for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVMutation>> storeMuts : mutations.entrySet()) {
+        for (Map.Entry<KCVSCache,Map<StaticBuffer, KCVEntryMutation>> storeMuts : mutations.entrySet()) {
             out.writeObjectNotNull(storeMuts.getKey().getName());
             VariableLong.writePositive(out,storeMuts.getValue().size());
-            for (Map.Entry<StaticBuffer,KCVMutation> muts : storeMuts.getValue().entrySet()) {
+            for (Map.Entry<StaticBuffer,KCVEntryMutation> muts : storeMuts.getValue().entrySet()) {
                 BufferUtil.writeBuffer(out,muts.getKey());
-                KCVMutation mut = muts.getValue();
-                List<Entry> adds = mut.getAdditions();
-                VariableLong.writePositive(out,adds.size());
-                for (Entry add : adds) BufferUtil.writeEntry(out,add);
-                List<StaticBuffer> dels = mut.getDeletions();
-                VariableLong.writePositive(out,dels.size());
-                for (StaticBuffer del: dels) BufferUtil.writeBuffer(out,del);
+                KCVEntryMutation mut = muts.getValue();
+                logMutatedEntries(out,mut.getAdditions());
+                logMutatedEntries(out,mut.getDeletions());
             }
         }
+    }
+
+    private void logMutatedEntries(DataOutput out, List<Entry> entries) {
+        VariableLong.writePositive(out,entries.size());
+        for (Entry add : entries) BufferUtil.writeEntry(out,add);
     }
 
     @Override

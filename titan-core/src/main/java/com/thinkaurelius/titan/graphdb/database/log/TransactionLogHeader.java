@@ -4,8 +4,8 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.indexing.HashPrefixKeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.HashingUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
@@ -30,7 +30,7 @@ public class TransactionLogHeader {
         this.backendTimeUnit = backendTimeUnit;
         Preconditions.checkArgument(this.transactionId > 0);
         Preconditions.checkNotNull(this.txTimestamp);
-        logKey = HashPrefixKeyColumnValueStore.prefixKey(HashPrefixKeyColumnValueStore.HashLength.SHORT,BufferUtil.getLongBuffer(transactionId));
+        logKey = HashingUtil.hashPrefixKey(HashingUtil.HashLength.SHORT, BufferUtil.getLongBuffer(transactionId));
     }
 
 
@@ -102,7 +102,7 @@ public class TransactionLogHeader {
 
         public Entry(TransactionLogHeader header, StaticBuffer content, LogTxStatus status,
                      EnumMap<LogTxMeta,Object> metadata) {
-            Preconditions.checkArgument(status!=null && metadata!=null);
+            Preconditions.checkArgument(status != null && metadata != null);
             Preconditions.checkArgument(header!=null);
             Preconditions.checkArgument(content==null || content.length()>0);
             this.header = header;

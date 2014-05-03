@@ -111,6 +111,9 @@ public class Mutation<E,K> {
         }
     }
 
+    public boolean isEmpty() {
+        return getTotalMutations()==0;
+    }
 
     public int getTotalMutations() {
         return (additions==null?0:additions.size()) + (deletions==null?0:deletions.size());
@@ -118,18 +121,25 @@ public class Mutation<E,K> {
 
     /**
      * Consolidates this mutation by removing redundant deletions. A deletion is considered redundant if
-     * it is identical to some addition since we consider additions to apply logically after deletions.
+     * it is identical to some addition under the provided conversion functions since we consider additions to apply logically after deletions.
      * Hence, such a deletion would be applied and immediately overwritten by an addition. To avoid this
      * inefficiency, consolidation should be called.
+     * </p>
+     * The provided conversion functions map additions and deletions into some object space V for comparison.
+     * An addition is considered identical to a deletion if both map to the same object (i.e. equals=true) with the respective
+     * conversion functions.
+     * </p>
+     * It needs to be ensured that V objects have valid hashCode() and equals() implementations.
      *
-     * @param convert Function which maps additions onto deletions. It needs to be ensure that K has valid hashCode() and equals()
+     * @param convertAdds Function which maps additions onto comparison objects.
+     * @param convertDels Function which maps deletions onto comparison objects.
      */
-    public void consolidate(Function<E,K> convert) {
+    public<V> void consolidate(Function<E,V> convertAdds, Function<K,V> convertDels) {
         if (hasDeletions() && hasAdditions()) {
-            Set<K> adds = Sets.newHashSet(Iterables.transform(additions,convert));
+            Set<V> adds = Sets.newHashSet(Iterables.transform(additions,convertAdds));
             Iterator<K> iter = deletions.iterator();
             while (iter.hasNext()) {
-                if (adds.contains(iter.next())) iter.remove();
+                if (adds.contains(convertDels.apply(iter.next()))) iter.remove();
             }
         }
     }

@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
@@ -97,8 +98,8 @@ public class Backend implements LockerProvider {
     private final KeyColumnValueStoreManager storeManagerLocking;
     private final StoreFeatures storeFeatures;
 
-    private KeyColumnValueStore edgeStore;
-    private KeyColumnValueStore indexStore;
+    private KCVSCache edgeStore;
+    private KCVSCache indexStore;
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
 
@@ -217,12 +218,12 @@ public class Backend implements LockerProvider {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
 
-            edgeStore = storeManagerLocking.openDatabase(EDGESTORE_NAME);
-            indexStore = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
+            KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
+            KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
             if (reportMetrics) {
-                edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsStoreName("edgeStore"));
-                indexStore = new MetricInstrumentedStore(indexStore, getMetricsStoreName("vertexIndexStore"));
+                edgeStoreRaw = new MetricInstrumentedStore(edgeStoreRaw, getMetricsStoreName("edgeStore"));
+                indexStoreRaw = new MetricInstrumentedStore(indexStoreRaw, getMetricsStoreName("vertexIndexStore"));
             }
 
             //Configure caches
@@ -248,17 +249,11 @@ public class Backend implements LockerProvider {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStore,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStore,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
             } else {
-                edgeStore = new NoKCVSCache(edgeStore);
-                indexStore = new NoKCVSCache(indexStore);
-            }
-
-            boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
-            if (hashPrefixIndex) {
-                log.info("Wrapping index store with HashPrefix");
-                indexStore = new HashPrefixKeyColumnValueStore(indexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
+                edgeStore = new NoKCVSCache(edgeStoreRaw);
+                indexStore = new NoKCVSCache(indexStoreRaw);
             }
 
             //Just open them so that they are cached
@@ -414,18 +409,6 @@ public class Backend implements LockerProvider {
         return ConfigurationUtil.instantiate(clazzname, new Object[]{config}, new Class[]{Configuration.class});
     }
 
-
-    //1. Store
-//
-//    public KeyColumnValueStore getEdgeStore() {
-//        Preconditions.checkNotNull(edgeStore, "Backend has not yet been initialized");
-//        return edgeStore;
-//    }
-//
-//    public KeyColumnValueStore getVertexIndexStore() {
-//        Preconditions.checkNotNull(vertexIndexStore, "Backend has not yet been initialized");
-//        return vertexIndexStore;
-//    }
 
     /**
      * Returns the configured {@link IDAuthority}.
