@@ -56,6 +56,8 @@ public class Timer {
 
     public String toString() {
         TimeUnit u = times.getUnit();
+        if (start==null) return "Initialized";
+        if (stop==null) return String.format("Started at %d %s",start.getTime(u),u);
         return String.format("%d %s", stop.getTime(u) - start.getTime(u), u);
     }
 }
