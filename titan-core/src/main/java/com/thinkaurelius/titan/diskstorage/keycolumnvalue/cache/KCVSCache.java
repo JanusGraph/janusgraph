@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -14,6 +15,8 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class KCVSCache implements KeyColumnValueStore {
+
+    public static final List<Entry> NO_DELETIONS = ImmutableList.of();
 
     private final String metricsName;
     private final boolean validateKeysOnly = true;

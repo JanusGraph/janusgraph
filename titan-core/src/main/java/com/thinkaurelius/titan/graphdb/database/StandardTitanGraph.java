@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -423,7 +424,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (indexUpdate.isInternalIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
-                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()),ImmutableList.<Entry>of());
+                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
                 else
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
