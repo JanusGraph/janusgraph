@@ -51,7 +51,6 @@ import java.util.Comparator;
 import static org.easymock.EasyMock.*;
 
 
-@Ignore
 public class ConsistentKeyLockerTest {
 
     // Arbitrary literals -- the exact values assigned here are not intrinsically important
