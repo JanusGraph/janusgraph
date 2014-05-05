@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.HadoopPathElement.MicroElement;
-import com.thinkaurelius.titan.hadoop.formats.rexster.util.ElementIdHandler;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -354,7 +353,6 @@ public class HadoopSerializer {
         return schema;
     }
 
-
     static {
         WritableComparator.define(HadoopPathElement.class, new Comparator());
     }
@@ -385,6 +383,18 @@ public class HadoopSerializer {
     //################################################
     // Serialization for vanilla Blueprints
     //################################################
+
+
+    /**
+     * All graph element identifiers must be of the long data type.  Implementations of this
+     * interface makes it possible to control the conversion of the identifier in the
+     * VertexToFaunusBinary utility class.
+     *
+     * @author Stephen Mallette (http://stephen.genoprime.com)
+     */
+    public static interface ElementIdHandler {
+        long convertIdentifier(final Element element);
+    }
 
     public void writeVertex(final Vertex vertex, final ElementIdHandler elementIdHandler, final DataOutput out) throws IOException {
         Schema schema = new Schema();
