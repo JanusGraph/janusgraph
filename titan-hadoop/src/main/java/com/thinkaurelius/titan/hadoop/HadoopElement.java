@@ -121,8 +121,8 @@ public abstract class HadoopElement implements Element, Comparable<HadoopElement
             //Need to consolidate element states
             final HadoopProperty old = Iterables.getOnlyElement(Iterables.filter(properties.get(property.getType()), new Predicate<HadoopProperty>() {
                 @Override
-                public boolean apply(@Nullable HadoopProperty faunusProperty) {
-                    return faunusProperty.equals(property);
+                public boolean apply(@Nullable HadoopProperty hadoopProperty) {
+                    return hadoopProperty.equals(property);
                 }
             }));
             if (property.isNew() && old.isDeleted()) {

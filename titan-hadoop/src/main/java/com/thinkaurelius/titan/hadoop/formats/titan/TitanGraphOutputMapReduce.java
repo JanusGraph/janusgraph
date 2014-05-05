@@ -64,7 +64,7 @@ public class TitanGraphOutputMapReduce {
     private static final String GRAPH = "graph";
     private static final String MAP_CONTEXT = "mapContext";
 
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";*/
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";*/
 
     public static Graph generateGraph(final Configuration configuration) {
         final Class<? extends OutputFormat> format = configuration.getClass(HadoopGraph.TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);

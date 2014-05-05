@@ -25,8 +25,8 @@ public class WeightedWritableTest extends TestCase {
     }
 
     public void testSerialization() throws IOException {
-        WeightedWritable<Text> a = new WeightedWritable<Text>(11, new Text("faunus"));
-        assertEquals(a.get().toString(), "faunus");
+        WeightedWritable<Text> a = new WeightedWritable<Text>(11, new Text("hadoop"));
+        assertEquals(a.get().toString(), "hadoop");
         assertEquals(a.getWeight(), 11l);
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -34,7 +34,7 @@ public class WeightedWritableTest extends TestCase {
         WeightedWritable<Text> a2 = new WeightedWritable<Text>(new DataInputStream(new ByteArrayInputStream(bytes.toByteArray())));
 
         assertEquals(a, a2);
-        assertEquals(a2.get().toString(), "faunus");
+        assertEquals(a2.get().toString(), "hadoop");
         assertEquals(a2.getWeight(), 11l);
 
         assertEquals(a.compareTo(a2), 0);

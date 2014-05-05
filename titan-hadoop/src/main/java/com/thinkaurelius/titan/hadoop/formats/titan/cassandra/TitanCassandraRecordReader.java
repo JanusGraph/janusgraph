@@ -39,7 +39,7 @@ public class TitanCassandraRecordReader extends RecordReader<NullWritable, Hadoo
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
             // TODO titan05 integration -- the duplicate() call may be unnecessary
-            final HadoopVertex temp = this.graph.readFaunusVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
+            final HadoopVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().duplicate(), this.reader.getCurrentValue());
             if (null != temp) {
                 this.vertex = temp;
                 this.vertexQuery.defaultFilter(this.vertex);

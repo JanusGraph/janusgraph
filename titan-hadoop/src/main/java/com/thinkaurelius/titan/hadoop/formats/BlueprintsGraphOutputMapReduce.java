@@ -40,7 +40,7 @@ import static com.tinkerpop.blueprints.Direction.OUT;
 
 /**
  * BlueprintsGraphOutputMapReduce will write a [NullWritable, HadoopVertex] stream to a Blueprints-enabled graph.
- * This is useful for bulk loading a Faunus graph into a Blueprints graph.
+ * This is useful for bulk loading a Hadoop graph into a Titan graph.
  * Graph writing happens in two distinction phase.
  * During the Map phase, all the vertices of the graph are written.
  * During the Reduce phase, all the edges of the graph are written.
@@ -63,17 +63,17 @@ public class BlueprintsGraphOutputMapReduce {
         FAILED_TRANSACTIONS
     }
 
-    private static final String GET_OR_CREATE_VERTEX = "getOrCreateVertex(faunusVertex,graph,mapContext)";
-    private static final String GET_OR_CREATE_EDGE = "getOrCreateEdge(faunusEdge,blueprintsOutVertex,blueprintsInVertex,graph,mapContext)";
+    private static final String GET_OR_CREATE_VERTEX = "getOrCreateVertex(hadoopVertex,graph,mapContext)";
+    private static final String GET_OR_CREATE_EDGE = "getOrCreateEdge(hadoopEdge,titanOutVertex,titanInVertex,graph,mapContext)";
 
-    private static final String FAUNUS_VERTEX = "faunusVertex";
-    private static final String FAUNUS_EDGE = "faunusEdge";
-    private static final String BLUEPRINTS_OUT_VERTEX = "blueprintsOutVertex";
-    private static final String BLUEPRINTS_IN_VERTEX = "blueprintsInVertex";
+    private static final String HADOOP_VERTEX = "hadoopVertex";
+    private static final String HADOOP_EDGE = "hadoopEdge";
+    private static final String TITAN_OUT_VERTEX = "titanOutVertex";
+    private static final String TITAN_IN_VERTEX = "titanInVertex";
     private static final String GRAPH = "graph";
     private static final String MAP_CONTEXT = "mapContext";
 
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "titan.hadoop.graph.output.blueprints.script-file";
 
     public static final Logger LOGGER = Logger.getLogger(BlueprintsGraphOutputMapReduce.class);
     // some random property that will 'never' be used by anyone
@@ -113,7 +113,7 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+            final String file = context.getConfiguration().get(TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
             if (null != file && firstRead) {
                 final FileSystem fs = FileSystem.get(context.getConfiguration());
                 try {
@@ -145,8 +145,8 @@ public class BlueprintsGraphOutputMapReduce {
                 final HadoopVertex shellVertex = new HadoopVertex(context.getConfiguration(), value.getIdAsLong());
                 shellVertex.setProperty(BLUEPRINTS_ID, blueprintsVertex.getId());
                 // TODO: Might need to be OUT for the sake of unidirectional edges in Titan
-                for (final Edge faunusEdge : value.getEdges(IN)) {
-                    this.longWritable.set((Long) faunusEdge.getVertex(OUT).getId());
+                for (final Edge hadoopEdge : value.getEdges(IN)) {
+                    this.longWritable.set((Long) hadoopEdge.getVertex(OUT).getId());
                     context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                 }
 
@@ -181,19 +181,19 @@ public class BlueprintsGraphOutputMapReduce {
             this.graph.shutdown();
         }
 
-        public Vertex getOrCreateVertex(final HadoopVertex faunusVertex, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>>.Context context) throws InterruptedException {
+        public Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>>.Context context) throws InterruptedException {
             final Vertex blueprintsVertex;
             if (this.loadingFromScratch) {
-                blueprintsVertex = this.graph.addVertex(faunusVertex.getIdAsLong());
+                blueprintsVertex = this.graph.addVertex(hadoopVertex.getIdAsLong());
                 context.getCounter(Counters.VERTICES_WRITTEN).increment(1l);
-                for (final String property : faunusVertex.getPropertyKeys()) {
-                    blueprintsVertex.setProperty(property, faunusVertex.getProperty(property));
+                for (final String property : hadoopVertex.getPropertyKeys()) {
+                    blueprintsVertex.setProperty(property, hadoopVertex.getProperty(property));
                     context.getCounter(Counters.VERTEX_PROPERTIES_WRITTEN).increment(1l);
                 }
             } else {
                 try {
                     final Bindings bindings = engine.createBindings();
-                    bindings.put(FAUNUS_VERTEX, faunusVertex);
+                    bindings.put(HADOOP_VERTEX, hadoopVertex);
                     bindings.put(GRAPH, this.graph);
                     bindings.put(MAP_CONTEXT, context);
                     blueprintsVertex = (Vertex) engine.eval(GET_OR_CREATE_VERTEX, bindings);
@@ -210,24 +210,24 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<HadoopVertex>> values, final Reducer<LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
 
-            HadoopVertex faunusVertex = null;
-            // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
-            final java.util.Map<Long, Object> faunusBlueprintsIdMap = new HashMap<Long, Object>();
+            HadoopVertex hadoopVertex = null;
+            // generate a map of the Hadoop id with the Titan id for all shell vertices (vertices incoming adjacent)
+            final java.util.Map<Long, Object> hadoopTitanIdMap = new HashMap<Long, Object>();
             for (final Holder<HadoopVertex> holder : values) {
                 if (holder.getTag() == 's') {
-                    faunusBlueprintsIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
+                    hadoopTitanIdMap.put(holder.get().getIdAsLong(), holder.get().getProperty(BLUEPRINTS_ID));
                 } else {
                     final HadoopVertex toClone = holder.get();
-                    faunusVertex = new HadoopVertex(context.getConfiguration(), toClone.getIdAsLong());
-                    faunusVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
-                    faunusVertex.addEdges(OUT, toClone);
+                    hadoopVertex = new HadoopVertex(context.getConfiguration(), toClone.getIdAsLong());
+                    hadoopVertex.setProperty(BLUEPRINTS_ID, toClone.getProperty(BLUEPRINTS_ID));
+                    hadoopVertex.addEdges(OUT, toClone);
                 }
             }
-            if (null != faunusVertex) {
-                faunusVertex.setProperty(ID_MAP_KEY, faunusBlueprintsIdMap);
-                context.write(NullWritable.get(), faunusVertex);
+            if (null != hadoopVertex) {
+                hadoopVertex.setProperty(ID_MAP_KEY, hadoopTitanIdMap);
+                context.write(NullWritable.get(), hadoopVertex);
             } else {
-                LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
+                LOGGER.warn("No source vertex: hadoopVertex[" + key.get() + "]");
                 context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
         }
@@ -240,12 +240,12 @@ public class BlueprintsGraphOutputMapReduce {
         static boolean firstRead = true;
         Graph graph;
 
-        private static final HadoopVertex DEAD_FAUNUS_VERTEX = new HadoopVertex();
+        private static final HadoopVertex DEAD_HADOOP_VERTEX = new HadoopVertex();
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+            final String file = context.getConfiguration().get(TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
             if (null != file && firstRead) {
                 final FileSystem fs = FileSystem.get(context.getConfiguration());
                 try {
@@ -268,31 +268,31 @@ public class BlueprintsGraphOutputMapReduce {
         @Override
         public void map(final NullWritable key, final HadoopVertex value, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             try {
-                final java.util.Map<Long, Object> faunusBlueprintsIdMap = value.getProperty(ID_MAP_KEY);
+                final java.util.Map<Long, Object> hadoopTitanIdMap = value.getProperty(ID_MAP_KEY);
                 final Object blueprintsId = value.getProperty(BLUEPRINTS_ID);
                 Vertex blueprintsVertex = null;
                 if (null != blueprintsId)
                     blueprintsVertex = this.graph.getVertex(blueprintsId);
                 // this means that an adjacent vertex to this vertex wasn't created
                 if (null != blueprintsVertex) {
-                    for (final Edge faunusEdge : value.getEdges(OUT)) {
-                        final Object otherId = faunusBlueprintsIdMap.get(faunusEdge.getVertex(IN).getId());
+                    for (final Edge hadoopEdge : value.getEdges(OUT)) {
+                        final Object otherId = hadoopTitanIdMap.get(hadoopEdge.getVertex(IN).getId());
                         Vertex otherVertex = null;
                         if (null != otherId)
                             otherVertex = this.graph.getVertex(otherId);
                         if (null != otherVertex) {
-                            this.getOrCreateEdge((HadoopEdge) faunusEdge, blueprintsVertex, otherVertex, context);
+                            this.getOrCreateEdge((HadoopEdge) hadoopEdge, blueprintsVertex, otherVertex, context);
                         } else {
-                            LOGGER.warn("No target vertex: faunusVertex[" + faunusEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
+                            LOGGER.warn("No target vertex: hadoopVertex[" + hadoopEdge.getVertex(IN).getId() + "] blueprintsVertex[" + otherId + "]");
                             context.getCounter(Counters.NULL_VERTEX_EDGES_IGNORED).increment(1l);
                         }
                     }
                 } else {
-                    LOGGER.warn("No source vertex: faunusVertex[" + NullWritable.get() + "] blueprintsVertex[" + blueprintsId + "]");
+                    LOGGER.warn("No source vertex: hadoopVertex[" + NullWritable.get() + "] titanVertex[" + blueprintsId + "]");
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 }
                 // the emitted vertex is not complete -- assuming this is the end of the stage and vertex is dead
-                context.write(NullWritable.get(), DEAD_FAUNUS_VERTEX);
+                context.write(NullWritable.get(), DEAD_HADOOP_VERTEX);
             } catch (final Exception e) {
                 if (this.graph instanceof TransactionalGraph) {
                     ((TransactionalGraph) this.graph).rollback();
@@ -331,9 +331,9 @@ public class BlueprintsGraphOutputMapReduce {
             } else {
                 try {
                     final Bindings bindings = engine.createBindings();
-                    bindings.put(FAUNUS_EDGE, hadoopEdge);
-                    bindings.put(BLUEPRINTS_OUT_VERTEX, blueprintsOutVertex);
-                    bindings.put(BLUEPRINTS_IN_VERTEX, blueprintsInVertex);
+                    bindings.put(HADOOP_EDGE, hadoopEdge);
+                    bindings.put(TITAN_OUT_VERTEX, blueprintsOutVertex);
+                    bindings.put(TITAN_IN_VERTEX, blueprintsInVertex);
                     bindings.put(GRAPH, this.graph);
                     bindings.put(MAP_CONTEXT, context);
                     blueprintsEdge = (Edge) engine.eval(GET_OR_CREATE_EDGE, bindings);

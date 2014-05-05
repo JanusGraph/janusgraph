@@ -145,7 +145,7 @@ public class HadoopGraph implements Configurable {
     }
 
     public String toString() {
-        return "faunusgraph[" + this.configuration.getClass(TITAN_HADOOP_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
+        return "titangraph[hadoop:" + this.configuration.getClass(TITAN_HADOOP_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
     public HadoopGraph getNextGraph() throws IOException {
@@ -156,17 +156,6 @@ public class HadoopGraph implements Configurable {
             graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(this.configuration), this.getOutputLocation().toString()));
             graph.setOutputLocation(new Path(this.getOutputLocation().toString() + "_"));
         }
-
-        /*
-        TODO: This needs to be put into the "input handler" system
-        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
-        while (itty.hasNext()) {
-            final Map.Entry<String, String> entry = itty.next();
-            if (entry.getKey().startsWith("faunus.graph.output.titan."))  {
-                configuration.set("faunus.graph.input.titan." + entry.getKey().substring("faunus.graph.output.titan.".length()+1), entry.getValue());
-            }
-        }*/
-
         return graph;
     }
 }

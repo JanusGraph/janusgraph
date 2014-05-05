@@ -42,7 +42,6 @@ public class Imports {
         imports.add("com.thinkaurelius.titan.hadoop.formats.noop.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.rexster.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.script.*");
-        imports.add("com.thinkaurelius.titan.hadoop.formats.sequence.faunus01.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.titan.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.titan.hbase.*");
         imports.add("com.thinkaurelius.titan.hadoop.formats.titan.cassandra.*");

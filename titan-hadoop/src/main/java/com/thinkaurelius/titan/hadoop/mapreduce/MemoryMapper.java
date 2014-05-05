@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * MemoryMapper supports in-memory mapping for a chain of consecutive mappers.
  * This provides significant performance improvements as each map need not write its results to disk.
- * Note that MemoryMapper is not general-purpose and is specific to Faunus' current MapReduce library.
+ * Note that MemoryMapper is not general-purpose and is specific to Titan/Hadoop's current MapReduce library.
  * In particular, it assumes that the chain of mappers emits 0 or 1 key/value pairs for each input.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)

@@ -26,7 +26,7 @@ import static com.tinkerpop.blueprints.Direction.*;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class FaunusVertexTest extends BaseTest {
+public class HadoopVertexTest extends BaseTest {
 
     public void testRawComparator() throws IOException {
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
@@ -402,7 +402,7 @@ public class FaunusVertexTest extends BaseTest {
     /*public void testSequenceFileRepresentation() throws Exception {
         final Configuration conf = new Configuration();
         final SequenceFile.Reader reader = new SequenceFile.Reader(
-                FileSystem.get(conf), new Path(FaunusVertexTest.class.getResource("graph-of-the-gods-2.seq").toURI()), conf);
+                FileSystem.get(conf), new Path(HadoopVertexTest.class.getResource("graph-of-the-gods-2.seq").toURI()), conf);
         NullWritable key = NullWritable.get();
         HadoopVertex value = new HadoopVertex();
 

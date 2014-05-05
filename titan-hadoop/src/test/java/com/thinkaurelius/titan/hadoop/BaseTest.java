@@ -51,7 +51,7 @@ public abstract class BaseTest extends TestCase {
         return generateGraph(example, configuration);
     }
 
-    public HadoopGraph createFaunusGraph(final InputStream inputStream) throws Exception {
+    public HadoopGraph createHadoopGraph(final InputStream inputStream) throws Exception {
         Configuration configuration = new Configuration();
         Properties properties = new Properties();
         properties.load(inputStream);
