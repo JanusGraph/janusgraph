@@ -18,7 +18,7 @@ public class Tokens {
 
     public enum Action {DROP, KEEP}
 
-    private static final String NAMESPACE = "faunus.mapreduce";
+    private static final String NAMESPACE = "titan.hadoop.mapreduce";
 
     static {
         try {
@@ -27,9 +27,9 @@ public class Tokens {
 
             VERSION = versionReader.readLine();
 
-            log.debug("Loaded Faunus version " + VERSION + " from classloader resource " + VERSION_RESOURCE);
+            log.debug("Loaded Titan/Hadoop version " + VERSION + " from classloader resource " + VERSION_RESOURCE);
         } catch (Throwable t) {
-            log.error("The Faunus version file " + VERSION_RESOURCE + " could not be found on the classpath: " + t);
+            log.error("The Titan/Hadoop version file " + VERSION_RESOURCE + " could not be found on the classpath: " + t);
             throw new RuntimeException(t);
         }
     }
@@ -65,8 +65,8 @@ public class Tokens {
     public static final String BZ2 = "bz2";
 
     public static int DEFAULT_MAP_SPILL_OVER = 500;
-    public static final String HADOOP_PIPELINE_MAP_SPILL_OVER = "hadoop.pipeline.map-spill-over";
-    public static final String HADOOP_PIPELINE_TRACK_PATHS = "hadoop.pipeline.track-paths";
-    public static final String HADOOP_PIPELINE_TRACK_STATE = "hadoop.pipeline.track-state";
+    public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = "titan.hadoop.pipeline.map-spill-over";
+    public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = "titan.hadoop.pipeline.track-paths";
+    public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = "titan.hadoop.pipeline.track-state";
 
 }

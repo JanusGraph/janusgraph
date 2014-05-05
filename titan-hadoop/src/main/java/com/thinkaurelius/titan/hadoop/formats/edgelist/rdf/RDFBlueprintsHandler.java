@@ -75,15 +75,15 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
         this.configuration = configuration;
-        this.useFragments = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
-        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
-        for (final String property : configuration.getStringCollection(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
+        this.useFragments = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
+        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
+        for (final String property : configuration.getStringCollection(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
         }
 
-        String formatName = configuration.get(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_FORMAT);
+        String formatName = configuration.get(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
         if (null == formatName) {
-            throw new RuntimeException("RDF format is required. Use " + RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_FORMAT);
+            throw new RuntimeException("RDF format is required. Use " + RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
         }
         RDFFormat format = formats.get(formatName);
         if (null == format) {

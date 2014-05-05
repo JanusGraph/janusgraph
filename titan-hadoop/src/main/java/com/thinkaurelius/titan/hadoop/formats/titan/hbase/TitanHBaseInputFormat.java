@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class TitanHBaseInputFormat extends TitanInputFormat {
 
-    public static final String FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "faunus.graph.input.titan.storage.tablename";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "titan.hadoop.graph.input.titan.storage.tablename";
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
@@ -52,10 +52,10 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
 
 
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, config.get(FAUNUS_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        if (config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT));
+        config.set(TableInputFormat.INPUT_TABLE, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
+        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        if (config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT));
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();

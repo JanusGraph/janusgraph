@@ -22,7 +22,7 @@ import java.util.List;
  */
 public class EdgeCopyMapReduce {
 
-    public static final String HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION = "hadoop.graph.input.edge-copy.direction";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION = "titan.hadoop.graph.input.edge-copy.direction";
 
     public enum Counters {
         EDGES_COPIED,
@@ -31,7 +31,7 @@ public class EdgeCopyMapReduce {
 
     public static Configuration createConfiguration(final Direction direction) {
         final Configuration configuration = new EmptyConfiguration();
-        configuration.setEnum(HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);
+        configuration.setEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, direction);
         return configuration;
     }
 
@@ -43,7 +43,7 @@ public class EdgeCopyMapReduce {
 
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }
@@ -72,7 +72,7 @@ public class EdgeCopyMapReduce {
 
         @Override
         public void setup(final Reduce.Context context) throws IOException, InterruptedException {
-            this.direction = context.getConfiguration().getEnum(HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
+            this.direction = context.getConfiguration().getEnum(TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT);
             if (this.direction.equals(Direction.BOTH))
                 throw new InterruptedException(ExceptionFactory.bothIsNotSupported().getMessage());
         }

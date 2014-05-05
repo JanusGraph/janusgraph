@@ -20,7 +20,7 @@ public class ScriptRecordReaderTest extends BaseTest {
 
     public void testRecordReader() throws Exception {
         final Configuration conf = new Configuration();
-        conf.setStrings(ScriptInputFormat.HADOOP_GRAPH_INPUT_SCRIPT_FILE, ScriptRecordReaderTest.class.getResource("ScriptInput.groovy").getFile());
+        conf.setStrings(ScriptInputFormat.TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE, ScriptRecordReaderTest.class.getResource("ScriptInput.groovy").getFile());
         ScriptRecordReader reader = new ScriptRecordReader(VertexQueryFilter.create(new EmptyConfiguration()), new TaskAttemptContext(conf, new TaskAttemptID()));
         reader.initialize(new FileSplit(new Path(ScriptRecordReaderTest.class.getResource("graph-of-the-gods.id").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 new TaskAttemptContext(conf, new TaskAttemptID()));

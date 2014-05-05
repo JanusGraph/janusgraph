@@ -20,13 +20,13 @@ import java.util.Map;
  */
 public class HadoopGraph implements Configurable {
 
-    public static final String FAUNUS_GRAPH_INPUT_FORMAT = "faunus.graph.input.format";
-    public static final String FAUNUS_INPUT_LOCATION = "faunus.input.location";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_FORMAT = "titan.hadoop.graph.input.format";
+    public static final String TITAN_HADOOP_INPUT_LOCATION = "titan.hadoop.input.location";
 
-    public static final String FAUNUS_GRAPH_OUTPUT_FORMAT = "faunus.graph.output.format";
-    public static final String FAUNUS_SIDEEFFECT_OUTPUT_FORMAT = "faunus.sideeffect.output.format";
-    public static final String FAUNUS_OUTPUT_LOCATION = "faunus.output.location";
-    public static final String FAUNUS_OUTPUT_LOCATION_OVERWRITE = "faunus.output.location.overwrite";
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_FORMAT = "titan.hadoop.graph.output.format";
+    public static final String TITAN_HADOOP_SIDEEFFECT_OUTPUT_FORMAT = "titan.hadoop.sideeffect.output.format";
+    public static final String TITAN_HADOOP_OUTPUT_LOCATION = "titan.hadoop.output.location";
+    public static final String TITAN_HADOOP_OUTPUT_LOCATION_OVERWRITE = "titan.hadoop.output.location.overwrite";
 
     private Configuration configuration;
 
@@ -60,41 +60,41 @@ public class HadoopGraph implements Configurable {
     // GRAPH INPUT AND OUTPUT FORMATS
 
     public Class<? extends InputFormat> getGraphInputFormat() {
-        return this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class, InputFormat.class);
+        return this.configuration.getClass(TITAN_HADOOP_GRAPH_INPUT_FORMAT, InputFormat.class, InputFormat.class);
     }
 
     public void setGraphInputFormat(final Class<? extends InputFormat> format) {
-        this.configuration.setClass(FAUNUS_GRAPH_INPUT_FORMAT, format, InputFormat.class);
+        this.configuration.setClass(TITAN_HADOOP_GRAPH_INPUT_FORMAT, format, InputFormat.class);
     }
 
     public Class<? extends OutputFormat> getGraphOutputFormat() {
-        return this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
     public void setGraphOutputFormat(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(FAUNUS_GRAPH_OUTPUT_FORMAT, format, OutputFormat.class);
+        this.configuration.setClass(TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // SIDE-EFFECT OUTPUT FORMAT
 
     public Class<? extends OutputFormat> getSideEffectOutputFormat() {
-        return this.configuration.getClass(FAUNUS_SIDEEFFECT_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        return this.configuration.getClass(TITAN_HADOOP_SIDEEFFECT_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
     }
 
     public void setSideEffectOutputFormat(final Class<? extends OutputFormat> format) {
-        this.configuration.setClass(FAUNUS_SIDEEFFECT_OUTPUT_FORMAT, format, OutputFormat.class);
+        this.configuration.setClass(TITAN_HADOOP_SIDEEFFECT_OUTPUT_FORMAT, format, OutputFormat.class);
     }
 
     // INPUT AND OUTPUT LOCATIONS
 
     public Path getInputLocation() {
-        if (null == this.configuration.get(FAUNUS_INPUT_LOCATION))
+        if (null == this.configuration.get(TITAN_HADOOP_INPUT_LOCATION))
             return null;
-        return new Path(this.configuration.get(FAUNUS_INPUT_LOCATION));
+        return new Path(this.configuration.get(TITAN_HADOOP_INPUT_LOCATION));
     }
 
     public void setInputLocation(final Path path) {
-        this.configuration.set(FAUNUS_INPUT_LOCATION, path.toString());
+        this.configuration.set(TITAN_HADOOP_INPUT_LOCATION, path.toString());
     }
 
     public void setInputLocation(final String path) {
@@ -102,14 +102,14 @@ public class HadoopGraph implements Configurable {
     }
 
     public Path getOutputLocation() {
-        if (null == this.configuration.get(FAUNUS_OUTPUT_LOCATION))
-            throw new IllegalStateException("Please set " + FAUNUS_OUTPUT_LOCATION + " configuration option.");
+        if (null == this.configuration.get(TITAN_HADOOP_OUTPUT_LOCATION))
+            throw new IllegalStateException("Please set " + TITAN_HADOOP_OUTPUT_LOCATION + " configuration option.");
 
-        return new Path(this.configuration.get(FAUNUS_OUTPUT_LOCATION));
+        return new Path(this.configuration.get(TITAN_HADOOP_OUTPUT_LOCATION));
     }
 
     public void setOutputLocation(final Path path) {
-        this.configuration.set(FAUNUS_OUTPUT_LOCATION, path.toString());
+        this.configuration.set(TITAN_HADOOP_OUTPUT_LOCATION, path.toString());
     }
 
     public void setOutputLocation(final String path) {
@@ -117,27 +117,27 @@ public class HadoopGraph implements Configurable {
     }
 
     public boolean getOutputLocationOverwrite() {
-        return this.configuration.getBoolean(FAUNUS_OUTPUT_LOCATION_OVERWRITE, false);
+        return this.configuration.getBoolean(TITAN_HADOOP_OUTPUT_LOCATION_OVERWRITE, false);
     }
 
     public void setOutputLocationOverwrite(final boolean overwrite) {
-        this.configuration.setBoolean(FAUNUS_OUTPUT_LOCATION_OVERWRITE, overwrite);
+        this.configuration.setBoolean(TITAN_HADOOP_OUTPUT_LOCATION_OVERWRITE, overwrite);
     }
 
     public void setTrackPaths(final boolean trackPaths) {
-        this.configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, trackPaths);
+        this.configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, trackPaths);
     }
 
     public boolean getTrackPaths() {
-        return this.configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+        return this.configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
     }
 
     public void setTrackState(final boolean trackState) {
-        this.configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, trackState);
+        this.configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, trackState);
     }
 
     public boolean getTrackState() {
-        return this.configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
+        return this.configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
     }
 
     public void shutdown() {
@@ -145,7 +145,7 @@ public class HadoopGraph implements Configurable {
     }
 
     public String toString() {
-        return "faunusgraph[" + this.configuration.getClass(FAUNUS_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
+        return "titangraph[hadoop:" + this.configuration.getClass(TITAN_HADOOP_GRAPH_INPUT_FORMAT, InputFormat.class).getSimpleName().toLowerCase() + "->" + this.configuration.getClass(TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class).getSimpleName().toLowerCase() + "]";
     }
 
     public HadoopGraph getNextGraph() throws IOException {
@@ -156,17 +156,6 @@ public class HadoopGraph implements Configurable {
             graph.setInputLocation(HDFSTools.getOutputsFinalJob(FileSystem.get(this.configuration), this.getOutputLocation().toString()));
             graph.setOutputLocation(new Path(this.getOutputLocation().toString() + "_"));
         }
-
-        /*
-        TODO: This needs to be put into the "input handler" system
-        final Iterator<Map.Entry<String, String>> itty = this.configuration.iterator();
-        while (itty.hasNext()) {
-            final Map.Entry<String, String> entry = itty.next();
-            if (entry.getKey().startsWith("faunus.graph.output.titan."))  {
-                configuration.set("faunus.graph.input.titan." + entry.getKey().substring("faunus.graph.output.titan.".length()+1), entry.getValue());
-            }
-        }*/
-
         return graph;
     }
 }

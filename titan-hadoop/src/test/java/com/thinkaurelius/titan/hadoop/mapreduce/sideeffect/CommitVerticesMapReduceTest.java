@@ -30,7 +30,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testKeepAllVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -50,7 +50,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropAllVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.DROP);
-        //config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> results = runWithGraph(startPath(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), Vertex.class), mapReduceDriver);
@@ -63,7 +63,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testKeepProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
-        //config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);
@@ -85,7 +85,7 @@ public class CommitVerticesMapReduceTest extends BaseTest {
 
     public void testDropProjectVertices() throws Exception {
         Configuration config = CommitVerticesMapReduce.createConfiguration(Tokens.Action.KEEP);
-        //config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, true);
+        //config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config);

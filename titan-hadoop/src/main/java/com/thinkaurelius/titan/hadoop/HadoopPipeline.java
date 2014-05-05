@@ -62,7 +62,7 @@ import static com.tinkerpop.blueprints.Direction.*;
 
 /**
  * A HadoopPipeline defines a breadth-first traversal through a property graph representation.
- * Gremlin/Faunus compiles down to a HadoopPipeline which is ultimately a series of MapReduce jobs.
+ * Gremlin/Hadoop compiles down to a HadoopPipeline which is ultimately a series of MapReduce jobs.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
@@ -208,7 +208,7 @@ public class HadoopPipeline {
             }
         }
 
-        if (null != this.graph.getConf().get(EdgeCopyMapReduce.HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
+        if (null != this.graph.getConf().get(EdgeCopyMapReduce.TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION)) {
             this.compiler.addMapReduce(EdgeCopyMapReduce.Map.class,
                     null,
                     EdgeCopyMapReduce.Reduce.class,
@@ -217,7 +217,7 @@ public class HadoopPipeline {
                     Holder.class,
                     NullWritable.class,
                     HadoopVertex.class,
-                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
+                    EdgeCopyMapReduce.createConfiguration(this.graph.getConf().getEnum(EdgeCopyMapReduce.TITAN_HADOOP_GRAPH_INPUT_EDGE_COPY_DIRECTION, Direction.OUT)));
         }
     }
 
@@ -1064,7 +1064,7 @@ public class HadoopPipeline {
      * Submit the HadoopPipeline to the Hadoop cluster and ensure that a header is emitted in the logs.
      *
      * @param script     the Gremlin script
-     * @param showHeader the Faunus header
+     * @param showHeader the Titan/Hadoop header
      * @throws Exception
      */
     public void submit(final String script, final Boolean showHeader) throws Exception {

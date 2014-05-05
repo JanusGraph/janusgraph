@@ -45,15 +45,15 @@ if [ "$1" = "-e" -o "$1" = "-i" ]; then
   fi
 
   if [ "$1" = "-e" ]; then
-      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.ScriptExecutor $k
+      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.ScriptExecutor $k
   else
-      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.InlineScriptExecutor $k
+      eval $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.InlineScriptExecutor $k
   fi
 else
   if [ "$1" = "-v" ]; then
-    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.Version
+    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Version
   else
-    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.faunus.tinkerpop.gremlin.Console
+    $JAVA $JAVA_OPTIONS -cp $CP:$CLASSPATH com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Console
   fi
 fi
 

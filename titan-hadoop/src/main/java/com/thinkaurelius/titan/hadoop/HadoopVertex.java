@@ -96,8 +96,8 @@ public class HadoopVertex extends HadoopPathElement implements Vertex {
         return Iterables.transform(Iterables.filter(properties.get(type), FILTER_DELETED_PROPERTIES), new Function<HadoopProperty, T>() {
             @Nullable
             @Override
-            public T apply(@Nullable HadoopProperty faunusProperty) {
-                return (T) faunusProperty.getValue();
+            public T apply(@Nullable HadoopProperty hadoopProperty) {
+                return (T) hadoopProperty.getValue();
             }
         });
     }

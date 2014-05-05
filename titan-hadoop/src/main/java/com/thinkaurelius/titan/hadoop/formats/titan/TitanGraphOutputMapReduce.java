@@ -64,12 +64,12 @@ public class TitanGraphOutputMapReduce {
     private static final String GRAPH = "graph";
     private static final String MAP_CONTEXT = "mapContext";
 
-    public static final String FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";*/
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE = "faunus.graph.output.blueprints.script-file";*/
 
     public static Graph generateGraph(final Configuration configuration) {
-        final Class<? extends OutputFormat> format = configuration.getClass(HadoopGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        final Class<? extends OutputFormat> format = configuration.getClass(HadoopGraph.TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return TitanFactory.open(ConfigurationUtil.extractConfiguration(configuration, TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN));
+            return TitanFactory.open(ConfigurationUtil.extractConfiguration(configuration, TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN));
         } else {
             throw new RuntimeException("The provide graph output format is not a supported TitanOutputFormat: " + format.getName());
         }
@@ -94,7 +94,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = TitanGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.trackState = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
+            this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
 
@@ -106,8 +106,8 @@ public class TitanGraphOutputMapReduce {
                     // Propagate shell vertices with Blueprints ids
                     final HadoopVertex shellVertex = new HadoopVertex(context.getConfiguration(), value.getIdAsLong());
                     shellVertex.setProperty(TITAN_ID, titanVertex.getId());
-                    for (final Edge faunusEdge : value.getEdges(OUT)) {
-                        this.longWritable.set((Long) faunusEdge.getVertex(IN).getId());
+                    for (final Edge hadoopEdge : value.getEdges(OUT)) {
+                        this.longWritable.set((Long) hadoopEdge.getVertex(IN).getId());
                         context.write(this.longWritable, this.vertexHolder.set('s', shellVertex));
                     }
 
@@ -143,9 +143,9 @@ public class TitanGraphOutputMapReduce {
             this.graph.shutdown();
         }
 
-        public Vertex getCreateOrDeleteVertex(final HadoopVertex faunusVertex, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>>.Context context) throws InterruptedException {
-            if (this.trackState && faunusVertex.isDeleted()) {
-                final Vertex titanVertex = this.graph.getVertex(faunusVertex.getId());
+        public Vertex getCreateOrDeleteVertex(final HadoopVertex hadoopVertex, final Mapper<NullWritable, HadoopVertex, LongWritable, Holder<HadoopVertex>>.Context context) throws InterruptedException {
+            if (this.trackState && hadoopVertex.isDeleted()) {
+                final Vertex titanVertex = this.graph.getVertex(hadoopVertex.getId());
                 if (null == titanVertex)
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 else {
@@ -153,18 +153,18 @@ public class TitanGraphOutputMapReduce {
                     context.getCounter(Counters.VERTICES_REMOVED).increment(1l);
                 }
                 return null;
-            } else if (this.trackState && faunusVertex.isLoaded()) {
-                final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getId());
+            } else if (this.trackState && hadoopVertex.isLoaded()) {
+                final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(hadoopVertex.getId());
                 if (null == titanVertex)
                     context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 else {
-                    for (final HadoopProperty faunusProperty : faunusVertex.getPropertiesWithState()) {
-                        if (faunusProperty.isNew()) {
-                            titanVertex.addProperty(faunusProperty.getName(), faunusProperty.getValue());
+                    for (final HadoopProperty hadoopProperty : hadoopVertex.getPropertiesWithState()) {
+                        if (hadoopProperty.isNew()) {
+                            titanVertex.addProperty(hadoopProperty.getName(), hadoopProperty.getValue());
                             context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
-                        } else if (faunusProperty.isDeleted()) {
-                            for (final TitanProperty titanProperty : titanVertex.getProperties(faunusProperty.getName())) {
-                                if (titanProperty.getID() == faunusProperty.getIdAsLong()) {
+                        } else if (hadoopProperty.isDeleted()) {
+                            for (final TitanProperty titanProperty : titanVertex.getProperties(hadoopProperty.getName())) {
+                                if (titanProperty.getID() == hadoopProperty.getIdAsLong()) {
                                     titanProperty.remove();
                                     context.getCounter(Counters.VERTEX_PROPERTIES_REMOVED).increment(1l);
                                 }
@@ -174,9 +174,9 @@ public class TitanGraphOutputMapReduce {
                 }
                 return titanVertex;
             } else {   // state == new || !trackState
-                final TitanVertex titanVertex = (TitanVertex) this.graph.addVertex(faunusVertex.getId());
+                final TitanVertex titanVertex = (TitanVertex) this.graph.addVertex(hadoopVertex.getId());
                 context.getCounter(Counters.VERTICES_ADDED).increment(1l);
-                for (final HadoopProperty property : faunusVertex.getProperties()) {
+                for (final HadoopProperty property : hadoopVertex.getProperties()) {
                     titanVertex.addProperty(property.getName(), property.getValue());
                     context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
                 }
@@ -189,21 +189,21 @@ public class TitanGraphOutputMapReduce {
 
         @Override
         public void reduce(final LongWritable key, final Iterable<Holder<HadoopVertex>> values, final Reducer<LongWritable, Holder<HadoopVertex>, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
-            HadoopVertex faunusVertex = null;
-            // generate a map of the faunus id with the blueprints id for all shell vertices (vertices incoming adjacent)
+            HadoopVertex hadoopVertex = null;
+            // generate a map of the Titan/Hadoop id with the Titan id for all shell vertices (vertices incoming adjacent)
             final java.util.Map<Long, Object> idMap = new HashMap<Long, Object>();
             for (final Holder<HadoopVertex> holder : values) {
                 if (holder.getTag() == 's') {
                     idMap.put(holder.get().getIdAsLong(), holder.get().getProperty(TITAN_ID));
                 } else {
-                    faunusVertex = holder.get();
+                    hadoopVertex = holder.get();
                 }
             }
-            if (null != faunusVertex) {
-                faunusVertex.setProperty(ID_MAP_KEY, idMap);
-                context.write(NullWritable.get(), faunusVertex);
+            if (null != hadoopVertex) {
+                hadoopVertex.setProperty(ID_MAP_KEY, idMap);
+                context.write(NullWritable.get(), hadoopVertex);
             } else {
-                LOGGER.warn("No source vertex: faunusVertex[" + key.get() + "]");
+                LOGGER.warn("No source vertex: hadoopVertex[" + key.get() + "]");
                 context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
         }
@@ -218,7 +218,7 @@ public class TitanGraphOutputMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.graph = TitanGraphOutputMapReduce.generateGraph(context.getConfiguration());
-            this.trackState = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
+            this.trackState = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
             LOGGER.setLevel(Level.INFO);
         }
 
@@ -253,9 +253,9 @@ public class TitanGraphOutputMapReduce {
             this.graph.shutdown();
         }
 
-        public Edge getCreateOrDeleteEdge(final HadoopVertex faunusVertex, final HadoopEdge hadoopEdge, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws InterruptedException {
-            final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(faunusVertex.getProperty(TITAN_ID));
-            final java.util.Map<Long, Object> idMap = faunusVertex.getProperty(ID_MAP_KEY);
+        public Edge getCreateOrDeleteEdge(final HadoopVertex hadoopVertex, final HadoopEdge hadoopEdge, final Mapper<NullWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws InterruptedException {
+            final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(hadoopVertex.getProperty(TITAN_ID));
+            final java.util.Map<Long, Object> idMap = hadoopVertex.getProperty(ID_MAP_KEY);
             final boolean isModified = hadoopEdge.isModified();
             if (this.trackState && (isModified || hadoopEdge.isDeleted())) {
                 final TitanEdge titanEdge = this.getIncident(titanVertex, hadoopEdge, idMap.get(hadoopEdge.getVertexId(OUT)));
@@ -269,8 +269,8 @@ public class TitanGraphOutputMapReduce {
             if (isModified || hadoopEdge.isNew()) {
                 final TitanEdge titanEdge = (TitanEdge) this.graph.getVertex(idMap.get(hadoopEdge.getVertexId(OUT))).addEdge(hadoopEdge.getLabel(), titanVertex);
                 context.getCounter(Counters.EDGES_ADDED).increment(1l);
-                for (final HadoopProperty faunusProperty : hadoopEdge.getProperties()) {
-                    titanEdge.setProperty(faunusProperty.getName(), faunusProperty.getValue());
+                for (final HadoopProperty hadoopProperty : hadoopEdge.getProperties()) {
+                    titanEdge.setProperty(hadoopProperty.getName(), hadoopProperty.getValue());
                     context.getCounter(Counters.EDGE_PROPERTIES_ADDED).increment(1l);
                 }
                 return titanEdge;

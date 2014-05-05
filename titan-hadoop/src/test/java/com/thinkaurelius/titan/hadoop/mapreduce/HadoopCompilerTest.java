@@ -89,7 +89,7 @@ public class HadoopCompilerTest extends TestCase {
     public void testConfigurationPersistence() throws Exception {
         Configuration conf = new Configuration();
         conf.setInt("mapred.reduce.tasks", 2);
-        conf.setBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, false);
+        conf.setBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, false);
         HadoopGraph graph = new HadoopGraph(conf);
         HadoopPipeline pipeline = new HadoopPipeline(graph);
         HadoopCompiler compiler = pipeline.getCompiler();
@@ -97,12 +97,12 @@ public class HadoopCompilerTest extends TestCase {
 
         assertEquals(graph.getConf().getInt("mapred.reduce.tasks", -1), 2);
         assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
-        assertFalse(graph.getConf().getBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
-        assertFalse(compiler.getConf().getBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(graph.getConf().getBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(compiler.getConf().getBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
         outputFormat.addMapReduceJobs(compiler);
         assertEquals(compiler.jobs.size(), 1);
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
-        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
         assertEquals(graph.getConf().getInt("mapred.reduce.tasks", -1), 2);
         assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
 
@@ -110,9 +110,9 @@ public class HadoopCompilerTest extends TestCase {
         compiler.completeSequence();
         assertEquals(compiler.jobs.size(), 2);
         assertEquals(compiler.jobs.get(0).getConfiguration().getInt("mapred.reduce.tasks", -1), 2);
-        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(compiler.jobs.get(0).getConfiguration().getBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
         assertEquals(compiler.jobs.get(1).getConfiguration().getInt("mapred.reduce.tasks", -1), 0);
-        assertFalse(compiler.jobs.get(1).getConfiguration().getBoolean(TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
+        assertFalse(compiler.jobs.get(1).getConfiguration().getBoolean(TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true));
         assertEquals(graph.getConf().getInt("mapred.reduce.tasks", -1), 2);
         assertEquals(compiler.getConf().getInt("mapred.reduce.tasks", -1), 2);
     }

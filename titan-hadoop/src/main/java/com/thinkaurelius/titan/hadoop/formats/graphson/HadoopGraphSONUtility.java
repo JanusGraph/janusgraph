@@ -45,7 +45,7 @@ public class HadoopGraphSONUtility {
     private static final Set<String> VERTEX_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, _OUT_E, _IN_E));
     private static final Set<String> EDGE_IGNORE = new HashSet<String>(Arrays.asList(GraphSONTokens._TYPE, GraphSONTokens._OUT_V, GraphSONTokens._IN_V));
 
-    private static final FaunusElementFactory elementFactory = new FaunusElementFactory();
+    private static final HadoopElementFactory elementFactory = new HadoopElementFactory();
 
     private static final GraphSONUtility graphson = new GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
             ElementPropertyConfig.ExcludeProperties(VERTEX_IGNORE, EDGE_IGNORE));
@@ -152,7 +152,7 @@ public class HadoopGraphSONUtility {
         return elementPropertyKeys;
     }
 
-    private static class FaunusElementFactory implements ElementFactory<HadoopVertex, HadoopEdge>, Configurable {
+    private static class HadoopElementFactory implements ElementFactory<HadoopVertex, HadoopEdge>, Configurable {
 
         private Configuration configuration;
 

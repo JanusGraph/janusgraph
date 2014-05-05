@@ -54,7 +54,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
     public void testTinkerGraphIncrementalVertexLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
         Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
         vertexMapReduceDriver.withConfiguration(conf);
         Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
@@ -83,7 +83,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         incrementalGraph.put(22l, stephen1);
         incrementalGraph.put(33l, vadas1);
         conf = new Configuration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
 
 
         setUp();
@@ -200,7 +200,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
     public void testTinkerGraphIncrementalEdgeLoading() throws Exception {
         TinkerGraphOutputMapReduce.graph = new TinkerGraph();
         Configuration conf = BlueprintsGraphOutputMapReduce.createConfiguration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
         vertexMapReduceDriver.withConfiguration(conf);
         Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, conf), vertexMapReduceDriver);
         edgeMapReduceDriver.withConfiguration(conf);
@@ -226,7 +226,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
         incrementalGraph.put(22l, lop1);
         incrementalGraph.put(33l, vadas1);
         conf = new Configuration();
-        conf.set(BlueprintsGraphOutputMapReduce.FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
+        conf.set(BlueprintsGraphOutputMapReduce.TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, "./data/BlueprintsScript.groovy");
 
         setUp();
         vertexMapReduceDriver.withConfiguration(conf);
@@ -519,7 +519,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
             public void setup(final Mapper.Context context) throws IOException, InterruptedException {
                 this.graph = TinkerGraphOutputMapReduce.getGraph();
                 // this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-                final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+                final String file = context.getConfiguration().get(TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
                 if (null != file && firstRead) {
                     final FileSystem fs = FileSystem.get(context.getConfiguration());
                     try {
@@ -549,7 +549,7 @@ public class BlueprintsGraphOutputMapReduceTest extends BaseTest {
             public void setup(final Mapper.Context context) throws IOException, InterruptedException {
                 this.graph = TinkerGraphOutputMapReduce.getGraph();
                 //this.graph = BlueprintsGraphOutputMapReduce.generateGraph(context.getConfiguration());
-                final String file = context.getConfiguration().get(FAUNUS_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
+                final String file = context.getConfiguration().get(TITAN_HADOOP_GRAPH_OUTPUT_BLUEPRINTS_SCRIPT_FILE, null);
                 if (null != file && firstRead) {
                     final FileSystem fs = FileSystem.get(context.getConfiguration());
                     try {

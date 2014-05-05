@@ -17,7 +17,7 @@ import java.io.IOException;
  */
 public class Console {
 
-    private static final String HISTORY_FILE = ".gremlin_faunus_history";
+    private static final String HISTORY_FILE = ".gremlin_titan_hadoop_history";
     private static final String STANDARD_INPUT_PROMPT = "gremlin> ";
     private static final String STANDARD_RESULT_PROMPT = "==>";
 

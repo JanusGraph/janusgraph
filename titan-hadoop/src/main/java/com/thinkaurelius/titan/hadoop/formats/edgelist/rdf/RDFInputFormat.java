@@ -23,10 +23,10 @@ import java.io.IOException;
  */
 public class RDFInputFormat extends FileInputFormat<NullWritable, HadoopElement> implements MapReduceFormat {
 
-    public static final String HADOOP_GRAPH_INPUT_RDF_FORMAT = "hadoop.graph.input.rdf.format";
-    public static final String HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME = "hadoop.graph.input.rdf.use-localname";
-    public static final String HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES = "hadoop.graph.input.rdf.as-properties";
-    public static final String HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY = "hadoop.graph.input.rdf.literal-as-property";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT = "titan.hadoop.graph.input.rdf.format";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME = "titan.hadoop.graph.input.rdf.use-localname";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES = "titan.hadoop.graph.input.rdf.as-properties";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY = "titan.hadoop.graph.input.rdf.literal-as-property";
 
     public static final String URI = "uri";
     public static final String CONTEXT = "context";

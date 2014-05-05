@@ -25,7 +25,7 @@ import java.util.Set;
 
 public class VertexQueryFilter extends DefaultVertexQuery {
 
-    public static final String FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER = "faunus.graph.input.vertex-query-filter";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER = "titan.hadoop.graph.input.vertex-query-filter";
 
     private static final GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
     private static final String V = "v";
@@ -40,8 +40,8 @@ public class VertexQueryFilter extends DefaultVertexQuery {
     public static VertexQueryFilter create(final Configuration configuration) {
         engine.put(V, DUMMY_VERTEX);
         try {
-            VertexQueryFilter query = (VertexQueryFilter) engine.eval(configuration.get(FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query()"));
-            if (null != configuration.get(FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER))
+            VertexQueryFilter query = (VertexQueryFilter) engine.eval(configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query()"));
+            if (null != configuration.get(TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER))
                 query.setDoesFilter(true);
             return query;
         } catch (final Exception e) {
