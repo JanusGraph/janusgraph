@@ -47,7 +47,7 @@ public abstract class BaseTest extends TestCase {
 
     public static Map<Long, HadoopVertex> generateGraph(final ExampleGraph example) throws Exception {
         Configuration configuration = new Configuration();
-        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+        configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
         return generateGraph(example, configuration);
     }
 

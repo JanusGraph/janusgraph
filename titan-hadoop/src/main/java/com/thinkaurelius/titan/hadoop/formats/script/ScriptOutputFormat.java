@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class ScriptOutputFormat extends HadoopFileOutputFormat {
 
-    public static final String HADOOP_GRAPH_OUTPUT_SCRIPT_FILE = "hadoop.graph.output.script.file";
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_SCRIPT_FILE = "titan.hadoop.graph.output.script.file";
 
     @Override
     public RecordWriter<NullWritable, HadoopVertex> getRecordWriter(final TaskAttemptContext job) throws IOException, InterruptedException {

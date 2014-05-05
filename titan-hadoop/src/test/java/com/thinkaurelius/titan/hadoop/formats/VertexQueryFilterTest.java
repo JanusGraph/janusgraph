@@ -36,7 +36,7 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testVertexQueryConstruction() {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0).direction(IN).labels('knows')");
+        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0).direction(IN).labels('knows')");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         assertTrue(query.doesFilter());
         assertEquals(query.limit, 0);
@@ -48,7 +48,7 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testDefaultFilterLimitZeroTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0)");
+        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(0)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
         for (HadoopVertex vertex : graph.values()) {
@@ -61,7 +61,7 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testDefaultFilterLimitOneTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(1)");
+        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().limit(1)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
         for (HadoopVertex vertex : graph.values()) {
@@ -72,7 +72,7 @@ public class VertexQueryFilterTest extends BaseTest {
 
     public void testDefaultFilterHasTinkerGraph() throws Exception {
         Configuration config = new Configuration();
-        config.set(VertexQueryFilter.FAUNUS_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',Compare.LESS_THAN,0.5d).limit(5)");
+        config.set(VertexQueryFilter.TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER, "v.query().has('weight',Compare.LESS_THAN,0.5d).limit(5)");
         VertexQueryFilter query = VertexQueryFilter.create(config);
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH);
 

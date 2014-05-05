@@ -33,7 +33,7 @@ public class CyclicPathFilterMap {
     public static Configuration createConfiguration(final Class<? extends Element> klass) {
         final Configuration configuration = new EmptyConfiguration();
         configuration.setClass(CLASS, klass, Element.class);
-        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         return configuration;
     }
 

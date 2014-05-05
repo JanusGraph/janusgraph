@@ -31,7 +31,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
     public void testOutCreatedTraversalWithPaths() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT, "created");
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 
@@ -74,7 +74,7 @@ public class VerticesEdgesMapReduceTest extends BaseTest {
 
     public void testOutAllTraversalWithPaths() throws Exception {
         Configuration config = VerticesEdgesMapReduce.createConfiguration(Direction.OUT);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 

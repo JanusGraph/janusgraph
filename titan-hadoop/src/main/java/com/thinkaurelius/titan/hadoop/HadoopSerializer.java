@@ -56,8 +56,8 @@ public class HadoopSerializer {
         this.serializer = new StandardSerializer(true);
         this.types = HadoopType.DEFAULT_MANAGER;
         this.configuration = configuration;
-        this.trackState = configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
-        this.trackPaths = configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+        this.trackState = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
+        this.trackPaths = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
     }
 
     public void writeVertex(final HadoopVertex vertex, final DataOutput out) throws IOException {

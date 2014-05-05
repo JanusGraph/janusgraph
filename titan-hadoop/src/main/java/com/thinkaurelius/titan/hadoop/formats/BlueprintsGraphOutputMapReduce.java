@@ -81,9 +81,9 @@ public class BlueprintsGraphOutputMapReduce {
     public static final String ID_MAP_KEY = "_iDMaPKeY";
 
     public static Graph generateGraph(final Configuration config) {
-        final Class<? extends OutputFormat> format = config.getClass(HadoopGraph.FAUNUS_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
+        final Class<? extends OutputFormat> format = config.getClass(HadoopGraph.TITAN_HADOOP_GRAPH_OUTPUT_FORMAT, OutputFormat.class, OutputFormat.class);
         if (TitanOutputFormat.class.isAssignableFrom(format)) {
-            return TitanFactory.open(ConfigurationUtil.extractConfiguration(config, TitanOutputFormat.HADOOP_GRAPH_OUTPUT_TITAN));
+            return TitanFactory.open(ConfigurationUtil.extractConfiguration(config, TitanOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_TITAN));
         } else {
             // TODO: this is where Rexster can come into play here
             throw new RuntimeException("The provide graph output format is not supported: " + format.getName());

@@ -33,7 +33,7 @@ public class ScriptRecordWriter extends RecordWriter<NullWritable, HadoopVertex>
         final FileSystem fs = FileSystem.get(configuration);
         try {
             this.engine.put(OUTPUT, this.out);
-            this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(ScriptOutputFormat.HADOOP_GRAPH_OUTPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(configuration.get(ScriptOutputFormat.TITAN_HADOOP_GRAPH_OUTPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

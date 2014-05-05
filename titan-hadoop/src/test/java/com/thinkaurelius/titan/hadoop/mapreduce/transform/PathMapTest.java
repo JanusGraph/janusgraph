@@ -64,7 +64,7 @@ public class PathMapTest extends BaseTest {
 
     public void testPathsAndGetException() throws Exception {
         Configuration config = PathMap.createConfiguration(Vertex.class);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
 
         mapReduceDriver.withConfiguration(config);
 

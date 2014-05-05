@@ -68,7 +68,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
     public void testDedupVerticesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Vertex.class);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = generateGraph(ExampleGraph.TINKERGRAPH, config);
@@ -106,7 +106,7 @@ public class DuplicateFilterMapTest extends BaseTest {
 
     public void testDedupEdgesWithPaths() throws Exception {
         Configuration config = DuplicateFilterMap.createConfiguration(Edge.class);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
 
         mapReduceDriver.withConfiguration(config);
 

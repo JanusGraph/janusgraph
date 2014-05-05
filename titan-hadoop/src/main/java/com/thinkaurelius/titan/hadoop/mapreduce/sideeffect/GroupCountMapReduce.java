@@ -66,7 +66,7 @@ public class GroupCountMapReduce {
         @Override
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             try {
-                this.mapSpillOver = context.getConfiguration().getInt(Tokens.HADOOP_PIPELINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
+                this.mapSpillOver = context.getConfiguration().getInt(Tokens.TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER, Tokens.DEFAULT_MAP_SPILL_OVER);
                 final String keyClosureString = context.getConfiguration().get(KEY_CLOSURE, null);
                 if (null == keyClosureString)
                     this.keyClosure = null;

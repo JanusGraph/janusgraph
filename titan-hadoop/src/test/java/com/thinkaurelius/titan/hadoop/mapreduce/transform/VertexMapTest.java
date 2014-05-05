@@ -50,7 +50,7 @@ public class VertexMapTest extends BaseTest {
 
     public void testVerticesWithPaths() throws Exception {
         Configuration config = VertexMap.createConfiguration(1, 2, 2346, 2345, 3333, 1, 1, 2);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);

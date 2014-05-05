@@ -139,7 +139,7 @@ public class FaunusVertexTest extends BaseTest {
 
     public void testVertexSerializationWithPaths() throws IOException {
         Configuration configuration = new EmptyConfiguration();
-        configuration.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        configuration.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
 
         HadoopVertex vertex1 = new HadoopVertex(EmptyConfiguration.immutable(), 10);
         vertex1.setConf(configuration);

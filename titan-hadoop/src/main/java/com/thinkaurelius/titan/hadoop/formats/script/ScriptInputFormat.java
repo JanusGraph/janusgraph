@@ -31,7 +31,7 @@ import java.io.IOException;
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, HadoopVertex> implements Configurable {
 
-    public static final String HADOOP_GRAPH_INPUT_SCRIPT_FILE = "hadoop.graph.input.script.file";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE = "titan.hadoop.graph.input.script.file";
     private VertexQueryFilter vertexQuery;
     private Configuration config;
 

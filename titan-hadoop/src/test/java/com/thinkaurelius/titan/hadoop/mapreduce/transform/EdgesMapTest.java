@@ -49,7 +49,7 @@ public class EdgesMapTest extends BaseTest {
 
     public void testEdgesWithPaths() throws Exception {
         Configuration config = EdgesMap.createConfiguration(false);
-        config.setBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, true);
+        config.setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, true);
         mapReduceDriver.withConfiguration(config);
 
         Map<Long, HadoopVertex> graph = runWithGraph(generateGraph(BaseTest.ExampleGraph.TINKERGRAPH, config), mapReduceDriver);

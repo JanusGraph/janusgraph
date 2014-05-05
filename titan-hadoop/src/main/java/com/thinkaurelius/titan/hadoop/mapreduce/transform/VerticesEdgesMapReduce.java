@@ -53,7 +53,7 @@ public class VerticesEdgesMapReduce {
         public void setup(final Mapper.Context context) throws IOException, InterruptedException {
             this.direction = Direction.valueOf(context.getConfiguration().get(DIRECTION));
             this.labels = context.getConfiguration().getStrings(LABELS, new String[0]);
-            this.trackPaths = context.getConfiguration().getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+            this.trackPaths = context.getConfiguration().getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
         }
 
         @Override
