@@ -126,7 +126,7 @@ public class ConfigurationTest {
 
     @Test
     public void printTitanNS() {
-        System.out.println(ConfigElement.toString(GraphDatabaseConfiguration.TITAN_NS));
+        System.out.println(ConfigElement.toString(GraphDatabaseConfiguration.ROOT_NS));
     }
 
 

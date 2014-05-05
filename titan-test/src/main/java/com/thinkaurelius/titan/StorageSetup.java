@@ -7,12 +7,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import com.thinkaurelius.titan.util.system.IOUtils;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -62,17 +59,17 @@ public class StorageSetup {
     }
 
     public static WriteConfiguration addPermanentCache(ModifiableConfiguration conf) {
-        conf.set(DB_CACHE,true);
+        conf.set(DB_CACHE, true);
         conf.set(DB_CACHE_TIME,0l);
         return conf.getConfiguration();
     }
 
     public static ModifiableConfiguration getConfig(WriteConfiguration config) {
-        return new ModifiableConfiguration(TITAN_NS,config, BasicConfiguration.Restriction.NONE);
+        return new ModifiableConfiguration(ROOT_NS,config, BasicConfiguration.Restriction.NONE);
     }
 
     public static BasicConfiguration getConfig(ReadConfiguration config) {
-        return new BasicConfiguration(TITAN_NS,config, BasicConfiguration.Restriction.NONE);
+        return new BasicConfiguration(ROOT_NS,config, BasicConfiguration.Restriction.NONE);
     }
 
 }

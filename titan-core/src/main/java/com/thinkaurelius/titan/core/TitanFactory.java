@@ -164,7 +164,7 @@ public class TitanFactory {
             String secondArg = null;
             if (pos+1<shortcutOrFile.length()) secondArg = shortcutOrFile.substring(pos + 1).trim();
             BaseConfiguration config = new BaseConfiguration();
-            ModifiableConfiguration writeConfig = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
+            ModifiableConfiguration writeConfig = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
             writeConfig.set(STORAGE_BACKEND,backend);
             ConfigOption option = Backend.REGISTERED_STORAGE_MANAGERS_SHORTHAND.get(backend.toLowerCase());
             if (option==null) {

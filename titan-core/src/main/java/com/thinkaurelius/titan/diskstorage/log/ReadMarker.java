@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.Timestamps;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timestamps;
 
 import java.util.concurrent.TimeUnit;
 
@@ -12,11 +13,13 @@ import java.util.concurrent.TimeUnit;
 public class ReadMarker {
 
     private final String identifier;
-    private final Timepoint startTime;
+    private final long sinceEpoch;
+    private final TimeUnit unit;
 
-    private ReadMarker(String identifier, Timepoint startTime) {
+    private ReadMarker(String identifier, long sinceEpoch, TimeUnit unit) {
         this.identifier = identifier;
-        this.startTime = startTime;
+        this.sinceEpoch = sinceEpoch;
+        this.unit = unit;
     }
 
     /**
@@ -40,8 +43,9 @@ public class ReadMarker {
      * Returns the start time of this marker in microseconds
      * @return
      */
-    public Timepoint getStartTime() {
-        return startTime;
+    public Timepoint getStartTime(TimestampProvider times) {
+        if (unit==null) return times.getTime();
+        return times.getTime(sinceEpoch,unit);
     }
 
     /**
@@ -50,7 +54,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, Timestamps.MICRO.getTime());
+        return new ReadMarker(null, 0, null);
     }
 
     /**
@@ -59,7 +63,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromTime(long timestamp, TimeUnit unit) {
-        return new ReadMarker(null, new Timepoint(timestamp, unit));
+        return new ReadMarker(null, timestamp, unit);
     }
 
     /**
@@ -76,7 +80,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromIdentifierOrTime(String id, long timestamp, TimeUnit unit) {
-        return new ReadMarker(id, new Timepoint(timestamp, unit));
+        return new ReadMarker(id, timestamp, unit);
     }
 
 }

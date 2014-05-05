@@ -1,7 +1,11 @@
-package com.thinkaurelius.titan.core.time;
+package com.thinkaurelius.titan.util.time;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A zero-length {@link Duration} singleton.
+ *
+ */
 public class ZeroDuration implements Duration {
 
     public static Duration INSTANCE = new ZeroDuration();
@@ -22,6 +26,10 @@ public class ZeroDuration implements Duration {
         return 0;
     }
 
+    public TimeUnit getNativeUnit() {
+        return TimeUnit.NANOSECONDS;
+    }
+
     @Override
     public Duration sub(Duration subtrahend) {
         return this;
@@ -38,7 +46,7 @@ public class ZeroDuration implements Duration {
     }
 
     @Override
-    public Duration mult(double multiplier) {
+    public Duration multiply(double multiplier) {
         return this;
     }
 }

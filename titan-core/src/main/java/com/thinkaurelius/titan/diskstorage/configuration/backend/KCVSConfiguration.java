@@ -6,10 +6,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
-import com.thinkaurelius.titan.core.time.ZeroDuration;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -48,7 +48,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final StandardSerializer serializer;
 
     private boolean closeManager = false;
-    private Duration maxOperationWaitTime = new SimpleDuration(10000L, TimeUnit.MILLISECONDS);
+    private Duration maxOperationWaitTime = new StandardDuration(10000L, TimeUnit.MILLISECONDS);
 
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, TimestampProvider times,

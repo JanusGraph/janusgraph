@@ -1,23 +1,27 @@
-package com.thinkaurelius.titan.core.time;
+package com.thinkaurelius.titan.util.time;
 
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.esotericsoftware.kryo.DefaultSerializer;
 import com.google.common.base.Preconditions;
 
-@DefaultSerializer(SimpleDurationKryoSerializer.class)
-public class SimpleDuration implements Duration {
+public class StandardDuration implements Duration {
 
     private static final Logger log =
-            LoggerFactory.getLogger(SimpleDuration.class);
+            LoggerFactory.getLogger(StandardDuration.class);
 
     private final long length;
     private final TimeUnit unit;
 
-    public SimpleDuration(long length, TimeUnit unit) {
+    private StandardDuration() {
+        //For Kryo
+        length=0;
+        unit = null;
+    }
+
+    public StandardDuration(long length, TimeUnit unit) {
         this.length = length;
         this.unit = unit;
         Preconditions.checkArgument(0 <= this.length, "Time durations must be non-negative");
@@ -63,12 +67,12 @@ public class SimpleDuration implements Duration {
         if (0 > result) {
             result = 0;
         }
-        return new SimpleDuration(result, unit);
+        return new StandardDuration(result, unit);
     }
 
     @Override
     public Duration add(Duration addend) {
-        return new SimpleDuration(getLength(unit) + addend.getLength(unit), unit);
+        return new StandardDuration(getLength(unit) + addend.getLength(unit), unit);
     }
 
     @Override
@@ -76,15 +80,16 @@ public class SimpleDuration implements Duration {
         return length == 0;
     }
 
+    @Override
     public TimeUnit getNativeUnit() {
         return unit;
     }
 
     @Override
-    public Duration mult(double multiplier) {
+    public Duration multiply(double multiplier) {
         Preconditions.checkArgument(0 <= multiplier, "Time multiplier %d is negative", multiplier);
-        long newLength = (long)(length * multiplier);
-        if (newLength < length) {
+        long newLength = Math.round(length * multiplier);
+        if (multiplier>=1.0 && newLength < length) {
             /*
              * Trying to be clever with unit conversions to avoid overflow is a
              * waste of effort. A duration long enough to trigger this condition
@@ -95,7 +100,7 @@ public class SimpleDuration implements Duration {
             log.warn("Duration overflow detected: {} * {} exceeds representable range of long; using Long.MAX_VALUE instead", length, multiplier);
             newLength = Long.MAX_VALUE;
         }
-        return new SimpleDuration(newLength, unit);
+        return new StandardDuration(newLength, unit);
     }
 
     @Override
@@ -112,7 +117,7 @@ public class SimpleDuration implements Duration {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        SimpleDuration other = (SimpleDuration) obj;
+        StandardDuration other = (StandardDuration) obj;
 
         return other.getLength(unit) == length;
     }

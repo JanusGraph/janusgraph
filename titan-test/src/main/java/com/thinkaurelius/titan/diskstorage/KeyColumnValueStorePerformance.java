@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.carrotsearch.junitbenchmarks.BenchmarkRule;
-import com.thinkaurelius.titan.core.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 

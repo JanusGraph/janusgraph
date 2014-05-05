@@ -1,10 +1,19 @@
-package com.thinkaurelius.titan.core.time;
+package com.thinkaurelius.titan.util.time;
 
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implementations of {@link TimestampProvider} for different resolutions of time:
+ * <ul>
+ *     <li>NANO: nano-second time resolution based on System.nanoTime using a base-time established
+ *     by System.currentTimeMillis(). The exact resolution depends on the particular JVM and host machine.</li>
+ *     <li>MICRO: micro-second time which is actually at milli-second resolution.</li>
+ *     <li>MILLI: milli-second time resolution</li>
+ * </ul>
+ */
 public enum Timestamps implements TimestampProvider {
     NANO {
 
@@ -60,17 +69,12 @@ public enum Timestamps implements TimestampProvider {
          */
         @Override
         public Timepoint getTime() {
-            return new Timepoint(getTimeInternal(), TimeUnit.NANOSECONDS);
+            return new StandardTimepoint(getTimeInternal(), NANO);
         }
 
         @Override
         public TimeUnit getUnit() {
             return TimeUnit.NANOSECONDS;
-        }
-
-        @Override
-        public long getTime(TimeUnit unit) {
-            return unit.convert(getTimeInternal(), TimeUnit.NANOSECONDS);
         }
 
         private final long getTimeInternal() {
@@ -81,34 +85,24 @@ public enum Timestamps implements TimestampProvider {
     MICRO {
         @Override
         public Timepoint getTime() {
-            return new Timepoint(System.currentTimeMillis() * 1000L, TimeUnit.MICROSECONDS);
+            return new StandardTimepoint(System.currentTimeMillis() * 1000L, MICRO);
         }
 
         @Override
         public TimeUnit getUnit() {
             return TimeUnit.MICROSECONDS;
         }
-
-        @Override
-        public long getTime(TimeUnit unit) {
-            return unit.convert(System.currentTimeMillis() * 1000L, TimeUnit.MICROSECONDS);
-        }
     },
 
     MILLI {
         @Override
         public Timepoint getTime() {
-            return new Timepoint(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+            return new StandardTimepoint(System.currentTimeMillis(), MILLI);
         }
 
         @Override
         public TimeUnit getUnit() {
             return TimeUnit.MILLISECONDS;
-        }
-
-        @Override
-        public long getTime(TimeUnit unit) {
-            return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
         }
     };
 
@@ -123,7 +117,7 @@ public enum Timestamps implements TimestampProvider {
         TimeUnit unit = getUnit();
 
         while ((now = getTime()).compareTo(futureTime) <= 0) {
-            long delta = futureTime.getTime(unit) - now.getTime(unit);
+            long delta = futureTime.getTimestamp(unit) - now.getTimestamp(unit);
             if (0L == delta)
                 delta = 1L;
             /*
@@ -142,7 +136,25 @@ public enum Timestamps implements TimestampProvider {
     }
 
     @Override
+    public void sleepFor(Duration duration) throws InterruptedException {
+        if (duration.isZeroLength()) return;
+
+        TimeUnit unit = duration.getNativeUnit();
+        unit.sleep(duration.getLength(unit));
+    }
+
+    @Override
+    public Timer getTimer() {
+        return new Timer(this);
+    }
+
+    @Override
     public String toString() {
-        return "Timestamps[" + getUnit() + "]";
+        return "Timestamps[" + Durations.abbreviate(getUnit()) + "]";
+    }
+
+    @Override
+    public Timepoint getTime(long sinceEpoch, TimeUnit unit) {
+        return new StandardTimepoint(getUnit().convert(sinceEpoch,unit),this);
     }
 }

@@ -39,7 +39,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
     private static BaseConfiguration getConfiguration() throws Exception {
         BaseConfiguration configuration = new BaseConfiguration();
 
-        ModifiableConfiguration config = new ModifiableConfiguration(TITAN_NS,
+        ModifiableConfiguration config = new ModifiableConfiguration(ROOT_NS,
                 new CommonsConfiguration(configuration),
                 BasicConfiguration.Restriction.NONE);
 
