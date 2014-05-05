@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
 
 /**
  * A single held lock's expiration time. This is used by {@link AbstractLocker}.

@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
-import com.thinkaurelius.titan.core.time.Timestamps;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
@@ -11,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class resolves lock contention between two transactions on the same JVM.

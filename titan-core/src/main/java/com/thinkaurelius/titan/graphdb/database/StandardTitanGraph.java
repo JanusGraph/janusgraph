@@ -5,8 +5,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
@@ -459,8 +459,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
-        tx.getConfiguration().setCommitTime(times.getTime());
-        final Timepoint txTimestamp = tx.getConfiguration().getTimestamp();
+        if (!tx.getConfiguration().hasCommitTime()) tx.getConfiguration().setCommitTime(times.getTime());
+        final Timepoint txTimestamp = tx.getConfiguration().getCommitTime();
         final long transactionId = txCounter.incrementAndGet();
 
         //2. Assign TitanVertex IDs
@@ -472,7 +472,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
-        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times.getUnit());
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp);
 
         //3.1 Commit schema elements and their associated relations
         try {

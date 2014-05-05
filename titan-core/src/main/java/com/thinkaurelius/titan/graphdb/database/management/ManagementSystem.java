@@ -69,7 +69,7 @@ public class ManagementSystem implements TitanManagement {
         this.sysLog = sysLog;
         this.mgmtLogger = mgmtLogger;
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
-        this.modifyConfig = new ModifiableConfiguration(TITAN_NS,
+        this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
         this.userConfig = new UserModifiableConfiguration(modifyConfig,configVerifier);
 

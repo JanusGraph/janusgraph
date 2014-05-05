@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -13,16 +13,13 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.util.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.Durations;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
-import com.thinkaurelius.titan.core.time.Timer;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -79,7 +76,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final TimestampProvider times;
 
     private final int rollbackAttempts = 5;
-    private final Duration rollbackWaitTime = new SimpleDuration(200L, TimeUnit.MILLISECONDS);
+    private final Duration rollbackWaitTime = new StandardDuration(200L, TimeUnit.MILLISECONDS);
 
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
@@ -135,7 +132,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(storeTxConfigBuilder.build());
+        return manager.beginTransaction(storeTxConfigBuilder.startTime(times.getTime()).build());
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
@@ -177,7 +174,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     public synchronized long[] getIDBlock(final int partition, Duration timeout) throws StorageException {
         //partition id can be any integer, even negative, its only a partition identifier
 
-        final Timer methodTime = new Timer(times).start();
+        final Timer methodTime = times.getTimer().start();
 
         final long blockSize = getBlockSize(partition);
         final long idUpperBound = getIdUpperBound(partition);
@@ -223,7 +220,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
-                    Timer writeTimer = new Timer(times).start();
+                    Timer writeTimer = times.getTimer().start();
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
                         public Boolean call(StoreTransaction txh) throws StorageException {
@@ -318,7 +315,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
             } catch (TemporaryStorageException e) {
-                backoffMS = Durations.min(backoffMS.mult(2), idApplicationWaitMS.mult(32));
+                backoffMS = Durations.min(backoffMS.multiply(2), idApplicationWaitMS.multiply(32));
                 log.warn("Temporary storage exception while acquiring id block - retrying in {}: {}", backoffMS, e);
                 sleepAndConvertInterrupts(backoffMS);
             }

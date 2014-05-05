@@ -3,10 +3,10 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
-import com.thinkaurelius.titan.core.time.Timer;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.util.time.Timer;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
@@ -34,8 +34,8 @@ public class ManagementLogger implements MessageReader {
     private static final Logger log =
             LoggerFactory.getLogger(ManagementLogger.class);
 
-    private static final Duration SLEEP_INTERVAL = new SimpleDuration(100L, TimeUnit.MILLISECONDS);
-    private static final Duration MAX_WAIT_TIME = new SimpleDuration(60L, TimeUnit.SECONDS);
+    private static final Duration SLEEP_INTERVAL = new StandardDuration(100L, TimeUnit.MILLISECONDS);
+    private static final Duration MAX_WAIT_TIME = new StandardDuration(60L, TimeUnit.SECONDS);
 
     private final StandardTitanGraph graph;
     private final SchemaCache schemaCache;
@@ -154,7 +154,7 @@ public class ManagementLogger implements MessageReader {
         @Override
         public void run() {
 //            long startTime = Timestamps.MICRO.getTime();
-            Timer t = new Timer(times).start();
+            Timer t = times.getTimer().start();
             while (true) {
                 boolean txStillOpen = false;
                 Iterator<? extends TitanTransaction> iter = openTx.iterator();

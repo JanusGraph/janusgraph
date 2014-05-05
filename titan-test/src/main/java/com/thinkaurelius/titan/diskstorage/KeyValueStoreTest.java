@@ -4,8 +4,6 @@ package com.thinkaurelius.titan.diskstorage;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.thinkaurelius.titan.core.time.Timestamps;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

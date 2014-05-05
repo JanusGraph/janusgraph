@@ -4,12 +4,9 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
-import com.thinkaurelius.titan.core.time.Timestamps;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.Timestamp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
@@ -20,7 +17,6 @@ import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.filter.IDiskAtomFilter;
-import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.filter.SliceQueryFilter;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.exceptions.InvalidRequestException;
@@ -29,7 +25,6 @@ import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ColumnParent;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.ThriftValidation;
@@ -40,7 +35,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -287,7 +281,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     private long getTime(StoreTransaction txh) {
-        return times.getTime(times.getUnit());
+        //TODO: Use actual start time and do so consistently across the different adapters
+        return times.getTime().getNativeTimestamp();
     }
 
     private class RowIterator implements KeyIterator {

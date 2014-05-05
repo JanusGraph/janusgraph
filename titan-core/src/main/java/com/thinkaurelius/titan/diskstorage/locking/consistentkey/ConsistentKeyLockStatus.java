@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 
 import java.util.concurrent.TimeUnit;
@@ -28,7 +28,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
     }
 
     public long getWriteTimestamp(TimeUnit tu) {
-        return write.getTime(tu);
+        return write.getTimestamp(tu);
     }
 
     public Timepoint getWriteTimestamp() {
