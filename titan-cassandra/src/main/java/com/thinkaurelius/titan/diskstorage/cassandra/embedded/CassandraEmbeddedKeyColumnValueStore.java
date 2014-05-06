@@ -299,9 +299,9 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                 case TIMESTAMP:
                     return element.timestamp();
                 case TTL:
-                    return (element instanceof ExpiringColumn)
+                    return Long.valueOf((element instanceof ExpiringColumn)
                             ? ((ExpiringColumn) element).getTimeToLive()
-                            : null;
+                            : 0);
                 default:
                     return null;
             }

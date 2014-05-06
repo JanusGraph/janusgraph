@@ -28,7 +28,7 @@ import java.util.*;
 import static com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager.Partitioner;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
-public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
+public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
 
     private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
 
@@ -41,10 +41,10 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     private final AstyanaxGetter entryGetter;
 
 
-    AstyanaxOrderedKeyColumnValueStore(String columnFamilyName,
-                                       Keyspace keyspace,
-                                       AstyanaxStoreManager storeManager,
-                                       RetryPolicy retryPolicy) {
+    AstyanaxKeyColumnValueStore(String columnFamilyName,
+                                Keyspace keyspace,
+                                AstyanaxStoreManager storeManager,
+                                RetryPolicy retryPolicy) {
         this.keyspace = keyspace;
         this.columnFamilyName = columnFamilyName;
         this.retryPolicy = retryPolicy;
