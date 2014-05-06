@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.util.time.Timestamps;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -40,7 +41,7 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
         query.setLimit(2);
         Stopwatch watch = new Stopwatch();
         watch.start();
-        StoreTransaction txh = manager.beginTransaction(StandardTransactionHandleConfig.of());
+        StoreTransaction txh = manager.beginTransaction(StandardTransactionHandleConfig.of(Timestamps.MILLI));
         KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {

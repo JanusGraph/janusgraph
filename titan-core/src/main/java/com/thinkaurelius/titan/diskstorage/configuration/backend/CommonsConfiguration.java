@@ -2,8 +2,9 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.Durations;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
@@ -83,7 +84,17 @@ public class CommonsConfiguration implements WriteConfiguration {
             if (Duration.class.isInstance(o)) {
                 return (O)o;
             } else {
-                return (O)new SimpleDuration(Long.valueOf(o.toString()), TimeUnit.MILLISECONDS);
+                String[] comps = o.toString().split("\\s");
+                TimeUnit unit = null;
+                if (comps.length==1) {
+                    //By default, times are in milli seconds
+                    unit = TimeUnit.MILLISECONDS;
+                } else if (comps.length==2) {
+                    unit = Durations.parse(comps[1]);
+                } else {
+                    throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
+                }
+                return (O)new StandardDuration(Long.valueOf(comps[0]), unit);
             }
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }

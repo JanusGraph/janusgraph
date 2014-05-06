@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -25,7 +24,7 @@ public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
                     ".hbase.zookeeper.quorum","localhost");
         config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
                 "hbase.zookeeper.property.clientPort",2181);
-        return new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.NONE));
+        return new HBaseStoreManager(new BasicConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE));
     }
 
     @Test

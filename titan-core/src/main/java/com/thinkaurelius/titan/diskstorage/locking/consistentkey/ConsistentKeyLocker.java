@@ -6,10 +6,10 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.Timer;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.Timer;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -337,7 +337,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     private WriteResult tryWriteLockOnce(StaticBuffer key, StaticBuffer del, StoreTransaction txh) {
         Throwable t = null;
-        final Timer writeTimer = new Timer(times).start();
+        final Timer writeTimer = times.getTimer().start();
         StaticBuffer newLockCol = serializer.toLockCol(writeTimer.getStartTime(timeUnit), rid);
         Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
         try {
@@ -354,7 +354,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     private WriteResult tryDeleteLockOnce(StaticBuffer key, StaticBuffer col, StoreTransaction txh) {
         Throwable t = null;
-        final Timer delTimer = new Timer(times).start();
+        final Timer delTimer = times.getTimer().start();
         try {
             StoreTransaction newTx = overrideTimestamp(txh, delTimer.getStartTime());
             store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), newTx);
@@ -391,7 +391,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         iter = Iterables.filter(iter, new Predicate<TimestampRid>() {
             @Override
             public boolean apply(TimestampRid tr) {
-                final long cutoffTime = now.sub(lockExpire).getTime(timeUnit);
+                final long cutoffTime = now.sub(lockExpire).getTimestamp(timeUnit);
                 if (tr.getTimestamp() < cutoffTime) {
                     log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
                     if (null != cleanerService)
@@ -497,8 +497,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
     }
 
-    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint t) throws StorageException {
-        StandardTransactionHandleConfig newCfg = new StandardTransactionHandleConfig.Builder(tx.getConfiguration()).timestamp(t).build();
+    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint commitTime) throws StorageException {
+        //TODO: check that start time is set correctly!
+        StandardTransactionHandleConfig newCfg = new StandardTransactionHandleConfig.Builder(tx.getConfiguration())
+                .startTime(tx.getConfiguration().getStartTime()).commitTime(commitTime).build();
         return manager.beginTransaction(newCfg);
     }
 

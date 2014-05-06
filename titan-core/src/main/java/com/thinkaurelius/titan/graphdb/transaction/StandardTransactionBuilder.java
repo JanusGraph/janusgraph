@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 import java.util.concurrent.TimeUnit;
 
@@ -8,7 +8,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 
 /**
  * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -57,13 +58,15 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String logIdentifier;
 
-    private Timepoint userTimestamp = null;
+    private Timepoint userCommitTime = null;
 
     private String groupName;
 
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
+
+    private final TimestampProvider times;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -74,6 +77,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
+        this.times = graphConfig.getTimestampProvider();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -126,9 +130,14 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit) {
-        this.userTimestamp = new Timepoint(timestampSinceEpoch, unit);
+    public StandardTransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit) {
+        this.userCommitTime = times.getTime(timestampSinceEpoch,unit);
         return this;
+    }
+
+    @Override
+    public void setCommitTime(Timepoint time) {
+        throw new UnsupportedOperationException("Use setCommitTime(lnog,TimeUnit)");
     }
 
     @Override
@@ -154,10 +163,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound, userTimestamp,
+                propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, groupName,
-                defaultTypeMaker, new BasicConfiguration(TITAN_NS,
+                defaultTypeMaker, new BasicConfiguration(ROOT_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
         return graph.newTransaction(immutable);
@@ -253,13 +262,18 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Timepoint getTimestamp() {
-        return userTimestamp;
+    public Timepoint getCommitTime() {
+        return userCommitTime;
     }
 
     @Override
-    public void setCommitTime(Timepoint time) {
-        throw new UnsupportedOperationException("Cannot set commit time in builder");
+    public boolean hasCommitTime() {
+        return userCommitTime!=null;
+    }
+
+    @Override
+    public Timepoint getStartTime() {
+        throw new IllegalStateException("Start time is set when transaction starts");
     }
 
     @Override
@@ -269,7 +283,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public Configuration getCustomOptions() {
-        return new BasicConfiguration(TITAN_NS,
+        return new BasicConfiguration(ROOT_NS,
                 storageConfiguration.getConfiguration(), Restriction.NONE);
     }
 
@@ -300,7 +314,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, Timepoint userTimestamp,
+                boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 String groupName, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
@@ -320,7 +334,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
-                    .timestamp(userTimestamp)
+                    .startTime(startTime)
+                    .commitTime(commitTime)
                     .groupName(groupName)
                     .customOptions(storageConfiguration).build();
         }
@@ -401,13 +416,23 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public Timepoint getTimestamp() {
-            return handleConfig.getTimestamp();
+        public Timepoint getCommitTime() {
+            return handleConfig.getCommitTime();
         }
 
         @Override
         public void setCommitTime(Timepoint time) {
             handleConfig.setCommitTime(time);
+        }
+
+        @Override
+        public boolean hasCommitTime() {
+            return handleConfig.hasCommitTime();
+        }
+
+        @Override
+        public Timepoint getStartTime() {
+            return handleConfig.getStartTime();
         }
 
         @Override

@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
@@ -98,7 +98,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
-            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new SimpleDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new StandardDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
 
             if (!storeFeatures.hasLocking()) {
                 Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
@@ -106,7 +106,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
                 ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore, manager[i]).fromConfig(sc).mediatorName(concreteClassName + i).build();
                 store[i] = new ExpectedValueCheckingStore(store[i], c);
                 for (int j = 0; j < NUM_TX; j++)
-                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(StandardTransactionHandleConfig.of(manager[i].getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
+                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(getConsistentTxConfig(manager[i])), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
             }
         }
     }
@@ -114,7 +114,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
         StoreTransaction transaction = manager.beginTransaction(getTxConfig());
         if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
-            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionHandleConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(getConsistentTxConfig(manager)), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
         }
         return transaction;
     }

@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Timepoint;
+import com.thinkaurelius.titan.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -10,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;
@@ -21,13 +23,11 @@ public class TransactionLogHeader {
 
     private final long transactionId;
     private final Timepoint txTimestamp;
-    private final TimeUnit backendTimeUnit;
     private final StaticBuffer logKey;
 
-    public TransactionLogHeader(long transactionId, Timepoint txTimestamp, TimeUnit backendTimeUnit) {
+    public TransactionLogHeader(long transactionId, Timepoint txTimestamp) {
         this.transactionId = transactionId;
         this.txTimestamp = txTimestamp;
-        this.backendTimeUnit = backendTimeUnit;
         Preconditions.checkArgument(this.transactionId > 0);
         Preconditions.checkNotNull(this.txTimestamp);
         logKey = HashingUtil.hashPrefixKey(HashingUtil.HashLength.SHORT, BufferUtil.getLongBuffer(transactionId));
@@ -39,7 +39,7 @@ public class TransactionLogHeader {
     }
 
     public long getTimestamp(TimeUnit unit) {
-        return txTimestamp.getTime(unit);
+        return txTimestamp.getTimestamp(unit);
     }
 
     public StaticBuffer getLogKey() {
@@ -53,7 +53,7 @@ public class TransactionLogHeader {
     public DataOutput serializeHeader(Serializer serializer, int capacity, LogTxStatus status, TransactionConfiguration txConfig) {
         Preconditions.checkArgument(status!=null,"Invalid status");
         DataOutput out = serializer.getDataOutput(capacity);
-        out.putLong(txTimestamp.getTime(backendTimeUnit));
+        out.putLong(txTimestamp.getNativeTimestamp());
         VariableLong.writePositive(out, transactionId);
         out.writeObjectNotNull(status);
         if (txConfig!=null) {
@@ -73,11 +73,11 @@ public class TransactionLogHeader {
         return out;
     }
 
-    public static Entry parse(StaticBuffer buffer, Serializer serializer, TimeUnit backendTimeUnit) {
+    public static Entry parse(StaticBuffer buffer, Serializer serializer, TimestampProvider times) {
         ReadBuffer read = buffer.asReadBuffer();
-        Timepoint txTimestamp = new Timepoint(read.getLong(), backendTimeUnit);
+        Timepoint txTimestamp = new StandardTimepoint(read.getLong(), times);
         TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read),
-                txTimestamp, backendTimeUnit);
+                txTimestamp);
         LogTxStatus status = serializer.readObjectNotNull(read,LogTxStatus.class);
         EnumMap<LogTxMeta,Object> metadata = new EnumMap<LogTxMeta, Object>(LogTxMeta.class);
         int metaSize = VariableLong.unsignedByte(read.getByte());

@@ -3,13 +3,12 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.*;
@@ -62,7 +61,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void open() throws StorageException {
         manager = openStorageManager();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
         store2 = new NoKCVSCache(manager.openDatabase(storeName2));
 
@@ -82,7 +81,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     public void newTx() throws StorageException {
         if (tx!=null) tx.commit();
-        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new SimpleDuration(100, TimeUnit.MILLISECONDS), true);
+        tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
     }
 
     @Test

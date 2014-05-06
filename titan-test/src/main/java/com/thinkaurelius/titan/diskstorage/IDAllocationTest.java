@@ -3,8 +3,8 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -48,7 +48,7 @@ public abstract class IDAllocationTest {
     public static final int CONCURRENCY = 8;
     public static final String DB_NAME = "test";
 
-    public static final Duration GET_ID_BLOCK_TIMEOUT = new SimpleDuration(300000L, TimeUnit.MILLISECONDS);
+    public static final Duration GET_ID_BLOCK_TIMEOUT = new StandardDuration(300000L, TimeUnit.MILLISECONDS);
 
     @Parameterized.Parameters
     public static Collection<Object[]> configs() {
@@ -64,7 +64,7 @@ public abstract class IDAllocationTest {
 
         c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
-        c.set(IDAUTHORITY_WAIT, new SimpleDuration(10L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, new StandardDuration(10L, TimeUnit.MILLISECONDS));
         c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
         c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
         configurations.add(new Object[]{c.getConfiguration()});
@@ -75,7 +75,7 @@ public abstract class IDAllocationTest {
     public static ModifiableConfiguration getBasicConfig() {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
-        c.set(IDAUTHORITY_WAIT, new SimpleDuration(100L, TimeUnit.MILLISECONDS));
+        c.set(IDAUTHORITY_WAIT, new StandardDuration(100L, TimeUnit.MILLISECONDS));
         c.set(IDS_BLOCK_SIZE,400);
         return c;
     }

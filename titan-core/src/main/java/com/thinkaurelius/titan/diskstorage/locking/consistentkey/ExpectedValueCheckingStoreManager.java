@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.core.time.Duration;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
@@ -62,6 +62,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
                 .groupName(configuration.getGroupName())
                 .customOptions(customOptions)
+                .startTime(configuration.getStartTime())
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
         StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);

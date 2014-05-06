@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.Timer;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.Timer;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -25,7 +25,7 @@ public class CombinerLock implements TransactionLock {
 
     @Override
     public void lock(Duration timeout) {
-        Timer t = new Timer(times).start();
+        Timer t = times.getTimer().start();
         first.lock(timeout);
         Duration remainingTimeout = timeout.sub(t.elapsed());
         try {

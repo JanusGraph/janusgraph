@@ -12,6 +12,8 @@ import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.util.time.StandardTimepoint;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.*;
@@ -30,7 +32,8 @@ public class StandardAttributeHandling implements AttributeHandling {
                     TypeDefinitionCategory.class, TypeDefinitionDescription.class, TitanSchemaCategory.class,
                     Parameter.class, Parameter[].class, ParameterType.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
-                    ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class
+                    ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
+                    StandardDuration.class, StandardTimepoint.class
             );
 
     private final Map<Class,AttributeHandler> handlers;

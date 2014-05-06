@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
@@ -27,12 +27,12 @@ public class BackendOperation {
             LoggerFactory.getLogger(BackendOperation.class);
     private static final Random random = new Random();
 
-    private static final Duration BASE_REATTEMPT_TIME=new SimpleDuration(50,TimeUnit.MILLISECONDS);
+    private static final Duration BASE_REATTEMPT_TIME=new StandardDuration(50,TimeUnit.MILLISECONDS);
     private static final double PERTURBATION_PERCENTAGE = 0.2;
 
 
     private static final Duration pertubateTime(Duration duration) {
-        Duration newDuration = duration.mult(1 + (random.nextDouble()*2-1.0)*PERTURBATION_PERCENTAGE);
+        Duration newDuration = duration.multiply(1 + (random.nextDouble() * 2 - 1.0) * PERTURBATION_PERCENTAGE);
         assert !duration.isZeroLength() : duration;
         return newDuration;
     }
@@ -75,7 +75,7 @@ public class BackendOperation {
             } else {
                 break;
             }
-            waitTime = pertubateTime(waitTime.mult(2.0));
+            waitTime = pertubateTime(waitTime.multiply(2.0));
         }
         throw new TemporaryStorageException("Could not successfully complete backend operation due to repeated temporary exceptions after "+totalWaitTime,lastException);
     }
@@ -123,7 +123,7 @@ public class BackendOperation {
         StoreTransaction txh = null;
         try {
             txh = provider.openTx();
-            txh.getConfiguration().setCommitTime(times.getTime());
+            if (!txh.getConfiguration().hasCommitTime()) txh.getConfiguration().setCommitTime(times.getTime());
             return exe.call(txh);
         } catch (StorageException e) {
             if (txh!=null) txh.rollback();

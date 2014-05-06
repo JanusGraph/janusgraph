@@ -59,7 +59,7 @@ public interface TransactionBuilder {
      *            units of the {@code timestamp argument}
      * @return
      */
-    public TransactionBuilder setTimestamp(long timestampSinceEpoch, TimeUnit unit);
+    public TransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit);
 
 
     /**

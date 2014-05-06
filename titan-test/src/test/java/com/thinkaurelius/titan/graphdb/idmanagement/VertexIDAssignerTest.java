@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.time.SimpleDuration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
@@ -70,7 +70,7 @@ public class VertexIDAssignerTest {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, InMemoryStoreManager.class.getCanonicalName());
         config.set(GraphDatabaseConfiguration.IDS_FLUSH, false);
-        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, new SimpleDuration(1L, TimeUnit.MILLISECONDS));
+        config.set(GraphDatabaseConfiguration.IDAUTHORITY_WAIT, new StandardDuration(1L, TimeUnit.MILLISECONDS));
         return TitanFactory.open(config);
     }
 

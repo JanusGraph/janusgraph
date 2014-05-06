@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.time.Duration;
-import com.thinkaurelius.titan.core.time.Timepoint;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -218,7 +219,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @return
      */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        return new Timestamp(txh.getConfiguration().getTimestamp());
+        return new Timestamp(txh.getConfiguration().getCommitTime());
     }
 
     protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
@@ -244,19 +245,19 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         public long getDeletionTime(TimeUnit unit) {
-            return t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+            return t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
         }
 
         public Timepoint getDeletionTime() {
-            return new Timepoint(getDeletionTime(t.getNativeUnit()), t.getNativeUnit());
+            return new StandardTimepoint(getDeletionTime(t.getNativeUnit()), t.getProvider());
         }
 
         public long getAdditionTime(TimeUnit unit) {
-            return (t.getTime(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
+            return (t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
         }
 
         public Timepoint getAdditionTime() {
-            return new Timepoint(getAdditionTime(t.getNativeUnit()), t.getNativeUnit());
+            return new StandardTimepoint(getAdditionTime(t.getNativeUnit()), t.getProvider());
         }
     }
 }

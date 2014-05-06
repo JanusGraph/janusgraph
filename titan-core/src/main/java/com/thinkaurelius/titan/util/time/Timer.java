@@ -1,10 +1,12 @@
-package com.thinkaurelius.titan.core.time;
+package com.thinkaurelius.titan.util.time;
 
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 
 /**
+ * A utility to measure time durations.
+ * </p>
  * Differs from Guava Stopwatch in the following ways:
  *
  * <ul>
@@ -31,7 +33,7 @@ public class Timer {
 
     public long getStartTime(TimeUnit u) {
         Preconditions.checkState(null != start, "Timer never started");
-        return start.getTime(u);
+        return start.getTimestamp(u);
     }
 
     public Timepoint getStartTime() {
@@ -49,15 +51,14 @@ public class Timer {
         if (null == start) {
             return ZeroDuration.INSTANCE;
         }
-        final TimeUnit u = times.getUnit();
-        final long stopTimestamp = null == stop ? times.getTime(u) : stop.getTime(u);
-        return new SimpleDuration(stopTimestamp - start.getTime(u), u);
+        final Timepoint stopTime = (null==stop? times.getTime() : stop);
+        return new StandardDuration(stopTime.getNativeTimestamp() - start.getNativeTimestamp(), times.getUnit());
     }
 
     public String toString() {
         TimeUnit u = times.getUnit();
         if (start==null) return "Initialized";
-        if (stop==null) return String.format("Started at %d %s",start.getTime(u),u);
-        return String.format("%d %s", stop.getTime(u) - start.getTime(u), u);
+        if (stop==null) return String.format("Started at %d %s",start.getNativeTimestamp(),u);
+        return String.format("%d %s", stop.getNativeTimestamp() - start.getNativeTimestamp(), u);
     }
 }

@@ -8,8 +8,8 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.time.TimestampProvider;
-import com.thinkaurelius.titan.core.time.Timestamps;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
@@ -747,7 +747,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         logger.debug("Guessed timestamp provider " + prov);
 
-        return prov.getTime(prov.getUnit());
+        return prov.getTime().getNativeTimestamp();
     }
 
     private HBaseAdmin getAdminInterface() {
