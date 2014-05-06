@@ -127,6 +127,16 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         public StaticBuffer getValue(KeyValueEntry element) {
             return element.getValue();
         }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(KeyValueEntry element) {
+            return StaticArrayEntry.EMPTY_SCHEMA;
+        }
+
+        @Override
+        public Object getMetaData(KeyValueEntry element, EntryMetaData meta) {
+            return null;
+        }
     };
 
     private Entry getEntry(KeyValueEntry entry) {

@@ -6,6 +6,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -348,6 +349,16 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public byte[] getValue(Map.Entry<byte[], byte[]> element) {
             return element.getValue();
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Map.Entry<byte[],byte[]> element) {
+            return StaticArrayEntry.EMPTY_SCHEMA;
+        }
+
+        @Override
+        public Object getMetaData(Map.Entry<byte[],byte[]> element, EntryMetaData meta) {
+            return null;
         }
     }
 }

@@ -5,11 +5,12 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry {
+public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
 
     public StaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array, offset, limit, valuePosition);
@@ -31,9 +32,23 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry
         super(entry,entry.getValuePosition());
     }
 
+    //########## META DATA ############
+
+    private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
+
+    public synchronized Object setMetaData(EntryMetaData key, Object value) {
+        if (metadata==EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
+        return metadata.put(key,value);
+    }
+
     @Override
-    public<O> O getMetaData(EntryMetaData meta) {
-        return null;
+    public boolean hasMetaData() {
+        return !metadata.isEmpty();
+    }
+
+    @Override
+    public Map<EntryMetaData,Object> getMetaData() {
+        return metadata;
     }
 
     /**
@@ -76,10 +91,17 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry
     }
 
     private static final<E,D>  Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> datahandler) {
-        return of(getter.getColumn(element),getter.getValue(element),datahandler);
+        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),datahandler);
+        //Add meta data if exists
+        if (getter.getMetaSchema(element).length>0) {
+            for (EntryMetaData meta : getter.getMetaSchema(element)) {
+                entry.setMetaData(meta,getter.getMetaData(element,meta));
+            }
+        }
+        return entry;
     }
 
-    private static final<E,D>  Entry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
+    private static final<E,D>  StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> datahandler) {
         int valuePos = datahandler.getSize(column);
         byte[] data = new byte[valuePos+datahandler.getSize(value)];
         datahandler.copy(column,data,0);
@@ -93,7 +115,13 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry
 
         public D getValue(E element);
 
+        public EntryMetaData[] getMetaSchema(E element);
+
+        public Object getMetaData(E element, EntryMetaData meta);
+
     }
+
+    public static final EntryMetaData[] EMPTY_SCHEMA = new EntryMetaData[0];
 
     public static GetColVal<Entry,StaticBuffer> ENTRY_GETTER = new GetColVal<Entry, StaticBuffer>() {
         @Override
@@ -105,6 +133,20 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry
         public StaticBuffer getValue(Entry entry) {
             return entry.getValue();
         }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Entry element) {
+            if (!element.hasMetaData()) return EMPTY_SCHEMA;
+            Map<EntryMetaData,Object> metas = element.getMetaData();
+            return metas.keySet().toArray(new EntryMetaData[metas.size()]);
+        }
+
+        @Override
+        public Object getMetaData(Entry element, EntryMetaData meta) {
+            return element.getMetaData().get(meta);
+        }
+
+
     };
 
     public static interface DataHandler<D> {
@@ -269,6 +311,18 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
     @Override
     public void setCache(RelationCache cache) {
         throw new UnsupportedOperationException();
+    }
+
+    //########## META DATA ############
+
+    @Override
+    public boolean hasMetaData() {
+        return false;
+    }
+
+    @Override
+    public Map<EntryMetaData,Object> getMetaData() {
+        return EntryMetaData.EMPTY_METADATA;
     }
 
 }

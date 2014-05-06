@@ -165,7 +165,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                         assertEquals(0,num);
                     }
                     for (int i=0; i<num;i++) {
-                        Entry entry = BufferUtil.readEntry(read);
+                        Entry entry = BufferUtil.readEntry(read,serializer);
                         assertNotNull(entry);
                         assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
                     }

@@ -324,21 +324,6 @@ public class BackendTransaction implements LoggableTransaction {
         }
     }
 
-    //TODO: remove and also KeyColumnValueStore.containsKey
-    public boolean edgeStoreContainsKey(final StaticBuffer key) {
-        return executeRead(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return edgeStore.containsKey(key, storeTx);
-            }
-
-            @Override
-            public String toString() {
-                return "EdgeStoreContainsKey";
-            }
-        });
-    }
-
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
         if (!storeFeatures.hasScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");

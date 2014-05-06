@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
+import java.util.Map;
 
 /**
  * An entry is the primitive persistence unit used in the graph database storage backend.
@@ -42,5 +43,19 @@ public interface Entry extends StaticBuffer {
      * @param cache
      */
     public void setCache(RelationCache cache);
+
+    /**
+     * Returns true if this entry has associated meta data
+     * @return
+     */
+    public boolean hasMetaData();
+
+    /**
+     * Returns all meta data associated with this entry
+     * @return
+     */
+    public Map<EntryMetaData,Object> getMetaData();
+
+
 
 }

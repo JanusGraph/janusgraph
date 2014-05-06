@@ -174,15 +174,30 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public long getLong(int position) {
-        int base = require(position, LONG_LEN);
-        return (long) array[base++] << 56 //
-                | (long) (array[base++] & 0xFF) << 48 //
-                | (long) (array[base++] & 0xFF) << 40 //
-                | (long) (array[base++] & 0xFF) << 32 //
-                | (long) (array[base++] & 0xFF) << 24 //
-                | (array[base++] & 0xFF) << 16 //
-                | (array[base++] & 0xFF) << 8 //
-                | array[base++] & 0xFF;
+        int offset = require(position, LONG_LEN);
+        return getLong(array,offset);
+    }
+
+    public static long getLong(byte[] array, int offset) {
+        return (long) array[offset++] << 56 //
+                | (long) (array[offset++] & 0xFF) << 48 //
+                | (long) (array[offset++] & 0xFF) << 40 //
+                | (long) (array[offset++] & 0xFF) << 32 //
+                | (long) (array[offset++] & 0xFF) << 24 //
+                | (array[offset++] & 0xFF) << 16 //
+                | (array[offset++] & 0xFF) << 8 //
+                | array[offset++] & 0xFF;
+    }
+
+    public static void putLong(byte[] array, int offset, final long value) {
+        array[offset++]= (byte)(value >> 56);
+        array[offset++]= (byte)((value >> 48) & 0xFF);
+        array[offset++]= (byte)((value >> 40) & 0xFF);
+        array[offset++]= (byte)((value >> 32) & 0xFF);
+        array[offset++]= (byte)((value >> 24) & 0xFF);
+        array[offset++]= (byte)((value >> 16) & 0xFF);
+        array[offset++]= (byte)((value >> 8) & 0xFF);
+        array[offset++]= (byte)(value & 0xFF);
     }
 
     @Override

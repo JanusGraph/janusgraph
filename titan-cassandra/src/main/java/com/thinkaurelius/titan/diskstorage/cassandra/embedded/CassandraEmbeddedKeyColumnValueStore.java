@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.Timestamp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -283,6 +284,16 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         @Override
         public ByteBuffer getValue(Column element) {
             return org.apache.cassandra.utils.ByteBufferUtil.clone(element.value());
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Column element) {
+            return StaticArrayEntry.EMPTY_SCHEMA;
+        }
+
+        @Override
+        public Object getMetaData(Column element, EntryMetaData meta) {
+            return null;
         }
     }
 

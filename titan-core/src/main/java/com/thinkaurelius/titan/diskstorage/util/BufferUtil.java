@@ -1,14 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.ScanBuffer;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Utility methods for dealing with {@link ByteBuffer}.
@@ -76,6 +76,18 @@ public class BufferUtil {
     public static void writeEntry(DataOutput out, Entry entry) {
         VariableLong.writePositive(out,entry.getValuePosition());
         writeBuffer(out,entry);
+        if (!entry.hasMetaData()) out.putByte((byte)0);
+        else {
+            Map<EntryMetaData,Object> metadata = entry.getMetaData();
+            assert metadata.size()>0 && metadata.size()<Byte.MAX_VALUE;
+            assert EntryMetaData.values().length<Byte.MAX_VALUE;
+            out.putByte((byte)metadata.size());
+            for (Map.Entry<EntryMetaData,Object> metas : metadata.entrySet()) {
+                EntryMetaData meta = metas.getKey();
+                out.putByte((byte)meta.ordinal());
+                out.writeObjectNotNull(metas.getValue());
+            }
+        }
     }
 
     public static void writeBuffer(DataOutput out, StaticBuffer buffer) {
@@ -83,11 +95,17 @@ public class BufferUtil {
         out.putBytes(buffer);
     }
 
-    public static Entry readEntry(ScanBuffer in) {
+    public static Entry readEntry(ReadBuffer in, Serializer serializer) {
         long valuePosition = VariableLong.readPositive(in);
         Preconditions.checkArgument(valuePosition>0 && valuePosition<=Integer.MAX_VALUE);
         StaticBuffer buffer = readBuffer(in);
-        return new StaticArrayEntry(buffer,(int)valuePosition);
+        StaticArrayEntry entry = new StaticArrayEntry(buffer,(int)valuePosition);
+        int metaSize = in.getByte();
+        for (int i=0;i<metaSize;i++) {
+            EntryMetaData meta = EntryMetaData.values()[in.getByte()];
+            entry.setMetaData(meta,serializer.readObjectNotNull(in,meta.getDataType()));
+        }
+        return entry;
     }
 
     public static StaticBuffer readBuffer(ScanBuffer in) {
