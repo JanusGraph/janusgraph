@@ -9,16 +9,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.util.time.StandardTimepoint;
 import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.Timer;
 import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
@@ -26,7 +30,6 @@ import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -94,7 +97,7 @@ public class ConsistentKeyLockerTest {
 
     @SuppressWarnings("unchecked")
     @Before
-    public void setupMocks() throws StorageException {
+    public void setupMocks() throws StorageException, NoSuchMethodException, SecurityException {
         currentTimeNS = 0;
 
         /*
@@ -142,23 +145,22 @@ public class ConsistentKeyLockerTest {
          * cause a test failure.
          */
         ctrl = EasyMock.createStrictControl();
-        times = ctrl.createMock(TimestampProvider.class);
+        Method timeInNativeUnit = FakeTimestampProvider.class.getMethod("getTime");
+        Method timeInSpecifiedUnit = FakeTimestampProvider.class.getMethod("getTime", long.class, TimeUnit.class);
+        Method sleepPast = FakeTimestampProvider.class.getMethod("sleepPast", Timepoint.class);
+
+//        times = EasyMock.createMockBuilder(FakeTimestampProvider.class).addMockedMethods(timeInNativeUnit, timeInSpecifiedUnit, sleepPast).createStrictMock();
+        times = ctrl.createMock(FakeTimestampProvider.class, timeInNativeUnit, timeInSpecifiedUnit, sleepPast);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
         lockState = ctrl.createMock(LockerState.class);
-        expect(times.getUnit()).andReturn(TimeUnit.NANOSECONDS).atLeastOnce();
         ctrl.replay();
         locker = getDefaultBuilder().build();
         ctrl.verify();
         ctrl.reset();
 
-//        locker = new ConsistentKeyLocker.Builder(store, manager)
-//                .times(times)
-//                .mediator(mediator)
-//                .internalState(lockState)
-//                .lockExpireNS(defaultExpireNS, TimeUnit.NANOSECONDS)
-//                .lockWaitNS(defaultWaitNS, TimeUnit.NANOSECONDS)
-//                .rid(defaultLockRid).build();
+        expect(defaultTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
+        expect(otherTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
 
         relaxedCtrl.replay();
     }
@@ -188,6 +190,7 @@ public class ConsistentKeyLockerTest {
         recordSuccessfulLocalLock(li.tsNS);
         // Store the taken lock's key, column, and timestamp in the lockState map
         lockState.take(eq(defaultTx), eq(defaultLockID), eq(li.stat));
+
         ctrl.replay();
 
         locker.writeLock(defaultLockID, defaultTx); // SUT
@@ -917,7 +920,6 @@ public class ConsistentKeyLockerTest {
     @Test
     public void testCleanExpiredLock() throws StorageException, InterruptedException {
         LockCleanerService mockCleaner = ctrl.createMock(LockCleanerService.class);
-        expect(times.getUnit()).andReturn(TimeUnit.NANOSECONDS).atLeastOnce();
         ctrl.replay();
         Locker altLocker = getDefaultBuilder().customCleaner(mockCleaner).build();
         ctrl.verify();
@@ -991,24 +993,20 @@ public class ConsistentKeyLockerTest {
         Entry add = StaticArrayEntry.of(lockCol, defaultLockVal);
 
         StaticBuffer k = eq(defaultLockKey);
-//        assert null != add;
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-//        assert null != adds;
         final List<StaticBuffer> dels;
         if (null != del) {
             dels = eq(Arrays.<StaticBuffer>asList(del));
         } else {
             dels = eq(ImmutableList.<StaticBuffer>of());
         }
+
         store.mutate(k, adds, dels, eq(tx));
+        expectLastCall().once();
 
         currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
 
         expect(times.getTime()).andReturn(new StandardTimepoint(currentTimeNS, times));
-
-        // A Timer instance measures how long the mutate call took
-        // Timer's implementation may call TimestampProvider.getUnit()
-        expect(times.getUnit()).andReturn(TimeUnit.NANOSECONDS).anyTimes();
 
         ConsistentKeyLockStatus status = new ConsistentKeyLockStatus(
                 new StandardTimepoint(lockNS, times),
@@ -1024,9 +1022,7 @@ public class ConsistentKeyLockerTest {
         Entry add = StaticArrayEntry.of(lockCol, defaultLockVal);
 
         StaticBuffer k = eq(defaultLockKey);
-//        assert null != add;
         final List<Entry> adds = eq(Arrays.<Entry>asList(add));
-//        assert null != adds;
         final List<StaticBuffer> dels;
         if (null != del) {
             dels = eq(Arrays.<StaticBuffer>asList(del));
@@ -1039,25 +1035,15 @@ public class ConsistentKeyLockerTest {
         currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
         expect(times.getTime()).andReturn(new StandardTimepoint(currentTimeNS, times));
 
-        // A Timer instance measures how long the mutate call took
-        // Timer's implementation may call TimestampProvider.getUnit()
-        expect(times.getUnit()).andReturn(TimeUnit.NANOSECONDS).anyTimes();
-
         return lockCol;
     }
 
     private void recordSuccessfulLockDelete(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
-
-
         expect(times.getTime()).andReturn(new StandardTimepoint(++currentTimeNS, times));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(Arrays.asList(del)), eq(defaultTx));
 
         currentTimeNS += TimeUnit.NANOSECONDS.convert(duration, tu);
         expect(times.getTime()).andReturn(new StandardTimepoint(currentTimeNS, times));
-
-        // A Timer instance measures how long the mutate call took
-        // Timer's implementation may call TimestampProvider.getUnit()
-        expect(times.getUnit()).andReturn(TimeUnit.NANOSECONDS).anyTimes();
     }
 
     private void recordSuccessfulLocalLock() {
@@ -1112,5 +1098,46 @@ public class ConsistentKeyLockerTest {
             .lockExpire(new StandardDuration(defaultExpireNS, TimeUnit.NANOSECONDS))
             .lockWait(new StandardDuration(defaultWaitNS, TimeUnit.NANOSECONDS))
             .rid(defaultLockRid);
+    }
+
+    /*
+     * This class supports partial mocking of TimestampProvider.
+     *
+     * It's impossible to mock Timestamps.NANO because that is an enum;
+     * EasyMock will fail to do it at runtime with cryptic
+     * "incompatible return value type" exceptions.
+     */
+    private static class FakeTimestampProvider implements TimestampProvider {
+
+        @Override
+        public Timepoint getTime() {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Timepoint getTime(long sinceEpoch, TimeUnit unit) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public TimeUnit getUnit() {
+            return TimeUnit.NANOSECONDS;
+        }
+
+        @Override
+        public Timepoint sleepPast(Timepoint futureTime)
+                throws InterruptedException {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public void sleepFor(Duration duration) throws InterruptedException {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Timer getTimer() {
+            return new Timer(this);
+        }
     }
 }

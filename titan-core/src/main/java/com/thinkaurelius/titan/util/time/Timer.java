@@ -21,7 +21,7 @@ public class Timer {
     private Timepoint start;
     private Timepoint stop;
 
-    Timer(final TimestampProvider times) {
+    public Timer(final TimestampProvider times) {
         this.times = times;
     }
 

@@ -26,8 +26,7 @@ public interface TimestampProvider {
     /**
      * Return the units of {@link #getTime()}. This method's return value must
      * be constant over at least the life of the object implementing this
-     * interface. Clients of this interface may call this method once and assume
-     * that the return value never changes thereafter.
+     * interface.
      *
      * @return this instance's time unit
      */
