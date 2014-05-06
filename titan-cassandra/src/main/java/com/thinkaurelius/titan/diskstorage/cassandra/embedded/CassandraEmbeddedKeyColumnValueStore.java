@@ -295,13 +295,13 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         @Override
         public Object getMetaData(Column element, EntryMetaData meta) {
-            switch(meta) {
+            switch (meta) {
                 case TIMESTAMP:
                     return element.timestamp();
                 case TTL:
-                    return Long.valueOf((element instanceof ExpiringColumn)
-                            ? ((ExpiringColumn) element).getTimeToLive()
-                            : 0);
+                    return (long) ((element instanceof ExpiringColumn)
+                                    ? ((ExpiringColumn) element).getTimeToLive()
+                                    : 0);
                 default:
                     return null;
             }
