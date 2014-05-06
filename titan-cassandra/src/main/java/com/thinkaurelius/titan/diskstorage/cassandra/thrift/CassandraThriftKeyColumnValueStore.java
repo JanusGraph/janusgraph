@@ -184,7 +184,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             switch(meta) {
                 case TIMESTAMP: return element.getColumn().getTimestamp();
                 case TTL: return Long.valueOf(element.getColumn().getTtl());
-                default: return null;
+                default: throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             }
         }
     }

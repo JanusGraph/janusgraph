@@ -180,7 +180,8 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
             switch(meta) {
                 case TIMESTAMP: return element.getTimestamp();
                 case TTL: return Long.valueOf(element.getTtl());
-                default: return null;
+                default: throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+
             }
         }
     }

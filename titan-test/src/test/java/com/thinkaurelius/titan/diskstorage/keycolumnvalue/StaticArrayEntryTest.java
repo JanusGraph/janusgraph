@@ -277,7 +277,7 @@ public class StaticArrayEntryTest {
 
         @Override
         public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
-            if (this==INSTANCE) return null;
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             else return metaData.get(meta);
         }
     }
@@ -308,7 +308,7 @@ public class StaticArrayEntryTest {
 
         @Override
         public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
-            if (this==INSTANCE) return null;
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             else return metaData.get(meta);
         }
     }
@@ -339,7 +339,7 @@ public class StaticArrayEntryTest {
 
         @Override
         public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
-            if (this==INSTANCE) return null;
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             else return metaData.get(meta);
         }
     }

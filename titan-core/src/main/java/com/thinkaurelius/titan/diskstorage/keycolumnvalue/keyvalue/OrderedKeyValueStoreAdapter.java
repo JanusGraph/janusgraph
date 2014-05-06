@@ -135,7 +135,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         @Override
         public Object getMetaData(KeyValueEntry element, EntryMetaData meta) {
-            return null;
+            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
         }
     };
 

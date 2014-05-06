@@ -79,7 +79,7 @@ public class KVUtil {
 
         @Override
         public Object getMetaData(KeyValueEntry element, EntryMetaData meta) {
-            return null;
+            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
         }
     };
 

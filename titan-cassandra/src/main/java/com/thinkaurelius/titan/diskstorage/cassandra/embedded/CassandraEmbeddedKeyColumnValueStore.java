@@ -303,7 +303,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                             ? ((ExpiringColumn) element).getTimeToLive()
                             : 0);
                 default:
-                    return null;
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             }
         }
     }

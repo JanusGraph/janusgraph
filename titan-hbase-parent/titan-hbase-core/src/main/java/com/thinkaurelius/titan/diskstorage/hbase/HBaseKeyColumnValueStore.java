@@ -358,7 +358,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public Object getMetaData(Map.Entry<byte[],byte[]> element, EntryMetaData meta) {
-            return null;
+            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
         }
     }
 }
