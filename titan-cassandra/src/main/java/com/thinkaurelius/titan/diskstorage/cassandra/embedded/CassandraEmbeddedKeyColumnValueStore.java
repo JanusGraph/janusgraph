@@ -8,7 +8,6 @@ import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -297,10 +296,14 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         @Override
         public Object getMetaData(Column element, EntryMetaData meta) {
             switch(meta) {
-                case TIMESTAMP: return element.timestamp();
-                //TODO: How do we actually get the true TTL? This seems to return a extraordinary large number
-                case TTL: return Long.valueOf(element.getMarkedForDeleteAt()-times.getTime().getNativeTimestamp());
-                default: return null;
+                case TIMESTAMP:
+                    return element.timestamp();
+                case TTL:
+                    return (element instanceof ExpiringColumn)
+                            ? ((ExpiringColumn) element).getTimeToLive()
+                            : null;
+                default:
+                    return null;
             }
         }
     }
