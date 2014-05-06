@@ -24,8 +24,8 @@ public class TitanHBaseHadoopGraph extends TitanHadoopGraph {
         super(setup);
     }
 
-    public HadoopVertex readFaunusVertex(final Configuration configuration, byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
-        return super.readFaunusVertex(configuration, new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
+    public HadoopVertex readHadoopVertex(final Configuration configuration, byte[] key, final NavigableMap<byte[], NavigableMap<Long, byte[]>> rowMap) {
+        return super.readHadoopVertex(configuration, new StaticArrayBuffer(key), new HBaseMapIterable(rowMap));
     }
 
     private static class HBaseMapIterable implements Iterable<Entry> {

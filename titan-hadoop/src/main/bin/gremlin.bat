@@ -32,7 +32,7 @@ IF "%1" EQU "-e" (
     )
   )
 
-  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.faunus.tinkerpop.gremlin.ScriptExecutor !K!
+  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.ScriptExecutor !K!
   GOTO done
 )
 
@@ -43,14 +43,14 @@ IF "%1" EQU "-i" (
     )
   )
 
-  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.faunus.tinkerpop.gremlin.InlineScriptExecutor !K!
+  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.InlineScriptExecutor !K!
   GOTO done
 )
 
 IF "%1" EQU "-v" (
-  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.faunus.tinkerpop.gremlin.Version
+  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Version
 ) ELSE (
-  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.faunus.tinkerpop.gremlin.Console
+  java %JAVA_OPTIONS% -cp %CP%;%CLASSPATH% com.thinkaurelius.titan.hadoop.tinkerpop.gremlin.Console
 )
 
 GOTO done

@@ -40,7 +40,7 @@ public class ScriptRecordReader extends RecordReader<NullWritable, HadoopVertex>
 
         final FileSystem fs = FileSystem.get(context.getConfiguration());
         try {
-            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(ScriptInputFormat.HADOOP_GRAPH_INPUT_SCRIPT_FILE)))));
+            this.engine.eval(new InputStreamReader(fs.open(new Path(context.getConfiguration().get(ScriptInputFormat.TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE)))));
         } catch (Exception e) {
             throw new IOException(e.getMessage());
         }

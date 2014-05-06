@@ -1,7 +1,5 @@
 import com.thinkaurelius.titan.hadoop.HadoopEdge
 import com.thinkaurelius.titan.hadoop.HadoopVertex
-import com.thinkaurelius.titan.hadoop.HadoopEdge
-import com.thinkaurelius.titan.hadoop.HadoopVertex
 import com.tinkerpop.blueprints.Edge
 import com.tinkerpop.blueprints.Graph
 import com.tinkerpop.blueprints.Vertex
@@ -25,7 +23,7 @@ def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph,
     final Object uniqueValue = hadoopVertex.getProperty(uniqueKey);
     final Vertex blueprintsVertex;
     if (null == uniqueValue)
-        throw new RuntimeException("The provided Faunus vertex does not have a property for the unique key: " + hadoopVertex);
+        throw new RuntimeException("The provided Hadoop vertex does not have a property for the unique key: " + hadoopVertex);
 
     final Iterator<Vertex> itty = graph.query().has(uniqueKey, uniqueValue).vertices().iterator();
     if (itty.hasNext()) {
@@ -39,7 +37,7 @@ def Vertex getOrCreateVertex(final HadoopVertex hadoopVertex, final Graph graph,
         context.getCounter(VERTICES_WRITTEN).increment(1l);
     }
 
-    // if vertex existed or not, add all the properties of the faunusVertex to the blueprintsVertex
+    // if vertex existed or not, add all the properties of the hadoopVertex to the blueprintsVertex
     for (final String property : hadoopVertex.getPropertyKeys()) {
         blueprintsVertex.setProperty(property, hadoopVertex.getProperty(property));
         context.getCounter(VERTEX_PROPERTIES_WRITTEN).increment(1l);
@@ -62,7 +60,7 @@ def Edge getOrCreateEdge(final HadoopEdge hadoopEdge, final Vertex blueprintsOut
         context.getCounter(EDGES_WRITTEN).increment(1l);
     }
 
-    // if edge existed or not, add all the properties of the faunusEdge to the blueprintsEdge
+    // if edge existed or not, add all the properties of the hadoopEdge to the blueprintsEdge
     for (final String key : hadoopEdge.getPropertyKeys()) {
         blueprintsEdge.setProperty(key, hadoopEdge.getProperty(key));
         context.getCounter(EDGE_PROPERTIES_WRITTEN).increment(1l);

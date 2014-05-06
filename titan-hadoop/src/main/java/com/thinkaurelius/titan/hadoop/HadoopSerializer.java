@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.diskstorage.util.ReadArrayBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.hadoop.HadoopPathElement.MicroElement;
-import com.thinkaurelius.titan.hadoop.formats.rexster.util.ElementIdHandler;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -57,8 +56,8 @@ public class HadoopSerializer {
         this.serializer = new StandardSerializer(true);
         this.types = HadoopType.DEFAULT_MANAGER;
         this.configuration = configuration;
-        this.trackState = configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_STATE, false);
-        this.trackPaths = configuration.getBoolean(Tokens.HADOOP_PIPELINE_TRACK_PATHS, false);
+        this.trackState = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, false);
+        this.trackPaths = configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false);
     }
 
     public void writeVertex(final HadoopVertex vertex, final DataOutput out) throws IOException {
@@ -84,14 +83,14 @@ public class HadoopSerializer {
         writePathElement(edge, out);
         WritableUtils.writeVLong(out, edge.inVertex);
         WritableUtils.writeVLong(out, edge.outVertex);
-        writeFaunusType(edge.getType(), out);
+        writeHadoopType(edge.getType(), out);
     }
 
     public void readEdge(final HadoopEdge edge, final DataInput in) throws IOException {
         readPathElement(edge, in);
         edge.inVertex = WritableUtils.readVLong(in);
         edge.outVertex = WritableUtils.readVLong(in);
-        edge.setLabel(readFaunusType(in));
+        edge.setLabel(readHadoopType(in));
     }
 
     private void readPathElement(final HadoopPathElement element, final DataInput in) throws IOException {
@@ -152,7 +151,7 @@ public class HadoopSerializer {
         if (count > 0) {
             for (final HadoopProperty property : subset) {
                 //Type
-                if (schema == null) writeFaunusType(property.getType(), out);
+                if (schema == null) writeHadoopType(property.getType(), out);
                 else WritableUtils.writeVLong(out, schema.getTypeId(property.getType()));
                 //Value
                 // TODO titan05 integration -- this used to be getDataOutput(40, true), what happened to the true argument?
@@ -175,7 +174,7 @@ public class HadoopSerializer {
             final Multimap<HadoopType, HadoopProperty> properties = HashMultimap.create();
             for (int i = 0; i < count; i++) {
                 HadoopType type;
-                if (schema == null) type = readFaunusType(in);
+                if (schema == null) type = readHadoopType(in);
                 else type = schema.getType(WritableUtils.readVLong(in));
                 //Value
                 int byteLength = WritableUtils.readVInt(in);
@@ -283,11 +282,11 @@ public class HadoopSerializer {
         }
     }
 
-    private void writeFaunusType(final HadoopType type, final DataOutput out) throws IOException {
+    private void writeHadoopType(final HadoopType type, final DataOutput out) throws IOException {
         out.writeUTF(type.getName());
     }
 
-    private HadoopType readFaunusType(final DataInput in) throws IOException {
+    private HadoopType readHadoopType(final DataInput in) throws IOException {
         return types.get(in.readUTF());
     }
 
@@ -338,7 +337,7 @@ public class HadoopSerializer {
         private void writeSchema(final DataOutput out) throws IOException {
             WritableUtils.writeVInt(out, localTypes.size());
             for (Map.Entry<HadoopType, Long> entry : localTypes.entrySet()) {
-                writeFaunusType(entry.getKey(), out);
+                writeHadoopType(entry.getKey(), out);
                 WritableUtils.writeVLong(out, entry.getValue());
             }
         }
@@ -349,11 +348,10 @@ public class HadoopSerializer {
         int size = WritableUtils.readVInt(in);
         Schema schema = new Schema(size);
         for (int i = 0; i < size; i++) {
-            schema.add(readFaunusType(in), WritableUtils.readVLong(in));
+            schema.add(readHadoopType(in), WritableUtils.readVLong(in));
         }
         return schema;
     }
-
 
     static {
         WritableComparator.define(HadoopPathElement.class, new Comparator());
@@ -385,6 +383,18 @@ public class HadoopSerializer {
     //################################################
     // Serialization for vanilla Blueprints
     //################################################
+
+
+    /**
+     * All graph element identifiers must be of the long data type.  Implementations of this
+     * interface makes it possible to control the conversion of the identifier in the
+     * VertexToHadoopBinary utility class.
+     *
+     * @author Stephen Mallette (http://stephen.genoprime.com)
+     */
+    public static interface ElementIdHandler {
+        long convertIdentifier(final Element element);
+    }
 
     public void writeVertex(final Vertex vertex, final ElementIdHandler elementIdHandler, final DataOutput out) throws IOException {
         Schema schema = new Schema();

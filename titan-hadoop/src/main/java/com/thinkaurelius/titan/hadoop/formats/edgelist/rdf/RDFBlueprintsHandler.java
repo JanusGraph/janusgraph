@@ -46,6 +46,8 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
 
     private static Map<String, Character> dataTypeToClass = new HashMap<String, Character>();
 
+    private static final Set<String> RESERVED_FRAGMENTS;
+
     private static final char STRING = 's';
     private static final char INTEGER = 'i';
     private static final char FLOAT = 'f';
@@ -61,6 +63,12 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
         dataTypeToClass.put(SailTokens.XSD_NS + "double", DOUBLE);
         dataTypeToClass.put(SailTokens.XSD_NS + "long", LONG);
         dataTypeToClass.put(SailTokens.XSD_NS + "boolean", BOOLEAN);
+
+        // exclude fragments which are most likely to interfere in a Titan/Faunus pipeline
+        RESERVED_FRAGMENTS = new HashSet<String>();
+        RESERVED_FRAGMENTS.add("label");
+        //RESERVED_FRAGMENTS.add("type");
+        RESERVED_FRAGMENTS.add("id");
     }
 
     static {
@@ -75,12 +83,22 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
 
     public RDFBlueprintsHandler(final Configuration configuration) throws IOException {
         this.configuration = configuration;
-        this.useFragments = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
-        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
-        for (final String property : configuration.getStringCollection(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
+        this.useFragments = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_USE_LOCALNAME, false);
+        this.literalAsProperty = configuration.getBoolean(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_LITERAL_AS_PROPERTY, false);
+        for (final String property : configuration.getStringCollection(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_AS_PROPERTIES)) {
             this.asProperties.add(property.trim());
         }
-        this.parser = Rio.createParser(formats.get(configuration.get(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_FORMAT)));
+
+        String formatName = configuration.get(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
+        if (null == formatName) {
+            throw new RuntimeException("RDF format is required. Use " + RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT);
+        }
+        RDFFormat format = formats.get(formatName);
+        if (null == format) {
+            throw new RuntimeException("unknown RDF format: " + formatName);
+        }
+        this.parser = Rio.createParser(format);
+
         this.parser.setRDFHandler(this);
         this.parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
     }
@@ -100,10 +118,27 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
     public String postProcess(final Value resource) {
         if (resource instanceof URI) {
             if (this.useFragments) {
-                return ((URI) resource).getLocalName();
+                return createFragment(resource);
             } else {
                 return resource.stringValue();
             }
+        } else {
+            return resource.stringValue();
+        }
+    }
+
+    /**
+     * Simplifies the lexical representation of a value, in particular by taking the fragment identifier of URI
+     * This is a lossy operation; many distinct URIs may map to the same fragment.
+     * Conflicts with reserved tokens are avoided.
+     *
+     * @param resource the Value to map
+     * @return the simplified fragment
+     */
+    private String createFragment(final Value resource) {
+        if (resource instanceof URI) {
+            String frag = ((URI) resource).getLocalName();
+            return RESERVED_FRAGMENTS.contains(frag) ? frag + "_" : frag;
         } else {
             return resource.stringValue();
         }
@@ -142,28 +177,28 @@ public class RDFBlueprintsHandler implements RDFHandler, Iterator<HadoopElement>
             subject.setProperty(postProcess(s.getPredicate()), postProcess(s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
+                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else if (this.literalAsProperty && (s.getObject() instanceof Literal)) {
             final HadoopVertex subject = new HadoopVertex(this.configuration, Crc64.digest(s.getSubject().stringValue().getBytes()));
             subject.setProperty(postProcess(s.getPredicate()), castLiteral((Literal) s.getObject()));
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
+                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
         } else {
             long subjectId = Crc64.digest(s.getSubject().stringValue().getBytes());
             final HadoopVertex subject = new HadoopVertex(this.configuration, subjectId);
             subject.setProperty(RDFInputFormat.URI, s.getSubject().stringValue());
             if (this.useFragments)
-                subject.setProperty(RDFInputFormat.NAME, postProcess(s.getSubject()));
+                subject.setProperty(RDFInputFormat.NAME, createFragment(s.getSubject()));
             this.queue.add(subject);
 
             long objectId = Crc64.digest(s.getObject().stringValue().getBytes());
             final HadoopVertex object = new HadoopVertex(this.configuration, objectId);
             object.setProperty(RDFInputFormat.URI, s.getObject().stringValue());
             if (this.useFragments)
-                object.setProperty(RDFInputFormat.NAME, postProcess(s.getObject()));
+                object.setProperty(RDFInputFormat.NAME, createFragment(s.getObject()));
             this.queue.add(object);
 
             final HadoopEdge predicate = new HadoopEdge(this.configuration, -1, subjectId, objectId, postProcess(s.getPredicate()));

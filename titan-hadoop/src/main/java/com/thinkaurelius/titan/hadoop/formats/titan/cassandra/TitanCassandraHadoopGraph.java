@@ -26,8 +26,8 @@ public class TitanCassandraHadoopGraph extends TitanHadoopGraph {
         super(setup);
     }
 
-    public HadoopVertex readFaunusVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
-        return super.readFaunusVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
+    public HadoopVertex readHadoopVertex(final Configuration configuration, final ByteBuffer key, final SortedMap<ByteBuffer, Column> value) {
+        return super.readHadoopVertex(configuration, StaticArrayBuffer.of(key), new CassandraMapIterable(value));
     }
 
     private static class CassandraMapIterable implements Iterable<Entry> {

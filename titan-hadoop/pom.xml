@@ -63,11 +63,6 @@
             <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.tinkerpop.rexster</groupId>
-            <artifactId>rexster-core</artifactId>
-            <version>${tinkerpop.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>1.2.1</version>
@@ -78,7 +73,6 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-core</artifactId>
             <version>${project.version}</version>
-            <classifier/>
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>

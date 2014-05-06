@@ -18,20 +18,20 @@ import java.io.IOException;
 
 /**
  * ScriptInputFormat supports the arbitrary parsing of a \n-based file format.
- * Each line of the file is passed to the Gremlin/Groovy script identified by the faunus.input.script.file property.
+ * Each line of the file is passed to the Gremlin/Groovy script identified by the titan.hadoop.input.script.file property.
  * The Gremlin/Groovy file must have a method with the following signature:
  * <p/>
  * def boolean read(HadoopVertex vertex, String line) { ... }
  * <p/>
  * The HadoopVertex argument is a reusable object to avoid object creation (see HadoopVertex.reuse(long)).
- * The String argument is the \n-line out of the file at the faunus.input.location.
+ * The String argument is the \n-line out of the file at the titan.hadoop.input.location.
  * The boolean denotes whether or not the provided line yielded a successful creation of a HadoopVertex.
  *
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class ScriptInputFormat extends FileInputFormat<NullWritable, HadoopVertex> implements Configurable {
 
-    public static final String HADOOP_GRAPH_INPUT_SCRIPT_FILE = "hadoop.graph.input.script.file";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_SCRIPT_FILE = "titan.hadoop.graph.input.script.file";
     private VertexQueryFilter vertexQuery;
     private Configuration config;
 

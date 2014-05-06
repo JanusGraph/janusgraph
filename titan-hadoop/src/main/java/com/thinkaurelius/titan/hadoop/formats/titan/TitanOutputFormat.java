@@ -14,12 +14,12 @@ import org.apache.hadoop.io.NullWritable;
  */
 public abstract class TitanOutputFormat extends NoOpOutputFormat implements MapReduceFormat {
 
-    public static final String HADOOP_GRAPH_OUTPUT_TITAN = "hadoop.graph.output.titan";
-    public static final String HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "hadoop.graph.output.titan.infer-schema";
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_TITAN = "titan.hadoop.graph.output.titan";
+    public static final String TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA = "titan.hadoop.graph.output.titan.infer-schema";
 
     @Override
     public void addMapReduceJobs(final HadoopCompiler compiler) {
-        if (compiler.getConf().getBoolean(HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true)) {
+        if (compiler.getConf().getBoolean(TITAN_HADOOP_GRAPH_OUTPUT_TITAN_INFER_SCHEMA, true)) {
             compiler.addMapReduce(SchemaInferencerMapReduce.Map.class,
                     null,
                     SchemaInferencerMapReduce.Reduce.class,

@@ -21,7 +21,7 @@ import com.tinkerpop.blueprints.util.ExceptionFactory;
 import org.apache.hadoop.conf.Configuration;
 
 /**
- * The backend agnostic Titan graph reader for pulling a graph of Titan and into Faunus.
+ * The backend agnostic Titan graph reader for pulling a graph of Titan and into Hadoop.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Marko A. Rodriguez (marko@markorodriguez.com)
@@ -41,7 +41,7 @@ public class TitanHadoopGraph {
         this.vertexReader = setup.getVertexReader();
     }
 
-    protected HadoopVertex readFaunusVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
+    protected HadoopVertex readHadoopVertex(final Configuration configuration, final StaticBuffer key, Iterable<Entry> entries) {
         final long vertexId = this.vertexReader.getVertexId(key);
         Preconditions.checkArgument(vertexId > 0);
         HadoopVertex vertex = new HadoopVertex(configuration, vertexId);

@@ -39,7 +39,7 @@ public class TitanHBaseRecordReader extends RecordReader<NullWritable, HadoopVer
     @Override
     public boolean nextKeyValue() throws IOException, InterruptedException {
         while (this.reader.nextKeyValue()) {
-            final HadoopVertex temp = this.graph.readFaunusVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
+            final HadoopVertex temp = this.graph.readHadoopVertex(this.configuration, this.reader.getCurrentKey().copyBytes(), this.reader.getCurrentValue().getMap().get(TitanHBaseInputFormat.EDGE_STORE_FAMILY));
             if (null != temp) {
                 this.vertex = temp;
                 this.vertexQuery.defaultFilter(this.vertex);

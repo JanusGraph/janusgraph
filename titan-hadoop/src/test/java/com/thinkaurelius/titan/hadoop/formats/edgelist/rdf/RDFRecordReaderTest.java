@@ -16,7 +16,7 @@ public class RDFRecordReaderTest extends BaseTest {
 
     public void testRecordReader() throws Exception {
         Configuration conf = new Configuration();
-        conf.set(RDFInputFormat.HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
+        conf.set(RDFInputFormat.TITAN_HADOOP_GRAPH_INPUT_RDF_FORMAT, "n-triples");
         RDFRecordReader reader = new RDFRecordReader(conf);
         reader.initialize(new FileSplit(new Path(RDFRecordReaderTest.class.getResource("graph-example-1.ntriple").toURI()), 0, Long.MAX_VALUE, new String[]{}),
                 new TaskAttemptContext(conf, new TaskAttemptID()));

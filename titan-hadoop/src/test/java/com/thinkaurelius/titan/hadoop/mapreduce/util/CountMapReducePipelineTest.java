@@ -12,7 +12,7 @@ import java.util.List;
 public class CountMapReducePipelineTest extends BaseTest {
 
     public void testWithPipeline() throws Exception {
-        HadoopGraph g = createFaunusGraph(BaseTest.class.getResourceAsStream("graphson-noop.properties"));
+        HadoopGraph g = createHadoopGraph(BaseTest.class.getResourceAsStream("graphson-noop.properties"));
         new HadoopPipeline(g).V().count().submit();
         List<String> sideEffect = getSideEffect(TEST_DATA_OUTPUT_PATH + "/job-0/sideeffect-r-00000");
         assertEquals(sideEffect.size(), 1);
