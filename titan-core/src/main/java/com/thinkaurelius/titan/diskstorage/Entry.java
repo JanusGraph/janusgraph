@@ -15,7 +15,7 @@ import java.util.Map;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public interface Entry extends StaticBuffer {
+public interface Entry extends StaticBuffer, MetaAnnotated {
 
     public int getValuePosition();
 
@@ -43,19 +43,5 @@ public interface Entry extends StaticBuffer {
      * @param cache
      */
     public void setCache(RelationCache cache);
-
-    /**
-     * Returns true if this entry has associated meta data
-     * @return
-     */
-    public boolean hasMetaData();
-
-    /**
-     * Returns all meta data associated with this entry
-     * @return
-     */
-    public Map<EntryMetaData,Object> getMetaData();
-
-
 
 }

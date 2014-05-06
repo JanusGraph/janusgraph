@@ -1,7 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import com.thinkaurelius.titan.diskstorage.MetaAnnotated;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.Map;
 
 /**
  * An index entry is a key-value pair (or field-value pair).
@@ -9,7 +13,7 @@ import org.apache.commons.lang.StringUtils;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexEntry {
+public class IndexEntry implements MetaAnnotated {
 
     public final String field;
     public final Object value;
@@ -20,6 +24,26 @@ public class IndexEntry {
         Preconditions.checkArgument(StringUtils.isNotBlank(field));
         this.field = field;
         this.value=value;
+    }
+
+    //########## META DATA ############
+    //copied from StaticArrayEntry
+
+    private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
+
+    public synchronized Object setMetaData(EntryMetaData key, Object value) {
+        if (metadata==EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
+        return metadata.put(key,value);
+    }
+
+    @Override
+    public boolean hasMetaData() {
+        return !metadata.isEmpty();
+    }
+
+    @Override
+    public Map<EntryMetaData,Object> getMetaData() {
+        return metadata;
     }
 
 }
