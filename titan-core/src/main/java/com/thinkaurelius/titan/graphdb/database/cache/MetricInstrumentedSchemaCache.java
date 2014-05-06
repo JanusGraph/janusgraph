@@ -36,8 +36,8 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     }
 
     private void incAction(String type, CacheMetricsAction action, StandardTitanTx tx) {
-        if (tx.getConfiguration().getMetricsPrefix()!=null) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getMetricsPrefix(), METRICS_NAME, type, action.getName()).inc();
+        if (tx.getConfiguration().getGroupName()!=null) {
+            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), METRICS_NAME, type, action.getName()).inc();
         }
     }
 

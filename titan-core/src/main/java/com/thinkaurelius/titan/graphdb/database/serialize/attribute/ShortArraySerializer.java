@@ -38,7 +38,7 @@ public class ShortArraySerializer extends ArraySerializer implements AttributeSe
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, short[] attribute) {
+    public void write(WriteBuffer buffer, short[] attribute) {
         writeLength(buffer,attribute);
         if (attribute!=null) for (int i = 0; i < attribute.length; i++) buffer.putShort(attribute[i]);
     }

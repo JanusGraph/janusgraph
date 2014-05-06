@@ -24,7 +24,7 @@ import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 
-public abstract class KeyColumnValueStoreTest {
+public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     @Rule
     public TestName name = new TestName();
@@ -55,7 +55,7 @@ public abstract class KeyColumnValueStoreTest {
     }
 
     public StoreTransaction startTx() throws StorageException {
-        return manager.beginTransaction(StandardTransactionConfig.of());
+        return manager.beginTransaction(getTxConfig());
     }
 
     public StoreFeatures storeFeatures() {

@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
+import com.thinkaurelius.titan.graphdb.query.Query;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -13,6 +14,7 @@ public class RawQuery extends BaseQuery {
     private final String store;
     private final String query;
     private final Parameter[] parameters;
+    private int offset;
 
 
     public RawQuery(String store, String query, Parameter[] parameters) {
@@ -22,6 +24,23 @@ public class RawQuery extends BaseQuery {
         this.store = store;
         this.query = query;
         this.parameters = parameters;
+        this.offset = 0;
+    }
+
+    public RawQuery setOffset(int offset) {
+        Preconditions.checkArgument(offset>=0,"Invalid offset: %s",offset);
+        this.offset=offset;
+        return this;
+    }
+
+    @Override
+    public RawQuery setLimit(int limit) {
+        super.setLimit(limit);
+        return this;
+    }
+
+    public int getOffset() {
+        return offset;
     }
 
     public String getStore() {

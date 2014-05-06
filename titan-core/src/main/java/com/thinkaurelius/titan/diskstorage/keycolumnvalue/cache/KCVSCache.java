@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -15,9 +16,10 @@ import java.util.List;
  */
 public abstract class KCVSCache implements KeyColumnValueStore {
 
+    public static final List<Entry> NO_DELETIONS = ImmutableList.of();
+
     private final String metricsName;
     private final boolean validateKeysOnly = true;
-    private final boolean bufferEnabled = true;
 
     protected final KeyColumnValueStore store;
 
@@ -33,8 +35,8 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
         assert by>=1;
-        if (metricsName!=null && txh.getConfiguration().hasMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getMetricsPrefix(), metricsName, action.getName()).inc(by);
+        if (metricsName!=null && txh.getConfiguration().hasGroupName()) {
+            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
         }
     }
 
@@ -44,9 +46,12 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        throw new UnsupportedOperationException("Only supports mutateEntries()");
+    }
+
+    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws StorageException {
         assert txh instanceof CacheTransaction;
         ((CacheTransaction) txh).mutate(this, key, additions, deletions);
-        if (!bufferEnabled) store.mutate(key, additions, deletions, getTx(txh));
     }
 
     //############### SIMPLE PROXY ###########

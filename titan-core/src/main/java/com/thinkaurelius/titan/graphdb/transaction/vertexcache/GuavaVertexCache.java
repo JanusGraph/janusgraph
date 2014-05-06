@@ -8,21 +8,25 @@ import com.thinkaurelius.titan.util.datastructures.Retriever;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
+
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GuavaVertexCache implements VertexCache {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(GuavaVertexCache.class);
 
     private final ConcurrentMap<Long, InternalVertex> volatileVertices;
     private final Cache<Long, InternalVertex> cache;
 
-    public GuavaVertexCache(final long capacity, final int concurrencyLevel) {
-//        volatileVertices = new ConcurrentHashMap<Long, InternalVertex>(8, 0.75f, concurrencyLevel);
-        volatileVertices = new NonBlockingHashMapLong<InternalVertex>();
+    public GuavaVertexCache(final long maxCacheSize, final int concurrencyLevel, final int initialDirtySize) {
+        volatileVertices = new NonBlockingHashMapLong<InternalVertex>(initialDirtySize);
+        log.debug("Created dirty vertex map with initial size {}", initialDirtySize);
 
-        cache = CacheBuilder.newBuilder().maximumSize(capacity).concurrencyLevel(concurrencyLevel)
+        cache = CacheBuilder.newBuilder().maximumSize(maxCacheSize).concurrencyLevel(concurrencyLevel)
                 .removalListener(new RemovalListener<Long, InternalVertex>() {
                     @Override
                     public void onRemoval(RemovalNotification<Long, InternalVertex> notification) {
@@ -39,6 +43,7 @@ public class GuavaVertexCache implements VertexCache {
                     }
                 })
                 .build();
+        log.debug("Created vertex cache with max size {}", maxCacheSize);
     }
 
     @Override

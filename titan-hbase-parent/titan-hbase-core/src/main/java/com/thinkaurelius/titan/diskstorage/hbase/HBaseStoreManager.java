@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
@@ -196,7 +198,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             hconf.set(entry.getKey(), entry.getValue().toString());
             keysLoaded++;
         }
-        
+
         // Special case for STORAGE_HOSTS
         if (config.has(GraphDatabaseConfiguration.STORAGE_HOSTS)) {
             String zkQuorumKey = "hbase.zookeeper.quorum";
@@ -262,7 +264,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
         // http://hbase.apache.org/book/versions.html#d244e4250
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.additionTime, timestamp.deletionTime);
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.getAdditionTime(times.getUnit()), timestamp.getDeletionTime(times.getUnit()));
 
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -541,6 +543,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
                 KeyRange kr = new KeyRange(startBuf, endBuf);
                 b.put(kr, e.getValue());
+                logger.debug("Found HRegionInfo with non-null end and start keys on server {}: {}", e.getValue(), regionInfo);
             }
         }
 
@@ -744,7 +747,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         logger.debug("Guessed timestamp provider " + prov);
 
-        return prov.getTime();
+        return prov.getTime().getNativeTimestamp();
     }
 
     private HBaseAdmin getAdminInterface() {
@@ -842,9 +845,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     private void checkConfigDeprecation(com.thinkaurelius.titan.diskstorage.configuration.Configuration config) {
-        if (config.has(GraphDatabaseConfiguration.PORT)) {
+        if (config.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             logger.warn("The configuration property {} is ignored for HBase. Set hbase.zookeeper.property.clientPort in hbase-site.xml or {}.hbase.zookeeper.property.clientPort in Titan's configuration file.",
-                    GraphDatabaseConfiguration.PORT, HBASE_CONFIGURATION_NAMESPACE);
+                    GraphDatabaseConfiguration.STORAGE_PORT, HBASE_CONFIGURATION_NAMESPACE);
         }
     }
 }

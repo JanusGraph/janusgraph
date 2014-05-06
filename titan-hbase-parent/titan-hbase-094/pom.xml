@@ -50,8 +50,25 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- HBase 0.94 is broken (master won't start) using Guava 15.0 or newer and this won't be fixed:
+             https://issues.apache.org/jira/browse/HBASE-10174
+        -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
     </dependencies>
-    
+
+    <dependencyManagement>
+      <dependencies>
+	<dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>14.0.1</version>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
+
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>../common/test/java</testSourceDirectory>
@@ -92,6 +109,79 @@
                     <execution>
                         <id>default-deploy</id>
                         <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeGroupIds>com.thinkaurelius.titan</excludeGroupIds>
+                            <outputDirectory>target/test-lib</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.2</version>
+                <executions>
+                    <execution>
+                        <id>shade-guava-14</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadeTestJar>true</shadeTestJar>
+                            <generateUniqueDependencyReducedPom>false</generateUniqueDependencyReducedPom>
+                            <minimizeJar>false</minimizeJar>
+			    <!-- false below  means the shade plugin overwrites the main project artifact (the one with no classifier).
+                                 false does *not* actually detach the main artifact, despite what the option name suggests. -->
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <artifactSet>
+                                <includes>
+                                    <include>com.google.guava:guava</include>
+                                </includes>
+                            </artifactSet>
+                            <relocations>
+                                <!-- Don't do this. The shade plugin relocates absolutely all classes and class 
+                                references with this kind of configuration. This results to garbage classfiles that contain 
+                                references to "titan03.java.lang.String", for example.
+                                <relocation>
+                                    <shadedPattern>titan03.</shadedPattern>
+                                </relocation>
+                                -->
+                                <relocation>
+                                    <pattern>com.google.common</pattern>
+                                    <shadedPattern>com.google.common.guava14</shadedPattern>
+                                </relocation>
+                            </relocations>
+                            <!--
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/license/**</exclude>
+                                        <exclude>META-INF/*</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>LICENSE</exclude>
+                                        <exclude>NOTICE</exclude>
+                                        <exclude>/*.txt</exclude>
+                                        <exclude>build.properties</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            -->
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

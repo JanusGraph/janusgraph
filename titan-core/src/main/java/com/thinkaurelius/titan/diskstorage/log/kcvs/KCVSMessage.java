@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.log.kcvs;
 
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
 
@@ -10,7 +11,7 @@ import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
  */
 public class KCVSMessage extends AbstractMessage {
 
-    public KCVSMessage(StaticBuffer payload, long timestampMirco, String senderId) {
-        super(payload, timestampMirco, senderId);
+    public KCVSMessage(StaticBuffer payload, Timepoint timestamp, String senderId) {
+        super(payload, timestamp, senderId);
     }
 }

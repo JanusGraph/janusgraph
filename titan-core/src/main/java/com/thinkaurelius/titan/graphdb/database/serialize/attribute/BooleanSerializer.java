@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class BooleanSerializer implements AttributeSerializer<Boolean>, OrderPreservingSerializer {
+public class BooleanSerializer implements OrderPreservingSerializer<Boolean> {
 
     @Override
     public Boolean read(ScanBuffer buffer) {
@@ -13,8 +13,19 @@ public class BooleanSerializer implements AttributeSerializer<Boolean>, OrderPre
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Boolean attribute) {
+    public void write(WriteBuffer out, Boolean attribute) {
         out.putByte(encode(attribute.booleanValue()));
+    }
+
+
+    @Override
+    public Boolean readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Boolean attribute) {
+        write(buffer,attribute);
     }
 
     @Override

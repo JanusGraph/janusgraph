@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
-import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,8 +75,10 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTimestampSetting() {
+        final TimeUnit unit = TimeUnit.SECONDS;
+
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
-        TitanTransaction tx1 = graph.buildTransaction().setTimestamp(100).start();
+        TitanTransaction tx1 = graph.buildTransaction().setCommitTime(100, unit).start();
         String name = "name";
         String age = "age";
         String address = "address";
@@ -95,7 +97,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
-        TitanTransaction tx2 = graph.buildTransaction().setTimestamp(1000).start();
+        TitanTransaction tx2 = graph.buildTransaction().setCommitTime(1000, unit).start();
         v1 = tx2.getVertex(id1);
         v2 = tx2.getVertex(id2);
         v1.removeProperty(name);
@@ -118,7 +120,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         // Transaction 3: Remove "address" property from v1 with earlier timestamp than
         // when the value was set
-        TitanTransaction tx3 = graph.buildTransaction().setTimestamp(200).start();
+        TitanTransaction tx3 = graph.buildTransaction().setCommitTime(200, unit).start();
         v1 = tx3.getVertex(id1);
         v1.removeProperty(address);
         tx3.commit();
@@ -129,7 +131,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("xyz", afterTx3.getProperty(address));
 
         // Transaction 4: Modify "age" property on v2, remove edge between v2 and v1
-        TitanTransaction tx4 = graph.buildTransaction().setTimestamp(2000).start();
+        TitanTransaction tx4 = graph.buildTransaction().setCommitTime(2000, unit).start();
         v2 = tx4.getVertex(id2);
         v2.setProperty(age, "15");
         tx4.removeEdge(tx4.getEdge(edgeId));
@@ -144,7 +146,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertNull(graph.getEdge(edgeId));
 
         // Transaction 5: Modify "age" property on v2 with earlier timestamp
-        TitanTransaction tx5 = graph.buildTransaction().setTimestamp(1500).start();
+        TitanTransaction tx5 = graph.buildTransaction().setCommitTime(1500, unit).start();
         v2 = tx5.getVertex(id2);
         v2.setProperty(age, "16");
         tx5.commit();

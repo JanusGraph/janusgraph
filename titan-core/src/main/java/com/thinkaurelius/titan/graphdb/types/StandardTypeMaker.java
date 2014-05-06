@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import org.apache.commons.lang.StringUtils;
 
@@ -16,8 +16,6 @@ import java.util.*;
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardTypeMaker implements TypeMaker {
-
-    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");//, "key");
 
     private static final char[] RESERVED_CHARS = {'{', '}', '"'};
 
@@ -53,7 +51,7 @@ public abstract class StandardTypeMaker implements TypeMaker {
     }
 
 
-    protected String getName() {
+    public String getName() {
         return this.name;
     }
 
@@ -73,8 +71,8 @@ public abstract class StandardTypeMaker implements TypeMaker {
         if (!isHidden) Token.verifyName(name);
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
                 "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
-        Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
-                "Name is reserved: " + name);
+        Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase()),
+                "Name is reserved by system and cannot be used: %s",name);
 
         checkSortKey(sortKey);
         Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");

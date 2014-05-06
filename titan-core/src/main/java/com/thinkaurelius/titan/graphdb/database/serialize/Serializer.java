@@ -10,6 +10,8 @@ public interface Serializer extends AttributeHandling {
 
     public <T> T readObject(ReadBuffer buffer, Class<T> type);
 
+    public <T> T readObjectByteOrder(ReadBuffer buffer, Class<T> type);
+
     public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type);
 
     public DataOutput getDataOutput(int initialCapacity);

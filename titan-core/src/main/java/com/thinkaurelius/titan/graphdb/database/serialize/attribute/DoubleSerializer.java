@@ -30,7 +30,7 @@ public class DoubleSerializer implements AttributeSerializer<Double> {
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, Double attribute) {
+    public void write(WriteBuffer buffer, Double attribute) {
         buffer.putDouble(attribute.doubleValue());
     }
 }

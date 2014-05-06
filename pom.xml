@@ -61,9 +61,10 @@
         <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
-        <cassandra.version>1.2.2</cassandra.version>
+        <cassandra.version>2.0.6</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
+        <sesame.version>2.6.10</sesame.version>
         <slf4j.version>1.7.5</slf4j.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.1.2</jackson2.version>
@@ -93,6 +94,7 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
+        <module>titan-hadoop</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
@@ -413,6 +415,16 @@
                 <version>2.2</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpcore</artifactId>
+                <version>4.1.4</version>
+            </dependency>
+            <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.12</version>
+            </dependency>
+            <dependency>
                 <groupId>org.reflections</groupId>
                 <artifactId>reflections</artifactId>
                 <version>0.9.9-RC1</version>
@@ -462,6 +474,48 @@
                 <artifactId>jetty</artifactId>
                 <version>6.1.26</version>
             </dependency>
+	    <!-- Sesame -->
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-model</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-api</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-n3</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-ntriples</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-rdfxml</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-trig</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-trix</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openrdf.sesame</groupId>
+                <artifactId>sesame-rio-turtle</artifactId>
+                <version>${sesame.version}</version>
+            </dependency>
+
             <!-- asm 3.x -->
             <dependency>
                 <groupId>asm</groupId>
@@ -552,9 +606,17 @@
                 <version>1.0.5-M3</version>
             </dependency>
             <dependency>
+                <!-- Run the full test suite when changing the Guava version.
+                     The Guava team is deadly serious about their 18 month period from deprecation
+                     to feature deletion, and as a result, at least one of Titan's dependencies is
+                     likely to break whenever the Guava version changes.
+
+                     Example where blithely upgrading Guava introduced a linkage error in the past:
+                     https://issues.apache.org/jira/browse/HBASE-10174
+                -->
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>14.0.1</version>
+                <version>15.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
@@ -658,7 +720,7 @@
             <dependency>
                 <groupId>org.apache.thrift</groupId>
                 <artifactId>libthrift</artifactId>
-                <version>0.7.0</version>
+                <version>0.9.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.cassandra</groupId>

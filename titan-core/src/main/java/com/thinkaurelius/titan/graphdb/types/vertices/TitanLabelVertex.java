@@ -11,8 +11,6 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
         super(tx, id, lifecycle);
     }
 
-    //######## IDENTICAL TO TitanLabelReference
-
     @Override
     public boolean isDirected() {
         return isUnidirected(Direction.BOTH);
@@ -24,6 +22,7 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
 
     }
 
+    @Override
     public boolean isUnidirected(Direction dir) {
         return getDefinition().getValue(TypeDefinitionCategory.UNIDIRECTIONAL,Direction.class)==dir;
     }

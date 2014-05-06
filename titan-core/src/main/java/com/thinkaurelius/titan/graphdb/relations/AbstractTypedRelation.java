@@ -8,6 +8,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Set;
@@ -127,6 +128,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public <O> O getProperty(TitanKey key) {
+        if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return it().getPropertyDirect(key);
     }
 

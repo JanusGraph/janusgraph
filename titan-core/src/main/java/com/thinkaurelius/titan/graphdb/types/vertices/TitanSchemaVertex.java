@@ -12,8 +12,8 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.indextype.ExternalIndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.indextype.InternalIndexTypeWrapper;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
 
@@ -34,10 +34,10 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
-                                            tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeName, Direction.OUT, tx()),
+                                            tx.getGraph().getSchemaCache().getTypeRelations(getID(), BaseKey.TypeName, Direction.OUT, tx()),
                                             tx), null);
             } else {
-                p = Iterables.getOnlyElement(query().type(SystemKey.TypeName).properties(), null);
+                p = Iterables.getOnlyElement(query().type(BaseKey.TypeName).properties(), null);
             }
             Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
             name = p.getValue(String.class);
@@ -57,13 +57,13 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 ps = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemKey.TypeDefinitionProperty, Direction.OUT, tx()),
+                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), BaseKey.TypeDefinitionProperty, Direction.OUT, tx()),
                         tx);
             } else {
-                ps = query().type(SystemKey.TypeDefinitionProperty).properties();
+                ps = query().type(BaseKey.TypeDefinitionProperty).properties();
             }
             for (TitanProperty property : ps) {
-                TypeDefinitionDescription desc = property.getProperty(SystemKey.TypeDefinitionDesc);
+                TypeDefinitionDescription desc = property.getProperty(BaseKey.TypeDefinitionDesc);
                 Preconditions.checkArgument(desc!=null && desc.getCategory().isProperty());
                 def.setValue(desc.getCategory(), property.getValue());
             }
@@ -88,15 +88,15 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
             if (isLoaded()) {
                 StandardTitanTx tx = tx();
                 edges = (Iterable)RelationConstructor.readRelation(this,
-                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), SystemLabel.TypeDefinitionEdge, dir, tx()),
+                        tx.getGraph().getSchemaCache().getTypeRelations(getID(), BaseLabel.TypeDefinitionEdge, dir, tx()),
                         tx);
             } else {
-                edges = query().type(SystemLabel.TypeDefinitionEdge).direction(dir).titanEdges();
+                edges = query().type(BaseLabel.TypeDefinitionEdge).direction(dir).titanEdges();
             }
             for (TitanEdge edge: edges) {
                 TitanVertex oth = edge.getVertex(dir.opposite());
                 assert oth instanceof TitanSchemaVertex;
-                TypeDefinitionDescription desc = edge.getProperty(SystemKey.TypeDefinitionDesc);
+                TypeDefinitionDescription desc = edge.getProperty(BaseKey.TypeDefinitionDesc);
                 Object modifier = null;
                 if (desc.getCategory().hasDataType()) {
                     assert desc.getModifier()!=null && desc.getModifier().getClass().equals(desc.getCategory().getDataType());
@@ -127,12 +127,12 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     }
 
     public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir, TitanSchemaVertex other) {
-        VertexCentricQueryBuilder query = query().type(SystemLabel.TypeDefinitionEdge).direction(dir);
+        VertexCentricQueryBuilder query = query().type(BaseLabel.TypeDefinitionEdge).direction(dir);
         if (other!=null) query.adjacentVertex(other);
         return Iterables.filter(query.titanEdges(),new Predicate<TitanEdge>() {
             @Override
             public boolean apply(@Nullable TitanEdge edge) {
-                TypeDefinitionDescription desc = edge.getProperty(SystemKey.TypeDefinitionDesc);
+                TypeDefinitionDescription desc = edge.getProperty(BaseKey.TypeDefinitionDesc);
                 return desc.getCategory()==def;
             }
         });

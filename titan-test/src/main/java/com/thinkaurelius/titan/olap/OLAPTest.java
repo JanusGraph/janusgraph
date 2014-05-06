@@ -77,7 +77,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         });
         builder.addQuery().edges();
         Stopwatch w = new Stopwatch().start();
-        Map<Long,Degree> degrees = builder.execute().get(20, TimeUnit.SECONDS);
+        Map<Long,Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
         System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
         assertNotNull(degrees);
         assertEquals(numV,degrees.size());

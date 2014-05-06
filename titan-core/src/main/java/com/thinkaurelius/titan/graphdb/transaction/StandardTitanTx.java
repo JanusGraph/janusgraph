@@ -10,6 +10,9 @@ import com.google.common.cache.Weigher;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -46,7 +49,8 @@ import com.thinkaurelius.titan.graphdb.transaction.lock.*;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.GuavaVertexCache;
 import com.thinkaurelius.titan.graphdb.transaction.vertexcache.VertexCache;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
@@ -83,7 +87,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
     private static final ConcurrentMap<LockTuple, TransactionLock> UNINITIALIZED_LOCKS = null;
-    private static final long LOCK_TIMEOUT_MS = 5000;
+    private static final Duration LOCK_TIMEOUT = new StandardDuration(5000L, TimeUnit.MILLISECONDS);
 
     private final StandardTitanGraph graph;
     private final TransactionConfiguration config;
@@ -147,6 +151,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
     private final IDPool temporaryIds;
 
+    /**
+     * This belongs in TitanConfig.
+     */
+    private final TimestampProvider times;
 
     /**
      * Whether or not this transaction is open
@@ -164,6 +172,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkNotNull(config);
         Preconditions.checkNotNull(txHandle);
         this.graph = graph;
+        this.times = graph.getConfiguration().getTimestampProvider();
         this.config = config;
         this.idInspector = graph.getIDInspector();
         this.attributeHandler = graph.getDataSerializer();
@@ -202,7 +211,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
         internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
 
-        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel);
+        vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel,config.getDirtyVertexSize());
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<JointIndexQuery.Subquery, List<Object>>() {
             @Override
             public int weigh(JointIndexQuery.Subquery q, List<Object> r) {
@@ -214,10 +223,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         deletedRelations = EMPTY_DELETED_RELATIONS;
 
         this.isOpen = true;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "begin").inc();
-            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>(config.getMetricsPrefix(), "graph", elementProcessorImpl);
-            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>(config.getMetricsPrefix(), "vertex", edgeProcessorImpl);
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
+            elementProcessor = new MetricsQueryExecutor<GraphCentricQuery, TitanElement, JointIndexQuery>(config.getGroupName(), "graph", elementProcessorImpl);
+            edgeProcessor    = new MetricsQueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>(config.getGroupName(), "vertex", edgeProcessorImpl);
         } else {
             elementProcessor = elementProcessorImpl;
             edgeProcessor    = edgeProcessorImpl;
@@ -290,11 +299,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertex getVertex(final long vertexid) {
         verifyOpen();
 
-        if (vertexid <= 0 || !(idInspector.isRelationTypeId(vertexid) || idInspector.isVertexId(vertexid)))
+        if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid)))
             return null;
 
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "db", "getVertexByID").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
         }
 
         InternalVertex v = vertexCache.get(vertexid, externalVertexRetriever);
@@ -329,10 +338,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             InternalVertex vertex = null;
             if (idInspector.isRelationTypeId(vertexid)) {
                 if (idInspector.isPropertyKeyId(vertexid)) {
-                    vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                        vertex = SystemTypeManager.getSystemType(vertexid);
+                    } else {
+                        vertex = new TitanKeyVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    }
                 } else {
-                    Preconditions.checkArgument(idInspector.isEdgeLabelId(vertexid));
-                    vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    assert idInspector.isEdgeLabelId(vertexid);
+                    if (idInspector.isSystemRelationTypeId(vertexid)) {
+                        vertex = SystemTypeManager.getSystemType(vertexid);
+                    } else {
+                        vertex = new TitanLabelVertex(StandardTitanTx.this, vertexid, lifecycle);
+                    }
                 }
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
@@ -359,7 +376,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } else if (config.hasAssignIDsImmediately()) {
             graph.assignID(vertex);
         }
-        addProperty(vertex, SystemKey.VertexExists, Boolean.TRUE);
+        addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         vertexCache.add(vertex, vertex.getID());
         return vertex;
 
@@ -475,7 +492,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     if (multiplicity.isUnique(dir)) {
                         TransactionLock lock = getLock(dir == Direction.OUT ? out : in, type, dir);
                         if (uniqueLock==null) uniqueLock=lock;
-                        else uniqueLock=new CombinerLock(uniqueLock,lock);
+                        else uniqueLock=new CombinerLock(uniqueLock,lock,times);
                     }
                 }
             }
@@ -493,7 +510,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         Preconditions.checkNotNull(label);
         Multiplicity multiplicity = label.getMultiplicity();
         TransactionLock uniqueLock = getUniquenessLock(outVertex, (InternalType) label,inVertex);
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -537,6 +554,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     public TitanProperty addPropertyInternal(TitanVertex vertex, final TitanKey key, Object value) {
         verifyWriteAccess(vertex);
+        Preconditions.checkArgument(!(key instanceof ImplicitKey),"Cannot create a property of implicit type: %s",key.getName());
         vertex = ((InternalVertex) vertex).it();
         Preconditions.checkNotNull(key);
         final Object normalizedValue = verifyAttribute(key, value);
@@ -551,8 +569,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         TransactionLock uniqueLock = getUniquenessLock(vertex, (InternalType) key, normalizedValue);
         //Add locks for unique indexes
-        for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple));
-        uniqueLock.lock(LOCK_TIMEOUT_MS);
+        for (IndexLockTuple lockTuple : uniqueIndexTuples) uniqueLock = new CombinerLock(uniqueLock,getLock(lockTuple),times);
+        uniqueLock.lock(LOCK_TIMEOUT);
         try {
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
@@ -594,7 +612,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             if (config.hasVerifyUniqueness()) {
                 //Acquire uniqueness lock, remove and add
                 uniqueLock = getLock(vertex, key, Direction.OUT);
-                uniqueLock.lock(LOCK_TIMEOUT_MS);
+                uniqueLock.lock(LOCK_TIMEOUT);
                 vertex.removeProperty(key);
             } else {
                 //Only delete in-memory
@@ -632,10 +650,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         TitanSchemaVertex type;
         if (typeCategory.isRelationType()) {
             if (typeCategory == TitanSchemaCategory.KEY) {
-                type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.PropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
+                type = new TitanKeyVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserPropertyKey, temporaryIds.nextID()), ElementLifeCycle.New);
             } else {
                 assert typeCategory == TitanSchemaCategory.LABEL;
-                type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.EdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
+                type = new TitanLabelVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,temporaryIds.nextID()), ElementLifeCycle.New);
             }
         } else {
             type = new TitanSchemaVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.GenericSchemaType,temporaryIds.nextID()), ElementLifeCycle.New);
@@ -643,12 +661,12 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         graph.assignID(type);
         Preconditions.checkArgument(type.getID() > 0);
-        if (typeCategory.hasName()) addProperty(type, SystemKey.TypeName, name);
-        addProperty(type, SystemKey.VertexExists, Boolean.TRUE);
-        addProperty(type, SystemKey.TypeCategory, typeCategory);
+        if (typeCategory.hasName()) addProperty(type, BaseKey.TypeName, name);
+        addProperty(type, BaseKey.VertexExists, Boolean.TRUE);
+        addProperty(type, BaseKey.TypeCategory, typeCategory);
         for (Map.Entry<TypeDefinitionCategory,Object> def : definition.entrySet()) {
-            TitanProperty p = addProperty(type,SystemKey.TypeDefinitionProperty,def.getValue());
-            p.setProperty(SystemKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
+            TitanProperty p = addProperty(type, BaseKey.TypeDefinitionProperty,def.getValue());
+            p.setProperty(BaseKey.TypeDefinitionDesc,TypeDefinitionDescription.of(def.getKey()));
         }
         vertexCache.add(type, type.getID());
         if (typeCategory.hasName()) newTypeCache.put(name, type.getID());
@@ -690,14 +708,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanType getExistingType(long typeid) {
         assert idInspector.isRelationTypeId(typeid);
-
-        SystemType st = SystemTypeManager.getSystemType(typeid);
-        if (st!=null) return st;
-
-        InternalVertex v = getExistingVertex(typeid);
-        assert v instanceof TitanType;
-
-        return (TitanType) v;
+        if (idInspector.isSystemRelationTypeId(typeid)) {
+            return SystemTypeManager.getSystemType(typeid);
+        } else {
+            InternalVertex v = getExistingVertex(typeid);
+            assert v instanceof TitanType;
+            return (TitanType) v;
+        }
     }
 
     @Override
@@ -1053,7 +1070,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanVertex getVertex(String key, Object attribute) {
         if (!containsType(key)) return null;
-        else return getVertex((TitanKey) getType(key), attribute);
+        else return getVertex(getPropertyKey(key), attribute);
     }
 
     @Override
@@ -1071,8 +1088,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
         }
         try {
             if (hasModifications()) {
@@ -1090,8 +1107,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new TitanException("Could not commit transaction due to exception during persistence", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "commit.exceptions").inc();
+            if (null != config.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
             }
         }
     }
@@ -1100,8 +1117,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getMetricsPrefix()) {
-            MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback").inc();
+        if (null != config.getGroupName()) {
+            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
         }
         try {
             txHandle.rollback();
@@ -1110,8 +1127,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             throw new TitanException("Could not rollback transaction due to exception", e);
         } finally {
             close();
-            if (null != config.getMetricsPrefix() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getMetricsPrefix(), "tx", "rollback.exceptions").inc();
+            if (null != config.getGroupName() && !success) {
+                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
             }
         }
     }

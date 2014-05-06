@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -29,21 +30,19 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private final TransactionHandle indexTx;
     private final KeyInformation.IndexRetriever keyInformations;
 
-    private final int mutationAttempts;
-    private final int attemptWaitTime;
+    private final Duration maxWriteTime;
 
     private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
-                            int mutationAttempts, int attemptWaitTime) throws StorageException {
+                            Duration maxWriteTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);
         this.index=index;
         this.keyInformations = keyInformations;
         this.indexTx=index.beginTransaction();
         Preconditions.checkNotNull(indexTx);
-        this.mutationAttempts = mutationAttempts;
-        this.attemptWaitTime = attemptWaitTime;
+        this.maxWriteTime = maxWriteTime;
         this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
     }
 
@@ -114,7 +113,7 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
                 public String toString() {
                     return "IndexMutation";
                 }
-            }, mutationAttempts, attemptWaitTime);
+            }, maxWriteTime);
 
             mutations=null;
         }

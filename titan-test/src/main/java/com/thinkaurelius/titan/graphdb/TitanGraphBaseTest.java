@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
@@ -19,11 +20,13 @@ import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
+
 import org.junit.After;
 import org.junit.Before;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
@@ -52,7 +55,7 @@ public abstract class TitanGraphBaseTest {
         this.config = getConfiguration();
         TestGraphConfigs.applyOverrides(config);
         Preconditions.checkNotNull(config);
-        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
         configuration.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX, "tmp");
         configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "inst");
         Backend backend = new Backend(configuration);
@@ -114,7 +117,7 @@ public abstract class TitanGraphBaseTest {
                 options.put((TestConfigOption)settings[i],settings[i+1]);
             }
             TitanManagement gconf = graph.getManagementSystem();
-            ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.LOCAL);
+            ModifiableConfiguration lconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.LOCAL);
             for (Map.Entry<TestConfigOption,Object> option : options.entrySet()) {
                 if (option.getKey().option.isLocal()) {
                     lconf.set(option.getKey().option,option.getValue(),option.getKey().umbrella);
@@ -188,9 +191,9 @@ public abstract class TitanGraphBaseTest {
 
     private Log openLog(String logManagerName, String logName, ReadMarker readMarker) {
         try {
-            ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config.copy(), BasicConfiguration.Restriction.NONE);
+            ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
             configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "reader");
-            configuration.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, 500, logManagerName);
+            configuration.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new StandardDuration(500L, TimeUnit.MILLISECONDS), logManagerName);
             if (logStoreManager==null) {
                 logStoreManager = Backend.getStorageManager(configuration);
             }

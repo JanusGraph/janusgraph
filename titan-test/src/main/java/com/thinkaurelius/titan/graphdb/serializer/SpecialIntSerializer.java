@@ -16,7 +16,7 @@ public class SpecialIntSerializer implements AttributeSerializer<SpecialInt> {
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, SpecialInt attribute) {
+    public void write(WriteBuffer out, SpecialInt attribute) {
         out.putInt(attribute.getValue());
     }
 

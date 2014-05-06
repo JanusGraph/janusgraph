@@ -29,6 +29,7 @@ import com.codahale.metrics.ganglia.GangliaReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.Duration;
 
 /**
  * Singleton that contains and configures Titan's {@code MetricRegistry}.
@@ -38,6 +39,9 @@ public enum MetricManager {
 
     private static final Logger log =
             LoggerFactory.getLogger(MetricManager.class);
+
+    private static final TimeUnit SCHEDULING_TIME_UNIT =
+            TimeUnit.MILLISECONDS;
 
     private final MetricRegistry registry     = new MetricRegistry();
     private ConsoleReporter consoleReporter   = null;
@@ -60,17 +64,17 @@ public enum MetricManager {
     /**
      * Create a {@link ConsoleReporter} attached to the Titan Metrics registry.
      *
-     * @param reportIntervalInMS
-     *            milliseconds to wait between dumping metrics to the console
+     * @param reportInterval
+     *            time to wait between dumping metrics to the console
      */
-    public synchronized void addConsoleReporter(long reportIntervalInMS) {
+    public synchronized void addConsoleReporter(Duration reportInterval) {
         if (null != consoleReporter) {
             log.debug("Metrics ConsoleReporter already active; not creating another");
             return;
         }
 
         consoleReporter = ConsoleReporter.forRegistry(getRegistry()).build();
-        consoleReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+        consoleReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
     }
 
     /**
@@ -93,14 +97,14 @@ public enum MetricManager {
      * doesn't already exist, this method attempts to create it by calling
      * {@link File#mkdirs()}.
      *
-     * @param reportIntervalInMS
-     *            milliseconds to wait between dumping metrics to CSV files in
+     * @param reportInterval
+     *            time to wait between dumping metrics to CSV files in
      *            the configured directory
      * @param output
      *            the path to a directory into which Metrics will periodically
      *            write CSV data
      */
-    public synchronized void addCsvReporter(long reportIntervalInMS,
+    public synchronized void addCsvReporter(Duration reportInterval,
             String output) {
 
         File outputDir = new File(output);
@@ -117,7 +121,7 @@ public enum MetricManager {
         }
 
         csvReporter = CsvReporter.forRegistry(getRegistry()).build(outputDir);
-        csvReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+        csvReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
     }
 
     /**
@@ -196,13 +200,13 @@ public enum MetricManager {
      * {@link LoggerFactory#getLogger(loggerName)} returns null, then Metrics's
      * default Slf4j logger name is used instead.
      *
-     * @param reportIntervalInMS
-     *            milliseconds to wait between writing metrics to the Slf4j
+     * @param reportInterval
+     *            time to wait between writing metrics to the Slf4j
      *            logger
      * @param loggerName
      *            the name of the Slf4j logger that receives metrics
      */
-    public synchronized void addSlf4jReporter(long reportIntervalInMS, String loggerName) {
+    public synchronized void addSlf4jReporter(Duration reportInterval, String loggerName) {
         if (null != slf4jReporter) {
             log.debug("Metrics Slf4jReporter already active; not creating another");
             return;
@@ -220,7 +224,7 @@ public enum MetricManager {
         }
 
         slf4jReporter = b.build();
-        slf4jReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+        slf4jReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
     }
 
     /**
@@ -262,8 +266,8 @@ public enum MetricManager {
      * @param spoof
      *            override this machine's IP/hostname as it appears on the
      *            Ganglia server
-     * @param reportIntervalInMS
-     *            milliseconds to wait before sending data to the ganglia
+     * @param reportInterval
+     *            titme to wait before sending data to the ganglia
      *            unicast host or multicast group
      * @throws IOException
      *             when a {@link GMetric} can't be instantiated using the
@@ -271,7 +275,7 @@ public enum MetricManager {
      */
     public synchronized void addGangliaReporter(String groupOrHost, int port,
             UDPAddressingMode addressingMode, int ttl, Boolean protocol31,
-            UUID hostUUID, String spoof, long reportIntervalInMS) throws IOException {
+            UUID hostUUID, String spoof, Duration reportInterval) throws IOException {
 
         Preconditions.checkNotNull(groupOrHost);
         Preconditions.checkNotNull(addressingMode);
@@ -290,10 +294,10 @@ public enum MetricManager {
         GangliaReporter.Builder b = GangliaReporter.forRegistry(getRegistry());
 
         gangliaReporter = b.build(ganglia);
-        gangliaReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
+        gangliaReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
 
-        log.info("Configured Ganglia Metrics reporter host={} interval={}ms port={} addrmode={} ttl={} proto31={} uuid={} spoof={}",
-                new Object[] { groupOrHost, reportIntervalInMS, port, addressingMode, ttl, protocol31, hostUUID, spoof });
+        log.info("Configured Ganglia Metrics reporter host={} interval={} port={} addrmode={} ttl={} proto31={} uuid={} spoof={}",
+                new Object[] { groupOrHost, reportInterval, port, addressingMode, ttl, protocol31, hostUUID, spoof });
     }
 
     /**
@@ -321,12 +325,12 @@ public enum MetricManager {
      *            the port to which Graphite reports are sent
      * @param prefix
      *            the optional metrics prefix
-     * @param reportIntervalInMS
-     *            milliseconds to wait between sending metrics to the configured
+     * @param reportInterval
+     *            time to wait between sending metrics to the configured
      *            Graphite host and port
      */
     public synchronized void addGraphiteReporter(String host, int port,
-            String prefix, long reportIntervalInMS) {
+            String prefix, Duration reportInterval) {
 
         Preconditions.checkNotNull(host);
 
@@ -341,9 +345,9 @@ public enum MetricManager {
         b.filter(MetricFilter.ALL);
 
         graphiteReporter = b.build(graphite);
-        graphiteReporter.start(reportIntervalInMS, TimeUnit.MILLISECONDS);
-        log.info("Configured Graphite reporter host={} interval={}ms port={} prefix={}",
-                new Object[] { host, reportIntervalInMS, port, prefix });
+        graphiteReporter.start(reportInterval.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+        log.info("Configured Graphite reporter host={} interval={} port={} prefix={}",
+                new Object[] { host, reportInterval, port, prefix });
     }
 
     /**

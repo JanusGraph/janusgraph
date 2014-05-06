@@ -1,32 +1,19 @@
 package com.thinkaurelius.titan;
 
-import cern.colt.function.LongObjectProcedure;
-import cern.colt.map.AbstractLongObjectMap;
-import cern.colt.map.OpenLongObjectHashMap;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.serialize.attribute.FloatSerializer;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.testutil.RandomGenerator;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
-import java.lang.reflect.Array;
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TestBed {
@@ -59,8 +46,12 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        int pp = 1759100286;
+        System.out.println(pp>>31);
+
+
         WriteBuffer out = new WriteByteBuffer(20);
-        IDHandler.writeEdgeType(out, SystemKey.VertexExists.getID(),IDHandler.DirectionID.PROPERTY_DIR,SystemKey.VertexExists.isHiddenType());
+        IDHandler.writeEdgeType(out, BaseKey.VertexExists.getID(),IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isHiddenType());
         StaticBuffer b = out.getStaticBuffer();
         System.exit(0);
 

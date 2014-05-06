@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -27,7 +28,7 @@ public abstract class AbstractIDManager implements IDAuthority {
       */
     protected static final long BASE_ID = 1;
 
-    protected final long idApplicationWaitMS;
+    protected final Duration idApplicationWaitMS;
     protected final int randomUniqueIDLimit;
 
     protected final String uid;
@@ -46,7 +47,7 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.isActive = false;
 
         this.idApplicationWaitMS =
-                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS);
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
 
         this.randomUniqueIDLimit =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);

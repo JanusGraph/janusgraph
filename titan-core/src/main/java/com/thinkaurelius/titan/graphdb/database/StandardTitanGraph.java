@@ -5,15 +5,17 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -22,7 +24,7 @@ import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
-import com.thinkaurelius.titan.graphdb.database.management.LogTxStatus;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementLogger;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -40,18 +42,20 @@ import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
-import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +73,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final Backend backend;
     private final IDManager idManager;
     private final VertexIDAssigner idAssigner;
+    private final TimestampProvider times;
 
     //Serializers
     protected final IndexSerializer indexSerializer;
@@ -99,11 +104,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         this.idManager = idAssigner.getIDManager();
 
         this.serializer = config.getSerializer();
-        this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation());
+        StoreFeatures storeFeatures = backend.getStoreFeatures();
+        this.indexSerializer = new IndexSerializer(this.serializer, this.backend.getIndexInformation(),storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
-        this.vertexExistenceQuery = edgeSerializer.getQuery(SystemKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
+        this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0], null).setLimit(1);
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.times = configuration.getTimestampProvider();
+
         isOpen = true;
         txCounter = new AtomicLong(0);
         openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<StandardTitanTx, Boolean>(100,0.75f,1));
@@ -117,7 +125,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         globalConfig.set(REGISTRATION_TIME, config.getTimestampProvider().getTime(), uniqueInstanceId);
 
         Log mgmtLog = backend.getSystemMgmtLog();
-        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache);
+        mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
         mgmtLog.registerReader(mgmtLogger);
 
         shutdownHook = new ShutdownThread(this);
@@ -236,7 +244,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         @Override
         public Long retrieveTypeByName(String typeName, StandardTitanTx tx) {
-            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(SystemKey.TypeName, typeName),null);
+            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.TypeName, typeName),null);
             return v!=null?v.getID():null;
         }
 
@@ -321,13 +329,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 && index.getCardinality()!=Cardinality.LIST;
     }
 
-    public void persist(final Collection<InternalRelation> addedRelations,
+    public boolean prepareCommit(final Collection<InternalRelation> addedRelations,
                                      final Collection<InternalRelation> deletedRelations,
                                      final Predicate<InternalRelation> filter,
-                                     final StandardTitanTx tx, final boolean commit) throws StorageException {
-        final BackendTransaction mutator = tx.getTxHandle();
-        final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
-        final boolean hasMutations;
+                                     final BackendTransaction mutator, final StandardTitanTx tx,
+                                     final boolean acquireLocks) throws StorageException {
+
 
         ListMultimap<InternalVertex, InternalRelation> mutations = ArrayListMultimap.create();
         List<IndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
@@ -385,7 +392,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             Preconditions.checkArgument(vertex.getID() > 0, "Vertex has no id: %s", vertex.getID());
             List<InternalRelation> edges = mutations.get(vertex);
             List<Entry> additions = new ArrayList<Entry>(edges.size());
-            List<StaticBuffer> deletions = new ArrayList<StaticBuffer>(Math.max(10, edges.size() / 10));
+            List<Entry> deletions = new ArrayList<Entry>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
                 InternalType baseType = (InternalType) edge.getType();
                 assert baseType.getBaseType()==null;
@@ -397,7 +404,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         if (edge.getVertex(pos).equals(vertex)) {
                             Entry entry = edgeSerializer.writeRelation(edge, pos, tx);
                             if (edge.isRemoved()) {
-                                deletions.add(entry.getColumn());
+                                deletions.add(entry);
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
                                 additions.add(entry);
@@ -417,9 +424,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             if (indexUpdate.isInternalIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
-                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()),KeyColumnValueStore.NO_DELETIONS);
+                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
                 else
-                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry().getColumn()));
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
                 IndexTransaction itx = mutator.getIndexTransactionHandle(update.getIndex().getBackingIndexName());
@@ -430,92 +437,164 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }
         }
-        hasMutations = !mutations.isEmpty();
-
-
-        //7) Log transaction
-        final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading() && hasMutations;
-        final Log txLog = logTransaction?backend.getSystemTxLog():null;
-        final TransactionLogHeader txLogHeader = new TransactionLogHeader(txCounter.incrementAndGet(),
-                mutator.getStoreTransactionHandle().getConfiguration().getTimestamp(), config.getTimestampProvider().getUnit(), LogTxStatus.PRECOMMIT);
-        if (logTransaction) {
-            DataOutput out = txLogHeader.serializeHeader(serializer,256);
-            mutator.logMutations(out);
-//            txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
-            txLog.add(out.getStaticBuffer());
-        }
-
-
-        // 8) Commit changes
-        boolean success=true;
-        try {
-            if (commit) mutator.commit();
-            else if (hasMutations) mutator.flush();
-        } catch (RuntimeException e) {
-            success=false;
-            throw e;
-        } finally {
-            if (logTransaction) {
-                txLogHeader.setStatus(success?LogTxStatus.SUCCESS:LogTxStatus.FAILURE);
-                DataOutput out = txLogHeader.serializeHeader(serializer,20);
-//                txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
-                txLog.add(out.getStaticBuffer());
-            }
-        }
-
+        return !mutations.isEmpty();
     }
 
-    private static final Predicate<InternalRelation> SYSTEMTYPES_FILTER = new Predicate<InternalRelation>() {
+    private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return internalRelation.getType() instanceof SystemType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
+            return internalRelation.getType() instanceof BaseType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
         }
     };
 
-    private static final Predicate<InternalRelation> NO_SYSTEMTYPES_FILTER = new Predicate<InternalRelation>() {
+    private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return !SYSTEMTYPES_FILTER.apply(internalRelation);
+            return !SCHEMA_FILTER.apply(internalRelation);
         }
     };
 
     public void commit(final Collection<InternalRelation> addedRelations,
                      final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
-        //Setup
+
+        //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
+        if (!tx.getConfiguration().hasCommitTime()) tx.getConfiguration().setCommitTime(times.getTime());
+        final Timepoint txTimestamp = tx.getConfiguration().getCommitTime();
+        final long transactionId = txCounter.incrementAndGet();
 
-
-        //1. Assign TitanVertex IDs
+        //2. Assign TitanVertex IDs
         if (!tx.getConfiguration().hasAssignIDsImmediately())
             idAssigner.assignIDs(addedRelations);
 
+        //3. Commit
+        BackendTransaction mutator = tx.getTxHandle();
+        final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
+        final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
+        final Log txLog = logTransaction?backend.getSystemTxLog():null;
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp);
+
+        //3.1 Commit schema elements and their associated relations
         try {
-            if (tx.getConfiguration().hasEnabledBatchLoading()) {
-                persist(addedRelations,deletedRelations, IterablesUtil.NO_FILTER, tx,true);
-            } else {
-                persist(addedRelations,deletedRelations, SYSTEMTYPES_FILTER, tx,false);
-                persist(addedRelations,deletedRelations, NO_SYSTEMTYPES_FILTER, tx,true);
-            }
-        } catch (StorageException e) {
-            throw new TitanException("Storage exception during commit",e);
-        }
+            //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
+            boolean hasSchemaElements = prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, mutator, tx, acquireLocks);
+            if (hasSchemaElements) {
+                Preconditions.checkArgument(!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks,"Attempting to create schema elements in inconsistent state");
 
-        String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
-        if (logTxIdentifier!=null && (!addedRelations.isEmpty() || !deletedRelations.isEmpty())) {
+                if (logTransaction) {
+                    //[FAILURE] If transaction logging fails immediately, abort - nothing persisted yet
+                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PREFLUSH_SYSTEM);
+                }
+
+                LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
+                try {
+                    mutator.flushStorage();
+                } catch (Throwable e) {
+                    //[FAILURE] Primary persistence failed => abort but log failure (if possible)
+                    status = LogTxStatus.FAILURE_SYSTEM;
+                    log.error("Could not commit transaction ["+transactionId+"] due to storage exception in system-commit",e);
+                    throw e;
+                } finally {
+                    if (logTransaction) {
+                        DataOutput out = txLogHeader.serializeHeader(serializer,20,status);
+                        //[FAILURE] An exception here will swallow any (very likely) previous exception in mutator.flushStorage()
+                        //which then has to be looked up from the error log
+                        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
+                    }
+                }
+            }
+
+            //[FAILURE] Exceptions during preparation here cause the entire transaction to fail on transactional systems
+            //or just the non-system part on others. Nothing has been persisted unless batch-loading
+            boolean hasModifications = prepareCommit(addedRelations,deletedRelations, NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
+            if (hasModifications) {
+
+                if (logTransaction) {
+                    //[FAILURE] If transaction logging fails, abort the non-system part - nothing persisted unless batch loading
+                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PRECOMMIT);
+                }
+
+                LogTxStatus status = LogTxStatus.SUCCESS;
+                boolean storageSuccess = false;
+                Map<String,Throwable> indexFailures = ImmutableMap.of();
+                boolean triggerSuccess = false;
+                try {
+                    //1. Commit storage - failures lead to immediate abort
+                    try {
+                        mutator.commitStorage();
+                        storageSuccess = true;
+                    } catch (Throwable e) {
+                        //[FAILURE] If primary storage persistence fails abort directly (partial persistence possible)
+                        status = LogTxStatus.FAILURE;
+                        log.error("Could not commit transaction ["+transactionId+"] due to storage exception in commit",e);
+                        throw e;
+                    }
+                    //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
+                    indexFailures = mutator.commitIndexes();
+                    if (!indexFailures.isEmpty()) {
+                        status = LogTxStatus.FAILURE;
+                        for (Map.Entry<String,Throwable> entry : indexFailures.entrySet()) {
+                            log.error("Error while commiting index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
+                        }
+                    }
+                    //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
+                    String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
+                    if (logTxIdentifier!=null) {
+                        try {
+                            final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
+                            DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
+                            out.putLong(txLogHeader.getTimestamp(times.getUnit()));
+                            out.putLong(txLogHeader.getId());
+                            logRelations(out, addedRelations, tx);
+                            logRelations(out, deletedRelations,tx);
+                            triggerLog.add(out.getStaticBuffer());
+                            triggerSuccess=true;
+                        } catch (Throwable e) {
+                            log.error("Could not trigger-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
+                        }
+                    }
+                } finally {
+                    if (logTransaction) {
+                        DataOutput out = txLogHeader.serializeHeader(serializer,20,status);
+                        if (status==LogTxStatus.FAILURE) {
+                            out.putBoolean(storageSuccess);
+                            out.putBoolean(triggerSuccess);
+                            out.putInt(indexFailures.size());
+                            for (String index : indexFailures.keySet()) {
+                                assert StringUtils.isNotBlank(index);
+                                out.writeObjectNotNull(index);
+                            }
+                        }
+                        //[FAILURE] An exception here will swallow any (very likely) previous exception in mutator.flushStorage()
+                        //which then has to be looked up from the error log
+                        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
+                    }
+                }
+            } else { //Just commit everything at once
+                //[FAILURE] This case only happens when there are no non-system mutations in which case all changes
+                //are already flushed. Hence, an exception here is unlikely and should abort
+                mutator.commit();
+            }
+        } catch (Throwable e) {
+            log.error("Could not commit transaction ["+transactionId+"] due to exception",e);
             try {
-                final Log txLog = backend.getTriggerLog(logTxIdentifier);
-                final long timestamp = tx.getTxHandle().getStoreTransactionHandle().getConfiguration().getTimestamp();
-                DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
-                out.putLong(timestamp);
-                logRelations(out,addedRelations,tx);
-                logRelations(out, deletedRelations,tx);
-                txLog.add(out.getStaticBuffer());
-            } catch (StorageException e) {
-                throw new TitanException("Could not log committed transaction to "+logTxIdentifier,e);
+                //Clean up any left-over transaction handles
+                mutator.rollback();
+            } catch (Throwable e2) {
+                log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
             }
+            if (e instanceof RuntimeException) throw (RuntimeException)e;
+            else throw new TitanException("Unexpected exception",e);
         }
+    }
 
+    private void logTransaction(Log txLog, BackendTransaction mutator, TransactionConfiguration txConfig,
+                                TransactionLogHeader txLogHeader, LogTxStatus status) {
+        DataOutput out = txLogHeader.serializeHeader(serializer,256, status,txConfig);
 
+        //TODO: add transaction config
+        mutator.logMutations(out);
+        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
     }
 
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {

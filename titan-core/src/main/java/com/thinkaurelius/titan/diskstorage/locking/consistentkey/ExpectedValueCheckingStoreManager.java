@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
@@ -7,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,17 +21,17 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     private final KeyColumnValueStoreManager storeManager;
     private final String lockStoreSuffix;
     private final LockerProvider lockerProvider;
-    private final int readAttempts;
+    private final Duration maxReadTime;
     private final StoreFeatures storeFeatures;
 
     private final Map<String,ExpectedValueCheckingStore> stores;
 
     public ExpectedValueCheckingStoreManager(KeyColumnValueStoreManager storeManager, String lockStoreSuffix,
-                                             LockerProvider lockerProvider, int readAttempts) {
+                                             LockerProvider lockerProvider, Duration maxReadTime) {
         this.storeManager = storeManager;
         this.lockStoreSuffix = lockStoreSuffix;
         this.lockerProvider = lockerProvider;
-        this.readAttempts = readAttempts;
+        this.maxReadTime = maxReadTime;
         this.storeFeatures = storeManager.getFeatures();
         this.stores = new HashMap<String,ExpectedValueCheckingStore>(6);
     }
@@ -58,13 +59,13 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
-        TransactionHandleConfig consistentTxCfg = new StandardTransactionConfig.Builder()
-                .metricsPrefix(configuration.getMetricsPrefix())
+        TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
+                .groupName(configuration.getGroupName())
                 .customOptions(customOptions)
-                .timestampProvider(configuration.getTimestampProvider())
+                .startTime(configuration.getStartTime())
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
-        StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, readAttempts);
+        StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
         return wrappedTx;
     }
 

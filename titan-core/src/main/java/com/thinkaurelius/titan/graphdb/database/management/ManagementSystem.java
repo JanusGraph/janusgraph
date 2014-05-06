@@ -22,10 +22,9 @@ import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.indextype.ExternalIndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
-import com.thinkaurelius.titan.graphdb.types.system.SystemKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
@@ -34,9 +33,7 @@ import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -72,7 +69,7 @@ public class ManagementSystem implements TitanManagement {
         this.sysLog = sysLog;
         this.mgmtLogger = mgmtLogger;
         this.transactionalConfig = new TransactionalConfiguration(baseConfig);
-        this.modifyConfig = new ModifiableConfiguration(TITAN_NS,
+        this.modifyConfig = new ModifiableConfiguration(ROOT_NS,
                 transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
         this.userConfig = new UserModifiableConfiguration(modifyConfig,configVerifier);
 
@@ -95,7 +92,10 @@ public class ManagementSystem implements TitanManagement {
                 Set<String> openInstances = getOpenInstances();
                 assert openInstances.size()>0;
                 Preconditions.checkArgument(openInstances.size()<2,"Cannot change offline config option [%s] since multiple instances are currently open: %s",option,openInstances);
-                Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),"Only one open instance but its not the current one: %s",openInstances);
+                Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
+                        "Only one open instance ("
+                        + openInstances.iterator().next() + "), but it's not the current one ("
+                        + graph.getConfiguration().getUniqueGraphId() + ")");
                 //Indicate that this graph must be closed
                 graphShutdownRequired = true;
             }
@@ -235,9 +235,9 @@ public class ManagementSystem implements TitanManagement {
 
     private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
-        TitanEdge edge = transaction.addEdge(out,in, SystemLabel.TypeDefinitionEdge);
+        TitanEdge edge = transaction.addEdge(out,in, BaseLabel.TypeDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
-        edge.setProperty(SystemKey.TypeDefinitionDesc,desc);
+        edge.setProperty(BaseKey.TypeDefinitionDesc,desc);
         return edge;
     }
 
@@ -252,7 +252,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = Token.getSeparatedName(TYPE_INDEX_NAME_PREFIX, type.getName(), name);
 
-        TitanVertex v = transaction.getVertex(SystemKey.TypeName,composedName);
+        TitanVertex v = transaction.getVertex(BaseKey.TypeName,composedName);
         if (v==null) return null;
         assert v instanceof InternalType;
         return new TitanTypeIndexWrapper((InternalType)v);
@@ -278,7 +278,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = composeIndexName(name);
 
-        TitanVertex v = transaction.getVertex(SystemKey.TypeName,composedName);
+        TitanVertex v = transaction.getVertex(BaseKey.TypeName,composedName);
         if (v==null) return null;
         assert v instanceof TitanSchemaVertex;
         return ((TitanSchemaVertex)v).asIndexType();
@@ -302,7 +302,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
         return Iterables.transform(Iterables.filter(Iterables.transform(
-                transaction.getVertices(SystemKey.TypeCategory, TitanSchemaCategory.INDEX),
+                transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.INDEX),
                 new Function<TitanVertex, IndexType>() {
                     @Nullable
                     @Override
@@ -344,7 +344,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public void addIndexKey(final TitanGraphIndex index, final TitanKey key, Parameter... parameters) {
         Preconditions.checkArgument(index!=null && key!=null && index instanceof TitanGraphIndexWrapper
-                && !(key instanceof SystemKey),"Need to provide valid index and key");
+                && !(key instanceof BaseKey),"Need to provide valid index and key");
         if (parameters==null) parameters=new Parameter[0];
         IndexType indexType = ((TitanGraphIndexWrapper)index).getBaseIndex();
         Preconditions.checkArgument(indexType instanceof ExternalIndexType,"Can only add keys to an external index, not %s",index.getName());
@@ -520,9 +520,9 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkNotNull(clazz);
         Iterable<? extends TitanVertex> types = null;
         if (TitanKey.class.equals(clazz)) {
-            types = transaction.getVertices(SystemKey.TypeCategory, TitanSchemaCategory.KEY);
+            types = transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.KEY);
         } else if (TitanLabel.class.equals(clazz)) {
-            types = transaction.getVertices(SystemKey.TypeCategory, TitanSchemaCategory.LABEL);
+            types = transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.LABEL);
         } else if (TitanType.class.equals(clazz)) {
             types = Iterables.concat(getTypes(TitanLabel.class),getTypes(TitanKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);

@@ -4,11 +4,14 @@ import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.core.Idfiable;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
-public class LongSerializer implements AttributeSerializer<Long>, OrderPreservingSerializer {
+public class LongSerializer implements OrderPreservingSerializer<Long> {
 
     private static final long serialVersionUID = -8438674418838450877L;
+
+    public static final LongSerializer INSTANCE = new LongSerializer();
 
     @Override
     public Long read(ScanBuffer buffer) {
@@ -16,8 +19,18 @@ public class LongSerializer implements AttributeSerializer<Long>, OrderPreservin
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Long object) {
-        out.putLong(object - Long.MIN_VALUE);
+    public void write(WriteBuffer out, Long attribute) {
+        out.putLong(attribute - Long.MIN_VALUE);
+    }
+
+    @Override
+    public Long readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer out, Long attribute) {
+        write(out,attribute);
     }
 
     /*
@@ -42,4 +55,6 @@ public class LongSerializer implements AttributeSerializer<Long>, OrderPreservin
             return ((Idfiable)value).getID();
         } else return null;
     }
+
+
 }

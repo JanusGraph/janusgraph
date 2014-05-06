@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
@@ -256,7 +257,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 
             for (String typeName : types) {
                 InternalType type = QueryUtil.getType(tx, typeName);
-                if (type==null) continue;
+                if (type==null || (type instanceof ImplicitKey)) continue;
                 ts.add(type);
 
                 if (type.isPropertyKey()) {

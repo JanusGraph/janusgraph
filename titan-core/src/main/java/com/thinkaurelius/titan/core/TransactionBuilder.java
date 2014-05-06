@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.core;
 
-import com.google.common.base.Preconditions;
+import java.util.concurrent.TimeUnit;
+
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -33,7 +34,9 @@ public interface TransactionBuilder {
      * @param size
      * @return
      */
-    public TransactionBuilder setCacheSize(int size);
+    public TransactionBuilder setVertexCacheSize(int size);
+
+    public TransactionBuilder setDirtyVertexSize(int size);
 
     /**
      * Enables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
@@ -45,13 +48,18 @@ public interface TransactionBuilder {
     public TransactionBuilder checkInternalVertexExistence();
 
     /**
-     * Sets the timestamp for this transaction. The transaction will be recorded with this timestamp
-     * in those storage backends where the timestamp is recorded.
+     * Sets the timestamp for this transaction. The transaction will be recorded
+     * with this timestamp in those storage backends where the timestamp is
+     * recorded.
      *
      * @param timestamp
+     *            number of units elapsed since the UNIX Epoch, that is,
+     *            00:00:00 UTC, Thursday, 1 January 1970
+     * @param unit
+     *            units of the {@code timestamp argument}
      * @return
      */
-    public TransactionBuilder setTimestamp(long timestamp);
+    public TransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit);
 
 
     /**
@@ -85,7 +93,7 @@ public interface TransactionBuilder {
      *            Metric name prefix for this transaction
      * @return
      */
-    public TransactionBuilder setMetricsPrefix(String prefix);
+    public TransactionBuilder setGroupName(String prefix);
 
     /**
      * Name of the log to be used for logging the mutations in this transaction.

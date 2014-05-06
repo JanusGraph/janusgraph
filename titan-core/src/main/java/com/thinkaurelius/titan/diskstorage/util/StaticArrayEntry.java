@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
@@ -11,7 +9,7 @@ import java.nio.ByteBuffer;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StaticArrayEntry extends BaseStaticArrayEntry {
+public class StaticArrayEntry extends BaseStaticArrayEntry implements WriteEntry {
 
     public StaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array, offset, limit, valuePosition);
@@ -27,6 +25,15 @@ public class StaticArrayEntry extends BaseStaticArrayEntry {
 
     public StaticArrayEntry(StaticBuffer buffer, int valuePosition, Integer ttl) {
         super(buffer, valuePosition, ttl);
+    }
+
+    StaticArrayEntry(Entry entry) {
+        super(entry,entry.getValuePosition(), 0);
+    }
+
+    @Override
+    public<O> O getMetaData(EntryMetaData meta) {
+        return null;
     }
 
     /**

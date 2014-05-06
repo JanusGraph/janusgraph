@@ -1,28 +1,34 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexEntry;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 /**
  * Bundles all transaction handles from the various backend systems and provides a proxy for some of their
@@ -32,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BackendTransaction implements TransactionHandle, LoggableTransaction {
+public class BackendTransaction implements LoggableTransaction {
 
     private static final Logger log =
             LoggerFactory.getLogger(BackendTransaction.class);
@@ -47,27 +53,25 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
     private final TransactionHandleConfig txConfig;
     private final StoreFeatures storeFeatures;
 
-    private final KeyColumnValueStore edgeStore;
-    private final KeyColumnValueStore indexStore;
+    private final KCVSCache edgeStore;
+    private final KCVSCache indexStore;
 
-    private final int maxReadRetryAttempts;
-    private final int retryStorageWaitTime;
+    private final Duration maxReadTime;
 
     private final Executor threadPool;
 
     private final Map<String, IndexTransaction> indexTx;
 
     public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
-                              StoreFeatures features, KeyColumnValueStore edgeStore, KeyColumnValueStore indexStore,
-                              int maxReadRetryAttempts, int retryStorageWaitTime,
+                              StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
+                              Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
         this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
         this.indexStore = indexStore;
-        this.maxReadRetryAttempts = maxReadRetryAttempts;
-        this.retryStorageWaitTime = retryStorageWaitTime;
+        this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
     }
@@ -87,16 +91,30 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         return itx;
     }
 
+    public void commitStorage() throws StorageException {
+        storeTx.commit();
+    }
+
+    public Map<String,Throwable> commitIndexes() {
+        Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
+        for (Map.Entry<String,IndexTransaction> txentry : indexTx.entrySet()) {
+            try {
+                txentry.getValue().commit();
+            } catch (Throwable e) {
+                exceptions.put(txentry.getKey(),e);
+            }
+        }
+        return exceptions;
+    }
+
     @Override
     public void commit() throws StorageException {
         storeTx.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
 
-    @Override
-    public void rollback() throws StorageException {
-        storeTx.rollback();
-        for (IndexTransaction itx : indexTx.values()) itx.rollback();
+    public void flushStorage() throws StorageException {
+        storeTx.flush();
     }
 
     @Override
@@ -104,6 +122,29 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         storeTx.flush();
         for (IndexTransaction itx : indexTx.values()) itx.flush();
     }
+
+    /**
+     * Rolls back all transactions and makes sure that this does not get cut short
+     * by exceptions. If exceptions occur, the storage exception takes priority on re-throw.
+     * @throws StorageException
+     */
+    @Override
+    public void rollback() throws StorageException {
+        Throwable excep = null;
+        for (IndexTransaction itx : indexTx.values()) {
+            try {
+                itx.rollback();
+            } catch (Throwable e) {
+                excep = e;
+            }
+        }
+        storeTx.rollback();
+        if (excep!=null) { //throw any encountered index transaction rollback exceptions
+            if (excep instanceof StorageException) throw (StorageException)excep;
+            else throw new PermanentStorageException("Unexpected exception",excep);
+        }
+    }
+
 
     @Override
     public void logMutations(DataOutput out) {
@@ -127,8 +168,8 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        edgeStore.mutate(key, additions, deletions, storeTx);
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        edgeStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**
@@ -139,8 +180,8 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        indexStore.mutate(key, additions, deletions, storeTx);
+    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        indexStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**
@@ -271,10 +312,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
         public void run() {
             try {
                 List<Entry> result;
-                if (maxReadRetryAttempts > 1)
-                    result = edgeStoreQuery(kq);
-                else //Premature optimization
-                    result = edgeStore.getSlice(kq, storeTx);
+                result = edgeStoreQuery(kq);
                 resultArray[resultPosition] = result;
             } catch (Exception e) {
                 failureCount.incrementAndGet();
@@ -383,7 +421,7 @@ public class BackendTransaction implements TransactionHandle, LoggableTransactio
 
 
     private final <V> V executeRead(Callable<V> exe) throws TitanException {
-        return BackendOperation.execute(exe, maxReadRetryAttempts, retryStorageWaitTime);
+        return BackendOperation.execute(exe, maxReadTime);
     }
 
 

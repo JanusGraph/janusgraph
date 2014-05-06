@@ -4,24 +4,27 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
+import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.ConsistencyLevel;
 import org.apache.cassandra.db.filter.IDiskAtomFilter;
-import org.apache.cassandra.db.filter.QueryPath;
+import org.apache.cassandra.db.filter.SliceQueryFilter;
 import org.apache.cassandra.dht.*;
+import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.exceptions.IsBootstrappingException;
 import org.apache.cassandra.exceptions.RequestTimeoutException;
 import org.apache.cassandra.exceptions.UnavailableException;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ColumnParent;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.ThriftValidation;
@@ -31,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
+
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -44,7 +47,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     private final String keyspace;
     private final String columnFamily;
     private final CassandraEmbeddedStoreManager storeManager;
-
+    private final TimestampProvider times;
 
     public CassandraEmbeddedKeyColumnValueStore(
             String keyspace,
@@ -53,6 +56,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.storeManager = storeManager;
+        this.times = this.storeManager.getTimestampProvider();
     }
 
     @Override
@@ -73,18 +77,19 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         if (partitioner instanceof RandomPartitioner || partitioner instanceof Murmur3Partitioner)
             throw new PermanentStorageException("This operation is only supported when byte-ordered partitioner is used.");
 
-        return new RowIterator(keyRangeQuery, storeManager.getPageSize());
+        return new RowIterator(keyRangeQuery, storeManager.getPageSize(), txh);
     }
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize());
+        return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize(), txh);
     }
 
     private List<Row> getKeySlice(Token start,
                                   Token end,
                                   @Nullable SliceQuery sliceQuery,
-                                  int pageSize) throws StorageException {
+                                  int pageSize,
+                                  long timestamp) throws StorageException {
         IPartitioner<?> partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
@@ -106,14 +111,11 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         List<Row> rows;
 
         try {
-            IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, Schema.instance.getComparator(keyspace, columnFamily));
+            CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamily);
+            IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, cfm, null);
+            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, timestamp, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
 
-            rows = StorageProxy.getRangeSlice(new RangeSliceCommand(keyspace,
-                    new ColumnParent(columnFamily),
-                    filter,
-                    new Bounds<RowPosition>(startPosition, endPosition),
-                    null,
-                    pageSize), ConsistencyLevel.QUORUM);
+            rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
             throw new PermanentStorageException(e);
         }
@@ -136,17 +138,11 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     @Override
     public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
 
-        QueryPath slicePath = new QueryPath(columnFamily);
-        // TODO key.asByteBuffer() may entail an unnecessary buffer copy
-        ReadCommand sliceCmd = new SliceFromReadCommand(
-                keyspace,          // Keyspace name
-                key.asByteBuffer(),// Row key
-                slicePath,         // ColumnFamily
-                ByteBufferUtil.EMPTY_BYTE_BUFFER, // Start column name (empty means begin at first result)
-                ByteBufferUtil.EMPTY_BYTE_BUFFER, // End column name (empty means max out the count)
-                false,             // Reverse results? (false=no)
-                1);                // Max count of Columns to return
+        long ts = getTime(txh);
 
+        // TODO key.asByteBuffer() may entail an unnecessary buffer copy
+        SliceQueryFilter sqf = new SliceQueryFilter(ByteBufferUtil.EMPTY_BYTE_BUFFER, ByteBufferUtil.EMPTY_BYTE_BUFFER, false, 1);
+        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, key.asByteBuffer(), columnFamily, ts, sqf);
         List<Row> rows = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
         if (null == rows || 0 == rows.size())
@@ -167,8 +163,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             if (r.cf.isMarkedForDelete())
                 continue;
 
-            for (IColumn ic : r.cf)
-                if (!ic.isMarkedForDelete())
+            for (Column column : r.cf)
+                if (!column.isMarkedForDelete(ts))
                     return true;
         }
 
@@ -178,15 +174,10 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
-        QueryPath slicePath = new QueryPath(columnFamily);
-        ReadCommand sliceCmd = new SliceFromReadCommand(
-                keyspace,                      // Keyspace name
-                query.getKey().asByteBuffer(), // Row key
-                slicePath,                     // ColumnFamily
-                query.getSliceStart().asByteBuffer(),  // Start column name (empty means begin at first result)
-                query.getSliceEnd().asByteBuffer(),   // End column name (empty means max out the count)
-                false,                         // Reverse results? (false=no)
-                query.getLimit() + (query.hasLimit()?1:0));             // Max count of Columns to return, add 1 in case of limit since we might have to filter one out at the end
+        final long ts = getTime(txh);
+
+        SliceQueryFilter sqf = new SliceQueryFilter(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, query.getLimit() + (query.hasLimit()?1:0));
+        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, ts, sqf);
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
@@ -215,20 +206,24 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return EntryList.EMPTY_LIST;
 
         return CassandraHelper.makeEntryList(
-                Iterables.filter(cf.getSortedColumns(),FilterDeletedColumns.INSTANCE),
+                Iterables.filter(cf.getSortedColumns(), new FilterDeletedColumns(ts)),
                 CassandraEmbeddedGetter.INSTANCE,
                 query.getSliceEnd(),
                 query.getLimit());
 
     }
 
-    private enum FilterDeletedColumns implements Predicate<IColumn> {
+    private class FilterDeletedColumns implements Predicate<Column> {
 
-        INSTANCE;
+        private final long ts;
+
+        private FilterDeletedColumns(long ts) {
+            this.ts = ts;
+        }
 
         @Override
-        public boolean apply(@Nullable IColumn iColumn) {
-            return !iColumn.isMarkedForDelete();
+        public boolean apply(Column input) {
+            return !input.isMarkedForDelete(ts);
         }
     }
 
@@ -260,54 +255,64 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
         try {
             return StorageProxy.read(cmds, clvl);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
         } catch (UnavailableException e) {
             throw new TemporaryStorageException(e);
         } catch (RequestTimeoutException e) {
             throw new PermanentStorageException(e);
         } catch (IsBootstrappingException e) {
             throw new TemporaryStorageException(e);
+        } catch (InvalidRequestException e) {
+            throw new PermanentStorageException(e);
         }
     }
 
-    private static enum CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<IColumn,ByteBuffer> {
+    private static enum CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<Column,ByteBuffer> {
         INSTANCE;
 
         @Override
-        public ByteBuffer getColumn(IColumn element) {
+        public ByteBuffer getColumn(Column element) {
             return org.apache.cassandra.utils.ByteBufferUtil.clone(element.name());
         }
 
         @Override
-        public ByteBuffer getValue(IColumn element) {
+        public ByteBuffer getValue(Column element) {
             return org.apache.cassandra.utils.ByteBufferUtil.clone(element.value());
         }
+    }
+
+    private long getTime(StoreTransaction txh) {
+        //TODO: Use actual start time and do so consistently across the different adapters
+        return times.getTime().getNativeTimestamp();
     }
 
     private class RowIterator implements KeyIterator {
         private final Token maximumToken;
         private final SliceQuery sliceQuery;
+        private final StoreTransaction txh;
 
         private Iterator<Row> keys;
         private ByteBuffer lastSeenKey = null;
         private Row currentRow;
         private int pageSize;
+        private final long ts;
 
         private boolean isClosed;
 
-        public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize) throws StorageException {
+        public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize, StoreTransaction txh) throws StorageException {
             this(StorageService.getPartitioner().getToken(keyRangeQuery.getKeyStart().asByteBuffer()),
                     StorageService.getPartitioner().getToken(keyRangeQuery.getKeyEnd().asByteBuffer()),
                     keyRangeQuery,
-                    pageSize);
+                    pageSize,
+                    txh);
         }
 
-        public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize) throws StorageException {
-            this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize));
+        public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize, StoreTransaction txh) throws StorageException {
+            this.ts = getTime(txh);
+            this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize, ts));
             this.pageSize = pageSize;
             this.sliceQuery = sliceQuery;
             this.maximumToken = maximum;
+            this.txh = txh;
         }
 
         @Override
@@ -355,7 +360,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns = CassandraHelper.makeEntryIterator(
-                        Iterables.filter(currentRow.cf.getSortedColumns(),FilterDeletedColumns.INSTANCE),
+                        Iterables.filter(currentRow.cf.getSortedColumns(), new FilterDeletedColumns(ts)),
                 CassandraEmbeddedGetter.INSTANCE,
                         sliceQuery.getSliceEnd(),
                         sliceQuery.getLimit());
@@ -403,7 +408,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                     return false;
                 }
 
-                List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize);
+                List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize, ts);
 
                 keys = getRowsIterator(newKeys, lastSeenKey);
                 hasNext = keys.hasNext();
@@ -424,7 +429,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return Iterators.filter(rows.iterator(), new Predicate<Row>() {
                 @Override
                 public boolean apply(@Nullable Row row) {
-                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones());
+                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones(ts));
                 }
             });
         }

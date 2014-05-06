@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.util.time.*;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
@@ -10,8 +12,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
-import com.thinkaurelius.titan.diskstorage.util.Timestamps;
 import com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.StandardSchemaCache;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
@@ -27,6 +27,7 @@ import java.lang.management.ManagementFactory;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.annotation.Nullable;
@@ -34,6 +35,7 @@ import javax.management.MBeanServerFactory;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +67,7 @@ public class GraphDatabaseConfiguration {
             LoggerFactory.getLogger(GraphDatabaseConfiguration.class);
 
 
-    public static ConfigNamespace TITAN_NS = new ConfigNamespace(null,"titan","Configuration namespace for the Titan Graph Database");
+    public static ConfigNamespace ROOT_NS = new ConfigNamespace(null,"root","Root Configuration Namespace for the Titan Graph Database");
 
     // ################ GENERAL #######################
     // ################################################
@@ -74,7 +76,7 @@ public class GraphDatabaseConfiguration {
      * Configures the {@link DefaultTypeMaker} to be used by this graph. If set to 'none', automatic creation of types
      * is disabled.
      */
-    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(TITAN_NS,"autotype",
+    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
             "Configures the DefaultTypeMaker to be used by this graph. If set to 'none', automatic creation of types is disabled.",
             ConfigOption.Type.MASKABLE, "blueprints" , new Predicate<String>() {
         @Override
@@ -96,7 +98,7 @@ public class GraphDatabaseConfiguration {
      * Disable this option when the graph contains vertices with very many properties such that retrieving all of them substantially
      * increases latencies compared to a single property retrieval.
      */
-    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(TITAN_NS,"fast-property",
+    public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(ROOT_NS,"fast-property",
             "Whether to pre-fetch all properties on first vertex property access",
             ConfigOption.Type.MASKABLE, Boolean.class);
 //    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
@@ -109,7 +111,7 @@ public class GraphDatabaseConfiguration {
      * Use this setting WITH GREAT CARE since it can easily lead to data corruption and performance issues when not used correctly.
      * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
      */
-    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(TITAN_NS,"set-vertex-id",
+    public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(ROOT_NS,"set-vertex-id",
             "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled",
             ConfigOption.Type.FIXED, false);
 //
@@ -120,7 +122,7 @@ public class GraphDatabaseConfiguration {
     /**
      * When true, Titan will ignore unknown index key fields in queries.
      */
-    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(TITAN_NS, "ignore-unknown-index-key",
+    public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(ROOT_NS, "ignore-unknown-index-key",
             "Whether to ignore unknown external index fields when querying",
             ConfigOption.Type.MASKABLE, false);
 //    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
@@ -129,34 +131,34 @@ public class GraphDatabaseConfiguration {
     public static final String UKNOWN_FIELD_NAME = "unknown_key";
 
 
-    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(TITAN_NS, "timestamps",
+    public static final ConfigOption<Timestamps> TIMESTAMP_PROVIDER = new ConfigOption<Timestamps>(ROOT_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices",
             ConfigOption.Type.FIXED, Timestamps.MICRO);
 
 
-    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(TITAN_NS,"log-tx",
+    public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(ROOT_NS,"log-tx",
             "Whether transaction mutations should be logged to Titan's system log",
             ConfigOption.Type.GLOBAL, true);
 
-    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(TITAN_NS,"unique-instance-id",
+    public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
             "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(TITAN_NS,"titan-version",
+    public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
             "The version of Titan with which this database was created", ConfigOption.Type.FIXED, String.class);
 
     // ################ INSTANCE REGISTRATION #######################
     // ##############################################################
 
-    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(TITAN_NS,"system-registration","This is used internally to keep track of open instances",true);
+    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration","This is used internally to keep track of open instances",true);
 
-    public static final ConfigOption<Long> REGISTRATION_TIME = new ConfigOption<Long>(REGISTRATION_NS,"startup-time",
-            "Timestamp when this instance was started", ConfigOption.Type.GLOBAL, Long.class);
+    public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
+            "Timestamp when this instance was started", ConfigOption.Type.GLOBAL, Timepoint.class);
 
     // ################ CACHE #######################
     // ################################################
 
 //    public static final String CACHE_NAMESPACE = "cache";
-    public static final ConfigNamespace CACHE_NS = new ConfigNamespace(TITAN_NS,"cache","Configuration options that modify Titan's caching behavior");
+    public static final ConfigNamespace CACHE_NS = new ConfigNamespace(ROOT_NS,"cache","Configuration options that modify Titan's caching behavior");
 
     /**
      * Whether this Titan instance should use a database level cache in front of the
@@ -205,23 +207,53 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
 
     /**
-     * Configures the cache size used by individual transactions opened against this graph. The smaller the cache size, the
+     * Configures the maximum number of recently-used vertices cached by a transaction. The smaller the cache size, the
      * less memory a transaction can consume at maximum. For many concurrent, long running transactions in memory constraint
      * environments, reducing the cache size can avoid OutOfMemory and GC limit exceeded exceptions.
      * Note, however, that all modifications in a transaction must always be kept in memory and hence this setting does not
      * have much impact on write intense transactions. Those must be split into smaller transactions in the case of memory errors.
+     * <p/>
+     * The recently-used vertex cache can contain both dirty and clean vertices, that is, both vertices which have been
+     * created or updated in the current transaction and vertices which have only been read in the current transaction.
      */
 //    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
 //    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
     public static final ConfigOption<Integer> TX_CACHE_SIZE = new ConfigOption<Integer>(CACHE_NS,"tx-cache-size",
-            "Size of the transaction level cache",
+            "Maximum size of the transaction-level cache of recently-used vertices",
             ConfigOption.Type.MASKABLE, 20000);
+
+    /**
+     * Configures the initial size of the dirty (modified) vertex map used by a transaction.  All vertices created or
+     * updated by a transaction are held in that transaction's dirty vertex map until the transaction commits.
+     * This option sets the initial size of the dirty map.  Unlike {@link #TX_CACHE_SIZE}, this is not a maximum.
+     * The transaction will transparently allocate more space to store dirty vertices if this initial size hint
+     * is exceeded.  Transactions that know how many vertices they are likely to modify a priori can avoid resize
+     * costs associated with growing the dirty vertex data structure by setting this option.
+     */
+    public static final ConfigOption<Integer> TX_DIRTY_SIZE = new ConfigOption<Integer>(CACHE_NS, "tx-dirty-size",
+          "Initial size of the transaction-level cache of uncommitted dirty vertices",
+          ConfigOption.Type.MASKABLE, Integer.class);
+
+    /**
+     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is disabled.
+     * This value is only considered if the user does not specify a value for
+     * {@code #TX_DIRTY_CACHE_SIZE} explictly in either the graph or transaction config.
+     */
+    private static final int TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH = 32;
+
+    /**
+     * The default value of {@link #TX_DIRTY_SIZE} when batch loading is enabled.
+     * This value is only considered if the user does not specify a value for
+     * {@code #TX_DIRTY_CACHE_SIZE} explictly in either the graph or transaction config.
+     */
+    private static final int TX_DIRTY_SIZE_DEFAULT_WITH_BATCH = 4096;
+
 
     // ################ STORAGE #######################
     // ################################################
 
 //    public static final String STORAGE_NAMESPACE = "storage";
-    public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(TITAN_NS,"storage","Configuration options for the storage backend");
+    public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend");
 
 
     /**
@@ -294,9 +326,9 @@ public class GraphDatabaseConfiguration {
      * temporary such as network failures. For temporary failures, Titan will re-attempt to persist the
      * state up to the number of times specified.
      */
-    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
-            "Number of attempts for write operations that might experience temporary failures",
-            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
+//    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"write-attempts",
+//            "Number of attempts for write operations that might experience temporary failures",
+//            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
 //    public static final String WRITE_ATTEMPTS_KEY = "write-attempts";
 //    public static final int WRITE_ATTEMPTS_DEFAULT = 5;
 
@@ -306,20 +338,21 @@ public class GraphDatabaseConfiguration {
      * temporary such as network failures. For temporary failures, Titan will re-attempt to read the
      * state up to the number of times specified before failing the transaction
      */
-    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
-            "Number of attempts for read operations that might experience temporary failures",
-            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
+//    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<Integer>(STORAGE_NS,"read-attempts",
+//            "Number of attempts for read operations that might experience temporary failures",
+//            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
 //    public static final String READ_ATTEMPTS_KEY = "read-attempts";
 //    public static final int READ_ATTEMPTS_DEFAULT = 3;
 
-    /**
-     * Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying.
-     */
-    public static final ConfigOption<Integer> STORAGE_ATTEMPT_WAITTIME = new ConfigOption<Integer>(STORAGE_NS,"attempt-wait",
-            "Time in milliseconds that Titan waits after an unsuccessful storage attempt before retrying",
-            ConfigOption.Type.MASKABLE, 250, ConfigOption.positiveInt());
-//    public static final String STORAGE_ATTEMPT_WAITTIME_KEY = "attempt-wait";
-//    public static final int STORAGE_ATTEMPT_WAITTIME_DEFAULT = 250;
+    public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
+            "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
+            "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+
+    public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
+            "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
+                    "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
+            ConfigOption.Type.MASKABLE, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
 
 
     /**
@@ -366,9 +399,9 @@ public class GraphDatabaseConfiguration {
      * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
      * This value should be a small multiple of the average consistent write time.
      */
-    public static final ConfigOption<Integer> LOCK_WAIT = new ConfigOption<Integer>(STORAGE_NS,"lock-wait-time",
+    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, 100);
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_WAIT_MS = "lock-wait-time";
 //    public static final long LOCK_WAIT_MS_DEFAULT = 100;
 
@@ -378,9 +411,9 @@ public class GraphDatabaseConfiguration {
      * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
      * held applications are expired pre-maturely and as small as possible to avoid dead lock.
      */
-    public static final ConfigOption<Long> LOCK_EXPIRE = new ConfigOption<Long>(STORAGE_NS,"lock-expiry-time",
+    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
             "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, 300 * 1000l);
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
 //    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
 //    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
 
@@ -409,9 +442,9 @@ public class GraphDatabaseConfiguration {
      * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
      * Also, the time waited after the application before verifying that the application was successful.
      */
-    public static final ConfigOption<Integer> IDAUTHORITY_WAIT_MS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-wait-time",
+    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(STORAGE_NS,"idauthority-wait-time",
             "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, 300);
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
 //    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
 //    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
@@ -524,7 +557,7 @@ public class GraphDatabaseConfiguration {
      * <p/>
      * Value = {@value}
      */
-    public static final ConfigOption<Integer> PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
+    public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<Integer>(STORAGE_NS,"port",
             "Configuration key for the port on which to connect to remote storage backend servers",
             ConfigOption.Type.LOCAL, Integer.class);
 
@@ -568,9 +601,9 @@ public class GraphDatabaseConfiguration {
      * Default timeout when connecting to a remote database instance
      * <p/>
      */
-    public static final ConfigOption<Integer> CONNECTION_TIMEOUT = new ConfigOption<Integer>(STORAGE_NS,"connection-timeout",
-            "Default timeout when connecting to a remote database instance",
-            ConfigOption.Type.MASKABLE, 10000);
+    public static final ConfigOption<Duration> CONNECTION_TIMEOUT = new ConfigOption<Duration>(STORAGE_NS,"connection-timeout",
+            "Default timeout, in milliseconds, when connecting to a remote database instance",
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
 //    public static final int CONNECTION_TIMEOUT_DEFAULT = 10000;
 //    public static final String CONNECTION_TIMEOUT_KEY = "connection-timeout";
 
@@ -583,9 +616,9 @@ public class GraphDatabaseConfiguration {
      * A wait time of 0 disables waiting.
      * <p/>
      */
-    public static final ConfigOption<Integer> SETUP_WAITTIME = new ConfigOption<Integer>(STORAGE_NS,"setup-wait",
+    public static final ConfigOption<Duration> SETUP_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"setup-wait",
             "Time in milliseconds for backend manager to wait for the storage backends to become available when Titan is run in server mode",
-            ConfigOption.Type.MASKABLE, 60000);
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
 //    public static final int SETUP_WAITTIME_DEFAULT = 60000;
 //    public static final String SETUP_WAITTIME_KEY = "setup-wait";
 
@@ -614,7 +647,7 @@ public class GraphDatabaseConfiguration {
     // ################ IDS ###########################
     // ################################################
 
-    public static final ConfigNamespace IDS_NS = new ConfigNamespace(TITAN_NS,"ids","Configuration options for id allocation");
+    public static final ConfigNamespace IDS_NS = new ConfigNamespace(ROOT_NS,"ids","Configuration options for id allocation");
 
 //    public static final String IDS_NAMESPACE = "ids";
 
@@ -655,9 +688,9 @@ public class GraphDatabaseConfiguration {
      * of ids. Note, that failure to allocate a new id block will cause the entire database to fail, hence this value
      * should be set conservatively. Choose a high value if there is a lot of contention around id allocation.
      */
-    public static final ConfigOption<Integer> IDS_RENEW_TIMEOUT = new ConfigOption<Integer>(IDS_NS,"renew-timeout",
+    public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
-            ConfigOption.Type.MASKABLE, 60 * 1000);
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
 //    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
 
@@ -677,7 +710,7 @@ public class GraphDatabaseConfiguration {
 
     public static final String INDEX_NAMESPACE = "index";
 
-    public static final ConfigNamespace INDEX_NS = new ConfigNamespace(TITAN_NS,"index","Configuration options for the individual indexing backends",true);
+    public static final ConfigNamespace INDEX_NS = new ConfigNamespace(ROOT_NS,"index","Configuration options for the individual indexing backends",true);
 
 
     /**
@@ -713,7 +746,7 @@ public class GraphDatabaseConfiguration {
     // ############## Logging System ######################
     // ################################################
 
-    public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.TITAN_NS,"log","Configuration options for Titan's logging system",true);
+    public static final ConfigNamespace LOG_NS = new ConfigNamespace(GraphDatabaseConfiguration.ROOT_NS,"log","Configuration options for Titan's logging system",true);
 
     public static final String MANAGEMENT_LOG = "titan";
     public static final String TRANSACTION_LOG = "tx";
@@ -735,13 +768,13 @@ public class GraphDatabaseConfiguration {
             "Maximum number of log messages to read at a time for logging implementations that read messages in batches",
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
 
-    public static final ConfigOption<Integer> LOG_SEND_DELAY = new ConfigOption<Integer>(LOG_NS,"send-delay",
+    public static final ConfigOption<Duration> LOG_SEND_DELAY = new ConfigOption<Duration>(LOG_NS,"send-delay",
             "Maximum time in ms that messages can be buffered locally before sending in batch",
-            ConfigOption.Type.MASKABLE, 1000, ConfigOption.nonnegativeInt());
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
 
-    public static final ConfigOption<Integer> LOG_READ_INTERVAL = new ConfigOption<Integer>(LOG_NS,"read-interval",
+    public static final ConfigOption<Duration> LOG_READ_INTERVAL = new ConfigOption<Duration>(LOG_NS,"read-interval",
             "Time in ms between message readings from the backend for this logging implementations that read message in batch",
-            ConfigOption.Type.MASKABLE, 5000, ConfigOption.nonnegativeInt());
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(5000L, TimeUnit.MILLISECONDS));
 
     public static final ConfigOption<Integer> LOG_READ_THREADS = new ConfigOption<Integer>(LOG_NS,"read-threads",
             "Number of threads to be used in reading and processing log messages",
@@ -752,7 +785,7 @@ public class GraphDatabaseConfiguration {
 
     public static final String ATTRIBUTE_NAMESPACE = "attributes";
 
-    public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(TITAN_NS,"attributes","Configuration options for attribute handling");
+    public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(ROOT_NS,"attributes","Configuration options for attribute handling");
 
     public static final ConfigOption<Boolean> ATTRIBUTE_ALLOW_ALL_SERIALIZABLE = new ConfigOption<Boolean>(ATTRIBUTE_NS,"allow-all",
             "Enables Titan to store any kind of attribute value in the database",
@@ -780,7 +813,7 @@ public class GraphDatabaseConfiguration {
      * Configuration key prefix for Metrics.
      */
 //    public static final String METRICS_NAMESPACE = "metrics";
-    public static final ConfigNamespace METRICS_NS = new ConfigNamespace(TITAN_NS,"metrics","Configuration options for metrics reporting");
+    public static final ConfigNamespace METRICS_NS = new ConfigNamespace(ROOT_NS,"metrics","Configuration options for metrics reporting");
 
     /**
      * Whether to enable basic timing and operation count monitoring on backend
@@ -807,7 +840,7 @@ public class GraphDatabaseConfiguration {
      * The default name prefix for Metrics reported by Titan. All metric names
      * will begin with this string and a period. This value can be overridden on
      * a transaction-specific basis through
-     * {@link StandardTransactionBuilder#setMetricsPrefix(String)}.
+     * {@link StandardTransactionBuilder#setGroupName(String)}.
      * <p/>
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */
@@ -847,9 +880,9 @@ public class GraphDatabaseConfiguration {
      * Metrics console reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the console reporter.
      */
-    public static final ConfigOption<Long> METRICS_CONSOLE_INTERVAL = new ConfigOption<Long>(METRICS_CONSOLE_NS,"interval",
+    public static final ConfigOption<Duration> METRICS_CONSOLE_INTERVAL = new ConfigOption<Duration>(METRICS_CONSOLE_NS,"interval",
             "Metrics console reporter interval in milliseconds",
-            ConfigOption.Type.MASKABLE, Long.class);
+            ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_CONSOLE_INTERVAL_KEY = "console.interval";
 //    public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
 
@@ -859,9 +892,9 @@ public class GraphDatabaseConfiguration {
      * Metrics CSV reporter interval in milliseconds. Leaving this configuration
      * key absent or null disables the CSV reporter.
      */
-    public static final ConfigOption<Long> METRICS_CSV_INTERVAL = new ConfigOption<Long>(METRICS_CSV_NS,"interval",
+    public static final ConfigOption<Duration> METRICS_CSV_INTERVAL = new ConfigOption<Duration>(METRICS_CSV_NS,"interval",
             "Metrics CSV reporter interval in milliseconds",
-            ConfigOption.Type.MASKABLE, Long.class);
+            ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_CSV_INTERVAL_KEY = "csv.interval";
 //    public static final Long METRICS_CSV_INTERVAL_DEFAULT = null;
 
@@ -919,9 +952,9 @@ public class GraphDatabaseConfiguration {
      * Metrics Slf4j reporter interval in milliseconds. Leaving this
      * configuration key absent or null disables the Slf4j reporter.
      */
-    public static final ConfigOption<Long> METRICS_SLF4J_INTERVAL = new ConfigOption<Long>(METRICS_SLF4J_NS,"interval",
+    public static final ConfigOption<Duration> METRICS_SLF4J_INTERVAL = new ConfigOption<Duration>(METRICS_SLF4J_NS,"interval",
             "Metrics Slf4j reporter interval in milliseconds",
-            ConfigOption.Type.MASKABLE, Long.class);
+            ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_SLF4J_INTERVAL_KEY = "slf4j.interval";
 //    public static final Long METRICS_SLF4J_INTERVAL_DEFAULT = null;
 
@@ -959,9 +992,9 @@ public class GraphDatabaseConfiguration {
      * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
      * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
      */
-    public static final ConfigOption<Long> GANGLIA_INTERVAL = new ConfigOption<Long>(METRICS_GANGLIA_NS,"interval",
+    public static final ConfigOption<Duration> GANGLIA_INTERVAL = new ConfigOption<Duration>(METRICS_GANGLIA_NS,"interval",
             "The number of milliseconds to wait between sending Metrics data",
-            ConfigOption.Type.MASKABLE, Long.class);
+            ConfigOption.Type.MASKABLE, Duration.class);
 
 //    public static final String GANGLIA_INTERVAL_KEY = "interval";
 
@@ -997,6 +1030,8 @@ public class GraphDatabaseConfiguration {
      * The multicast TTL to set on outgoing Ganglia datagrams. This has no
      * effect when {@link #GANGLIA_ADDRESSING_MODE} is set to "multicast".
      * <p/>
+     * This is a TTL in the multicast protocol sense (number of routed hops),
+     * not a timestamp sense.
      */
     public static final ConfigOption<Integer> GANGLIA_TTL = new ConfigOption<Integer>(METRICS_GANGLIA_NS,"ttl",
             "The multicast TTL to set on outgoing Ganglia datagrams",
@@ -1071,9 +1106,9 @@ public class GraphDatabaseConfiguration {
      * host specified {@link #GRAPHITE_HOST}. This has no effect unless
      * {@link #GRAPHITE_HOST} is also set.
      */
-    public static final ConfigOption<Long> GRAPHITE_INTERVAL = new ConfigOption<Long>(METRICS_GRAPHITE_NS,"interval",
+    public static final ConfigOption<Duration> GRAPHITE_INTERVAL = new ConfigOption<Duration>(METRICS_GRAPHITE_NS,"interval",
             "The number of milliseconds to wait between sending Metrics data",
-            ConfigOption.Type.MASKABLE, Long.class);
+            ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String GRAPHITE_INTERVAL_KEY = "interval";
 
     /**
@@ -1113,7 +1148,8 @@ public class GraphDatabaseConfiguration {
     private boolean readOnly;
     private boolean flushIDs;
     private boolean batchLoading;
-    private int txCacheSize;
+    private int txVertexCacheSize;
+    private int txDirtyVertexSize;
     private DefaultTypeMaker defaultTypeMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
@@ -1126,8 +1162,8 @@ public class GraphDatabaseConfiguration {
     public GraphDatabaseConfiguration(ReadConfiguration localConfig) {
         Preconditions.checkNotNull(localConfig);
 
-        BasicConfiguration localbc = new BasicConfiguration(TITAN_NS,localConfig, BasicConfiguration.Restriction.NONE);
-        ModifiableConfiguration overwrite = new ModifiableConfiguration(TITAN_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        BasicConfiguration localbc = new BasicConfiguration(ROOT_NS,localConfig, BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS,new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
 
 //        KeyColumnValueStoreManager storeManager=null;
         final KeyColumnValueStoreManager storeManager = Backend.getStorageManager(localbc);
@@ -1142,7 +1178,7 @@ public class GraphDatabaseConfiguration {
             }
 
             //Freeze global configuration if not already frozen!
-            ModifiableConfiguration globalWrite = new ModifiableConfiguration(TITAN_NS,kcvsConfig, BasicConfiguration.Restriction.GLOBAL);
+            ModifiableConfiguration globalWrite = new ModifiableConfiguration(ROOT_NS,kcvsConfig, BasicConfiguration.Restriction.GLOBAL);
             if (!globalWrite.isFrozen()) {
                 //Copy over global configurations
                 Map<ConfigElement.PathIdentifier,Object> allOptions = localbc.getAll();
@@ -1181,7 +1217,7 @@ public class GraphDatabaseConfiguration {
         } finally {
             kcvsConfig.close();
         }
-        Configuration combinedConfig = new MixedConfiguration(TITAN_NS,globalConfig,localConfig);
+        Configuration combinedConfig = new MixedConfiguration(ROOT_NS,globalConfig,localConfig);
 
         //Compute unique instance id
         this.uniqueGraphId = getOrGenerateUniqueInstanceId(combinedConfig);
@@ -1190,14 +1226,14 @@ public class GraphDatabaseConfiguration {
         //Default log configuration for system and tx log
         //TRANSACTION LOG: send_delay=0 for tx log
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
-                combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG)==0,"Send delay must be 0 for transaction log.");
-        overwrite.set(LOG_SEND_DELAY,0,TRANSACTION_LOG);
+                combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
+        overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
         //SYSTEM MANAGEMENT LOG: backend=default and send_delay=0 and key_consistent=true and fixed-partitions=true
         Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,MANAGEMENT_LOG).equals(LOG_BACKEND.getDefaultValue()),
                 "Must use default log backend for system log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,MANAGEMENT_LOG) ||
-                combinedConfig.get(LOG_SEND_DELAY,MANAGEMENT_LOG)==0,"Send delay must be 0 for system log.");
-        overwrite.set(LOG_SEND_DELAY, 0, MANAGEMENT_LOG);
+                combinedConfig.get(LOG_SEND_DELAY,MANAGEMENT_LOG).isZeroLength(),"Send delay must be 0 for system log.");
+        overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE, MANAGEMENT_LOG);
         Preconditions.checkArgument(!combinedConfig.has(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
                 combinedConfig.get(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management log must be configured to be key-consistent");
         overwrite.set(KCVSLog.LOG_KEY_CONSISTENT,true,MANAGEMENT_LOG);
@@ -1227,7 +1263,11 @@ public class GraphDatabaseConfiguration {
         } catch (UnknownHostException e) {
             throw new TitanConfigurationException("Cannot determine local host", e);
         }
-        return new String(Hex.encodeHex(addrBytes)) + suffix;
+        String uid = new String(Hex.encodeHex(addrBytes)) + suffix;
+        for (char c : ConfigElement.ILLEGAL_CHARS) {
+            uid = StringUtils.replaceChars(uid,c,'-');
+        }
+        return uid;
     }
 
     public static String getOrGenerateUniqueInstanceId(Configuration config) {
@@ -1238,11 +1278,12 @@ public class GraphDatabaseConfiguration {
         } else {
             uid = config.get(UNIQUE_INSTANCE_ID);
         }
+        Preconditions.checkArgument(!StringUtils.containsAny(uid,ConfigElement.ILLEGAL_CHARS),"Invalid unique identifier: %s",uid);
         return uid;
     }
 
     public static final ModifiableConfiguration buildConfiguration() {
-        return new ModifiableConfiguration(TITAN_NS,
+        return new ModifiableConfiguration(ROOT_NS,
                 new CommonsConfiguration(new BaseConfiguration()),
                 BasicConfiguration.Restriction.NONE);
     }
@@ -1253,7 +1294,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public static ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-        return new ModifiableConfiguration(TITAN_NS,
+        return new ModifiableConfiguration(ROOT_NS,
                 backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
@@ -1261,10 +1302,19 @@ public class GraphDatabaseConfiguration {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         batchLoading = configuration.get(STORAGE_BATCH);
-        txCacheSize = configuration.get(TX_CACHE_SIZE);
         defaultTypeMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+
+        txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
+        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
+        if (configuration.has(TX_DIRTY_SIZE)) {
+            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
+        } else {
+            txDirtyVertexSize = batchLoading ?
+                    TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
+                    TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
+        }
 
         if (configuration.has(PROPERTY_PREFETCHING))
             propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
@@ -1298,9 +1348,7 @@ public class GraphDatabaseConfiguration {
 
     private void configureMetricsConsoleReporter() {
         if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-            Long ms = configuration.get(METRICS_CONSOLE_INTERVAL);
-            System.err.println("Console metrics on");
-            MetricManager.INSTANCE.addConsoleReporter(ms);
+            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
         }
     }
 
@@ -1320,14 +1368,14 @@ public class GraphDatabaseConfiguration {
         if (configuration.has(METRICS_SLF4J_INTERVAL)) {
             // null loggerName is allowed -- that means Metrics will use its internal default
             MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-                    configuration.has(METRICS_SLF4J_LOGGER)?configuration.get(METRICS_SLF4J_LOGGER):null);
+                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
         }
     }
 
     private void configureMetricsGangliaReporter() {
         if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
             final String host = configuration.get(GANGLIA_HOST_OR_GROUP);
-            final Long ms = configuration.get(GANGLIA_INTERVAL);
+            final Duration ival = configuration.get(GANGLIA_INTERVAL);
             final Integer port = configuration.get(GANGLIA_PORT);
 
             final UDPAddressingMode addrMode;
@@ -1348,7 +1396,7 @@ public class GraphDatabaseConfiguration {
             if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
 
             try {
-                MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, spoof, ms);
+                MetricManager.INSTANCE.addGangliaReporter(host, port, addrMode, ttl, proto31, uuid, spoof, ival);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -1372,8 +1420,12 @@ public class GraphDatabaseConfiguration {
         return flushIDs;
     }
 
-    public int getTxCacheSize() {
-        return txCacheSize;
+    public int getTxVertexCacheSize() {
+        return txVertexCacheSize;
+    }
+
+    public int getTxDirtyVertexSize() {
+        return txDirtyVertexSize;
     }
 
     public boolean isBatchLoading() {
@@ -1408,16 +1460,8 @@ public class GraphDatabaseConfiguration {
         return unknownIndexKeydName;
     }
 
-    public int getWriteAttempts() {
-        return configuration.get(WRITE_ATTEMPTS);
-    }
-
     public boolean hasLogTransactions() {
         return logTransactions;
-    }
-
-    public int getStorageWaittime() {
-        return configuration.get(STORAGE_ATTEMPT_WAITTIME);
     }
 
     public TimestampProvider getTimestampProvider() {

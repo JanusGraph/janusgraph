@@ -7,12 +7,14 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.NoKCVSCache;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
@@ -26,7 +28,7 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
@@ -96,8 +98,8 @@ public class Backend implements LockerProvider {
     private final KeyColumnValueStoreManager storeManagerLocking;
     private final StoreFeatures storeFeatures;
 
-    private KeyColumnValueStore edgeStore;
-    private KeyColumnValueStore indexStore;
+    private KCVSCache edgeStore;
+    private KCVSCache indexStore;
     private IDAuthority idAuthority;
     private KCVSConfiguration systemConfig;
 
@@ -109,9 +111,8 @@ public class Backend implements LockerProvider {
     private final Map<String, IndexProvider> indexes;
 
     private final int bufferSize;
-    private final int writeAttempts;
-    private final int readAttempts;
-    private final int persistAttemptWaittime;
+    private final Duration maxWriteTime;
+    private final Duration maxReadTime;
     private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 
@@ -142,13 +143,12 @@ public class Backend implements LockerProvider {
             bufferSize = Integer.MAX_VALUE;
         } else bufferSize = bufferSizeTmp;
 
-        writeAttempts = configuration.get(WRITE_ATTEMPTS);
-        readAttempts = configuration.get(READ_ATTEMPTS);
-        persistAttemptWaittime = configuration.get(STORAGE_ATTEMPT_WAITTIME);
+        maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
+        maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
 
         if (!storeFeatures.hasLocking()) {
             Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
-            storeManagerLocking = new ExpectedValueCheckingStoreManager(storeManager,LOCK_STORE_SUFFIX,this,readAttempts);
+            storeManagerLocking = new ExpectedValueCheckingStoreManager(storeManager,LOCK_STORE_SUFFIX,this,maxReadTime);
         } else {
             storeManagerLocking = storeManager;
         }
@@ -218,12 +218,12 @@ public class Backend implements LockerProvider {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
 
-            edgeStore = storeManagerLocking.openDatabase(EDGESTORE_NAME);
-            indexStore = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
+            KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
+            KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
             if (reportMetrics) {
-                edgeStore = new MetricInstrumentedStore(edgeStore, getMetricsStoreName("edgeStore"));
-                indexStore = new MetricInstrumentedStore(indexStore, getMetricsStoreName("vertexIndexStore"));
+                edgeStoreRaw = new MetricInstrumentedStore(edgeStoreRaw, getMetricsStoreName("edgeStore"));
+                indexStoreRaw = new MetricInstrumentedStore(indexStoreRaw, getMetricsStoreName("vertexIndexStore"));
             }
 
             //Configure caches
@@ -249,17 +249,11 @@ public class Backend implements LockerProvider {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStore,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStore,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
+                edgeStore = new ExpirationKCVSCache(edgeStoreRaw,getMetricsCacheName("edgeStore",reportMetrics),expirationTime,cleanWaitTime,edgeStoreCacheSize);
+                indexStore = new ExpirationKCVSCache(indexStoreRaw,getMetricsCacheName("indexStore",reportMetrics),expirationTime,cleanWaitTime,indexStoreCacheSize);
             } else {
-                edgeStore = new NoKCVSCache(edgeStore);
-                indexStore = new NoKCVSCache(indexStore);
-            }
-
-            boolean hashPrefixIndex = storeFeatures.isDistributed() && storeFeatures.isKeyOrdered();
-            if (hashPrefixIndex) {
-                log.info("Wrapping index store with HashPrefix");
-                indexStore = new HashPrefixKeyColumnValueStore(indexStore, HashPrefixKeyColumnValueStore.HashLength.SHORT);
+                edgeStore = new NoKCVSCache(edgeStoreRaw);
+                indexStore = new NoKCVSCache(indexStoreRaw);
             }
 
             //Just open them so that they are cached
@@ -272,7 +266,8 @@ public class Backend implements LockerProvider {
             systemConfig = getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws StorageException {
-                    return storeManagerLocking.beginTransaction(StandardTransactionConfig.of(
+                    return storeManagerLocking.beginTransaction(StandardTransactionHandleConfig.of(
+                            configuration.get(TIMESTAMP_PROVIDER),
                             storeFeatures.getKeyConsistentTxConfig()));
                 }
 
@@ -366,7 +361,7 @@ public class Backend implements LockerProvider {
                                                                      final KeyColumnValueStore store,
                                                                      final Configuration config) {
         try {
-            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,store,SYSTEM_CONFIGURATION_IDENTIFIER);
+            KCVSConfiguration kcvsConfig = new KCVSConfiguration(txProvider,config.get(TIMESTAMP_PROVIDER),store,SYSTEM_CONFIGURATION_IDENTIFIER);
             kcvsConfig.setMaxOperationWaitTime(config.get(SETUP_WAITTIME));
             return kcvsConfig;
         } catch (StorageException e) {
@@ -381,7 +376,7 @@ public class Backend implements LockerProvider {
             return getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws StorageException {
-                    return manager.beginTransaction(StandardTransactionConfig.of(features.getKeyConsistentTxConfig()));
+                    return manager.beginTransaction(StandardTransactionHandleConfig.of(config.get(TIMESTAMP_PROVIDER),features.getKeyConsistentTxConfig()));
                 }
 
                 @Override
@@ -416,18 +411,6 @@ public class Backend implements LockerProvider {
     }
 
 
-    //1. Store
-//
-//    public KeyColumnValueStore getEdgeStore() {
-//        Preconditions.checkNotNull(edgeStore, "Backend has not yet been initialized");
-//        return edgeStore;
-//    }
-//
-//    public KeyColumnValueStore getVertexIndexStore() {
-//        Preconditions.checkNotNull(vertexIndexStore, "Backend has not yet been initialized");
-//        return vertexIndexStore;
-//    }
-
     /**
      * Returns the configured {@link IDAuthority}.
      *
@@ -458,17 +441,17 @@ public class Backend implements LockerProvider {
         StoreTransaction tx = storeManagerLocking.beginTransaction(configuration);
 
         // Cache
-        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, writeAttempts, persistAttemptWaittime, configuration.hasEnabledBatchLoading());
+        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), writeAttempts, persistAttemptWaittime));
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), maxWriteTime));
         }
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,
                 edgeStore, indexStore,
-                readAttempts, persistAttemptWaittime, indexTx, threadPool);
+                maxReadTime, indexTx, threadPool);
     }
 
     public void close() throws StorageException {
@@ -516,8 +499,9 @@ public class Backend implements LockerProvider {
         put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
+        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");
         put("embeddedcassandra", "com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager");

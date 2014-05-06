@@ -13,10 +13,10 @@ import static org.junit.Assert.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -31,7 +31,7 @@ public abstract class LogTest {
 
     public static final String DEFAULT_SENDER_ID = "sender";
 
-    private static final long SLEEP_TIME_MS = 22000;
+    private static final long TIMEOUT_MS = 22000;
 
     public abstract LogManager openLogManager(String senderId) throws StorageException;
 
@@ -72,10 +72,10 @@ public abstract class LogTest {
         log1.add(BufferUtil.getLongBuffer(1L));
         log1.close();
         log1 = manager.openLog("test1", ReadMarker.fromNow());
-        CountingReader count = new CountingReader();
+        CountingReader count = new CountingReader(1, true);
         log1.registerReader(count);
         log1.add(BufferUtil.getLongBuffer(2L));
-        Thread.sleep(SLEEP_TIME_MS);
+        count.await(TIMEOUT_MS);
         assertEquals(1, count.totalMsg.get());
         assertEquals(2, count.totalValue.get());
     }
@@ -87,18 +87,16 @@ public abstract class LogTest {
         Log l;
         l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
         l.add(BufferUtil.getLongBuffer(1L));
-        Thread.sleep(SLEEP_TIME_MS);
         manager.close();
 
         l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
         l.add(BufferUtil.getLongBuffer(2L));
-        Thread.sleep(SLEEP_TIME_MS);
         l.close();
 
         l = manager.openLog("durable", ReadMarker.fromTime(past, TimeUnit.MILLISECONDS));
-        CountingReader count = new CountingReader();
+        CountingReader count = new CountingReader(2, true);
         l.registerReader(count);
-        Thread.sleep(SLEEP_TIME_MS);
+        count.await(TIMEOUT_MS);
         assertEquals(2, count.totalMsg.get());
         assertEquals(3L, count.totalValue.get());
     }
@@ -108,14 +106,14 @@ public abstract class LogTest {
         final int nl = 3;
         Log logs[] = new Log[nl];
         long value = 1L;
-        CountingReader count = new CountingReader();
+        CountingReader count = new CountingReader(3, false);
         for (int i = 0; i < nl; i++) {
             logs[i] = manager.openLog("ml" + i, ReadMarker.fromNow());
             logs[i].registerReader(count);
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
-        Thread.sleep(SLEEP_TIME_MS);
+        count.await(TIMEOUT_MS);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
     }
@@ -126,13 +124,13 @@ public abstract class LogTest {
         Log logs[] = new Log[n];
         CountingReader counts[] = new CountingReader[n];
         for (int i = 0; i < n; i++) {
-            counts[i] = new CountingReader();
+            counts[i] = new CountingReader(1, true);
             logs[i] = manager.openLog("loner" + i, ReadMarker.fromNow());
             logs[i].registerReader(counts[i]);
             logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
         }
-        Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < n; i++) {
+            counts[i].await(TIMEOUT_MS);
             assertEquals(1L << (i + 1), counts[i].totalValue.get());
             assertEquals(1, counts[i].totalMsg.get());
         }
@@ -143,7 +141,7 @@ public abstract class LogTest {
         final int maxLen = 1024 * 4;
         final int rounds = 32;
 
-        StoringReader reader = new StoringReader();
+        StoringReader reader = new StoringReader(rounds);
         List<StaticBuffer> expected = new ArrayList<StaticBuffer>(rounds);
 
         Log l = manager.openLog("fuzz", ReadMarker.fromNow());
@@ -161,9 +159,31 @@ public abstract class LogTest {
             expected.add(sb);
             Thread.sleep(50L);
         }
-        Thread.sleep(SLEEP_TIME_MS);
+        reader.await(TIMEOUT_MS);
         assertEquals(rounds, reader.msgCount);
         assertEquals(expected, reader.msgs);
+    }
+
+    @Test
+    public void testUnregisterReader() throws Exception {
+        Log log = manager.openLog("test1", ReadMarker.fromNow());
+
+        // Register two readers and verify they receive messages.
+        CountingReader reader1 = new CountingReader(1, true);
+        CountingReader reader2 = new CountingReader(2, true);
+        log.registerReader(reader1, reader2);
+        log.add(BufferUtil.getLongBuffer(1L));
+        reader1.await(TIMEOUT_MS);
+
+        // Unregister one reader. It should no longer receive messages. The other reader should
+        // continue to receive messages.
+        log.unregisterReader(reader1);
+        log.add(BufferUtil.getLongBuffer(2L));
+        reader2.await(TIMEOUT_MS);
+        assertEquals(1, reader1.totalMsg.get());
+        assertEquals(1, reader1.totalValue.get());
+        assertEquals(2, reader2.totalMsg.get());
+        assertEquals(3, reader2.totalValue.get());
     }
 
     private void simpleSendReceive(int numMessages, int delayMS) throws Exception {
@@ -176,7 +196,7 @@ public abstract class LogTest {
         assertEquals("test1",log1.getName());
         CountingReader counts[] = new CountingReader[readers];
         for (int i = 0; i < counts.length; i++) {
-            counts[i] = new CountingReader();
+            counts[i] = new CountingReader(numMessages, true);
             log1.registerReader(counts[i]);
         }
         for (long i=1;i<=numMessages;i++) {
@@ -184,10 +204,10 @@ public abstract class LogTest {
 //            System.out.println("Wrote message: " + i);
             Thread.sleep(delayMS);
         }
-        Thread.sleep(SLEEP_TIME_MS);
         for (int i = 0; i < counts.length; i++) {
             CountingReader count = counts[i];
-            assertEquals("counter index " + i + " message count mismatch", numMessages,count.totalMsg.get());
+            count.await(TIMEOUT_MS);
+            assertEquals("counter index " + i + " message count mismatch", numMessages, count.totalMsg.get());
             assertEquals("counter index " + i + " value mismatch", numMessages*(numMessages+1)/2,count.totalValue.get());
             assertTrue(log1.unregisterReader(count));
         }
@@ -195,40 +215,90 @@ public abstract class LogTest {
 
     }
 
-    private static class CountingReader implements MessageReader {
+    /**
+     * Test MessageReader implementation. Allows waiting until an expected number of messages have
+     * been read.
+     */
+    private static class LatchMessageReader implements MessageReader {
+        private final CountDownLatch latch;
 
-        private AtomicLong totalMsg=new AtomicLong(0);
-        private AtomicLong totalValue=new AtomicLong(0);
-        private long lastMessageValue = 0;
+        LatchMessageReader(int expectedMessageCount) {
+            latch = new CountDownLatch(expectedMessageCount);
+        }
 
         @Override
-        public void read(Message message) {
+        public final void read(Message message) {
             assertNotNull(message);
             assertNotNull(message.getSenderId());
-            assertTrue(System.currentTimeMillis()>=message.getTimestamp(TimeUnit.MILLISECONDS));
+            assertNotNull(message.getContent());
+            assertTrue(System.currentTimeMillis() >= message.getTimestamp(TimeUnit.MILLISECONDS));
+            processMessage(message);
+            latch.countDown();
+        }
+
+        /**
+         * Subclasses can override this method to perform additional processing on the message.
+         */
+        protected void processMessage(Message message) {}
+
+        /**
+         * Blocks until the reader has read the expected number of messages.
+         *
+         * @param timeoutMillis the maximum time to wait, in milliseconds
+         * @throws AssertionError if the specified timeout is exceeded
+         */
+        public void await(long timeoutMillis) throws InterruptedException {
+            if (latch.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
+                return;
+            }
+            throw new AssertionError("Did not read expected number of messages before timeout " +
+                                     "was reached.");
+        }
+    }
+
+    private static class CountingReader extends LatchMessageReader {
+
+        private static final Logger log =
+                LoggerFactory.getLogger(CountingReader.class);
+
+        private final AtomicLong totalMsg=new AtomicLong(0);
+        private final AtomicLong totalValue=new AtomicLong(0);
+        private final boolean expectIncreasingValues;
+
+        private long lastMessageValue = 0;
+
+        private CountingReader(int expectedMessageCount, boolean expectIncreasingValues) {
+            super(expectedMessageCount);
+            this.expectIncreasingValues = expectIncreasingValues;
+        }
+
+        @Override
+        public void processMessage(Message message) {
             StaticBuffer content = message.getContent();
-            assertNotNull(content);
             assertEquals(8,content.length());
             long value = content.getLong(0);
-            assertTrue("Message out of order: "+value, lastMessageValue<value);
-            lastMessageValue = value;
+            log.info("Read log value {} by senderid \"{}\"", value, message.getSenderId());
+            if (expectIncreasingValues) {
+                assertTrue("Message out of order or duplicated: " + lastMessageValue + " preceded " + value, lastMessageValue<value);
+                lastMessageValue = value;
+            }
             totalMsg.incrementAndGet();
             totalValue.addAndGet(value);
         }
     }
 
-    private static class StoringReader implements MessageReader {
+    private static class StoringReader extends LatchMessageReader {
 
         private List<StaticBuffer> msgs = new ArrayList<StaticBuffer>(64);
         private volatile int msgCount = 0;
 
+        StoringReader(int expectedMessageCount) {
+            super(expectedMessageCount);
+        }
+
         @Override
-        public void read(Message message) {
-            assertNotNull(message);
-            assertNotNull(message.getSenderId());
-            assertTrue(System.currentTimeMillis()>=message.getTimestamp(TimeUnit.MILLISECONDS));
+        public void processMessage(Message message) {
             StaticBuffer content = message.getContent();
-            assertNotNull(content);
             msgs.add(content);
             msgCount++;
         }

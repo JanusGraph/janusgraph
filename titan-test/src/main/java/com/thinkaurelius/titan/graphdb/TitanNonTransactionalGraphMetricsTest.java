@@ -46,7 +46,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
     @Override
     public WriteConfiguration getConfiguration() {
         WriteConfiguration config = getBaseConfiguration();
-        ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.TITAN_NS,config, BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
         mconf.set(GraphDatabaseConfiguration.BASIC_METRICS,true);
         mconf.set(GraphDatabaseConfiguration.MERGE_BASIC_METRICS,false);
         mconf.set(GraphDatabaseConfiguration.PROPERTY_PREFETCHING,false);
@@ -69,7 +69,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
     public void testKCVSAccess1() throws InterruptedException {
         metricsPrefix = "metrics1";
 
-        TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         TitanVertex v = tx.addVertex(null);
         verifyStoreMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
         ElementHelper.setProperties(v, "age", 25, "name", "john");
@@ -87,7 +87,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         verifyTypeCacheMetrics(3, 3, 0, 0);
 
         //Check type name & definition caching
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         assertEquals(2,Iterables.size(v.getProperties()));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 4l)); //1 verify vertex existence, 1 for query, 1 for each of the 2 types (Definition)
@@ -97,7 +97,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         verifyTypeCacheMetrics(3, 3, 2, 2);
         tx.commit();
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         assertEquals(2, Iterables.size(v.getProperties()));
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 6l));
@@ -108,7 +108,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         tx.commit();
 
         //Check type index lookup caching
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         assertNotNull(v.getProperty("age"));
         assertNotNull(v.getProperty("name"));
@@ -119,7 +119,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         verifyTypeCacheMetrics(9, 5, 8, 4);
         tx.commit();
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         assertEquals(1,Iterables.size(v.getEdges(Direction.BOTH)));
         assertEquals(2, Iterables.size(v.getProperties()));
@@ -136,7 +136,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
     public void testKCVSAccess2() throws InterruptedException {
         metricsPrefix = "metrics2";
 
-        TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         TitanVertex parentVertex = tx.addVertex();
         parentVertex.setProperty("name", "vParent");
         parentVertex.setProperty("other-prop-key1", "other-prop-value1");
@@ -155,7 +155,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         //==> 8 mutations in edgeStore to create vertices and types
         //3 cache misses when doing the index lookup for the type names (since they are not yet defined)
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getID()).getProperties()));
         tx.commit();
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 5l));
@@ -165,7 +165,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         //==> of those, the 3 type related calls go through the cache which is empty at this point ==> 3 (additional) misses
         //all other stats remain unchanged
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         assertEquals(3,Iterables.size(tx.getVertex(parentVertex.getID()).getProperties()));
         verifyStoreMetrics("edgeStore", ImmutableMap.of(M_MUTATE, 8l, M_GET_SLICE, 7l));
         verifyStoreMetrics("vertexIndexStore", ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
@@ -198,7 +198,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING), fastProperty);
         metricsPrefix = "metrics3"+fastProperty;
 
-        TitanTransaction tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         tx.makeKey("name").dataType(String.class).make();
         tx.makeKey("age").dataType(Integer.class).make();
         TitanVertex v = tx.addVertex(null);
@@ -208,7 +208,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         verifyStoreMetrics(STORE_NAMES.get(1), ImmutableMap.of(M_GET_SLICE, 4l, M_MUTATE, 7l, M_ACQUIRE_LOCK, 3l));
         verifyTypeCacheMetrics(0, 0, 0, 0);
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         v.setProperty("age",35);
         v.setProperty("name","johnny");
@@ -223,7 +223,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         else
             verifyTypeCacheMetrics(6, 2, 4, 4);
 
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         v.setProperty("age",45);
         v.setProperty("name","johnnie");
@@ -240,7 +240,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         }
 
         //Check no further locks on read all
-        tx = graph.buildTransaction().setMetricsPrefix(metricsPrefix).start();
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         v = tx.getVertex(v.getID());
         for (TitanProperty p : v.getProperties()) {
             assertNotNull(p.getValue());

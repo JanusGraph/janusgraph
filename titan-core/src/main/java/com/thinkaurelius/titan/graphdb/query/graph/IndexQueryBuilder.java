@@ -46,6 +46,8 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     private String prefix;
     private final String unkownKeyName;
 
+    private int offset;
+
 
     public IndexQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
         Preconditions.checkNotNull(tx);
@@ -55,6 +57,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
 
         parameters = Lists.newArrayList();
         unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeydName();
+        this.offset=0;
     }
 
     //################################################
@@ -71,6 +74,10 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
 
     public String getQuery() {
         return query;
+    }
+
+    public int getOffset() {
+        return offset;
     }
 
     public String getPrefix() {
@@ -95,6 +102,13 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     public IndexQueryBuilder setQuery(String query) {
         Preconditions.checkArgument(StringUtils.isNotBlank(query));
         this.query=query;
+        return this;
+    }
+
+    @Override
+    public IndexQueryBuilder offset(int offset) {
+        Preconditions.checkArgument(offset>=0,"Invalid offset provided: %s",offset);
+        this.offset=offset;
         return this;
     }
 

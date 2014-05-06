@@ -9,9 +9,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
 import org.junit.After;
@@ -30,7 +31,7 @@ import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCh
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
-public abstract class LockKeyColumnValueStoreTest {
+public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
@@ -38,7 +39,7 @@ public abstract class LockKeyColumnValueStoreTest {
     public static final int CONCURRENCY = 8;
     public static final int NUM_TX = 2;
     public static final String DB_NAME = "test";
-    protected static final long EXPIRE_MS = 5000;
+    protected static final long EXPIRE_MS = 5000L;
 
     /*
      * Don't change these back to static. We can run test classes concurrently
@@ -89,7 +90,7 @@ public abstract class LockKeyColumnValueStoreTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
-                tx[i][j] = manager[i].beginTransaction(StandardTransactionConfig.of());
+                tx[i][j] = manager[i].beginTransaction(getTxConfig());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
@@ -97,7 +98,7 @@ public abstract class LockKeyColumnValueStoreTest {
             sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
             sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
             sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
-            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, EXPIRE_MS);
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new StandardDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
 
             if (!storeFeatures.hasLocking()) {
                 Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
@@ -105,15 +106,15 @@ public abstract class LockKeyColumnValueStoreTest {
                 ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore, manager[i]).fromConfig(sc).mediatorName(concreteClassName + i).build();
                 store[i] = new ExpectedValueCheckingStore(store[i], c);
                 for (int j = 0; j < NUM_TX; j++)
-                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(StandardTransactionConfig.of(manager[i].getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
+                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(getConsistentTxConfig(manager[i])), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
             }
         }
     }
 
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
-        StoreTransaction transaction = manager.beginTransaction(StandardTransactionConfig.of());
+        StoreTransaction transaction = manager.beginTransaction(getTxConfig());
         if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
-            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(StandardTransactionConfig.of(manager.getFeatures().getKeyConsistentTxConfig())), GraphDatabaseConfiguration.READ_ATTEMPTS.getDefaultValue());
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(getConsistentTxConfig(manager)), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
         }
         return transaction;
     }

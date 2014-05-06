@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.SupportsNullSerializer;
 import com.thinkaurelius.titan.util.encoding.StringEncoding;
 
@@ -20,7 +21,7 @@ import java.util.zip.GZIPOutputStream;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StringSerializer implements AttributeSerializer<String>, SupportsNullSerializer {
+public class StringSerializer implements OrderPreservingSerializer<String>, SupportsNullSerializer {
 
     public static final int MAX_LENGTH = 128 * 1024 * 1024; //128 MB
 
@@ -32,6 +33,38 @@ public class StringSerializer implements AttributeSerializer<String>, SupportsNu
     private static final long COMPRESSOR_BIT_MASK = MAX_NUM_COMPRESSORS-1;
     private static final long NO_COMPRESSION_OFFSET = COMPRESSOR_BIT_LEN+1;
 
+
+    private final CharacterSerializer cs = new CharacterSerializer();
+
+    @Override
+    public String readByteOrder(ScanBuffer buffer) {
+        byte prefix = buffer.getByte();
+        if (prefix==-1) return null;
+        assert prefix==0;
+        StringBuilder s = new StringBuilder();
+        while (true) {
+            char c = cs.readByteOrder(buffer);
+            if (((int) c) > 0) s.append(c);
+            else break;
+        }
+        return s.toString();
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, String attribute) {
+        if (attribute==null) {
+            buffer.putByte((byte)-1);
+            return;
+        } else {
+            buffer.putByte((byte)0);
+        }
+        for (int i = 0; i < attribute.length(); i++) {
+            char c = attribute.charAt(i);
+            Preconditions.checkArgument(((int) c) > 0, "No null characters allowed in string @ position %s: %s", i, attribute);
+            cs.writeByteOrder(buffer, c);
+        }
+        cs.writeByteOrder(buffer, (char) 0);
+    }
 
     @Override
     public void verifyAttribute(String value) {
@@ -104,7 +137,7 @@ public class StringSerializer implements AttributeSerializer<String>, SupportsNu
     }
 
     @Override
-    public void writeObjectData(WriteBuffer buffer, String attribute) {
+    public void write(WriteBuffer buffer, String attribute) {
         CompressionType compression;
         if (attribute==null) {
             VariableLong.writePositive(buffer,0);

@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.Durations;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
@@ -14,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link ReadConfiguration} wrapper for Apache Configuration
@@ -74,6 +78,24 @@ public class CommonsConfiguration implements WriteConfiguration {
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + datatype);
         } else if (datatype==Object.class) {
             return (O)config.getProperty(key);
+        } else if (Duration.class.isAssignableFrom(datatype)) {
+            // This is a conceptual leak; the config layer should ideally only handle standard library types
+            Object o = config.getProperty(key);
+            if (Duration.class.isInstance(o)) {
+                return (O)o;
+            } else {
+                String[] comps = o.toString().split("\\s");
+                TimeUnit unit = null;
+                if (comps.length==1) {
+                    //By default, times are in milli seconds
+                    unit = TimeUnit.MILLISECONDS;
+                } else if (comps.length==2) {
+                    unit = Durations.parse(comps[1]);
+                } else {
+                    throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
+                }
+                return (O)new StandardDuration(Long.valueOf(comps[0]), unit);
+            }
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 

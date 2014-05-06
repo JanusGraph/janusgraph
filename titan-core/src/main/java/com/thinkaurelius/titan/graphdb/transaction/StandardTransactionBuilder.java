@@ -1,23 +1,24 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TITAN_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionConfig;
-import com.thinkaurelius.titan.diskstorage.util.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 
 /**
  * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -51,19 +52,21 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private int vertexCacheSize;
 
+    private int dirtyVertexSize;
+
     private long indexCacheWeight;
 
     private String logIdentifier;
 
-    private Long timestamp = null;
+    private Timepoint userCommitTime = null;
 
-    private String metricsPrefix;
-
-    private TimestampProvider timestampProvider;
+    private String groupName;
 
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
+
+    private final TimestampProvider times;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -71,17 +74,18 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardTitanGraph graph) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
+        if (graphConfig.isReadOnly()) readOnly();
+        if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
+        this.times = graphConfig.getTimestampProvider();
         this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
-        this.metricsPrefix = graphConfig.getMetricsPrefix();
+        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.timestampProvider = graphConfig.getTimestampProvider();
         this.storageConfiguration = new UserModifiableConfiguration(GraphDatabaseConfiguration.buildConfiguration());
-        if (graphConfig.isReadOnly()) readOnly();
-        setCacheSize(graphConfig.getTxCacheSize());
-        if (graphConfig.isBatchLoading()) enableBatchLoading();
+        setVertexCacheSize(graphConfig.getTxVertexCacheSize());
+        setDirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
     public StandardTransactionBuilder threadBound() {
@@ -106,10 +110,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setCacheSize(int size) {
+    public StandardTransactionBuilder setVertexCacheSize(int size) {
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
         this.indexCacheWeight = size / 2;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder setDirtyVertexSize(int size) {
+        this.dirtyVertexSize = size;
         return this;
     }
 
@@ -120,14 +130,19 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    public StandardTransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit) {
+        this.userCommitTime = times.getTime(timestampSinceEpoch,unit);
         return this;
     }
 
     @Override
-    public StandardTransactionBuilder setMetricsPrefix(String p) {
-        this.metricsPrefix = p;
+    public void setCommitTime(Timepoint time) {
+        throw new UnsupportedOperationException("Use setCommitTime(lnog,TimeUnit)");
+    }
+
+    @Override
+    public StandardTransactionBuilder setGroupName(String p) {
+        this.groupName = p;
         return this;
     }
 
@@ -148,10 +163,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound,
-                hasTimestamp(), timestamp, timestampProvider,
-                indexCacheWeight, vertexCacheSize, logIdentifier, metricsPrefix,
-                defaultTypeMaker, new BasicConfiguration(TITAN_NS,
+                propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
+                indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
+                logIdentifier, groupName,
+                defaultTypeMaker, new BasicConfiguration(ROOT_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
         return graph.newTransaction(immutable);
@@ -222,6 +237,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public final int getDirtyVertexSize() {
+        return dirtyVertexSize;
+    }
+
+    @Override
     public final long getIndexCacheWeight() {
         return indexCacheWeight;
     }
@@ -232,29 +252,28 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public boolean hasTimestamp() {
-        return timestamp != null;
+    public String getGroupName() {
+        return groupName;
     }
 
     @Override
-    public TimestampProvider getTimestampProvider() {
-        return timestampProvider;
+    public boolean hasGroupName() {
+        return null != groupName;
     }
 
     @Override
-    public String getMetricsPrefix() {
-        return metricsPrefix;
+    public Timepoint getCommitTime() {
+        return userCommitTime;
     }
 
     @Override
-    public boolean hasMetricsPrefix() {
-        return null != metricsPrefix;
+    public boolean hasCommitTime() {
+        return userCommitTime!=null;
     }
 
     @Override
-    public long getTimestamp() {
-        Preconditions.checkState(timestamp != null, "A timestamp has not been configured");
-        return timestamp;
+    public Timepoint getStartTime() {
+        throw new IllegalStateException("Start time is set when transaction starts");
     }
 
     @Override
@@ -264,7 +283,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public Configuration getCustomOptions() {
-        return new BasicConfiguration(TITAN_NS,
+        return new BasicConfiguration(ROOT_NS,
                 storageConfiguration.getConfiguration(), Restriction.NONE);
     }
 
@@ -282,6 +301,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isThreadBound;
         private final long indexCacheWeight;
         private final int vertexCacheSize;
+        private final int dirtyVertexSize;
         private final String logIdentifier;
         private final DefaultTypeMaker defaultTypeMaker;
 
@@ -294,9 +314,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound, boolean hasTimestamp, Long timestamp, TimestampProvider timestampProvider,
-                long indexCacheWeight, int vertexCacheSize, String logIdentifier,
-                String metricsPrefix, DefaultTypeMaker defaultTypeMaker,
+                boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
+                long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
+                String groupName, DefaultTypeMaker defaultTypeMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -310,11 +330,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isThreadBound = isThreadBound;
             this.indexCacheWeight = indexCacheWeight;
             this.vertexCacheSize = vertexCacheSize;
+            this.dirtyVertexSize = dirtyVertexSize;
             this.logIdentifier = logIdentifier;
             this.defaultTypeMaker = defaultTypeMaker;
-            this.handleConfig = new StandardTransactionConfig.Builder()
-                    .timestampProvider(timestampProvider).timestamp(timestamp)
-                    .metricsPrefix(metricsPrefix)
+            this.handleConfig = new StandardTransactionHandleConfig.Builder()
+                    .startTime(startTime)
+                    .commitTime(commitTime)
+                    .groupName(groupName)
                     .customOptions(storageConfiguration).build();
         }
 
@@ -379,6 +401,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
+        public int getDirtyVertexSize() {
+            return dirtyVertexSize;
+        }
+
+        @Override
         public long getIndexCacheWeight() {
             return indexCacheWeight;
         }
@@ -389,28 +416,33 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public boolean hasTimestamp() {
-            return handleConfig.hasTimestamp();
+        public Timepoint getCommitTime() {
+            return handleConfig.getCommitTime();
         }
 
         @Override
-        public long getTimestamp() {
-            return handleConfig.getTimestamp();
+        public void setCommitTime(Timepoint time) {
+            handleConfig.setCommitTime(time);
         }
 
         @Override
-        public TimestampProvider getTimestampProvider() {
-            return handleConfig.getTimestampProvider();
+        public boolean hasCommitTime() {
+            return handleConfig.hasCommitTime();
         }
 
         @Override
-        public String getMetricsPrefix() {
-            return handleConfig.getMetricsPrefix();
+        public Timepoint getStartTime() {
+            return handleConfig.getStartTime();
         }
 
         @Override
-        public boolean hasMetricsPrefix() {
-            return handleConfig.hasMetricsPrefix();
+        public String getGroupName() {
+            return handleConfig.getGroupName();
+        }
+
+        @Override
+        public boolean hasGroupName() {
+            return handleConfig.hasGroupName();
         }
 
         @Override

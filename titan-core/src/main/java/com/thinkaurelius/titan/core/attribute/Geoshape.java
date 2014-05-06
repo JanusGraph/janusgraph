@@ -398,7 +398,7 @@ public class Geoshape {
         }
 
         @Override
-        public void writeObjectData(WriteBuffer buffer, Geoshape attribute) {
+        public void write(WriteBuffer buffer, Geoshape attribute) {
             float[][] coordinates = attribute.coordinates;
             assert (coordinates.length==2);
             assert (coordinates[0].length==coordinates[1].length && coordinates[0].length>0);
