@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnect
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 import org.apache.cassandra.dht.*;
@@ -182,9 +181,12 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public Object getMetaData(ColumnOrSuperColumn element, EntryMetaData meta) {
             switch(meta) {
-                case TIMESTAMP: return element.getColumn().getTimestamp();
-                case TTL: return Long.valueOf(element.getColumn().getTtl());
-                default: throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+                case TIMESTAMP:
+                    return element.getColumn().getTimestamp();
+                case TTL:
+                    return (long) element.getColumn().getTtl();
+                default:
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             }
         }
     }

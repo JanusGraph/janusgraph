@@ -19,7 +19,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -178,10 +177,12 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public Object getMetaData(Column<ByteBuffer> element, EntryMetaData meta) {
             switch(meta) {
-                case TIMESTAMP: return element.getTimestamp();
-                case TTL: return Long.valueOf(element.getTtl());
-                default: throw new UnsupportedOperationException("Unsupported meta data: " + meta);
-
+                case TIMESTAMP:
+                    return element.getTimestamp();
+                case TTL:
+                    return (long) element.getTtl();
+                default:
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             }
         }
     }
