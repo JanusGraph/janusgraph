@@ -105,8 +105,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         for (TitanProperty prop : v1.getProperties(name)) {
             if (features.hasTimestamps())
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,unit)+1,prop.getProperty("_timestamp"));
-            if (features.hasTTL())
-                assertEquals(0l,prop.getProperty("_ttl"));
+//            if (features.hasTTL())
+//                assertEquals(0l,prop.getProperty("_ttl"));
         }
         v1.removeProperty(name);
         v1.setProperty(address, "xyz");

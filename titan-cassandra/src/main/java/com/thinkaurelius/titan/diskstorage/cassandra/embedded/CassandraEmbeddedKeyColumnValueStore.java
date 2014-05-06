@@ -298,6 +298,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         public Object getMetaData(Column element, EntryMetaData meta) {
             switch(meta) {
                 case TIMESTAMP: return element.timestamp();
+                //TODO: How do we actually get the true TTL? This seems to return a extraordinary large number
                 case TTL: return Long.valueOf(element.getMarkedForDeleteAt()-times.getTime().getNativeTimestamp());
                 default: return null;
             }
