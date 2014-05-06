@@ -644,6 +644,23 @@ public class GraphDatabaseConfiguration {
 //    public static final int PAGE_SIZE_DEFAULT = 100;
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
+    // ################ STORAGE - META #######################
+
+    public static final ConfigNamespace STORE_META_NS = new ConfigNamespace(STORAGE_NS,"meta","Meta data to include in storage backend retrievals",true);
+
+    public static final ConfigOption<Boolean> STORE_META_TIMESTAMPS = new ConfigOption<Boolean>(STORE_META_NS,"timestamps",
+            "Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Boolean> STORE_META_TTL = new ConfigOption<Boolean>(STORE_META_NS,"ttl",
+            "Whether to include ttl in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<Boolean>(STORE_META_NS,"visibility",
+            "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, true);
+
+
     // ################ IDS ###########################
     // ################################################
 

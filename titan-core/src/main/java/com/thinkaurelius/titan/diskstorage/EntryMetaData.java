@@ -4,7 +4,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.util.encoding.StringEncoding;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,6 +39,21 @@ public enum EntryMetaData {
             default: throw new AssertionError("Unexpected meta data: " + this);
         }
     }
+
+    public boolean isIdentifying() {
+        switch(this) {
+            case VISIBILITY:
+                return true;
+            case TTL:
+            case TIMESTAMP:
+                return false;
+            default: throw new AssertionError("Unexpected meta data: " + this);
+        }
+    }
+
+    public static final List<EntryMetaData> IDENTIFYING_METADATA = new ArrayList<EntryMetaData>(3) {{
+        for (EntryMetaData meta : values()) if (meta.isIdentifying()) add(meta);
+    }};
 
     public static class Map extends EnumMap<EntryMetaData,Object> {
 

@@ -6,6 +6,7 @@ import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -25,6 +26,7 @@ import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.TypeInspector;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
 
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Map;
 
 import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
 
@@ -145,7 +148,18 @@ public class EdgeSerializer implements RelationReader {
                 assert pvalue != null;
                 properties.put(type.getID(), pvalue);
             }
+
+            if (data.hasMetaData()) {
+                for (Map.Entry<EntryMetaData,Object> metas : data.getMetaData().entrySet()) {
+                    ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
+                    if (key!=null) {
+                        assert metas.getValue()!=null && metas.getValue().getClass().equals(key.getDataType());
+                        properties.put(key.getID(),metas.getValue());
+                    }
+                }
+            }
         }
+
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
@@ -284,15 +298,17 @@ public class EdgeSerializer implements RelationReader {
 
         //Write remaining properties
         LongSet writtenTypes = new LongOpenHashSet(sortKey.length + signature.length);
+        boolean hasImplicitKeys = false;
         if (sortKey.length > 0 || signature.length > 0) {
             for (long id : sortKey) writtenTypes.add(id);
             for (long id : signature) writtenTypes.add(id);
         }
         LongArrayList remainingTypes = new LongArrayList(8);
         for (TitanType t : relation.getPropertyKeysDirect()) {
-            if (!writtenTypes.contains(t.getID())) {
+            if (t instanceof ImplicitKey) {
+                hasImplicitKeys=true;
+            } else if (!writtenTypes.contains(t.getID())) {
                 remainingTypes.add(t.getID());
-
             }
         }
         //Sort types before writing to ensure that value is always written the same way
@@ -304,9 +320,16 @@ public class EdgeSerializer implements RelationReader {
         }
         assert valuePosition>0;
 
-        return new StaticArrayEntry(type.getSortOrder()==Order.DESC?
+        StaticArrayEntry entry = new StaticArrayEntry(type.getSortOrder()==Order.DESC?
                                     out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
                                     out.getStaticBuffer(),valuePosition);
+        if (hasImplicitKeys) {
+            for (EntryMetaData meta : EntryMetaData.IDENTIFYING_METADATA) {
+                Object value = relation.getPropertyDirect(ImplicitKey.MetaData2ImplicitKey.get(meta));
+                if (value!=null) entry.setMetaData(meta,value);
+            }
+        }
+        return entry;
     }
 
     private enum InlineType {

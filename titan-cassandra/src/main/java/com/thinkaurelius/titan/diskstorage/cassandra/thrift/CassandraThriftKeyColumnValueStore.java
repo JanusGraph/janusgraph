@@ -50,6 +50,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final String keyspace;
     private final String columnFamily;
     private final CTConnectionPool pool;
+    private final ThriftGetter entryGetter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
                                               CTConnectionPool pool) {
@@ -57,6 +58,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.pool = pool;
+        this.entryGetter = new ThriftGetter(storeManager.getMetaDataSchema(columnFamily));
     }
 
     /**
@@ -143,7 +145,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 
             for (ByteBuffer key : rows.keySet()) {
                 results.put(StaticArrayBuffer.of(key),
-                        CassandraHelper.makeEntryList(rows.get(key), ThriftGetter.INSTANCE, query.getSliceEnd(), query.getLimit()));
+                        CassandraHelper.makeEntryList(rows.get(key), entryGetter, query.getSliceEnd(), query.getLimit()));
             }
 
             return results;
@@ -154,9 +156,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static enum ThriftGetter implements StaticArrayEntry.GetColVal<ColumnOrSuperColumn,ByteBuffer> {
+    private static class ThriftGetter implements StaticArrayEntry.GetColVal<ColumnOrSuperColumn,ByteBuffer> {
 
-        INSTANCE;
+        private final EntryMetaData[] schema;
+
+        private ThriftGetter(EntryMetaData[] schema) {
+            this.schema = schema;
+        }
 
         @Override
         public ByteBuffer getColumn(ColumnOrSuperColumn element) {
@@ -168,15 +174,18 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             return element.getColumn().bufferForValue();
         }
 
-
         @Override
         public EntryMetaData[] getMetaSchema(ColumnOrSuperColumn element) {
-            return StaticArrayEntry.EMPTY_SCHEMA;
+            return schema;
         }
 
         @Override
         public Object getMetaData(ColumnOrSuperColumn element, EntryMetaData meta) {
-            return null;
+            switch(meta) {
+                case TIMESTAMP: return element.getColumn().getTimestamp();
+                case TTL: return Long.valueOf(element.getColumn().getTtl());
+                default: return null;
+            }
         }
     }
 
@@ -497,7 +506,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns =
                         CassandraHelper.makeEntryIterator(mostRecentRow.getColumns(),
-                                ThriftGetter.INSTANCE, columnSlice.getSliceEnd(),
+                                entryGetter, columnSlice.getSliceEnd(),
                                 columnSlice.getLimit());
 
                 @Override

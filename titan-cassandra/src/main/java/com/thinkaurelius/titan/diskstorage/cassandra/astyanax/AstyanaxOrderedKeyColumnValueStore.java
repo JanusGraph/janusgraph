@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import org.apache.cassandra.thrift.ColumnOrSuperColumn;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -37,6 +38,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
     private final ColumnFamily<ByteBuffer, ByteBuffer> columnFamily;
     private final RetryPolicy retryPolicy;
     private final AstyanaxStoreManager storeManager;
+    private final AstyanaxGetter entryGetter;
 
 
     AstyanaxOrderedKeyColumnValueStore(String columnFamilyName,
@@ -48,10 +50,13 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         this.retryPolicy = retryPolicy;
         this.storeManager = storeManager;
 
+        entryGetter = new AstyanaxGetter(storeManager.getMetaDataSchema(columnFamilyName));
+
         columnFamily = new ColumnFamily<ByteBuffer, ByteBuffer>(
                 this.columnFamilyName,
                 ByteBufferSerializer.get(),
                 ByteBufferSerializer.get());
+
     }
 
 
@@ -140,14 +145,19 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         for (Row<ByteBuffer, ByteBuffer> row : rows) {
             assert !result.containsKey(row.getKey());
             result.put(StaticArrayBuffer.of(row.getKey()),
-                  CassandraHelper.makeEntryList(row.getColumns(),AstyanaxGetter.INSTANCE, query.getSliceEnd(), query.getLimit()));
+                  CassandraHelper.makeEntryList(row.getColumns(),entryGetter, query.getSliceEnd(), query.getLimit()));
         }
 
         return result;
     }
 
-    private static enum AstyanaxGetter implements StaticArrayEntry.GetColVal<Column<ByteBuffer>,ByteBuffer> {
-        INSTANCE;
+    private static class AstyanaxGetter implements StaticArrayEntry.GetColVal<Column<ByteBuffer>,ByteBuffer> {
+
+        private final EntryMetaData[] schema;
+
+        private AstyanaxGetter(EntryMetaData[] schema) {
+            this.schema = schema;
+        }
 
 
         @Override
@@ -158,6 +168,20 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public ByteBuffer getValue(Column<ByteBuffer> element) {
             return element.getByteBufferValue();
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Column<ByteBuffer> element) {
+            return schema;
+        }
+
+        @Override
+        public Object getMetaData(Column<ByteBuffer> element, EntryMetaData meta) {
+            switch(meta) {
+                case TIMESTAMP: return element.getTimestamp();
+                case TTL: return Long.valueOf(element.getTtl());
+                default: return null;
+            }
         }
     }
 
@@ -281,7 +305,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static class RowIterator implements KeyIterator {
+    private class RowIterator implements KeyIterator {
         private final Iterator<Row<ByteBuffer, ByteBuffer>> rows;
         private Row<ByteBuffer, ByteBuffer> currentRow;
         private final SliceQuery sliceQuery;
@@ -302,7 +326,7 @@ public class AstyanaxOrderedKeyColumnValueStore implements KeyColumnValueStore {
             return new RecordIterator<Entry>() {
                 private final Iterator<Entry> columns =
                         CassandraHelper.makeEntryIterator(currentRow.getColumns(),
-                                AstyanaxGetter.INSTANCE,
+                                entryGetter,
                                 sliceQuery.getSliceEnd(),sliceQuery.getLimit());
 
                 @Override

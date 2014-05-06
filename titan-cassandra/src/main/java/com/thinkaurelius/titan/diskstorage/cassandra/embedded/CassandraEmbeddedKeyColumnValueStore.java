@@ -49,6 +49,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     private final String columnFamily;
     private final CassandraEmbeddedStoreManager storeManager;
     private final TimestampProvider times;
+    private final CassandraEmbeddedGetter entryGetter;
 
     public CassandraEmbeddedKeyColumnValueStore(
             String keyspace,
@@ -58,6 +59,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         this.columnFamily = columnFamily;
         this.storeManager = storeManager;
         this.times = this.storeManager.getTimestampProvider();
+        entryGetter = new CassandraEmbeddedGetter(storeManager.getMetaDataSchema(columnFamily),times);
     }
 
     @Override
@@ -208,7 +210,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         return CassandraHelper.makeEntryList(
                 Iterables.filter(cf.getSortedColumns(), new FilterDeletedColumns(ts)),
-                CassandraEmbeddedGetter.INSTANCE,
+                entryGetter,
                 query.getSliceEnd(),
                 query.getLimit());
 
@@ -267,8 +269,15 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
     }
 
-    private static enum CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<Column,ByteBuffer> {
-        INSTANCE;
+    private static class CassandraEmbeddedGetter implements StaticArrayEntry.GetColVal<Column,ByteBuffer> {
+
+        private final EntryMetaData[] schema;
+        private final TimestampProvider times;
+
+        private CassandraEmbeddedGetter(EntryMetaData[] schema, TimestampProvider times) {
+            this.schema = schema;
+            this.times = times;
+        }
 
         @Override
         public ByteBuffer getColumn(Column element) {
@@ -282,12 +291,16 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         @Override
         public EntryMetaData[] getMetaSchema(Column element) {
-            return StaticArrayEntry.EMPTY_SCHEMA;
+            return schema;
         }
 
         @Override
         public Object getMetaData(Column element, EntryMetaData meta) {
-            return null;
+            switch(meta) {
+                case TIMESTAMP: return element.timestamp();
+                case TTL: return Long.valueOf(element.getMarkedForDeleteAt()-times.getTime().getNativeTimestamp());
+                default: return null;
+            }
         }
     }
 
@@ -372,7 +385,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns = CassandraHelper.makeEntryIterator(
                         Iterables.filter(currentRow.cf.getSortedColumns(), new FilterDeletedColumns(ts)),
-                CassandraEmbeddedGetter.INSTANCE,
+                        entryGetter,
                         sliceQuery.getSliceEnd(),
                         sliceQuery.getLimit());
 

@@ -134,7 +134,6 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public <O> O getProperty(String key) {
-        if (!tx().containsType(key)) return null;
         TitanType type = tx().getType(key);
         if (type==null) return null;
         else if (type.isPropertyKey()) return getProperty((TitanKey) type);

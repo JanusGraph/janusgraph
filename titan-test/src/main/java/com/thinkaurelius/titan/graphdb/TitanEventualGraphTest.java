@@ -75,6 +75,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTimestampSetting() {
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS,"edgestore"),true,
+                option(GraphDatabaseConfiguration.STORE_META_TTL,"edgestore"),true);
         final TimeUnit unit = TimeUnit.SECONDS;
 
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
@@ -83,8 +85,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         String age = "age";
         String address = "address";
 
-        Vertex v1 = tx1.addVertex();
-        Vertex v2 = tx1.addVertex();
+        TitanVertex v1 = tx1.addVertex();
+        TitanVertex v2 = tx1.addVertex();
         v1.setProperty(name, "a");
         v2.setProperty(age, "14");
         v2.setProperty(name, "b");
@@ -92,14 +94,20 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx1.commit();
 
         // Fetch vertex ids
-        Object id1 = v1.getId();
-        Object id2 = v2.getId();
+        long id1 = v1.getID();
+        long id2 = v2.getID();
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
         TitanTransaction tx2 = graph.buildTransaction().setCommitTime(1000, unit).start();
         v1 = tx2.getVertex(id1);
         v2 = tx2.getVertex(id2);
+        for (TitanProperty prop : v1.getProperties(name)) {
+            if (features.hasTimestamps())
+                assertEquals(TimeUnit.MICROSECONDS.convert(100,unit)+1,prop.getProperty("_timestamp"));
+            if (features.hasTTL())
+                assertEquals(0l,prop.getProperty("_ttl"));
+        }
         v1.removeProperty(name);
         v1.setProperty(address, "xyz");
         Edge edge = tx2.addEdge(1, v2, v1, "parent");

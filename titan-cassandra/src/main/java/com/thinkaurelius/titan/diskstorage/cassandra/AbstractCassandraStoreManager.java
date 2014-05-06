@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 import java.util.Map;
 
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
@@ -152,7 +153,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;
 
-
     public AbstractCassandraStoreManager(Configuration config) {
         super(config, PORT_DEFAULT);
 
@@ -206,6 +206,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
             fb.batchMutation(true).distributed(true);
+            fb.timestamps(true).ttl(true);
             fb.keyConsistent(global, local);
 
             boolean keyOrdered;

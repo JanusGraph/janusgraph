@@ -24,7 +24,8 @@ public abstract class SystemTypeManager {
             for (SystemType et : new SystemType[]{BaseKey.TypeCategory, BaseKey.TypeDefinitionDesc,
                     BaseKey.TypeDefinitionProperty, BaseKey.TypeName,
                     BaseKey.VertexExists, BaseLabel.TypeDefinitionEdge,
-                    ImplicitKey.ID, ImplicitKey.LABEL, ImplicitKey.TIMESTAMP, ImplicitKey.VISIBILITY
+                    ImplicitKey.ID, ImplicitKey.LABEL,
+                    ImplicitKey.TIMESTAMP, ImplicitKey.TTL, ImplicitKey.VISIBILITY
                 }) {
                 if (et.hasId()) idBuilder.put(et.getID(), et);
                 nameBuilder.put(et.getName(),et);
@@ -33,8 +34,8 @@ public abstract class SystemTypeManager {
             SYSTEM_TYPES_BY_ID = idBuilder.build();
             SYSTEM_TYPES_BY_NAME = nameBuilder.build();
         }
-        assert SYSTEM_TYPES_BY_ID.size()==8;
-        assert SYSTEM_TYPES_BY_NAME.size()==10;
+        assert SYSTEM_TYPES_BY_ID.size()==9;
+        assert SYSTEM_TYPES_BY_NAME.size()==11;
     }
 
     public static SystemType getSystemType(long id) {

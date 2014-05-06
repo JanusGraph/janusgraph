@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
@@ -29,6 +30,14 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
     public static final ImplicitKey VISIBILITY = new ImplicitKey(9,"_visibility",String.class);
 
+    public static final ImplicitKey TTL = new ImplicitKey(10,"_ttl",Long.class);
+
+
+    public static final Map<EntryMetaData,ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
+            EntryMetaData.TIMESTAMP,TIMESTAMP,
+            EntryMetaData.TTL,TTL,
+            EntryMetaData.VISIBILITY,VISIBILITY);
+
     private final Class<?> datatype;
     private final String name;
     private final long id;
@@ -51,13 +60,16 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
         } else if (this==LABEL) {
             if (e instanceof TitanEdge) {
                 return (O)((TitanEdge) e).getLabel();
+            } else {
+                return null;
             }
-        } else if (this==TIMESTAMP || this==VISIBILITY) {
+        } else if (this==TIMESTAMP || this==VISIBILITY || this==TTL) {
             if (e instanceof InternalRelation) {
-                ((InternalRelation) e).getPropertyDirect(this);
+                return ((InternalRelation) e).getPropertyDirect(this);
+            } else {
+                return null;
             }
         } else throw new AssertionError("Unexpected instance: " + this.getName());
-        return null;
     }
 
 
