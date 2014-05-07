@@ -2,22 +2,19 @@ package com.thinkaurelius.titan.diskstorage;
 
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -26,19 +23,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
-import com.thinkaurelius.titan.diskstorage.idmanagement.TransactionalIDManager;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
-import com.thinkaurelius.titan.diskstorage.locking.transactional.TransactionalLockStore;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 
-public abstract class LockKeyColumnValueStoreTest {
+public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(LockKeyColumnValueStoreTest.class);
@@ -46,14 +39,14 @@ public abstract class LockKeyColumnValueStoreTest {
     public static final int CONCURRENCY = 8;
     public static final int NUM_TX = 2;
     public static final String DB_NAME = "test";
-    protected static final long EXPIRE_MS = 5000;
+    protected static final long EXPIRE_MS = 5000L;
 
     /*
      * Don't change these back to static. We can run test classes concurrently
      * now. There are multiple concrete subclasses of this abstract class. If
      * the subclasses run in separate threads and were to concurrently mutate
      * static state on this common superclass, then thread safety fails.
-     * 
+     *
      * Anything final and deeply immutable is of course fair game for static,
      * but these are mutable.
      */
@@ -97,35 +90,31 @@ public abstract class LockKeyColumnValueStoreTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             store[i] = manager[i].openDatabase(DB_NAME);
             for (int j = 0; j < NUM_TX; j++) {
-                tx[i][j] = manager[i].beginTransaction(new StoreTxConfig());
+                tx[i][j] = manager[i].beginTransaction(getTxConfig());
                 log.debug("Began transaction of class {}", tx[i][j].getClass().getCanonicalName());
             }
 
-            Configuration sc = new BaseConfiguration();
-            sc.addProperty(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX_KEY, concreteClassName + i);
-            sc.addProperty(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY, (short) i);
-            sc.addProperty(GraphDatabaseConfiguration.LOCK_RETRY_COUNT, 10);
-            sc.addProperty(GraphDatabaseConfiguration.LOCK_EXPIRE_MS, EXPIRE_MS);
+            ModifiableConfiguration sc = GraphDatabaseConfiguration.buildConfiguration();
+            sc.set(ExpectedValueCheckingStore.LOCAL_LOCK_MEDIATOR_PREFIX,concreteClassName + i);
+            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,"inst"+i);
+            sc.set(GraphDatabaseConfiguration.LOCK_RETRY,10);
+            sc.set(GraphDatabaseConfiguration.LOCK_EXPIRE, new StandardDuration(EXPIRE_MS, TimeUnit.MILLISECONDS));
 
-            if (!storeFeatures.supportsLocking()) {
-                if (storeFeatures.supportsTransactions()) {
-                    store[i] = new TransactionalLockStore(store[i]);
-                } else if (storeFeatures.supportsConsistentKeyOperations()) {
-
-                    KeyColumnValueStore lockerStore = manager[i].openDatabase(DB_NAME + "_lock_");
-                    ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore).fromCommonsConfig(sc).mediatorName(concreteClassName + i).build();
-                    store[i] = new ExpectedValueCheckingStore(store[i], c);
-                    for (int j = 0; j < NUM_TX; j++)
-                        tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
-                } else throw new IllegalArgumentException("Store needs to support some form of locking");
+            if (!storeFeatures.hasLocking()) {
+                Preconditions.checkArgument(storeFeatures.isKeyConsistent(),"Store needs to support some form of locking");
+                KeyColumnValueStore lockerStore = manager[i].openDatabase(DB_NAME + "_lock_");
+                ConsistentKeyLocker c = new ConsistentKeyLocker.Builder(lockerStore, manager[i]).fromConfig(sc).mediatorName(concreteClassName + i).build();
+                store[i] = new ExpectedValueCheckingStore(store[i], c);
+                for (int j = 0; j < NUM_TX; j++)
+                    tx[i][j] = new ExpectedValueCheckingTransaction(tx[i][j], manager[i].beginTransaction(getConsistentTxConfig(manager[i])), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
             }
         }
     }
 
     public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
-        StoreTransaction transaction = manager.beginTransaction(new StoreTxConfig());
-        if (!manager.getFeatures().supportsLocking() && manager.getFeatures().supportsConsistentKeyOperations()) {
-            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(new StoreTxConfig(ConsistencyLevel.KEY_CONSISTENT)), GraphDatabaseConfiguration.READ_ATTEMPTS_DEFAULT);
+        StoreTransaction transaction = manager.beginTransaction(getTxConfig());
+        if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
+            transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(getConsistentTxConfig(manager)), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
         }
         return transaction;
     }
@@ -152,7 +141,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test
     public void singleLockAndUnlock() throws StorageException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -164,7 +153,7 @@ public abstract class LockKeyColumnValueStoreTest {
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
 
         tx[0][0] = newTransaction(manager[0]);
@@ -174,7 +163,7 @@ public abstract class LockKeyColumnValueStoreTest {
     @Test(expected = PermanentLockingException.class)
     public void expectedValueMismatchCausesMutateFailure() throws StorageException {
         store[0].acquireLock(k, c1, v1, tx[0][0]);
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
     }
 
     @Test
@@ -222,14 +211,14 @@ public abstract class LockKeyColumnValueStoreTest {
 
         try {
             // This must fail since "host1" took the lock first
-            store[1].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v2)), NO_DELETIONS, tx[1][0]);
+            store[1].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
         } catch (StorageException e) {
             Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         // This should succeed
-        store[0].mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx[0][0]);
+        store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
 
         tx[0][0].commit();
         tx[0][0] = newTransaction(manager[0]);
@@ -353,8 +342,8 @@ public abstract class LockKeyColumnValueStoreTest {
         store1.acquireLock(k, c1, null, tx1);
         store2.acquireLock(k, c2, null, tx2);
 
-        store1.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c1, v1)), NO_DELETIONS, tx1);
-        store2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
+        store1.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx1);
+        store2.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c2, v2)), NO_DELETIONS, tx2);
 
         tx1.commit();
         if (tx2 != tx1)
@@ -390,7 +379,7 @@ public abstract class LockKeyColumnValueStoreTest {
         s2.acquireLock(k, k, null, tx2);
 
         // Mutate to check for remote contention
-        s2.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c2, v2)), NO_DELETIONS, tx2);
+        s2.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c2, v2)), NO_DELETIONS, tx2);
 
     }
 

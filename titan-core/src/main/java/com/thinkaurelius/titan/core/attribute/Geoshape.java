@@ -5,7 +5,13 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
+import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.lang.reflect.Array;
 
 /**
  * A generic representation of a geographic shape, which can either be a single point,
@@ -336,4 +342,73 @@ public class Geoshape {
 
     }
 
+    /**
+     * @author Matthias Broecheler (me@matthiasb.com)
+     */
+    public static class GeoshapeSerializer implements AttributeSerializer<Geoshape> {
+
+        @Override
+        public void verifyAttribute(Geoshape value) {
+            //All values of Geoshape are valid
+        }
+
+        @Override
+        public Geoshape convert(Object value) {
+            if (value.getClass().isArray() && (value.getClass().getComponentType().isPrimitive() ||
+                    Number.class.isAssignableFrom(value.getClass().getComponentType())) ) {
+                Geoshape shape = null;
+                int len= Array.getLength(value);
+                double[] arr = new double[len];
+                for (int i=0;i<len;i++) arr[i]=((Number)Array.get(value,i)).doubleValue();
+                if (len==2) shape= point(arr[0],arr[1]);
+                else if (len==3) shape= circle(arr[0],arr[1],arr[2]);
+                else if (len==4) shape= box(arr[0],arr[1],arr[2],arr[3]);
+                else throw new IllegalArgumentException("Expected 2-4 coordinates to create Geoshape, but given: " + value);
+                return shape;
+            } else if (value instanceof String) {
+                String[] components=null;
+                for (String delimiter : new String[]{",",";"}) {
+                    components = ((String)value).split(delimiter);
+                    if (components.length>=2 && components.length<=4) break;
+                    else components=null;
+                }
+                Preconditions.checkArgument(components!=null,"Could not parse coordinates from string: %s",value);
+                double[] coords = new double[components.length];
+                try {
+                    for (int i=0;i<components.length;i++) {
+                        coords[i]=Double.parseDouble(components[i]);
+                    }
+                } catch (NumberFormatException e) {
+                    throw new IllegalArgumentException("Could not parse coordinates from string: " + value, e);
+                }
+                return convert(coords);
+            } else return null;
+        }
+
+        @Override
+        public Geoshape read(ScanBuffer buffer) {
+            long l = VariableLong.readPositive(buffer);
+            assert l>0 && l<Integer.MAX_VALUE;
+            int length = (int)l;
+            float[][] coordinates = new float[2][];
+            for (int i = 0; i < 2; i++) {
+                coordinates[i]=buffer.getFloats(length);
+            }
+            return new Geoshape(coordinates);
+        }
+
+        @Override
+        public void write(WriteBuffer buffer, Geoshape attribute) {
+            float[][] coordinates = attribute.coordinates;
+            assert (coordinates.length==2);
+            assert (coordinates[0].length==coordinates[1].length && coordinates[0].length>0);
+            int length = coordinates[0].length;
+            VariableLong.writePositive(buffer,length);
+            for (int i = 0; i < 2; i++) {
+                for (int j = 0; j < length; j++) {
+                    buffer.putFloat(coordinates[i][j]);
+                }
+            }
+        }
+    }
 }

@@ -6,7 +6,9 @@ import java.util.Arrays;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVSUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 public class KeyColumnValueStoreUtil {
 
@@ -29,7 +31,7 @@ public class KeyColumnValueStoreUtil {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
         StaticBuffer v = stringToByteBuffer(val);
-        store.mutate(k, Arrays.<Entry>asList(new StaticBufferEntry(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
+        store.mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c, v)), KeyColumnValueStore.NO_DELETIONS, txn);
     }
 
     // TODO rename as "bufferToString" after syntax errors are resolved
@@ -53,14 +55,12 @@ public class KeyColumnValueStoreUtil {
         ByteBuffer bb = ByteBuffer.allocate(b.length);
         bb.put(b);
         bb.flip();
-        return new StaticByteBuffer(bb);
+        return StaticArrayBuffer.of(bb);
     }
 
     // TODO rename as "longToBuffer" after syntax errors are resolved
     public static StaticBuffer longToByteBuffer(long l) {
-        ByteBuffer b = ByteBuffer.allocate(8).putLong(l);
-        b.flip();
-        return new StaticByteBuffer(b);
+        return new WriteByteBuffer(8).putLong(l).getStaticBuffer();
     }
     
     public static long bufferToLong(StaticBuffer b) {

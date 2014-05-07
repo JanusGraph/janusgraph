@@ -1,12 +1,15 @@
 package com.thinkaurelius.titan.graphdb.berkeleyje;
 
+import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
 import com.thinkaurelius.titan.StorageSetup;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanIndexTest;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY_KEY;
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MODE_KEY;
+import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
@@ -16,23 +19,19 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 public class ElasticSearchBerkeleyDBTest extends TitanIndexTest {
 
     public ElasticSearchBerkeleyDBTest() {
-        super(getElasticSearchBDBConfig(), true, true, true);
+        super(true, true, true);
     }
 
-    public static final Configuration getElasticSearchBDBConfig() {
-        BaseConfiguration config = new BaseConfiguration();
-        config.subset(STORAGE_NAMESPACE).addProperty(STORAGE_BACKEND_KEY, "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        config.subset(STORAGE_NAMESPACE).addProperty(STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir());
+    @Override
+    public WriteConfiguration getConfiguration() {
+        ModifiableConfiguration config = BerkeleyJeStorageSetup.getBerkeleyJEConfiguration();
         //Add index
-        Configuration sub = config.subset(STORAGE_NAMESPACE).subset(INDEX_NAMESPACE).subset(INDEX);
-        sub.setProperty(INDEX_BACKEND_KEY,"com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex");
-        sub.setProperty(LOCAL_MODE_KEY,true);
-        sub.setProperty(CLIENT_ONLY_KEY,false);
-        sub.setProperty(STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("es"));
-//        System.out.println(GraphDatabaseConfiguration.toString(config));
-        return config;
+        config.set(INDEX_BACKEND,"elasticsearch",INDEX);
+        config.set(LOCAL_MODE,true,INDEX);
+        config.set(CLIENT_ONLY,false,INDEX);
+        config.set(INDEX_DIRECTORY,StorageSetup.getHomeDir("es"),INDEX);
+        return config.getConfiguration();
     }
-
 
     @Override
     public boolean supportsLuceneStyleQueries() {

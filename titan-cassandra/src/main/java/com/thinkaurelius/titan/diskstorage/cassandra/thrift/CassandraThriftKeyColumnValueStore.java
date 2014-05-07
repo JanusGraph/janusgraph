@@ -1,67 +1,34 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.thrift;
 
-import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
-
-import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
-import org.apache.cassandra.dht.BytesToken;
-import org.apache.cassandra.dht.IPartitioner;
-import org.apache.cassandra.dht.Murmur3Partitioner;
-import org.apache.cassandra.dht.RandomPartitioner;
-import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ColumnParent;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
+import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.util.*;
+import com.thinkaurelius.titan.util.system.NetworkUtil;
+import org.apache.cassandra.dht.*;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KeyRange;
-import org.apache.cassandra.thrift.KeySlice;
-import org.apache.cassandra.thrift.SlicePredicate;
-import org.apache.cassandra.thrift.SliceRange;
-import org.apache.cassandra.thrift.TimedOutException;
-import org.apache.cassandra.thrift.UnavailableException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
-import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.ByteBufferEntry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import javax.annotation.Nullable;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
 /**
  * A Titan {@code KeyColumnValueStore} backed by Cassandra.
@@ -82,6 +49,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final String keyspace;
     private final String columnFamily;
     private final CTConnectionPool pool;
+    private final ThriftGetter entryGetter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
                                               CTConnectionPool pool) {
@@ -89,16 +57,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.pool = pool;
+        this.entryGetter = new ThriftGetter(storeManager.getMetaDataSchema(columnFamily));
     }
 
     /**
      * Call Cassandra's Thrift get_slice() method.
-     * <p/>
-     * When columnEnd equals columnStart, and both startInclusive
-     * and endInclusive are true, then this method calls
-     * {@link #get(java.nio.ByteBuffer, java.nio.ByteBuffer, com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction)}
-     * instead of calling Thrift's getSlice() method and returns
-     * a one-element list containing the result.
      * <p/>
      * When columnEnd equals columnStart and either startInclusive
      * or endInclusive is false (or both are false), then this
@@ -115,48 +78,48 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
      *          when columnEnd < columnStart
      */
     @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        ByteBuffer key = query.getKey().asByteBuffer();
-        List<Entry> slice = getNamesSlice(Arrays.asList(query.getKey()), query, txh).get(key);
-        return (slice == null) ? Collections.<Entry>emptyList() : slice;
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        Map<StaticBuffer, EntryList> result = getNamesSlice(query.getKey(), query, txh);
+        return Iterables.getOnlyElement(result.values(), EntryList.EMPTY_LIST);
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return CassandraHelper.order(getNamesSlice(keys, query, txh), keys);
+    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        return getNamesSlice(keys, query, txh);
     }
 
-    public Map<ByteBuffer, List<Entry>> getNamesSlice(List<StaticBuffer> keys,
+    public Map<StaticBuffer, EntryList> getNamesSlice(StaticBuffer key,
+                                                      SliceQuery query, StoreTransaction txh) throws StorageException {
+        return getNamesSlice(ImmutableList.of(key),query,txh);
+    }
+
+    public Map<StaticBuffer, EntryList> getNamesSlice(List<StaticBuffer> keys,
                                                       SliceQuery query,
                                                       StoreTransaction txh) throws StorageException {
-        Preconditions.checkArgument(query.getLimit() >= 0);
-        if (0 == query.getLimit())
-            return Collections.emptyMap();
-
         ColumnParent parent = new ColumnParent(columnFamily);
         /*
          * Cassandra cannot handle columnStart = columnEnd.
 		 * Cassandra's Thrift getSlice() throws InvalidRequestException
 		 * if columnStart = columnEnd.
 		 */
-        if (ByteBufferUtil.compare(query.getSliceStart(), query.getSliceEnd()) >= 0) {
+        if (query.getSliceStart().compareTo(query.getSliceEnd()) >= 0) {
             // Check for invalid arguments where columnEnd < columnStart
-            if (ByteBufferUtil.isSmallerThan(query.getSliceEnd(), query.getSliceStart())) {
+            if (query.getSliceEnd().compareTo(query.getSliceStart())<0) {
                 throw new PermanentStorageException("columnStart=" + query.getSliceStart() +
                         " is greater than columnEnd=" + query.getSliceEnd() + ". " +
                         "columnStart must be less than or equal to columnEnd");
             }
             if (0 != query.getSliceStart().length() && 0 != query.getSliceEnd().length()) {
                 logger.debug("Return empty list due to columnEnd==columnStart and neither empty");
-                return Collections.emptyMap();
+                return KCVSUtil.emptyResults(keys);
             }
         }
 
-        // true: columnStart < columnEnd
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
+        assert query.getSliceStart().compareTo(query.getSliceEnd()) < 0;
+        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
         SlicePredicate predicate = new SlicePredicate();
         SliceRange range = new SliceRange();
-        range.setCount(query.getLimit());
+        range.setCount(query.getLimit() + (query.hasLimit()?1:0)); //Add one for potentially removed last column
         range.setStart(query.getSliceStart().asByteBuffer());
         range.setFinish(query.getSliceEnd().asByteBuffer());
         predicate.setSlice_range(range);
@@ -165,15 +128,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         try {
             conn = pool.borrowObject(keyspace);
             Cassandra.Client client = conn.getClient();
-
-            List<ByteBuffer> requestKeys = new ArrayList<ByteBuffer>(keys.size());
-            {
-                for (StaticBuffer key : keys) {
-                    requestKeys.add(key.asByteBuffer());
-                }
-            }
-
-            Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(requestKeys,
+            Map<ByteBuffer, List<ColumnOrSuperColumn>> rows = client.multiget_slice(CassandraHelper.convert(keys),
                     parent,
                     predicate,
                     consistency);
@@ -183,12 +138,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 			 * However, "result" could also be up to two elements smaller than
 			 * rows.size(), depending on startInclusive and endInclusive
 			 */
-            Map<ByteBuffer, List<Entry>> results = new HashMap<ByteBuffer, List<Entry>>();
+            Map<StaticBuffer, EntryList> results = new HashMap<StaticBuffer, EntryList>();
 
             ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
 
             for (ByteBuffer key : rows.keySet()) {
-                results.put(key, excludeLastColumn(rows.get(key), sliceEndBB));
+                results.put(StaticArrayBuffer.of(key),
+                        CassandraHelper.makeEntryList(rows.get(key), entryGetter, query.getSliceEnd(), query.getLimit()));
             }
 
             return results;
@@ -199,50 +155,45 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static List<Entry> excludeLastColumn(List<ColumnOrSuperColumn> row, ByteBuffer lastColumn) {
-        List<Entry> entries = new ArrayList<Entry>();
+    private static class ThriftGetter implements StaticArrayEntry.GetColVal<ColumnOrSuperColumn,ByteBuffer> {
 
-        for (ColumnOrSuperColumn r : row) {
-            Column c = r.getColumn();
+        private final EntryMetaData[] schema;
 
-            // Skip column if it is equal to columnEnd because columnEnd is exclusive
-            if (lastColumn.equals(c.bufferForName()))
-                break;
-
-            entries.add(new ByteBufferEntry(c.bufferForName(), c.bufferForValue()));
+        private ThriftGetter(EntryMetaData[] schema) {
+            this.schema = schema;
         }
 
-        return entries;
+        @Override
+        public ByteBuffer getColumn(ColumnOrSuperColumn element) {
+            return element.getColumn().bufferForName();
+        }
+
+        @Override
+        public ByteBuffer getValue(ColumnOrSuperColumn element) {
+            return element.getColumn().bufferForValue();
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(ColumnOrSuperColumn element) {
+            return schema;
+        }
+
+        @Override
+        public Object getMetaData(ColumnOrSuperColumn element, EntryMetaData meta) {
+            switch(meta) {
+                case TIMESTAMP:
+                    return element.getColumn().getTimestamp();
+                case TTL:
+                    return (long) element.getColumn().getTtl();
+                default:
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            }
+        }
     }
 
     @Override
     public void close() {
         // Do nothing
-    }
-
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        ColumnParent parent = new ColumnParent(columnFamily);
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThriftConsistency();
-        SlicePredicate predicate = new SlicePredicate();
-        SliceRange range = new SliceRange();
-        range.setCount(1);
-        byte[] empty = new byte[0];
-        range.setStart(empty);
-        range.setFinish(empty);
-        predicate.setSlice_range(range);
-
-        CTConnection conn = null;
-        try {
-            conn = pool.borrowObject(keyspace);
-            Cassandra.Client client = conn.getClient();
-            List<?> result = client.get_slice(key.asByteBuffer(), parent, predicate, consistency);
-            return 0 < result.size();
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            pool.returnObjectUnsafe(keyspace, conn);
-        }
     }
 
     @Override
@@ -274,10 +225,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             throw new PermanentStorageException("This operation is only allowed when byte-ordered partitioner is used.");
 
         try {
-            SliceQuery columnSlice = new SliceQuery(
-                    keyRangeQuery.getSliceStart(), keyRangeQuery.getSliceEnd());
-            
-            return new KeyRangeIterator<Token<?>>(partitioner, columnSlice, storeManager.getPageSize(),
+            return new KeyRangeIterator<Token<?>>(partitioner, keyRangeQuery, storeManager.getPageSize(),
                     keyRangeQuery.getKeyStart().asByteBuffer(),
                     keyRangeQuery.getKeyEnd().asByteBuffer());
         } catch (Exception e) {
@@ -286,8 +234,33 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        CTConnection conn = null;
+        IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
+
+        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
+            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
+
+        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
+
+        try {
+            conn = pool.borrowObject(keyspace);
+            List<TokenRange> ranges  = conn.getClient().describe_ring(keyspace);
+            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
+
+            for (TokenRange range : ranges) {
+                if (!NetworkUtil.hasLocalAddress(range.endpoints))
+                    continue;
+
+                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
+            }
+
+            return keyRanges;
+        } catch (Exception e) {
+            throw convertException(e);
+        } finally {
+            pool.returnObjectUnsafe(keyspace, conn);
+        }
     }
 
 
@@ -331,24 +304,24 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                                        ByteBuffer endKey,
                                        SliceQuery columnSlice,
                                        int count) throws StorageException {
-        return getRangeSlices(new KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(count), columnSlice);
+        return getRangeSlices(new org.apache.cassandra.thrift.KeyRange().setStart_key(startKey).setEnd_key(endKey).setCount(count), columnSlice);
     }
 
     private <T extends Token<?>> List<KeySlice> getTokenSlice(T startToken, T endToken,
             SliceQuery sliceQuery, int count) throws StorageException {
-        
+
         String st = sanitizeBrokenByteToken(startToken);
         String et = sanitizeBrokenByteToken(endToken);
-        
-        KeyRange kr = new KeyRange().setStart_token(st).setEnd_token(et).setCount(count);
+
+        org.apache.cassandra.thrift.KeyRange kr = new org.apache.cassandra.thrift.KeyRange().setStart_token(st).setEnd_token(et).setCount(count);
 
         return getRangeSlices(kr, sliceQuery);
     }
-    
+
     private String sanitizeBrokenByteToken(Token<?> tok) {
         /*
          * Background: https://issues.apache.org/jira/browse/CASSANDRA-5566
-         * 
+         *
          * This hack can go away when we upgrade to or past 1.2.5. But as I
          * write this comment, we're still stuck on 1.2.2 because Astyanax
          * hasn't upgraded and tries to call an undefined thrift constructor
@@ -358,9 +331,9 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
          * Cassandra version, and 1.2.5 is not the latest anyway.
          */
         String st = tok.toString();
-        if (!(tok instanceof BytesToken)) 
+        if (!(tok instanceof BytesToken))
             return st;
-        
+
         // Do a cheap 1-character startsWith before unleashing the regex
         if (st.startsWith("T")) {
             Matcher m = BROKEN_BYTE_TOKEN_PATTERN.matcher(st);
@@ -375,7 +348,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         return st;
     }
 
-    private List<KeySlice> getRangeSlices(KeyRange keyRange, @Nullable SliceQuery sliceQuery) throws StorageException {
+    private List<KeySlice> getRangeSlices(org.apache.cassandra.thrift.KeyRange keyRange, @Nullable SliceQuery sliceQuery) throws StorageException {
         SliceRange sliceRange = new SliceRange();
 
         if (sliceQuery == null) {
@@ -399,11 +372,11 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                                     .setSlice_range(sliceRange),
                             keyRange,
                             ConsistencyLevel.QUORUM);
-            
+
             for (KeySlice s : slices) {
                 logger.debug("Key {}", ByteBufferUtil.toString(s.key, "-"));
             }
-            
+
             /* Note: we need to fetch columns for each row as well to remove "range ghosts" */
             List<KeySlice> result = new ArrayList<KeySlice>(slices.size());
             KeyIterationPredicate pred = new KeyIterationPredicate();
@@ -420,20 +393,20 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     private static class KeyIterationPredicate implements Predicate<KeySlice> {
-        
+
         @Override
         public boolean apply(@Nullable KeySlice row) {
             return (row != null) && row.getColumns().size() > 0;
         }
     }
-    
+
     /**
      * Slices rows and columns using tokens. Recall that the partitioner turns
      * keys into tokens. For instance, under RandomPartitioner, tokens are the
      * MD5 hashes of keys.
      */
     public class AbstractBufferedRowIter<T extends Token<?>> implements KeyIterator {
-        
+
         private final int pageSize;
         private final SliceQuery columnSlice;
 
@@ -441,14 +414,14 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         private boolean seenEnd;
         protected Iterator<KeySlice> ksIter;
         private KeySlice mostRecentRow;
-        
+
         private final IPartitioner<? extends T> partitioner;
         private T nextStartToken;
         private final T endToken;
         private ByteBuffer nextStartKey;
-        
+
         private boolean omitEndToken;
-        
+
         public AbstractBufferedRowIter(IPartitioner<? extends T> partitioner,
                 SliceQuery columnSlice, int pageSize, T startToken, T endToken, boolean omitEndToken) {
             this.pageSize = pageSize;
@@ -456,7 +429,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             this.nextStartToken = startToken;
             this.endToken = endToken;
             this.columnSlice = columnSlice;
-            
+
             this.seenEnd = false;
             this.isClosed = false;
             this.ksIter = Iterators.emptyIterator();
@@ -467,7 +440,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         @Override
         public boolean hasNext() {
             ensureOpen();
-            
+
             if (!ksIter.hasNext() && !seenEnd) {
                 try {
                     ksIter = rebuffer().iterator();
@@ -487,17 +460,16 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
                 throw new NoSuchElementException();
 
             mostRecentRow = ksIter.next();
-            
+
             Preconditions.checkNotNull(mostRecentRow);
-            
-            return new StaticByteBuffer(mostRecentRow.bufferForKey());
+            return StaticArrayBuffer.of(mostRecentRow.bufferForKey());
         }
 
         @Override
         public void close() {
             closeIterator();
         }
-        
+
         @Override
         public void remove() {
             throw new UnsupportedOperationException();
@@ -508,8 +480,10 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                final Iterator<Entry> columns = excludeLastColumn(mostRecentRow.getColumns(),
-                        columnSlice.getSliceEnd().asByteBuffer()).iterator();
+                final Iterator<Entry> columns =
+                        CassandraHelper.makeEntryIterator(mostRecentRow.getColumns(),
+                                entryGetter, columnSlice.getSliceEnd(),
+                                columnSlice.getLimit());
 
                 @Override
                 public boolean hasNext() {
@@ -547,47 +521,47 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         private List<KeySlice> rebuffer() throws StorageException {
-            
+
             Preconditions.checkArgument(!seenEnd);
-            
+
             return checkFreshSlices(getNextKeySlices());
         }
-        
+
         protected List<KeySlice> checkFreshSlices(List<KeySlice> ks) {
-            
+
             if (0 == ks.size()) {
                 seenEnd = true;
                 return Collections.emptyList();
             }
-            
+
             nextStartKey = ks.get(ks.size() - 1).bufferForKey();
             nextStartToken = partitioner.getToken(nextStartKey);
-            
+
             if (nextStartToken.equals(endToken)) {
                 seenEnd = true;
                 if (omitEndToken)
                     ks.remove(ks.size() - 1);
             }
-            
+
             return ks;
         }
-        
+
         protected final List<KeySlice> getNextKeySlices() throws StorageException {
             return getTokenSlice(nextStartToken, endToken, columnSlice, pageSize);
         }
     }
-    
+
     private final class AllTokensIterator<T extends Token<?>> extends AbstractBufferedRowIter<T> {
         public AllTokensIterator(IPartitioner<? extends T> partitioner, SliceQuery columnSlice, int pageSize) {
             super(partitioner, columnSlice, pageSize, partitioner.getMinimumToken(), partitioner.getMinimumToken(), false);
-        }        
+        }
     }
-        
+
     private final class KeyRangeIterator<T extends Token<?>> extends AbstractBufferedRowIter<T> {
         public KeyRangeIterator(IPartitioner<? extends T> partitioner, SliceQuery columnSlice,
                 int pageSize, ByteBuffer startKey, ByteBuffer endKey) throws StorageException {
             super(partitioner, columnSlice, pageSize, partitioner.getToken(startKey), partitioner.getToken(endKey), true);
-            
+
             Preconditions.checkArgument(partitioner instanceof AbstractByteOrderedPartitioner);
 
             // Get first slice with key range instead of token range. Token
@@ -595,7 +569,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             // are end-inclusive. If we don't make the call below, then we will
             // erroneously miss startKey.
             List<KeySlice> ks = getKeySlice(startKey, endKey, columnSlice, pageSize);
-            
+
             this.ksIter = checkFreshSlices(ks).iterator();
         }
     }

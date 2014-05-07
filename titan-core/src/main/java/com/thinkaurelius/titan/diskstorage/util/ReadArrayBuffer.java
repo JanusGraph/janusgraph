@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
  */
 
 public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
+
     public ReadArrayBuffer(byte[] array) {
         super(array);
     }
@@ -22,9 +23,20 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
         super(buffer);
     }
 
+    protected ReadArrayBuffer(byte[] array, int offset, int limit) {
+        super(array,offset,limit);
+    }
+
+    @Override
+    void reset(int newOffset, int newLimit) {
+        position=0;
+        super.reset(newOffset,newLimit);
+    }
+
     /*
     ############ IDENTICAL CODE #############
      */
+
 
     private transient int position=0;
 
@@ -45,59 +57,100 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
-    public void movePosition(int delta) {
-        int newPosition = position + delta;
+    public void movePositionTo(int newPosition) {
         assert newPosition >= 0 && newPosition <= length();
         position = newPosition;
     }
 
     @Override
     public byte getByte() {
-        return super.getByte(updatePos(1));
+        return getByte(updatePos(1));
+    }
+
+    @Override
+    public boolean getBoolean() {
+        return getBoolean(updatePos(1));
     }
 
     @Override
     public short getShort() {
-        return super.getShort(updatePos(2));
+        return getShort(updatePos(2));
     }
 
     @Override
     public int getInt() {
-        return super.getInt(updatePos(4));
+        return getInt(updatePos(4));
     }
 
     @Override
     public long getLong() {
-        return super.getLong(updatePos(8));
+        return getLong(updatePos(8));
     }
 
     @Override
     public char getChar() {
-        return super.getChar(updatePos(2));
+        return getChar(updatePos(2));
     }
 
     @Override
     public float getFloat() {
-        return super.getFloat(updatePos(4));
+        return getFloat(updatePos(4));
     }
 
     @Override
     public double getDouble() {
-        return super.getDouble(updatePos(8));
+        return getDouble(updatePos(8));
     }
 
-    @Override
-    public ByteBuffer asRelativeByteBuffer() {
-        ByteBuffer rb = super.asByteBuffer();
-        rb.position(rb.position()+position);
-        return rb;
+    //------
+
+    public byte[] getBytes(int length) {
+        byte[] result = super.getBytes(position,length);
+        position += length*BYTE_LEN;
+        return result;
+    }
+
+    public short[] getShorts(int length) {
+        short[] result = super.getShorts(position,length);
+        position += length*SHORT_LEN;
+        return result;
+    }
+
+    public int[] getInts(int length) {
+        int[] result = super.getInts(position,length);
+        position += length*INT_LEN;
+        return result;
+    }
+
+    public long[] getLongs(int length) {
+        long[] result = super.getLongs(position,length);
+        position += length*LONG_LEN;
+        return result;
+    }
+
+    public char[] getChars(int length) {
+        char[] result = super.getChars(position,length);
+        position += length*CHAR_LEN;
+        return result;
+    }
+
+    public float[] getFloats(int length) {
+        float[] result = super.getFloats(position,length);
+        position += length*FLOAT_LEN;
+        return result;
+    }
+
+    public double[] getDoubles(int length) {
+        double[] result = super.getDoubles(position,length);
+        position += length*DOUBLE_LEN;
+        return result;
     }
 
     @Override
     public<T> T asRelative(final Factory<T> factory) {
-        if (position==0) return super.as(factory);
+        if (position==0) return as(factory);
         else {
-            return super.as(new Factory<T>() {
+            return as(new Factory<T>() {
                 @Override
                 public T get(byte[] array, int offset, int limit) {
                     return factory.get(array,offset+position,limit);
@@ -107,12 +160,8 @@ public class ReadArrayBuffer extends StaticArrayBuffer implements ReadBuffer {
     }
 
     @Override
-    public ReadBuffer invert() {
-        byte[] newvalues = new byte[super.length()];
-        for (int i=0;i<newvalues.length;i++) newvalues[i]=(byte)~super.getByte(i);
-        ReadArrayBuffer newread = new ReadArrayBuffer(newvalues);
-        newread.movePosition(this.position);
-        return newread;
+    public ReadBuffer subrange(int length, boolean invert) {
+        return super.subrange(position,length,invert).asReadBuffer();
     }
 
 

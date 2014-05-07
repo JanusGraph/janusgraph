@@ -27,6 +27,8 @@ public class ElasticSearchConstants {
         }
         
         String vs = props.getProperty("es.version");
+        // The string formatting here assumes that there's no Beta or RC
+        // suffix.
         String versionConstantName = String.format("V_%s_%s_%s", (Object[])vs.split("\\."));
         ES_VERSION_EXPECTED = getExpectedVersionReflectively(versionConstantName);
     }

@@ -8,10 +8,12 @@ import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +89,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever);
+        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After
@@ -243,9 +246,13 @@ public abstract class IndexProviderTest {
 
             if (supportsLuceneStyleQueries()) {
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:\"Hello Bob\"",NO_PARAS))));
+                assertEquals(0, Iterables.size(tx.query(new RawQuery(store,"text:\"Hello Bob\"",NO_PARAS).setOffset(1))));
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(world AND tomorrow)",NO_PARAS))));
 //                printResult(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS)));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1))));
+                assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1).setOffset(1))));
+                assertEquals(0, Iterables.size(tx.query(new RawQuery(store,"text:(you there Hello Bob)",NO_PARAS).setLimit(1).setOffset(2))));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"text:\"world\"",NO_PARAS))));
                 assertEquals(2, Iterables.size(tx.query(new RawQuery(store,"time:[1000 TO 1020]",NO_PARAS))));
                 assertEquals(1, Iterables.size(tx.query(new RawQuery(store,"text:world AND time:1001",NO_PARAS))));
@@ -340,7 +347,7 @@ public abstract class IndexProviderTest {
     private void remove(String store, String docid, Map<String, Object> doc, boolean deleteAll) {
         for (Map.Entry<String, Object> kv : doc.entrySet()) {
             if (index.supports(allKeys.get(kv.getKey()))) {
-                tx.delete(store, docid, kv.getKey(), deleteAll);
+                tx.delete(store, docid, kv.getKey(), kv.getValue(), deleteAll);
             }
         }
     }

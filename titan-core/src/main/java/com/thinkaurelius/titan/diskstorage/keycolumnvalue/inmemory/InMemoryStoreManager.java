@@ -3,10 +3,11 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,32 +23,37 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     private final ConcurrentHashMap<String, InMemoryKeyColumnValueStore> stores;
 
     private final StoreFeatures features;
-    private final Map<String, String> storeConfig;
 
     public InMemoryStoreManager() {
-        this(new BaseConfiguration());
+        this(Configuration.EMPTY);
     }
 
     public InMemoryStoreManager(final Configuration configuration) {
 
         stores = new ConcurrentHashMap<String, InMemoryKeyColumnValueStore>();
-        storeConfig = new ConcurrentHashMap<String, String>();
 
-        features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = true;
-        features.supportsBatchMutation = false;
-        features.supportsTransactions = false;
-        features.supportsConsistentKeyOperations = true;
-        features.supportsLocking = false;
-        features.isDistributed = false;
-        features.supportsMultiQuery = false;
-        features.isKeyOrdered = true;
-        features.hasLocalKeyPartition = false;
+        features = new StandardStoreFeatures.Builder()
+            .orderedScan(true)
+            .unorderedScan(true)
+            .keyOrdered(true)
+            .keyConsistent(GraphDatabaseConfiguration.buildConfiguration())
+            .build();
+
+//        features = new StoreFeatures();
+//        features.supportsOrderedScan = true;
+//        features.supportsUnorderedScan = true;
+//        features.supportsBatchMutation = false;
+//        features.supportsTxIsolation = false;
+//        features.supportsConsistentKeyOperations = true;
+//        features.supportsLocking = false;
+//        features.isDistributed = false;
+//        features.supportsMultiQuery = false;
+//        features.isKeyOrdered = true;
+//        features.hasLocalKeyPartition = false;
     }
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         return new TransactionHandle(config);
     }
 
@@ -99,7 +105,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
 
     private class TransactionHandle extends AbstractStoreTransaction {
 
-        public TransactionHandle(final StoreTxConfig config) {
+        public TransactionHandle(final TransactionHandleConfig config) {
             super(config);
         }
     }

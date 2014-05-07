@@ -3,7 +3,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>../src/assembly/static/bin</directory>
+            <directory>src/assembly/static/bin</directory>
             <outputDirectory>/bin</outputDirectory>
             <includes>
                 <include>gremlin.sh</include>
@@ -11,14 +11,14 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>../src/assembly/static/ext</directory>
+            <directory>src/assembly/static/ext</directory>
             <outputDirectory>/ext</outputDirectory>
         </fileSet>
     </fileSets>
 
     <files>
         <file>
-            <source>../src/assembly/static/conf/log4j.properties</source>
+            <source>src/assembly/static/conf/log4j-gremlin.properties</source>
             <outputDirectory>/conf</outputDirectory>
         </file>
     </files>
@@ -29,9 +29,9 @@
             <unpack>false</unpack>
             <scope>runtime</scope>
             <useProjectArtifact>false</useProjectArtifact>
-            <excludes>
-                <exclude>${project.groupId}:titan-site:zip:htdocs:${project.version}</exclude>
-            </excludes>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
         </dependencySet>
     </dependencySets>
 </component>

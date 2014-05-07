@@ -1,16 +1,17 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexQuery;
-import com.thinkaurelius.titan.core.VertexList;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
-import org.apache.commons.configuration.Configuration;
-import org.junit.Before;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -22,15 +23,11 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
     private static final int numVertices = 2000;
     private static final int edgesPerVertex = 400;
 
-    public SpeedComparisonPerformanceTest(Configuration config) {
-        super(config);
-    }
+    @Test
+    public void compare() {
+        makeVertexIndexedUniqueKey("uid", Long.class);
+        finishSchema();
 
-    @Override
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        graph.createKeyIndex("uid", Vertex.class);
         Vertex vertices[] = new TitanVertex[numVertices];
         for (int i = 0; i < numVertices; i++) {
             vertices[i] = graph.addVertex(null);
@@ -42,10 +39,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
             }
         }
         graph.commit();
-    }
 
-    @Test
-    public void compare() {
         for (int i = 0; i < 10; i++) {
             if (i % 2 == 0) {
                 System.out.print("In Memory - ");
@@ -59,7 +53,7 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
     }
 
 
-    public void retrieveNgh(boolean inMemory) {
+    private void retrieveNgh(boolean inMemory) {
         long time = time();
         Vertex vertices[] = new TitanVertex[numVertices];
         for (int i = 0; i < numVertices; i++) vertices[i] = graph.getVertices("uid", i).iterator().next();
@@ -87,6 +81,61 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
 
         graph.commit();
     }
+
+    @Test
+    public void testIncrementalSpeed() {
+        mgmt.makeKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        makeVertexIndexedUniqueKey("uid", Long.class);
+        mgmt.makeLabel("activity").multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
+
+        final int numV = 20;
+        final int numA = 500;
+        for (int i=1;i<=numV;i++) {
+            TitanVertex v = graph.addVertex(null);
+            v.setProperty("uid",i);
+            for (int j=1;j<=numA;j++) {
+                TitanVertex a = graph.addVertex(null);
+                a.setProperty("payload", RandomStringUtils.randomAlphabetic(100));
+                v.addEdge("activity",a);
+            }
+        }
+
+        clopen();
+
+        final int outer = 10;
+        final int inner = 20;
+        final int every = 5;
+        assert numV % every == 0;
+
+        long[][][] times = new long[outer][numV][inner];
+
+        for (int u : new int[]{1,2}) {
+            for (int o=0;o<outer;o++) {
+                for (int i=0;i<numV;i++) {
+                    if (i%every!=u) continue;
+                    for (int j=0;j<inner;j++) {
+                        long start = System.nanoTime();
+
+                        Vertex v = graph.getVertices("uid",i).iterator().next();
+                        assertEquals(numA,v.query().direction(Direction.OUT).labels("activity").count());
+
+                        times[o][i][j]=(System.nanoTime()-start)/1000;
+                        graph.commit();
+                    }
+                }
+                clopen();
+            }
+        }
+        for (int i=0;i<times.length;i++) {
+            for (int j=0;j<times[i].length;j++) {
+                if (times[i][j][0]==0) continue;
+                System.out.println("v["+(j+1)+"]"+(j%every==2?"*":"")+":\t"+ Arrays.toString(times[i][j]));
+            }
+            System.out.println("------- Database Reopen -------------");
+        }
+    }
+
 
     private static long time() {
         return System.currentTimeMillis();

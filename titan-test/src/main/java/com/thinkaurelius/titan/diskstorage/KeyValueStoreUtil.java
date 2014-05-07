@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.kryo.KryoSerializer;
+import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.junit.Assert;
 import org.slf4j.Logger;
@@ -15,11 +15,11 @@ import java.util.Arrays;
 public class KeyValueStoreUtil {
 
     private static final Logger log = LoggerFactory.getLogger(KeyValueStoreUtil.class);
-    public static final Serializer serial = new KryoSerializer(true);
+    public static final Serializer serial = new StandardSerializer();
     public static final long idOffset = 1000;
 
-    public static final StaticBuffer MIN_KEY = ByteBufferUtil.getLongBuffer(0);
-    public static final StaticBuffer MAX_KEY = ByteBufferUtil.getLongBuffer(-1);
+    public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
+    public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
     public static String[] generateData(int numKeys) {
         String[] ret = new String[numKeys];
@@ -48,7 +48,7 @@ public class KeyValueStoreUtil {
     }
 
     public static StaticBuffer getBuffer(int no) {
-        return ByteBufferUtil.getLongBuffer(no + idOffset);
+        return BufferUtil.getLongBuffer(no + idOffset);
     }
 
     public static int getID(StaticBuffer b) {
@@ -58,7 +58,7 @@ public class KeyValueStoreUtil {
     }
 
     public static StaticBuffer getBuffer(String s) {
-        DataOutput out = serial.getDataOutput(50, true);
+        DataOutput out = serial.getDataOutput(50);
         out.writeObjectNotNull(s);
         return out.getStaticBuffer();
     }

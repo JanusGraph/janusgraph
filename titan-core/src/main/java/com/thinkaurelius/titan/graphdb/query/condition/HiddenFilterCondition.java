@@ -1,21 +1,21 @@
 package com.thinkaurelius.titan.graphdb.query.condition;
 
-import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.core.TitanElement;
+import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class HiddenFilterCondition<E extends TitanRelation> extends Literal<E> {
+public class HiddenFilterCondition<E extends TitanElement> extends Literal<E> {
 
     public HiddenFilterCondition() {
     }
 
     @Override
     public boolean evaluate(E element) {
-        return !((InternalType)element.getType()).isHidden();
+        return !((InternalElement)element).isHidden();
     }
 
     @Override

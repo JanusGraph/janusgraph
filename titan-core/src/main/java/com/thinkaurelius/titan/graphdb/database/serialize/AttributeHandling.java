@@ -24,4 +24,6 @@ public interface AttributeHandling {
      */
     public<V> V convert(Class<V> datatype, Object value);
 
+    public boolean isOrderPreservingDatatype(Class<?> datatype);
+
 }

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**
  * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -8,7 +9,7 @@ import com.thinkaurelius.titan.core.DefaultTypeMaker;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see com.thinkaurelius.titan.core.TitanTransaction
  */
-public interface TransactionConfiguration {
+public interface TransactionConfiguration extends TransactionHandleConfig {
 
     /**
      * Checks whether the graph transaction is configured as read-only.
@@ -21,6 +22,14 @@ public interface TransactionConfiguration {
      * @return Whether this transaction is configured to assign idAuthorities immediately.
      */
     public boolean hasAssignIDsImmediately();
+
+
+    /**
+     * Whether this transaction should be optimized for batch-loading, i.e. ingestion of lots of data.
+     *
+     * @return
+     */
+    public boolean hasEnabledBatchLoading();
 
     /**
      * Whether the graph transaction is configured to verify that a vertex with the id GIVEN BY THE USER actually exists
@@ -92,12 +101,19 @@ public interface TransactionConfiguration {
     public boolean isThreadBound();
 
     /**
-     * The size of the vertex cache for this particular transaction, i.e. the maximum number
-     * of non-modified vertices that are kept in cache
+     * The maximum number of recently-used vertices to cache in this transaction.
+     * The recently-used vertex cache can include both clean and dirty vertices.
      *
      * @return
      */
     public int getVertexCacheSize();
+
+    /**
+     * The initial size of the dirty (modified) vertex map used by a transaction.
+     *
+     * @return
+     */
+    public int getDirtyVertexSize();
 
     /**
      * The maximum weight for the index cache store used in this particular transaction
@@ -106,26 +122,12 @@ public interface TransactionConfiguration {
      */
     public long getIndexCacheWeight();
 
-
     /**
-     * Whether a timestamp has been configured for this transaction
+     * The name of the log to be used for logging the mutations in this transaction.
+     * If the identifier is NULL the mutations will not be logged.
      *
      * @return
      */
-    public boolean hasTimestamp();
+    public String getLogIdentifier();
 
-    /**
-     * Returns the timestamp of this transaction if one has been set, otherwise throws an exception
-     *
-     * @return
-     * @see #hasTimestamp()
-     */
-    public long getTimestamp();
-
-    /**
-     * Returns the (possibly null) metrics prefix for this transaction.
-     *
-     * @return metrics name prefix string or null
-     */
-    public String getMetricsPrefix();
 }

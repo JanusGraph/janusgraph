@@ -4,18 +4,19 @@ import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.CLIENT_ONLY_KEY;
-import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.LOCAL_MODE_KEY;
+import static com.thinkaurelius.titan.diskstorage.es.ElasticSearchIndex.*;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_HOSTS;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -34,11 +35,12 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     public static final Configuration getLocalESTestConfig() {
-        Configuration config = new BaseConfiguration();
-        config.setProperty(LOCAL_MODE_KEY, true);
-        config.setProperty(CLIENT_ONLY_KEY, false);
-        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("es"));
-        return config;
+        final String index = "es";
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, true, index);
+        config.set(CLIENT_ONLY, false, index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        return config.restrictTo(index);
     }
 
 
@@ -83,4 +85,34 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
         assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
     }
 
+    @Test
+    public void testConfiguration() throws StorageException {
+        // Test that local-mode has precedence over hostname
+        final String index = "es";
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, true, index);
+        config.set(CLIENT_ONLY, true, index);
+        config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        Configuration indexConfig = config.restrictTo(index);
+
+        IndexProvider idx = new ElasticSearchIndex(indexConfig); // Shouldn't throw exception
+        idx.close();
+
+        config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(LOCAL_MODE, false, index);
+        config.set(CLIENT_ONLY, true, index);
+        config.set(INDEX_HOSTS, new String[] { "10.0.0.1" }, index);
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("es"), index);
+        indexConfig = config.restrictTo(index);
+
+        RuntimeException expectedException = null;
+        try {
+            idx = new ElasticSearchIndex(indexConfig); // Should try 10.0.0.1 and throw exception
+            idx.close();
+        } catch (RuntimeException re) {
+            expectedException = re;
+        }
+        assertNotNull(expectedException);
+    }
 }

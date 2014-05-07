@@ -2,8 +2,10 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import java.util.HashMap;
@@ -45,7 +47,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public StoreTransaction beginTransaction(final StoreTxConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
         return manager.beginTransaction(config);
     }
 
@@ -62,7 +64,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     @Override
     public synchronized OrderedKeyValueStoreAdapter openDatabase(String name)
             throws StorageException {
-        if (!stores.containsKey(name)) {
+        if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);
             stores.put(name, store);
         }
@@ -82,13 +84,13 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
                 KCVMutation mutation = entry.getValue();
                 if (mutation.hasAdditions()) {
                     for (Entry addition : mutation.getAdditions()) {
-                        mut.addition(new KeyValueEntry(store.concatenate(key, addition.getColumn()), addition.getValue()));
+                        mut.addition(store.concatenate(key,addition));
                     }
                 }
 
                 if (mutation.hasDeletions()) {
-                    for (StaticBuffer column : mutation.getDeletions()) {
-                        mut.deletion(store.concatenate(key, column));
+                    for (StaticBuffer del : mutation.getDeletions()) {
+                        mut.deletion(store.concatenate(key, del));
                     }
                 }
             }

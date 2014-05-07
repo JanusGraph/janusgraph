@@ -5,11 +5,11 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import org.slf4j.Logger;
@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
@@ -77,7 +76,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             DatabaseEntry dbkey = key.as(ENTRY_FACTORY);
             DatabaseEntry data = new DatabaseEntry();
 
-            OperationStatus status = db.get(tx, dbkey, data, LockMode.DEFAULT);
+            OperationStatus status = db.get(tx, dbkey, data, getLockMode(txh));
             if (status == OperationStatus.SUCCESS) {
                 return getBuffer(data);
             } else {
@@ -96,12 +95,12 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         if (getTransaction(txh) == null) {
-            log.info("Attempt to acquire lock with transactions disabled");
+            log.warn("Attempt to acquire lock with transactions disabled");
         } //else we need no locking
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         throw new UnsupportedOperationException();
     }
 
@@ -117,7 +116,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             DatabaseEntry foundData = new DatabaseEntry();
 
             cursor = db.openCursor(tx, null);
-            OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, LockMode.DEFAULT);
+            OperationStatus status = cursor.getSearchKeyRange(foundKey, foundData, getLockMode(txh));
             //Iterate until given condition is satisfied or end of records
             while (status == OperationStatus.SUCCESS) {
                 StaticBuffer key = getBuffer(foundKey);
@@ -132,7 +131,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 if (selector.reachedLimit())
                     break;
 
-                status = cursor.getNext(foundKey, foundData, LockMode.DEFAULT);
+                status = cursor.getNext(foundKey, foundData, getLockMode(txh));
             }
             log.trace("Retrieved: {}", result.size());
 
@@ -214,5 +213,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         return new StaticArrayBuffer(entry.getData(),entry.getOffset(),entry.getOffset()+entry.getSize());
     }
 
-
+    private static LockMode getLockMode(StoreTransaction txh) {
+        return ((BerkeleyJETx)txh).getLockMode();
+    }
 }

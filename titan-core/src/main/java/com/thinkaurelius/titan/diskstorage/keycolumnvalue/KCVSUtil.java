@@ -1,14 +1,17 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contains static utility methods for operating on {@link KeyColumnValueStore}.
@@ -32,14 +35,14 @@ public class KCVSUtil {
      * @return Value for key and column or NULL if such does not exist
      */
     public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
-        KeySliceQuery query = new KeySliceQuery(key, column, ByteBufferUtil.nextBiggerBuffer(column)).setLimit(2);
+        KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column)).setLimit(2);
         List<Entry> result = store.getSlice(query, txh);
         if (result.size() > 1)
             log.warn("GET query returned more than 1 result: store {} | key {} | column {}", new Object[]{store.getName(),
                     key, column});
 
         if (result.isEmpty()) return null;
-        else return result.get(0).getValue();
+        else return result.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
     }
 
     /**
@@ -52,7 +55,7 @@ public class KCVSUtil {
      * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}. The
      * key and columns slice bounds are the same as those described above. The
      * column limit is 1.
-     * 
+     *
      * @param store the store to query
      * @param features the store's features
      * @param keyLength length of the zero/one buffers that form the key limits
@@ -61,19 +64,16 @@ public class KCVSUtil {
      * @return keys returned by the store.getKeys call
      * @throws StorageException unexpected failure
      */
-    public static RecordIterator<StaticBuffer> getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
-        SliceQuery slice = new SliceQuery(ByteBufferUtil.zeroBuffer(sliceLength), ByteBufferUtil.oneBuffer(sliceLength)).setLimit(1);
-        if (features.supportsUnorderedScan()) {
+    public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
+        SliceQuery slice = new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1);
+        if (features.hasUnorderedScan()) {
             return store.getKeys(slice, txh);
-        } else if (features.supportsOrderedScan()) {
-            return store.getKeys(new KeyRangeQuery(ByteBufferUtil.zeroBuffer(keyLength), ByteBufferUtil.oneBuffer(keyLength), slice), txh);
+        } else if (features.hasOrderedScan()) {
+            return store.getKeys(new KeyRangeQuery(BufferUtil.zeroBuffer(keyLength), BufferUtil.oneBuffer(keyLength), slice), txh);
         } else throw new UnsupportedOperationException("Scan not supported by this store");
     }
 
-    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int sliceLength, StoreTransaction txh) throws StorageException {
-        SliceQuery slice = new SliceQuery(ByteBufferUtil.zeroBuffer(sliceLength), ByteBufferUtil.oneBuffer(sliceLength)).setLimit(1);
-        return !store.getSlice(new KeySliceQuery(key, slice), txh).isEmpty();
-    }
+
 
     /**
      * Returns true if the specified key-column pair exists in the store.
@@ -88,6 +88,20 @@ public class KCVSUtil {
         return get(store, key, column, txh) != null;
     }
 
+    private static final StaticBuffer START = BufferUtil.zeroBuffer(8), END = BufferUtil.oneBuffer(32);
+
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, StoreTransaction txh) throws StorageException {
+        return containsKey(store,key,32,txh);
+    }
+
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws StorageException {
+        StaticBuffer start = START, end = END;
+        if (maxColumnLength>32) {
+            end = BufferUtil.oneBuffer(maxColumnLength);
+        }
+        return !store.getSlice(new KeySliceQuery(key, START, END).setLimit(1),txh).isEmpty();
+    }
+
     public static boolean matches(SliceQuery query, StaticBuffer column) {
         return query.getSliceStart().compareTo(column)<=0 && query.getSliceEnd().compareTo(column)>0;
     }
@@ -98,4 +112,11 @@ public class KCVSUtil {
     }
 
 
+    public static Map<StaticBuffer,EntryList> emptyResults(List<StaticBuffer> keys) {
+        Map<StaticBuffer,EntryList> result = new HashMap<StaticBuffer, EntryList>(keys.size());
+        for (StaticBuffer key : keys) {
+            result.put(key,EntryList.EMPTY_LIST);
+        }
+        return result;
+    }
 }

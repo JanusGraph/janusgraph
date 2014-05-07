@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.astyanax;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanGraphTest;
 
 import org.junit.BeforeClass;
@@ -11,11 +11,12 @@ public class InternalAstyanaxGraphTest extends TitanGraphTest {
 
     @BeforeClass
     public static void startCassandra() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 
-    public InternalAstyanaxGraphTest() {
-        super(CassandraStorageSetup.getAstyanaxGraphConfiguration(InternalAstyanaxGraphTest.class.getSimpleName()));
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return CassandraStorageSetup.getAstyanaxGraphConfiguration(getClass().getSimpleName());
     }
 
 }

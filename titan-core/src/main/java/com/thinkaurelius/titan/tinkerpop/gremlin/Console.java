@@ -51,6 +51,7 @@ public class Console {
         }
 
         Gremlin.load();
+        TitanGremlinLoader.load();
         initializeShellWithScript(io, initScriptFile, groovy);
 
         try {

@@ -14,12 +14,12 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexMutation extends Mutation<IndexEntry,String> {
+public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
 
     private final boolean isNew;
     private final boolean isDeleted;
 
-    public IndexMutation(List<IndexEntry> additions, List<String> deletions, boolean isNew, boolean isDeleted) {
+    public IndexMutation(List<IndexEntry> additions, List<IndexEntry> deletions, boolean isNew, boolean isDeleted) {
         super(additions, deletions);
         Preconditions.checkArgument(!(isNew && isDeleted),"Invalid status");
         this.isNew = isNew;

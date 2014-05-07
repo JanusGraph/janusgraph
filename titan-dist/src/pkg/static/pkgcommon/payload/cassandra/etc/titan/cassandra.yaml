@@ -80,7 +80,7 @@ authorizer: org.apache.cassandra.auth.AllowAllAuthorizer
 #
 # See http://wiki.apache.org/cassandra/Operations for more on
 # partitioners and token selection.
-partitioner: org.apache.cassandra.dht.RandomPartitioner
+partitioner: org.apache.cassandra.dht.Murmur3Partitioner
 
 # directories where Cassandra should store data on disk.
 data_file_directories:

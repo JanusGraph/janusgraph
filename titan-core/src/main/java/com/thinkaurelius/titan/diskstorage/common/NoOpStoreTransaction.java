@@ -1,14 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**
+ * Dummy transaction object that does nothing
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
 public class NoOpStoreTransaction extends AbstractStoreTransaction {
 
-    public NoOpStoreTransaction(StoreTxConfig config) {
+    public NoOpStoreTransaction(TransactionHandleConfig config) {
         super(config);
     }
 }

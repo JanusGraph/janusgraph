@@ -1,32 +1,38 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
+import com.thinkaurelius.titan.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 
 import java.util.concurrent.TimeUnit;
 
 /**
  * The timestamp and checked-ness of a held {@link ConsistentKeyLock}
- * 
+ *
  * {@see ConsistentKeyLockStore}
  */
 public class ConsistentKeyLockStatus implements LockStatus {
-    private long writeNS;
-    private long expireNS;
+
+    private final Timepoint write;
+    private final Timepoint expire;
     private boolean checked;
 
-    public ConsistentKeyLockStatus(long writeTimestamp, TimeUnit writeUnits, long expireTimestamp, TimeUnit expireUnits) {
-        this.writeNS =  TimeUnit.NANOSECONDS.convert(writeTimestamp, writeUnits);
-        this.expireNS = TimeUnit.NANOSECONDS.convert(expireTimestamp,  expireUnits);
+    public ConsistentKeyLockStatus(Timepoint written, Timepoint expire) {
+        this.write = written;
+        this.expire = expire;
         this.checked = false;
     }
 
     @Override
-    public long getExpirationTimestamp(TimeUnit tu) {
-        return tu.convert(expireNS, TimeUnit.NANOSECONDS);
+    public Timepoint getExpirationTimestamp() {
+        return expire;
     }
-    
+
     public long getWriteTimestamp(TimeUnit tu) {
-        return tu.convert(writeNS, TimeUnit.NANOSECONDS);
+        return write.getTimestamp(tu);
+    }
+
+    public Timepoint getWriteTimestamp() {
+        return write;
     }
 
     public boolean isChecked() {
@@ -42,7 +48,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
         final int prime = 31;
         int result = 1;
         result = prime * result + (checked ? 1231 : 1237);
-        result = prime * result + (int) (expireNS ^ (expireNS >>> 32));
+        result = prime * result + ((expire == null) ? 0 : expire.hashCode());
         return result;
     }
 
@@ -57,7 +63,10 @@ public class ConsistentKeyLockStatus implements LockStatus {
         ConsistentKeyLockStatus other = (ConsistentKeyLockStatus) obj;
         if (checked != other.checked)
             return false;
-        if (expireNS != other.expireNS)
+        if (expire == null) {
+            if (other.expire != null)
+                return false;
+        } else if (!expire.equals(other.expire))
             return false;
         return true;
     }

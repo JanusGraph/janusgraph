@@ -1,13 +1,16 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
-import org.apache.commons.configuration.Configuration;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+
 
 /**
  * Base Class for {@link IDAuthority} implementations.
@@ -25,30 +28,29 @@ public abstract class AbstractIDManager implements IDAuthority {
       */
     protected static final long BASE_ID = 1;
 
-    protected final long idApplicationWaitMS;
-    protected final int idApplicationRetryCount;
+    protected final Duration idApplicationWaitMS;
+    protected final int randomUniqueIDLimit;
 
-    protected final byte[] rid;
-    
+    protected final String uid;
+    protected final byte[] uidBytes;
+
     protected final String metricsPrefix;
 
     private IDBlockSizer blockSizer;
     private volatile boolean isActive;
 
     public AbstractIDManager(Configuration config) {
-        this.rid = DistributedStoreManager.getRid(config);
+        this.uid = config.get(UNIQUE_INSTANCE_ID);
+
+        this.uidBytes = uid.getBytes();
 
         this.isActive = false;
 
         this.idApplicationWaitMS =
-                config.getLong(
-                        GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_KEY,
-                        GraphDatabaseConfiguration.IDAUTHORITY_WAIT_MS_DEFAULT);
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
 
-        this.idApplicationRetryCount =
-                config.getInt(
-                        GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_KEY,
-                        GraphDatabaseConfiguration.IDAUTHORITY_RETRY_COUNT_DEFAULT);
+        this.randomUniqueIDLimit =
+                config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);
 
         this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
     }
@@ -60,13 +62,18 @@ public abstract class AbstractIDManager implements IDAuthority {
         this.blockSizer = sizer;
     }
 
+    @Override
+    public String getUniqueID() {
+        return uid;
+    }
+
     /**
      * Returns a byte buffer representation for the given partition id
      * @param partition
      * @return
      */
     protected StaticBuffer getPartitionKey(int partition) {
-        return ByteBufferUtil.getIntBuffer(partition);
+        return BufferUtil.getIntBuffer(partition);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 public interface DataOutput extends WriteBuffer {
@@ -17,6 +18,12 @@ public interface DataOutput extends WriteBuffer {
     public DataOutput putByte(byte val);
 
     @Override
+    public DataOutput putBytes(byte[] val);
+
+    @Override
+    public DataOutput putBytes(StaticBuffer val);
+
+    @Override
     public DataOutput putChar(char val);
 
     @Override
@@ -26,6 +33,8 @@ public interface DataOutput extends WriteBuffer {
     public DataOutput putDouble(double val);
 
     public DataOutput writeObject(Object object, Class<?> type);
+
+    public DataOutput writeObjectByteOrder(Object object, Class<?> type);
 
     public DataOutput writeObjectNotNull(Object object);
 

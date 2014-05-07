@@ -4,28 +4,47 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTxConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
-import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
+
 public class BerkeleyJEStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
 
-    public static final String CACHE_KEY = "cache-percentage";
-    public static final int CACHE_DEFAULT = 65;
+    public static final ConfigOption<Integer> JVM_CACHE = new ConfigOption<Integer>(GraphDatabaseConfiguration.STORAGE_NS,"cache-percentage",
+            "Percentage of JVM heap reserved for BerkeleyJE's cache",
+            ConfigOption.Type.MASKABLE, 65, ConfigOption.positiveInt());
+//    public static final String CACHE_KEY = "cache-percentage";
+//    public static final int CACHE_DEFAULT = 65;
+
+    public static final ConfigOption<LockMode> LOCK_MODE = new ConfigOption<LockMode>(GraphDatabaseConfiguration.STORAGE_NS, "lock-mode",
+            "The BDB record lock mode used for read operations",
+            ConfigOption.Type.MASKABLE, LockMode.class, LockMode.DEFAULT, disallowEmpty(LockMode.class));
+
+    public static final ConfigOption<IsolationLevel> ISOLATION_LEVEL = new ConfigOption<IsolationLevel>(GraphDatabaseConfiguration.STORAGE_NS, "isolation-level",
+            "The isolation level used by transactions",
+            ConfigOption.Type.MASKABLE,  IsolationLevel.class, IsolationLevel.REPEATABLE_READ, disallowEmpty(IsolationLevel.class));
 
     private final Map<String, BerkeleyJEKeyValueStore> stores;
 
@@ -35,23 +54,29 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public BerkeleyJEStoreManager(Configuration configuration) throws StorageException {
         super(configuration);
         stores = new HashMap<String, BerkeleyJEKeyValueStore>();
-        if (!transactional)
-            log.warn("Transactions are disabled. Ensure that there is at most one Titan instance interacting with this BerkeleyDB instance, otherwise your database may corrupt.");
 
-        int cachePercentage = configuration.getInt(CACHE_KEY, CACHE_DEFAULT);
+        int cachePercentage = configuration.get(JVM_CACHE);
         initialize(cachePercentage);
 
-        features = new StoreFeatures();
-        features.supportsOrderedScan = true;
-        features.supportsUnorderedScan = false;
-        features.supportsBatchMutation = false;
-        features.supportsTransactions = true;
-        features.supportsConsistentKeyOperations = false;
-        features.supportsLocking = true;
-        features.isKeyOrdered = true;
-        features.isDistributed = false;
-        features.hasLocalKeyPartition = false;
-        features.supportsMultiQuery = false;
+        features = new StandardStoreFeatures.Builder()
+                    .orderedScan(true)
+                    .transactional(transactional)
+                    .keyConsistent(GraphDatabaseConfiguration.buildConfiguration())
+                    .locking(true)
+                    .keyOrdered(true)
+                    .build();
+
+//        features = new StoreFeatures();
+//        features.supportsOrderedScan = true;
+//        features.supportsUnorderedScan = false;
+//        features.supportsBatchMutation = false;
+//        features.supportsTxIsolation = transactional;
+//        features.supportsConsistentKeyOperations = true;
+//        features.supportsLocking = true;
+//        features.isKeyOrdered = true;
+//        features.isDistributed = false;
+//        features.hasLocalKeyPartition = false;
+//        features.supportsMultiQuery = false;
     }
 
     private void initialize(int cachePercent) throws StorageException {
@@ -82,18 +107,24 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
-    public BerkeleyJETx beginTransaction(final StoreTxConfig config) throws StorageException {
+    public BerkeleyJETx beginTransaction(final TransactionHandleConfig txCfg) throws StorageException {
         try {
             Transaction tx = null;
+
+            Configuration effectiveCfg =
+                    new MergedConfiguration(txCfg.getCustomOptions(), getStorageConfig());
+
             if (transactional) {
-                tx = environment.beginTransaction(null, null);
+                TransactionConfig txnConfig = new TransactionConfig();
+                effectiveCfg.get(ISOLATION_LEVEL).configure(txnConfig);
+                tx = environment.beginTransaction(null, txnConfig);
             }
-            return new BerkeleyJETx(tx, config);
+
+            return new BerkeleyJETx(tx, effectiveCfg.get(LOCK_MODE), txCfg);
         } catch (DatabaseException e) {
             throw new PermanentStorageException("Could not start BerkeleyJE transaction", e);
         }
     }
-
 
     @Override
     public BerkeleyJEKeyValueStore openDatabase(String name) throws StorageException {
@@ -125,7 +156,16 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
 
     @Override
     public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        for (Map.Entry<String,KVMutation> muts : mutations.entrySet()) {
+            BerkeleyJEKeyValueStore store = openDatabase(muts.getKey());
+            KVMutation mut = muts.getValue();
+            if (mut.hasAdditions()) {
+                for (KeyValueEntry entry : mut.getAdditions()) store.insert(entry.getKey(),entry.getValue(),txh);
+            }
+            if (mut.hasDeletions()) {
+                for (StaticBuffer del : mut.getDeletions()) store.delete(del,txh);
+            }
+        }
     }
 
     void removeDatabase(BerkeleyJEKeyValueStore db) {
@@ -173,4 +213,32 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     public String getName() {
         return getClass().getSimpleName() + ":" + directory.toString();
     }
+
+
+    public static enum IsolationLevel {
+        READ_UNCOMMITTED {
+            @Override
+            void configure(TransactionConfig cfg) {
+                cfg.setReadUncommitted(true);
+            }
+        }, READ_COMMITTED {
+            @Override
+            void configure(TransactionConfig cfg) {
+                cfg.setReadCommitted(true);
+
+            }
+        }, REPEATABLE_READ {
+            @Override
+            void configure(TransactionConfig cfg) {
+                // This is the default and has no setter
+            }
+        }, SERIALIZABLE {
+            @Override
+            void configure(TransactionConfig cfg) {
+                cfg.setSerializableIsolation(true);
+            }
+        };
+
+        abstract void configure(TransactionConfig cfg);
+    };
 }

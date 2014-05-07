@@ -39,6 +39,9 @@ public class CTConnection implements Closeable {
      return cfg;
     }
 
+    public boolean isOpen() {
+        return transport.isOpen();
+    }
     @Override
     public void close() {
         if (transport != null && transport.isOpen())

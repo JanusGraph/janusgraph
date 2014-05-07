@@ -132,6 +132,9 @@ esac
 #MAX_HEAP_SIZE="4G"
 #HEAP_NEWSIZE="800M"
 
+# Set this to control the amount of arenas per-thread in glibc
+#MALLOC_ARENA_MAX=4
+
 if [ "x$MAX_HEAP_SIZE" = "x" ] && [ "x$HEAP_NEWSIZE" = "x" ]; then
     calculate_heap_sizes
 else
@@ -139,6 +142,11 @@ else
         echo "please set or unset MAX_HEAP_SIZE and HEAP_NEWSIZE in pairs (see cassandra-env.sh)"
         exit 1
     fi
+fi
+
+if [ "x$MALLOC_ARENA_MAX" = "x" ]
+then
+    MALLOC_ARENA_MAX=4
 fi
 
 # Specifies the default port over which Cassandra will be available for
@@ -157,12 +165,11 @@ JVM_OPTS="$JVM_OPTS -ea"
 if [ "$JVM_VENDOR" != "OpenJDK" -o "$JVM_VERSION" \> "1.6.0" ] \
       || [ "$JVM_VERSION" = "1.6.0" -a "$JVM_PATCH_VERSION" -ge 23 ]
 then
-    agentpath="$CASSANDRA_HOME/lib/jamm-0.2.5.jar"
-    case "`uname`" in
-        CYGWIN*) agentpath="`echo $agentpath | cygpath --windows --path -f -`";;
-    esac
-    JVM_OPTS="$JVM_OPTS -javaagent:$agentpath"
+    JVM_OPTS="$JVM_OPTS -javaagent:$CASSANDRA_HOME/lib/jamm-0.2.5.jar"
 fi
+
+# some JVMs will fill up their heap when accessed via JMX, see CASSANDRA-6541
+JVM_OPTS="$JVM_OPTS -XX:+CMSClassUnloadingEnabled"
 
 # enable thread priorities, primarily so we can give periodic tasks
 # a lower priority to avoid interfering with client workload
@@ -188,15 +195,11 @@ fi
 
 startswith() { [ "${1#$2}" != "$1" ]; }
 
-if [ "`uname`" = "Linux" ] ; then
-    # reduce the per-thread stack size to minimize the impact of Thrift
-    # thread-per-client.  (Best practice is for client connections to
-    # be pooled anyway.) Only do so on Linux where it is known to be
-    # supported.
-    # u34 and greater need 180k
-    JVM_OPTS="$JVM_OPTS -Xss256k"
-fi
-echo "xss = $JVM_OPTS"
+# Per-thread stack size.
+JVM_OPTS="$JVM_OPTS -Xss256k"
+
+# Larger interned string table, for gossip's benefit (CASSANDRA-6410)
+JVM_OPTS="$JVM_OPTS -XX:StringTableSize=1000003"
 
 # GC tuning options
 JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC" 
@@ -206,8 +209,9 @@ JVM_OPTS="$JVM_OPTS -XX:SurvivorRatio=8"
 JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=1"
 JVM_OPTS="$JVM_OPTS -XX:CMSInitiatingOccupancyFraction=75"
 JVM_OPTS="$JVM_OPTS -XX:+UseCMSInitiatingOccupancyOnly"
+JVM_OPTS="$JVM_OPTS -XX:+UseTLAB"
 # note: bash evals '1.7.x' as > '1.7' so this is really a >= 1.7 jvm check
-if [ "$JVM_VERSION" \> "1.7" ] ; then
+if [ "$JVM_VERSION" \> "1.7" ] && [ "$JVM_ARCH" = "64-Bit" ] ; then
     JVM_OPTS="$JVM_OPTS -XX:+UseCondCardMark"
 fi
 
@@ -220,25 +224,37 @@ fi
 # JVM_OPTS="$JVM_OPTS -XX:+PrintPromotionFailure"
 # JVM_OPTS="$JVM_OPTS -XX:PrintFLSStatistics=1"
 # JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/cassandra/gc-`date +%s`.log"
+# If you are using JDK 6u34 7u2 or later you can enable GC log rotation
+# don't stick the date in the log name if rotation is on.
+# JVM_OPTS="$JVM_OPTS -Xloggc:/var/log/cassandra/gc.log"
+# JVM_OPTS="$JVM_OPTS -XX:+UseGCLogFileRotation"
+# JVM_OPTS="$JVM_OPTS -XX:NumberOfGCLogFiles=10"
+# JVM_OPTS="$JVM_OPTS -XX:GCLogFileSize=10M"
+
+# Configure the following for JEMallocAllocator and if jemalloc is not available in the system 
+# library path (Example: /usr/local/lib/). Usually "make install" will do the right thing. 
+# export LD_LIBRARY_PATH=<JEMALLOC_HOME>/lib/
+# JVM_OPTS="$JVM_OPTS -Djava.library.path=<JEMALLOC_HOME>/lib/"
 
 # uncomment to have Cassandra JVM listen for remote debuggers/profilers on port 1414
 # JVM_OPTS="$JVM_OPTS -Xdebug -Xnoagent -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1414"
 
-# Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See 
+# Prefer binding to IPv4 network intefaces (when net.ipv6.bindv6only=1). See
 # http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6342561 (short version:
 # comment out this entry to enable IPv6 support).
 JVM_OPTS="$JVM_OPTS -Djava.net.preferIPv4Stack=true"
 
 # jmx: metrics and administration interface
-# 
+#
 # add this if you're having trouble connecting:
 # JVM_OPTS="$JVM_OPTS -Djava.rmi.server.hostname=<public name>"
-# 
-# see 
+#
+# see
 # https://blogs.oracle.com/jmxetc/entry/troubleshooting_connection_problems_in_jconsole
 # for more on configuring JMX through firewalls, etc. (Short version:
 # get it working with no firewall first.)
-JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT" 
-JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.ssl=false" 
-JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.authenticate=false" 
+JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.port=$JMX_PORT"
+JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.ssl=false"
+JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.authenticate=false"
+#JVM_OPTS="$JVM_OPTS -Dcom.sun.management.jmxremote.password.file=/etc/cassandra/jmxremote.password"
 JVM_OPTS="$JVM_OPTS $JVM_EXTRA_OPTS"

@@ -8,23 +8,24 @@ import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
-import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
-import com.thinkaurelius.titan.graphdb.database.serialize.SerializerInitialization;
-import com.thinkaurelius.titan.graphdb.database.serialize.DefaultAttributeHandling;
+import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.types.*;
+import com.tinkerpop.blueprints.Direction;
 
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-public class KryoSerializer extends DefaultAttributeHandling implements Serializer {
+public class KryoSerializer {
 
     private static final int MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
+
+    public static final int KRYO_ID_OFFSET = 50;
 
     private final boolean registerRequired;
     private final ThreadLocal<Kryo> kryos;
@@ -34,106 +35,103 @@ public class KryoSerializer extends DefaultAttributeHandling implements Serializ
         @Override
         public Input get(byte[] array, int offset, int limit) {
             //Needs to copy array - otherwise we see BufferUnderflow exceptions from concurrent access
+            //See https://github.com/EsotericSoftware/kryo#threading
             return new Input(Arrays.copyOfRange(array,offset,limit));
         }
     };
 
-    private boolean initialized=false;
 
-
-    public KryoSerializer(final boolean allowAllSerializable) {
-        this.registerRequired=!allowAllSerializable;
+    public KryoSerializer(final List<Class<? extends Object>> defaultRegistrations) {
+        this.registerRequired=false;
         this.registrations = new HashMap<Integer,TypeRegistration>();
+
+        for (Class clazz : defaultRegistrations) {
+            Preconditions.checkArgument(isValidClass(clazz),"Class does not have a default constructor: %s",clazz.getName());
+            objectVerificationCache.put(clazz,Boolean.TRUE);
+        }
 
         kryos = new ThreadLocal<Kryo>() {
             public Kryo initialValue() {
-                initialized=true;
                 Kryo k = new Kryo();
                 k.setRegistrationRequired(registerRequired);
                 k.register(Class.class,new DefaultSerializers.ClassSerializer());
-                for (Map.Entry<Integer,TypeRegistration> entry : registrations.entrySet()) {
-                    if (entry.getValue().serializer==null) {
-                        k.register(entry.getValue().type,entry.getKey());
-                    } else {
-                        k.register(entry.getValue().type,entry.getValue().serializer,entry.getKey());
-                    }
+                for (int i=0;i<defaultRegistrations.size();i++) {
+                    Class clazz = defaultRegistrations.get(i);
+                    k.register(clazz, KRYO_ID_OFFSET + i);
                 }
                 return k;
             }
         };
-        SerializerInitialization.initialize(this);
-    }
-
-    @Override
-    public synchronized  <T> void registerClass(Class<T> type, int id) {
-        Preconditions.checkArgument(!initialized,"Serializer has already been initialized!");
-        Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
-        Preconditions.checkArgument(!registrations.containsKey(id),"ID has already been registered: %s",id);
-        Preconditions.checkArgument(isValidClass(type),"Class does not have a default constructor: %s",type.getName());
-        registrations.put(id,new TypeRegistration(type,null));
-        objectVerificationCache.put(type,Boolean.TRUE);
-    }
-
-    @Override
-    public <T> void registerClass(Class<T> type, AttributeHandler<T> handler, int id) {
-        super.registerClass(type,handler);
-        this.registerClass(type,id);
-    }
-
-    @Override
-    public synchronized  <T> void registerClass(Class<T> type, AttributeSerializer<T> serializer, int id) {
-        super.registerClass(type,serializer);
-        Preconditions.checkArgument(!initialized,"Serializer has already been initialized!");
-        Preconditions.checkArgument(id>0,"Invalid id provided: %s",id);
-        Preconditions.checkArgument(!registrations.containsKey(id),"ID has already been registered: %s",id);
-        registrations.put(id,new TypeRegistration(type,new KryoAttributeSerializerAdapter<T>(serializer)));
-        objectVerificationCache.put(type,Boolean.TRUE);
     }
 
     Kryo getKryo() {
         return kryos.get();
     }
 
-    @Override
     public Object readClassAndObject(ReadBuffer buffer) {
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         Object value = getKryo().readClassAndObject(i);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
-    @Override
-    public <T> T readObject(ReadBuffer buffer, Class<T> type) {
-        Input i = buffer.asRelative(INPUT_FACTORY);
-        int startPos = i.position();
-        T value = getKryo().readObjectOrNull(i, type);
-        buffer.movePosition(i.position()-startPos);
-        return value;
-    }
+//    public <T> T readObject(ReadBuffer buffer, Class<T> type) {
+//        Input i = buffer.asRelative(INPUT_FACTORY);
+//        int startPos = i.position();
+//        T value = getKryo().readObjectOrNull(i, type);
+//        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
+//        return value;
+//    }
 
     public <T> T readObjectNotNull(ReadBuffer buffer, Class<T> type) {
         Input i = buffer.asRelative(INPUT_FACTORY);
         int startPos = i.position();
         T value = getKryo().readObject(i, type);
-        buffer.movePosition(i.position()-startPos);
+        buffer.movePositionTo(buffer.getPosition()+i.position()-startPos);
         return value;
     }
 
-    @Override
-    public DataOutput getDataOutput(int capacity, boolean serializeObjects) {
-        Output output = new Output(capacity,MAX_OUTPUT_SIZE);
-        if (serializeObjects) return new KryoDataOutput(output, this);
-        else return new KryoDataOutput(output);
+    private Output getOutput(Object object) {
+        return new Output(128,MAX_OUTPUT_SIZE);
+    }
+
+    private void writeOutput(WriteBuffer out, Output output) {
+        byte[] array = output.getBuffer();
+        int limit = output.position();
+        for (int i=0;i<limit;i++) out.putByte(array[i]);
+    }
+
+//    public void writeObject(WriteBuffer out, Object object, Class<?> type) {
+//        Preconditions.checkArgument(isValidObject(object), "Cannot de-/serialize object: %s", object);
+//        Output output = getOutput(object);
+//        getKryo().writeObjectOrNull(output, object, type);
+//        writeOutput(out,output);
+//    }
+
+    public void writeObjectNotNull(WriteBuffer out, Object object) {
+        Preconditions.checkNotNull(object);
+        Preconditions.checkArgument(isValidObject(object), "Cannot de-/serialize object: %s", object);
+        Output output = getOutput(object);
+        getKryo().writeObject(output, object);
+        writeOutput(out,output);
+    }
+
+    public void writeClassAndObject(WriteBuffer out, Object object) {
+        Preconditions.checkArgument(isValidObject(object), "Cannot de-/serialize object: %s", object);
+        Output output = getOutput(object);
+        getKryo().writeClassAndObject(output, object);
+        writeOutput(out,output);
     }
 
     private final Cache<Class<?>,Boolean> objectVerificationCache = CacheBuilder.newBuilder()
                                 .maximumSize(10000).concurrencyLevel(4).initialCapacity(32).build();
 
-    final boolean isValidObject(Kryo kryo, final Object o) {
+    final boolean isValidObject(final Object o) {
         if (o==null) return true;
         Boolean status = objectVerificationCache.getIfPresent(o.getClass());
         if (status==null) {
+            Kryo kryo = getKryo();
             if (!(kryo.getSerializer(o.getClass()) instanceof FieldSerializer)) status=Boolean.TRUE;
             else if (!isValidClass(o.getClass())) status=Boolean.FALSE;
             else {

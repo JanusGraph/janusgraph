@@ -1,20 +1,21 @@
 package com.thinkaurelius.titan.graphdb.thrift;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
-import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 public class InternalCassandraGraphMetricsTest extends TitanNonTransactionalGraphMetricsTest {
 
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 
     @Override
-    public Configuration getConfiguration() {
-        return CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphMetricsTest.class.getSimpleName());
+    public WriteConfiguration getBaseConfiguration() {
+        return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
+
 }

@@ -1,16 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
-import static com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedKeyColumnValueStore.getInternal;
 
+import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
+
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.CFMetaData.Caching;
@@ -19,12 +21,13 @@ import org.apache.cassandra.config.KSMetaData;
 import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamilyType;
 import org.apache.cassandra.db.ConsistencyLevel;
+import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.RowMutation;
+import org.apache.cassandra.db.SliceByNamesReadCommand;
+import org.apache.cassandra.db.filter.NamesQueryFilter;
 import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
-import org.apache.cassandra.db.marshal.UTF8Type;
-import org.apache.cassandra.dht.BytesToken;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Range;
 import org.apache.cassandra.dht.Token;
@@ -35,25 +38,16 @@ import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ColumnPath;
-import org.apache.commons.configuration.Configuration;
+import org.apache.cassandra.thrift.ColumnParent;
+import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraDaemonWrapper;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager {
 
@@ -79,8 +73,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * <p/>
      * Value = {@value}
      */
-    public static final String CASSANDRA_CONFIG_DIR_DEFAULT = "./config/cassandra.yaml";
-    public static final String CASSANDRA_CONFIG_DIR_KEY = "cassandra-config-dir";
+    public static final String CASSANDRA_YAML_DEFAULT = "./conf/cassandra.yaml";
 
     private final Map<String, CassandraEmbeddedKeyColumnValueStore> openStores;
 
@@ -92,14 +85,24 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         // Check if we have non-default thrift frame size or max message size set and warn users
         // because embedded doesn't use Thrift, warning is good enough here otherwise it would
         // make bad user experience if we don't warn at all or crash on this.
-        if (config.containsKey(THRIFT_FRAME_SIZE_MB))
+        if (config.has(CASSANDRA_THRIFT_FRAME_SIZE))
             log.warn("Couldn't set custom Thrift Frame Size property, use 'cassandrathrift' instead.");
 
-        String cassandraConfigDir = config.getString(CASSANDRA_CONFIG_DIR_KEY, CASSANDRA_CONFIG_DIR_DEFAULT);
+        String cassandraConfig = CASSANDRA_YAML_DEFAULT;
+        if (config.has(GraphDatabaseConfiguration.STORAGE_CONF_FILE)) {
+            cassandraConfig = config.get(GraphDatabaseConfiguration.STORAGE_CONF_FILE);
+        }
 
-        assert cassandraConfigDir != null && !cassandraConfigDir.isEmpty();
+        assert cassandraConfig != null && !cassandraConfig.isEmpty();
 
-        CassandraDaemonWrapper.start(cassandraConfigDir);
+        File ccf = new File(cassandraConfig);
+
+        if (ccf.exists() && ccf.isAbsolute()) {
+            cassandraConfig = "file://" + cassandraConfig;
+            log.debug("Set cassandra config string \"{}\"", cassandraConfig);
+        }
+
+        CassandraDaemonWrapper.start(cassandraConfig);
 
         this.openStores = new HashMap<String, CassandraEmbeddedKeyColumnValueStore>(8);
         this.requestScheduler = DatabaseDescriptor.getRequestScheduler();
@@ -147,49 +150,15 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         return store;
     }
 
-    StaticBuffer[] getLocalKeyPartition() throws StorageException {
-        // getLocalPrimaryRange() returns a raw type
-        @SuppressWarnings({"rawtypes", "deprecation"})
-        Range<Token> range = StorageService.instance.getLocalPrimaryRange();
-        Token<?> leftKeyExclusive = range.left;
-        Token<?> rightKeyInclusive = range.right;
+    List<KeyRange> getLocalKeyPartition() throws StorageException {
+        Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
+        List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
-        if (leftKeyExclusive instanceof BytesToken) {
-            assert rightKeyInclusive instanceof BytesToken;
-
-            // l is exclusive, r is inclusive
-            BytesToken l = (BytesToken) leftKeyExclusive;
-            BytesToken r = (BytesToken) rightKeyInclusive;
-
-            Preconditions.checkArgument(l.token.length == r.token.length, "Tokens have unequal length");
-            int tokenLength = l.token.length;
-            log.debug("Token length: " + tokenLength);
-
-            byte[][] tokens = new byte[][]{l.token, r.token};
-            byte[][] plusOne = new byte[2][tokenLength];
-
-            for (int j = 0; j < 2; j++) {
-                boolean carry = true;
-                for (int i = tokenLength - 1; i >= 0; i--) {
-                    byte b = tokens[j][i];
-                    if (carry) {
-                        b++;
-                        carry = false;
-                    }
-                    if (b == 0) carry = true;
-                    plusOne[j][i] = b;
-                }
-            }
-
-            StaticBuffer lb = new StaticArrayBuffer(plusOne[0]);
-            StaticBuffer rb = new StaticArrayBuffer(plusOne[1]);
-            Preconditions.checkArgument(lb.length() == tokenLength, lb.length());
-            Preconditions.checkArgument(rb.length() == tokenLength, rb.length());
-
-            return new StaticBuffer[]{lb, rb};
-        } else {
-            throw new UnsupportedOperationException();
+        for (Range<Token> range : ranges) {
+            keyRanges.add(CassandraHelper.transformRange(range));
         }
+
+        return keyRanges;
     }
 
     /*
@@ -222,23 +191,23 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        // TODO are these asByteBuffer() calls too expensive?
-                        QueryPath path = new QueryPath(columnFamily, null, e.getColumn().asByteBuffer());
-                        rm.add(path, e.getValue().asByteBuffer(), timestamp.additionTime);
+                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.getAdditionTime(times.getUnit()));
+
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        QueryPath path = new QueryPath(columnFamily, null, col.asByteBuffer());
-                        rm.delete(path, timestamp.deletionTime);
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.getDeletionTime(times.getUnit()));
                     }
                 }
 
             }
         }
 
-        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDBConsistency());
+        mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
+
+        sleepAfterWrite(txh, timestamp);
     }
 
     private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
@@ -289,7 +258,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     private void ensureKeyspaceExists(String keyspaceName) throws StorageException {
 
-        if (null != Schema.instance.getTableInstance(keyspaceName))
+        if (null != Schema.instance.getKeyspaceInstance(keyspaceName))
             return;
 
         // Keyspace not found; create it
@@ -306,7 +275,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
-            log.debug("Created keyspace {}", keyspaceName);
+            log.info("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
         }
@@ -326,7 +295,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         // Hard-coded caching settings
         if (columnfamilyName.startsWith(Backend.EDGESTORE_NAME)) {
             cfm.caching(Caching.KEYS_ONLY);
-        } else if (columnfamilyName.startsWith(Backend.VERTEXINDEX_STORE_NAME)) {
+        } else if (columnfamilyName.startsWith(Backend.INDEXSTORE_NAME)) {
             cfm.caching(Caching.ROWS_ONLY);
         }
 
@@ -361,9 +330,31 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         }
         try {
             MigrationManager.announceNewColumnFamily(cfm);
+            log.info("Created CF {} in KS {}", columnfamilyName, keyspaceName);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
         }
+
+        /*
+         * I'm chasing a nondetermistic exception that appears only rarely on my
+         * machine when executing the embedded cassandra tests. If these dummy
+         * reads ever actually fail and dump a log message, it could help debug
+         * the root cause.
+         *
+         *   java.lang.RuntimeException: java.lang.IllegalArgumentException: Unknown table/cf pair (InternalCassandraEmbeddedKeyColumnValueTest.testStore1)
+         *          at org.apache.cassandra.service.StorageProxy$DroppableRunnable.run(StorageProxy.java:1582)
+         *           at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+         *           at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+         *           at java.lang.Thread.run(Thread.java:744)
+         *   Caused by: java.lang.IllegalArgumentException: Unknown table/cf pair (InternalCassandraEmbeddedKeyColumnValueTest.testStore1)
+         *           at org.apache.cassandra.db.Table.getColumnFamilyStore(Table.java:166)
+         *           at org.apache.cassandra.db.Table.getRow(Table.java:354)
+         *           at org.apache.cassandra.db.SliceFromReadCommand.getRow(SliceFromReadCommand.java:70)
+         *           at org.apache.cassandra.service.StorageProxy$LocalReadRunnable.runMayThrow(StorageProxy.java:1052)
+         *           at org.apache.cassandra.service.StorageProxy$DroppableRunnable.run(StorageProxy.java:1578)
+         *           ... 3 more
+         */
+        retryDummyRead(keyspaceName, columnfamilyName);
     }
 
     @Override
@@ -375,5 +366,32 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             return null;
 
         return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
+    }
+
+    private void retryDummyRead(String ks, String cf) throws PermanentStorageException {
+
+        final long limit = System.currentTimeMillis() + (60L * 1000L);
+
+        while (System.currentTimeMillis() < limit) {
+            try {
+                SortedSet<ByteBuffer> ss = new TreeSet<ByteBuffer>();
+                ss.add(ByteBufferUtil.zeroByteBuffer(1));
+                NamesQueryFilter nqf = new NamesQueryFilter(ss);
+                SliceByNamesReadCommand cmd = new SliceByNamesReadCommand(ks, ByteBufferUtil.zeroByteBuffer(1), cf, 1L, nqf);
+                StorageProxy.read(ImmutableList.<ReadCommand> of(cmd), ConsistencyLevel.QUORUM);
+                log.info("Read on CF {} in KS {} succeeded", cf, ks);
+                return;
+            } catch (Throwable t) {
+                log.warn("Failed to read CF {} in KS {} following creation", cf, ks, t);
+            }
+
+            try {
+                Thread.sleep(1000L);
+            } catch (InterruptedException e) {
+                throw new PermanentStorageException(e);
+            }
+        }
+
+        throw new PermanentStorageException("Timed out while attempting to read CF " + cf + " in KS " + ks + " following creation");
     }
 }

@@ -3,12 +3,18 @@ package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
+import java.util.List;
 import java.util.Map;
 
 /**
+ * Determines how vertices are placed in individual graph partitions.
+ * A particular implementation determines the partition id of a (newly created) vertex. The vertex is
+ * then assigned to said partition by Titan.
+ *
+ * The id placement strategy is configurable.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface IDPlacementStrategy {
 
     /**
@@ -41,20 +47,19 @@ public interface IDPlacementStrategy {
 
     /**
      * If Titan is embedded, this method is used to indicate to the placement strategy which
-     * part of the id space is hosted locally.
+     * part of the partition id space is hosted locally so that vertex and edge placements can be made accordingly
+     * (i.e. preferring to assign partitions in the local ranges so that the data is hosted locally which is often
+     * faster).
      * <p/>
      * This method can be called at any time while Titan is running. It is typically called right
      * after construction and when the id space is redistributed.
      * <p/>
-     * Note, that the portion of the locally hosted keyspace may "wrap around", meaning that the lowerID>upperID
-     * which describes the id block starting at lowerID (inclusive) than wrapping around idLimit (exclusive) to
-     * upperID (exclusive).
+     * Depending on the storage backend one or multiple ranges of partition ids may be given. However, this list is never
+     * emtpy.
      *
-     * @param lowerID lower bound of the locally hosted id space (inclusive)
-     * @param upperID upper bound of the locally hosted id space (exclusive)
-     * @param idLimit any valid partition id must be smaller than this limit. Used to compute wrap arounds.
+     * @param localPartitionIdRanges List of {@link PartitionIDRange}s correspondinging to the locally hosted partitions
      */
-    public void setLocalPartitionBounds(int lowerID, int upperID, int idLimit);
+    public void setLocalPartitionBounds(List<PartitionIDRange> localPartitionIdRanges);
 
     /**
      * Called when there are no more idAuthorities left in the given partition. It is expected that the

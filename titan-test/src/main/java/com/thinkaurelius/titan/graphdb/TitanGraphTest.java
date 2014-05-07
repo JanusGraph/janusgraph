@@ -7,8 +7,28 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.log.Log;
+import com.thinkaurelius.titan.diskstorage.log.Message;
+import com.thinkaurelius.titan.diskstorage.log.MessageReader;
+import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
+import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
@@ -17,7 +37,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
 import com.tinkerpop.blueprints.Vertex;
-import org.apache.commons.configuration.Configuration;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,17 +45,15 @@ import org.slf4j.LoggerFactory;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
 
-public abstract class TitanGraphTest extends TitanGraphTestCommon {
+public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
-
-    public TitanGraphTest(Configuration config) {
-        super(config);
-    }
 
     @Test
     public void testOpenClose() {
@@ -43,9 +61,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testBasic() {
-        TitanKey weight = makeWeightPropertyKey("weight");
+        TitanKey weight = tx.makeKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
         TitanVertex n1 = tx.addVertex();
         n1.addProperty(weight, 10.5);
+        assertTrue(tx.containsType("weight"));
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
@@ -54,7 +73,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(tx.containsVertex(weight.getID() + 64));
         assertTrue(tx.containsType("weight"));
         weight = tx.getPropertyKey("weight");
-        assertEquals(weight.getDataType(), Double.class);
+        assertEquals(weight.getDataType(), Decimal.class);
         assertEquals(weight.getName(), "weight");
         n1 = tx.getVertex(nid);
 
@@ -62,68 +81,166 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             Object o = prop.getValue();
         }
         n1.query().relations();
-        assertEquals(10.5, n1.getProperty(weight));
+        assertTrue(n1.getProperty(weight).equals(10.5));
     }
 
     @Test
+    public void simpleLogTest() throws InterruptedException {
+        final String triggerName = "test";
+        final Serializer serializer = graph.getDataSerializer();
+        final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
+        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
+        final TimeUnit unit = times.getUnit();
+        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+//        System.out.println(startTime);
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
+        testBasic();
+        //Transaction with custom triggerName
+        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v1 = tx2.addVertex();
+        v1.setProperty("weight",111.1);
+        tx2.commit();
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v2 = tx2.addVertex();
+        v2.setProperty("weight",222.2);
+        tx2.commit();
+        //Only read tx
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        v1 = tx2.getVertex(v1.getID());
+        assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
+        assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
+        tx2.commit();
+        close();
+
+        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        final AtomicInteger triggerMeta = new AtomicInteger(0);
+        txlog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, times);
+                TransactionLogHeader header = txEntry.getHeader();
+//                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
+                assertNotNull(txEntry.getMetadata());
+                assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
+                if (!txEntry.hasContent()) {
+                    assertTrue(txEntry.getStatus().isSuccess());
+                } else {
+                    assertTrue(txEntry.getStatus().isPreCommit());
+                    Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
+                    if (logid!=null) {
+                        assertTrue(logid instanceof String);
+                        assertEquals(triggerName,logid);
+                        triggerMeta.incrementAndGet();
+                    }
+                    //TODO: Verify content parses correctly
+                }
+                txMsgCounter.incrementAndGet();
+            }
+        });
+        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
+        triggerLog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                StaticBuffer content = message.getContent();
+                assertTrue(content!=null && content.length()>0);
+                ReadBuffer read = content.asReadBuffer();
+                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
+                assertTrue(txTime<=msgTime);
+                assertTrue(txTime>=startTime);
+                long txid = read.getLong();
+                assertTrue(txid>0);
+                for (String type : new String[]{"add","del"}) {
+                    long num = VariableLong.readPositive(read);
+                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
+                    if (type.equals("add")) {
+                        assertEquals(2,num);
+                    } else {
+                        assertEquals(0,num);
+                    }
+                    for (int i=0; i<num;i++) {
+                        Long vertexid = VariableLong.readPositive(read);
+                        assertTrue(vertexid>0);
+                        Entry entry = BufferUtil.readEntry(read,serializer);
+                        assertNotNull(entry);
+                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
+                    }
+                }
+                triggerMsgCounter.incrementAndGet();
+            }
+        });
+        Thread.sleep(20000);
+        assertEquals(8, txMsgCounter.get());
+        assertEquals(2,triggerMsgCounter.get());
+        assertEquals(2,triggerMeta.get());
+    }
+
+
+    @Test
     public void testTypes() {
+        clopen(option(CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
+                option(CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
 
-        config.subset(GraphDatabaseConfiguration.ATTRIBUTE_NAMESPACE)
-                .setProperty("attribute10", SpecialInt.class.getCanonicalName());
-        config.subset(GraphDatabaseConfiguration.ATTRIBUTE_NAMESPACE)
-                .setProperty("serializer10", SpecialIntSerializer.class.getCanonicalName());
+        TitanLabel friend = mgmt.makeLabel("friend").directed().make();
 
-        clopen();
+        TitanKey id = makeVertexIndexedUniqueKey("uid",String.class);
 
-        TitanLabel friend = tx.makeLabel("friend").directed().manyToMany().make();
+        TitanKey name = makeKey("name",String.class);
 
-        TitanKey id = tx.makeKey("uid").single().unique().indexed(Vertex.class).dataType(String.class).make();
+        TitanKey weight = makeKey("weight",Decimal.class);
 
-        TitanKey weight = tx.makeKey("weight").single().dataType(Double.class).make();
+        TitanKey someid = makeVertexIndexedKey("someid",Object.class);
 
-        TitanKey someid = tx.makeKey("someid").single().dataType(Object.class).indexed(Vertex.class).make();
+        TitanKey boolval = makeKey("boolval",Boolean.class);
 
-        TitanKey boolval = tx.makeKey("boolval").dataType(Boolean.class).single().make();
+        TitanKey sint = makeKey("int",SpecialInt.class);
 
-        TitanKey sint = tx.makeKey("int").dataType(SpecialInt.class).single().make();
+        TitanLabel link = mgmt.makeLabel("link").unidirected().make();
 
-        TitanLabel link = tx.makeLabel("link").unidirected().make();
+        TitanLabel connect = mgmt.makeLabel("connect").signature(id, weight).multiplicity(Multiplicity.MANY2ONE).make();
 
-        TitanLabel connect = tx.makeLabel("connect").signature(id, weight).manyToOne(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-
-        TitanLabel parent = tx.makeLabel("parent").manyToOne().sortKey(weight).make();
-        assertTrue(parent.isUnique(OUT));
-        TitanLabel child = tx.makeLabel("child").oneToMany().make();
-        assertTrue(child.isUnique(IN));
-        TitanLabel spouse = tx.makeLabel("spouse").oneToOne().make();
-        assertTrue(spouse.isUnique(IN));
-        assertTrue(spouse.isUnique(OUT));
+        TitanLabel parent = mgmt.makeLabel("parent").multiplicity(Multiplicity.MANY2ONE).make();
+        assertTrue(parent.getMultiplicity().isUnique(OUT));
+        TitanLabel child = mgmt.makeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
+        assertTrue(child.getMultiplicity().isUnique(IN));
+        TitanLabel spouse = mgmt.makeLabel("spouse").multiplicity(Multiplicity.ONE2ONE).make();
+        assertTrue(spouse.getMultiplicity().isUnique(IN));
+        assertTrue(spouse.getMultiplicity().isUnique(OUT));
 
         assertEquals("weight",weight.toString());
 
 
         try {
-            tx.makeKey("pint").dataType(int.class).make();
+            mgmt.makeKey("pint").dataType(int.class).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
 
         try {
-            tx.makeKey("number").dataType(Number.class).single().make();
+            mgmt.makeKey("number").dataType(Number.class).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
 
-        TitanKey arrType = tx.makeKey("barr").dataType(byte[].class).single().make();
+        TitanKey arrType = mgmt.makeKey("barr").dataType(byte[].class).make();
 
+        finishSchema();
         clopen();
 
         assertNull(tx.getVertex(id, "v1"));
 
         id = tx.getPropertyKey("uid");
-        assertTrue(id.isUnique(Direction.IN));
-        assertTrue(id.hasIndex(Titan.Token.STANDARD_INDEX, Vertex.class));
-        assertTrue(id.isUnique(Direction.OUT));
+        assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
+        assertTrue(id.getCardinality()==Cardinality.SINGLE);
         assertEquals(String.class, id.getDataType());
 
         //Basic properties
@@ -134,30 +251,29 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertFalse(friend.isUnidirected());
         assertTrue(friend.isEdgeLabel());
         assertFalse(friend.isPropertyKey());
-        assertFalse(friend.isUnique(Direction.OUT));
-        assertFalse(((InternalType) friend).uniqueLock(Direction.OUT));
-        assertFalse(((InternalType) friend).isHidden());
+        assertFalse(friend.getMultiplicity().isUnique(Direction.OUT));
+        assertTrue(((InternalType) friend).isHidden());
+        assertFalse(((InternalType) friend).isHiddenType());
 
         connect = tx.getEdgeLabel("connect");
         assertEquals("connect", connect.getName());
         assertFalse(connect.isUnidirected());
         assertTrue(connect.isEdgeLabel());
         assertFalse(connect.isPropertyKey());
-        assertTrue(connect.isUnique(Direction.OUT));
-        assertFalse(((InternalType) connect).uniqueLock(Direction.OUT));
-        assertFalse(((InternalType) connect).isHidden());
+        assertTrue(connect.getMultiplicity().isUnique(Direction.OUT));
+        assertFalse(((InternalType) connect).isHiddenType());
 
         link = tx.getEdgeLabel("link");
         assertTrue(link.isUnidirected());
-        assertFalse(link.isUnique(Direction.OUT));
+        assertFalse(link.getMultiplicity().isUnique(Direction.OUT));
 
         weight = tx.getPropertyKey("weight");
-        assertEquals(Double.class, weight.getDataType());
+        assertEquals(Decimal.class, weight.getDataType());
 
         boolval = tx.getPropertyKey("boolval");
         assertEquals(Boolean.class, boolval.getDataType());
 
-
+        name = tx.getPropertyKey("name");
         //Failures
         try {
             tx.makeKey("fid").make();
@@ -172,7 +288,13 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         tx.makeLabel("test").make();
         try {
             tx.makeLabel("link2").unidirected().
-                    sortKey(id, weight).signature(id).make();
+                    sortKey(name, weight).signature(name).make();
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            tx.makeLabel("link2").unidirected().
+                    sortKey(tx.getPropertyKey("int"), weight).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
@@ -182,7 +304,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
-        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(id, weight).make();
+        TitanLabel link2 = tx.makeLabel("link2").unidirected().sortKey(name, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();
@@ -318,8 +440,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             tx = null;
         }
 
-        newTx();
-        tx.makeKey("domain").unique().indexed(Vertex.class).dataType(String.class).make();
+
+        makeVertexIndexedUniqueKey("domain",String.class);
+        finishSchema();
+
         v1 = tx.addVertex();
         try {
             v1.setProperty("domain", "unique1");
@@ -332,7 +456,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         newTx();
 
 
-        tx.makeKey("domain").unique().indexed(Vertex.class).dataType(String.class).make();
         v1 = tx.addVertex();
         v1.addProperty("domain", "unique1");
         try {
@@ -347,7 +470,6 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         }
         newTx();
 
-        tx.makeKey("domain").unique().indexed(Vertex.class).dataType(String.class).make();
         clopen();
         v1 = tx.addVertex();
         v1.addProperty("domain", "unique1");
@@ -375,17 +497,26 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         v1 = graph.getVertex(v1);
         v2 = graph.getVertex(v2);
-        graph.removeVertex(v1);
-        graph.removeVertex(v2);
+        assertEquals(1,Iterables.size(v1.getEdges(Direction.BOTH)));
+        assertEquals(1,Iterables.size(v2.getEdges(Direction.BOTH)));
+        v2.remove();
+        assertEquals(0,Iterables.size(v1.getEdges(Direction.BOTH)));
+        try {
+            assertEquals(0,Iterables.size(v2.getEdges(Direction.BOTH)));
+            fail();
+        } catch (IllegalArgumentException ex) {}
+
 
         graph.commit();
+        assertNull(graph.getVertex(v2));
+
     }
 
     @Test
     public void testVertexDeletion() throws Exception {
 
-        TitanKey name = makeUniqueStringPropertyKey("name");
-        newTx();
+        TitanKey name = makeVertexIndexedUniqueKey("name",String.class);
+        finishSchema();
 
         TitanVertex v = tx.addVertex();
         TitanProperty p = v.addProperty("name", "oldName");
@@ -407,30 +538,52 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
         /*
          * Constant test data
-         * 
+         *
          * The values list below must have at least two elements. The string
          * literals were chosen arbitrarily and have no special significance.
          */
-        final String foo = "foo", bar = "bar";
+        final String foo = "foo", bar = "bar", weight = "weight";
         final List<String> values =
                 ImmutableList.of("four", "score", "and", "seven");
         assertTrue("Values list must have multiple elements for this test to make sense",
                 2 <= values.size());
 
         // Create property with name pname and a vertex
-        makeNonUniqueStringPropertyKey(foo);
-        makeNonUniqueStringPropertyKey(bar);
-        newTx();
+        TitanKey w = makeKey(weight,Integer.class);
+        TitanKey f = mgmt.makeKey(foo).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
+        mgmt.createInternalIndex(foo,Vertex.class,f);
+        TitanKey b = mgmt.makeKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.createInternalIndex(bar,Vertex.class,b);
+        finishSchema();
+
         TitanVertex v = tx.addVertex();
 
         // Insert prop values
+        int i=0;
         for (String s : values) {
-            v.addProperty(foo, s);
-            v.addProperty(bar, s);
+            TitanProperty p = v.addProperty(foo, s);
+            p.setProperty(weight,++i);
+            p = v.addProperty(bar, s);
+            p.setProperty(weight,i);
         }
 
         //Verify correct number of properties
         assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
+        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
+        //Verify order
+        for (String prop : new String[]{foo,bar}) {
+            int sum = 0;
+            int index = values.size();
+            for (TitanProperty p : v.getProperties(foo)) {
+                assertTrue(values.contains(p.getValue()));
+                int wint = p.getProperty(weight);
+                sum+=wint;
+                if (prop==foo) assertEquals(index,wint);
+                index--;
+            }
+            assertEquals(values.size()*(values.size()+1)/2,sum);
+        }
+
 
         assertEquals(1, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
         assertEquals(1, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
@@ -476,7 +629,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testDate() throws ParseException {
-        tx.makeKey("birthday").single().dataType(GregorianCalendar.class).make();
+        makeKey("birthday",GregorianCalendar.class);
+        finishSchema();
 
         Vertex v = tx.addVertex(null);
         Date date = new SimpleDateFormat("ddMMyyyy").parse("28101978");
@@ -558,13 +712,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     //Add more removal operations, different transaction contexts
     @Test
     public void testCreateDelete() {
-        TitanKey weight = graph.makeKey("weight").single().dataType(Double.class).make();
-        TitanKey id = graph.makeKey("uid").single().unique().indexed(Vertex.class).dataType(Integer.class).make();
-        TitanLabel knows = graph.makeLabel("knows").sortKey(id).sortOrder(Order.DESC).directed().make();
-        TitanLabel father = graph.makeLabel("father").manyToOne().make();
+        makeKey("weight",Double.class);
+        TitanKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        mgmt.makeLabel("knows").sortKey(id).sortOrder(Order.DESC).directed().make();
+        mgmt.makeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        finishSchema();
 
+        id = tx.getPropertyKey("uid");
         TitanVertex n1 = graph.addVertex(null), n3 = graph.addVertex(null);
-        TitanEdge e = n3.addEdge(knows, n1);
+        TitanEdge e = n3.addEdge("knows", n1);
         Edge e2 = n1.addEdge("friend",n3);
         e.setProperty(id, 111);
         n3.addProperty(id, 445);
@@ -585,8 +741,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         e.setProperty(id,222);
 
         e2 = Iterables.getOnlyElement(n1.getEdges(OUT,"friend"));
-        e2.setProperty("uid",1);
-        e2.setProperty("weight",2.0);
+        e2.setProperty("uid", 1);
+        e2.setProperty("weight", 2.0);
 
         assertEquals(1,e2.getProperty("uid"));
         assertEquals(2.0,e2.getProperty("weight"));
@@ -679,7 +835,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testVertexDeletionWithIndex() {
-        TitanKey name = makeStringPropertyKey("name");
+        TitanKey name = tx.makeKey("name").dataType(String.class).make();
         Vertex v1 = tx.addVertex(null);
         v1.setProperty("name", "v1");
         Vertex v2 = tx.addVertex(null);
@@ -701,7 +857,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         final String propName = "favorite_color";
         final String sharedValue = "blue";
 
-        makeStringPropertyKey(propName);
+        tx.makeKey(propName).dataType(String.class).make();
 
         TitanVertex alice = tx.addVertex();
         TitanVertex bob = tx.addVertex();
@@ -724,7 +880,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testUnidirectional() {
-        TitanLabel link = tx.makeLabel("link").unidirected().manyToOne().make();
+        TitanLabel link = tx.makeLabel("link").unidirected().multiplicity(Multiplicity.MANY2ONE).make();
         TitanLabel connect = tx.makeLabel("connect").sortKey(link).make();
 
         TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
@@ -764,8 +920,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testJointIndexRetrieval() {
-        graph.makeKey("name").dataType(String.class).indexed(Vertex.class).make();
-        graph.makeKey("color").dataType(String.class).indexed(Vertex.class).make();
+        makeVertexIndexedKey("name",String.class);
+        makeVertexIndexedKey("color",String.class);
+        finishSchema();
+
         Vertex v = graph.addVertex(null);
         v.setProperty("name", "ilya");
         v.setProperty("color", "blue");
@@ -777,9 +935,9 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testLargeJointIndexRetrieval() {
-        graph.makeKey("sid").dataType(Integer.class).indexed(Vertex.class).make();
-        graph.makeKey("color").dataType(String.class).indexed(Vertex.class).make();
-        graph.commit();
+        makeVertexIndexedKey("sid",Integer.class);
+        makeVertexIndexedKey("color",String.class);
+        finishSchema();
 
         int sids = 17;
         String[] colors = {"blue", "red", "yellow", "brown", "green", "orange", "purple"};
@@ -802,28 +960,29 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexRetrieval() {
-        TitanKey id = tx.makeKey("uid").
-                single().
-                unique().indexed(Vertex.class).indexed(Edge.class).
-                dataType(Integer.class).
-                make();
-        TitanKey name = tx.makeKey("name").single().
-                indexed(Vertex.class).indexed(Edge.class).
-                dataType(String.class).
-                make();
-        TitanLabel connect = tx.makeLabel("connect").signature(id, name).make();
+        TitanKey id = mgmt.makeKey("uid").dataType(Integer.class).make();
+        mgmt.createInternalIndex("vuid",Vertex.class,true,id);
+        mgmt.createInternalIndex("euid",Edge.class,id);
+
+        TitanKey name = mgmt.makeKey("name").dataType(String.class).make();
+        mgmt.createInternalIndex("vname",Vertex.class,name);
+        mgmt.createInternalIndex("ename",Edge.class,name);
+        mgmt.makeLabel("connect").signature(id, name).make();
+        finishSchema();
+
+
         int noNodes = 100;
         int div = 10;
         int mod = noNodes / div;
         for (int i = 0; i < noNodes; i++) {
             TitanVertex n = tx.addVertex();
-            n.addProperty(id, i);
-            n.addProperty(name, "Name" + (i % mod));
-            TitanVertex other = tx.getVertex(id, Math.max(0, i - 1));
+            n.addProperty("uid", i);
+            n.addProperty("name", "Name" + (i % mod));
+            TitanVertex other = tx.getVertex("uid", Math.max(0, i - 1));
             Preconditions.checkNotNull(other);
-            TitanEdge e = n.addEdge(connect, other);
-            e.setProperty(id, i);
-            e.setProperty(name, "Edge" + (i % mod));
+            TitanEdge e = n.addEdge("connect", other);
+            e.setProperty("uid", i);
+            e.setProperty("name", "Edge" + (i % mod));
         }
         clopen();
         for (int j = 0; j < mod; j++) {
@@ -852,9 +1011,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testThreadBoundTx() {
-        TitanKey t = graph.makeKey("type").dataType(Integer.class).single().indexed(Edge.class).make();
-        graph.makeLabel("friend").sortKey(t).make();
-        graph.commit();
+        TitanKey t = mgmt.makeKey("type").dataType(Integer.class).make();
+        mgmt.createInternalIndex("etype",Edge.class,t);
+        mgmt.makeLabel("friend").sortKey(t).make();
+        finishSchema();
 
         Vertex v1 = graph.addVertex(null);
         Vertex v2 = graph.addVertex(null);
@@ -915,12 +1075,12 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(45, e3.getProperty("time"));
         assertEquals(5, e1.getProperty("time"));
 
-        try {
-            //TODO: how to address this? Only allow transactional passing for vertices?
-            assertEquals(25, e2.getProperty("time"));
-            fail();
-        } catch (InvalidElementException e) {
-        }
+//        try {
+//            //TODO: how to address this? Only allow transactional passing for vertices?
+//            assertEquals(25, e2.getProperty("time"));
+//            fail();
+//        } catch (InvalidElementException e) {
+//        }
 
         assertEquals(35, v1.getProperty("age"));
         assertEquals(65, v3.getProperty("age"));
@@ -946,17 +1106,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     //Test all element methods: vertex, edge, property, relation, element
     @Test
     public void testCreateAndRetrieveComprehensive() {
-        String[] etNames = {"connect", "name", "weight", "knows"};
-        TitanLabel connect = makeSimpleEdgeLabel(etNames[0]);
-        TitanKey name = makeUniqueStringPropertyKey(etNames[1]);
-        TitanKey weight = makeWeightPropertyKey(etNames[2]);
-        TitanKey id = makeIntegerUIDPropertyKey("uid");
-        TitanLabel knows = makeKeyedEdgeLabel(etNames[3], id, weight);
+        makeLabel("connect");
+        makeVertexIndexedUniqueKey("name",String.class);
+        TitanKey weight = makeKey("weight",Double.class);
+        TitanKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        mgmt.makeLabel("knows").sortKey(id).signature(weight).make();
+        finishSchema();
 
-
-        assertEquals(connect, tx.getEdgeLabel(etNames[0]));
-        assertEquals(name, tx.getPropertyKey(etNames[1]));
-        assertEquals(knows, tx.getEdgeLabel(etNames[3]));
+        TitanKey name = tx.getPropertyKey("name");
+        assertNotNull(name);
+        TitanLabel connect = tx.getEdgeLabel("connect");
+        assertNotNull(connect);
+        TitanLabel knows = tx.getEdgeLabel("knows");
+        assertNotNull(knows);
         assertTrue(knows.isEdgeLabel());
 
         TitanVertex n1 = tx.addVertex();
@@ -965,32 +1127,30 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertNotNull(n1.toString());
         n1.addProperty(name, "Node1");
         n2.addProperty(name, "Node2");
-        n3.addProperty(weight, 5.0);
+        n3.addProperty("weight", 5.0);
         TitanEdge e = n1.addEdge(connect, n2);
         assertNotNull(e.toString());
         assertEquals(n1, e.getVertex(OUT));
         assertEquals(n2, e.getVertex(IN));
         e = n2.addEdge(knows, n3);
-        e.setProperty(weight, 3.0);
+        e.setProperty("weight", 3.0);
         e.setProperty(name, "HasProperties TitanRelation");
         e = n3.addEdge(knows, n1);
         n3.addEdge(connect, n3);
-        e.setProperty(id, 111);
+        e.setProperty("uid", 111);
         assertEquals(4, Iterables.size(n3.getEdges()));
         assertEquals(2, Iterables.size(n3.getEdges(Direction.OUT)));
         assertEquals(2, Iterables.size(n3.getEdges(Direction.IN)));
 
         clopen();
 
-        connect = tx.getEdgeLabel(etNames[0]);
-        assertEquals(connect.getName(), etNames[0]);
+        connect = tx.getEdgeLabel("connect");
+        assertEquals(connect.getName(), "connect");
         assertTrue(connect.isDirected());
-        name = tx.getPropertyKey(etNames[1]);
-        assertTrue(name.isUnique(Direction.IN));
-        assertTrue(name.hasIndex(Titan.Token.STANDARD_INDEX, Vertex.class));
-        weight = tx.getPropertyKey(etNames[2]);
+        name = tx.getPropertyKey("name");
+        weight = tx.getPropertyKey("weight");
         id = tx.getPropertyKey("uid");
-        knows = tx.getEdgeLabel(etNames[3]);
+        knows = tx.getEdgeLabel("knows");
         log.debug("Loaded edge types");
         n2 = tx.getVertex(name, "Node2");
         assertNotNull(n2.toString());
@@ -1023,7 +1183,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(e, Iterables.getOnlyElement(n1.getTitanEdges(BOTH, connect)));
 
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
-        assertEquals(3.0, e.getProperty(weight));
+        assertTrue(e.getProperty(weight).equals(3.0));
         assertEquals("HasProperties TitanRelation", e.getProperty(name));
         n3 = e.getVertex(IN);
 
@@ -1051,38 +1211,39 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         n2 = tx.getVertex("name", "Node2");
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name")));
-        assertEquals(111.5, ((Double) e.getProperty("weight")).doubleValue(), 0.01);
+        assertTrue(e.getProperty("weight").equals(111.5));
 
     }
 
     @Test
     public void testQuery() {
-        TitanKey name = tx.makeKey("name").dataType(String.class).single().indexed(Vertex.class).unique().make();
-        TitanKey time = tx.makeKey("time").dataType(Integer.class).single().make();
-        TitanKey weight = tx.makeKey("weight").dataType(Double.class).single().make();
+        makeVertexIndexedUniqueKey("name",String.class);
+        TitanKey time = makeKey("time",Integer.class);
+        TitanKey weight = makeKey("weight",Precision.class);
 
-        TitanLabel author = tx.makeLabel("author").manyToOne().unidirected().make();
+        TitanLabel author = mgmt.makeLabel("author").multiplicity(Multiplicity.MANY2ONE).unidirected().make();
 
-        TitanLabel connect = tx.makeLabel("connect").sortKey(time).make();
-        TitanLabel connectDesc = tx.makeLabel("connectDesc").sortKey(time).sortOrder(Order.DESC).make();
-        TitanLabel friend = tx.makeLabel("friend").sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
-        TitanLabel friendDesc = tx.makeLabel("friendDesc").sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
-        TitanLabel knows = tx.makeLabel("knows").sortKey(author, weight).make();
-        TitanLabel follows = tx.makeLabel("follows").make();
+        mgmt.makeLabel("connect").sortKey(time).make();
+        mgmt.makeLabel("connectDesc").sortKey(time).sortOrder(Order.DESC).make();
+        mgmt.makeLabel("friend").sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
+        mgmt.makeLabel("friendDesc").sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
+        mgmt.makeLabel("knows").sortKey(author, weight).make();
+        mgmt.makeLabel("follows").make();
+        finishSchema();
 
         TitanVertex v = tx.addVertex();
-        v.addProperty(name,"v");
+        v.addProperty("name","v");
         TitanVertex u = tx.addVertex();
-        u.addProperty(name,"u");
+        u.addProperty("name","u");
         int noVertices = 10000;
         assertEquals(0,(noVertices-1)%3);
         TitanVertex[] vs = new TitanVertex[noVertices];
         for (int i = 1; i < noVertices; i++) {
             vs[i] = tx.addVertex();
-            vs[i].addProperty(name, "v" + i);
+            vs[i].addProperty("name", "v" + i);
         }
-        TitanLabel[] labelsV = {connect,friend,knows};
-        TitanLabel[] labelsU = {connectDesc,friendDesc,knows};
+        TitanLabel[] labelsV = {tx.getEdgeLabel("connect"),tx.getEdgeLabel("friend"),tx.getEdgeLabel("knows")};
+        TitanLabel[] labelsU = {tx.getEdgeLabel("connectDesc"),tx.getEdgeLabel("friendDesc"),tx.getEdgeLabel("knows")};
         for (int i = 1; i < noVertices; i++) {
             for (TitanVertex vertex : new TitanVertex[]{v,u}) {
                 for (Direction d : new Direction[]{OUT,IN}) {
@@ -1092,7 +1253,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
                     e.setProperty("time", i);
                     e.setProperty("weight", i % 4 + 0.5);
                     e.setProperty("name", "e" + i);
-                    e.setProperty(author, i%5==0?v:vs[i % 5]);
+                    e.setProperty("author", i%5==0?v:vs[i % 5]);
                 }
             }
         }
@@ -1158,6 +1319,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
         assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
         assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
+        assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
+        assertEquals(3, v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3).count());
         assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
         assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
@@ -1375,13 +1538,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
     @Test
     public void createAndRetrieveMedium() {
         //Create Graph
-        TitanLabel connect = makeSimpleEdgeLabel("connect");
-        TitanKey name = makeUniqueStringPropertyKey("name");
-        TitanKey weight = makeWeightPropertyKey("weight");
-        TitanKey id = makeIntegerUIDPropertyKey("uid");
-        TitanLabel knows = makeKeyedEdgeLabel("knows", id, weight);
+        makeLabel("connect");
+        makeVertexIndexedUniqueKey("name",String.class);
+        TitanKey weight = makeKey("weight",Double.class);
+        TitanKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        mgmt.makeLabel("knows").sortKey(id).signature(weight).make();
+        finishSchema();
 
         //Create Nodes
+        id = tx.getPropertyKey("uid");
         int noNodes = 500;
         String[] names = new String[noNodes];
         int[] ids = new int[noNodes];
@@ -1392,8 +1557,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             names[i] = "vertex" + i;//RandomGenerator.randomString();
             ids[i] = i;//RandomGenerator.randomInt(1, Integer.MAX_VALUE / 4);
             nodes[i] = tx.addVertex();
-            nodes[i].addProperty(name, names[i]);
-            nodes[i].addProperty(id, ids[i]);
+            nodes[i].addProperty("name", names[i]);
+            nodes[i].addProperty("uid", ids[i]);
             if ((i + 1) % 100 == 0) log.debug("Added 100 nodes");
         }
         log.debug("Nodes created");
@@ -1403,15 +1568,15 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             TitanVertex n = nodes[i];
             nodeEdges[i] = new ArrayList(10);
             for (int c : connectOff) {
-                TitanEdge r = n.addEdge(connect, nodes[wrapAround(i + c, noNodes)]);
+                TitanEdge r = n.addEdge("connect", nodes[wrapAround(i + c, noNodes)]);
                 nodeEdges[i].add(r);
             }
             for (int k : knowsOff) {
                 TitanVertex n2 = nodes[wrapAround(i + k, noNodes)];
-                TitanEdge r = n.addEdge(knows, n2);
+                TitanEdge r = n.addEdge("knows", n2);
                 r.setProperty(id, ((Number) n.getProperty(id)).intValue() + ((Number) n2.getProperty(id)).intValue());
-                r.setProperty(weight, k * 1.5);
-                r.setProperty(name, i + "-" + k);
+                r.setProperty("weight", k * 1.5);
+                r.setProperty("name", i + "-" + k);
                 nodeEdges[i].add(r);
             }
             if (i % 100 == 99) log.debug(".");
@@ -1430,11 +1595,11 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         clopen();
 
         nodes = new TitanVertex[noNodes];
-        name = tx.getPropertyKey("name");
+        TitanKey name = tx.getPropertyKey("name");
         weight = tx.getPropertyKey("weight");
         assertEquals("name", name.getName());
         id = tx.getPropertyKey("uid");
-        assertTrue(id.isUnique(Direction.OUT));
+        assertTrue(id.getCardinality()==Cardinality.SINGLE);
         for (int i = 0; i < noNodes; i++) {
             TitanVertex n = tx.getVertex(id, ids[i]);
             assertEquals(n, tx.getVertex(name, names[i]));
@@ -1442,7 +1607,7 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             nodes[i] = n;
             assertEquals(nodeIds[i], n.getID());
         }
-        knows = tx.getEdgeLabel("knows");
+        TitanLabel knows = tx.getEdgeLabel("knows");
         for (int i = 0; i < noNodes; i++) {
             TitanVertex n = nodes[i];
             assertEquals(connectOff.length + knowsOff.length, Iterables.size(n.getEdges(OUT)));
@@ -1476,11 +1641,10 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
         final String alice = "alice";
         final String bob = "bob";
 
-        TitanKey vtk = makeStringPropertyKey(vt);
-        TitanKey fnk = makeUnindexedStringPropertyKey(fn);
+        TitanKey vtk = makeVertexIndexedKey(vt,String.class);
+        TitanKey fnk = makeKey(fn,String.class);
 
-        tx.commit();
-        tx = graph.newTransaction();
+        finishSchema();
 
         vtk = tx.getPropertyKey(vt);
         fnk = tx.getPropertyKey(fn);
@@ -1520,8 +1684,8 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
 
     @Test
     public void testWithoutIndex() {
-        TitanKey kid = graph.makeKey("kid").dataType(Long.class).single().make();
-        graph.makeKey("name").dataType(String.class).single().make();
+        TitanKey kid = graph.makeKey("kid").dataType(Long.class).make();
+        graph.makeKey("name").dataType(String.class).make();
         graph.makeLabel("knows").signature(kid).make();
         Random random = new Random();
         int numV = 1000;
@@ -1536,13 +1700,19 @@ public abstract class TitanGraphTest extends TitanGraphTestCommon {
             }
             previous=v;
         }
-        clopen();
 
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(400).vertices(),"kid",Order.DESC,400);
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
 
+        clopen();
+
+        //Copied from above
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(500).vertices(),"kid",Order.ASC,500);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.ASC).limit(300).edges(),"kid",Order.ASC,300);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(400).vertices(),"kid",Order.DESC,400);
+        TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
     }
 
     @Test

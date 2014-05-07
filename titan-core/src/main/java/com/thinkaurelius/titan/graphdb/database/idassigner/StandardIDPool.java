@@ -1,9 +1,21 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,19 +28,19 @@ public class StandardIDPool implements IDPool {
     private static final Logger log =
             LoggerFactory.getLogger(StandardIDPool.class);
 
+    private static final TimeUnit SCHEDULING_TIME_UNIT =
+            TimeUnit.MILLISECONDS; // TODO
+
     private static final long BUFFER_EMPTY = -1;
     private static final long BUFFER_POOL_EXHAUSTION = -100;
 
     private static final int RENEW_ID_COUNT = 100;
 
-    private static final long RENEW_WAIT_INTERVAL = 1000;
-
-
     private final IDAuthority idAuthority;
-    private final long maxID; //inclusive
+    private final long idUpperBound; //exclusive
     private final int partitionID;
 
-    private final long renewTimeoutMS;
+    private final Duration renewTimeout;
     private final double renewBufferPercentage;
 
     private long nextID;
@@ -37,18 +49,19 @@ public class StandardIDPool implements IDPool {
 
     private volatile long bufferNextID;
     private volatile long bufferMaxID;
-    private Thread idBlockRenewer;
+    private Future<?> idBlockFuture;
+    private final ThreadPoolExecutor exec;
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long maximumID, long renewTimeoutMS, double renewBufferPercentage) {
-        Preconditions.checkArgument(maximumID > 0);
+    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
+        Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
         Preconditions.checkArgument(partitionID<(1l<<32));
         this.partitionID = (int) partitionID;
-        this.maxID = maximumID;
-        Preconditions.checkArgument(renewTimeoutMS>0,"Renew-timeout must be positive");
-        this.renewTimeoutMS = renewTimeoutMS;
+        this.idUpperBound = idUpperBound;
+        Preconditions.checkArgument(!renewTimeout.isZeroLength(), "Renew-timeout must be positive");
+        this.renewTimeout = renewTimeout;
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
         this.renewBufferPercentage = renewBufferPercentage;
 
@@ -58,24 +71,45 @@ public class StandardIDPool implements IDPool {
 
         bufferNextID = BUFFER_EMPTY;
         bufferMaxID = BUFFER_EMPTY;
-        idBlockRenewer = null;
+
+        // daemon=true would probably be fine too
+        exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder()
+                        .setDaemon(false)
+                        .setNameFormat("TitanID[" + partitionID + "][%d]")
+                        .build());
+        //exec.allowCoreThreadTimeOut(false);
+        //exec.prestartCoreThread();
+        idBlockFuture = null;
 
         initialized = false;
     }
 
     private void waitForIDRenewer() throws InterruptedException {
-        long timeStart = System.currentTimeMillis(); long timeDelta=0;
-        while (idBlockRenewer!= null && idBlockRenewer.isAlive() && ((timeDelta=System.currentTimeMillis()-timeStart)<renewTimeoutMS)) {
-            //Updating thread has not yet completed, so wait for it
-            if (timeDelta<RENEW_WAIT_INTERVAL) {
-                log.debug("Waiting for id renewal thread on partition {} [{} ms]",partitionID,timeDelta);
-            } else {
-                log.warn("Waiting for id renewal thread on partition {} [{} ms]",partitionID,timeDelta);
+
+        Stopwatch sw = new Stopwatch().start();
+        if (null != idBlockFuture) {
+            try {
+                idBlockFuture.get(renewTimeout.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
+            } catch (ExecutionException e) {
+                String msg = String.format("ID block allocation on partition %d failed with an exception in %s",
+                        partitionID, sw.stop());
+                throw new TitanException(msg, e);
+            } catch (TimeoutException e) {
+                // Attempt to cancel the renewer
+                idBlockFuture.cancel(true);
+                String msg = String.format("ID block allocation on partition %d timed out in %s",
+                        partitionID, sw.stop());
+                throw new TitanException(msg, e);
+            } catch (CancellationException e) {
+                String msg = String.format("ID block allocation on partition %d was cancelled after %s",
+                        partitionID, sw.stop());
+                throw new TitanException(msg, e);
+            } finally {
+                idBlockFuture = null;
             }
-            idBlockRenewer.join(RENEW_WAIT_INTERVAL);
+            // Allow InterruptedException to propagate up the stack
         }
-        if (idBlockRenewer!=null && idBlockRenewer.isAlive())
-            throw new TitanException("ID renewal thread on partition ["+partitionID+"] did not complete in time. ["+(System.currentTimeMillis()-timeStart)+" ms]");
     }
 
     private synchronized void nextBlock() throws InterruptedException {
@@ -108,7 +142,9 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(bufferNextID == BUFFER_EMPTY, bufferNextID);
         Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
         try {
-            long[] idblock = idAuthority.getIDBlock(partitionID);
+            Stopwatch sw = new Stopwatch().start();
+            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout);
+            log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
             bufferNextID = idblock[0];
             bufferMaxID = idblock[1];
             Preconditions.checkArgument(bufferNextID > 0, bufferNextID);
@@ -142,35 +178,38 @@ public class StandardIDPool implements IDPool {
         }
         long returnId = nextID;
         nextID++;
-        if (returnId > maxID) throw new IDPoolExhaustedException("Exhausted max id of " + maxID);
+        if (returnId >= idUpperBound) throw new IDPoolExhaustedException("Reached id upper bound of " + idUpperBound);
         log.trace("[{}] Returned id: {}", partitionID, returnId);
         return returnId;
     }
 
     @Override
     public synchronized void close() {
-        //Wait for renewer to finish
+        //Wait for renewer to finish -- call exec.shutdownNow() instead?
         try {
             waitForIDRenewer();
         } catch (InterruptedException e) {
             throw new TitanException("Interrupted while waiting for id renewer thread to finish", e);
         }
+        exec.shutdownNow();
     }
 
     private void startNextIDAcquisition() {
-        Preconditions.checkArgument(idBlockRenewer == null || !idBlockRenewer.isAlive(), idBlockRenewer);
+        Preconditions.checkArgument(idBlockFuture == null, idBlockFuture);
         //Renew buffer
         log.debug("Starting id block renewal thread upon {}", nextID);
-        idBlockRenewer = new IDBlockThread();
-        idBlockRenewer.start();
+        idBlockFuture = exec.submit(new IDBlockRunnable());
     }
 
-    private class IDBlockThread extends Thread {
+    private class IDBlockRunnable implements Runnable {
+
+        private final Stopwatch alive = new Stopwatch().start();
 
         @Override
         public void run() {
+            Stopwatch running = new Stopwatch().start();
             renewBuffer();
-            log.debug("Finishing id renewal thread");
+            log.debug("Renewed buffer: partition {}, exec time {}, exec+q time {}", partitionID, running.stop(), alive.stop());
         }
 
     }

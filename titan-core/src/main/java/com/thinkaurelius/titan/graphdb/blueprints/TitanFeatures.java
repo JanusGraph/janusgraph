@@ -34,8 +34,8 @@ public class TitanFeatures {
         features.supportsVertexIndex = false;
         features.supportsEdgeIndex = false;
         features.supportsKeyIndices = true;
-        features.supportsVertexKeyIndex = true;
-        features.supportsEdgeKeyIndex = true;
+        features.supportsVertexKeyIndex = false;
+        features.supportsEdgeKeyIndex = false;
         features.supportsEdgeIteration = false;
         features.supportsVertexIteration = false;
         features.supportsVertexProperties = true;
@@ -51,7 +51,7 @@ public class TitanFeatures {
         Features features = TitanFeatures.getBaselineTitanFeatures();
         features.supportsSerializableObjectProperty = config.hasSerializeAll();
         if (storageFeatures != null) {
-            if (storageFeatures.supportsScan()) {
+            if (storageFeatures.hasScan()) {
                 features.supportsVertexIteration = true;
                 features.supportsEdgeIteration = true;
             }

@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -15,6 +17,8 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public byte getByte(int position);
 
+    public boolean getBoolean(int position);
+
     public short getShort(int position);
 
     public int getInt(int position);
@@ -27,13 +31,30 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     public double getDouble(int position);
 
+    public byte[] getBytes(int position, int length);
+
+    public short[] getShorts(int position, int length);
+
+    public int[] getInts(int position, int length);
+
+    public long[] getLongs(int position, int length);
+
+    public char[] getChars(int position, int length);
+
+    public float[] getFloats(int position, int length);
+
+    public double[] getDoubles(int position, int length);
+
     public StaticBuffer subrange(int position, int length);
+
+    public StaticBuffer subrange(int position, int length, boolean invert);
 
     public ReadBuffer asReadBuffer();
 
-    public ByteBuffer asByteBuffer();
-
     public<T> T as(Factory<T> factory);
+
+    //Convenience method
+    public ByteBuffer asByteBuffer();
 
     public interface Factory<T> {
 
@@ -48,6 +69,20 @@ public interface StaticBuffer extends Comparable<StaticBuffer> {
             else return Arrays.copyOfRange(array,offset,limit);
         }
 
+    };
+
+    public static final Factory<ByteBuffer> BB_FACTORY = new Factory<ByteBuffer>() {
+        @Override
+        public ByteBuffer get(byte[] array, int offset, int limit) {
+            return ByteBuffer.wrap(array, offset, limit - offset);
+        }
+    };
+
+    public static final Factory<StaticBuffer> STATIC_FACTORY = new Factory<StaticBuffer>() {
+        @Override
+        public StaticBuffer get(byte[] array, int offset, int limit) {
+            return new StaticArrayBuffer(array, offset, limit);
+        }
     };
 
 }

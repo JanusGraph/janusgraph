@@ -33,4 +33,11 @@ public interface TitanLabel extends TitanType {
      */
     public boolean isUnidirected();
 
+    /**
+     * The {@link Multiplicity} for this edge label.
+     *
+     * @return
+     */
+    public Multiplicity getMultiplicity();
+
 }

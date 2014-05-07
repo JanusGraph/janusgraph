@@ -25,7 +25,7 @@ import com.tinkerpop.blueprints.Element;
  * @see TitanVertex
  * @see TitanRelation
  */
-public interface TitanElement extends Element, Comparable<TitanElement>, Removable {
+public interface TitanElement extends Element, Idfiable, Comparable<TitanElement>, Removable {
 
     /**
      * Returns a unique identifier for this entity.
@@ -155,6 +155,5 @@ public interface TitanElement extends Element, Comparable<TitanElement>, Removab
      * @return True, has been deleted, else false.
      */
     public boolean isRemoved();
-
 
 }

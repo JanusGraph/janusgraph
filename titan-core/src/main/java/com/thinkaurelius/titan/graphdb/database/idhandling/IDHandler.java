@@ -3,11 +3,14 @@ package com.thinkaurelius.titan.graphdb.database.idhandling;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.RelationType;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.tinkerpop.blueprints.Direction;
+
+import static com.thinkaurelius.titan.graphdb.idmanagement.IDManager.VertexIDType.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -15,13 +18,13 @@ import com.thinkaurelius.titan.graphdb.internal.RelationType;
 
 public class IDHandler {
 
-    public static final StaticBuffer MIN_KEY = ByteBufferUtil.getLongBuffer(0);
-    public static final StaticBuffer MAX_KEY = ByteBufferUtil.getLongBuffer(-1);
+    public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
+    public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
 
     public static StaticBuffer getKey(long id) {
         assert id >= 0;
-        return ByteBufferUtil.getLongBuffer(id << 1);
+        return BufferUtil.getLongBuffer(id << 1);
     }
 
     public static long getKeyID(StaticBuffer b) {
@@ -29,98 +32,136 @@ public class IDHandler {
         return value >>> 1;
     }
 
-    //Would only need 1 bit to store relation-type-id, but using two so we can upper bound
-    private static final int PREFIX_BIT_LEN = 2;
 
-    public static final int PROPERTY_DIR = 0; //00b
-    public static final int EDGE_OUT_DIR = 2; //10b
-    public static final int EDGE_IN_DIR = 3;  //11b
+    public static enum DirectionID {
 
-    private static int getDirection(int dirID) {
-        //0=out, 1=in
-        return dirID & 1;
+        PROPERTY_DIR(0),  //00b
+        EDGE_OUT_DIR(2),  //10b
+        EDGE_IN_DIR(3);   //11b
+
+        private final int id;
+
+        private DirectionID(int id) {
+            this.id = id;
+        }
+
+        private int getRelationType() {
+            return id >>> 1;
+        }
+
+        private int getDirectionInt() {
+            return id & 1;
+        }
+
+        public RelationCategory getRelationCategory() {
+            switch(this) {
+                case PROPERTY_DIR:
+                    return RelationCategory.PROPERTY;
+                case EDGE_IN_DIR:
+                case EDGE_OUT_DIR:
+                    return RelationCategory.EDGE;
+                default: throw new AssertionError();
+            }
+        }
+
+        public Direction getDirection() {
+            switch(this) {
+                case PROPERTY_DIR:
+                case EDGE_OUT_DIR:
+                    return Direction.OUT;
+                case EDGE_IN_DIR:
+                    return Direction.IN;
+                default: throw new AssertionError();
+            }
+        }
+
+        private int getPrefix(boolean hidden, boolean systemType) {
+            assert !systemType || hidden; // systemType implies hidden
+            return ((systemType?0:hidden?2:1)<<1) + getRelationType();
+        }
+
+        private int getPrefix() {
+            return getPrefix(false,false);
+        }
+
+        private static DirectionID getDirectionID(int relationType, int direction) {
+            assert relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1;
+            return forId((relationType << 1) + direction);
+        }
+
+        private static DirectionID forId(int id) {
+            switch(id) {
+                case 0: return PROPERTY_DIR;
+                case 2: return EDGE_OUT_DIR;
+                case 3: return EDGE_IN_DIR;
+                default: throw new AssertionError("Invalid id: " + id);
+            }
+        }
     }
 
-    private static int getRelationType(int dirID) {
-        //0=property, 1=edge
-        return dirID >>> 1;
-    }
 
-    private static int getDirectionID(int relationType, int direction) {
-        assert relationType >= 0 && relationType <= 1 && direction >= 0 && direction <= 1;
-        return (relationType << 1) + direction;
-    }
-
-    public static boolean isValidDirection(final int dirId) {
-        return dirId == PROPERTY_DIR || dirId == EDGE_IN_DIR || dirId == EDGE_OUT_DIR;
-    }
+    private static final int PREFIX_BIT_LEN = 3;
 
     public static int edgeTypeLength(long etid) {
         assert etid > 0 && (etid << 1) > 0;  //Check positive and no-overflow
-        return VariableLong.positiveWithPrefixLength(IDManager.getTypeCount(etid) << 1, PREFIX_BIT_LEN);
+        return VariableLong.positiveWithPrefixLength(IDManager.stripEntireRelationTypePadding(etid) << 1, PREFIX_BIT_LEN);
     }
 
-
     /**
-     * The edge type is written as follows: [ Relation-Type-ID (2 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * The edge type is written as follows: [ Hidden & System (2 bit) | Relation-Type-ID (1 bit) | Relation-Type-Count (variable) | Direction-ID (1 bit)]
+     * Would only need 1 bit to store relation-type-id, but using two so we can upper bound.
+     *
      *
      * @param out
      * @param etid
      * @param dirID
      */
-    public static void writeEdgeType(WriteBuffer out, long etid, int dirID) {
+    public static void writeEdgeType(WriteBuffer out, long etid, DirectionID dirID, boolean hidden) {
         assert etid > 0 && (etid << 1) > 0; //Check positive and no-overflow
-        assert isValidDirection(dirID);
-        etid = (IDManager.getTypeCount(etid) << 1) + getDirection(dirID);
-        VariableLong.writePositiveWithPrefix(out, etid, getRelationType(dirID), PREFIX_BIT_LEN);
+
+        long strippedId = (IDManager.stripEntireRelationTypePadding(etid) << 1) + dirID.getDirectionInt();
+        VariableLong.writePositiveWithPrefix(out, strippedId, dirID.getPrefix(hidden, IDManager.isSystemRelationTypeId(etid)), PREFIX_BIT_LEN);
     }
 
-    public static StaticBuffer getEdgeType(long etid, int dirID) {
+    public static StaticBuffer getEdgeType(long etid, DirectionID dirID, boolean hidden) {
         WriteBuffer b = new WriteByteBuffer(edgeTypeLength(etid));
-        IDHandler.writeEdgeType(b, etid, dirID);
+        IDHandler.writeEdgeType(b, etid, dirID, hidden);
         return b.getStaticBuffer();
     }
 
-    public static long[] readEdgeType(ReadBuffer in) {
+    public static EdgeTypeParse readEdgeType(ReadBuffer in) {
         long[] countPrefix = VariableLong.readPositiveWithPrefix(in, PREFIX_BIT_LEN);
-        int dirID = getDirectionID((int) countPrefix[1], (int) (countPrefix[0] & 1));
-        countPrefix[1] = dirID;
-        countPrefix[0] = countPrefix[0] >>> 1;
+        DirectionID dirID = DirectionID.getDirectionID((int) countPrefix[1] & 1, (int) (countPrefix[0] & 1));
+        long typeId = countPrefix[0] >>> 1;
+        boolean isSystemType = (countPrefix[1]>>1)==0;
 
-        if (countPrefix[1] == PROPERTY_DIR)
-            countPrefix[0] = IDManager.getPropertyKeyID(countPrefix[0]);
-        else if (countPrefix[1] == EDGE_IN_DIR || countPrefix[1] == EDGE_OUT_DIR)
-            countPrefix[0] = IDManager.getEdgeLabelID(countPrefix[0]);
+        if (dirID == DirectionID.PROPERTY_DIR)
+            typeId = IDManager.getSchemaId(isSystemType?SystemPropertyKey:UserPropertyKey, typeId);
         else
-            throw new AssertionError("Invalid direction ID: " + countPrefix[1]);
-        return countPrefix;
+            typeId = IDManager.getSchemaId(isSystemType?SystemEdgeLabel:UserEdgeLabel, typeId);
+        return new EdgeTypeParse(typeId,dirID);
+    }
+
+    public static class EdgeTypeParse {
+
+        public final long typeId;
+        public final DirectionID dirID;
+
+        public EdgeTypeParse(long typeId, DirectionID dirID) {
+            this.typeId = typeId;
+            this.dirID = dirID;
+        }
     }
 
 
     public static void writeInlineEdgeType(WriteBuffer out, long etid) {
-        long compressId = IDManager.getTypeCount(etid) << 1;
-        if (IDManager.isPropertyKeyID(etid))
-            compressId += 0;
-        else if (IDManager.isEdgeLabelID(etid))
-            compressId += 1;
-        else throw new AssertionError("Invalid type id: " + etid);
+        long compressId = IDManager.stripRelationTypePadding(etid);
         VariableLong.writePositive(out, compressId);
     }
 
     public static long readInlineEdgeType(ReadBuffer in) {
         long compressId = VariableLong.readPositive(in);
-        long id = compressId >>> 1;
-        switch ((int) (compressId & 1)) {
-            case 0:
-                id = IDManager.getPropertyKeyID(id);
-                break;
-            case 1:
-                id = IDManager.getEdgeLabelID(id);
-                break;
-            default:
-                throw new AssertionError("Invalid type: " + compressId);
-        }
-        return id;
+        return IDManager.addRelationTypePadding(compressId);
     }
 
     private static StaticBuffer getPrefixed(int prefix) {
@@ -130,24 +171,26 @@ public class IDHandler {
         return new StaticArrayBuffer(arr);
     }
 
-    public static StaticBuffer[] getBounds(RelationType type) {
+    //Assumes not hidden!
+    public static StaticBuffer[] getBounds(RelationCategory type) {
         int start, end;
         switch (type) {
             case PROPERTY:
-                start = getRelationType(PROPERTY_DIR);
-                end = start + 1;
+                start = DirectionID.PROPERTY_DIR.getPrefix();
+                end = start;
                 break;
             case EDGE:
-                start = getRelationType(EDGE_OUT_DIR);
-                end = start + 1;
+                start = DirectionID.EDGE_OUT_DIR.getPrefix();
+                end = start;
                 break;
             case RELATION:
-                start = getRelationType(PROPERTY_DIR);
-                end = getRelationType(EDGE_OUT_DIR) + 1;
+                start = DirectionID.PROPERTY_DIR.getPrefix();
+                end = DirectionID.EDGE_OUT_DIR.getPrefix();
                 break;
             default:
                 throw new AssertionError("Unrecognized type:" + type);
         }
+        end++;
         assert end > start;
         return new StaticBuffer[]{getPrefixed(start), getPrefixed(end)};
     }

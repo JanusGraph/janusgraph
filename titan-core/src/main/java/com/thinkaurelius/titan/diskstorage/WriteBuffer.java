@@ -8,13 +8,20 @@ package com.thinkaurelius.titan.diskstorage;
 
 public interface WriteBuffer {
 
-    public WriteBuffer putLong(long val);
 
-    public WriteBuffer putInt(int val);
+    public WriteBuffer putByte(byte val);
+
+    public WriteBuffer putBytes(byte[] val);
+
+    public WriteBuffer putBytes(StaticBuffer val);
+
+    public WriteBuffer putBoolean(boolean val);
 
     public WriteBuffer putShort(short val);
 
-    public WriteBuffer putByte(byte val);
+    public WriteBuffer putInt(int val);
+
+    public WriteBuffer putLong(long val);
 
     public WriteBuffer putChar(char val);
 

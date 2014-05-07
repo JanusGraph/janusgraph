@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.tinkerpop.blueprints.Graph;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -33,10 +34,7 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
     public Graph generateGraph(String uid) {
         String dir = BerkeleyJeStorageSetup.getHomeDir(uid);
         System.out.println("Opening graph in: " + dir);
-        BaseConfiguration config = new BaseConfiguration();
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, dir);
-        config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE).addProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "berkeleyje");
-        Graph graph = TitanFactory.open(config);
+        Graph graph = TitanFactory.open(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration(dir));
         synchronized (openDirs) {
             openDirs.add(dir);
         }
@@ -52,9 +50,7 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
     public void cleanUp() throws StorageException {
         synchronized (openDirs) {
             for (String dir : openDirs) {
-                BaseConfiguration config = new BaseConfiguration();
-                config.addProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, dir);
-                BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(config);
+                BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration(dir));
                 s.clearStorage();
                 File dirFile = new File(dir);
                 Assert.assertFalse(dirFile.exists() && dirFile.listFiles().length > 0);

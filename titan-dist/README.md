@@ -6,7 +6,7 @@ Building zip/tar.bz2 archives
 -----------------------------
 
 Run `mvn clean install -Paurelius-release -Dgpg.skip=true`.  Archives
-files will be written to `titan-dist-*/target/`.  The archives expect
+files will be written to the `target` subdir.  The archives expect
 that titan-site has already been installed locally with the same 
 command (but executed in ../titan-site).  titan-site requires the
 gollum-site utility to export a copy of the wikidocs which is later

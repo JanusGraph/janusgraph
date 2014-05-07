@@ -1,8 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Element;
-
 /**
  * TypeMaker is a factory for {@link TitanType}s. TitanTypes can be configured to provide data verification,
  * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link TitanRelation}s
@@ -19,21 +16,7 @@ import com.tinkerpop.blueprints.Element;
  */
 public interface TypeMaker {
 
-    /**
-     * Consistency imposed against the underlying storage backend as configured in {@link TypeMaker}.
-     */
-    public enum UniquenessConsistency {
-
-        /**
-         * Does not acquire a lock and hence concurrent transactions may overwrite existing
-         * uniqueness relations.
-         */
-        NO_LOCK,
-        /**
-         * Acquires a lock to ensure uniqueness consistency.
-         */
-        LOCK
-    }
+    public String getName();
 
     public TitanType make();
 }

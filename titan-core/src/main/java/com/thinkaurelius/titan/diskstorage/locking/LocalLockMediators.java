@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * A singleton maintaining a globally unique map of {@link LocalLockMediator}
  * instances.
- * 
+ *
  * @see LocalLockMediatorProvider
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
@@ -30,15 +32,15 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
     private final ConcurrentHashMap<String, LocalLockMediator<?>> mediators = new ConcurrentHashMap<String, LocalLockMediator<?>>();
 
     @Override
-    public <T> LocalLockMediator<T> get(String namespace) {
-        
+    public <T> LocalLockMediator<T> get(String namespace, TimestampProvider times) {
+
         Preconditions.checkNotNull(namespace);
-        
+
         @SuppressWarnings("unchecked")
         LocalLockMediator<T> m = (LocalLockMediator<T>)mediators.get(namespace);
 
         if (null == m) {
-            m = new LocalLockMediator<T>(namespace);
+            m = new LocalLockMediator<T>(namespace, times);
             @SuppressWarnings("unchecked")
             LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
             if (null != old)
@@ -61,21 +63,21 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
     public void clear() {
         mediators.clear();
     }
-    
+
     /**
      * Only use this in testing.
      * <p>
      * This deletes all entries in the global map of namespaces to mediators
      * whose namespace key equals the argument.
-     * 
-     * @param prefix 
+     *
+     * @param prefix
      */
     public void clear(String namespace) {
         Iterator<Entry<String, LocalLockMediator<?>>> iter = mediators.entrySet().iterator();
-        
+
         while (iter.hasNext()) {
             Entry<String, LocalLockMediator<?>> e = iter.next();
-            
+
             if (e.getKey().equals(namespace)) {
                 iter.remove();
             }

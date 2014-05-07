@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Parameter;
 
 /**
@@ -38,6 +39,12 @@ public interface KeyInformation {
      * @return
      */
     public Parameter[] getParameters();
+
+    /**
+     * Returns the {@link com.thinkaurelius.titan.core.Cardinality} for this key.
+     * @return
+     */
+    public Cardinality getCardinality();
 
 
     public interface StoreRetriever {

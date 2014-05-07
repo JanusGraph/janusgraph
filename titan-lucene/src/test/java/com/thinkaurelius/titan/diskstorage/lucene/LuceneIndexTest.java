@@ -4,12 +4,12 @@ import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
 import com.thinkaurelius.titan.core.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
@@ -32,9 +32,10 @@ public class LuceneIndexTest extends IndexProviderTest {
     }
 
     public static final Configuration getLocalLuceneTestConfig() {
-        Configuration config = new BaseConfiguration();
-        config.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, StorageSetup.getHomeDir("lucene"));
-        return config;
+        final String index = "lucene";
+        ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
+        config.set(GraphDatabaseConfiguration.INDEX_DIRECTORY, StorageSetup.getHomeDir("lucene"),index);
+        return config.restrictTo(index);
     }
 
     @Test

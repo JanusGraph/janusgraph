@@ -12,6 +12,8 @@ public interface ScanBuffer {
 
     public byte getByte();
 
+    public boolean getBoolean();
+
     public short getShort();
 
     public int getInt();
@@ -23,5 +25,19 @@ public interface ScanBuffer {
     public float getFloat();
 
     public double getDouble();
+
+    public byte[] getBytes(int length);
+
+    public short[] getShorts(int length);
+
+    public int[] getInts(int length);
+
+    public long[] getLongs(int length);
+
+    public char[] getChars(int length);
+
+    public float[] getFloats(int length);
+
+    public double[] getDoubles(int length);
 
 }

@@ -1,163 +1,140 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
 /**
- * Specifies the features that a given store supports
- * <p/>
+ * Describes features supported by a storage backend.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Dan LaRocque <dalaro@hopcount.org>
  */
 
-public class StoreFeatures {
-
-    public Boolean supportsUnorderedScan;
-    public Boolean supportsOrderedScan;
-    public Boolean supportsBatchMutation;
-    public Boolean supportsMultiQuery;
-
-    public Boolean supportsTransactions;
-    public Boolean supportsConsistentKeyOperations;
-    public Boolean supportsLocking;
-
-    public Boolean isKeyOrdered;
-    public Boolean isDistributed;
-    public Boolean hasLocalKeyPartition;
-
-    private boolean verify() {
-        for (Field f : getClass().getDeclaredFields()) {
-            try {
-                if (f.get(this) == null) return false;
-            } catch (IllegalAccessException e) {
-                throw new IllegalArgumentException("Could not inspect setting: " + f.getName(), e);
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public StoreFeatures clone() {
-        StoreFeatures newfeatures = new StoreFeatures();
-        for (Field f : getClass().getDeclaredFields()) {
-            if (!Modifier.isStatic(f.getModifiers())) {
-                try {
-                    f.set(newfeatures, f.get(this));
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException("Could not copy setting: " + f.getName(), e);
-                }
-            }
-        }
-        return newfeatures;
-    }
-
-    public static StoreFeatures defaultFeature(boolean value) {
-        StoreFeatures newfeatures = new StoreFeatures();
-        for (Field f : StoreFeatures.class.getDeclaredFields()) {
-            if (!Modifier.isStatic(f.getModifiers())) {
-                try {
-                    f.set(newfeatures, value);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalArgumentException("Could not read setting: " + f.getName(), e);
-                }
-            }
-        }
-        return newfeatures;
-    }
+public interface StoreFeatures {
 
     /**
-     * Whether this storage backends supports scanning of any kind
+     * Equivalent to calling {@link #hasUnorderedScan()} {@code ||}
+     * {@link #hasOrderedScan()}.
+     */
+    public boolean hasScan();
+
+    /**
+     * Whether this storage backend supports global key scans via
+     * {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}.
+     */
+    public boolean hasUnorderedScan();
+
+    /**
+     * Whether this storage backend supports global key scans via
+     * {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}.
+     */
+    public boolean hasOrderedScan();
+
+    /**
+     * Whether this storage backend supports query operations on multiple keys
+     * via
+     * {@link KeyColumnValueStore#getSlice(java.util.List, SliceQuery, StoreTransaction)}
+     */
+    public boolean hasMultiQuery();
+
+    /**
+     * Whether this store supports locking via
+     * {@link KeyColumnValueStore#acquireLock(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
+     *
+     */
+    public boolean hasLocking();
+
+    /**
+     * Whether this storage backend supports batch mutations via
+     * {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
+     *
+     */
+    public boolean hasBatchMutation();
+
+    /**
+     * Whether this storage backend preserves key locality. This affects Titan's
+     * use of vertex ID partitioning.
+     *
+     */
+    public boolean isKeyOrdered();
+
+    /**
+     * Whether this storage backend writes and reads data from more than one
+     * machine.
+     */
+    public boolean isDistributed();
+
+    /**
+     * Whether this storage backend's transactions support isolation.
+     */
+    public boolean hasTxIsolation();
+
+    /**
+     *
+     */
+    public boolean hasLocalKeyPartition();
+
+    /**
+     * Whether this storage backend provides strong consistency within each
+     * key/row. This property is weaker than general strong consistency, since
+     * reads and writes to different keys need not obey strong consistency.
+     * "Key consistency" is shorthand for
+     * "strong consistency at the key/row level".
+     *
+     * @return true if the backend supports key-level strong consistency
+     */
+    public boolean isKeyConsistent();
+
+    /**
+     * Returns true if column-value entries in this storage backend are annotated with a timestamp,
+     * else false. It is assumed that the timestamp matches the one set during the committing transaction.
      *
      * @return
      */
-    public boolean supportsScan() {
-        return supportsOrderedScan() || supportsUnorderedScan();
-    }
+    public boolean hasTimestamps();
+
+    /**
+     * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
+     * is provided as a meta-data annotation on the {@link com.thinkaurelius.titan.diskstorage.Entry}, the entry will
+     * disappear from the storage backend after the given amount of time.
+     *
+     * @return true if the storage backend supports TTL, else false
+     */
+    public boolean hasTTL();
 
 
     /**
-     * Whether this storage backend supports global key scans via {@link KeyColumnValueStore#getKeys(SliceQuery, StoreTransaction)}
+     * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
+     * token to each column-value entry in the data store and limited retrievals to "visible" entries.
      *
      * @return
      */
-    public boolean supportsUnorderedScan() {
-        assert verify();
-        return supportsUnorderedScan;
-    }
+    public boolean hasVisibility();
+
 
     /**
-     * Whether this storage backend supports global key scans via {@link KeyColumnValueStore#getKeys(KeyRangeQuery, StoreTransaction)}
+     * Get a transaction configuration that enforces key consistency. This
+     * method has undefined behavior when {@link #isKeyConsistent()} is
+     * false.
      *
-     * @return
+     * @return a key-consistent tx config
      */
-    public boolean supportsOrderedScan() {
-        assert verify();
-        return supportsOrderedScan;
-    }
+    public Configuration getKeyConsistentTxConfig();
 
     /**
-     * Whether this storage backend supports query operations on multiple keys,
-     * i.e {@link KeyColumnValueStore#getSlice(java.util.List, SliceQuery, StoreTransaction)}
+     * Get a transaction configuration that enforces local key consistency.
+     * "Local" has flexible meaning depending on the backend implementation. An
+     * example is Cassandra's notion of LOCAL_QUORUM, which provides strong
+     * consistency among all replicas in the same datacenter as the node
+     * handling the request, but not nodes at other datacenters. This method has
+     * undefined behavior when {@link #isKeyConsistent()} is false.
      *
-     * @return
-     */
-    public boolean supportsMultiQuery() {
-        assert verify();
-        return supportsMultiQuery;
-    }
-
-    /**
-     * Whether this storage backend is transactional.
+     * Backends which don't support the notion of "local" strong consistency may
+     * return the same configuration returned by
+     * {@link #getKeyConsistencyTxConfig()}.
      *
-     * @return
+     * @return a locally (or globally) key-consistent tx config
      */
-    public boolean supportsTransactions() {
-        assert verify();
-        return supportsTransactions;
-    }
+    public Configuration getLocalKeyConsistentTxConfig();
 
-    /**
-     * Whether this store supports consistent atomic operations on keys.
-     *
-     * @return
-     */
-    public boolean supportsConsistentKeyOperations() {
-        assert verify();
-        return supportsConsistentKeyOperations;
-    }
 
-    /**
-     * Whether this store supports locking via {@link KeyColumnValueStore#acquireLock(com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, com.thinkaurelius.titan.diskstorage.StaticBuffer, StoreTransaction)}
-     *
-     * @return
-     */
-    public boolean supportsLocking() {
-        assert verify();
-        return supportsLocking;
-    }
-
-    /**
-     * Whether this storage backend supports batch mutations via {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
-     *
-     * @return
-     */
-    public boolean supportsBatchMutation() {
-        assert verify();
-        return supportsBatchMutation;
-    }
-
-    public boolean isKeyOrdered() {
-        assert verify();
-        return isKeyOrdered;
-    }
-
-    public boolean isDistributed() {
-        assert verify();
-        return isDistributed;
-    }
-
-    public boolean hasLocalKeyPartition() {
-        assert verify();
-        return hasLocalKeyPartition;
-    }
 }

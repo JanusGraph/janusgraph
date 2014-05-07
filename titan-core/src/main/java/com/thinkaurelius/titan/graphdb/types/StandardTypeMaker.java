@@ -1,84 +1,90 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
-import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
+import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
+import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.types.TypeAttributeType.*;
-import static com.tinkerpop.blueprints.Direction.OUT;
+import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
-abstract class StandardTypeMaker implements TypeMaker {
-
-    private static final Set<String> RESERVED_NAMES = ImmutableSet.of("id", "label");//, "key");
+public abstract class StandardTypeMaker implements TypeMaker {
 
     private static final char[] RESERVED_CHARS = {'{', '}', '"'};
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
+    protected final AttributeHandling attributeHandler;
 
     private String name;
-    private boolean[] isUnique;
-    private boolean[] hasUniqueLock;
-    private boolean[] isStatic;
     private boolean isHidden;
-    private boolean isModifiable;
     private List<TitanType> sortKey;
     private Order sortOrder;
     private List<TitanType> signature;
+    private Multiplicity multiplicity;
 
-    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer) {
+    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
+                             final AttributeHandling attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
+        Preconditions.checkNotNull(attributeHandler);
         this.tx = tx;
         this.indexSerializer = indexSerializer;
+        this.attributeHandler = attributeHandler;
 
         //Default assignments
         name = null;
-        isUnique = new boolean[2]; //false
-        hasUniqueLock = new boolean[2]; //false
-        isStatic = new boolean[2]; //false
         isHidden = false;
-        isModifiable = true;
         sortKey = new ArrayList<TitanType>(4);
         sortOrder = Order.ASC;
         signature = new ArrayList<TitanType>(4);
+        multiplicity = Multiplicity.MULTI;
+    }
+
+
+    public String getName() {
+        return this.name;
+    }
+
+    protected boolean hasSortKey() {
+        return !sortKey.isEmpty();
+    }
+
+    protected Multiplicity getMultiplicity() {
+        return multiplicity;
     }
 
     private void checkGeneralArguments() {
+        //Verify name
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
+        if (!isHidden) Token.verifyName(name);
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
                 "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
-        Preconditions.checkArgument(!RESERVED_NAMES.contains(name.toLowerCase()),
-                "Name is reserved: " + name);
+        Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase()),
+                "Name is reserved by system and cannot be used: %s",name);
 
-        for (int i = 0; i < 2; i++)
-            Preconditions.checkArgument(!hasUniqueLock[i] || isUnique[i],
-                    "Must be unique in order to have a lock");
         checkSortKey(sortKey);
-        Preconditions.checkArgument(sortOrder==Order.ASC || !sortKey.isEmpty(),"Must define a sort key to use ordering");
+        Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");
         checkSignature(signature);
         Preconditions.checkArgument(Sets.intersection(Sets.newHashSet(sortKey), Sets.newHashSet(signature)).isEmpty(),
                 "Signature and sort key must be disjoined");
-        if ((isUnique[0] && isUnique[1]) && !sortKey.isEmpty())
-            throw new IllegalArgumentException("Cannot define a sort key on a both-unique type");
+        Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained edge labels");
     }
 
-    private static long[] checkSortKey(List<TitanType> sig) {
+    private long[] checkSortKey(List<TitanType> sig) {
         for (TitanType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
-                    || Comparable.class.isAssignableFrom(((TitanKey) t).getDataType()),
-                    "Key must have comparable data type to be used as sort key: " + t);
+                    || attributeHandler.isOrderPreservingDatatype(((TitanKey) t).getDataType()),
+                    "Key must have an order-preserving data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
     }
@@ -89,7 +95,6 @@ abstract class StandardTypeMaker implements TypeMaker {
         for (int i = 0; i < sig.size(); i++) {
             TitanType et = sig.get(i);
             Preconditions.checkNotNull(et);
-            Preconditions.checkArgument(et.isUnique(OUT), "Type must be single valued: %s", et.getName());
             Preconditions.checkArgument(!et.isEdgeLabel() || ((TitanLabel) et).isUnidirected(),
                     "Label must be unidirectional: %s", et.getName());
             Preconditions.checkArgument(!et.isPropertyKey() || !((TitanKey) et).getDataType().equals(Object.class),
@@ -99,86 +104,51 @@ abstract class StandardTypeMaker implements TypeMaker {
         return signature;
     }
 
-    protected final TypeAttribute.Map makeDefinition() {
+    protected final TypeDefinitionMap makeDefinition() {
         checkGeneralArguments();
 
-        TypeAttribute.Map def = new TypeAttribute.Map();
-        def.setValue(UNIQUENESS, new boolean[]{isUnique[0], isUnique[1]});
-        def.setValue(UNIQUENESS_LOCK, hasUniqueLock);
-        def.setValue(STATIC, isStatic);
+        TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(HIDDEN, isHidden);
-        def.setValue(MODIFIABLE, isModifiable);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
         def.setValue(SORT_ORDER, sortOrder);
         def.setValue(SIGNATURE, checkSignature(signature));
+        def.setValue(MULTIPLICITY,multiplicity);
         return def;
     }
 
-    protected StandardTypeMaker signature(TitanType... types) {
+    public StandardTypeMaker multiplicity(Multiplicity multiplicity) {
+        Preconditions.checkNotNull(multiplicity);
+        this.multiplicity=multiplicity;
+        return this;
+    }
+
+    public StandardTypeMaker signature(TitanType... types) {
+        Preconditions.checkArgument(types!=null && types.length>0);
         signature.addAll(Arrays.asList(types));
         return this;
     }
 
-    protected StandardTypeMaker sortKey(TitanType... types) {
+    public StandardTypeMaker sortKey(TitanType... types) {
+        Preconditions.checkArgument(types!=null && types.length>0);
         sortKey.addAll(Arrays.asList(types));
         return this;
     }
 
-    protected StandardTypeMaker sortOrder(Order order) {
+    public StandardTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);
         this.sortOrder=order;
         return this;
     }
 
     public StandardTypeMaker name(String name) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
-        return this;
-    }
-
-    protected String getName() {
-        return this.name;
-    }
-
-    protected boolean isUnique(Direction direction) {
-        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
-        return isUnique[EdgeDirection.position(direction)];
-    }
-
-    protected StandardTypeMaker unique(Direction direction, UniquenessConsistency consistency) {
-        if (direction == Direction.BOTH) {
-            unique(Direction.IN, consistency);
-            unique(Direction.OUT, consistency);
-        } else {
-            isUnique[EdgeDirection.position(direction)] = consistency == null ? false : true;
-            hasUniqueLock[EdgeDirection.position(direction)] =
-                    (consistency == UniquenessConsistency.LOCK ? true : false);
-        }
         return this;
     }
 
     public StandardTypeMaker hidden() {
         this.isHidden = true;
         return this;
-    }
-
-    public StandardTypeMaker unModifiable() {
-        this.isModifiable = false;
-        return this;
-    }
-
-    public StandardTypeMaker makeStatic(Direction direction) {
-        if (direction == Direction.BOTH) {
-            makeStatic(Direction.IN);
-            makeStatic(Direction.OUT);
-        } else {
-            isStatic[EdgeDirection.position(direction)] = true;
-        }
-        return this;
-    }
-
-    protected boolean isStatic(Direction direction) {
-        Preconditions.checkArgument(direction == Direction.IN || direction == Direction.OUT);
-        return isStatic[EdgeDirection.position(direction)];
     }
 
 

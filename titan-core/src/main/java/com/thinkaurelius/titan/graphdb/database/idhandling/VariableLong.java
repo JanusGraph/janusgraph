@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.idhandling;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
@@ -15,12 +17,17 @@ public class VariableLong {
         return b < 0 ? b + 256 : b;
     }
 
+    public static byte unsignedByte(int value) {
+        Preconditions.checkArgument(value>=0 && value<256,"Value overflow: %s",value);
+        return (byte)(value & 0xFF);
+    }
+
     //Move stop bit back to front => rewrite prefix variable encoding by custom writing first byte
 
     private static final byte BIT_MASK = 127;
     private static final byte STOP_MASK = -128;
 
-    private static long readUnsigned(ReadBuffer in) {
+    private static long readUnsigned(ScanBuffer in) {
         long value = 0;
         byte b;
         do {
@@ -69,7 +76,7 @@ public class VariableLong {
        ################################## */
 
 
-    public static long readPositive(ReadBuffer in) {
+    public static long readPositive(ScanBuffer in) {
         long value = readUnsigned(in);
         assert value >= 0;
         return value;
@@ -80,14 +87,14 @@ public class VariableLong {
         writeUnsigned(out, value);
     }
 
-    public static StaticBuffer positiveByteBuffer(final long value) {
+    public static StaticBuffer positiveBuffer(final long value) {
         WriteBuffer buffer = new WriteByteBuffer(positiveLength(value));
         writePositive(buffer, value);
         return buffer.getStaticBuffer();
     }
 
 
-    public static StaticBuffer positiveByteBuffer(long[] value) {
+    public static StaticBuffer positiveBuffer(long[] value) {
         int len = 0;
         for (long aValue : value)
             len += positiveLength(aValue);
@@ -126,7 +133,7 @@ public class VariableLong {
         writeUnsigned(out, convert2Unsigned(value));
     }
 
-    public static long read(ReadBuffer in) {
+    public static long read(ScanBuffer in) {
         return convertFromUnsigned(readUnsigned(in));
     }
 
@@ -151,8 +158,9 @@ public class VariableLong {
         } else {
             valueLen += (7-mod);
         }
-        if (valueLen==0) {
-            //Add stop mask
+        assert valueLen>=0;
+        if (valueLen>0) {
+            //Add continue mask to indicate reading further
             first = (byte) ( first | (1<<(deltaLen-1)));
         }
         out.putByte(first);
@@ -175,7 +183,7 @@ public class VariableLong {
         int deltaLen = 8 - prefixBitLen;
         long prefix = first>>deltaLen;
         long value =  first & ((1<<(deltaLen-1))-1);
-        if ( ((first>>>(deltaLen-1)) & 1) == 0) { //No stop mask
+        if ( ((first>>>(deltaLen-1)) & 1) == 1) { //Continue mask
             int deltaPos = in.getPosition();
             long remainder = readUnsigned(in);
             deltaPos = in.getPosition()-deltaPos;
@@ -231,11 +239,11 @@ public class VariableLong {
         long value = 0;
         int b;
         do {
+            position--;
             b = in.getByte(position);
             value = value << 7 | b & BIT_MASK;
-            position--;
         } while (b >= 0);
-        in.movePosition(position-in.getPosition());
+        in.movePositionTo(position);
         return value;
     }
 

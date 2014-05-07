@@ -4,12 +4,12 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.datastructures.IterablesUtil;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
@@ -17,7 +17,6 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -41,7 +40,7 @@ public class EmptyVertex implements InternalVertex {
     }
 
     @Override
-    public Collection<Entry> loadRelations(SliceQuery query, Retriever<SliceQuery, List<Entry>> lookup) {
+    public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
@@ -62,12 +61,14 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public <O> O getProperty(TitanKey key) {
+        if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return null;
     }
 
     @Override
     public <O> O getProperty(String key) {
-        return null;
+        if (!tx().containsType(key)) return null;
+        else return getProperty(tx().getPropertyKey(key));
     }
 
 
@@ -236,6 +237,11 @@ public class EmptyVertex implements InternalVertex {
     @Override
     public byte getLifeCycle() {
         return ElementLifeCycle.Loaded;
+    }
+
+    @Override
+    public boolean isHidden() {
+        return false;
     }
 
     @Override

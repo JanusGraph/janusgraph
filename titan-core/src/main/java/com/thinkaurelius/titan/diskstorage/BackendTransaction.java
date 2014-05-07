@@ -1,26 +1,34 @@
 package com.thinkaurelius.titan.diskstorage;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
-import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
-import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
-import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
+import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
+import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyIterator;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRangeQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 /**
  * Bundles all transaction handles from the various backend systems and provides a proxy for some of their
@@ -30,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BackendTransaction implements TransactionHandle {
+public class BackendTransaction implements LoggableTransaction {
 
     private static final Logger log =
             LoggerFactory.getLogger(BackendTransaction.class);
@@ -38,41 +46,42 @@ public class BackendTransaction implements TransactionHandle {
     public static final int MIN_TASKS_TO_PARALLELIZE = 2;
 
     //Assumes 64 bit key length as specified in IDManager
-    public static final StaticBuffer EDGESTORE_MIN_KEY = ByteBufferUtil.zeroBuffer(8);
-    public static final StaticBuffer EDGESTORE_MAX_KEY = ByteBufferUtil.oneBuffer(8);
+    public static final StaticBuffer EDGESTORE_MIN_KEY = BufferUtil.zeroBuffer(8);
+    public static final StaticBuffer EDGESTORE_MAX_KEY = BufferUtil.oneBuffer(8);
 
-    private final StoreTransaction storeTx;
+    private final CacheTransaction storeTx;
+    private final TransactionHandleConfig txConfig;
     private final StoreFeatures storeFeatures;
 
-    private final KeyColumnValueStore edgeStore;
-    private final KeyColumnValueStore vertexIndexStore;
-    private final KeyColumnValueStore edgeIndexStore;
+    private final KCVSCache edgeStore;
+    private final KCVSCache indexStore;
 
-    private final int maxReadRetryAttempts;
-    private final int retryStorageWaitTime;
+    private final Duration maxReadTime;
 
     private final Executor threadPool;
 
     private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(StoreTransaction storeTx, StoreFeatures features,
-                              KeyColumnValueStore edgeStore,
-                              KeyColumnValueStore vertexIndexStore, KeyColumnValueStore edgeIndexStore,
-                              int maxReadRetryAttempts, int retryStorageWaitTime,
+    public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
+                              StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
+                              Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
         this.storeTx = storeTx;
+        this.txConfig = txConfig;
         this.storeFeatures = features;
         this.edgeStore = edgeStore;
-        this.vertexIndexStore = vertexIndexStore;
-        this.edgeIndexStore = edgeIndexStore;
-        this.maxReadRetryAttempts = maxReadRetryAttempts;
-        this.retryStorageWaitTime = retryStorageWaitTime;
+        this.indexStore = indexStore;
+        this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
     }
 
     public StoreTransaction getStoreTransactionHandle() {
         return storeTx;
+    }
+
+    public TransactionHandleConfig getConfiguration() {
+        return txConfig;
     }
 
     public IndexTransaction getIndexTransactionHandle(String index) {
@@ -82,22 +91,69 @@ public class BackendTransaction implements TransactionHandle {
         return itx;
     }
 
+    public void commitStorage() throws StorageException {
+        storeTx.commit();
+    }
+
+    public Map<String,Throwable> commitIndexes() {
+        Map<String,Throwable> exceptions = new HashMap<String, Throwable>(indexTx.size());
+        for (Map.Entry<String,IndexTransaction> txentry : indexTx.entrySet()) {
+            try {
+                txentry.getValue().commit();
+            } catch (Throwable e) {
+                exceptions.put(txentry.getKey(),e);
+            }
+        }
+        return exceptions;
+    }
+
     @Override
     public void commit() throws StorageException {
         storeTx.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
 
-    @Override
-    public void rollback() throws StorageException {
-        storeTx.rollback();
-        for (IndexTransaction itx : indexTx.values()) itx.rollback();
+    public void flushStorage() throws StorageException {
+        storeTx.flush();
     }
 
     @Override
     public void flush() throws StorageException {
         storeTx.flush();
         for (IndexTransaction itx : indexTx.values()) itx.flush();
+    }
+
+    /**
+     * Rolls back all transactions and makes sure that this does not get cut short
+     * by exceptions. If exceptions occur, the storage exception takes priority on re-throw.
+     * @throws StorageException
+     */
+    @Override
+    public void rollback() throws StorageException {
+        Throwable excep = null;
+        for (IndexTransaction itx : indexTx.values()) {
+            try {
+                itx.rollback();
+            } catch (Throwable e) {
+                excep = e;
+            }
+        }
+        storeTx.rollback();
+        if (excep!=null) { //throw any encountered index transaction rollback exceptions
+            if (excep instanceof StorageException) throw (StorageException)excep;
+            else throw new PermanentStorageException("Unexpected exception",excep);
+        }
+    }
+
+
+    @Override
+    public void logMutations(DataOutput out) {
+        //Write
+        storeTx.logMutations(out);
+        for (Map.Entry<String, IndexTransaction> itx : indexTx.entrySet()) {
+            out.writeObjectNotNull(itx.getKey());
+            itx.getValue().logMutations(out);
+        }
     }
 
     /* ###################################################
@@ -112,8 +168,8 @@ public class BackendTransaction implements TransactionHandle {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        edgeStore.mutate(key, additions, deletions, storeTx);
+    public void mutateEdges(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        edgeStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**
@@ -124,12 +180,8 @@ public class BackendTransaction implements TransactionHandle {
      * @param additions List of entries (column + value) to be added
      * @param deletions List of columns to be removed
      */
-    public void mutateVertexIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        vertexIndexStore.mutate(key, additions, deletions, storeTx);
-    }
-
-    public void mutateEdgeIndex(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions) throws StorageException {
-        edgeIndexStore.mutate(key, additions, deletions, storeTx);
+    public void mutateIndex(StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+        indexStore.mutateEntries(key, additions, deletions, storeTx);
     }
 
     /**
@@ -145,10 +197,13 @@ public class BackendTransaction implements TransactionHandle {
      *
      * @param key           Key on which to lock
      * @param column        Column the column on which to lock
-     * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireEdgeLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue) throws StorageException {
-        edgeStore.acquireLock(key, column, expectedValue, storeTx);
+    public void acquireEdgeLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+        edgeStore.acquireLock(key, column, null, storeTx);
+    }
+
+    public void acquireEdgeLock(StaticBuffer key, Entry entry) throws StorageException {
+        edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }
 
     /**
@@ -166,18 +221,22 @@ public class BackendTransaction implements TransactionHandle {
      * @param column        Column the column on which to lock
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
-    public void acquireVertexIndexLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue) throws StorageException {
-        vertexIndexStore.acquireLock(key, column, expectedValue, storeTx);
+    public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+        indexStore.acquireLock(key, column, null, storeTx);
+    }
+
+    public void acquireIndexLock(StaticBuffer key, Entry entry) throws StorageException {
+        indexStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }
 
     /* ###################################################
             Convenience Read Methods
      */
 
-    public List<Entry> edgeStoreQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
+    public EntryList edgeStoreQuery(final KeySliceQuery query) {
+        return executeRead(new Callable<EntryList>() {
             @Override
-            public List<Entry> call() throws Exception {
+            public EntryList call() throws Exception {
                 return edgeStore.getSlice(query, storeTx);
             }
 
@@ -188,11 +247,11 @@ public class BackendTransaction implements TransactionHandle {
         });
     }
 
-    public List<List<Entry>> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
-        if (storeFeatures.supportsMultiQuery()) {
-            return executeRead(new Callable<List<List<Entry>>>() {
+    public Map<StaticBuffer,EntryList> edgeStoreMultiQuery(final List<StaticBuffer> keys, final SliceQuery query) {
+        if (storeFeatures.hasMultiQuery()) {
+            return executeRead(new Callable<Map<StaticBuffer,EntryList>>() {
                 @Override
-                public List<List<Entry>> call() throws Exception {
+                public Map<StaticBuffer,EntryList> call() throws Exception {
                     return edgeStore.getSlice(keys, query, storeTx);
                 }
 
@@ -202,16 +261,15 @@ public class BackendTransaction implements TransactionHandle {
                 }
             });
         } else {
-            final List<List<Entry>> results;
+            final Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer,EntryList>(keys.size());
             if (threadPool == null || keys.size() < MIN_TASKS_TO_PARALLELIZE) {
-                results = new ArrayList<List<Entry>>(keys.size());
                 for (StaticBuffer key : keys) {
-                    results.add(edgeStoreQuery(new KeySliceQuery(key, query)));
+                    results.put(key,edgeStoreQuery(new KeySliceQuery(key, query)));
                 }
             } else {
                 final CountDownLatch doneSignal = new CountDownLatch(keys.size());
                 final AtomicInteger failureCount = new AtomicInteger(0);
-                List<Entry>[] resultArray = new List[keys.size()];
+                EntryList[] resultArray = new EntryList[keys.size()];
                 for (int i = 0; i < keys.size(); i++) {
                     threadPool.execute(new SliceQueryRunner(new KeySliceQuery(keys.get(i), query),
                             doneSignal, failureCount, resultArray, i));
@@ -224,9 +282,10 @@ public class BackendTransaction implements TransactionHandle {
                 if (failureCount.get() > 0) {
                     throw new TitanException("Could not successfully complete multi-query. " + failureCount.get() + " individual queries failed.");
                 }
-                results = Arrays.asList(resultArray);
-                assert keys.size() == results.size();
-                for (List l : results) assert l != null;
+                for (int i=0;i<keys.size();i++) {
+                    assert resultArray[i]!=null;
+                    results.put(keys.get(i),resultArray[i]);
+                }
             }
             return results;
         }
@@ -253,10 +312,7 @@ public class BackendTransaction implements TransactionHandle {
         public void run() {
             try {
                 List<Entry> result;
-                if (maxReadRetryAttempts > 1)
-                    result = edgeStoreQuery(kq);
-                else //Premature optimization
-                    result = edgeStore.getSlice(kq, storeTx);
+                result = edgeStoreQuery(kq);
                 resultArray[resultPosition] = result;
             } catch (Exception e) {
                 failureCount.incrementAndGet();
@@ -267,22 +323,8 @@ public class BackendTransaction implements TransactionHandle {
         }
     }
 
-    public boolean edgeStoreContainsKey(final StaticBuffer key) {
-        return executeRead(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return edgeStore.containsKey(key, storeTx);
-            }
-
-            @Override
-            public String toString() {
-                return "EdgeStoreContainsKey";
-            }
-        });
-    }
-
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
-        if (!storeFeatures.supportsScan())
+        if (!storeFeatures.hasScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
 
         return executeRead(new Callable<KeyIterator>() {
@@ -301,7 +343,7 @@ public class BackendTransaction implements TransactionHandle {
     }
 
     public KeyIterator edgeStoreKeys(final KeyRangeQuery range) {
-        Preconditions.checkArgument(storeFeatures.supportsOrderedScan(), "The configured storage backend does not support ordered scans");
+        Preconditions.checkArgument(storeFeatures.hasOrderedScan(), "The configured storage backend does not support ordered scans");
 
         return executeRead(new Callable<KeyIterator>() {
             @Override
@@ -316,11 +358,11 @@ public class BackendTransaction implements TransactionHandle {
         });
     }
 
-    public List<Entry> vertexIndexQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
+    public EntryList indexQuery(final KeySliceQuery query) {
+        return executeRead(new Callable<EntryList>() {
             @Override
-            public List<Entry> call() throws Exception {
-                return vertexIndexStore.getSlice(query, storeTx);
+            public EntryList call() throws Exception {
+                return indexStore.getSlice(query, storeTx);
             }
 
             @Override
@@ -331,19 +373,6 @@ public class BackendTransaction implements TransactionHandle {
 
     }
 
-    public List<Entry> edgeIndexQuery(final KeySliceQuery query) {
-        return executeRead(new Callable<List<Entry>>() {
-            @Override
-            public List<Entry> call() throws Exception {
-                return edgeIndexStore.getSlice(query, storeTx);
-            }
-
-            @Override
-            public String toString() {
-                return "EdgeIndexQuery";
-            }
-        });
-    }
 
     public List<String> indexQuery(final String index, final IndexQuery query) {
         final IndexTransaction indexTx = getIndexTransactionHandle(index);
@@ -377,7 +406,7 @@ public class BackendTransaction implements TransactionHandle {
 
 
     private final <V> V executeRead(Callable<V> exe) throws TitanException {
-        return BackendOperation.execute(exe, maxReadRetryAttempts, retryStorageWaitTime);
+        return BackendOperation.execute(exe, maxReadTime);
     }
 
 

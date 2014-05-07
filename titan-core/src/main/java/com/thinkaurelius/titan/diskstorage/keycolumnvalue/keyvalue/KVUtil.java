@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,26 +39,49 @@ public class KVUtil {
         }
     };
 
-    public static List<KeyValueEntry> getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
+    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, StoreTransaction txh) throws StorageException {
         return convert(store.getSlice(keyStart, keyEnd, KeySelector.SelectAll, txh));
     }
 
-    public static List<KeyValueEntry> getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
+    public static EntryList getSlice(OrderedKeyValueStore store, StaticBuffer keyStart, StaticBuffer keyEnd, int limit, StoreTransaction txh) throws StorageException {
         return convert(store.getSlice(keyStart, keyEnd, new LimitedSelector(limit), txh));
     }
 
-    public static List<KeyValueEntry> convert(RecordIterator<KeyValueEntry> iter) throws StorageException {
-        List<KeyValueEntry> entries = new ArrayList<KeyValueEntry>();
-        while (iter.hasNext()) {
-            entries.add(iter.next());
-        }
+    public static EntryList convert(RecordIterator<KeyValueEntry> iter) throws StorageException {
         try {
-            iter.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            return StaticArrayEntryList.ofStaticBuffer(iter, KVEntryGetter.INSTANCE);
+        } finally {
+            try {
+                iter.close();
+            } catch (IOException e) {
+                throw new TemporaryStorageException(e);
+            }
         }
-        return entries;
     }
+
+    private static enum KVEntryGetter implements StaticArrayEntry.GetColVal<KeyValueEntry,StaticBuffer> {
+        INSTANCE;
+
+        @Override
+        public StaticBuffer getColumn(KeyValueEntry element) {
+            return element.getKey();
+        }
+
+        @Override
+        public StaticBuffer getValue(KeyValueEntry element) {
+            return element.getValue();
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(KeyValueEntry element) {
+            return StaticArrayEntry.EMPTY_SCHEMA;
+        }
+
+        @Override
+        public Object getMetaData(KeyValueEntry element, EntryMetaData meta) {
+            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+        }
+    };
 
     public static class RangeKeySelector implements KeySelector {
 

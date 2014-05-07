@@ -3,12 +3,14 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
@@ -76,21 +78,17 @@ public class CacheEdge extends AbstractEdge {
         copy.remove();
 
         StandardEdge u = (StandardEdge) tx().addEdge(getVertex(0), getVertex(1), getLabel());
+        if (type.getConsistencyModifier()!=ConsistencyModifier.FORK) u.setID(super.getID());
         u.setPreviousID(super.getID());
         copyProperties(u);
+        setID(u.getID());
         return u;
-    }
-
-    @Override
-    public long getID() {
-        InternalRelation it = it();
-        return (it == this) ? super.getID() : it.getID();
     }
 
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = tx().getGraph().getEdgeSerializer().readRelation(getVertex(position), data, tx());
+            map = RelationConstructor.readRelationCache(getVertex(position), data, tx());
         }
         return map;
     }
@@ -131,7 +129,6 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public void remove() {
-        verifyRemoval();
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
         }

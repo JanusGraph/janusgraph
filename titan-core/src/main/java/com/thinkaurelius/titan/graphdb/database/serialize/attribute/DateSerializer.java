@@ -3,24 +3,35 @@ package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 import com.thinkaurelius.titan.core.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.graphdb.database.serialize.OrderPreservingSerializer;
 
 import java.util.Date;
 
-public class DateSerializer implements AttributeSerializer<Date> {
+public class DateSerializer implements OrderPreservingSerializer<Date> {
 
-    private final LongSerializer ls = new LongSerializer();
+    private final LongSerializer ls = LongSerializer.INSTANCE;
 
     @Override
     public Date read(ScanBuffer buffer) {
-        long utc = -ls.read(buffer);
+        long utc = ls.read(buffer);
         Date d = new Date(utc);
         return d;
     }
 
     @Override
-    public void writeObjectData(WriteBuffer out, Date attribute) {
+    public void write(WriteBuffer out, Date attribute) {
         long utc = attribute.getTime();
-        ls.writeObjectData(out,-utc);
+        ls.write(out, utc);
+    }
+
+    @Override
+    public Date readByteOrder(ScanBuffer buffer) {
+        return read(buffer);
+    }
+
+    @Override
+    public void writeByteOrder(WriteBuffer buffer, Date attribute) {
+        write(buffer,attribute);
     }
 
     @Override

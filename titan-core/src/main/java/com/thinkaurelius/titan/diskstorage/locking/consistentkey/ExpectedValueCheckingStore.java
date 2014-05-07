@@ -1,16 +1,21 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * A {@link KeyColumnValueStore} wrapper intended for nontransactional stores
@@ -40,7 +45,9 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     /**
      * Configuration setting key for the local lock mediator prefix
      */
-    public static final String LOCAL_LOCK_MEDIATOR_PREFIX_KEY = "local-lock-mediator-prefix";
+    public static final ConfigOption<String> LOCAL_LOCK_MEDIATOR_PREFIX = new ConfigOption<String>(GraphDatabaseConfiguration.STORAGE_NS,
+            "local-lock-mediator-prefix","Local prefix to disambiguate multiple local titan instances",
+            ConfigOption.Type.LOCAL,String.class);
 
     private static final Logger log = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
@@ -61,24 +68,19 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         return dataStore;
     }
 
-    private StoreTransaction getBaseTx(StoreTransaction txh) {
+    static StoreTransaction getBaseTx(StoreTransaction txh) {
         Preconditions.checkNotNull(txh);
         Preconditions.checkArgument(txh instanceof ExpectedValueCheckingTransaction);
         return ((ExpectedValueCheckingTransaction) txh).getBaseTransaction();
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return dataStore.containsKey(key, getBaseTx(txh));
-    }
-
-    @Override
-    public List<Entry> getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getSlice(query, getBaseTx(txh));
     }
 
     @Override
-    public List<List<Entry>> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getSlice(keys, query, getBaseTx(txh));
     }
 
@@ -91,6 +93,11 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
      */
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        verifyLocksOnMutations(txh);
+        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
+    }
+
+    void verifyLocksOnMutations(StoreTransaction txh) throws StorageException {
         if (locker != null) {
             ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (!tx.isMutationStarted()) {
@@ -99,7 +106,6 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
                 tx.checkExpectedValues();
             }
         }
-        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
     }
 
     /**
@@ -142,7 +148,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         return dataStore.getLocalKeyPartition();
     }
 

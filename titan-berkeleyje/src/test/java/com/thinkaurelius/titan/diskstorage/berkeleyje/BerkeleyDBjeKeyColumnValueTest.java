@@ -12,7 +12,7 @@ import org.junit.Test;
 public class BerkeleyDBjeKeyColumnValueTest extends KeyColumnValueStoreTest {
 
     public KeyColumnValueStoreManager openStorageManager() throws StorageException {
-        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration());
+        BerkeleyJEStoreManager sm = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration());
         return new OrderedKeyValueStoreManagerAdapter(sm, ImmutableMap.of(storeName, 8));
     }
 

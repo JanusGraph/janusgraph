@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
 import com.tinkerpop.blueprints.Direction;
@@ -21,7 +22,7 @@ public class TitanGraphQueryTestSuite extends GraphQueryTestSuite {
     public void testGraphQueryForVertices() {
         TitanGraph g = (TitanGraph) graphTest.generateGraph();
         if (g.getType("age") == null) {
-            TitanKey age = g.makeKey("age").dataType(Integer.class).single().make();
+            TitanKey age = g.makeKey("age").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         }
         g.shutdown();
         super.testGraphQueryForVertices();
@@ -31,7 +32,7 @@ public class TitanGraphQueryTestSuite extends GraphQueryTestSuite {
     public void testGraphQueryForEdges() {
         TitanGraph g = (TitanGraph) graphTest.generateGraph();
         if (g.getType("weight") == null) {
-            TitanKey weight = g.makeKey("weight").dataType(Double.class).single().make();
+            TitanKey weight = g.makeKey("weight").dataType(Double.class).cardinality(Cardinality.SINGLE).make();
         }
         g.shutdown();
         super.testGraphQueryForEdges();

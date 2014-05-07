@@ -2,12 +2,12 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.DirectoryUtil;
-import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
 
 /**
  * Abstract Store Manager used as the basis for local StoreManager implementations.
@@ -22,7 +22,7 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
 
     public LocalStoreManager(Configuration storageConfig) throws StorageException {
         super(storageConfig);
-        String storageDir = storageConfig.getString(STORAGE_DIRECTORY_KEY);
+        String storageDir = storageConfig.get(STORAGE_DIRECTORY);
         if (null == storageDir) {
             directory = null;
         } else { 

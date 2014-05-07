@@ -10,6 +10,7 @@ import org.apache.cassandra.db.marshal.TimeUUIDType;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.FBUtilities;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TFramedTransport;
@@ -20,10 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -40,12 +38,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
     private final AtomicReference<Config> cfgRef;
 
-    public CTConnectionFactory(String hostname, int port, int timeoutMS, int frameSize) {
-        this(hostname, port, null, null, timeoutMS, frameSize);
-    }
-
-    public CTConnectionFactory(String hostname, int port, String username, String password, int timeoutMS, int frameSize) {
-        this.cfgRef = new AtomicReference<Config>(new Config(hostname, port, username, password, timeoutMS, frameSize));
+    public CTConnectionFactory(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+        this.cfgRef = new AtomicReference<Config>(new Config(hostnames, port, username, password, timeoutMS, frameSize));
     }
 
     @Override
@@ -80,10 +74,12 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     public CTConnection makeRawConnection() throws TTransportException {
         final Config cfg = cfgRef.get();
 
-        if (log.isDebugEnabled())
-            log.debug("Creating TSocket({}, {}, {}, {}, {})", cfg.hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
+        String hostname = cfg.getRandomHost();
 
-        TTransport transport = new TFramedTransport(new TSocket(cfg.hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
+        if (log.isDebugEnabled())
+            log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
+
+        TTransport transport = new TFramedTransport(new TSocket(hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
@@ -112,18 +108,17 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     public boolean validateObject(String key, CTConnection c) {
         Config curCfg = cfgRef.get();
         
-        boolean result = c.getConfig().equals(curCfg);
+        boolean isSameConfig = c.getConfig().equals(curCfg);
         if (log.isDebugEnabled()) {
-            if (result) {
+            if (isSameConfig) {
                 log.debug("Validated Thrift connection {}", c);
             } else {
-                log.debug(
-                        "Rejected Thrift connection {}; current config is {}; connection config is {}",
-                        new Object[] { c, curCfg, c.getConfig() });
+                log.debug("Rejected Thrift connection {}; current config is {}; connection config is {}",
+                          c, curCfg, c.getConfig());
             }
         }
-        
-        return result;
+
+        return isSameConfig && c.isOpen();
     }
     
     public Config getConfig() {
@@ -263,15 +258,23 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     }
     
     public static class Config {
-        private final String hostname;
+        // this is to keep backward compatibility with JDK 1.6, can be changed to ThreadLocalRandom once we fully switch
+        private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<Random>() {
+            @Override
+            public Random initialValue() {
+                return new Random();
+            }
+        };
+
+        private final String[] hostnames;
         private final int port;
         private final int timeoutMS;
         private final int frameSize;
         private final String username;
         private final String password;
 
-        public Config(String hostname, int port, String username, String password, int timeoutMS, int frameSize) {
-            this.hostname = hostname;
+        public Config(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+            this.hostnames = hostnames;
             this.port = port;
             this.username = username;
             this.password = password;
@@ -282,28 +285,23 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         // TODO: we don't really need getters/setters here as all of the fields are final and immutable
 
         public String getHostname() {
-            return hostname;
+            return hostnames[0];
         }
 
         public int getPort() {
             return port;
         }
 
-        public int getTimeoutMS() {
-            return timeoutMS;
+        public String getRandomHost() {
+            return hostnames.length == 1 ? hostnames[0] : hostnames[THREAD_LOCAL_RANDOM.get().nextInt(hostnames.length)];
         }
 
-        public int getFrameSize() {
-            return frameSize;
-        }
-        
         @Override
         public String toString() {
-            return "Config[hostname=" + hostname + ", port=" + port
+            return "Config[hostnames=" + StringUtils.join(hostnames, ',') + ", port=" + port
                     + ", timeoutMS=" + timeoutMS + ", frameSize=" + frameSize
                     + "]";
         }
     }
-
 }
 

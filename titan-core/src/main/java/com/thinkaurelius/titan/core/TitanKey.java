@@ -2,8 +2,6 @@
 package com.thinkaurelius.titan.core;
 
 
-import com.tinkerpop.blueprints.Element;
-
 /**
  * TitanKey is an extension of {@link TitanType} for properties.
  * <p/>
@@ -29,23 +27,10 @@ public interface TitanKey extends TitanType {
      */
     public Class<?> getDataType();
 
-
     /**
-     * Returns the indexes defined for this key and a given element type (vertex or edge).
-     *
-     * @param elementType vertex or edge
+     * The {@link Cardinality} of this property key.
      * @return
      */
-    public Iterable<String> getIndexes(Class<? extends Element> elementType);
-
-
-    /**
-     * Checks whether a particular index has been registered for this key on the given element type.
-     * @param name Name of the index
-     * @param elementType vertex or edge
-     * @return
-     */
-    public boolean hasIndex(String name, Class<? extends Element> elementType);
-
+    public Cardinality getCardinality();
 
 }

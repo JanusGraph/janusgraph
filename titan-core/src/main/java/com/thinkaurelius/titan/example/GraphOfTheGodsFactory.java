@@ -1,20 +1,13 @@
 package com.thinkaurelius.titan.example;
 
-import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 import java.io.File;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND_KEY;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY;
 
 
 /**
@@ -29,39 +22,41 @@ public class GraphOfTheGodsFactory {
 
 
     public static TitanGraph create(final String directory) {
-        BaseConfiguration config = new BaseConfiguration();
-        Configuration storage = config.subset(GraphDatabaseConfiguration.STORAGE_NAMESPACE);
-        // configuring local backend
-        storage.setProperty(GraphDatabaseConfiguration.STORAGE_BACKEND_KEY, "local");
-        storage.setProperty(GraphDatabaseConfiguration.STORAGE_DIRECTORY_KEY, directory);
-        // configuring elastic search index
-        Configuration index = storage.subset(GraphDatabaseConfiguration.INDEX_NAMESPACE).subset(INDEX_NAME);
-        index.setProperty(INDEX_BACKEND_KEY, "elasticsearch");
-        index.setProperty("local-mode", true);
-        index.setProperty("client-only", false);
-        index.setProperty(STORAGE_DIRECTORY_KEY, directory + File.separator + "es");
+        TitanFactory.Builder config = TitanFactory.build();
+        config.set("storage.backend","berkeleyje");
+        config.set("storage.directory",directory);
+        config.set("index."+INDEX_NAME+".backend","elasticsearch");
+        config.set("index."+INDEX_NAME+".local-mode",true);
+        config.set("index."+INDEX_NAME+".client-only",false);
+        config.set("index." + INDEX_NAME + ".directory", directory + File.separator + "es");
 
-        TitanGraph graph = TitanFactory.open(config);
+        TitanGraph graph = config.open();
         GraphOfTheGodsFactory.load(graph);
         return graph;
     }
 
     public static void load(final TitanGraph graph) {
+        TitanManagement mgmt = graph.getManagementSystem();
+        TitanGraphIndex vindex = mgmt.createExternalIndex("vertices",Vertex.class,INDEX_NAME);
+        TitanGraphIndex eindex = mgmt.createExternalIndex("edges",Edge.class,INDEX_NAME);
+        final TitanKey name = mgmt.makeKey("name").dataType(String.class).make();
+        mgmt.createInternalIndex("name",Vertex.class,true,name);
+        final TitanKey age = mgmt.makeKey("age").dataType(Integer.class).make();
+        mgmt.addIndexKey(vindex,age);
+        mgmt.makeKey("type").dataType(String.class).make();
 
-        graph.makeKey("name").dataType(String.class).indexed(Vertex.class).unique().make();
-        graph.makeKey("age").dataType(Integer.class).indexed(INDEX_NAME, Vertex.class).make();
-        graph.makeKey("type").dataType(String.class).make();
+        final TitanKey time = mgmt.makeKey("time").dataType(Integer.class).make();
+        final TitanKey reason = mgmt.makeKey("reason").dataType(String.class).make();
+        mgmt.addIndexKey(eindex,reason);
+        final TitanKey place = mgmt.makeKey("place").dataType(Geoshape.class).make();
+        mgmt.addIndexKey(eindex,place);
 
-        final TitanKey time = graph.makeKey("time").dataType(Integer.class).make();
-        final TitanKey reason = graph.makeKey("reason").dataType(String.class).indexed(INDEX_NAME, Edge.class).make();
-        graph.makeKey("place").dataType(Geoshape.class).indexed(INDEX_NAME, Edge.class).make();
-
-        graph.makeLabel("father").manyToOne().make();
-        graph.makeLabel("mother").manyToOne().make();
-        graph.makeLabel("battled").sortKey(time).make();
-        graph.makeLabel("lives").signature(reason).make();
-        graph.makeLabel("pet").make();
-        graph.makeLabel("brother").make();
+        mgmt.makeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        mgmt.makeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
+        mgmt.makeLabel("battled").sortKey(time).make();
+        mgmt.makeLabel("lives").signature(reason).make();
+        mgmt.makeLabel("pet").make();
+        mgmt.makeLabel("brother").make();
 
         graph.commit();
 

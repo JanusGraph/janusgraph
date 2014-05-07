@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.3-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-core</artifactId>
@@ -40,6 +40,11 @@
         </dependency>
         <!-- Utility -->
         <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+            <version>1.0</version>
+        </dependency>
+        <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-core</artifactId>
         </dependency>
@@ -50,6 +55,10 @@
         <dependency>
             <groupId>com.codahale.metrics</groupId>
             <artifactId>metrics-graphite</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
         </dependency>
         <dependency>
             <groupId>com.spatial4j</groupId>
@@ -78,7 +87,6 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>14.0.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -98,8 +106,8 @@
         <dependency>
             <groupId>com.esotericsoftware.kryo</groupId>
             <artifactId>kryo</artifactId>
-            <version>2.21</version>
-            <classifier>shaded</classifier>
+            <version>2.22</version>
+            <!--<classifier>shaded</classifier>-->
             
             <!--
             http://code.google.com/p/kryo/wiki/MavenShadedJAR
@@ -145,5 +153,25 @@
                 </directory>
             </testResource>
         </testResources>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generateStubs</goal>
+                            <goal>compile</goal>
+                            <goal>generateTestStubs</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <providerSelection>1.8</providerSelection>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

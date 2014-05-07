@@ -10,7 +10,7 @@ public class BerkeleyJEKeyValueTest extends KeyValueStoreTest {
 
     @Override
     public OrderedKeyValueStoreManager openStorageManager() throws StorageException {
-        return new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEStorageConfiguration());
+        return new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration());
     }
 
 

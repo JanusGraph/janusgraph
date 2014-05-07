@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.attribute.FullDouble;
-import com.thinkaurelius.titan.core.attribute.FullFloat;
+import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class AttributeUtil {
 
     public static final boolean isDecimal(Class<?> clazz) {
         return clazz.equals(Double.class) || clazz.equals(Float.class) ||
-                clazz.equals(FullDouble.class) || clazz.equals(FullFloat.class);
+                clazz.equals(Decimal.class) || clazz.equals(Precision.class);
     }
 
     public static final boolean isString(Object o) {
@@ -77,4 +78,7 @@ public class AttributeUtil {
         }
     }
 
+    public static boolean hasGenericDataType(TitanKey key) {
+        return key.getDataType().equals(Object.class);
+    }
 }

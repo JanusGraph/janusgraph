@@ -37,10 +37,6 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
 
-    public TitanGraphPerformanceMemoryTest(Configuration config) {
-        super(config);
-    }
-
     @Test
     public void testMemoryLeakage() {
         long memoryBaseline = 0;
@@ -159,13 +155,12 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
 
     @Test
     public void testTransactionalMemory() throws Exception {
-        graph.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
-                .unique(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        graph.makeKey("name").dataType(String.class).single(TypeMaker.UniquenessConsistency.NO_LOCK)
-                .make();
-        TitanKey time = graph.makeKey("time").dataType(Integer.class).single(TypeMaker.UniquenessConsistency.NO_LOCK).make();
-        graph.makeLabel("friend").signature(time).directed().make();
-        graph.commit();
+        makeVertexIndexedUniqueKey("uid",Long.class);
+        makeKey("name",String.class);
+
+        TitanKey time = makeKey("time",Integer.class);
+        mgmt.makeLabel("friend").signature(time).directed().make();
+        finishSchema();
 
         final Random random = new Random();
         final int rounds = 100;
@@ -239,7 +234,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
 
     @Test
     public void elementCreationPerformance() {
-        TitanLabel connect = makeSimpleEdgeLabel("connect");
+        TitanLabel connect = tx.makeLabel("connect").make();
         int noNodes = 20000;
         TitanVertex[] nodes = new TitanVertex[noNodes];
         PerformanceTest p = new PerformanceTest(true);
@@ -250,6 +245,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
         System.out.println("Time per node in (ns): " + (p.getNanoTime() / noNodes));
 
         p = new PerformanceTest(true);
+
         for (int i = 0; i < noNodes; i++) {
             new StandardEdge(i + 1, connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
         }
@@ -268,11 +264,12 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
 
     @Test
     public void testInTxIndex() throws Exception {
+        makeVertexIndexedKey("uid",Long.class);
+        finishSchema();
+
         int trials = 2;
         int numV = 2000;
         int offset = 10000;
-        tx.makeKey("uid").dataType(Long.class).indexed(Vertex.class).single().make();
-        newTx();
 
         long start = System.currentTimeMillis();
         for (int t = 0; t < trials; t++) {

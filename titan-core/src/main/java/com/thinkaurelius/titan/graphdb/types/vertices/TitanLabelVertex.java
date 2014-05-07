@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.thinkaurelius.titan.core.TitanLabel;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.TypeAttributeType;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.tinkerpop.blueprints.Direction;
 
 public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
 
@@ -10,12 +11,20 @@ public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
         super(tx, id, lifecycle);
     }
 
+    @Override
     public boolean isDirected() {
-        return !isUnidirected();
+        return isUnidirected(Direction.BOTH);
     }
 
+    @Override
     public boolean isUnidirected() {
-        return getDefinition().getValue(TypeAttributeType.UNIDIRECTIONAL,boolean.class);
+        return isUnidirected(Direction.OUT);
+
+    }
+
+    @Override
+    public boolean isUnidirected(Direction dir) {
+        return getDefinition().getValue(TypeDefinitionCategory.UNIDIRECTIONAL,Direction.class)==dir;
     }
 
     @Override

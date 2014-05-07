@@ -49,7 +49,7 @@ public class Parameter<V> {
 
     @Override
     public String toString() {
-        return "("+key+":"+value+")";
+        return key+"->"+String.valueOf(value);
     }
 
 }

@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.primitives.Longs;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 
 /**
  * AbstractElement is the base class for all elements in Titan.
@@ -13,7 +12,7 @@ import com.thinkaurelius.titan.core.TitanVertex;
  */
 public abstract class AbstractElement implements InternalElement {
 
-    protected long id;
+    private long id;
 
     public AbstractElement(long id) {
         assert id != 0;
@@ -38,11 +37,17 @@ public abstract class AbstractElement implements InternalElement {
         if (this == other)
             return true;
 
-        if (this instanceof TitanVertex && other instanceof TitanVertex)
-            return id == ((TitanVertex) other).getID();
+        try {
+            if (id != ((TitanElement)other).getID()) return false;
+        } catch (ClassCastException e) {
+            return false;
+        }
 
-        if (this instanceof TitanEdge && other instanceof TitanEdge)
-            return id == ((TitanEdge) other).getID();
+        if (this instanceof TitanVertex && other instanceof TitanVertex)
+            return true;
+
+        if (this instanceof TitanRelation && other instanceof TitanRelation)
+            return true;
 
         return false;
     }
@@ -74,11 +79,14 @@ public abstract class AbstractElement implements InternalElement {
 
     @Override
     public void setID(long id) {
-        assert isTemporaryId(this.id);
         assert id > 0;
         this.id=id;
     }
 
+    @Override
+    public boolean isHidden() {
+        return IDManager.VertexIDType.Hidden.is(id);
+    }
 
     @Override
     public boolean isNew() {

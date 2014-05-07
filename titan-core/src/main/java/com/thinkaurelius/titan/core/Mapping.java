@@ -28,20 +28,17 @@ public enum Mapping {
     TEXT,
     STRING;
 
-    public static final String MAPPING_PREFIX = "mapping";
 
     public static Mapping getMapping(KeyInformation information) {
-        Mapping mapping = null;
-        for (Parameter p : information.getParameters()) {
-            if (p.getKey().equalsIgnoreCase(MAPPING_PREFIX)) {
-                Object value = p.getValue();
-                Preconditions.checkArgument(value!=null && value instanceof Mapping,"Invalid mapping for specified: %s",value);
-                Preconditions.checkArgument(mapping==null,"Multiple mappings specified");
-                mapping = (Mapping)value;
+        Object value = ParameterType.MAPPING.findParameter(information.getParameters(),null);
+        if (value==null) return DEFAULT;
+        else {
+            Preconditions.checkArgument((value instanceof Mapping || value instanceof String),"Invalid mapping specified: %s",value);
+            if (value instanceof String) {
+                value = Mapping.valueOf(value.toString().toUpperCase());
             }
+            return (Mapping)value;
         }
-        if (mapping==null) mapping=DEFAULT;
-        return mapping;
     }
 
     public static Mapping getMapping(String store, String key, KeyInformation.IndexRetriever informations) {

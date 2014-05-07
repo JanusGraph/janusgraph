@@ -4,10 +4,7 @@ import cern.colt.map.AbstractIntIntMap;
 import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.Weigher;
 import com.google.common.collect.HashMultimap;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.Entry;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -118,13 +115,12 @@ public final class ObjectSizer {
         @Override
         public Object newInstance() {
             int size = 10000;
-            Cache<Nothing,Nothing> cache = CacheBuilder.newBuilder()
-                    .maximumSize(size).softValues()
-                    .concurrencyLevel(3)
-                    .initialCapacity(size).build();
-            for (int i=0;i<size;i++) {
-                cache.put(new Nothing(),new Nothing());
-            }
+            Cache<String,Long> cache = CacheBuilder.newBuilder()
+                    .concurrencyLevel(2).initialCapacity(16*3)
+                    .maximumSize(10000).build();
+//            for (int i=0;i<size;i++) {
+//                cache.put(new Nothing(),new Nothing());
+//            }
             return cache;
         }
     };
@@ -223,4 +219,4 @@ public final class ObjectSizer {
             ex.printStackTrace();
         }
     }
-} 
+}

@@ -2,11 +2,13 @@ package com.thinkaurelius.titan.core.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utility class containing methods that simplify Titan clean-up processes.
@@ -37,7 +39,7 @@ public class TitanCleanup {
             }
             @Override
             public String toString() { return "ClearBackend"; }
-        },config.getWriteAttempts(),config.getStorageWaittime());
+        },new StandardDuration(20, TimeUnit.SECONDS));
     }
 
 

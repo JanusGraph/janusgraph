@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.thinkaurelius.titan.diskstorage.Mutation;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 
 import java.util.List;

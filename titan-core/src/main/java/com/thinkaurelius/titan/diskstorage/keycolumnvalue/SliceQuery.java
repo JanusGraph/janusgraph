@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.hash.HashCode;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -29,34 +31,16 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
 
-    private final boolean isStatic;
-
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd, boolean isStatic) {
+    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
         assert sliceStart != null && sliceEnd != null;
 
         this.sliceStart = sliceStart;
         this.sliceEnd = sliceEnd;
-        this.isStatic = isStatic;
-    }
-
-    public SliceQuery(final StaticBuffer sliceStart, final StaticBuffer sliceEnd) {
-        this(sliceStart, sliceEnd, DEFAULT_STATIC);
     }
 
     public SliceQuery(final SliceQuery query) {
-        this(query.getSliceStart(), query.getSliceEnd(), query.isStatic());
+        this(query.getSliceStart(), query.getSliceEnd());
         setLimit(query.getLimit());
-    }
-
-
-    /**
-     * Whether the result set, if non-empty, is static, i.e. does not
-     * change anymore. This allows the query result (if non-empty) to be cached.
-     *
-     * @return whether query is static
-     */
-    public boolean isStatic() {
-        return isStatic;
     }
 
     /**
@@ -79,7 +63,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(isStatic).append(getLimit()).toHashCode();
+        return new HashCodeBuilder().append(sliceStart).append(sliceEnd).append(getLimit()).toHashCode();
     }
 
     @Override
@@ -93,8 +77,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
         SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart)
                 && sliceEnd.equals(oth.sliceEnd)
-                && getLimit() == oth.getLimit()
-                && isStatic == oth.isStatic;
+                && getLimit() == oth.getLimit();
     }
 
     public boolean subsumes(SliceQuery oth) {
@@ -107,21 +90,23 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
             return sliceStart.compareTo(oth.sliceStart) == 0 && sliceEnd.compareTo(oth.sliceEnd) >= 0;
     }
 
-    public List<Entry> getSubset(SliceQuery otherQuery, List<Entry> otherResult) {
+    //TODO: make this more efficient by using reuseIterator() on otherResult
+    public EntryList getSubset(final SliceQuery otherQuery, final EntryList otherResult) {
         assert otherQuery.subsumes(this);
-        List<Entry> result = new ArrayList<Entry>();
-        int pos = Collections.binarySearch(otherResult, StaticBufferEntry.of(sliceStart));
+        int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
+
+        List<Entry> result = new ArrayList<Entry>();
         for (; pos < otherResult.size() && result.size() < getLimit(); pos++) {
             Entry e = otherResult.get(pos);
-            if (e.getColumn().compareTo(sliceEnd) < 0) result.add(e);
+            if (e.getColumnAs(StaticBuffer.STATIC_FACTORY).compareTo(sliceEnd) < 0) result.add(e);
             else break;
         }
-        return result;
+        return StaticArrayEntryList.of(result);
     }
 
     public static StaticBuffer pointRange(StaticBuffer point) {
-        return ByteBufferUtil.nextBiggerBuffer(point);
+        return BufferUtil.nextBiggerBuffer(point);
     }
 
     @Override
@@ -133,7 +118,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public SliceQuery updateLimit(int newLimit) {
-        return new SliceQuery(sliceStart, sliceEnd, isStatic).setLimit(newLimit);
+        return new SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
     }
 
 }

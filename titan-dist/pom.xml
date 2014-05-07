@@ -1,76 +1,106 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.thinkaurelius.titan</groupId>
         <artifactId>titan</artifactId>
-        <version>0.4.3-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <packaging>pom</packaging>
     <artifactId>titan-dist</artifactId>
-    <name>Titan-Dist: Supermodule for Tar and Zip Archives</name>
+    <name>Titan-Dist: Tar and Zip Archives</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
-    <!--
-      I resorted to a submodule build after several misadventures.
-      First, there's this:
-
-      https://jira.codehaus.org/browse/MASSEMBLY-614
-
-      I tried a single module build with multiple descriptors using
-      <includes> filtering, but that led to odd dependency inclusion
-      logic.  I might have made a mistake elsewhere, but it seemed
-      like the assembly plugin was halting dependency traversal at
-      titan artifacts.  My cassandra assembly would end up with all of
-      titan-cassandra's dependencies except titan-core, titan-es, etc
-      and their dependencies.
-
-      I now tiptoe around that case with a combination of include and
-      exclude filtering in each of the submodule descriptors.  There's
-      a lot of duplicated descriptor and pom.xml text, and this could
-      probably be folded back into a single submodule, but I'm loath
-      to touch it again at the moment and potentially spend time
-      trying to debug it again.
-    -->
-    <modules>
-        <module>titan-dist-all</module>
-        <module>titan-dist-berkeleyje</module>
-        <module>titan-dist-cassandra</module>
-        <module>titan-dist-hbase</module>
-        <module>titan-dist-persistit</module>
-        <module>titan-dist-server</module>
-    </modules>
-
     <properties>
-      <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
-      <top.level.basedir>${basedir}/..</top.level.basedir>
+        <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
+        <top.level.basedir>${basedir}/..</top.level.basedir>
+        <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
+        <test.zipfile.path>${project.build.directory}/titan-${project.version}.zip</test.zipfile.path>
+        <run.dir>${project.basedir}/..</run.dir>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>titan-core</artifactId>
+            <artifactId>titan-berkeleyje</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-es</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-hbase</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>0.96.1.1-hadoop2</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-lucene</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-rexster</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-cassandra</artifactId>
+            <classifier>tests</classifier>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.rexster</groupId>
+            <artifactId>rexster-console</artifactId>
+            <version>${tinkerpop.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.tinkerpop.rexster</groupId>
+            <artifactId>rexster-server</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-	    <scope>test</scope>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.velocity</groupId>
             <artifactId>velocity</artifactId>
             <version>1.7</version>
-	    <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-	    <scope>test</scope>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
+
+        <!-- Used during release:perform to upload to S3 -->
+        <extensions>
+            <extension>
+                <groupId>org.kuali.maven.wagons</groupId>
+                <artifactId>maven-s3-wagon</artifactId>
+                <version>${kuali.s3.wagon.version}</version>
+            </extension>
+        </extensions>
+
         <resources>
             <resource>
                 <directory>src/util-scripts</directory>
@@ -80,9 +110,9 @@
 
         <plugins>
             <!--
-              Filter the shell scripts in src/util-scripts during the
-              process-resources phase.  Disable default resource goal
-              bindings because we have no main or test resources.
+                Filter the shell scripts in src/util-scripts during the
+                process-resources phase. Disable default resource goal
+                bindings because we have no main or test resources.
             -->
             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -114,12 +144,12 @@
             </plugin>
 
             <!--
-              We use maven-resources-plugin to filter util-scripts,
-              but that plugin has an open bug about the fact that it
-              doesn't copy file permissions during filtering.  Make
-              the script executable with chmod.  Not portable.
-         
-              Bug: http://jira.codehaus.org/browse/MRESOURCES-132
+                We use maven-resources-plugin to filter util-scripts,
+                but that plugin has an open bug about the fact that it
+                doesn't copy file permissions during filtering. Make
+                the script executable with chmod. Not portable.
+
+                Bug: http://jira.codehaus.org/browse/MRESOURCES-132
             -->
             <plugin>
                 <inherited>false</inherited>
@@ -142,7 +172,8 @@
                             <workingDirectory>${project.parent.basedir}/doc</workingDirectory>
                         </configuration>
                     </execution>
-                    
+
+                    <!-- Dump gremlin.sh's default import list to a file -->
                     <execution>
                         <id>generate-titan-gremlin-imports</id>
                         <phase>prepare-package</phase>
@@ -159,31 +190,100 @@
                 </executions>
             </plugin>
 
+            <!-- Load gremlin.sh's default import list from a file: we're going to 
+                write this into rexster's configuration later with a template -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>load-titan-gremlin-imports</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.build.directory}/imports.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>compile-tests</id>
-			<phase>test-compile</phase>
-			<goals>
-  			    <goal>testCompile</goal>
-			</goals>
-		    </execution>
-		</executions>
-	    </plugin>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
+                <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>pack-test-jar</id>
-			<phase>package</phase>
-			<goals>
-  			    <goal>test-jar</goal>
-			</goals>
-		    </execution>
-		</executions>
-	    </plugin>
+                        <id>assemble-standalone-dir</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>false</attach>
+                            <outputDirectory>${run.dir}</outputDirectory>
+                            <finalName>/</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>src/assembly/descriptor/filesystem.xml</descriptor>
+                            </descriptors>
+                            <formats combine.self="override">
+                                <format>dir</format>
+                            </formats>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>clean-standalone-tools</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${run.dir}/bin/</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${run.dir}/conf/</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${run.dir}/db/</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${run.dir}/ext/</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${run.dir}/lib/</directory>
+                                </fileset>
+                                <fileset>
+                                    <directory>${run.dir}/log/</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
@@ -218,13 +318,13 @@
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
-                                <configuration> 
+                                <configuration>
                                     <attach>false</attach>
                                     <outputDirectory>${pkgtools.dir}/</outputDirectory>
                                     <finalName>/</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                     <descriptors>
-                                        <descriptor>assembly-pkg.xml</descriptor>
+                                        <descriptor>src/assembly/descriptor/pkgtools.xml</descriptor>
                                     </descriptors>
                                 </configuration>
                             </execution>
@@ -244,7 +344,7 @@
                                 <goals>
                                     <goal>clean</goal>
                                 </goals>
-                                <configuration> 
+                                <configuration>
                                     <excludeDefaultDirectories>true</excludeDefaultDirectories>
                                     <filesets>
                                         <fileset>
@@ -257,7 +357,199 @@
                                             <directory>${pkgtools.dir}/redhat/</directory>
                                         </fileset>
                                     </filesets>
-                                </configuration> 
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>aurelius-release</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.thinkaurelius.titan</groupId>
+                    <artifactId>titan-site</artifactId>
+                    <classifier>htdocs</classifier>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>assemble-distribution-archive</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!--
+                                We set attached=true so that the gpg plugin will
+                                sign all of our assembly artifacts. We handle
+                                deployment of the artifacts manually because
+                                maven-deploy-plugin can't upload files to a flat
+                                S3 directory; it insists on creating a
+                                long/packagename/and/artifactid/and/version/
+                                path at the destination before uploading, and we
+                                don't want that for our files S3. codehaus's
+                                wagon:upload plugin comes to our rescue.
+                            -->
+                            <attach>true</attach>
+                            <!--
+                                archive filenames are of the form
+                                ${finalName}-${<id /> from assembly descriptor}.${archive 
+                                format extension}
+                            -->
+                            <finalName>titan-${project.version}</finalName>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <tarLongFileMode>gnu</tarLongFileMode>
+                            <descriptors>
+                                <!-- This property is intended to be set in submodules -->
+                                <descriptor>src/assembly/descriptor/archive.xml</descriptor>
+                            </descriptors>
+                            <formats>
+                                <format>zip</format>
+                            </formats>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>deploy-distribution-archives-to-s3</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <configuration>
+                                    <fromDir>${project.build.directory}</fromDir>
+                                    <includes>*.tar.bz2.asc,*.zip.asc,*.zip,*.tar.bz2</includes>
+                                    <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                    <url>s3://s3.thinkaurelius.com/downloads/titan/</url>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>pack-test-jar</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>test-jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>compile-package-tests</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>testCompile</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-cassandra-rp-config</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/cassandra/conf/localhost-rp</outputDirectory>
+                                    <filters>
+                                        <filter>${project.basedir}/../titan-cassandra/config/cassandra-filters/localhost-rp.properties</filter>
+                                    </filters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/../titan-cassandra/config/cassandra</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>filter-expect-scripts</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/test/expect</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>filter-test-resources</id>
+                                <phase>process-test-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/test/resources</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <configuration>
+                            <forkCount>1</forkCount>
+                            <reuseForks>false</reuseForks>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>integration-test</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>verify</id>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
                             </execution>
                         </executions>
                     </plugin>

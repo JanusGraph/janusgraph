@@ -1,20 +1,22 @@
 package com.thinkaurelius.titan.graphdb.thrift;
 
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.junit.BeforeClass;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.cassandra.CassandraProcessStarter;
 import com.thinkaurelius.titan.graphdb.TitanGraphPerformanceMemoryTest;
 
 public class InternalCassandraGraphPerformanceMemoryTest extends TitanGraphPerformanceMemoryTest {
 
-    public InternalCassandraGraphPerformanceMemoryTest() {
-        super(CassandraStorageSetup.getCassandraThriftGraphConfiguration(InternalCassandraGraphPerformanceMemoryTest.class.getSimpleName()));
+    @Override
+    public WriteConfiguration getConfiguration() {
+        return CassandraStorageSetup.getCassandraThriftGraphConfiguration(getClass().getSimpleName());
     }
-    
+
+
     @BeforeClass
     public static void beforeClass() {
-        CassandraProcessStarter.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
+        CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 }

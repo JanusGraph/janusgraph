@@ -1,9 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
+import java.util.List;
+
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
+
+import java.util.List;
 
 /**
  * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
@@ -61,7 +66,7 @@ public interface KeyValueStore {
      * @return
      * @throws StorageException
      */
-    public StaticBuffer[] getLocalKeyPartition() throws StorageException;
+    public List<KeyRange> getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store

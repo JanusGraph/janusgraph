@@ -1,19 +1,20 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanConfigurationException;
+import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.configuration.Configuration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.management.ManagementFactory;
-import java.net.Inet4Address;
-import java.net.UnknownHostException;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -28,19 +29,19 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     public enum Deployment {
 
         /**
-         * Connects to storage backend over the network
+         * Connects to storage backend over the network or some other connection with significant latency
          */
         REMOTE,
 
         /**
-         * Connects to storage backend over localhost
+         * Connects to storage backend over localhost or some other connection with very low latency
          */
         LOCAL,
 
         /**
-         * Embedded with storage backend
+         * Embedded with storage backend and communicates inside the JVM
          */
-        EMBEDDED;
+        EMBEDDED
 
     }
 
@@ -48,34 +49,35 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
     private static final Logger log = LoggerFactory.getLogger(DistributedStoreManager.class);
     private static final Random random = new Random();
 
-    protected final byte[] rid;
-
     protected final String[] hostnames;
     protected final int port;
-    protected final int connectionTimeout;
+    protected final Duration connectionTimeoutMS;
     protected final int connectionPoolSize;
     protected final int pageSize;
 
     protected final String username;
     protected final String password;
 
+    protected final TimestampProvider times; // TODO remove
+
     public DistributedStoreManager(Configuration storageConfig, int portDefault) {
         super(storageConfig);
-        if (storageConfig.containsKey(HOSTNAME_KEY)) {
-            this.hostnames = storageConfig.getStringArray(HOSTNAME_KEY);
-        } else {
-            this.hostnames = new String[]{HOSTNAME_DEFAULT};
-        }
+        this.hostnames = storageConfig.get(STORAGE_HOSTS);
         Preconditions.checkArgument(hostnames.length > 0, "No hostname configured");
-        this.port = storageConfig.getInt(GraphDatabaseConfiguration.PORT_KEY, portDefault);
-        this.rid = getRid(storageConfig);
-        this.connectionTimeout = storageConfig.getInt(CONNECTION_TIMEOUT_KEY, CONNECTION_TIMEOUT_DEFAULT);
-        this.connectionPoolSize = storageConfig.getInt(CONNECTION_POOL_SIZE_KEY, CONNECTION_POOL_SIZE_DEFAULT);
-        this.pageSize = storageConfig.getInt(PAGE_SIZE_KEY, PAGE_SIZE_DEFAULT);
+        if (storageConfig.has(STORAGE_PORT)) this.port = storageConfig.get(STORAGE_PORT);
+        else this.port = portDefault;
+        this.connectionTimeoutMS = storageConfig.get(CONNECTION_TIMEOUT);
+        this.connectionPoolSize = storageConfig.get(CONNECTION_POOL_SIZE);
+        this.pageSize = storageConfig.get(PAGE_SIZE);
+        this.times = storageConfig.get(TIMESTAMP_PROVIDER);
 
-
-        this.username = storageConfig.getString(GraphDatabaseConfiguration.AUTH_USERNAME_KEY,null);
-        this.password = storageConfig.getString(GraphDatabaseConfiguration.AUTH_PASSWORD_KEY,null);
+        if (storageConfig.has(AUTH_USERNAME)) {
+            this.username = storageConfig.get(AUTH_USERNAME);
+            this.password = storageConfig.get(AUTH_PASSWORD);
+        } else {
+            this.username=null;
+            this.password=null;
+        }
     }
 
     /**
@@ -87,13 +89,37 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         return hostnames[random.nextInt(hostnames.length)];
     }
 
+    /**
+     * Whether authentication is enabled for this storage backend
+     *
+     * @return
+     */
     public boolean hasAuthentication() {
         return username!=null;
     }
 
+    /**
+     * Returns the default configured page size for this storage backend. The page size is used to determine
+     * the number of records to request at a time when streaming result data.
+     * @return
+     */
     public int getPageSize() {
         return pageSize;
     }
+
+    /*
+     * TODO this should go away once we have a TitanConfig that encapsulates TimestampProvider
+     */
+    public TimestampProvider getTimestampProvider() {
+        return times;
+    }
+
+    /**
+     * Returns the {@link Deployment} mode of this connection to the storage backend
+     *
+     * @return
+     */
+    public abstract Deployment getDeployment();
 
     @Override
     public String toString() {
@@ -131,76 +157,107 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * @param config commons config from which to read Rid-related keys
      * @return A byte array which should uniquely identify this machine
      */
-    public static byte[] getRid(Configuration config) {
+//    public static byte[] getRid(Configuration config) {
+//        Preconditions.checkArgument(config.has(UNIQUE_INSTANCE_ID));
+//        return config.get(UNIQUE_INSTANCE_ID).getBytes();
+//
+//        byte tentativeRid[] = null;
+//
+//        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_RAW)) {
+//            String ridText =
+//                    config.get(GraphDatabaseConfiguration.INSTANCE_RID_RAW);
+//            try {
+//                tentativeRid = Hex.decodeHex(ridText.toCharArray());
+//            } catch (DecoderException e) {
+//                throw new TitanConfigurationException("Could not decode hex value", e);
+//            }
+//
+//            log.debug("Set rid from hex string: 0x{}", ridText);
+//        } else {
+//            final byte[] endBytes;
+//
+//            if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
+//
+//                short s = config.get(
+//                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT);
+//
+//                endBytes = new byte[2];
+//
+//                endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
+//                endBytes[1] = (byte) (s & 0x000000FF);
+//            } else {
+//                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
+//                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
+//                            .append("@")
+//                            .append(ManagementFactory.getRuntimeMXBean().getName())
+//                            .toString()
+//                            .getBytes();
+//            }
+//
+//            byte[] addrBytes;
+//            try {
+//                addrBytes = Inet4Address.getLocalHost().getAddress();
+//            } catch (UnknownHostException e) {
+//                throw new TitanConfigurationException("Unknown host specified", e);
+//            }
+//
+//            tentativeRid = new byte[addrBytes.length + endBytes.length];
+//            System.arraycopy(addrBytes, 0, tentativeRid, 0, addrBytes.length);
+//            System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
+//
+//            if (log.isDebugEnabled()) {
+//                log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));
+//            }
+//        }
+//
+//        return tentativeRid;
+//    }
 
-        byte tentativeRid[] = null;
-
-        if (config.containsKey(GraphDatabaseConfiguration.INSTANCE_RID_RAW_KEY)) {
-            String ridText =
-                    config.getString(GraphDatabaseConfiguration.INSTANCE_RID_RAW_KEY);
-            try {
-                tentativeRid = Hex.decodeHex(ridText.toCharArray());
-            } catch (DecoderException e) {
-                throw new TitanConfigurationException("Could not decode hex value", e);
-            }
-
-            log.debug("Set rid from hex string: 0x{}", ridText);
-        } else {
-            final byte[] endBytes;
-
-            if (config.containsKey(GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY)) {
-
-                short s = config.getShort(
-                        GraphDatabaseConfiguration.INSTANCE_RID_SHORT_KEY);
-
-                endBytes = new byte[2];
-
-                endBytes[0] = (byte) ((s & 0x0000FF00) >> 8);
-                endBytes[1] = (byte) (s & 0x000000FF);
-            } else {
-                //endBytes = ManagementFactory.getRuntimeMXBean().getName().getBytes();
-                endBytes = new StringBuilder(String.valueOf(Thread.currentThread().getId()))
-                            .append("@")
-                            .append(ManagementFactory.getRuntimeMXBean().getName())
-                            .toString()
-                            .getBytes();
-            }
-
-            byte[] addrBytes;
-            try {
-                addrBytes = Inet4Address.getLocalHost().getAddress();
-            } catch (UnknownHostException e) {
-                throw new TitanConfigurationException("Unknown host specified", e);
-            }
-
-            tentativeRid = new byte[addrBytes.length + endBytes.length];
-            System.arraycopy(addrBytes, 0, tentativeRid, 0, addrBytes.length);
-            System.arraycopy(endBytes, 0, tentativeRid, addrBytes.length, endBytes.length);
-
-            if (log.isDebugEnabled()) {
-                log.debug("Set rid: 0x{}", new String(Hex.encodeHex(tentativeRid)));
-            }
-        }
-
-        return tentativeRid;
-    }
-
+    /**
+     * Returns the {@link Timestamp} for a particular transaction
+     * @param txh
+     * @return
+     */
     protected Timestamp getTimestamp(StoreTransaction txh) {
-        long time = txh.getConfiguration().getTimestamp();
-        time = time & 0xFFFFFFFFFFFFFFFEL; //remove last bit
-        return new Timestamp(time | 1L, time);
+        return new Timestamp(txh.getConfiguration().getCommitTime());
     }
 
-    public static class Timestamp {
-        public final long additionTime;
-        public final long deletionTime;
-
-        public Timestamp(long additionTime, long deletionTime) {
-            Preconditions.checkArgument(0 < deletionTime, "Negative time: %s", deletionTime);
-            Preconditions.checkArgument(deletionTime < additionTime, "%s vs %s", deletionTime, additionTime);
-            this.additionTime = additionTime;
-            this.deletionTime = deletionTime;
+    protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
+        assert mustPass.getDeletionTime(times.getUnit()) < mustPass.getAdditionTime(times.getUnit());
+        try {
+            times.sleepPast(mustPass.getAdditionTime());
+        } catch (InterruptedException e) {
+            throw new PermanentStorageException("Unexpected interrupt", e);
         }
     }
 
+    /**
+     * Helper class to create the deletion and addition timestamps for a particular transaction.
+     * It needs to be ensured that the deletion time is prior to the addition time since
+     * some storage backends use the time to resolve conflicts.
+     */
+    public static class Timestamp {
+
+        private final Timepoint t;
+
+        private Timestamp(Timepoint t) {
+            this.t = t;
+        }
+
+        public long getDeletionTime(TimeUnit unit) {
+            return t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+        }
+
+        public Timepoint getDeletionTime() {
+            return new StandardTimepoint(getDeletionTime(t.getNativeUnit()), t.getProvider());
+        }
+
+        public long getAdditionTime(TimeUnit unit) {
+            return (t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
+        }
+
+        public Timepoint getAdditionTime() {
+            return new StandardTimepoint(getAdditionTime(t.getNativeUnit()), t.getProvider());
+        }
+    }
 }

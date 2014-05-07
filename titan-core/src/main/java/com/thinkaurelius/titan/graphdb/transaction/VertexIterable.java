@@ -1,10 +1,8 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 
 import java.util.Iterator;
@@ -35,9 +33,12 @@ public class VertexIterable implements Iterable<InternalVertex> {
                 InternalVertex v = null;
                 while (v == null && iterator.hasNext()) {
                     long nextId = iterator.next().longValue();
+                    //Filter out hidden vertices
+                    if (IDManager.VertexIDType.Hidden.is(nextId)) continue;
+
                     v = tx.getExistingVertex(nextId);
                     //Filter out deleted vertices and types
-                    if (v.isRemoved() || (v instanceof  TitanType)) v = null;
+                    if (v.isRemoved()) v = null;
                 }
                 return v;
             }

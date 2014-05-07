@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**
  * Generic interface to a backend storage engine.
@@ -15,7 +16,7 @@ public interface StoreManager {
      *
      * @return New Transaction Handle
      */
-    public StoreTransaction beginTransaction(StoreTxConfig config) throws StorageException;
+    public StoreTransaction beginTransaction(TransactionHandleConfig config) throws StorageException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.

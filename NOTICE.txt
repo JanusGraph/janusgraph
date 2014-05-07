@@ -30,15 +30,16 @@ It also includes software from other open source projects including, but not lim
  * Apache Hadoop [http://hadoop.apache.org/]
  * Apache Cassandra [http://cassandra.apache.org/]
  * Apache Lucene [http://lucene.apache.org/]
+ * Apache MRUnit [http://mrunit.apache.org/]
+ * Codehaus Groovy [http://groovy.codehaus.org/]
+ * OpenRDF [http://www.openrdf.org/]
  * Elastic Search [http://www.elasticsearch.org/]
  * Astyanax [https://github.com/Netflix/astyanax]
  * JUnit [http://www.junit.org/]
  * Mockito [http://code.google.com/p/mockito/]
- * Persistit [https://github.com/pdbeaman/persistit]
  * Hazelcast [https://github.com/hazelcast/hazelcast]
  * Infinispan [http://www.infinispan.org]
  * Oracle's BerkeleyDB [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
-
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 The following is the license that applies to this copy of the Berkeley

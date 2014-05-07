@@ -1,18 +1,20 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.StaticByteBuffer;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idassigner.StaticIDBlockSizer;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -25,11 +27,10 @@ public class MockIDAuthority implements IDAuthority {
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
     private final ConcurrentHashMap<Integer, AtomicLong> ids = new ConcurrentHashMap<Integer, AtomicLong>();
-    private IDBlockSizer blockSizer = null;
-    private int blockSizeLimit = BLOCK_SIZE_LIMIT;
+    private IDBlockSizer blockSizer;
+    private final int blockSizeLimit;
+    private final int delayAcquisitionMS;
     private int[] localPartition = {0, -1};
-
-    private int delayAcquisitionMS = 0;
 
     public MockIDAuthority() {
         this(100);
@@ -40,17 +41,18 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     public MockIDAuthority(int blockSize, int blockSizeLimit) {
-        blockSizer = new StaticIDBlockSizer(blockSize,blockSizeLimit);
-        this.blockSizeLimit = blockSizeLimit;
+        this(blockSize, blockSizeLimit, 0);
     }
 
-    public void setDelayAcquisition(int timeMS) {
-        Preconditions.checkArgument(timeMS>=0);
-        this.delayAcquisitionMS=timeMS;
+    public MockIDAuthority(int blockSize, int blockSizeLimit, int delayAcquisitionMS) {
+        blockSizer = new StaticIDBlockSizer(blockSize, blockSizeLimit);
+        this.blockSizeLimit = blockSizeLimit;
+        this.delayAcquisitionMS = delayAcquisitionMS;
+        Preconditions.checkArgument(0 <= this.delayAcquisitionMS);
     }
 
     @Override
-    public synchronized long[] getIDBlock(int partition) throws StorageException {
+    public long[] getIDBlock(int partition, Duration timeout) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -65,6 +67,7 @@ public class MockIDAuthority implements IDAuthority {
         if (id == null) {
             ids.putIfAbsent(p, new AtomicLong(1));
             id = ids.get(p);
+            Preconditions.checkNotNull(id);
         }
         long lowerBound = id.getAndAdd(size);
         if (lowerBound >= blockSizeLimit) {
@@ -78,15 +81,11 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public StaticBuffer[] getLocalIDPartition() throws StorageException {
-        ByteBuffer lower = ByteBuffer.allocate(4);
-        ByteBuffer upper = ByteBuffer.allocate(4);
-        lower.putInt(localPartition[0]);
-        upper.putInt(localPartition[1]);
-        lower.rewind();
-        upper.rewind();
-        Preconditions.checkArgument(ByteBufferUtil.isSmallerThan(lower, upper), Arrays.toString(localPartition));
-        return new StaticBuffer[]{new StaticByteBuffer(lower), new StaticByteBuffer(upper)};
+    public List<KeyRange> getLocalIDPartition() throws StorageException {
+        StaticBuffer lower = new WriteByteBuffer(4).putInt(localPartition[0]).getStaticBuffer();
+        StaticBuffer upper = new WriteByteBuffer(4).putInt(localPartition[1]).getStaticBuffer();
+        Preconditions.checkArgument(lower.compareTo(upper)<0, Arrays.toString(localPartition));
+        return Lists.newArrayList(new KeyRange(lower, upper));
     }
 
     @Override
@@ -97,5 +96,10 @@ public class MockIDAuthority implements IDAuthority {
     @Override
     public void close() throws StorageException {
 
+    }
+
+    @Override
+    public String getUniqueID() {
+        return "";
     }
 }
