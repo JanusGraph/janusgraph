@@ -73,10 +73,7 @@ public class KCVSUtil {
         } else throw new UnsupportedOperationException("Scan not supported by this store");
     }
 
-    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int sliceLength, StoreTransaction txh) throws StorageException {
-        SliceQuery slice = new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1);
-        return !store.getSlice(new KeySliceQuery(key, slice), txh).isEmpty();
-    }
+
 
     /**
      * Returns true if the specified key-column pair exists in the store.
@@ -89,6 +86,20 @@ public class KCVSUtil {
      */
     public static boolean containsKeyColumn(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
         return get(store, key, column, txh) != null;
+    }
+
+    private static final StaticBuffer START = BufferUtil.zeroBuffer(8), END = BufferUtil.oneBuffer(32);
+
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, StoreTransaction txh) throws StorageException {
+        return containsKey(store,key,32,txh);
+    }
+
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws StorageException {
+        StaticBuffer start = START, end = END;
+        if (maxColumnLength>32) {
+            end = BufferUtil.oneBuffer(maxColumnLength);
+        }
+        return !store.getSlice(new KeySliceQuery(key, START, END).setLimit(1),txh).isEmpty();
     }
 
     public static boolean matches(SliceQuery query, StaticBuffer column) {

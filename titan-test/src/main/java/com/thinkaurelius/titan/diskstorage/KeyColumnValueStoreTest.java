@@ -807,12 +807,12 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Test
     public void containsKeyReturnsTrueOnExtantKey() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        Assert.assertFalse(store.containsKey(key1, tx));
+        Assert.assertFalse(KCVSUtil.containsKey(store, key1, tx));
         KeyColumnValueStoreUtil.insert(store, tx, 1, "c", "v");
         tx.commit();
 
         tx = startTx();
-        Assert.assertTrue(store.containsKey(key1, tx));
+        Assert.assertTrue(KCVSUtil.containsKey(store, key1, tx));
     }
 
     @Test
