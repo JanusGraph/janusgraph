@@ -247,6 +247,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder()
                 .orderedScan(true).unorderedScan(true).batchMutation(true)
                 .multiQuery(true).distributed(true).keyOrdered(true)
+//                .timestamps(true)
                 .keyConsistent(c);
 
         try {

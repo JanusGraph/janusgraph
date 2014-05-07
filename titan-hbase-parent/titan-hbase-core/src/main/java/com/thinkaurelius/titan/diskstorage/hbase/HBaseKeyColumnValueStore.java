@@ -53,6 +53,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     private final String storeName;
     // This is columnFamily.getBytes()
     private final byte[] columnFamilyBytes;
+    private final HBaseGetter entryGetter;
 
     private final HConnection cnx;
 
@@ -63,6 +64,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         //this.columnFamily = columnFamily;
         this.storeName = storeName;
         this.columnFamilyBytes = columnFamily.getBytes();
+        this.entryGetter = new HBaseGetter(storeManager.getMetaDataSchema(storeName));
     }
 
     @Override
@@ -196,7 +198,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 Map<byte[], byte[]> fmap = result.getFamilyMap(columnFamilyBytes);
                 EntryList entries;
                 if (fmap == null) entries = EntryList.EMPTY_LIST;
-                else entries = StaticArrayEntryList.ofBytes(fmap.entrySet(),MapEntryGetter.INSTANCE);
+                else entries = StaticArrayEntryList.ofBytes(fmap.entrySet(),entryGetter);
                 resultMap.put(keys.get(i), entries);
             }
 
@@ -291,7 +293,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 public Entry next() {
                     ensureOpen();
                     Map.Entry<byte[], byte[]> column = kv.next();
-                    return StaticArrayEntry.ofBytes(column, MapEntryGetter.INSTANCE);
+                    return StaticArrayEntry.ofBytes(column, entryGetter);
                 }
 
                 @Override
@@ -338,8 +340,13 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static enum MapEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<byte[],byte[]>,byte[]> {
-        INSTANCE;
+    private static class HBaseGetter implements StaticArrayEntry.GetColVal<Map.Entry<byte[],byte[]>,byte[]> {
+
+        private final EntryMetaData[] schema;
+
+        private HBaseGetter(EntryMetaData[] schema) {
+            this.schema = schema;
+        }
 
         @Override
         public byte[] getColumn(Map.Entry<byte[], byte[]> element) {
@@ -353,12 +360,17 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
         @Override
         public EntryMetaData[] getMetaSchema(Map.Entry<byte[],byte[]> element) {
-            return StaticArrayEntry.EMPTY_SCHEMA;
+            return schema;
         }
 
         @Override
         public Object getMetaData(Map.Entry<byte[],byte[]> element, EntryMetaData meta) {
-            throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            switch(meta) {
+//                case TIMESTAMP:
+//                    return element.getColumn().getTimestamp();
+                default:
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            }
         }
     }
 }
