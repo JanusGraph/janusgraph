@@ -591,8 +591,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private void logTransaction(Log txLog, BackendTransaction mutator, TransactionConfiguration txConfig,
                                 TransactionLogHeader txLogHeader, LogTxStatus status) {
         DataOutput out = txLogHeader.serializeHeader(serializer,256, status,txConfig);
-
-        //TODO: add transaction config
         mutator.logMutations(out);
         txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
     }
@@ -600,6 +598,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
         VariableLong.writePositive(out,relations.size());
         for (InternalRelation rel : relations) {
+            VariableLong.writePositive(out,rel.getVertex(0).getID());
             Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out,entry);
         }

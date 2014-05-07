@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -167,6 +168,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                         assertEquals(0,num);
                     }
                     for (int i=0; i<num;i++) {
+                        Long vertexid = VariableLong.readPositive(read);
+                        assertTrue(vertexid>0);
                         Entry entry = BufferUtil.readEntry(read,serializer);
                         assertNotNull(entry);
                         assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
