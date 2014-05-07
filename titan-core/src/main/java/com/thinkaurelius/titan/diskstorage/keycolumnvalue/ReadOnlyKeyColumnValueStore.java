@@ -58,11 +58,6 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return store.containsKey(key, txh);
-    }
-
-    @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return store.getSlice(query, txh);
     }

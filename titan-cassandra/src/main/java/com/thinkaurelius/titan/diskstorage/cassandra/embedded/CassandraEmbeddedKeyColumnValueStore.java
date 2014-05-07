@@ -136,43 +136,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return columnFamily;
     }
 
-    //TODO: remove
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-
-        long ts = getTime(txh);
-
-        // TODO key.asByteBuffer() may entail an unnecessary buffer copy
-        SliceQueryFilter sqf = new SliceQueryFilter(ByteBufferUtil.EMPTY_BYTE_BUFFER, ByteBufferUtil.EMPTY_BYTE_BUFFER, false, 1);
-        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, key.asByteBuffer(), columnFamily, ts, sqf);
-        List<Row> rows = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
-
-        if (null == rows || 0 == rows.size())
-            return false;
-
-        /*
-         * Find at least one live column
-		 *
-		 * Note that the rows list may contain arbitrarily many
-		 * marked-for-delete elements. Therefore, we can't assume that we're
-		 * dealing with a singleton even though we set the maximum column count
-		 * to 1.
-		 */
-        for (Row r : rows) {
-            if (null == r || null == r.cf)
-                continue;
-
-            if (r.cf.isMarkedForDelete())
-                continue;
-
-            for (Column column : r.cf)
-                if (!column.isMarkedForDelete(ts))
-                    return true;
-        }
-
-        return false;
-    }
-
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 

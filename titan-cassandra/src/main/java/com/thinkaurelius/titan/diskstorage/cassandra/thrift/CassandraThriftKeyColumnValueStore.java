@@ -196,32 +196,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         // Do nothing
     }
 
-    //TODO: remove
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        ColumnParent parent = new ColumnParent(columnFamily);
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
-        SlicePredicate predicate = new SlicePredicate();
-        SliceRange range = new SliceRange();
-        range.setCount(1);
-        byte[] empty = new byte[0];
-        range.setStart(empty);
-        range.setFinish(empty);
-        predicate.setSlice_range(range);
-
-        CTConnection conn = null;
-        try {
-            conn = pool.borrowObject(keyspace);
-            Cassandra.Client client = conn.getClient();
-            List<?> result = client.get_slice(key.asByteBuffer(), parent, predicate, consistency);
-            return 0 < result.size();
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            pool.returnObjectUnsafe(keyspace, conn);
-        }
-    }
-
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
                             StoreTransaction txh) throws StorageException {

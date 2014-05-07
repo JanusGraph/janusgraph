@@ -28,17 +28,6 @@ public interface KeyColumnValueStore {
     public static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
-     * TODO:remove (make sure there is a util method for it)
-     * Returns true if the specified key exists in the store, i.e. there is at least one column-value
-     * pair for the key.
-     *
-     * @param key Key
-     * @param txh Transaction
-     * @return TRUE, if key has at least one column-value pair, else FALSE
-     */
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
-
-    /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified query.
      *
      * @param query Query to get results for

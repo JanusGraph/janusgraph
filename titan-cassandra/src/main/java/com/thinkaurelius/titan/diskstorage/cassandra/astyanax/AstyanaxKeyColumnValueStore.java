@@ -68,24 +68,6 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         //Do nothing
     }
 
-    //TODO: remove
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        try {
-            // See getSlice() below for a warning suppression justification
-            @SuppressWarnings("rawtypes")
-            RowQuery rq = (RowQuery) keyspace.prepareQuery(columnFamily)
-                    .withRetryPolicy(retryPolicy.duplicate())
-                    .setConsistencyLevel(getTx(txh).getReadConsistencyLevel().getAstyanax())
-                    .getKey(key.asByteBuffer());
-            @SuppressWarnings("unchecked")
-            OperationResult<ColumnList<ByteBuffer>> r = rq.withColumnRange(EMPTY, EMPTY, false, 1).execute();
-            return 0 < r.getResult().size();
-        } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
-        }
-    }
-
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         Map<StaticBuffer, EntryList> result = getNamesSlice(query.getKey(), query, txh);

@@ -75,11 +75,6 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return dataStore.containsKey(key, getBaseTx(txh));
-    }
-
-    @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return dataStore.getSlice(query, getBaseTx(txh));
     }
