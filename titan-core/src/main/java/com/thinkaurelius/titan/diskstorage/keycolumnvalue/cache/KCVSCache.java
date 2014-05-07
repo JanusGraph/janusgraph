@@ -62,11 +62,6 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return store.containsKey(key, getTx(txh));
-    }
-
-    @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
         store.acquireLock(key, column, expectedValue, getTx(txh));
     }

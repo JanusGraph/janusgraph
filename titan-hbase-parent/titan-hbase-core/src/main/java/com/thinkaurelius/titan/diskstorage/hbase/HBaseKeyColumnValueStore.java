@@ -70,31 +70,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        byte[] keyBytes = key.as(StaticBuffer.ARRAY_FACTORY);
-
-        Get g = new Get(keyBytes).addFamily(columnFamilyBytes);
-        try {
-            g.setTimeRange(0, Long.MAX_VALUE);
-        } catch (IOException e) {
-            throw new PermanentStorageException(e);
-        }
-
-        try {
-            HTableInterface table = null;
-
-            try {
-                table = cnx.getTable(tableName);
-                return table.exists(g);
-            } finally {
-                IOUtils.closeQuietly(table);
-            }
-        } catch (IOException e) {
-            throw new TemporaryStorageException(e);
-        }
-    }
-
-    @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         Map<StaticBuffer, EntryList> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
         return Iterables.getOnlyElement(result.values(), EntryList.EMPTY_LIST);

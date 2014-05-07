@@ -48,13 +48,6 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        ContainsSelector select = new ContainsSelector(key);
-        store.getSlice(key, BufferUtil.nextBiggerBuffer(key), select, txh);
-        return select.contains();
-    }
-
-    @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),

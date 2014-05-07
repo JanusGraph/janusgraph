@@ -38,12 +38,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        ColumnValueStore cvs = kcv.get(key);
-        return cvs != null && !cvs.isEmpty(txh);
-    }
-
-    @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
         ColumnValueStore cvs = kcv.get(query.getKey());
         if (cvs == null) return EntryList.EMPTY_LIST;
