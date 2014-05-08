@@ -137,6 +137,10 @@
                             <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
                             <sourceDocumentName>index.txt</sourceDocumentName>
                             <backend>docbook5</backend>
+                            <attributes>
+                                <encoding>UTF-8</encoding>
+                                <toc>true</toc>
+                            </attributes>
                         </configuration>
                     </execution>
                 </executions>
