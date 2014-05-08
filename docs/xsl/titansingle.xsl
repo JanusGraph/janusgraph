@@ -34,6 +34,9 @@
 
 <xsl:template match="*" mode="process.root">
   <xsl:variable name="doc" select="self::*"/>
+  <xsl:variable name="content">
+    <xsl:apply-imports/>
+  </xsl:variable>
 
   <!--
   <xsl:call-template name="user.preroot"/>
@@ -54,7 +57,9 @@
       </xsl:call-template>
     </head>
 
-    <xsl:call-template name="titan.body"/>
+    <xsl:call-template name="titan.body">
+      <xsl:with-param name="maincontent" select="$content"/>
+    </xsl:call-template>
   </html>
 
   <xsl:value-of select="$html.append"/>

@@ -1,4 +1,5 @@
 /* what is this i dont even */
+#header-sticky .logo a, #header .logo a { height: auto; }
 
 a:hover, .tooltip-shortcode{
 color:#e10707;

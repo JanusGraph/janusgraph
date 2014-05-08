@@ -1,7 +1,6 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
   <xsl:template name="titan.head">
-
     <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-includes/js/jquery/jquery.js?ver=1.11.0'></script>
     <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.2.1'></script>
 
@@ -92,7 +91,7 @@
 	  </div>
 	</header>
 	<div id="main" class="clearfix width-100" style="padding-left:20px;padding-right:20px">
-          <xsl:apply-templates select="."/>
+          <xsl:copy-of select="$maincontent"/>
 	</div>
 	<div class="clearer"></div>
 	<footer id="footer">
