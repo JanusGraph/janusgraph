@@ -1240,6 +1240,14 @@
                     <name>asciidoc</name>
                 </property>
             </activation>
+
+            <properties>
+                <asciidoc.input.dir>${project.basedir}/docs</asciidoc.input.dir>
+                <xsl.input.dir>${asciidoc.input.dir}/xsl</xsl.input.dir>
+                <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
+                <htmlsingle.output.dir>${project.basedir}/target/docs/htmlsingle</htmlsingle.output.dir>
+            </properties>
+
             <build>
                 <plugins>
                     <plugin>
@@ -1254,10 +1262,12 @@
                                 </goals>
                                 <inherited>false</inherited>
                                 <configuration>
-                                    <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
+                                    <sourceDirectory>${asciidoc.input.dir}</sourceDirectory>
                                     <sourceDocumentName>index.txt</sourceDocumentName>
+                                    <outputDirectory>${docbook.output.dir}</outputDirectory>
                                     <backend>docbook5</backend>
                                     <attributes>
+                                        <imagesdir>images</imagesdir>
                                         <encoding>UTF-8</encoding>
                                         <toc>true</toc>
                                     </attributes>
@@ -1270,7 +1280,7 @@
                         <artifactId>xml-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>docbook-to-html</id>
+                                <id>docbook-to-htmlsingle</id>
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>transform</goal>
@@ -1280,11 +1290,37 @@
                                     <forceCreation>true</forceCreation>
                                     <transformationSets>
                                         <transformationSet>
-                                            <dir>${project.basedir}/target/generated-docs/</dir>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <outputDir>${htmlsingle.output.dir}</outputDir>
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${project.basedir}/htcust.xsl</stylesheet>
+                                            <stylesheet>${xsl.input.dir}/titansingle.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docbook-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${xsl.input.dir}/titanchunk.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>
@@ -1302,9 +1338,9 @@
                                 <version>2.1.0</version>
                             </dependency>
                             <dependency>
-                                <groupId>net.sourceforge.saxon</groupId>
+                                <groupId>saxon</groupId>
                                 <artifactId>saxon</artifactId>
-                                <version>9.1.0.8</version>
+                                <version>6.5.3</version>
                             </dependency>
                         </dependencies>
                     </plugin>
