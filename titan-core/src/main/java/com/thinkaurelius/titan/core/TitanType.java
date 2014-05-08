@@ -26,14 +26,7 @@ import com.tinkerpop.blueprints.Direction;
  * @see TypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-configuration">Titan Type Wiki</a>
  */
-public interface TitanType extends TitanVertex, TitanSchemaElement {
-
-    /**
-     * Returns the unique name of this type.
-     *
-     * @return Name of this type.
-     */
-    public String getName();
+public interface TitanType extends TitanVertex, TitanSchemaElement, Namifiable {
 
     /**
      * Checks if this type is a property key

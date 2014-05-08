@@ -5,9 +5,10 @@ import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
+ * Evaluates to false for hidden elements - used to filter out hidden elements in queries.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class HiddenFilterCondition<E extends TitanElement> extends Literal<E> {
 
     public HiddenFilterCondition() {

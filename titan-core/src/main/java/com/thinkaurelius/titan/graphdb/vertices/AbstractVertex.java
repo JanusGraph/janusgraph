@@ -101,7 +101,6 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(TitanKey key) {
-        if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         if (!((InternalType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
             getProperties().iterator().hasNext();
         }

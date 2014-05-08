@@ -163,27 +163,31 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
     protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationCategory returnType) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
-        BaseVertexCentricQuery vq = super.constructQuery(returnType);
         Map<TitanVertex, Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size());
-        if (!vq.isEmpty()) {
-            for (BackendQueryHolder<SliceQuery> sq : vq.getQueries()) {
-                tx.executeMultiQuery(vertices, sq.getBackendQuery());
-            }
-
-            Condition<TitanRelation> condition = vq.getCondition();
-            for (InternalVertex v : vertices) {
-                //Add other-vertex and direction related conditions (need to copy!)
-                And<TitanRelation> newcond = new And<TitanRelation>();
-                if (condition instanceof And) newcond.addAll((And) condition);
-                else newcond.add(condition);
-                newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
-                VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
-                result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
-
-            }
+        if (isImplicitKeyQuery(returnType)) {
+            for (InternalVertex v : vertices ) result.put(v,executeImplicitKeyQuery(v));
         } else {
-            for (TitanVertex v : vertices)
-                result.put(v, Collections.EMPTY_LIST);
+            BaseVertexCentricQuery vq = super.constructQuery(returnType);
+            if (!vq.isEmpty()) {
+                for (BackendQueryHolder<SliceQuery> sq : vq.getQueries()) {
+                    tx.executeMultiQuery(vertices, sq.getBackendQuery());
+                }
+
+                Condition<TitanRelation> condition = vq.getCondition();
+                for (InternalVertex v : vertices) {
+                    //Add other-vertex and direction related conditions (need to copy!)
+                    And<TitanRelation> newcond = new And<TitanRelation>();
+                    if (condition instanceof And) newcond.addAll((And) condition);
+                    else newcond.add(condition);
+                    newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
+                    VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
+                    result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
+
+                }
+            } else {
+                for (TitanVertex v : vertices)
+                    result.put(v, Collections.EMPTY_LIST);
+            }
         }
         return result;
     }

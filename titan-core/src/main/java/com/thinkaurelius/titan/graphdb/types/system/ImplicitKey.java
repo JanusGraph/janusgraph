@@ -20,7 +20,7 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
     public static final ImplicitKey ID = new ImplicitKey(0,"id",Long.class);
 
-    public static final ImplicitKey LABEL = new ImplicitKey(0,"label",Long.class);
+    public static final ImplicitKey LABEL = new ImplicitKey(0,"label",String.class);
 
 //    public static final ImplicitKey KEY = new ImplicitKey("key",Long.class);
 
@@ -132,6 +132,11 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
     @Override
     public void setID(long id) {
         throw new IllegalStateException("SystemType has already been assigned an id");
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 
 }

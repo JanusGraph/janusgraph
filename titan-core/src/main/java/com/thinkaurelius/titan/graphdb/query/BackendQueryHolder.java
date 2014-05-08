@@ -3,9 +3,19 @@ package com.thinkaurelius.titan.graphdb.query;
 import com.google.common.base.Preconditions;
 
 /**
+ * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a
+ * {@link QueryExecutor}:
+ * <ul>
+ *     <li>Whether the query is fitted, i.e., whether all results returned from executing the backend query are part
+ *     of the result set or must be filtered in memory.</li>
+ *     <li>Whether the query results will already be sorted in the user defined sort order or whether extra sorting is
+ *     required.</li>
+ *     <li>Additional execution info required by the query executor. This would be compiled by the query optimizer
+ *     and is passed through verbatim. Can be null.</li>
+ * </ul>
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class BackendQueryHolder<E extends BackendQuery<E>> {
 
     private final E backendQuery;

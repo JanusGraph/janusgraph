@@ -13,6 +13,11 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * Utility methods used in query optimization and processing.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class QueryUtil {
 
     public static int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {

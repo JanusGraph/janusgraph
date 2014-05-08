@@ -7,9 +7,10 @@ import com.thinkaurelius.titan.core.TitanType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
+ *
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class RelationTypeCondition<E extends TitanElement> extends Literal<E> {
 
     private final TitanType relationType;

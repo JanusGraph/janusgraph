@@ -9,8 +9,10 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
-/*
- * Does not measure time spent in returned iterators
+/**
+ * Wraps a {@link QueryExecutor} to gather metrics on the query execution and forward them to METRICS.
+ *
+ * @author Dan LaRocque (dan@thinkaurelius.com)
  */
 public class MetricsQueryExecutor<Q extends ElementQuery,R extends TitanElement,B extends BackendQuery> implements QueryExecutor<Q,R,B> {
 

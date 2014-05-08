@@ -15,13 +15,23 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * TODO: Make the returned iterator smarter about limits: If less than LIMIT elements are returned,
- * it checks if the underlying iterators have been exhausted. If not, then it doubles the limit, discards the first count
- * elements and returns the remaining ones. Tricky bit: how to keep track of which iterators have been exhausted?
+ * Executes a given {@link ElementQuery} against a provided {@link QueryExecutor} to produce the result set of elements.
+ * </p>
+ * The QueryProcessor creates a number of stacked iterators. </br>
+ * At the highest level, the OuterIterator ensures that the correct (up to the given limit) number of elements is returned. It also provides the implementation of remove()
+ * by calling the element's remove() method. </br>
+ * The OuterIterator wraps the "unfolded" iterator which is a combination of the individual result set iterators of the sub-queries of the given query (see {@link ElementQuery#getSubQuery(int)}.
+ * The unfolded iterator combines this iterators by checking whether 1) the result sets need additional filtering (if so, a filter iterator is wrapped around it) and 2) whether
+ * the final result set needs to be sorted and in what order. If the result set needs to be sorted and the individual sub-query result sets aren't, then a PreSortingIterator is wrapped around
+ * the iterator which effectively iterates the result set out, sorts it and then returns an iterator (i.e. much more expensive than exploiting existing sort orders).</br>
+ * In this way, the individual sub-result sets are prepared and then merged together the MergeSortIterator (which conserves sort order if present).
+ * The semantics of the queries is OR, meaning the result sets are combined.
+ * However, when {@link com.thinkaurelius.titan.graphdb.query.ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator
+ * filters out immediate duplicates.
+ *
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement, B extends BackendQuery<B>> implements Iterable<R> {
 
     private static final Logger log = LoggerFactory.getLogger(QueryProcessor.class);
@@ -46,6 +56,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         return new OuterIterator();
     }
 
+
     private final class OuterIterator implements Iterator<R> {
 
         private final Iterator<R> iter;
@@ -57,7 +68,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
 
         OuterIterator() {
-            this.iter = getUnwrappedIterator();
+            this.iter = getUnfoldedIterator();
             limit = (query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT;
             count = 0;
 
@@ -99,7 +110,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
     }
 
-    private Iterator<R> getUnwrappedIterator() {
+    private Iterator<R> getUnfoldedIterator() {
         Iterator<R> iter = null;
         boolean hasDeletions = executor.hasDeletions(query);
         Iterator<R> newElements = executor.getNew(query);
@@ -212,6 +223,13 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
             throw new UnsupportedOperationException();
         }
     }
+
+     /*
+     TODO: Make the returned iterator smarter about limits: If less than LIMIT elements are returned,
+     it checks if the underlying iterators have been exhausted. If not, then it doubles the limit, discards the first count
+     elements and returns the remaining ones. Tricky bit: how to keep track of which iterators have been exhausted?
+     */
+
 
     private final class LimitAdjustingIterator extends com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator<R> {
 

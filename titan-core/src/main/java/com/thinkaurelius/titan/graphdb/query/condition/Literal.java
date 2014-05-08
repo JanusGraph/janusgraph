@@ -5,9 +5,10 @@ import java.util.Collections;
 import com.thinkaurelius.titan.core.TitanElement;
 
 /**
+ * Abstract literal condition.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 abstract class Literal<E extends TitanElement> implements Condition<E> {
 
     @Override

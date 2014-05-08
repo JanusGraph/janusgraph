@@ -28,4 +28,6 @@ public enum Order {
         }
     }
 
+    public static final Order DEFAULT = ASC;
+
 }

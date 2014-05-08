@@ -190,6 +190,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     //#### RELATIONS
 
     private Iterable<TitanRelation> relations(RelationCategory returnType) {
+        if (isImplicitKeyQuery(returnType)) return executeImplicitKeyQuery(vertex);
         return relations(constructQuery(returnType));
     }
 

@@ -9,13 +9,16 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
+import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
@@ -177,6 +180,18 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
         return types.length>0;
     }
 
+    protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
+        if (returnType==RelationCategory.EDGE || types.length!=1 || !constraints.isEmpty()) return false;
+        return tx.getType(types[0]) instanceof ImplicitKey;
+    }
+
+    protected Iterable<TitanRelation> executeImplicitKeyQuery(InternalVertex v) {
+        assert isImplicitKeyQuery(RelationCategory.PROPERTY);
+        if (dir==Direction.IN || limit<1) return ImmutableList.of();
+        ImplicitKey key = (ImplicitKey)tx.getType(types[0]);
+        return ImmutableList.of((TitanRelation)new StandardProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
+    }
+
     protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
         return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
             @Nullable
@@ -205,6 +220,10 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
     private static final int HARD_MAX_LIMIT   = 300000;
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
+        //TODO: accommodate
+        //if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
+
+
         assert returnType != null;
         if (limit == 0)
             return BaseVertexCentricQuery.emptyQuery();
@@ -243,7 +262,7 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new HiddenFilterCondition<TitanRelation>());
+            conditions.add(new HiddenFilterCondition<TitanRelation>()); //Need this to filter out newly created hidden relations in the transaction
         } else {
             Set<TitanType> ts = new HashSet<TitanType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
@@ -257,7 +276,8 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 
             for (String typeName : types) {
                 InternalType type = QueryUtil.getType(tx, typeName);
-                if (type==null || (type instanceof ImplicitKey)) continue;
+                if (type==null) continue;
+                if (type instanceof ImplicitKey) throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "+type);
                 ts.add(type);
 
                 if (type.isPropertyKey()) {
