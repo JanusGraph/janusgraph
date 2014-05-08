@@ -63,7 +63,7 @@ _____________________
 
 When using a database, the http://en.wikipedia.org/wiki/CAP_theorem[CAP theorem] should be thoroughly considered (C=Consistency, A=Availability, P=Partitionability). Titan is distributed with 3 supporting backends: http://cassandra.apache.org/[Cassandra], http://hbase.apache.org/[HBase], and http://www.oracle.com/technetwork/products/berkeleydb/[BerkeleyDB]. Their tradeoffs with respect to the CAP theorem are represented in the diagram below. Note that BerkeleyDB is a non-distributed database and as such, is typically only used with Titan for testing and exploration purposes.
 
-image:images/titan-captheorem.png[]
+image:titan-captheorem.png[]
 
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
@@ -109,7 +109,7 @@ The Graph of the Gods
 The examples in this section make extensive use of a toy graph distributed with Titan called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a `property graph <Property Graph Model_>`_ and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
 
 .Graph of the Gods
-image:images/graph-of-the-gods-2.png[]
+image:graph-of-the-gods-2.png[]
 [cols="1,4",options="header"]
 |=====
 |visual symbol      | meaning

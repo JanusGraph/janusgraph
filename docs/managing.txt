@@ -25,7 +25,7 @@ The following sections outline the various ways in which Titan can be used in co
 Local Server Mode
 +++++++++++++++++
 
-image:images/titan-modes-local.png[]
+image:titan-modes-local.png[]
 
 Cassandra can be run as a standalone database on the same local host as Titan and the end-user application. In this model, Titan and Cassandra communicate with one another via a `localhost` socket. Running Titan over Cassandra requires the following setup steps:
 
@@ -45,7 +45,7 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 Remote Server Mode
 ++++++++++++++++++
 
-image:images/titan-modes-distributed.png[]
+image:titan-modes-distributed.png[]
 
 When the graph needs to scale beyond the confines of a single machine, then Cassandra and Titan are logically separated into different machines. In this model, the Cassandra cluster maintains the graph representation and any number of Titan instances maintain socket-based read/write access to the Cassandra cluster. The end-user application can directly interact with Titan within the same JVM as Titan.
 
@@ -62,7 +62,7 @@ In the Gremlin shell, you can not define the type of the variables `conf` and `g
 Remote Server Mode with Rexster
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-image:images/titan-modes-rexster.png[]
+image:titan-modes-rexster.png[]
 
 Rexster can be wrapped around each Titan instance defined in the previous subsection. In this way, the end-user application need not be a Java-based application as it can communicate with Rexster over REST. This type of deployment is great for polyglot architectures where various components written in different languages need to reference and compute on the graph.
 
@@ -93,7 +93,7 @@ In this case, each Rexster server would be configured to connect to the Cassandr
 Titan Embedded Mode
 ^^^^^^^^^^^^^^^^^^^
 
-image:images/titan-modes-embedded.png[]
+image:titan-modes-embedded.png[]
 
 Finally, Cassandra can be embedded in Titan, which means, that Titan and Cassandra run in the same JVM and communicate via in process calls rather than over the network. This removes the (de)serialization and network protocol overhead and can therefore lead to considerable performance improvements. In this deployment mode, Titan internally starts a cassandra daemon and Titan no longer connects to an existing cluster but is its own cluster.
 
