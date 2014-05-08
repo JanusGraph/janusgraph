@@ -14,8 +14,8 @@
     extension-element-prefixes="sbhl xslthl">
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
-
-<xsl:import href="asciidoccommon.xsl"/>
+<xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/highlight.xsl"/>
+<xsl:import href="asciicommon.xsl"/>
 <xsl:import href="titancommon.xsl"/>
 
 <xsl:output
@@ -62,10 +62,6 @@
   <!-- Generate any css files only once, not once per chunk -->
   <xsl:call-template name="generate.css.files"/>
 </xsl:template>
-
-
-
-
 
 <!--
 <xsl:template match='xslthl:keyword'>
