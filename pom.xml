@@ -124,28 +124,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctor-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>output-html</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>process-asciidoc</goal>
-                        </goals>
-                        <configuration>
-                            <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
-                            <sourceDocumentName>index.txt</sourceDocumentName>
-                            <backend>docbook5</backend>
-                            <attributes>
-                                <encoding>UTF-8</encoding>
-                                <toc>true</toc>
-                            </attributes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <!--
@@ -1255,32 +1233,68 @@
         </profile>
 
         <profile>
-            <id>saxondoc</id>
+            <id>asciidoc</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>asciidoc</name>
+                </property>
             </activation>
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>asciidoc-to-docbook</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
+                                    <sourceDocumentName>index.txt</sourceDocumentName>
+                                    <backend>docbook5</backend>
+                                    <attributes>
+                                        <encoding>UTF-8</encoding>
+                                        <toc>true</toc>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>xml-maven-plugin</artifactId>
-                        <configuration>
-                            <forceCreation>true</forceCreation>
-                            <transformationSets>
-                                <transformationSet>
-                                    <dir>${project.basedir}/target/generated-docs/</dir>
-                                    <includes>
-                                        <include>index.xml</include>
-                                    </includes>
-                                    <stylesheet>${project.basedir}/htcust.xsl</stylesheet>
-                                    <fileMappers>
-                                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
-                                            <targetExtension>.html</targetExtension>
-                                        </fileMapper>
-                                    </fileMappers>
-                                </transformationSet>
-                            </transformationSets>
-                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>docbook-to-html</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${project.basedir}/target/generated-docs/</dir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${project.basedir}/htcust.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                        </executions>
                         <dependencies>
                             <dependency>
                                 <groupId>net.sf.xslthl</groupId>
@@ -1300,7 +1314,7 @@
 
         <!--
         <profile>
-            <id>htmldoc</id>
+            <id>docbkx</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
@@ -1333,7 +1347,6 @@
                             <hyphenateVerbatim>false</hyphenateVerbatim>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
