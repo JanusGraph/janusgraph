@@ -136,6 +136,7 @@
                         <configuration>
                             <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
                             <sourceDocumentName>index.txt</sourceDocumentName>
+                            <backend>docbook5</backend>
                         </configuration>
                     </execution>
                 </executions>
@@ -1268,6 +1269,11 @@
                                         <include>index.xml</include>
                                     </includes>
                                     <stylesheet>${project.basedir}/htcust.xsl</stylesheet>
+                                    <fileMappers>
+                                        <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                            <targetExtension>.html</targetExtension>
+                                        </fileMapper>
+                                    </fileMappers>
                                 </transformationSet>
                             </transformationSets>
                         </configuration>

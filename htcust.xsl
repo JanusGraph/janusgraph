@@ -13,10 +13,16 @@
     xmlns:xslthl="http://xslthl.sf.net"
     extension-element-prefixes="sbhl xslthl">
 
-<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/docbook.xsl"/>
-<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/xhtml/highlight.xsl"/>
+<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl"/>
+<xsl:import href="http://docbook.sourceforge.net/release/xsl/current/html/highlight.xsl"/>
 <xsl:import href="common.xsl"/>
 
+<xsl:output
+    method="html"
+    encoding="utf-8"
+    doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"
+    doctype-system="http://www.w3.org/TR/html4/loose.dtd"
+    indent="yes" />
 
 <!-- <xsl:param name="highlight.xslthl.config">file:///usr/share/xml/docbook/stylesheet/docbook-xsl/highlighting/xslthl-config.xml</xsl:param>-->
 <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>
