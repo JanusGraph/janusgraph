@@ -124,6 +124,23 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.asciidoctor</groupId>
+                <artifactId>asciidoctor-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>output-html</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>process-asciidoc</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.basedir}/docs/</sourceDirectory>
+                            <sourceDocumentName>index.txt</sourceDocumentName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <!--
@@ -336,6 +353,11 @@
                 <plugin>
                     <artifactId>maven-antrun-plugin</artifactId>
                     <version>1.7</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>0.1.4</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -1226,5 +1248,85 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>saxondoc</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <configuration>
+                            <forceCreation>true</forceCreation>
+                            <transformationSets>
+                                <transformationSet>
+                                    <dir>${project.basedir}/target/generated-docs/</dir>
+                                    <includes>
+                                        <include>index.xml</include>
+                                    </includes>
+                                    <stylesheet>${project.basedir}/htcust.xsl</stylesheet>
+                                </transformationSet>
+                            </transformationSets>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>net.sourceforge.saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                                <version>9.1.0.8</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+        <profile>
+            <id>htmldoc</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.agilejava.docbkx</groupId>
+                        <artifactId>docbkx-maven-plugin</artifactId>
+                        <version>2.0.15</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                            <dependency>
+                                <groupId>net.sf.offo</groupId>
+                                <artifactId>fop-hyph</artifactId>
+                                <version>1.2</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <highlightSource>1</highlightSource>
+                            <htmlCustomization>htcust.xsl</htmlCustomization>
+                            <hyphenate>false</hyphenate>
+                            <sourceDirectory>${project.basedir}/target/generated-docs/</sourceDirectory>
+                            <includes>index.xml</includes>
+                            <hyphenateVerbatim>false</hyphenateVerbatim>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+        -->
     </profiles>
 </project>
