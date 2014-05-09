@@ -1246,6 +1246,7 @@
                 <xsl.input.dir>${asciidoc.input.dir}/xsl</xsl.input.dir>
                 <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
                 <htmlsingle.output.dir>${project.basedir}/target/docs/htmlsingle</htmlsingle.output.dir>
+                <htmlchunk.output.dir>${project.basedir}/target/docs/htmlchunk</htmlchunk.output.dir>
             </properties>
 
             <build>
@@ -1344,6 +1345,79 @@
                                 <version>6.5.3</version>
                             </dependency>
                         </dependencies>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-css-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlsingle.output.dir}/css</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/css</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-images-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlsingle.output.dir}/images</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/images</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-css-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlchunk.output.dir}/css</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/css</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-images-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlchunk.output.dir}/images</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/images</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
