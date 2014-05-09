@@ -1,11 +1,11 @@
 Management
-----------
+==========
 
 This section describes installation, configuration, and administration
 of Titan.
 
 Storage Backends
-~~~~~~~~~~~~~~~~
+----------------
 
 Titan's data storage layer is pluggable.  Implementations of the
 pluggable storage layer -- that is, the software component tells Titan
@@ -16,16 +16,11 @@ standard storage backends.
 
 This section only addresses configuration of the stock storage
 backends that come with Titan.  For information about writing a new
-storage backend for Titan, see TODO.
-
-TODO move this to the new section: This layer is easiest to implement
-efficiently on storage systems that support the key-column-value idiom
-popularized by distributed systems like BigTable, Cassandra, and
-HBase, though it can be implemented on other storage idioms as well.
-For more information on writing a custom storage backend,
+storage backend for Titan, see _TODO: xref to StoreManager/KCVS
+overview_.
 
 Cassandra
-^^^^^^^^^
+~~~~~~~~~
 
 image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/"]
 
@@ -43,7 +38,7 @@ over 300 TB of data in over 400 machines.
 The following sections outline the various ways in which Titan can be used in concert with Cassandra.
 
 Local Server Mode
-+++++++++++++++++
+^^^^^^^^^^^^^^^^^
 
 image:titan-modes-local.png[]
 
@@ -63,7 +58,7 @@ TitanGraph g = TitanFactory.open(conf);
 In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration.
 
 Remote Server Mode
-++++++++++++++++++
+^^^^^^^^^^^^^^^^^^
 
 image:titan-modes-distributed.png[]
 
@@ -91,7 +86,7 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Rexster server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the "Rexster-Graph-Server page (TODO)" for a complete example.
+In this case, each Rexster server would be configured to connect to the Cassandra cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the _TODO: xref to Rexster-Graph-Server_ for a complete example.
 
 [source,xml]
 <graph>
@@ -126,7 +121,7 @@ Note, that running Titan with Cassandra embedded requires GC tuning. While embed
 Cassandra Specific Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In addition to the general "Titan Graph-Configuration link (TODO)", there are the following Cassandra specific Titan configuration options:
+In addition to the general _TODO: xref to Graph-Configuration_, there are the following Cassandra specific Titan configuration options:
 
 [cols="4,7,2,2,1",options="header"]
 |==========================
@@ -185,7 +180,7 @@ Global Graph Operations
 Titan over Cassandra supports global vertex and edge iteration. However, note that all these vertices and/or edges will be loaded into memory which can cause `OutOfMemoryException`. Use http://faunus.thinkaurelius.com/[Faunus] to iterate over all vertices or edges in large graphs.
 
 Deploying on Amazon EC2
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^
 
 image:http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png[link="http://aws.amazon.com/ec2/"]
 
@@ -195,19 +190,19 @@ Amazon Elastic Compute Cloud (Amazon EC2) is a web service that provides resizab
 Follow these steps to setup a Cassandra cluster on EC2 and deploy Titan over Cassandra. To follow these instructions, you need an Amazon AWS account with established authentication credentials and some basic knowledge of AWS and EC2.
 
 Setup Cassandra Cluster
-^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++
 
 These instructions for configuring and launching the DataStax Cassandra Community Edition AMI are based on the http://www.datastax.com/docs/datastax_enterprise2.0/ami/install_dse_ami[DataStax AMI Docs] and focus on aspects relevant for a Titan deployment.
 
 Setting up Security Group
-^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++
 
 * Navigate to the EC2 Console Dashboard, then click on "Security Groups" under "Network & Security".
 
 * Create a new security group. Click Inbound.  Set the "Create a new rule" dropdown menu to "Custom TCP rule".  Add a rule for port 22 from source 0.0.0.0/0.  Add a rule for ports 1024-65535 from the security group members.  If you don't want to open all unprivileged ports among security group members, then at least open 7000, 7199, and 9160 among security group members.  Tip: the "Source" dropdown will autocomplete security group identifiers once "sg" is typed in the box, so you needn't have the exact value ready beforehand.
 
 Launch DataStax Cassandra AMI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++++++
 
 * "Launch the https://aws.amazon.com/amis/datastax-auto-clustering-ami-2-2[DataStax AMI] in your desired zone 
 
@@ -240,7 +235,7 @@ Launch DataStax Cassandra AMI
 * Review and launch instances on the final wizard page.
 
 Verify Successful Instance Launch
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++++++++++
 
 * SSH into any Cassandra instance node: `ssh -i [your-private-key].pem ubuntu@[public-dns-name-of-any-cassandra-instance]`
 
@@ -249,12 +244,12 @@ Verify Successful Instance Launch
 Note, that the AMI takes a few minutes to configure each instance. A shell prompt will appear upon successful configuration when you SSH into the instance.
 
 Launch Titan Instances
-^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++
 
 Launch additional EC2 instances to run Titan which are either configured in Remote Server Mode or Remote Server Mode with Rexster as described above. You only need to note the IP address of one of the Cassandra cluster instances and configure it as the host name. The particular EC2 instance to run and the particular configuration depends on your use case. 
 
 Example Titan Instance on Amazon Linux AMI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++++++++++++++++++++++
 
 * Launch the http://aws.amazon.com/amazon-linux-ami[Amazon Linux AMI] in the same zone of the Cassandra cluster. Choose your desired EC2 instance type depending on the amount of resources you need. Use the default configuration options and select the same Key Pair and Security Group as for the Cassandra cluster configured in the previous step.
 
@@ -277,7 +272,7 @@ You may add additional configuration options found on this page or under "Graph 
 You have successfully connected this Titan instance to the Cassandra cluster and can start to operate on the graph.
 
 Connect to Cassandra cluster in EC2 from outside EC2
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Opening the usual Cassandra ports (9160, 7000, 7199) in the security group is not enough, because the Cassandra nodes by default broadcast their ec2-internal IPs, and not their public-facing IPs.
 
@@ -287,26 +282,13 @@ To fix this, set the "broadcast-address" property for each instance in /etc/cass
 
 Changing the "broadcast-address" property allows you to connect to the cluster from outside ec2, but it might also mean that traffic originating within ec2 will have to round-trip to the internet and back before it gets to the cluster.  So, this approach is only useful for development and testing.
 
-TODO Sections from Github Wiki
-------------------------------
 
-*** [[Using HBase]]
-*** [[Using Persistit]]
-*** [[Using BerkeleyDB]]
-** Indexing Backends
-*** [[Indexing Backend Overview]]
-*** [[Using Elastic Search]]
-*** [[Using Lucene]]
-*** [[Full Text and String Search]]
-*** [[Direct Index Query]]
-** Type Management
-*** [[Type Definition Overview]] (*cheat sheet*)
-*** [[Vertex-Centric Indices]]
-** Configuration and Tuning
-*** [[Graph Configuration]] (*cheat sheet*)
-*** [[Datatype and Attribute Serializer Configuration]]
-*** [[Example Graph Configuration]]
-** [[Data Caching]]
-*** [[Database Cache]]
-*** [[Transaction Cache]]
+HBase
+~~~~~
 
+Stub
+
+BerkeleyDB
+~~~~~~~~~~
+
+Stub
