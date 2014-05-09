@@ -18,7 +18,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface TitanMultiVertexQuery extends BaseVertexQuery {
+public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification
@@ -40,39 +40,6 @@ public interface TitanMultiVertexQuery extends BaseVertexQuery {
      * @return this query builder
      */
     public TitanMultiVertexQuery addAllVertices(Collection<TitanVertex> vertices);
-
-    @Override
-    public TitanMultiVertexQuery labels(String... labels);
-
-    @Override
-    public TitanMultiVertexQuery types(TitanType... type);
-
-    @Override
-    public TitanMultiVertexQuery keys(String... keys);
-
-    @Override
-    public TitanMultiVertexQuery direction(Direction d);
-
-    @Override
-    public TitanMultiVertexQuery has(String key);
-
-    @Override
-    public TitanMultiVertexQuery hasNot(String key);
-
-    @Override
-    public TitanMultiVertexQuery has(String type, Object value);
-
-    @Override
-    public TitanMultiVertexQuery hasNot(String key, Object value);
-
-    @Override
-    public TitanMultiVertexQuery has(String key, Predicate predicate, Object value);
-
-    @Override
-    public <T extends Comparable<?>> TitanMultiVertexQuery interval(String key, T start, T end);
-
-    @Override
-    public TitanMultiVertexQuery limit(int limit);
 
 
    /* ---------------------------------------------------------------

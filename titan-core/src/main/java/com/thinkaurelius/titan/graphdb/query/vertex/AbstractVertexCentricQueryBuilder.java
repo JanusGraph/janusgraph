@@ -32,20 +32,37 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQuery {
+public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuery> implements BaseVertexQuery<Q> {
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
 
     private static final String[] NO_TYPES = new String[0];
     private static final List<PredicateCondition<String, TitanRelation>> NO_CONSTRAINTS = ImmutableList.of();
 
+    /**
+     * Transaction in which this query is executed
+     */
     protected final StandardTitanTx tx;
 
-    //Initial query configuration
+    /**
+     * The direction of this query. BOTH by default
+     */
     private Direction dir = Direction.BOTH;
+    /**
+     * The relation types (labels or keys) to query for. None by default which means query for any relation type.
+     */
     private String[] types = NO_TYPES;
+    /**
+     * The constraints added to this query. None by default.
+     */
     private List<PredicateCondition<String, TitanRelation>> constraints = NO_CONSTRAINTS;
-
+    /**
+     * The vertex to be used for the adjacent vertex constraint. If null, that means no such constraint. Null by default.
+     */
+    private TitanVertex adjacentVertex = null;
+    /**
+     * The limit of this query. No limit by default.
+     */
     private int limit = Query.NO_LIMIT;
 
 
@@ -54,81 +71,85 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
         this.tx = tx;
     }
 
-    Direction getDirection() {
-        return dir;
-    }
+    protected abstract Q getThis();
 
     /* ---------------------------------------------------------------
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
 
+    @Override
+    public Q adjacent(TitanVertex vertex) {
+        Preconditions.checkNotNull(vertex);
+        this.adjacentVertex = vertex;
+        return getThis();
+    }
 
-    private AbstractVertexCentricQueryBuilder addConstraint(String type, TitanPredicate rel, Object value) {
+    private Q addConstraint(String type, TitanPredicate rel, Object value) {
         Preconditions.checkArgument(type!=null && StringUtils.isNotBlank(type) && rel!=null);
         if (constraints==NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
-        return this;
+        return getThis();
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(TitanKey key, Object value) {
+    public Q has(TitanKey key, Object value) {
         return has(key.getName(), value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(TitanLabel label, TitanVertex vertex) {
+    public Q has(TitanLabel label, TitanVertex vertex) {
         return has(label.getName(), vertex);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(String type, Object value) {
+    public Q has(String type, Object value) {
         return addConstraint(type, Cmp.EQUAL, value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder hasNot(String key, Object value) {
+    public Q hasNot(String key, Object value) {
         return has(key, Cmp.NOT_EQUAL, value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(String key, Predicate predicate, Object value) {
+    public Q has(String key, Predicate predicate, Object value) {
         return addConstraint(key, TitanPredicate.Converter.convert(predicate), value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(TitanKey key, Predicate predicate, Object value) {
+    public Q has(TitanKey key, Predicate predicate, Object value) {
         return has(key.getName(), predicate, value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder has(String key) {
+    public Q has(String key) {
         return has(key, Cmp.NOT_EQUAL, (Object) null);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder hasNot(String key) {
+    public Q hasNot(String key) {
         return has(key, Cmp.EQUAL, (Object) null);
     }
 
     @Override
-    public <T extends Comparable<?>> AbstractVertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
+    public <T extends Comparable<?>> Q interval(TitanKey key, T start, T end) {
         return interval(key.getName(), start, end);
     }
 
     @Override
-    public <T extends Comparable<?>> AbstractVertexCentricQueryBuilder interval(String key, T start, T end) {
+    public <T extends Comparable<?>> Q interval(String key, T start, T end) {
         addConstraint(key, Cmp.GREATER_THAN_EQUAL, start);
         return addConstraint(key, Cmp.LESS_THAN, end);
     }
 
     @Deprecated
-    public <T extends Comparable<T>> AbstractVertexCentricQueryBuilder has(String key, T value, com.tinkerpop.blueprints.Query.Compare compare) {
+    public <T extends Comparable<T>> Q has(String key, T value, com.tinkerpop.blueprints.Query.Compare compare) {
         return addConstraint(key, TitanPredicate.Converter.convert(compare), value);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder types(TitanType... types) {
+    public Q types(TitanType... types) {
         String[] ts = new String[types.length];
         for (int i = 0; i < types.length; i++) {
             ts[i]=types[i].getName();
@@ -137,38 +158,38 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder labels(String... labels) {
+    public Q labels(String... labels) {
         return types(labels);
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder keys(String... keys) {
+    public Q keys(String... keys) {
         return types(keys);
     }
 
-    public AbstractVertexCentricQueryBuilder type(TitanType type) {
+    public Q type(TitanType type) {
         return types(type.getName());
     }
 
-    private AbstractVertexCentricQueryBuilder types(String... types) {
+    private Q types(String... types) {
         Preconditions.checkArgument(types!=null);
         for (String type : types) Preconditions.checkArgument(StringUtils.isNotBlank(type),"Invalid type: %s",type);
         this.types=types;
-        return this;
+        return getThis();
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder direction(Direction d) {
+    public Q direction(Direction d) {
         Preconditions.checkNotNull(d);
         dir = d;
-        return this;
+        return getThis();
     }
 
     @Override
-    public AbstractVertexCentricQueryBuilder limit(int limit) {
+    public Q limit(int limit) {
         Preconditions.checkArgument(limit >= 0);
         this.limit = limit;
-        return this;
+        return getThis();
     }
 
     /* ---------------------------------------------------------------
@@ -176,15 +197,42 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 	 * ---------------------------------------------------------------
 	 */
 
+    protected Direction getDirection() {
+        return dir;
+    }
+
+    protected TitanVertex getAdjacentVertex() {
+        return adjacentVertex;
+    }
+
     protected final boolean hasTypes() {
         return types.length>0;
     }
 
+    /**
+     * Whether this query is asking for the value of an {@link ImplicitKey}.
+     * </p>
+     * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
+     * for completeness reasons.
+     *
+     * @param returnType
+     * @return
+     */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
         if (returnType==RelationCategory.EDGE || types.length!=1 || !constraints.isEmpty()) return false;
         return tx.getType(types[0]) instanceof ImplicitKey;
     }
 
+    /**
+     * If {@link #isImplicitKeyQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)} is true,
+     * this method provides the result set for the query based on the evaluation of the {@link ImplicitKey}.
+     * </p>
+     * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
+     * for completeness reasons.
+     *
+     * @param v
+     * @return
+     */
     protected Iterable<TitanRelation> executeImplicitKeyQuery(InternalVertex v) {
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
@@ -213,17 +261,9 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 	 * ---------------------------------------------------------------
 	 */
 
-    protected EdgeSerializer.VertexConstraint getVertexConstraint() {
-        return null;
-    }
-
     private static final int HARD_MAX_LIMIT   = 300000;
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
-        //TODO: accommodate
-        //if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
-
-
         assert returnType != null;
         if (limit == 0)
             return BaseVertexCentricQuery.emptyQuery();
@@ -372,6 +412,22 @@ public abstract class AbstractVertexCentricQueryBuilder implements BaseVertexQue
 
     private static boolean emptySortConstraints(EdgeSerializer.TypedInterval[] sortKeyConstraints) {
         return sortKeyConstraints.length==0 || sortKeyConstraints[0]==null;
+    }
+
+    private static TitanType[] getExtendedSortKey(InternalType type, Direction dir, StandardTitanTx tx) {
+        int additional = 0;
+        if (!type.getMultiplicity().isUnique(dir)) {
+            if (!type.getMultiplicity().isConstrained()) additional++;
+            if (type.isEdgeLabel()) additional++;
+        }
+        TitanType[] entireKey = new TitanType[type.getSortKey().length+additional];
+        int i;
+        for (i=0;i<type.getSortKey().length;i++) {
+            entireKey[i]=tx.getExistingType(type.getSortKey()[i]);
+        }
+        if (type.isEdgeLabel() && !type.getMultiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
+        if (!type.getMultiplicity().isConstrained()) entireKey[i++]=ImplicitKey.ID;
+        return entireKey;
     }
 
 

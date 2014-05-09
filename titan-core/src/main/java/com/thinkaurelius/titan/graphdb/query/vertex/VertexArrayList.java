@@ -12,6 +12,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * An implementation of {@link VertexListInternal} that stores the actual vertex references
+ * and simply wraps an {@link ArrayList} and keeps a boolean flag to remember whether this list is in sort order.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class VertexArrayList implements VertexListInternal {
 
     private final ArrayList<TitanVertex> vertices;
@@ -66,6 +72,12 @@ public class VertexArrayList implements VertexListInternal {
         return Iterators.unmodifiableIterator(vertices.iterator());
     }
 
+    /**
+     * Utility method used to convert the list of vertices into a list of vertex ids (assuming all vertices have ids)
+     *
+     * @param vertices
+     * @return
+     */
     private static final AbstractLongList toLongList(List<TitanVertex> vertices) {
         AbstractLongList result = new LongArrayList(vertices.size());
         for (TitanVertex n : vertices) {

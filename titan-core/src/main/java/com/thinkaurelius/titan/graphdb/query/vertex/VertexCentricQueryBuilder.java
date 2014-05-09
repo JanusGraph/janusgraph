@@ -19,14 +19,35 @@ import com.tinkerpop.blueprints.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanVertexQuery {
+/**
+ * Implementation of {@link TitanVertexQuery} that extends {@link AbstractVertexCentricQueryBuilder}
+ * for all the query building and optimization and adds only the execution logic in
+ * {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}. However, there is
+ * one important special case: If the constructed query is simple (i.e. {@link com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery#isSimple()=true}
+ * then we use the {@link SimpleVertexQueryProcessor} to execute the query instead of the generic {@link QueryProcessor}
+ * for performance reasons and we compute the result sets differently to make things faster and more memory efficient.
+ * </p>
+ * The simplified vertex processing only applies to loaded (i.e. non-mutated) vertices. The query can be configured
+ * to only included loaded relations in the result set (which is needed, for instance, when computing index deltas in
+ * {@link com.thinkaurelius.titan.graphdb.database.IndexSerializer}) via {@link #queryOnlyLoaded()}.
+ * </p>
+ * All other methods just prepare or transform that result set to fit the particular method semantics.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements TitanVertexQuery<VertexCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(VertexCentricQueryBuilder.class);
 
+    /**
+    The base vertex of this query
+     */
     private final InternalVertex vertex;
 
-    //Additional constraints
-    private TitanVertex adjacentVertex = null;
+    /**
+    Whether to query only for persisted edges, i.e. ignore any modifications to the vertex made in this transaction.
+     This is achieved by using the {@link SimpleVertexQueryProcessor} for execution.
+     */
     private boolean queryOnlyLoaded = false;
 
     public VertexCentricQueryBuilder(InternalVertex v) {
@@ -36,126 +57,23 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         this.vertex = v;
     }
 
+    @Override
+    protected VertexCentricQueryBuilder getThis() {
+        return this;
+    }
+
     /* ---------------------------------------------------------------
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
 
-    @Override
-    public VertexCentricQueryBuilder adjacentVertex(TitanVertex vertex) {
-        Preconditions.checkNotNull(vertex);
-        this.adjacentVertex = vertex;
-        return this;
-    }
-
+    /**
+     * Calling this method will cause this query to only included loaded (i.e. unmodified) relations in the
+     * result set.
+     * @return
+     */
     public VertexCentricQueryBuilder queryOnlyLoaded() {
         queryOnlyLoaded=true;
-        return this;
-    }
-
-    /*
-    ########### SIMPLE OVERWRITES ##########
-	 */
-
-    @Override
-    public VertexCentricQueryBuilder has(TitanKey key, Object value) {
-        super.has(key, value);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder has(TitanLabel label, TitanVertex vertex) {
-        super.has(label, vertex);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder has(String type, Object value) {
-        super.has(type, value);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder hasNot(String key, Object value) {
-        super.hasNot(key, value);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder has(String key, Predicate predicate, Object value) {
-        super.has(key, predicate, value);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder has(TitanKey key, Predicate predicate, Object value) {
-        super.has(key, predicate, value);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder has(String key) {
-        super.has(key);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder hasNot(String key) {
-        super.hasNot(key);
-        return this;
-    }
-
-    @Override
-    public <T extends Comparable<?>> VertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
-        super.interval(key, start, end);
-        return this;
-    }
-
-    @Override
-    public <T extends Comparable<?>> VertexCentricQueryBuilder interval(String key, T start, T end) {
-        super.interval(key, start, end);
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public <T extends Comparable<T>> VertexCentricQueryBuilder has(String key, T value, Compare compare) {
-        super.has(key, value, compare);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder types(TitanType... types) {
-        super.types(types);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder labels(String... labels) {
-        super.labels(labels);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder keys(String... keys) {
-        super.keys(keys);
-        return this;
-    }
-
-    public VertexCentricQueryBuilder type(TitanType type) {
-        super.type(type);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder direction(Direction d) {
-        super.direction(d);
-        return this;
-    }
-
-    @Override
-    public VertexCentricQueryBuilder limit(int limit) {
-        super.limit(limit);
         return this;
     }
 
@@ -164,22 +82,30 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
 	 * ---------------------------------------------------------------
 	 */
 
-    @Override
-    protected EdgeSerializer.VertexConstraint getVertexConstraint() {
-        if (adjacentVertex != null && vertex.hasId() && adjacentVertex.hasId()) {
-            return new EdgeSerializer.VertexConstraint(vertex.getID(), adjacentVertex.getID());
-        } else return null;
-    }
+//    @Override
+//    protected EdgeSerializer.VertexConstraint getVertexConstraint() {
+//        if (adjacentVertex != null && vertex.hasId() && adjacentVertex.hasId()) {
+//            return new EdgeSerializer.VertexConstraint(vertex.getID(), adjacentVertex.getID());
+//        } else return null;
+//    }
 
+    /**
+     * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
+     * logic is taken from {@link AbstractVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+     * This method only adds the additional conditions that are based on the base vertex.
+     *
+     * @param returnType
+     * @return
+     */
     public VertexCentricQuery constructQuery(RelationCategory returnType) {
         BaseVertexCentricQuery vq = super.constructQuery(returnType);
         Condition<TitanRelation> condition = vq.getCondition();
         if (!vq.isEmpty()) {
-            //Add other-vertex and direction related conditions
+            //Add adjacent-vertex and direction related conditions
             And<TitanRelation> newcond = (condition instanceof And) ? (And) condition : new And<TitanRelation>(condition);
             newcond.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
-            if (adjacentVertex != null)
-                newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
+            if (getAdjacentVertex() != null)
+                newcond.add(new IncidenceCondition<TitanRelation>(vertex,getAdjacentVertex()));
             condition=newcond;
         }
         VertexCentricQuery query = new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());

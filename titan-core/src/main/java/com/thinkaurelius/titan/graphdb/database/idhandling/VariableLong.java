@@ -204,6 +204,11 @@ public class VariableLong {
         writeUnsignedBackward(out,value);
     }
 
+    public static int positiveBackwardLength(long value) {
+        assert value >= 0;
+        return unsignedBackwardLength(value);
+    }
+
     public static long readPositiveBackward(ReadBuffer in) {
         return readUnsignedBackward(in);
     }
@@ -217,32 +222,60 @@ public class VariableLong {
         writeUnsignedBackward(out, convert2Unsigned(value));
     }
 
+    public static int backwardLength(final long value) {
+        return unsignedBackwardLength(convert2Unsigned(value));
+    }
+
     public static long readBackward(ReadBuffer in) {
         return convertFromUnsigned(readUnsignedBackward(in));
     }
 
-    private static void writeUnsignedBackward(WriteBuffer out, long value) {
-        boolean first = true;
-        do {
-            byte b = (byte) (value & BIT_MASK);
-            value = value >>> 7;
-            if (first) {
-                b = (byte) (b | STOP_MASK);
-                first = false;
-            }
+    /**
+     * The format used is this:
+     * - The first bit indicates whether this is the first block (reading backwards, this would be the stopping criterion)
+     * - In the first byte, the 3 bits after the first bit indicate the number of bytes written minus 3 (since 3 is
+     * the minimum number of bytes written. So, if the 3 bits are 010 = 2 => 5 bytes written. The value is aligned to
+     * the left to ensure that this encoding is byte order preserving.
+     *
+     * @param out
+     * @param value
+     */
+    private static void writeUnsignedBackward(WriteBuffer out, final long value) {
+        int numBytes= unsignedBackwardLength(value);
+        int prefixLen = numBytes-3;
+        assert prefixLen>=0 && prefixLen<8; //Consumes 3 bits
+        //Prepare first byte
+        byte b = (byte)((prefixLen<<4) | 0x80); //stop marker (first bit) and length
+        for (int i=numBytes-1; i>=0; i--) {
+            b = (byte)(b | (0x7F & (value>>>(i*7))));
             out.putByte(b);
-        } while (value>0);
+            b=0;
+        }
+    }
+
+    private static int unsignedBackwardLength(final long value) {
+        int bitlength = unsignedBitLength(value);
+        assert bitlength>0 && bitlength<=64;
+        int numBytes= Math.max(3,1+(bitlength<=4?0:(1+(bitlength-5)/7)));
+        return numBytes;
     }
 
     private static long readUnsignedBackward(ReadBuffer in) {
         int position = in.getPosition();
+        int numBytes = 0;
         long value = 0;
-        int b;
-        do {
+        long b;
+        while (true) {
             position--;
             b = in.getByte(position);
-            value = value << 7 | b & BIT_MASK;
-        } while (b >= 0);
+            if (b<0) { //First byte
+                value = value | ((b & 0x0F)<<(7*numBytes));
+                assert ((b>>>4)&7)+3 == numBytes+1 : b + " vs " + numBytes; //verify correct length
+                break;
+            }
+            value = value | (b<<(7*numBytes));
+            numBytes++;
+        }
         in.movePositionTo(position);
         return value;
     }

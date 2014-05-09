@@ -14,12 +14,20 @@ import com.tinkerpop.blueprints.Predicate;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface BaseVertexQuery {
+public interface BaseVertexQuery<Q extends BaseVertexQuery> {
 
     /* ---------------------------------------------------------------
     * Query Specification
     * ---------------------------------------------------------------
     */
+
+    /**
+     * Restricts this query to only those edges that point to the given vertex.
+     *
+     * @param vertex
+     * @return this query builder
+     */
+    public Q adjacent(TitanVertex vertex);
 
     /**
      * Query for only those relations matching one of the given types.
@@ -28,7 +36,7 @@ public interface BaseVertexQuery {
      * @param type types to query for
      * @return this query
      */
-    public BaseVertexQuery types(TitanType... type);
+    public Q types(TitanType... type);
 
     /**
      * Query for only those edges matching one of the given labels.
@@ -37,7 +45,7 @@ public interface BaseVertexQuery {
      * @param labels edge labels to query for
      * @return this query
      */
-    public BaseVertexQuery labels(String... labels);
+    public Q labels(String... labels);
 
     /**
      * Query for only those properties having one of the given keys.
@@ -46,7 +54,7 @@ public interface BaseVertexQuery {
      * @param keys property keys to query for
      * @return this query
      */
-    public BaseVertexQuery keys(String... keys);
+    public Q keys(String... keys);
 
     /**
      * Query only for relations in the given direction.
@@ -55,7 +63,7 @@ public interface BaseVertexQuery {
      * @param d Direction to query for
      * @return this query
      */
-    public BaseVertexQuery direction(Direction d);
+    public Q direction(Direction d);
 
     /**
      * Query only for edges that have an incident property matching the given value.
@@ -65,7 +73,7 @@ public interface BaseVertexQuery {
      * @param value Value for the property of the given key to match
      * @return this query
      */
-    public BaseVertexQuery has(TitanKey key, Object value);
+    public Q has(TitanKey key, Object value);
 
     /**
      * Query only for edges that have a unidirected edge matching pointing to the given vertex
@@ -77,11 +85,11 @@ public interface BaseVertexQuery {
      * @param vertex Vertex to point unidirectional edge to
      * @return this query
      */
-    public BaseVertexQuery has(TitanLabel label, TitanVertex vertex);
+    public Q has(TitanLabel label, TitanVertex vertex);
 
-    public BaseVertexQuery has(String key);
+    public Q has(String key);
 
-    public BaseVertexQuery hasNot(String key);
+    public Q hasNot(String key);
 
     /**
      * Query only for edges that have an incident property or unidirected edge matching the given value.
@@ -96,24 +104,14 @@ public interface BaseVertexQuery {
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
      * @return this query
      */
-    public BaseVertexQuery has(String type, Object value);
+    public Q has(String type, Object value);
 
-    public BaseVertexQuery hasNot(String key, Object value);
+    public Q hasNot(String key, Object value);
 
 
-    public BaseVertexQuery has(TitanKey key, Predicate predicate, Object value);
+    public Q has(TitanKey key, Predicate predicate, Object value);
 
-    public BaseVertexQuery has(String key, Predicate predicate, Object value);
-
-    /**
-     * Query for those edges that have an incident property whose values lies in the interval by [start,end).
-     *
-     * @param key   property key
-     * @param start value defining the start of the interval (inclusive)
-     * @param end   value defining the end of the interval (exclusive)
-     * @return this query
-     */
-    public <T extends Comparable<?>> BaseVertexQuery interval(String key, T start, T end);
+    public Q has(String key, Predicate predicate, Object value);
 
     /**
      * Query for those edges that have an incident property whose values lies in the interval by [start,end).
@@ -123,7 +121,17 @@ public interface BaseVertexQuery {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<?>> BaseVertexQuery interval(TitanKey key, T start, T end);
+    public <T extends Comparable<?>> Q interval(String key, T start, T end);
+
+    /**
+     * Query for those edges that have an incident property whose values lies in the interval by [start,end).
+     *
+     * @param key   property key
+     * @param start value defining the start of the interval (inclusive)
+     * @param end   value defining the end of the interval (exclusive)
+     * @return this query
+     */
+    public <T extends Comparable<?>> Q interval(TitanKey key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -134,7 +142,7 @@ public interface BaseVertexQuery {
      * @param limit maximum number of relations to retrieve for this query
      * @return this query
      */
-    public BaseVertexQuery limit(int limit);
+    public Q limit(int limit);
 
 
 }

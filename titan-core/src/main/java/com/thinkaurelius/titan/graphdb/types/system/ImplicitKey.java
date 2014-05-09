@@ -24,6 +24,8 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
 //    public static final ImplicitKey KEY = new ImplicitKey("key",Long.class);
 
+    public static final ImplicitKey ADJACENT_ID = new ImplicitKey(0,"_adjacent",Long.class);
+
     //######### IMPLICIT KEYS WITH ID ############
 
     public static final ImplicitKey TIMESTAMP = new ImplicitKey(8,"_timestamp",Long.class);
@@ -69,7 +71,7 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
             } else {
                 return null;
             }
-        } else throw new AssertionError("Unexpected instance: " + this.getName());
+        } else throw new AssertionError("Implicit key property is undefined: " + this.getName());
     }
 
 

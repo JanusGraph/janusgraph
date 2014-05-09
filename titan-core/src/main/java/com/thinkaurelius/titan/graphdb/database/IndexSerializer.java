@@ -578,6 +578,7 @@ public class IndexSerializer {
 
     private final StaticBuffer getIndexKey(InternalIndexType index, Object[] values) {
         DataOutput out = serializer.getDataOutput(8*DEFAULT_OBJECT_BYTELEN + 8);
+        VariableLong.writePositive(out, index.getID());
         IndexField[] fields = index.getFieldKeys();
         Preconditions.checkArgument(fields.length>0 && fields.length==values.length);
         for (int i = 0; i < fields.length; i++) {
@@ -591,7 +592,6 @@ public class IndexSerializer {
                 out.writeObjectNotNull(value);
             }
         }
-        VariableLong.writePositiveBackward(out, index.getID());
         StaticBuffer key = out.getStaticBuffer();
         if (hashKeys) key = HashingUtil.hashPrefixKey(hashLength,key);
         return key;

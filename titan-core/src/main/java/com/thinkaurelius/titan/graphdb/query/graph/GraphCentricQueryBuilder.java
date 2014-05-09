@@ -163,7 +163,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     private static final double CARDINALITY_SINGE_SCORE = 1000;
     private static final double CARDINALITY_OTHER_SCORE = 1000;
 
-    private GraphCentricQuery constructQuery(final ElementCategory resultType) {
+    public GraphCentricQuery constructQuery(final ElementCategory resultType) {
         Preconditions.checkNotNull(resultType);
         if (limit == 0) return GraphCentricQuery.emptyQuery(resultType);
 

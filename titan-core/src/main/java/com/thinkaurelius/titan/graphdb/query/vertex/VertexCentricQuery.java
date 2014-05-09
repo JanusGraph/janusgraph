@@ -14,9 +14,12 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
+ * A vertex-centric query which implements {@link ElementQuery} so that it can be executed by
+ * {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}. Most of the query definition
+ * is in the extended {@link BaseVertexCentricQuery} - this class only adds the base vertex to the mix.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<TitanRelation, SliceQuery> {
 
     private final InternalVertex vertex;
@@ -36,6 +39,10 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
         this.vertex = vertex;
     }
 
+    /**
+     * Constructs an empty query
+     * @param vertex
+     */
     protected VertexCentricQuery(InternalVertex vertex) {
         super();
         Preconditions.checkNotNull(vertex);
@@ -46,6 +53,11 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
         return new VertexCentricQuery(vertex);
     }
 
+    /**
+     * A query is considered 'simple' if it is comprised of just one sub-query and that query
+     * is fitted (i.e. does not require an in-memory filtering).
+     * @return
+     */
     public boolean isSimple() {
         return queries.size()==1 && queries.get(0).isFitted();
     }

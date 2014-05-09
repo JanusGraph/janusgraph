@@ -9,6 +9,6 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
  */
 public interface RelationReader {
 
-    public RelationCache parseRelation(long vertexid, Entry data, boolean parseHeaderOnly, TypeInspector tx);
+    public RelationCache parseRelation(Entry data, boolean parseHeaderOnly, TypeInspector tx);
 
 }

@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
 import com.thinkaurelius.titan.graphdb.query.condition.And;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
+import com.thinkaurelius.titan.graphdb.query.condition.IncidenceCondition;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
@@ -20,16 +21,30 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder implements TitanMultiVertexQuery {
+/**
+ * Implementation of {@link TitanMultiVertexQuery} that extends {@link AbstractVertexCentricQueryBuilder}
+ * for all the query building and optimization and adds only the execution logic in
+ * {@link #relations(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+ * </p>
+ * All other methods just prepare or transform that result set to fit the particular method semantics.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements TitanMultiVertexQuery<MultiVertexCentricQueryBuilder> {
 
-    @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(MultiVertexCentricQueryBuilder.class);
-
+    /**
+     * The base vertices of this query
+     */
     private final Set<InternalVertex> vertices;
 
     public MultiVertexCentricQueryBuilder(final StandardTitanTx tx) {
         super(tx);
         vertices = Sets.newHashSet();
+    }
+
+    @Override
+    protected MultiVertexCentricQueryBuilder getThis() {
+        return this;
     }
 
     /* ---------------------------------------------------------------
@@ -51,116 +66,26 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
         return this;
     }
 
-    /*
-    ########### SIMPLE OVERWRITES ##########
-	 */
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(TitanKey key, Object value) {
-        super.has(key, value);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(TitanLabel label, TitanVertex vertex) {
-        super.has(label, vertex);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(String type, Object value) {
-        super.has(type, value);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder hasNot(String key, Object value) {
-        super.hasNot(key, value);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(String key, Predicate predicate, Object value) {
-        super.has(key, predicate, value);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(TitanKey key, Predicate predicate, Object value) {
-        super.has(key, predicate, value);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder has(String key) {
-        super.has(key);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder hasNot(String key) {
-        super.hasNot(key);
-        return this;
-    }
-
-    @Override
-    public <T extends Comparable<?>> MultiVertexCentricQueryBuilder interval(TitanKey key, T start, T end) {
-        super.interval(key, start, end);
-        return this;
-    }
-
-    @Override
-    public <T extends Comparable<?>> MultiVertexCentricQueryBuilder interval(String key, T start, T end) {
-        super.interval(key, start, end);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder types(TitanType... types) {
-        super.types(types);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder labels(String... labels) {
-        super.labels(labels);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder keys(String... keys) {
-        super.keys(keys);
-        return this;
-    }
-
-    public MultiVertexCentricQueryBuilder type(TitanType type) {
-        super.type(type);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder direction(Direction d) {
-        super.direction(d);
-        return this;
-    }
-
-    @Override
-    public MultiVertexCentricQueryBuilder limit(int limit) {
-        super.limit(limit);
-        return this;
-    }
-
     /* ---------------------------------------------------------------
      * Query Execution
 	 * ---------------------------------------------------------------
 	 */
 
-    @Override
-    protected EdgeSerializer.VertexConstraint getVertexConstraint() {
-        return null;
-    }
-
-
+    /**
+     * Constructs the BaseVertexCentricQuery through {@link AbstractVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+     * If the query asks for an implicit key, the resulting map is computed and returned directly.
+     * If the query is empty, a map that maps each vertex to an empty list is returned.
+     * Otherwise, the query is executed for all vertices through the transaction which will effectively
+     * pre-load the return result sets into the associated {@link com.thinkaurelius.titan.graphdb.vertices.CacheVertex} or
+     * don't do anything at all if the vertex is new (and hence no edges in the storage backend).
+     * After that, a map is constructed that maps each vertex to the corresponding VertexCentricQuery and wrapped
+     * into a QueryProcessor. Hence, upon iteration the query will be executed like any other VertexCentricQuery
+     * with the performance difference that the SliceQueries will have already been preloaded and not further
+     * calls to the storage backend are needed.
+     *
+     * @param returnType
+     * @return
+     */
     protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationCategory returnType) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         Map<TitanVertex, Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size());
@@ -175,11 +100,14 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
 
                 Condition<TitanRelation> condition = vq.getCondition();
                 for (InternalVertex v : vertices) {
-                    //Add other-vertex and direction related conditions (need to copy!)
+                    ///Add adjacent-vertex and direction related conditions (which depend on the base vertex) to the
+                    // condition. Need to copy the condition in order to not overwrite a previous one.
                     And<TitanRelation> newcond = new And<TitanRelation>();
                     if (condition instanceof And) newcond.addAll((And) condition);
                     else newcond.add(condition);
                     newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
+                    if (getAdjacentVertex() != null)
+                        newcond.add(new IncidenceCondition<TitanRelation>(v,getAdjacentVertex()));
                     VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
                     result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
 

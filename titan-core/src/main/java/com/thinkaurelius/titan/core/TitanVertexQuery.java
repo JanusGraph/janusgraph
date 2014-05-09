@@ -12,58 +12,7 @@ import com.tinkerpop.blueprints.*;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanVertexQuery extends BaseVertexQuery, VertexQuery {
-
-    /* ---------------------------------------------------------------
-    * Query Specification
-    * ---------------------------------------------------------------
-    */
-
-    /**
-     * Restricts this query to only those edges that point to the given vertex.
-     *
-     * @param vertex
-     * @return this query builder
-     */
-    public TitanVertexQuery adjacentVertex(TitanVertex vertex);
-
-    @Override
-    public TitanVertexQuery labels(String... labels);
-
-    @Override
-    public TitanVertexQuery keys(String... keys);
-
-    @Override
-    public TitanVertexQuery types(TitanType... type);
-
-    @Override
-    public TitanVertexQuery direction(Direction d);
-
-    @Override
-    public TitanVertexQuery has(String key);
-
-    @Override
-    public TitanVertexQuery hasNot(String key);
-
-    @Override
-    public TitanVertexQuery has(String type, Object value);
-
-    @Override
-    public TitanVertexQuery hasNot(String key, Object value);
-
-    @Override
-    public TitanVertexQuery has(String key, Predicate predicate, Object value);
-
-    @Override
-    @Deprecated
-    public <T extends Comparable<T>> TitanVertexQuery has(String s, T t, Compare compare);
-
-    @Override
-    public <T extends Comparable<?>> TitanVertexQuery interval(String key, T start, T end);
-
-    @Override
-    public TitanVertexQuery limit(int limit);
-
+public interface TitanVertexQuery<Q extends TitanVertexQuery> extends BaseVertexQuery<Q>, VertexQuery {
 
     /* ---------------------------------------------------------------
     * Query execution

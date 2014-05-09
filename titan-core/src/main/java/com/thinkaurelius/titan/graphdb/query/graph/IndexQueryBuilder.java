@@ -25,6 +25,8 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
+ *
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {

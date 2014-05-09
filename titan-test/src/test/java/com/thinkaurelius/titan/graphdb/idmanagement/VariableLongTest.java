@@ -2,13 +2,17 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.testutil.RandomGenerator;
 import org.apache.commons.lang.time.StopWatch;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Random;
 
 import static junit.framework.Assert.assertEquals;
 
@@ -208,7 +212,7 @@ public class VariableLongTest {
 
         @Override
         public int length(long value) {
-            return VariableLong.positiveLength(value);
+            return VariableLong.positiveBackwardLength(value);
         }
 
         @Override
@@ -226,7 +230,7 @@ public class VariableLongTest {
 
         @Override
         public int length(long value) {
-            return VariableLong.length(value);
+            return VariableLong.backwardLength(value);
         }
 
         @Override
@@ -265,6 +269,38 @@ public class VariableLongTest {
             assertEquals(prefix,result[1]);
             return result[0];
         }
+    }
+
+
+
+    @Test
+    public void byteOrderPreserving() {
+        long[] scalingFactors = { Long.MAX_VALUE, 1000, 1000000000l};
+        for (int t=0;t<10000000;t++) {
+            StaticBuffer[] b = new StaticBuffer[2];
+            long[] l = new long[2];
+            for (int i=0;i<2;i++) {
+                l[i] = randomPosLong(scalingFactors[random.nextInt(scalingFactors.length)]);
+                WriteBuffer out = new WriteByteBuffer(11);
+                VariableLong.writePositiveBackward(out,l[i]);
+                b[i]=out.getStaticBuffer();
+                ReadBuffer res = b[i].asReadBuffer();
+                res.movePositionTo(res.length());
+                assertEquals(l[i], VariableLong.readPositiveBackward(res));
+            }
+//            System.out.println(l[0] + " vs " + l[1]);
+            assertEquals(Math.signum(Long.compare(l[0],l[1])),Math.signum(b[0].compareTo(b[1])));
+        }
+
+    }
+
+    private static final Random random = new Random();
+
+    public static long randomPosLong(long scaling) {
+        long l = Math.round(random.nextGaussian()/3*scaling);
+        if (l<0) l=Math.abs(l+1);
+        assert l>=0;
+        return l;
     }
 
 }

@@ -9,6 +9,16 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 
 import java.util.Iterator;
 
+/**
+ * An implementation of {@link VertexListInternal} that stores only the vertex ids
+ * and simply wraps an {@link AbstractLongList} and keeps a boolean flag to remember whether this list is in sort order.
+ * In addition, we need a transaction reference in order to construct actual vertex references on request.
+ * </p>
+ * This is a more efficient way to represent a vertex result set but only applies to loaded vertices that have ids.
+ * So, compared to {@link VertexArrayList} this is an optimization for the special use case that a vertex is loaded.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class VertexLongList implements VertexListInternal {
 
     private final StandardTitanTx tx;

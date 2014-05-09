@@ -14,7 +14,11 @@ public class IDManager {
     /**
      *bit mask- Description (+ indicates defined type, * indicates proper & defined type)
      *
-     *      0 - * Normal (user created) Vertex
+     *      0 - + User created Vertex
+     *    000 -     * Normal vertices
+     *    010 -     * Partitioned vertices
+     *    100 -     * Unmodifiable (e.g. TTL'ed) vertices
+     *    110 -     Reserved for additional vertex type
      *      1 - + Hidden
      *     11 -     * Hidden (user created/triggered) Vertex [for later]
      *     01 -     + Schema related vertices

@@ -14,14 +14,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
+ * base vertex of the query. This query is constructed by {@link AbstractVertexCentricQueryBuilder#constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+ * and then later extended by single or multi-vertex query which add the vertex to the query.
+ * </p>
+ * This class override many methods in {@link com.thinkaurelius.titan.graphdb.query.ElementQuery} - check there
+ * for a description.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class BaseVertexCentricQuery extends BaseQuery {
 
-    //Condition in CNF
+    /**
+     * The condition of this query in QNF
+     */
     protected final Condition<TitanRelation> condition;
+    /**
+     * The individual component {@link SliceQuery} of this query. This query is considered an OR
+     * of the individual components (possibly filtered by the condition if not fitted).
+     */
     protected final List<BackendQueryHolder<SliceQuery>> queries;
+    /**
+     * The direction condition of this query. This is duplicated from the condition for efficiency reasons.
+     */
     protected final Direction direction;
 
     public BaseVertexCentricQuery(Condition<TitanRelation> condition, Direction direction,
@@ -39,6 +54,9 @@ public class BaseVertexCentricQuery extends BaseQuery {
         this(query.getCondition(), query.getDirection(), query.getQueries(), query.getLimit());
     }
 
+    /**
+     * Construct an empty query
+     */
     protected BaseVertexCentricQuery() {
         this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0);
     }
