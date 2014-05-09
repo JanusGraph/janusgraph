@@ -4,6 +4,7 @@ Management
 This section describes installation, configuration, and administration
 of Titan.
 
+[[storage-backends]]
 Storage Backends
 ----------------
 
@@ -19,6 +20,7 @@ backends that come with Titan.  For information about writing a new
 storage backend for Titan, see _TODO: xref to StoreManager/KCVS
 overview_.
 
+[[cassandra-storage]]
 Cassandra
 ~~~~~~~~~
 
@@ -255,14 +257,14 @@ Example Titan Instance on Amazon Linux AMI
 
 * SSH into the newly created instance via `ssh -i [your-private-key].pem ec2-user@[public-dns-name-of-the-instance]`. You may have to wait a little for the instance to launch.
 
-* https://github.com/thinkaurelius/titan/wiki/Downloads[Download] the current Titan distribution with `wget` and unpack the archive locally to the home directory. Start the gremlin shell to verify that Titan runs successfully. For more information on how to unpack Titan and start the gremlin shell, please refer to the "Getting Started guide":Getting-Started.
+* https://github.com/thinkaurelius/titan/wiki/Downloads[Download] the current Titan distribution with `wget` and unpack the archive locally to the home directory. Start the gremlin shell to verify that Titan runs successfully. For more information on how to unpack Titan and start the gremlin shell, please refer to the <<getting-started, Getting Started guide>>
 
 * Create a configuration file with `vi titan.properties` and add the following lines::
 
       storage.backend = cassandra
       storage.hostname = [IP-address-of-one-Cassandra-EC2-instance]
 
-You may add additional configuration options found on this page or under "Graph Configuration":Graph-Configuration.
+You may add additional configuration options found on this page or under _TODO: xref to Graph Configuration_.
 
 * Start the gremlin shell again and type the following::
 
@@ -283,11 +285,13 @@ To fix this, set the "broadcast-address" property for each instance in /etc/cass
 Changing the "broadcast-address" property allows you to connect to the cluster from outside ec2, but it might also mean that traffic originating within ec2 will have to round-trip to the internet and back before it gets to the cluster.  So, this approach is only useful for development and testing.
 
 
+[[hbase-storage]]
 HBase
 ~~~~~
 
 Stub
 
+[[bdb-storage]]
 BerkeleyDB
 ~~~~~~~~~~
 

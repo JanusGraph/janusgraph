@@ -74,6 +74,7 @@ image:titan-captheorem.png[]
 
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
+[[getting-started]]
 Getting Started with the Graph of the Gods sample data
 ------------------------------------------------------
 
@@ -155,7 +156,7 @@ Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Greml
 Loading the Graph of the Gods Into Titan
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance [[using Cassandra]] or [[using HBase]]. Refer to the [[storage backend overview]] on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
+The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance <<cassandra-storage,using Cassandra>> or <<hbase-storage,using HBase>>. Refer to the <<storage-backends,storage backend overview>> on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
 
 [source,gremlin]
 gremlin> g = GraphOfTheGodsFactory.create('/tmp/titan')           

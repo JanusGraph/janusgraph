@@ -112,7 +112,7 @@ Titan relies on optimized concurrent data structures to support hundreds of conc
 Concurrent Algorithms
 ~~~~~~~~~~~~~~~~~~~~~
 
-Thread independent transactions started through `newTransaction()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel [embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `TransactionalGraph` object returned by `newTransaction` without blocking each other.
+Thread independent transactions started through `newTransaction()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `TransactionalGraph` object returned by `newTransaction` without blocking each other.
 
 Nested Transactions
 ~~~~~~~~~~~~~~~~~~~
