@@ -1,14 +1,27 @@
 /* what is this i dont even */
 #header-sticky .logo a, #header .logo a { height: auto; }
 
+.navheader {
+    background-color: #F0F0F0;
+    padding: 6px 40px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.navheader hr {
+    display: none;
+}
+
 .navfooter {
     background-color: #F0F0F0;
     padding: 6px 40px;
     border-top: 1px solid black;
 }
+
 .navfooter hr {
     display: none;
 }
+
 .title {
     overflow: auto;
 }

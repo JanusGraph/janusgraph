@@ -23,6 +23,7 @@
 
   <xsl:template name="titan.body">
     <xsl:param name="maincontent"/>
+    <xsl:param name="headercontent"/>
     <xsl:param name="footercontent"/>
     <body>
       <xsl:call-template name="body.attributes"/>
@@ -93,6 +94,9 @@
 	    </div>
 	  </div>
 	</header>
+
+	<xsl:copy-of select="$headercontent"/>
+
 	<div id="main" class="clearfix width-100" style="padding-left:20px;padding-right:20px">
           <xsl:copy-of select="$maincontent"/>
 	</div>
