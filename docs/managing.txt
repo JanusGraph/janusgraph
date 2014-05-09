@@ -1,7 +1,8 @@
-Managing Titan
---------------
+Management
+----------
 
-Help
+This section describes installation, configuration, and administration
+of Titan.
 
 Storage Backends
 ~~~~~~~~~~~~~~~~
