@@ -1350,68 +1350,34 @@
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>copy-css-to-htmlsingle</id>
+                                <id>copy-static-assets-to-htmlsingle</id>
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <inherited>false</inherited>
                                 <configuration>
-                                    <outputDirectory>${htmlsingle.output.dir}/css</outputDirectory>
+                                    <outputDirectory>${htmlsingle.output.dir}</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${asciidoc.input.dir}/css</directory>
+                                            <directory>${asciidoc.input.dir}/static</directory>
                                             <filtering>false</filtering>
                                         </resource>
                                     </resources>
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>copy-images-to-htmlsingle</id>
+                                <id>copy-static-assets-to-htmlchunk</id>
                                 <phase>process-resources</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <inherited>false</inherited>
                                 <configuration>
-                                    <outputDirectory>${htmlsingle.output.dir}/images</outputDirectory>
+                                    <outputDirectory>${htmlchunk.output.dir}</outputDirectory>
                                     <resources>
                                         <resource>
-                                            <directory>${asciidoc.input.dir}/images</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>copy-css-to-htmlchunk</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <outputDirectory>${htmlchunk.output.dir}/css</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${asciidoc.input.dir}/css</directory>
-                                            <filtering>false</filtering>
-                                        </resource>
-                                    </resources>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>copy-images-to-htmlchunk</id>
-                                <phase>process-resources</phase>
-                                <goals>
-                                    <goal>copy-resources</goal>
-                                </goals>
-                                <inherited>false</inherited>
-                                <configuration>
-                                    <outputDirectory>${htmlchunk.output.dir}/images</outputDirectory>
-                                    <resources>
-                                        <resource>
-                                            <directory>${asciidoc.input.dir}/images</directory>
+                                            <directory>${asciidoc.input.dir}/static</directory>
                                             <filtering>false</filtering>
                                         </resource>
                                     </resources>
