@@ -1,6 +1,21 @@
 /* what is this i dont even */
 #header-sticky .logo a, #header .logo a { height: auto; }
 
+.navfooter {
+    background-color: #F0F0F0;
+    padding: 6px 40px;
+    border-top: 1px solid black;
+}
+.navfooter hr {
+    display: none;
+}
+.title {
+    overflow: auto;
+}
+html {
+    background-color: #000000;
+}
+
 a:hover, .tooltip-shortcode{
 color:#e10707;
 }
