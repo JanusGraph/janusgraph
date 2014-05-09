@@ -24,10 +24,8 @@
     doctype-system="http://www.w3.org/TR/html4/loose.dtd"
     indent="yes" />
 
-<!-- <xsl:param name="highlight.xslthl.config">file:///usr/share/xml/docbook/stylesheet/docbook-xsl/highlighting/xslthl-config.xml</xsl:param>-->
-<!-- <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>-->
-<!-- <xsl:param name="highlight.xslthl.config">file:///home/dalaro/tinkerelius/titan/docs/xsl/xslthl-config.xml</xsl:param> -->
-<xsl:param name="highlight.xslthl.config">file:///home/dalaro/tinkerelius/titan/docs/xsl/xslthl-config.xml</xsl:param>
+<!-- <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>--> 
+<xsl:param name="highlight.xslthl.config">file://$MAVEN{xsl.output.dir}/xslthl-config.xml</xsl:param>
 
 <xsl:template name="user.head.content">
   <xsl:call-template name="titan.head"/>

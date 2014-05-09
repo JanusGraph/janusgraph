@@ -1244,6 +1244,7 @@
             <properties>
                 <asciidoc.input.dir>${project.basedir}/docs</asciidoc.input.dir>
                 <xsl.input.dir>${asciidoc.input.dir}/xsl</xsl.input.dir>
+                <xsl.output.dir>${project.basedir}/target/docs/xsl</xsl.output.dir>
                 <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
                 <htmlsingle.output.dir>${project.basedir}/target/docs/htmlsingle</htmlsingle.output.dir>
                 <htmlchunk.output.dir>${project.basedir}/target/docs/htmlchunk</htmlchunk.output.dir>
@@ -1297,7 +1298,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.input.dir}/titansingle.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/titansingle.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>
@@ -1322,7 +1323,7 @@
                                             <includes>
                                                 <include>index.xml</include>
                                             </includes>
-                                            <stylesheet>${xsl.input.dir}/titanchunk.xsl</stylesheet>
+                                            <stylesheet>${xsl.output.dir}/titanchunk.xsl</stylesheet>
                                             <fileMappers>
                                                 <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
                                                     <targetExtension>.html</targetExtension>
@@ -1349,6 +1350,26 @@
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <executions>
+                            <execution>
+                                <id>filter-xsl-stylesheets</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${xsl.output.dir}</outputDirectory>
+                                    <delimiters>
+                                        <delimiter>$MAVEN{*}</delimiter>
+                                    </delimiters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${xsl.input.dir}</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
                             <execution>
                                 <id>copy-static-assets-to-htmlsingle</id>
                                 <phase>process-resources</phase>
