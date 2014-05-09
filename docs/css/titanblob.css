@@ -5,7 +5,7 @@
     background-color: #F0F0F0;
     padding: 6px 40px;
     border-top: 1px solid black;
-    border-bottom: 1px solid black;
+    border-bottom: 1px dotted #FF8080;
 }
 
 .navheader hr {
@@ -15,7 +15,7 @@
 .navfooter {
     background-color: #F0F0F0;
     padding: 6px 40px;
-    border-top: 1px solid black;
+    border-top: 1px dotted #FF8080;
 }
 
 .navfooter hr {
