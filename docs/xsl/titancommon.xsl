@@ -1,7 +1,34 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
 
+  <!-- Navigation and section labels -->
+  <xsl:param name="suppress.navigation" select="0"/>
   <xsl:param name="navig.showtitles">1</xsl:param>
+  <xsl:param name="section.autolabel.max.depth" select="5"/>
+  <xsl:param name="section.autolabel" select="1"/>
+  <xsl:param name="section.label.includes.component.label" select="1"/>
 
+  <!-- Chunking -->
+  <xsl:param name="chunk.first.sections" select="1"/>
+  <xsl:param name="chunk.section.depth" select="0"/>
+  <xsl:param name="chunk.toc" select="''"/>
+  <xsl:param name="chunk.tocs.and.lots" select="0"/>
+
+  <!-- Code syntax highlighting -->
+  <xsl:param name="highlight.source" select="1"/>
+
+  <!-- Table configuration -->
+  <xsl:param name="table.borders.with.css" select="1"/>
+  <xsl:param name="table.cell.border.color" select="'#747474'"/>
+  <xsl:param name="table.cell.border.style" select="'solid'"/>
+  <xsl:param name="table.cell.border.thickness" select="'1px'"/>
+  <xsl:param name="table.frame.border.color" select="'#FF8080'"/>
+  <xsl:param name="table.frame.border.style" select="'solid'"/>
+  <xsl:param name="table.frame.border.thickness" select="'1px'"/>
+  <xsl:param name="tablecolumns.extension" select="'1'"/>
+  <xsl:param name="html.cellpadding" select="'4px'"/>
+  <xsl:param name="html.cellspacing" select="''"/>
+
+  <!-- Titan-themed output templates -->
   <xsl:template name="titan.head">
     <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-includes/js/jquery/jquery.js?ver=1.11.0'></script>
     <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-includes/js/jquery/jquery-migrate.min.js?ver=1.2.1'></script>
@@ -19,6 +46,30 @@
     <link rel='stylesheet' id='animate-css-css'  href='http://intelliscence.com/web/work/demos/titan/wp-content/themes/Avada/css/animate-custom.css' type='text/css' media='all' />
     <link rel='stylesheet' id='inline-blob-from-avada-prototype' href='css/titanblob.css' type='text/css' media='all' />
 
+    <script type="text/javascript">
+      WebFontConfig = {
+        google: {
+          families: [
+            "Lato:400,400italic,700,700italic:latin,greek-ext,cyrillic,latin-ext,greek,cyrillic-ext,vietnamese",
+            "Open+Sans:400,400italic,700,700italic:latin,greek-ext,cyrillic,latin-ext,greek,cyrillic-ext,vietnamese",
+            "Antic+Slab:400,400italic,700,700italic:latin,greek-ext,cyrillic,latin-ext,greek,cyrillic-ext,vietnamese"
+          ]
+        },
+        custom: {
+           families: ['FontAwesome'],
+           urls: ['font-awesome-4.0.3/css/font-awesome.css']
+        }
+      };
+      (function() {
+      var wf = document.createElement('script');
+      wf.src = ('https:' == document.location.protocol ? 'https' : 'http') +
+        '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+	wf.type = 'text/javascript';
+	wf.async = 'true';
+	var s = document.getElementsByTagName('script')[0];
+	s.parentNode.insertBefore(wf, s);
+	})();
+    </script>
   </xsl:template>
 
   <xsl:template name="titan.body">
@@ -97,7 +148,7 @@
 
 	<xsl:copy-of select="$headercontent"/>
 
-	<div id="main" class="clearfix width-100" style="padding-left:20px;padding-right:20px">
+	<div id="main" class="clearfix width-100">
           <xsl:copy-of select="$maincontent"/>
 	</div>
 	<div class="clearer"></div>

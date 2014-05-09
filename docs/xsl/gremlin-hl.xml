@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<highlighters>
+	<highlighter type="string">
+		<string>"</string>
+		<escape>\</escape>
+	</highlighter>
+	<highlighter type="string">
+		<string>'</string>
+	</highlighter>
+	<highlighter type="oneline-comment">//</highlighter>
+	<highlighter type="hexnumber">
+		<prefix>0x</prefix>
+		<ignoreCase />
+	</highlighter>
+	<highlighter type="number">
+		<point>.</point>
+		<exponent>e</exponent>
+		<suffix>f</suffix>
+		<suffix>d</suffix>
+		<suffix>l</suffix>
+		<ignoreCase />
+	</highlighter>
+<highlighter type="word">
+    <word>gremlin&gt;</word>
+    <style>keyword</style>
+</highlighter>
+
+<highlighter type="regex">
+    <pattern>==&gt;</pattern>
+    <style>keyword</style>
+</highlighter>
+</highlighters>

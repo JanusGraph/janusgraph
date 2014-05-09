@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xslthl-config>
+  <highlighter id="java" file="java-hl.xml" />
+  <!-- TODO a real Groovy highlighter config -->
+  <highlighter id="groovy" file="java-hl.xml" />
+  <highlighter id="bourne" file="bourne-hl.xml" />
+  <highlighter id="gremlin" file="gremlin-hl.xml" />
+  <namespace prefix="xslthl" uri="http://xslthl.sf.net" />
+</xslthl-config>

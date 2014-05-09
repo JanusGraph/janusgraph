@@ -14,8 +14,7 @@
     extension-element-prefixes="sbhl xslthl">
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
-<xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/highlight.xsl"/>
-<xsl:import href="asciicommon.xsl"/>
+<xsl:import href="titanhighlight.xsl"/>
 <xsl:import href="titancommon.xsl"/>
 
 <xsl:output
@@ -26,7 +25,9 @@
     indent="yes" />
 
 <!-- <xsl:param name="highlight.xslthl.config">file:///usr/share/xml/docbook/stylesheet/docbook-xsl/highlighting/xslthl-config.xml</xsl:param>-->
-<xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>
+<!-- <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>-->
+<!-- <xsl:param name="highlight.xslthl.config">file:///home/dalaro/tinkerelius/titan/docs/xsl/xslthl-config.xml</xsl:param> -->
+<xsl:param name="highlight.xslthl.config">file:///home/dalaro/tinkerelius/titan/docs/xsl/xslthl-config.xml</xsl:param>
 
 <xsl:template name="user.head.content">
   <xsl:call-template name="titan.head"/>

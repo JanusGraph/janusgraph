@@ -19,13 +19,24 @@
 <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-common.xsl"/>
 <xsl:include href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-code.xsl"/>
 
-<!-- Output directory for chunks -->
+<!-- Output directory for chunks; this should ideally be a Maven
+     property reference like ${htmlchunk.output.dir} that's stored in
+     pom.xml and substituted during the generate-resources phase of
+     the build, but for now it's hard-coded both here and in pom.xml.
+
+     tl;dr this breaks DRY for expediency
+     -->
 <xsl:param name="base.dir">target/docs/htmlchunk</xsl:param>
 
 <xsl:param name="generate.toc">
-book         toc,title
+book         toc,title,table
+book/part    toc,title
 book/chapter toc,title
 </xsl:param>
+
+  <xsl:template match="figure[@role = 'tss-centeredfig']" mode="class.value">
+    <xsl:value-of select="'tss-centeredfig'"/>
+  </xsl:template>
 
 <xsl:template name="chunk-element-content">
   <xsl:param name="prev"/>
