@@ -106,7 +106,7 @@ book/chapter toc,title
     </body>
 -->
     <xsl:call-template name="titan.body">
-      <xsl:with-param name="headercontent" select="$navheader"/>
+      <!-- <xsl:with-param name="headercontent" select="$navheader"/> -->
       <xsl:with-param name="maincontent"   select="$content"/>
       <xsl:with-param name="footercontent" select="$navfooter"/>
     </xsl:call-template>
