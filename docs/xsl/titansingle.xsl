@@ -24,6 +24,12 @@
     doctype-system="http://www.w3.org/TR/html4/loose.dtd"
     indent="yes" />
 
+<xsl:param name="generate.toc">
+book         toc,title
+book/part    title
+book/chapter title
+</xsl:param>
+
 <!-- <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>--> 
 <xsl:param name="highlight.xslthl.config">file://$MAVEN{xsl.output.dir}/xslthl-config.xml</xsl:param>
 
