@@ -1,6 +1,8 @@
 Using Titan
 -----------
 
+This section describes how to read and write graph data with Titan from a user's point of view.
+
 TinkerPop
 ~~~~~~~~~
 
@@ -15,6 +17,12 @@ Being a native implementation means that Titan directly implements the Blueprint
 
 Transactions
 ~~~~~~~~~~~~
+
+Almost all interaction with Titan is associated with a transaction.  Titan transactions are safe for concurrent use by multiple threads.  Methods on a TitanGraph instance like `graph.getVertex(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
+
+Titan transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
+
+This section describes Titan's transactional semantics and API.
 
 Transaction Handling
 ^^^^^^^^^^^^^^^^^^^^
@@ -70,7 +78,7 @@ try {
     user.setProperty("name", name);
     g.commit();
 } catch (TitanException e) {
-    //Recover, retry, or return error message
+    //Recover, retry, 	or return error message
 }
 
 The example above demonstrates a simplified user signup implementation where `name` is the name of the user who wishes to register. First, it is checked whether a user with that name already exists. If not, a new user vertex is created and the name assigned. Finally, the transaction is committed.
@@ -121,7 +129,7 @@ Next Steps
 //.. _multi-threaded-tx:
 
 Multi-Threaded Transactions
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Titan supports multi-threaded transactions through Blueprint's `ThreadedTransactionalGraph` interface. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
 
@@ -142,7 +150,7 @@ The `newTransaction()` method returns a new `TransactionalGraph` object that rep
 Titan relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
 
 Concurrent Algorithms
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^ 
 
 Thread independent transactions started through `newTransaction()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel [embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `TransactionalGraph` object returned by `newTransaction` without blocking each other.
 
@@ -186,7 +194,7 @@ Next steps
 Read more about https://github.com/tinkerpop/blueprints/wiki/Graph-Transactions[Blueprints's ThreadedTransactionalGraph].
 
 Transaction Configuration
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Titan's `TitanGraph.buildTransaction()` method gives the user the ability to configure and start a new :ref:`multi-threaded transaction <multi-threaded-tx>` against a `TitanGraph`. Hence, it is identical to `TitanGraph.newTransaction()` with additional configuration options.
 
@@ -201,58 +209,71 @@ Titan's `TitanGraph.buildTransaction()` method gives the user the ability to con
 Once, the desired configuration options have been specified, the new transaction is started via `start()` which returns a `TitanTransaction`.
 
 
-Gotchas and Limitations
------------------------
+Technical Limitations
+~~~~~~~~~~~~~~~~~~~~~
 
-[[images/titan-head.png|float|align=left]] There are various limitations and "gotchas" that one should be aware of when using Titan. Some of these limitations are necessary design choices and others are issues that will be rectified as Titan development continues. Finally, the last section provides solutions to common issues.
+image:titan-head.png[]
+
+There are various limitations and "gotchas" that one should be aware
+of when using Titan. Some of these limitations are necessary design
+choices and others are issues that will be rectified as Titan
+development continues. Finally, the last section provides solutions to
+common issues.
 
 Design Limitations
-------------------
+^^^^^^^^^^^^^^^^^^
+
+These limitations reflect long-term tradeoffs design tradeoffs which
+are either difficult or impractical to change.  These limitations are
+unlikely to be removed in the near future.
 
 Size Limitation
-^^^^^^^^^^^^^^^
++++++++++++++++
 
 Titan can store up to a quintillion edges (2^60) and half as many vertices. That limitation is imposed by Titan's id scheme.
 
 DataType Definitions
-^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++
 
 When declaring the data type of a property key using `dataType(Class)` Titan will enforce that all properties for that key have the declared type, unless that type is `Object.class`. This is an equality type check, meaning that sub-classes will not be allowed. For instance, one cannot declare the data type to be `Number.class` and use `Integer` or `Long`. For efficiency reasons, the type needs to match exactly. Hence, use `Object.class` as the data type for type flexibility. In all other cases, declare the actual data type to benefit from increased performance and type safety.
 
 Edge Retrievals are not O(1)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++++++++
 
 Retrieving an edge by id, e.g `tx.getEdge(edge.getId())`, is not a constant time operation. Titan will retrieve an adjacent vertex of the edge to be retrieved and then execute a vertex query to identify the edge. The former is constant time but the latter is potentially linear in the number of edges incident on the vertex with the same edge label.
 
 This also applies to index retrievals for edges via a standard or external index.
 
 Temporary Limitations
----------------------
+^^^^^^^^^^^^^^^^^^^^^
+
+These are limitations in Titan's current implementation.  These
+limitations could reasonably be removed in upcoming versions of Titan.
 
 Key Index Must Be Created Prior to Key Being Used
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++++++++++++++++++++++++++
 
 To index vertices or edges by key, the respective key index must be created before the key is first used in a vertex or edge property. Read more about creating [[vertex indexes|Blueprints Interface]].
 
 Unable to Drop Key Indices
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++++++
 
 Once an index has been created for a key, it can never be removed. 
 
 Types Can Not Be Changed Once Created
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++++++++++++++++++++
 
 This pitfall constrains the graph schema. While the graph schema can be extended, previous declarations cannot be changed. 
 
 Batch Loading Speed
-^^^^^^^^^^^^^^^^^^^
++++++++++++++++++++
 
 Titan provides a batch loading mode that can be enabled through the `configuration <Graph Configuration_>`_ (TODO link to graph configuration section when populated). However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. The [[Bulk Loading]] documentation lists ways to speed up batch loading in Titan.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
 
-Beware
-------
+Common Problems
+~~~~~~~~~~~~~~~
 
 Multiple Titan instances on one machine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -299,21 +320,18 @@ Snappy 1.4 does not work with Java 1.7
 
 Cassandra 1.2.x makes use of Snappy 1.4. Titan will not be able to connect to Cassandra if the server is running Java 1.7 and Cassandra 1.2.x (with Snappy 1.4). Be sure to remove the Snappy 1.4 jar in the `cassandra/lib` directory and replace with a http://code.google.com/p/snappy-java/downloads/list[Snappy 1.5 jar version].
 
-Debug-level Logging
-^^^^^^^^^^^^^^^^^^^
+Debug-level Logging Slows Execution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When the log level is set to `debug` Titan produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, you `info` or above for production systems or benchmarking.
-
-Useful Tips
-^^^^^^^^^^^
 
 Titan OutOfMemoryException or excessive Garbage Collection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you experience memory issues or excessive garbage collection while running Titan it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. Read more about [[Titan's caching layers | Data Caching]].
 
-Removing JAMM Warning Messages
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+JAMM Warning Messages
+^^^^^^^^^^^^^^^^^^^^^
 
 When launching Titan with embedded Cassandra, the following warnings may be displayed:
 

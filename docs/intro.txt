@@ -1,6 +1,10 @@
 Introduction
 ------------
 
+This section gives an overview of Titan's architecture and benefits,
+followed by a quick tour of Titan features using a small example data
+set.
+
 The Benefits of Titan
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -67,9 +71,8 @@ image:titan-captheorem.png[]
 
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
-
-Getting Started
-~~~~~~~~~~~~~~~
+Getting Started with the Graph of the Gods sample data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 [quote]
 _______
@@ -88,24 +91,6 @@ Gods. Ultimately, the Gods won and Jupiter took the throne as leader
 of the Gods.
 _______
 
-//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/8646_-_St_Petersburg_-_Hermitage_-_Jupiter2.jpg/180px-8646_-_St_Petersburg_-_Hermitage_-_Jupiter2.jpg
-//..    :align: right
-//.. 
-//..    Jupiter
-//.. 
-//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Sousse_neptune.jpg/282px-Sousse_neptune.jpg
-//..    :align: right
-//.. 
-//..    Neptune
-//.. 
-//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Henryk_Siemiradzki_010.jpeg/320px-Henryk_Siemiradzki_010.jpeg
-//..    :align: right
-//.. 
-//..    Pluto
-
-The Graph of the Gods
-~~~~~~~~~~~~~~~~~~~~~
-
 The examples in this section make extensive use of a toy graph distributed with Titan called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a `property graph <Property Graph Model_>`_ and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
 
 .Graph of the Gods
@@ -121,7 +106,7 @@ image:graph-of-the-gods-2.png[]
 |=====
 
 Downloading Titan and Running the Gremlin Shell
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 [quote]
 _______
@@ -159,8 +144,8 @@ gremlin> [name:'aurelius',vocation:['philosopher','emperor']]
 [TIP]
 Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and https://github.com/tinkerpop/gremlin/wiki[the Gremlin Wiki] for more information about using Gremlin.
 
-Loading Data Into Titan
-~~~~~~~~~~~~~~~~~~~~~~~
+Loading the Graph of the Gods Into Titan
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance [[using Cassandra]] or [[using HBase]]. Refer to the [[storage backend overview]] on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
 
@@ -187,7 +172,7 @@ gremlin> GraphOfTheGodsFactory.load(g)
 ----
 
 Global Graph Indices
-~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^
 
 The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) -- i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.
 
@@ -220,7 +205,7 @@ gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().c
 Graph indices are one type of index structure in Titan. Graph indices are accessible via the `Graph.query()` method. The second aspect of indexing in Titan is known as vertex-centric indices. Vertex-centric indices are accessible via the `Vertex.query()` method. Vertex-centric indices are described later.
 
 Graph Traversal Examples
-~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 [quote]
 http://en.wikipedia.org/wiki/Hercules[Hercules], son of Jupiter and http://en.wikipedia.org/wiki/Alcmene[Alcmene], bore super human strength. Hercules was a http://en.wikipedia.org/wiki/Demigod[Demigod] because his father was a god and his mother was a human. http://en.wikipedia.org/wiki/Juno_(mythology)[Juno], wife of Jupiter, was furious with Jupiter's infidelity. In revenge, she blinded Hercules with temporary insanity and caused him to kill his wife and children. To atone for the slaying, Hercules was ordered by the http://en.wikipedia.org/wiki/Oracle_at_Delphi[Oracle of Delphi] to serve http://en.wikipedia.org/wiki/Eurystheus[Eurystheus]. Eurystheus appointed Hercules to 12 labors.
@@ -287,7 +272,7 @@ gremlin> hercules.outE('battled').has('time',T.gt,1).inV.name.toString()
 ----
 
 More Complex Graph Traversal Examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 [quote]
 In the depths of Tartarus lives Pluto. His relationship with Hercules was strained by the fact that Hercules battled his pet, Cerberus. However, Hercules is his nephew -- how should he make Hercules pay for his insolence?
@@ -298,7 +283,7 @@ The Gremlin traversals below provide more examples over _The Graph of the Gods_.
 //..   :align: right
 
 Cohabiters of Tartarus
-^^^^^^^^^^^^^^^^^^^^^^
+++++++++++++++++++++++
 
 ----
 gremlin> pluto = g.V('name','pluto').next()
@@ -315,7 +300,7 @@ gremlin> pluto.as('x').out('lives').in('lives').except('x').name
 ----
 
 Pluto's Brothers
-^^^^^^^^^^^^^^^^
+++++++++++++++++
 
 ----
 gremlin> // where do pluto's brothers live?
@@ -347,26 +332,13 @@ gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
 ==>[neptune, loves waves, sea]
 ----
 
-Next Steps
-~~~~~~~~~~
-
-This section presented some basic examples of how to traverse _The Graph of the Gods_ in Titan. In essence, a graph database is all about representing some world (structure) and traversing it to solve problems (process). 
-
-* Learn more about [[Titan's core interface | Blueprints Interface]]
-* Read about choosing a [[Titan storage backend | Storage Backend Overview]]
-* Read more about Gremlin via its "wiki":http://gremlin.tinkerpop.com and "GremlinDocs":http://gremlindocs.com
-
 Additional Background and Orientation Resources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here are some external resources with information about Titan, the TinkerPop stack, and the graph data model:
 
-* `Introduction to Titan Video`_
-* `Brief Primer on Graph Databases`_
-* The `Property Graph Model`_
-* `Big Graph Data Presentation`_
-
-.. _Introduction to Titan Video: http://www.youtube.com/watch?v=ZkAYA4Kd8JE
-.. _Brief Primer on Graph Databases: http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/
-.. _Property Graph Model: https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model
-.. _Big Graph Data Presentation: http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data
+* http://www.youtube.com/watch?v=ZkAYA4Kd8JE[Introduction to Titan Video]
+* http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/[Brief Primer on Graph Databases]
+* https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model]
+* The http://gremlin.tinkerpop.com[Gremlin Wiki], http://gremlindocs.com[GremlinDocs], and http://sql2gremlin.com/[SQL2Gremlin]
+* http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data[Big Graph Data Presentation]
