@@ -21,6 +21,7 @@
 
   <xsl:template name="titan.body">
     <xsl:param name="maincontent"/>
+    <xsl:param name="footercontent"/>
     <body>
       <xsl:call-template name="body.attributes"/>
       <div id="wrapper" >
@@ -94,6 +95,9 @@
           <xsl:copy-of select="$maincontent"/>
 	</div>
 	<div class="clearer"></div>
+
+	<xsl:copy-of select="$footercontent"/>
+
 	<footer id="footer">
 	  <div class="avada-row">
 	    <ul class="copyright">
@@ -108,4 +112,5 @@
       <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-content/themes/Avada/js/main.js'></script>
     </body>
   </xsl:template>
+
 </xsl:stylesheet>

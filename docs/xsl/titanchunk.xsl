@@ -34,6 +34,19 @@ book/chapter toc,title
   <xsl:param name="content">
     <xsl:apply-imports/>
   </xsl:param>
+  <xsl:param name="navfooter">
+    <xsl:call-template name="footer.navigation">
+      <xsl:with-param name="prev" select="$prev"/>
+      <xsl:with-param name="next" select="$next"/>
+      <xsl:with-param name="nav.context" select="$nav.context"/>
+    </xsl:call-template>
+
+    <xsl:call-template name="user.footer.navigation">
+      <xsl:with-param name="prev" select="$prev"/>
+      <xsl:with-param name="next" select="$next"/>
+      <xsl:with-param name="nav.context" select="$nav.context"/>
+    </xsl:call-template>
+  </xsl:param>
 
   <xsl:call-template name="user.preroot"/>
 
@@ -82,6 +95,7 @@ book/chapter toc,title
 -->
     <xsl:call-template name="titan.body">
       <xsl:with-param name="maincontent" select="$content"/>
+      <xsl:with-param name="footercontent" select="$navfooter"/>
     </xsl:call-template>
   </html>
   <xsl:value-of select="$chunk.append"/>
