@@ -1266,6 +1266,7 @@
                                     <sourceDocumentName>index.txt</sourceDocumentName>
                                     <outputDirectory>${docbook.output.dir}</outputDirectory>
                                     <backend>docbook5</backend>
+                                    <doctype>book</doctype>
                                     <attributes>
                                         <imagesdir>images</imagesdir>
                                         <encoding>UTF-8</encoding>

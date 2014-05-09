@@ -15,13 +15,17 @@
 
 <!-- Importing our customization of docbook.xsl in accordance with the
      comment at the top of chunk.xsl -->
-<xsl:import href="asciicommon.xsl"/>
 <xsl:import href="titansingle.xsl"/>
 <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-common.xsl"/>
 <xsl:include href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-code.xsl"/>
 
 <!-- Output directory for chunks -->
 <xsl:param name="base.dir">target/docs/htmlchunk</xsl:param>
+
+<xsl:param name="generate.toc">
+book         toc,title
+book/chapter toc,title
+</xsl:param>
 
 <xsl:template name="chunk-element-content">
   <xsl:param name="prev"/>
