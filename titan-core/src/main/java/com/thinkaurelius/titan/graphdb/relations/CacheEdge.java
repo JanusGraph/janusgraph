@@ -23,15 +23,11 @@ import java.util.List;
 
 public class CacheEdge extends AbstractEdge {
 
-    private final byte position;
-
-    public CacheEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, byte position, Entry data) {
+    public CacheEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, Entry data) {
         super(id, label, start, end);
         assert data != null;
-        assert position >= 0 && position <= 1;
 
         this.data = data;
-        this.position = position;
     }
 
     public Direction getVertexCentricDirection() {
@@ -88,7 +84,7 @@ public class CacheEdge extends AbstractEdge {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = RelationConstructor.readRelationCache(getVertex(position), data, tx());
+            map = RelationConstructor.readRelationCache(data, tx());
         }
         return map;
     }

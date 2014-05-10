@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.ElementQuery;
 import com.thinkaurelius.titan.graphdb.query.condition.Condition;
@@ -27,8 +28,9 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
     public VertexCentricQuery(InternalVertex vertex, Condition<TitanRelation> condition,
                               Direction direction,
                               List<BackendQueryHolder<SliceQuery>> queries,
+                              OrderList orders,
                               int limit) {
-        super(condition, direction, queries, limit);
+        super(condition, direction, queries, orders, limit);
         Preconditions.checkNotNull(vertex);
         this.vertex = vertex;
     }
@@ -59,7 +61,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
      * @return
      */
     public boolean isSimple() {
-        return queries.size()==1 && queries.get(0).isFitted();
+        return queries.size()==1 && queries.get(0).isFitted() && queries.get(0).isSorted();
     }
 
     public InternalVertex getVertex() {
@@ -73,7 +75,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
 
     @Override
     public Comparator getSortOrder() {
-        return new RelationComparator(vertex);
+        return new RelationComparator(vertex,getOrders());
     }
 
     @Override

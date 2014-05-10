@@ -318,11 +318,11 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 //    }
 
     @Override
-    public RelationReader getRelationReader() {
+    public RelationReader getRelationReader(final long vertexid) {
         return new RelationReader() {
 
             @Override
-            public RelationCache parseRelation(long vertexid, Entry entry, boolean headerOnly, TypeInspector typeInspector) {
+            public RelationCache parseRelation(Entry entry, boolean headerOnly, TypeInspector typeInspector) {
                 titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getColumn().as(StaticBuffer.ARRAY_FACTORY));
                 titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getValue().as(StaticBuffer.ARRAY_FACTORY));
 

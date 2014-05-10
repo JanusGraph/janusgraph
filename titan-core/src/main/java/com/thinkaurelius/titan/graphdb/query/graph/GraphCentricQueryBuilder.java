@@ -22,17 +22,34 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
+ * Builds a {@link TitanGraphQuery}, optimizes the query and compiles the result into a {@link GraphCentricQuery} which
+ * is then executed through a {@link QueryProcessor}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
-public class GraphCentricQueryBuilder implements TitanGraphQuery {
+public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQueryBuilder> {
 
     private static final Logger log = LoggerFactory.getLogger(GraphCentricQueryBuilder.class);
 
+    /**
+     * Transaction in which this query is executed.
+     */
     private final StandardTitanTx tx;
+    /**
+     * Serializer used to serialize the query conditions into backend queries.
+     */
     private final IndexSerializer serializer;
+    /**
+     * The constraints added to this query. None by default.
+     */
     private List<PredicateCondition<String, TitanElement>> constraints;
+    /**
+     * The order in which the elements should be returned. None by default.
+     */
     private OrderList orders = new OrderList();
+    /**
+     * The limit of this query. No limit by default.
+     */
     private int limit = Query.NO_LIMIT;
 
     public GraphCentricQueryBuilder(StandardTitanTx tx, IndexSerializer serializer) {
@@ -48,7 +65,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
 	 * ---------------------------------------------------------------
 	 */
 
-    private TitanGraphQuery has(String key, TitanPredicate predicate, Object condition) {
+    private GraphCentricQueryBuilder has(String key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
@@ -57,65 +74,65 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery {
     }
 
     @Override
-    public TitanGraphQuery has(String key, com.tinkerpop.blueprints.Predicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(String key, com.tinkerpop.blueprints.Predicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         TitanPredicate titanPredicate = TitanPredicate.Converter.convert(predicate);
         return has(key, titanPredicate, condition);
     }
 
     @Override
-    public TitanGraphQuery has(TitanKey key, TitanPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(TitanKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         return has(key.getName(), predicate, condition);
     }
 
     @Override
-    public TitanGraphQuery has(String key) {
+    public GraphCentricQueryBuilder has(String key) {
         return has(key, Cmp.NOT_EQUAL, (Object) null);
     }
 
     @Override
-    public TitanGraphQuery hasNot(String key) {
+    public GraphCentricQueryBuilder hasNot(String key) {
         return has(key, Cmp.EQUAL, (Object) null);
     }
 
     @Override
     @Deprecated
-    public <T extends Comparable<T>> TitanGraphQuery has(String s, T t, Compare compare) {
+    public <T extends Comparable<T>> GraphCentricQueryBuilder has(String s, T t, Compare compare) {
         return has(s, compare, t);
     }
 
     @Override
-    public TitanGraphQuery has(String key, Object value) {
+    public GraphCentricQueryBuilder has(String key, Object value) {
         return has(key, Cmp.EQUAL, value);
     }
 
     @Override
-    public TitanGraphQuery hasNot(String key, Object value) {
+    public GraphCentricQueryBuilder hasNot(String key, Object value) {
         return has(key, Cmp.NOT_EQUAL, value);
     }
 
     @Override
-    public <T extends Comparable<?>> TitanGraphQuery interval(String s, T t1, T t2) {
+    public <T extends Comparable<?>> GraphCentricQueryBuilder interval(String s, T t1, T t2) {
         has(s, Cmp.GREATER_THAN_EQUAL, t1);
         return has(s, Cmp.LESS_THAN, t2);
     }
 
     @Override
-    public TitanGraphQuery limit(final int limit) {
+    public GraphCentricQueryBuilder limit(final int limit) {
         Preconditions.checkArgument(limit >= 0, "Non-negative limit expected: %s", limit);
         this.limit = limit;
         return this;
     }
 
     @Override
-    public TitanGraphQuery orderBy(String key, Order order) {
+    public GraphCentricQueryBuilder orderBy(String key, Order order) {
         return orderBy(tx.getPropertyKey(key), order);
     }
 
     @Override
-    public TitanGraphQuery orderBy(TitanKey key, Order order) {
+    public GraphCentricQueryBuilder orderBy(TitanKey key, Order order) {
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());

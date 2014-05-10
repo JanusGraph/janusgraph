@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.query.vertex;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
@@ -35,30 +36,35 @@ public class BaseVertexCentricQuery extends BaseQuery {
      */
     protected final List<BackendQueryHolder<SliceQuery>> queries;
     /**
+     * The result order of this query (if any)
+     */
+    private final OrderList orders;
+    /**
      * The direction condition of this query. This is duplicated from the condition for efficiency reasons.
      */
     protected final Direction direction;
 
     public BaseVertexCentricQuery(Condition<TitanRelation> condition, Direction direction,
-                                  List<BackendQueryHolder<SliceQuery>> queries,
+                                  List<BackendQueryHolder<SliceQuery>> queries, OrderList orders,
                                   int limit) {
         super(limit);
         Preconditions.checkArgument(condition != null && queries != null && direction != null);
         Preconditions.checkArgument(QueryUtil.isQueryNormalForm(condition) && limit>=0);
         this.condition = condition;
         this.queries = queries;
+        this.orders = orders;
         this.direction=direction;
     }
 
     protected BaseVertexCentricQuery(BaseVertexCentricQuery query) {
-        this(query.getCondition(), query.getDirection(), query.getQueries(), query.getLimit());
+        this(query.getCondition(), query.getDirection(), query.getQueries(), query.getOrders(), query.getLimit());
     }
 
     /**
      * Construct an empty query
      */
     protected BaseVertexCentricQuery() {
-        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),0);
+        this(new FixedCondition<TitanRelation>(false), Direction.BOTH, new ArrayList<BackendQueryHolder<SliceQuery>>(0),OrderList.NO_ORDER,0);
     }
 
     public static BaseVertexCentricQuery emptyQuery() {
@@ -67,6 +73,10 @@ public class BaseVertexCentricQuery extends BaseQuery {
 
     public Condition<TitanRelation> getCondition() {
         return condition;
+    }
+
+    public OrderList getOrders() {
+        return orders;
     }
 
     public Direction getDirection() {

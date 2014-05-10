@@ -17,7 +17,12 @@ import com.tinkerpop.blueprints.Vertex;
  * @since 0.3.0
  */
 
-public interface TitanGraphQuery extends GraphQuery {
+public interface TitanGraphQuery<Q extends TitanGraphQuery<Q>> extends GraphQuery {
+
+   /* ---------------------------------------------------------------
+    * Query Specification
+    * ---------------------------------------------------------------
+    */
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -29,7 +34,7 @@ public interface TitanGraphQuery extends GraphQuery {
      * @return This query
      */
     @Override
-    public TitanGraphQuery has(String key, Predicate predicate, Object condition);
+    public Q has(String key, Predicate predicate, Object condition);
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -40,27 +45,62 @@ public interface TitanGraphQuery extends GraphQuery {
      * @param condition
      * @return This query
      */
-    public TitanGraphQuery has(TitanKey key, TitanPredicate predicate, Object condition);
+    public Q has(TitanKey key, TitanPredicate predicate, Object condition);
 
 
     @Override
-    public TitanGraphQuery has(String key);
+    public Q has(String key);
 
     @Override
-    public TitanGraphQuery hasNot(String key);
+    public Q hasNot(String key);
 
     @Override
-    public TitanGraphQuery has(String key, Object value);
+    public Q has(String key, Object value);
 
     @Override
-    public TitanGraphQuery hasNot(String key, Object value);
+    public Q hasNot(String key, Object value);
 
     @Override
     @Deprecated
-    public <T extends Comparable<T>> TitanGraphQuery has(String key, T value, Compare compare);
+    public <T extends Comparable<T>> Q has(String key, T value, Compare compare);
 
     @Override
-    public <T extends Comparable<?>> TitanGraphQuery interval(String key, T startValue, T endValue);
+    public <T extends Comparable<?>> Q interval(String key, T startValue, T endValue);
+
+    /**
+     * Limits the size of the returned result set
+     *
+     * @param max The maximum number of results to return
+     * @return This query
+     */
+    @Override
+    public Q limit(final int max);
+
+    /**
+     * Orders the element results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
+    public Q orderBy(String key, Order order);
+
+    /**
+     * Orders the element results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
+    public Q orderBy(TitanKey key, Order order);
+
+
+    /* ---------------------------------------------------------------
+    * Query Execution
+    * ---------------------------------------------------------------
+    */
 
     /**
      * Returns all vertices that match the conditions.
@@ -83,34 +123,5 @@ public interface TitanGraphQuery extends GraphQuery {
      */
     public Iterable<TitanProperty> properties();
 
-
-    /**
-     * Limits the size of the returned result set
-     *
-     * @param max The maximum number of results to return
-     * @return This query
-     */
-    @Override
-    public TitanGraphQuery limit(final int max);
-
-    /**
-     * Orders the element results of this query according
-     * to their property for the given key in the given order (increasing/decreasing).
-     *
-     * @param key   The key of the properties on which to order
-     * @param order the ordering direction
-     * @return
-     */
-    public TitanGraphQuery orderBy(String key, Order order);
-
-    /**
-     * Orders the element results of this query according
-     * to their property for the given key in the given order (increasing/decreasing).
-     *
-     * @param key   The key of the properties on which to order
-     * @param order the ordering direction
-     * @return
-     */
-    public TitanGraphQuery orderBy(TitanKey key, Order order);
 
 }

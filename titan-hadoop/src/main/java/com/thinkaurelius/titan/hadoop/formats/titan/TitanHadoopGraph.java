@@ -29,13 +29,13 @@ import org.apache.hadoop.conf.Configuration;
 
 public class TitanHadoopGraph {
 
-    private final RelationReader relationReader;
+    private final TitanHadoopSetup setup;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
 
     public TitanHadoopGraph(final TitanHadoopSetup setup) {
-        this.relationReader = setup.getRelationReader();
+        this.setup = setup;
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
         this.vertexReader = setup.getVertexReader();
@@ -50,7 +50,8 @@ public class TitanHadoopGraph {
         boolean foundVertexState = false;
         for (final Entry data : entries) {
             try {
-                final RelationCache relation = this.relationReader.parseRelation(vertexId, data, false, typeManager);
+                RelationReader relationReader = setup.getRelationReader(vertex.getIdAsLong());
+                final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
                 if (this.systemTypes.isTypeSystemType(relation.typeId)) {
                     isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
                 } else if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {

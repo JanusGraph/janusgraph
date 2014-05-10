@@ -128,7 +128,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
 
     public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir, TitanSchemaVertex other) {
         VertexCentricQueryBuilder query = query().type(BaseLabel.TypeDefinitionEdge).direction(dir);
-        if (other!=null) query.adjacentVertex(other);
+        if (other!=null) query.adjacent(other);
         return Iterables.filter(query.titanEdges(),new Predicate<TitanEdge>() {
             @Override
             public boolean apply(@Nullable TitanEdge edge) {

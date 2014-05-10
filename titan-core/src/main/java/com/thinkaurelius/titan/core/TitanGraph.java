@@ -78,7 +78,7 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      *
      * @return
      */
-    public TitanGraphQuery query();
+    public TitanGraphQuery<? extends TitanGraphQuery> query();
 
     /**
      * Returns a {@link TitanIndexQuery} to query for vertices or edges against the specified indexing backend using

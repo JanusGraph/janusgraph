@@ -76,7 +76,7 @@ public interface OLAPJobBuilder<S> {
      *
      * @return
      */
-    public OLAPQueryBuilder<S> addQuery();
+    public OLAPQueryBuilder<S,?> addQuery();
 
     /**
      * Starts the execution of this job and returns the computed vertex states as a map.

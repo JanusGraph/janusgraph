@@ -141,7 +141,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 //First, check if this is a valid (non-deleted) vertex
                 assert conditionQuery.entries.size()==1;
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
-                                        conditionQuery.vertexId,conditionQuery.entries.get(0),true,tx);
+                                        conditionQuery.entries.get(0),true,tx);
                 if (relCache.typeId != BaseKey.VertexExists.getID()) {
                     log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
                     for (int i=1;i<currentResults.length;i++) {

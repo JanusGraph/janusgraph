@@ -88,7 +88,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return New TitanQuery for this vertex
      * @see TitanVertexQuery
      */
-    public TitanVertexQuery query();
+    public TitanVertexQuery<? extends TitanVertexQuery> query();
 
 
     /**

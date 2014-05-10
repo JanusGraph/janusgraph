@@ -95,7 +95,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     }
 
     @Override
-    public RelationReader getRelationReader() {
+    public RelationReader getRelationReader(long vertexid) {
         return graph.getEdgeSerializer();
     }
 

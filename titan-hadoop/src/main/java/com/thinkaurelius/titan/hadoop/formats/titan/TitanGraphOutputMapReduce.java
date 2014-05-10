@@ -282,7 +282,7 @@ public class TitanGraphOutputMapReduce {
         private TitanEdge getIncident(final TitanVertex titanVertex, HadoopEdge hadoopEdge, final Object otherVertexId) {
             final VertexQuery query = (null == otherVertexId) ?   // the shell wasn't propagated because the vertex was deleted -- should we propagate shell?
                     titanVertex.query().direction(IN).labels(hadoopEdge.getLabel()) :
-                    titanVertex.query().direction(IN).labels(hadoopEdge.getLabel()).adjacentVertex((TitanVertex) this.graph.getVertex(otherVertexId));
+                    titanVertex.query().direction(IN).labels(hadoopEdge.getLabel()).adjacent((TitanVertex) this.graph.getVertex(otherVertexId));
             for (final HadoopProperty property : hadoopEdge.getPropertiesWithState()) {
                 if (property.isLoaded()) {
                     query.has(property.getName(), property.getValue());

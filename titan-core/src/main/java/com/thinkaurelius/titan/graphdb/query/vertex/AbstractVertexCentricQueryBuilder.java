@@ -9,10 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
 import com.thinkaurelius.titan.graphdb.query.Query;
 import com.thinkaurelius.titan.graphdb.query.QueryUtil;
@@ -22,6 +19,7 @@ import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.thinkaurelius.titan.graphdb.types.system.SystemType;
 import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
@@ -32,7 +30,13 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.*;
 
-public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuery> implements BaseVertexQuery<Q> {
+/**
+ * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link com.thinkaurelius.titan.graphdb.query.vertex.BaseVertexCentricQuery} which
+ * is then executed by one of the extending classes.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
+public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
     @SuppressWarnings("unused")
     private static final Logger log = LoggerFactory.getLogger(AbstractVertexCentricQueryBuilder.class);
 
@@ -60,6 +64,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      * The vertex to be used for the adjacent vertex constraint. If null, that means no such constraint. Null by default.
      */
     private TitanVertex adjacentVertex = null;
+    /**
+     * The order in which the relations should be returned. None by default.
+     */
+    private OrderList orders = new OrderList();
     /**
      * The limit of this query. No limit by default.
      */
@@ -192,6 +200,25 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return getThis();
     }
 
+    @Override
+    public Q orderBy(String key, Order order) {
+        return orderBy(tx.getPropertyKey(key), order);
+    }
+
+    @Override
+    public Q orderBy(TitanKey key, Order order) {
+        Preconditions.checkArgument(key!=null,"Cannot order on undefined key");
+        Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
+                "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
+        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
+        Preconditions.checkArgument(!(key instanceof SystemType),"Cannot use system types in ordering: %s",key);
+        Preconditions.checkArgument(!orders.containsKey(key.getName()));
+        Preconditions.checkArgument(orders.isEmpty(),"Only a single sort order is supported on vertex queries");
+        orders.add(key, order);
+        return getThis();
+    }
+
+
     /* ---------------------------------------------------------------
      * Utility Methods
 	 * ---------------------------------------------------------------
@@ -265,25 +292,25 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         assert returnType != null;
-        if (limit == 0)
+        Preconditions.checkArgument(adjacentVertex==null || returnType == RelationCategory.EDGE,"Vertex constraints only apply to edges");
+        if (limit <= 0)
             return BaseVertexCentricQuery.emptyQuery();
 
         //Prepare direction
         if (returnType == RelationCategory.PROPERTY) {
             if (dir == Direction.IN)
                 return BaseVertexCentricQuery.emptyQuery();
-
             dir = Direction.OUT;
         }
-
-        Preconditions.checkArgument(getVertexConstraint() == null || returnType == RelationCategory.EDGE,"Vertex constraints only apply to edges");
+        //Prepare order
+        orders.makeImmutable();
+        assert orders.hasCommonOrder();
 
         //Prepare constraints
         And<TitanRelation> conditions = QueryUtil.constraints2QNF(tx, constraints);
         if (conditions == null)
             return BaseVertexCentricQuery.emptyQuery();
 
-        assert limit > 0;
         //Don't be smart with query limit adjustments - it just messes up the caching layer and penalizes when appropriate limits are set by the user!
         int sliceLimit = limit;
 
@@ -293,7 +320,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         if (!hasTypes()) {
             BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
                     ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
-                            && !conditions.hasChildren()), true, null);
+                            && !conditions.hasChildren()), orders.isEmpty(), null);
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
                 //If only one direction is queried, ask for twice the limit from backend since approximately half will be filtered
                 if (dir != Direction.BOTH && (returnType == RelationCategory.EDGE || returnType == RelationCategory.RELATION))
@@ -311,8 +338,6 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             for (ProperInterval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
             }
-            EdgeSerializer.VertexConstraint vertexConstraint = getVertexConstraint();
-
 
             for (String typeName : types) {
                 InternalType type = QueryUtil.getType(tx, typeName);
@@ -332,74 +357,88 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
                 }
 
 
-                //Find best scoring relation type
-                InternalType bestCandidate = null;
-                int bestScore = Integer.MIN_VALUE;
-                for (InternalType candidate : type.getRelationIndexes()) {
-                    if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(dir)) continue;
-                    if (type.getStatus()!= SchemaStatus.ENABLED) continue;
+                if (type.isEdgeLabel() && dir==Direction.BOTH && intervalConstraints.isEmpty() && orders.isEmpty()) {
+                    //TODO: This if-condition is a little too restrictive - we also want to include those cases where there
+                    // ARE intervalConstraints or orders but those cannot be covered by any sort-keys
+                    SliceQuery q = serializer.getQuery(type, dir, null);
+                    q.setLimit(sliceLimit);
+                    queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true, null));
+                } else {
+                    //Optimize for each direction independently
+                    Direction[] dirs = {dir};
+                    if (dir == Direction.BOTH) {
+                        if (type.isEdgeLabel())
+                            dirs = new Direction[]{Direction.OUT, Direction.IN};
+                        else
+                            dirs = new Direction[]{Direction.OUT}; //property key
+                    }
 
-                    int score = 0;
-                    boolean coveredAllSortKeys = true;
-                    for (long keyid : candidate.getSortKey()) {
-                        TitanType keyType = tx.getExistingType(keyid);
-                        ProperInterval interval = intervalConstraints.get(keyType);
-                        if (interval==null || !interval.isPoint()) {
-                            if (interval!=null) score+=1;
-                            coveredAllSortKeys=false;
-                            break;
-                        } else {
-                            assert interval.isPoint();
-                            score+=2;
+                    for (Direction direction : dirs) {
+                        /*
+                        Find best scoring relation type to answer this query with. We score each candidate by the number
+                        of conditions that each sort-keys satisfy. Equality conditions score higher than interval conditions
+                        since they are more restrictive. We assign additional points if the sort key satisfies the order
+                        of this query.
+                        */
+                        InternalType bestCandidate = null;
+                        int bestScore = Integer.MIN_VALUE;
+                        boolean bestCandidateSupportsOrder = false;
+                        for (InternalType candidate : type.getRelationIndexes()) {
+                            //Filter out those that don't apply
+                            if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) continue;
+                            if (candidate.getStatus()!= SchemaStatus.ENABLED) continue;
+
+                            boolean supportsOrder = orders.isEmpty()?true:orders.getCommonOrder()==candidate.getSortOrder();
+                            int currentOrder = 0;
+
+                            int score = 0;
+                            TitanType[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
+
+                            for (int i=0;i<extendedSortKey.length;i++) {
+                                TitanType keyType = extendedSortKey[i];
+                                if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
+
+                                ProperInterval interval = intervalConstraints.get(keyType);
+                                if (interval==null || !interval.isPoint()) {
+                                    if (interval!=null) score+=1;
+                                    break;
+                                } else {
+                                    assert interval.isPoint();
+                                    score+=5;
+                                }
+                            }
+                            if (supportsOrder && currentOrder==orders.size()) score+=3;
+                            if (score>bestScore) {
+                                bestScore=score;
+                                bestCandidate=candidate;
+                                bestCandidateSupportsOrder=supportsOrder && currentOrder==orders.size();
+                            }
                         }
-                    }
-                    if (coveredAllSortKeys && vertexConstraint!=null) score+=10;
-                    if (score>bestScore) {
-                        bestScore=score;
-                        bestCandidate=candidate;
+                        Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.getName());
+
+                        //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
+                        //that is wrapped into a BackendQueryHolder
+                        TitanType[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
+                        EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[extendedSortKey.length];
+                        int coveredTypes = 0;
+                        for (int i = 0; i < extendedSortKey.length; i++) {
+                            TitanType keyType = extendedSortKey[i];
+                            ProperInterval interval = intervalConstraints.get(keyType);
+                            if (interval!=null) {
+                                sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalType) keyType,interval);
+                                coveredTypes++;
+                            }
+                            if (interval==null || !interval.isPoint()) break;
+                        }
+
+                        boolean isFitted = isIntervalFittedConditions && coveredTypes==intervalConstraints.size();
+                        SliceQuery q = serializer.getQuery(bestCandidate, direction, sortKeyConstraints);
+                        q.setLimit(computeLimit(intervalConstraints.size()-coveredTypes, sliceLimit));
+                        queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, bestCandidateSupportsOrder, null));
+
+
                     }
                 }
-                Preconditions.checkArgument(bestCandidate!=null,"Current graph schema does not support the specified query constraints for type: %s",type.getName());
-
-                //Construct sort key constraints
-                long[] sortKey = bestCandidate.getSortKey();
-                EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[sortKey.length];
-                int coveredTypes = 0;
-                for (int i = 0; i < sortKeyConstraints.length; i++) {
-                    TitanType keyType = tx.getExistingType(sortKey[i]);
-                    ProperInterval interval = intervalConstraints.get(keyType);
-                    if (interval!=null) {
-                        sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalType) keyType,interval);
-                        coveredTypes++;
-                    }
-                    if (interval==null || !interval.isPoint()) break;
-                }
-                boolean vertexConstraintApplies = sortKeyConstraints.length==0 ||
-                        (sortKeyConstraints[sortKeyConstraints.length-1] != null && sortKeyConstraints[sortKeyConstraints.length-1].interval.isPoint());
-                boolean hasSortKeyConstraint = sortKeyConstraints.length>0 && sortKeyConstraints[0]!=null;
-
-                Direction[] dirs = {dir};
-                if (dir == Direction.BOTH &&
-                        (hasSortKeyConstraint || (vertexConstraintApplies && vertexConstraint != null))) {
-                    //Split on direction in the presence of effective sort key constraints
-                    dirs = new Direction[]{Direction.OUT, Direction.IN};
-                }
-                for (Direction dir : dirs) {
-                    EdgeSerializer.VertexConstraint vertexCon = vertexConstraintApplies?vertexConstraint:null;
-                    EdgeSerializer.TypedInterval[] sortConstraints = sortKeyConstraints;
-                    if (bestCandidate.getMultiplicity().isUnique(dir)) {
-                        vertexCon = null;
-                        sortConstraints = new EdgeSerializer.TypedInterval[bestCandidate.getSortKey().length];
-                    }
-
-                    boolean isFitted = isIntervalFittedConditions && coveredTypes==intervalConstraints.size()
-                            && vertexConstraint == vertexCon && sortConstraints == sortKeyConstraints;
-                    SliceQuery q;
-                    q = serializer.getQuery(bestCandidate, dir, sortConstraints, vertexCon);
-                    q.setLimit(computeLimit(intervalConstraints.size()-coveredTypes, sliceLimit));
-                    queries.add(new BackendQueryHolder<SliceQuery>(q, isFitted, true, null));
-                }
-
             }
             if (queries.isEmpty())
                 return BaseVertexCentricQuery.emptyQuery();
@@ -407,13 +446,19 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             conditions.add(getTypeCondition(ts));
         }
 
-        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, limit);
+        return new BaseVertexCentricQuery(QueryUtil.simplifyQNF(conditions), dir, queries, orders, limit);
     }
 
-    private static boolean emptySortConstraints(EdgeSerializer.TypedInterval[] sortKeyConstraints) {
-        return sortKeyConstraints.length==0 || sortKeyConstraints[0]==null;
-    }
-
+    /**
+     * Returns the extended sort key of the given type. The extended sort key extends the type's primary sort key
+     * by ADJACENT_ID and ID depending on the multiplicity of the type in the given direction.
+     * It also converts the type ids to actual types.
+     *
+     * @param type
+     * @param dir
+     * @param tx
+     * @return
+     */
     private static TitanType[] getExtendedSortKey(InternalType type, Direction dir, StandardTitanTx tx) {
         int additional = 0;
         if (!type.getMultiplicity().isUnique(dir)) {
@@ -430,7 +475,19 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return entireKey;
     }
 
-
+    /**
+     * Converts the constraint conditions of this query into a constraintMap which is passed as an argument.
+     * If all the constraint conditions could be accounted for in the constraintMap, this method returns true, else -
+     * if some constraints cannot be captured in an interval - it returns false to indicate that further in-memory filtering
+     * will be necessary.
+     * </p>
+     * This constraint map is used in constructing the SliceQueries and query optimization since this representation
+     * is easier to handle.
+     *
+     * @param conditions
+     * @param constraintMap
+     * @return
+     */
     private boolean compileConstraints(And<TitanRelation> conditions, Map<TitanType,ProperInterval> constraintMap) {
         boolean isFitted = true;
         for (Condition<TitanRelation> condition : conditions.getChildren()) {
@@ -445,6 +502,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             }
             boolean fittedSub = compileConstraint(pi,type,atom.getPredicate(),atom.getValue());
             isFitted = isFitted && fittedSub;
+        }
+        if (adjacentVertex!=null) {
+            if (adjacentVertex.hasId()) constraintMap.put(ImplicitKey.ADJACENT_ID,new ProperInterval(adjacentVertex.getID()));
+            else isFitted=false;
         }
         return isFitted;
     }
@@ -493,23 +554,34 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         } else return false;
     }
 
-    private static final boolean isIntervalType(TitanType type) {
-        return type.isPropertyKey() && Comparable.class.isAssignableFrom(((TitanKey) type).getDataType());
-    }
-
+    /**
+     * Constructs a condition that is equivalent to the type constraints of this query if there are any.
+     *
+     * @param types
+     * @return
+     */
     private static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
             return new RelationTypeCondition<TitanRelation>(types.iterator().next());
 
         Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
-
         for (TitanType type : types)
             typeCond.add(new RelationTypeCondition<TitanRelation>(type));
 
         return typeCond;
     }
 
+    /**
+     * Updates a given user limit based on the number of conditions that can not be fulfilled by the backend query, i.e. the query
+     * is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in memory, we will discard
+     * results returned from the backend and hence we should increase the limit to account for this "waste" in order to not have
+     * to adjust the limit too often in {@link com.thinkaurelius.titan.graphdb.query.LimitAdjustingIterator}.
+     *
+     * @param remainingConditions
+     * @param baseLimit
+     * @return
+     */
     private int computeLimit(int remainingConditions, int baseLimit) {
         if (baseLimit==Query.NO_LIMIT) return baseLimit;
         assert baseLimit>0;
@@ -518,6 +590,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return baseLimit;
     }
 
-
+    protected static<E extends TitanElement> Condition<E> addAndCondition(Condition<E> base, Condition<E> add) {
+        And<E> newcond = (base instanceof And) ? (And) base : new And<E>(base);
+        newcond.add(add);
+        return newcond;
+    }
 
 }

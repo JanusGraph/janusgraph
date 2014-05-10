@@ -128,7 +128,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#query()
      */
-    public TitanGraphQuery query();
+    public TitanGraphQuery<? extends TitanGraphQuery> query();
 
     /**
      * Returns a {@link TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
@@ -146,13 +146,13 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
      */
-    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(TitanVertex... vertices);
 
     /**
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(Collection)
      */
-    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
+    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(Collection<TitanVertex> vertices);
 
     /**
      * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.

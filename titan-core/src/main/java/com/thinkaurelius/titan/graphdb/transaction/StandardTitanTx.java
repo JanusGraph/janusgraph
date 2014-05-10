@@ -515,7 +515,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             //Check uniqueness
             if (config.hasVerifyUniqueness()) {
                 if (multiplicity==Multiplicity.SIMPLE) {
-                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacentVertex(inVertex).titanEdges()),
+                    Preconditions.checkArgument(Iterables.isEmpty(query(outVertex).type(label).direction(Direction.OUT).adjacent(inVertex).titanEdges()),
                             "An edge with the given label already exists between the pair of vertices and the label [%s] is simple", label.getName());
                 }
                 if (multiplicity.isUnique(Direction.OUT)) {

@@ -108,7 +108,7 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
                     newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
                     if (getAdjacentVertex() != null)
                         newcond.add(new IncidenceCondition<TitanRelation>(v,getAdjacentVertex()));
-                    VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getLimit());
+                    VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getOrders(), vq.getLimit());
                     result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
 
                 }

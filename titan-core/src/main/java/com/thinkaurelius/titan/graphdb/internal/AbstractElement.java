@@ -7,6 +7,11 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 /**
  * AbstractElement is the base class for all elements in Titan.
  * It is defined and uniquely identified by its id.
+ * </p>
+ * For the id, it holds that:
+ * id<0: Temporary id, will be assigned id>0 when the transaction is committed
+ * id=0: Virtual or implicit element that does not physically exist in the database
+ * id>0: Physically persisted element
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -15,12 +20,15 @@ public abstract class AbstractElement implements InternalElement {
     private long id;
 
     public AbstractElement(long id) {
-        assert id != 0;
         this.id = id;
     }
 
     public static boolean isTemporaryId(long elementId) {
         return elementId < 0;
+    }
+
+    public static boolean isImplicitId(long elementId) {
+        return elementId==0;
     }
 
 

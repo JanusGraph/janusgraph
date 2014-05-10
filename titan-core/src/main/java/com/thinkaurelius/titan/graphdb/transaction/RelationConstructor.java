@@ -26,8 +26,8 @@ import java.util.Iterator;
  */
 public class RelationConstructor {
 
-    public static RelationCache readRelationCache(InternalVertex vertex, Entry data, StandardTitanTx tx) {
-        return tx.getEdgeSerializer().readRelation(vertex.getID(), data, false, tx);
+    public static RelationCache readRelationCache(Entry data, StandardTitanTx tx) {
+        return tx.getEdgeSerializer().readRelation(data, false, tx);
     }
 
     public static Iterable<TitanRelation> readRelation(final InternalVertex vertex, final Iterable<Entry> data, final StandardTitanTx tx) {
@@ -61,14 +61,14 @@ public class RelationConstructor {
     }
 
     public static InternalRelation readRelation(final InternalVertex vertex, final Entry data, final StandardTitanTx tx) {
-        RelationCache relation = tx.getEdgeSerializer().readRelation(vertex.getID(), data, true, tx);
+        RelationCache relation = tx.getEdgeSerializer().readRelation(data, true, tx);
         return readRelation(vertex,relation,data,tx,tx);
     }
 
     public static InternalRelation readRelation(final InternalVertex vertex, final Entry data,
                                                 final EdgeSerializer serializer, final TypeInspector types,
                                                 final VertexFactory vertexFac) {
-        RelationCache relation = serializer.readRelation(vertex.getID(), data, true, types);
+        RelationCache relation = serializer.readRelation(data, true, types);
         return readRelation(vertex,relation,data,types,vertexFac);
     }
 
@@ -86,10 +86,10 @@ public class RelationConstructor {
             InternalVertex otherVertex = vertexFac.getExistingVertex(relation.getOtherVertexId());
             switch (relation.direction) {
                 case IN:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, otherVertex, vertex, (byte) 1, data);
+                    return new CacheEdge(relation.relationId, (TitanLabel) type, otherVertex, vertex, data);
 
                 case OUT:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, vertex, otherVertex, (byte) 0, data);
+                    return new CacheEdge(relation.relationId, (TitanLabel) type, vertex, otherVertex, data);
 
                 default:
                     throw new AssertionError();

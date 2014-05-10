@@ -14,7 +14,7 @@ import com.tinkerpop.blueprints.Predicate;
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface BaseVertexQuery<Q extends BaseVertexQuery> {
+public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
     /* ---------------------------------------------------------------
     * Query Specification
@@ -143,6 +143,33 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery> {
      * @return this query
      */
     public Q limit(int limit);
+
+
+    /**
+     * Orders the relation results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     * </p>
+     * Note, that the ordering always applies to the incident relations (edges/properties) and NOT
+     * to the adjacent vertices even if only vertices are being returned.
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
+    public Q orderBy(String key, Order order);
+
+    /**
+     * Orders the relation results of this query according
+     * to their property for the given key in the given order (increasing/decreasing).
+     * </p>
+     * Note, that the ordering always applies to the incident relations (edges/properties) and NOT
+     * to the adjacent vertices even if only vertices are being returned.
+     *
+     * @param key   The key of the properties on which to order
+     * @param order the ordering direction
+     * @return
+     */
+    public Q orderBy(TitanKey key, Order order);
 
 
 }

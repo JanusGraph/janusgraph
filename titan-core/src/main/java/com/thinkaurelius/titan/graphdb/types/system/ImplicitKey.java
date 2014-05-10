@@ -20,7 +20,7 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
     public static final ImplicitKey ID = new ImplicitKey(0,"id",Long.class);
 
-    public static final ImplicitKey LABEL = new ImplicitKey(0,"label",String.class);
+    public static final ImplicitKey LABEL = new ImplicitKey(11,"label",String.class);
 
 //    public static final ImplicitKey KEY = new ImplicitKey("key",Long.class);
 

@@ -130,7 +130,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         return executor;
     }
 
-    private class QueryBuilder extends AbstractVertexCentricQueryBuilder implements OLAPQueryBuilder<S> {
+    private class QueryBuilder extends AbstractVertexCentricQueryBuilder<QueryBuilder> implements OLAPQueryBuilder<S,QueryBuilder> {
 
         private final StandardTitanTx tx;
 
@@ -147,6 +147,11 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
                 queries.add(sq.updateLimit(bq.isFitted()?vq.getLimit():hardQueryLimit));
             }
             tx.rollback();
+        }
+
+        @Override
+        protected QueryBuilder getThis() {
+            return this;
         }
 
         @Override

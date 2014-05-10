@@ -76,7 +76,7 @@ public class CacheProperty extends AbstractProperty {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = RelationConstructor.readRelationCache(getVertex(0), data, tx());
+            map = RelationConstructor.readRelationCache(data, tx());
         }
         return map;
     }

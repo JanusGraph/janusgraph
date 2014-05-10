@@ -102,13 +102,11 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
         Condition<TitanRelation> condition = vq.getCondition();
         if (!vq.isEmpty()) {
             //Add adjacent-vertex and direction related conditions
-            And<TitanRelation> newcond = (condition instanceof And) ? (And) condition : new And<TitanRelation>(condition);
-            newcond.add(new DirectionCondition<TitanRelation>(vertex,getDirection()));
+            condition = addAndCondition(condition,new DirectionCondition<TitanRelation>(vertex,getDirection()));
             if (getAdjacentVertex() != null)
-                newcond.add(new IncidenceCondition<TitanRelation>(vertex,getAdjacentVertex()));
-            condition=newcond;
+                condition = addAndCondition(condition,new IncidenceCondition<TitanRelation>(vertex,getAdjacentVertex()));
         }
-        VertexCentricQuery query = new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(), vq.getLimit());
+        VertexCentricQuery query = new VertexCentricQuery(vertex, condition, vq.getDirection(), vq.getQueries(),vq.getOrders(), vq.getLimit());
         Preconditions.checkArgument(!queryOnlyLoaded || query.isSimple(),"Query-only-loaded only works on simple queries");
         return query;
     }

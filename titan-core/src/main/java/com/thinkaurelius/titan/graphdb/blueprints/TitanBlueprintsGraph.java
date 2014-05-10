@@ -178,7 +178,7 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public TitanGraphQuery query() {
+    public TitanGraphQuery<? extends TitanGraphQuery> query() {
         return getAutoStartTx().query();
     }
 

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -109,7 +110,7 @@ public final class RelationIdentifier {
         if (((TitanType) typeVertex).isEdgeLabel()) {
             TitanVertex in = tx.getVertex(inVertexId);
             if (in==null) return null;
-            rels = v.query().types((TitanLabel)type).direction(Direction.OUT).adjacentVertex(in).titanEdges();
+            rels = v.query().types((TitanLabel)type).direction(Direction.OUT).adjacent(in).titanEdges();
         } else {
             rels = v.query().types((TitanKey)type).properties();
         }
