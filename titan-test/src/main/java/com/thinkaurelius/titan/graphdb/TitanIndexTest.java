@@ -113,7 +113,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
             v.setProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
 
-            Edge e = v.addEdge("knows", tx.getVertex("uid", Math.max(0, i - 1)));
+            Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
             e.setProperty("text", "Vertex " + words[i % words.length]);
             e.setProperty("time", i);
             e.setProperty("category", i % numCategories);
@@ -232,7 +232,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         int numDelete = 12;
         for (int i = numV - numDelete; i < numV; i++) {
-            tx.getVertex("uid", i).remove();
+            getVertex("uid", i).remove();
         }
 
         numV = numV - numDelete;

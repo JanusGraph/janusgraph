@@ -207,9 +207,9 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
                 public void run() {
                     TitanTransaction tx = graph.newTransaction();
                     long ruid = random.nextInt(maxUID) + 1;
-                    tx.getVertex("uid", ruid).setProperty("name", fixedName);
+                    getVertex(tx,"uid", ruid).setProperty("name", fixedName);
                     for (int t = 1; t <= trials; t++) {
-                        TitanVertex v = tx.getVertex("uid", random.nextInt(maxUID) + 1);
+                        TitanVertex v = getVertex(tx,"uid", random.nextInt(maxUID) + 1);
                         assertEquals(2, Iterables.size(v.getProperties()));
                         int count = 0;
                         for (TitanEdge e : v.getEdges()) {
@@ -219,7 +219,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestComm
                         assertTrue(count <= 2);
 //                        if (t%(trials/10)==0) System.out.println(t);
                     }
-                    assertEquals(fixedName, tx.getVertex("uid", ruid).getProperty("name"));
+                    assertEquals(fixedName, getVertex(tx,"uid", ruid).getProperty("name"));
                     tx.commit();
                 }
             });

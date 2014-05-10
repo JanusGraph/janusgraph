@@ -155,26 +155,6 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(Collection<TitanVertex> vertices);
 
     /**
-     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
-     * This method assumes that the provided key is unique and will throw an execption otherwise.
-     *
-     * @param key
-     * @param attribute
-     * @return The vertex which has the provided key and value or NULL if it does not exit
-     */
-    public TitanVertex getVertex(TitanKey key, Object attribute);
-
-    /**
-     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
-     * This method assumes that the provided key is unique and will throw an execption otherwise.
-     *
-     * @param key
-     * @param attribute
-     * @return The vertex which has the provided key and value or NULL if it does not exit
-     */
-    public TitanVertex getVertex(String key, Object attribute);
-
-    /**
      * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
      * For this operation to be efficient, please ensure that the given property key is indexed for vertices using a <i>standard</i> index.

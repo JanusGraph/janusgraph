@@ -64,8 +64,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        tx1.getVertex("uid", "v").setProperty("value", 11);
-        tx2.getVertex("uid", "v").setProperty("value", 11);
+        getVertex(tx1,"uid", "v").setProperty("value", 11);
+        getVertex(tx2,"uid", "v").setProperty("value", 11);
         tx1.commit();
         tx2.commit();
 

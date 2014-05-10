@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.zip.GZIPOutputStream;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanKey;
@@ -95,7 +96,7 @@ public class GraphGenerator {
         hiOutDeg.setProperty(Schema.UID_PROP, Schema.SUPERNODE_UID);
         String pKey = schema.getSortKeyForLabel(label);
         for (long i = INITIAL_VERTEX_UID; i < schema.getVertexCount(); i++) {
-            Vertex in = tx.getVertex(uidKey, i);
+            Vertex in = Iterables.getOnlyElement(tx.getVertices(uidKey, i));
             Edge e = hiOutDeg.addEdge(label, in);
             e.setProperty(pKey, (int) i);
         }

@@ -236,7 +236,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         finishSchema();
         clopen();
 
-        assertNull(tx.getVertex(id, "v1"));
+        assertNull(getVertex(id, "v1"));
 
         id = tx.getPropertyKey("uid");
         assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
@@ -370,10 +370,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         clopen();
 
         id = tx.getPropertyKey("uid");
-        v1 = tx.getVertex(id, "v1");
+        v1 = getVertex(id, "v1");
         assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
-        assertEquals(v1, Iterables.getOnlyElement(tx.getVertices("someid", 100l)));
-        assertEquals(v1, Iterables.getOnlyElement(tx.getVertices(id, "v1")));
+        assertEquals(v1, getVertex("someid", 100l));
+        assertEquals(v1, getVertex(id, "v1"));
 
         v12 = (TitanVertex) tx.getVertex(v12);
         v13 = (TitanVertex) tx.getVertex(v13);
@@ -398,10 +398,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         v2.setProperty("int", new SpecialInt(154));
 
-        v2 = tx.getVertex(id, "v2");
+        v2 = getVertex(id, "v2");
         assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
-        assertEquals(v2, Iterables.getOnlyElement(tx.getVertices("someid", 200l)));
-        assertEquals(v2, Iterables.getOnlyElement(tx.getVertices(id, "v2")));
+        assertEquals(v2, getVertex("someid", 200l));
+        assertEquals(v2, getVertex(id, "v2"));
 
         assertEquals(5, Iterables.size(tx.getVertices()));
 
@@ -978,7 +978,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             TitanVertex n = tx.addVertex();
             n.addProperty("uid", i);
             n.addProperty("name", "Name" + (i % mod));
-            TitanVertex other = tx.getVertex("uid", Math.max(0, i - 1));
+            TitanVertex other = getVertex("uid", Math.max(0, i - 1));
             Preconditions.checkNotNull(other);
             TitanEdge e = n.addEdge("connect", other);
             e.setProperty("uid", i);
@@ -1001,7 +1001,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         clopen();
         for (int i = 0; i < noNodes; i++) {
-            assertEquals(Iterables.getOnlyElement(tx.getVertices("uid", i)).getProperty("name").toString().substring(4), String.valueOf(i % mod));
+            assertEquals(getVertex("uid", i).getProperty("name").toString().substring(4), String.valueOf(i % mod));
         }
         for (int i = 0; i < noNodes; i++) {
             assertEquals(Iterables.getOnlyElement(tx.getEdges("uid", i)).getProperty("name").toString().substring(4), String.valueOf(i % mod));
@@ -1152,7 +1152,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         id = tx.getPropertyKey("uid");
         knows = tx.getEdgeLabel("knows");
         log.debug("Loaded edge types");
-        n2 = tx.getVertex(name, "Node2");
+        n2 = getVertex(name, "Node2");
         assertNotNull(n2.toString());
         assertEquals("Node2", n2.getProperty(name));
         e = Iterables.getOnlyElement(n2.getTitanEdges(BOTH, connect));
@@ -1208,7 +1208,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(2, Iterables.size(n1.getEdges(BOTH, "knows")));
 
         clopen();
-        n2 = tx.getVertex("name", "Node2");
+        n2 = getVertex("name", "Node2");
         e = Iterables.getOnlyElement(n2.getTitanEdges(OUT, tx.getEdgeLabel("knows")));
         assertEquals("New TitanRelation", e.getProperty(tx.getPropertyKey("name")));
         assertTrue(e.getProperty("weight").equals(111.5));
@@ -1524,11 +1524,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void neighborhoodTest() {
         testCreateAndRetrieveComprehensive();
         log.debug("Neighborhood:");
-        TitanVertex n1 = tx.getVertex("name", "Node1");
+        TitanVertex n1 = getVertex("name", "Node1");
         TitanVertexQuery q = n1.query().direction(OUT).types(tx.getEdgeLabel("connect"));
         VertexList res = q.vertexIds();
         assertEquals(1, res.size());
-        TitanVertex n2 = tx.getVertex("name", "Node2");
+        TitanVertex n2 = getVertex("name", "Node2");
         assertEquals(n2.getID(), res.getID(0));
     }
 
@@ -1601,8 +1601,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         id = tx.getPropertyKey("uid");
         assertTrue(id.getCardinality()==Cardinality.SINGLE);
         for (int i = 0; i < noNodes; i++) {
-            TitanVertex n = tx.getVertex(id, ids[i]);
-            assertEquals(n, tx.getVertex(name, names[i]));
+            TitanVertex n = getVertex(id, ids[i]);
+            assertEquals(n, getVertex(name, names[i]));
             assertEquals(names[i], n.getProperty(name));
             nodes[i] = n;
             assertEquals(nodeIds[i], n.getID());

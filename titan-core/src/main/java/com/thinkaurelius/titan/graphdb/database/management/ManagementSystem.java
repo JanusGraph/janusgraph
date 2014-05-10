@@ -252,7 +252,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = Token.getSeparatedName(TYPE_INDEX_NAME_PREFIX, type.getName(), name);
 
-        TitanVertex v = transaction.getVertex(BaseKey.TypeName,composedName);
+        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.TypeName,composedName),null);
         if (v==null) return null;
         assert v instanceof InternalType;
         return new TitanTypeIndexWrapper((InternalType)v);
@@ -278,7 +278,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         String composedName = composeIndexName(name);
 
-        TitanVertex v = transaction.getVertex(BaseKey.TypeName,composedName);
+        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.TypeName,composedName),null);
         if (v==null) return null;
         assert v instanceof TitanSchemaVertex;
         return ((TitanSchemaVertex)v).asIndexType();

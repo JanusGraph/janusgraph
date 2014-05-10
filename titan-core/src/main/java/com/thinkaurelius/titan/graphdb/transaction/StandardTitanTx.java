@@ -1063,17 +1063,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     @Override
-    public TitanVertex getVertex(TitanKey key, Object attribute) {
-        return Iterables.getOnlyElement(getVertices(key, attribute), null);
-    }
-
-    @Override
-    public TitanVertex getVertex(String key, Object attribute) {
-        if (!containsType(key)) return null;
-        else return getVertex(getPropertyKey(key), attribute);
-    }
-
-    @Override
     public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(attribute);

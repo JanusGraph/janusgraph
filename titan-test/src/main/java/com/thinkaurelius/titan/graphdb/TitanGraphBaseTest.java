@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.util.time.StandardDuration;
@@ -284,6 +285,22 @@ public abstract class TitanGraphBaseTest {
         value = value % maxValue;
         if (value < 0) value = value + maxValue;
         return value;
+    }
+
+    public TitanVertex getVertex(String key, Object value) {
+        return getVertex(tx,key,value);
+    }
+
+    public TitanVertex getVertex(TitanKey key, Object value) {
+        return getVertex(tx,key,value);
+    }
+
+    public static TitanVertex getVertex(TitanTransaction tx, String key, Object value) {
+        return (TitanVertex)Iterables.getOnlyElement(tx.getVertices(key,value),null);
+    }
+
+    public static TitanVertex getVertex(TitanTransaction tx, TitanKey key, Object value) {
+        return Iterables.getOnlyElement(tx.getVertices(key,value),null);
     }
 
 }
