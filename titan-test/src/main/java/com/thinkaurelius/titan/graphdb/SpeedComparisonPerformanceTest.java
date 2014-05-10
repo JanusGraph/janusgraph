@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
  */
 
 @Category({ PerformanceTests.class })
-public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommon {
+public abstract class SpeedComparisonPerformanceTest extends TitanGraphBaseTest {
 
     private static final int numVertices = 2000;
     private static final int edgesPerVertex = 400;

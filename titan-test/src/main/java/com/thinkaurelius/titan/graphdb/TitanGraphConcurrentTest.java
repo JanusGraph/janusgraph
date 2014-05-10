@@ -30,7 +30,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
 @Category({PerformanceTests.class})
-public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
+public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();

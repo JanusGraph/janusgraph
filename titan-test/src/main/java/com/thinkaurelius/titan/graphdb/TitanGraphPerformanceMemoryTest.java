@@ -32,7 +32,7 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
 @Category({MemoryTests.class})
-public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphTestCommon {
+public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();

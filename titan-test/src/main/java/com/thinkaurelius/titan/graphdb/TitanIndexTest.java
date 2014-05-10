@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanIndexTest extends TitanGraphTestCommon {
+public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     public static final String INDEX = "index";
     public static final String VINDEX = "vindex";
