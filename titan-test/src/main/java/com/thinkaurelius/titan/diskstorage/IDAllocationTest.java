@@ -1,5 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
+import com.carrotsearch.hppc.LongOpenHashSet;
+import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.StorageSetup;
@@ -13,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
+import static org.junit.Assert.*;
 
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
@@ -58,15 +61,15 @@ public abstract class IDAllocationTest {
         configurations.add(new Object[]{c.getConfiguration()});
 
         c = getBasicConfig();
-        c.set(IDAUTHORITY_UNIQUE_ID_BITS,9);
-        c.set(IDAUTHORITY_UNIQUE_ID,511);
+        c.set(IDAUTHORITY_UNIQUEID_BITS,9);
+        c.set(IDAUTHORITY_UNIQUEID,511);
         configurations.add(new Object[]{c.getConfiguration()});
 
         c = getBasicConfig();
         c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
         c.set(IDAUTHORITY_WAIT, new StandardDuration(10L, TimeUnit.MILLISECONDS));
-        c.set(IDAUTHORITY_UNIQUE_ID_BITS,7);
-        c.set(IDAUTHORITY_RANDOMIZE_UNIQUE_ID,true);
+        c.set(IDAUTHORITY_UNIQUEID_BITS,7);
+        c.set(IDAUTHORITY_RANDOMIZE_UNIQUEID,true);
         configurations.add(new Object[]{c.getConfiguration()});
 
         return configurations;
@@ -74,7 +77,6 @@ public abstract class IDAllocationTest {
 
     public static ModifiableConfiguration getBasicConfig() {
         ModifiableConfiguration c = GraphDatabaseConfiguration.buildConfiguration();
-        c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,50);
         c.set(IDAUTHORITY_WAIT, new StandardDuration(100L, TimeUnit.MILLISECONDS));
         c.set(IDS_BLOCK_SIZE,400);
         return c;
@@ -87,6 +89,7 @@ public abstract class IDAllocationTest {
 
     public final int uidBitWidth;
     public final boolean hasFixedUid;
+    public final boolean hasEmptyUid;
     public final long blockSize;
     public final long idUpperBoundBitWidth;
     public final long idUpperBound;
@@ -96,8 +99,9 @@ public abstract class IDAllocationTest {
         TestGraphConfigs.applyOverrides(baseConfig);
         this.baseStoreConfiguration = baseConfig;
         Configuration config = StorageSetup.getConfig(baseConfig);
-        hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID);
-        uidBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
+        uidBitWidth = config.get(IDAUTHORITY_UNIQUEID_BITS);
+        hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID);
+        hasEmptyUid = uidBitWidth==0;
         blockSize = config.get(IDS_BLOCK_SIZE);
         idUpperBoundBitWidth = 30;
         idUpperBound = 1l<<idUpperBoundBitWidth;
@@ -159,24 +163,49 @@ public abstract class IDAllocationTest {
         }
     }
 
-    private void checkIdList(List<Long> ids) {
-        Collections.sort(ids);
-        for (int i=1;i<ids.size();i++) {
-            long current = ids.get(i);
-            long previous = ids.get(i-1);
-            Assert.assertTrue(current>0);
-            Assert.assertTrue(previous>0);
-            Assert.assertTrue("ID block allocated twice: blockstart=" + current + ", indices=(" + i + ", " + (i-1) + ")", current!=previous);
-            Assert.assertTrue("ID blocks allocated in non-increasing order: " + previous + " then " + current, current>previous);
-            Assert.assertTrue(previous+blockSize<=current);
-
-            if (hasFixedUid) {
-                Assert.assertTrue(current + " vs " + previous, 0 == (current - previous) % blockSize);
-                final long skipped = (current - previous) / blockSize;
-                Assert.assertTrue(0 <= skipped);
-            }
-        }
+    private void checkBlock(IDBlock block) {
+        assertTrue(blockSize<10000);
+        LongSet ids = new LongOpenHashSet((int)blockSize);
+        checkBlock(block,ids);
     }
+
+    private void checkBlock(IDBlock block, LongSet ids) {
+        assertEquals(blockSize,block.numIds());
+        for (int i=0;i<blockSize;i++) {
+            long id = block.getId(i);
+            assertEquals(id,block.getId(i));
+            assertFalse(ids.contains(id));
+            assertTrue(id<idUpperBound);
+            assertTrue(id>0);
+            ids.add(id);
+        }
+        if (hasEmptyUid) {
+            assertEquals(blockSize-1,block.getId(block.numIds()-1)-block.getId(0));
+        }
+        try {
+            block.getId(blockSize);
+            fail();
+        } catch (ArrayIndexOutOfBoundsException e) {}
+    }
+
+//    private void checkIdList(List<Long> ids) {
+//        Collections.sort(ids);
+//        for (int i=1;i<ids.size();i++) {
+//            long current = ids.get(i);
+//            long previous = ids.get(i-1);
+//            Assert.assertTrue(current>0);
+//            Assert.assertTrue(previous>0);
+//            Assert.assertTrue("ID block allocated twice: blockstart=" + current + ", indices=(" + i + ", " + (i-1) + ")", current!=previous);
+//            Assert.assertTrue("ID blocks allocated in non-increasing order: " + previous + " then " + current, current>previous);
+//            Assert.assertTrue(previous+blockSize<=current);
+//
+//            if (hasFixedUid) {
+//                Assert.assertTrue(current + " vs " + previous, 0 == (current - previous) % blockSize);
+//                final long skipped = (current - previous) / blockSize;
+//                Assert.assertTrue(0 <= skipped);
+//            }
+//        }
+//    }
 
     @Test
     public void testAuthorityUniqueIDsAreDistinct() {
@@ -191,26 +220,25 @@ public abstract class IDAllocationTest {
             Assert.assertTrue(uidErrorMessage, !uids.contains(uid));
             uids.add(uid);
         }
-        Assert.assertEquals(uidErrorMessage, CONCURRENCY, uids.size());
+        assertEquals(uidErrorMessage, CONCURRENCY, uids.size());
     }
 
     @Test
     public void testSimpleIDAcquisition() throws StorageException {
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         idAuthorities[0].setIDBlockSizer(blockSizer);
-        List<Long> ids = Lists.newArrayList();
+        int numTrials = 100;
+        LongSet ids = new LongOpenHashSet((int)blockSize*numTrials);
         long previous = 0;
-        for (int i=0;i<100;i++) {
-            long[] block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT);
-            Assert.assertEquals(block[1], block[0] + blockSize);
-            ids.add(block[0]);
-            if (hasFixedUid) {
+        for (int i=0;i<numTrials;i++) {
+            IDBlock block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT);
+            checkBlock(block,ids);
+            if (hasEmptyUid) {
                 if (previous!=0)
-                    Assert.assertEquals(previous,block[0]);
-                previous=block[1];
+                    assertEquals(previous+1, block.getId(0));
+                previous=block.getId(block.numIds()-1);
             }
         }
-        checkIdList(ids);
     }
 
     @Test
@@ -250,14 +278,86 @@ public abstract class IDAllocationTest {
     }
 
     @Test
+    public void testLocalPartitionAcquisition() throws StorageException {
+        for (int c = 0; c < CONCURRENCY; c++) {
+            if (manager[c].getFeatures().hasLocalKeyPartition()) {
+                try {
+                    List<KeyRange> partitions = idAuthorities[c].getLocalIDPartition();
+                    for (KeyRange range : partitions) {
+                        assertEquals(range.getStart().length(), range.getEnd().length());
+                        for (int i = 0; i < 2; i++) {
+                            Assert.assertTrue(range.getAt(i).length() >= 4);
+                        }
+                    }
+                } catch (UnsupportedOperationException e) {
+                    Assert.fail();
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testManyThreadsOneIDAuthority() throws StorageException, InterruptedException, ExecutionException {
+
+        ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
+
+        final IDAuthority targetAuthority = idAuthorities[0];
+        targetAuthority.setIDBlockSizer(new InnerIDBlockSizer());
+        final int targetPartition = 0;
+
+        final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<IDBlock>();
+        final int blocksPerThread = 40;
+        Assert.assertTrue(0 < blocksPerThread);
+        List <Future<Void>> futures = new ArrayList<Future<Void>>(CONCURRENCY);
+
+        // Start some concurrent threads getting blocks the same ID authority and same partition in that authority
+        for (int c = 0; c < CONCURRENCY; c++) {
+            futures.add(es.submit(new Callable<Void>() {
+                @Override
+                public Void call() {
+                    try {
+                        getBlock();
+                    } catch (StorageException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return null;
+                }
+
+                private void getBlock() throws StorageException {
+                    for (int i = 0; i < blocksPerThread; i++) {
+                        IDBlock block = targetAuthority.getIDBlock(targetPartition,
+                               GET_ID_BLOCK_TIMEOUT);
+                        Assert.assertNotNull(block);
+                        blocks.add(block);
+                    }
+                }
+            }));
+        }
+
+        for (Future<Void> f : futures) {
+            try {
+                f.get();
+            } catch (ExecutionException e) {
+                throw e;
+            }
+        }
+
+        es.shutdownNow();
+
+        assertEquals(blocksPerThread * CONCURRENCY, blocks.size());
+        LongSet ids = new LongOpenHashSet((int)blockSize*blocksPerThread*CONCURRENCY);
+        for (IDBlock block : blocks) checkBlock(block,ids);
+    }
+
+    @Test
     public void testMultiIDAcquisition() throws Throwable {
         final int numPartitions = 4;
-        final int numAcquisitionsPerThreadPartition = 300;
+        final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);
-        final List<List<Long>> ids = new ArrayList<List<Long>>(numPartitions);
+        final List<ConcurrentLinkedQueue<IDBlock>> ids = new ArrayList<ConcurrentLinkedQueue<IDBlock>>(numPartitions);
         for (int i = 0; i < numPartitions; i++) {
-            ids.add(Collections.synchronizedList(new ArrayList<Long>(numAcquisitionsPerThreadPartition * CONCURRENCY)));
+            ids.add(new ConcurrentLinkedQueue<IDBlock>());
         }
 
         final int maxIterations = numAcquisitionsPerThreadPartition * numPartitions * 2;
@@ -281,97 +381,13 @@ public abstract class IDAllocationTest {
         }
 
         for (int i = 0; i < numPartitions; i++) {
-            List<Long> list = ids.get(i);
-            Assert.assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
-            checkIdList(list);
+            ConcurrentLinkedQueue<IDBlock> list = ids.get(i);
+            assertEquals(numAcquisitionsPerThreadPartition * CONCURRENCY, list.size());
+            LongSet idset = new LongOpenHashSet((int)blockSize*list.size());
+            for (IDBlock block : list) checkBlock(block,idset);
         }
 
         es.shutdownNow();
-    }
-
-
-    @Test
-    public void testLocalPartitionAcquisition() throws StorageException {
-        for (int c = 0; c < CONCURRENCY; c++) {
-            if (manager[c].getFeatures().hasLocalKeyPartition()) {
-                try {
-                    List<KeyRange> partitions = idAuthorities[c].getLocalIDPartition();
-                    for (KeyRange range : partitions) {
-                        Assert.assertEquals(range.getStart().length(), range.getEnd().length());
-                        for (int i = 0; i < 2; i++) {
-                            Assert.assertTrue(range.getAt(i).length() >= 4);
-                        }
-                    }
-                } catch (UnsupportedOperationException e) {
-                    Assert.fail();
-                }
-            }
-        }
-    }
-
-    @Test
-    public void testManyThreadsOneIDAuthority() throws StorageException, InterruptedException, ExecutionException {
-
-        ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
-
-        final IDAuthority targetAuthority = idAuthorities[0];
-        targetAuthority.setIDBlockSizer(new InnerIDBlockSizer());
-        final int targetPartition = 0;
-        final ConcurrentLinkedQueue<Long> blocks = new ConcurrentLinkedQueue<Long>();
-        final int blocksPerThread = 40;
-        Assert.assertTrue(0 < blocksPerThread);
-        List <Future<Void>> futures = new ArrayList<Future<Void>>(CONCURRENCY);
-
-        // Start some concurrent threads getting blocks the same ID authority and same partition in that authority
-        for (int c = 0; c < CONCURRENCY; c++) {
-            futures.add(es.submit(new Callable<Void>() {
-                @Override
-                public Void call() {
-                    try {
-                        getBlock();
-                    } catch (StorageException e) {
-                        throw new RuntimeException(e);
-                    }
-                    return null;
-                }
-
-                private void getBlock() throws StorageException {
-                    for (int i = 0; i < blocksPerThread; i++) {
-                        long block[] = targetAuthority.getIDBlock(targetPartition,
-                               GET_ID_BLOCK_TIMEOUT);
-                        Assert.assertNotNull(block);
-                        blocks.add(block[0]);
-                    }
-                }
-            }));
-        }
-
-        for (Future<Void> f : futures) {
-            try {
-                f.get();
-            } catch (ExecutionException e) {
-                throw e;
-            }
-        }
-
-        es.shutdownNow();
-
-        /*
-         * Sorting is a reasonable compromise; we can't expect to keep the list
-         * of blocks in allocation-order without effectively serializing the
-         * concurrent threads.
-         *
-         * A superior approach might be to insert a mock or spy object in the
-         * IDAuthority implementation itself, rather than attempting to observe
-         * allocations from concurrent threads -- maybe supportable with future
-         * refactoring.
-         */
-        List<Long> sortedBlocks = new ArrayList<Long>(blocks.size());
-        sortedBlocks.addAll(blocks);
-        Collections.sort(sortedBlocks);
-
-        checkIdList(sortedBlocks);
-        Assert.assertEquals(blocksPerThread * CONCURRENCY, sortedBlocks.size());
     }
 
 
@@ -381,12 +397,12 @@ public abstract class IDAllocationTest {
         private final int numPartitions;
         private final int maxIterations;
         private final IDAuthority authority;
-        private final List<List<Long>> allocatedBlocks;
+        private final List<ConcurrentLinkedQueue<IDBlock>> allocatedBlocks;
 
         private static final long sleepMS = 250L;
 
         private IDStressor(int numRounds, int numPartitions, int maxIterations,
-                           IDAuthority authority, List<List<Long>> ids) {
+                           IDAuthority authority, List<ConcurrentLinkedQueue<IDBlock>> ids) {
             this.numRounds = numRounds;
             this.numPartitions = numPartitions;
             this.maxIterations = maxIterations;
@@ -414,14 +430,15 @@ public abstract class IDAllocationTest {
                         throwIterationsExceededException();
                     }
 
-                    final Long start = allocate(p);
+                    final IDBlock block = allocate(p);
 
-                    if (null == start) {
+                    if (null == block) {
                         Thread.sleep(sleepMS);
                         p--;
                     } else {
-                        allocatedBlocks.get(p).add(start);
-                        if (hasFixedUid) {
+                        allocatedBlocks.get(p).add(block);
+                        if (hasEmptyUid) {
+                            long start = block.getId(0);
                             Assert.assertTrue("Previous block start "
                                     + lastStart[p] + " exceeds next block start "
                                     + start, lastStart[p] <= start);
@@ -432,16 +449,15 @@ public abstract class IDAllocationTest {
             }
         }
 
-        private Long allocate(int partitionIndex) {
+        private IDBlock allocate(int partitionIndex) {
 
-            long[] block;
+            IDBlock block;
             try {
                 block = authority.getIDBlock(partitionIndex,GET_ID_BLOCK_TIMEOUT);
             } catch (StorageException e) {
                 log.error("Unexpected exception while getting ID block", e);
                 return null;
             }
-            long start = block[0];
             /*
              * This is not guaranteed in the consistentkey implementation.
              * Writers of ID block claims in that implementation delete their
@@ -449,10 +465,10 @@ public abstract class IDAllocationTest {
              * block claim even though a subsequent getblock does not.
              */
 //            Assert.assertTrue(nextId <= block[0]);
-            Assert.assertEquals(block[0] + blockSize, block[1]);
-            log.trace("Obtained ID block {},{}", block[0], block[1]);
+            if (hasEmptyUid) assertEquals(block.getId(0)+ blockSize-1, block.getId(blockSize-1));
+            log.trace("Obtained ID block {}", block);
 
-            return start;
+            return block;
         }
 
         private boolean throwIterationsExceededException() {

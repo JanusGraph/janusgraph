@@ -29,7 +29,6 @@ public abstract class AbstractIDManager implements IDAuthority {
     protected static final long BASE_ID = 1;
 
     protected final Duration idApplicationWaitMS;
-    protected final int randomUniqueIDLimit;
 
     protected final String uid;
     protected final byte[] uidBytes;
@@ -48,9 +47,6 @@ public abstract class AbstractIDManager implements IDAuthority {
 
         this.idApplicationWaitMS =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
-
-        this.randomUniqueIDLimit =
-                config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);
 
         this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
     }

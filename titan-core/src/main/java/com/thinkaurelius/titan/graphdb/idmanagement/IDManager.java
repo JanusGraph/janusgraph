@@ -278,7 +278,7 @@ public class IDManager {
     /**
      * Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
-    public static final int TYPE_LEN_RESERVE = 2;
+    public static final int TYPE_LEN_RESERVE = 3;
 
     /**
      * Total number of bits available to a Titan assigned id
@@ -286,12 +286,12 @@ public class IDManager {
      *
      * @see com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler#getKey(long)
      */
-    private static final long TOTAL_BITS = 63;
+    private static final long TOTAL_BITS = Long.SIZE-1;
 
     /**
      * Maximum number of bits that can be used for the partition prefix of an id
      */
-    private static final long MAX_PARTITION_BITS = 30;
+    private static final long MAX_PARTITION_BITS = 16;
     /**
      * Default number of bits used for the partition prefix. 0 means there is no partition prefix
      */

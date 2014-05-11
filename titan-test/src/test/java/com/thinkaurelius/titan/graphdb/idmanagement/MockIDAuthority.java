@@ -2,11 +2,8 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -52,7 +49,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public long[] getIDBlock(int partition, Duration timeout) throws StorageException {
+    public IDBlock getIDBlock(int partition, Duration timeout) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -73,7 +70,29 @@ public class MockIDAuthority implements IDAuthority {
         if (lowerBound >= blockSizeLimit) {
             throw new IDPoolExhaustedException("Reached partition limit: " + blockSizeLimit);
         }
-        return new long[]{lowerBound, Math.min(lowerBound + size, blockSizeLimit)};
+        return new MockIDBlock(lowerBound,Math.min(size,blockSizeLimit-lowerBound));
+    }
+
+    private static class MockIDBlock implements IDBlock {
+
+        private final long start;
+        private final long numIds;
+
+        private MockIDBlock(long start, long numIds) {
+            this.start = start;
+            this.numIds = numIds;
+        }
+
+        @Override
+        public long numIds() {
+            return numIds;
+        }
+
+        @Override
+        public long getId(long index) {
+            if (index<0 || index>=numIds) throw new ArrayIndexOutOfBoundsException((int)index);
+            return start+index;
+        }
     }
 
     public void setLocalPartition(int[] local) {

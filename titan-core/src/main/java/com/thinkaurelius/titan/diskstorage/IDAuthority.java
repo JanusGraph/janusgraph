@@ -17,8 +17,7 @@ import java.util.List;
 public interface IDAuthority {
 
     /**
-     * Returns an array that specifies a block of new ids, i.e. the ids between
-     * return[0] (inclusive) and return[1] (exclusive). It is guaranteed that
+     * Returns a block of new ids in the form of {@link IDBlock}. It is guaranteed that
      * the block of ids for the particular partition id is uniquely assigned,
      * that is, the block of ids has not been previously and will not
      * subsequently be assigned again when invoking this method on the local or
@@ -26,6 +25,10 @@ public interface IDAuthority {
      * <p/>
      * In other words, this method has to ensure that ids are uniquely assigned
      * per partition.
+     * <p/>
+     * It is furthermore guaranteed that any id of the returned IDBlock is smaller than the upper bound
+     * for the given partition as read from the {@link IDBlockSizer} set on this IDAuthority and that the
+     * number of ids returned is equal to the block size of the IDBlockSizer.
      *
      * @param partition
      *            Partition for which to request an id block
@@ -35,7 +38,7 @@ public interface IDAuthority {
      *            and throw a {@code StorageException} ASAP
      * @return a range of ids for the {@code partition} parameter
      */
-    public long[] getIDBlock(int partition, Duration timout)
+    public IDBlock getIDBlock(int partition, Duration timeout)
             throws StorageException;
 
     /**

@@ -449,7 +449,7 @@ public class GraphDatabaseConfiguration {
 //    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
 
     /**
-     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
+     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
      * enabled, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
@@ -459,7 +459,7 @@ public class GraphDatabaseConfiguration {
      * is allocated and fails the request. It must be set to at least 1 and
      * should generally be set to 3 or more.
      * <p/>
-     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
+     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
      * is disabled.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_RETRY_COUNT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-retries",
@@ -476,7 +476,7 @@ public class GraphDatabaseConfiguration {
      * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
      * same value. Otherwise, data corruption will occur.
      */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID_BITS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-bits",
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_BITS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-bits",
             "Configures the number of bits of Titan assigned ids that are reserved for a unique id marker",
             ConfigOption.Type.FIXED, 0 , new Predicate<Integer>() {
         @Override
@@ -495,7 +495,7 @@ public class GraphDatabaseConfiguration {
      *
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
      */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid",
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid",
             "Unique id marker to be used by this Titan instance when allocating ids",
             ConfigOption.Type.LOCAL, 0);
 //    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
@@ -503,14 +503,14 @@ public class GraphDatabaseConfiguration {
 
     /**
      * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
-     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUE_ID} where the
+     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUEID} where the
      * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
      * instances.
      *
      * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
      * this option must be configured accordingly.
      */
-    public static final ConfigOption<Boolean> IDAUTHORITY_RANDOMIZE_UNIQUE_ID = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-uniqueid-random",
+    public static final ConfigOption<Boolean> IDAUTHORITY_RANDOMIZE_UNIQUEID = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-uniqueid-random",
             "Configures this Titan instance to use a random unique id marker each time it attempts to allocate a new id block",
             ConfigOption.Type.MASKABLE, false);
 //    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
@@ -521,8 +521,8 @@ public class GraphDatabaseConfiguration {
      * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
      * In this case, the consistency is only ensured within the local sub-clusters which does not require
      * acquiring global locks that can be too expensive to acquire.
-     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUE_ID} is configured
-     * that fits within the bit width {@link #IDAUTHORITY_UNIQUE_ID_BITS} and that each local cluster of Titan
+     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUEID} is configured
+     * that fits within the bit width {@link #IDAUTHORITY_UNIQUEID_BITS} and that each local cluster of Titan
      * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
      *
      * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in

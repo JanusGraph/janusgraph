@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.IDBlock;
 import com.thinkaurelius.titan.util.time.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -31,8 +32,29 @@ public class StandardIDPool implements IDPool {
     private static final TimeUnit SCHEDULING_TIME_UNIT =
             TimeUnit.MILLISECONDS; // TODO
 
-    private static final long BUFFER_EMPTY = -1;
-    private static final long BUFFER_POOL_EXHAUSTION = -100;
+    private static final IDBlock ID_POOL_EXHAUSTION = new IDBlock() {
+        @Override
+        public long numIds() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getId(long index) {
+            throw new UnsupportedOperationException();
+        }
+    };
+
+    private static final IDBlock UNINITIALIZED_BLOCK = new IDBlock() {
+        @Override
+        public long numIds() {
+            return 0;
+        }
+
+        @Override
+        public long getId(long index) {
+            throw new ArrayIndexOutOfBoundsException(0);
+        }
+    };
 
     private static final int RENEW_ID_COUNT = 100;
 
@@ -43,12 +65,14 @@ public class StandardIDPool implements IDPool {
     private final Duration renewTimeout;
     private final double renewBufferPercentage;
 
-    private long nextID;
-    private long currentMaxID;
-    private long renewBufferID;
+    private IDBlock currentBlock;
+    private long currentIndex;
+    private long renewBlockIndex;
+//    private long nextID;
+//    private long currentMaxID;
+//    private long renewBufferID;
 
-    private volatile long bufferNextID;
-    private volatile long bufferMaxID;
+    private volatile IDBlock nextBlock;
     private Future<?> idBlockFuture;
     private final ThreadPoolExecutor exec;
 
@@ -65,12 +89,11 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(renewBufferPercentage>0.0 && renewBufferPercentage<=1.0,"Renew-buffer percentage must be in (0.0,1.0]");
         this.renewBufferPercentage = renewBufferPercentage;
 
-        nextID = 0;
-        currentMaxID = 0;
-        renewBufferID = 0;
+        currentBlock = UNINITIALIZED_BLOCK;
+        currentIndex = 0;
+        renewBlockIndex = 0;
 
-        bufferNextID = BUFFER_EMPTY;
-        bufferMaxID = BUFFER_EMPTY;
+        nextBlock = null;
 
         // daemon=true would probably be fine too
         exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
@@ -113,59 +136,52 @@ public class StandardIDPool implements IDPool {
     }
 
     private synchronized void nextBlock() throws InterruptedException {
-        assert nextID == currentMaxID;
+        assert currentIndex == currentBlock.numIds();
 
         waitForIDRenewer();
-        if (bufferMaxID == BUFFER_POOL_EXHAUSTION || bufferNextID == BUFFER_POOL_EXHAUSTION)
+        if (nextBlock == ID_POOL_EXHAUSTION)
             throw new IDPoolExhaustedException("Exhausted ID Pool for partition: " + partitionID);
 
-        Preconditions.checkArgument(bufferMaxID > 0, bufferMaxID);
-        Preconditions.checkArgument(bufferNextID > 0, bufferNextID);
+        Preconditions.checkArgument(nextBlock!=null);
 
-        nextID = bufferNextID;
-        currentMaxID = bufferMaxID;
+        currentBlock = nextBlock;
+        currentIndex = 0;
 
-        log.debug("[ID Partition {}] Acquired range: [{},{}]", new Object[]{ partitionID, nextID, currentMaxID });
+        log.debug("[ID Partition {}] acquired block: [{}]", partitionID, currentBlock);
 
-        assert nextID > 0 && currentMaxID > nextID;
+        assert currentBlock.numIds()>0;
 
-        bufferNextID = BUFFER_EMPTY;
-        bufferMaxID = BUFFER_EMPTY;
+        nextBlock = null;
 
-        renewBufferID = currentMaxID - Math.max(RENEW_ID_COUNT, Math.round((currentMaxID - nextID)*renewBufferPercentage));
-        if (renewBufferID >= currentMaxID) renewBufferID = currentMaxID - 1;
-        if (renewBufferID < nextID) renewBufferID = nextID;
-        assert renewBufferID >= nextID && renewBufferID < currentMaxID;
+        assert RENEW_ID_COUNT>0;
+        renewBlockIndex = Math.max(0,currentBlock.numIds()-Math.max(RENEW_ID_COUNT, Math.round(currentBlock.numIds()*renewBufferPercentage)));
+        assert renewBlockIndex<currentBlock.numIds() && renewBlockIndex>=currentIndex;
     }
 
     private void renewBuffer() {
-        Preconditions.checkArgument(bufferNextID == BUFFER_EMPTY, bufferNextID);
-        Preconditions.checkArgument(bufferMaxID == BUFFER_EMPTY, bufferMaxID);
+        Preconditions.checkArgument(nextBlock == null, nextBlock);
         try {
             Stopwatch sw = new Stopwatch().start();
-            long[] idblock = idAuthority.getIDBlock(partitionID, renewTimeout);
+            IDBlock idBlock = idAuthority.getIDBlock(partitionID, renewTimeout);
             log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
-            bufferNextID = idblock[0];
-            bufferMaxID = idblock[1];
-            Preconditions.checkArgument(bufferNextID > 0, bufferNextID);
-            Preconditions.checkArgument(bufferMaxID > bufferNextID, bufferMaxID);
+            Preconditions.checkArgument(idBlock!=null && idBlock.numIds()>0);
+            nextBlock = idBlock;
         } catch (StorageException e) {
             throw new TitanException("Could not acquire new ID block from storage", e);
         } catch (IDPoolExhaustedException e) {
-            bufferNextID = BUFFER_POOL_EXHAUSTION;
-            bufferMaxID = BUFFER_POOL_EXHAUSTION;
+            nextBlock = ID_POOL_EXHAUSTION;
         }
     }
 
     @Override
     public synchronized long nextID() {
-        assert nextID <= currentMaxID;
+        assert currentIndex <= currentBlock.numIds();
         if (!initialized) {
             startNextIDAcquisition();
             initialized = true;
         }
 
-        if (nextID == currentMaxID) {
+        if (currentIndex == currentBlock.numIds()) {
             try {
                 nextBlock();
             } catch (InterruptedException e) {
@@ -173,11 +189,11 @@ public class StandardIDPool implements IDPool {
             }
         }
 
-        if (nextID == renewBufferID) {
+        if (currentIndex == renewBlockIndex) {
             startNextIDAcquisition();
         }
-        long returnId = nextID;
-        nextID++;
+        long returnId = currentBlock.getId(currentIndex);
+        currentIndex++;
         if (returnId >= idUpperBound) throw new IDPoolExhaustedException("Reached id upper bound of " + idUpperBound);
         log.trace("[{}] Returned id: {}", partitionID, returnId);
         return returnId;
@@ -197,7 +213,7 @@ public class StandardIDPool implements IDPool {
     private void startNextIDAcquisition() {
         Preconditions.checkArgument(idBlockFuture == null, idBlockFuture);
         //Renew buffer
-        log.debug("Starting id block renewal thread upon {}", nextID);
+        log.debug("Starting id block renewal thread upon {}", currentIndex);
         idBlockFuture = exec.submit(new IDBlockRunnable());
     }
 

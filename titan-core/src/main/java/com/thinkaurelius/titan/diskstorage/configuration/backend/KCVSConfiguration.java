@@ -47,7 +47,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     private final StaticBuffer rowKey;
     private final StandardSerializer serializer;
 
-    private boolean closeManager = false;
     private Duration maxOperationWaitTime = new StandardDuration(10000L, TimeUnit.MILLISECONDS);
 
 
