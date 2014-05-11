@@ -291,7 +291,7 @@ public class IDManager {
     /**
      * Maximum number of bits that can be used for the partition prefix of an id
      */
-    private static final long MAX_PARTITION_BITS = 16;
+    private static final long MAX_PARTITION_BITS = 30;
     /**
      * Default number of bits used for the partition prefix. 0 means there is no partition prefix
      */
