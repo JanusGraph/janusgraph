@@ -124,7 +124,8 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         for (Map.Entry<String,Object> txOption : txOptions.entrySet())
             txBuilder.setCustomOption(txOption.getKey(),txOption.getValue());
         final StandardTitanTx tx = (StandardTitanTx)txBuilder.start();
-        FulgoraExecutor executor = new FulgoraExecutor(queries,tx,(int)numVertices,numProcessingThreads,
+        FulgoraExecutor executor = new FulgoraExecutor(queries,tx,graph.getIDManager(),
+                (int)numVertices,numProcessingThreads,
                 stateKey, olapJob, initializer,initialState);
         new Thread(executor).start();
         return executor;

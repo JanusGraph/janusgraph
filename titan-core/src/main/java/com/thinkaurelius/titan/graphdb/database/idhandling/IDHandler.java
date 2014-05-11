@@ -21,18 +21,6 @@ public class IDHandler {
     public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
     public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
-
-    public static StaticBuffer getKey(long id) {
-        assert id >= 0;
-        return BufferUtil.getLongBuffer(id << 1);
-    }
-
-    public static long getKeyID(StaticBuffer b) {
-        long value = b.getLong(0);
-        return value >>> 1;
-    }
-
-
     public static enum DirectionID {
 
         PROPERTY_DIR(0),  //00b

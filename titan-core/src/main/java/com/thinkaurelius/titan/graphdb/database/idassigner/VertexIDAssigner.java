@@ -307,7 +307,7 @@ public class VertexIDAssigner {
                 } else if (vertex instanceof TitanSchemaVertex) {
                     id = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,pool.genericType.nextID()<<1);
                 } else {
-                    id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
+                    id = idManager.getVertexID(pool.vertex.nextID(), partitionID, IDManager.VertexIDType.Vertex);
                 }
                 pool.accessed();
             } catch (IDPoolExhaustedException e) {

@@ -21,6 +21,10 @@ public interface IDInspector {
 
     public boolean isVertexId(long id);
 
+    public boolean isUnmodifiableVertex(long id);
+
+    public boolean isPartitionedVertex(long id);
+
     public long getPartitionId(long id);
 
 }

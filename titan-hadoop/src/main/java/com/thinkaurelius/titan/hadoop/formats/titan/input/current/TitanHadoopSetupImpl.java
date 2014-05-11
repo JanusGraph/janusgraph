@@ -89,7 +89,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         return new VertexReader() {
             @Override
             public long getVertexId(StaticBuffer key) {
-                return IDHandler.getKeyID(key);
+                return graph.getIDManager().getKeyID(key);
             }
         };
     }

@@ -240,6 +240,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private void verifyWriteAccess(TitanVertex... vertices) {
         if (config.isReadOnly())
             throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
+        for (TitanVertex v : vertices) {
+            if (v.hasId() && idInspector.isUnmodifiableVertex(v.getID()))
+                throw new IllegalArgumentException("Cannot modify unmodifiable vertex: "+v);
+        }
         verifyAccess(vertices);
     }
 
@@ -354,7 +358,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
             } else if (idInspector.isVertexId(vertexid)) {
-                vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
+                if (idInspector.isPartitionedVertex(vertexid)) {
+                    throw new UnsupportedOperationException();
+                } else {
+                    vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
+                }
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;
         }

@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.QueryExecutor;
@@ -66,7 +65,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
 
     private boolean processingException = false;
 
-    FulgoraExecutor(final List<SliceQuery> sliceQueries, final StandardTitanTx tx,
+    FulgoraExecutor(final List<SliceQuery> sliceQueries, final StandardTitanTx tx, final IDManager idManager,
                     final int numVertices, final int numProcessors,
                     final String stateKey, final OLAPJob job,
                     final StateInitializer<S> initializer, final Map<Long,S> initialState) {
@@ -85,7 +84,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             else queries[i]=sliceQueries.get(i-1);
             BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
             dataQueues.add(queue);
-            pullThreads[i]=new DataPuller(queue,btx.edgeStoreKeys(queries[i]));
+            pullThreads[i]=new DataPuller(idManager,queue,btx.edgeStoreKeys(queries[i]));
             pullThreads[i].start();
         }
         //Prepare vertex state
@@ -250,11 +249,13 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
 
         private final BlockingQueue<QueryResult> queue;
         private final KeyIterator keyIter;
+        private final IDManager idManager;
         private volatile boolean finished;
 
-        private DataPuller(BlockingQueue<QueryResult> queue, KeyIterator keyIter) {
+        private DataPuller(IDManager idManager, BlockingQueue<QueryResult> queue, KeyIterator keyIter) {
             this.queue = queue;
             this.keyIter = keyIter;
+            this.idManager = idManager;
             this.finished = false;
         }
 
@@ -264,7 +265,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 while (keyIter.hasNext()) {
                     StaticBuffer key = keyIter.next();
                     RecordIterator<Entry> entries = keyIter.getEntries();
-                    long vertexId = IDHandler.getKeyID(key);
+                    long vertexId = idManager.getKeyID(key);
                     if (IDManager.VertexIDType.Hidden.is(vertexId)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     try {

@@ -31,6 +31,9 @@ public class IDManagementTest {
 
     private static final Random random = new Random();
 
+    private static final IDManager.VertexIDType[] USER_VERTEX_TYPES = {IDManager.VertexIDType.Vertex,
+            IDManager.VertexIDType.PartitionedVertex, IDManager.VertexIDType.UnmodifiableVertex};
+
     @Before
     public void setUp() throws Exception {
     }
@@ -41,29 +44,25 @@ public class IDManagementTest {
 
     @Test
     public void EntityIDTest() {
-        testEntityID(21, 1234123, 2341);
-        testEntityID(25, 582919, 9921239);
-        testEntityID(4, 1, 14);
-        testEntityID(10, 903392, 1);
-        testEntityID(0, 242342, 0);
-        testEntityID(0, 242342, 0);
+        testEntityID(12, 2341, 1234123, 1235123);
+        testEntityID(16, 64000, 582919, 583219);
+        testEntityID(4, 14, 1, 1000);
+        testEntityID(10, 1, 903392, 903592);
+        testEntityID(0, 0, 242342, 249342);
         try {
-            testEntityID(0, 242342, 1);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-        }
-        ;
+            testEntityID(0, 1, 242342, 242345);
+            fail();
+        } catch (IllegalArgumentException e) {}
+
         try {
-            testEntityID(0, -11, 0);
-            assertTrue(false);
-        } catch (IllegalArgumentException e) {
-        }
-        ;
+            testEntityID(0, 0, -11, -10);
+            fail();
+        } catch (IllegalArgumentException e) {}
 
     }
 
 
-    public void testEntityID(int partitionBits, long count, int partition) {
+    public void testEntityID(int partitionBits, int partition, long minCount, long maxCount) {
         IDManager eid = new IDManager(partitionBits);
         IDInspector isp = eid.getIdInspector();
 
@@ -73,53 +72,60 @@ public class IDManagementTest {
         assertTrue(eid.getRelationTypeCountBound()>0);
         assertTrue(eid.getVertexCountBound()>0);
 
-        long id = eid.getVertexID(count, partition);
-        assertTrue(isp.isVertexId(id));
-        assertEquals(eid.getPartitionId(id), partition);
-
-        id = eid.getRelationID(count, partition);
-        assertEquals(eid.getPartitionId(id), partition);
-
-        id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
-        assertTrue(isp.isPropertyKeyId(id));
-        assertTrue(isp.isRelationTypeId(id));
-        assertFalse(isp.isSystemRelationTypeId(id));
-
-        id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
-        assertTrue(isp.isPropertyKeyId(id));
-        assertTrue(isp.isRelationTypeId(id));
-        assertTrue(isp.isSystemRelationTypeId(id));
-
-
-        id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
-        assertTrue(isp.isEdgeLabelId(id));
-        assertTrue(isp.isRelationTypeId(id));
-
-        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.Vertex,1);
-        assertTrue(id<0);
-        assertTrue(IDManager.VertexIDType.Vertex.is(id));
-
-        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,2);
-        assertTrue(id<0);
-        assertTrue(IDManager.VertexIDType.UserEdgeLabel.is(id));
-
-        id = IDManager.getTemporaryRelationID(101);
-        assertTrue(id<0);
-
-        id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.HiddenVertex,1011);
-        assertTrue(id<0);
-        assertTrue(IDManager.VertexIDType.Hidden.is(id));
-
         try {
-            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.RelationType,5);
+            IDManager.getTemporaryVertexID(IDManager.VertexIDType.RelationType,5);
             fail();
         } catch (IllegalArgumentException e) {}
 
+        for (long count=minCount;count<maxCount;count++) {
+
+            for (IDManager.VertexIDType vtype : USER_VERTEX_TYPES) {
+                long id = eid.getVertexID(count, partition,vtype);
+                assertTrue(isp.isVertexId(id));
+                assertTrue(vtype.is(id));
+                assertEquals(eid.getPartitionId(id), partition);
+                assertEquals(id, eid.getKeyID(eid.getKey(id)));
+            }
+
+            long id = eid.getRelationID(count, partition);
+            assertTrue(id>=partition);
+
+            id = eid.getSchemaId(IDManager.VertexIDType.UserPropertyKey, count);
+            assertTrue(isp.isPropertyKeyId(id));
+            assertTrue(isp.isRelationTypeId(id));
+            assertFalse(isp.isSystemRelationTypeId(id));
+
+            id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
+            assertTrue(isp.isPropertyKeyId(id));
+            assertTrue(isp.isRelationTypeId(id));
+            assertTrue(isp.isSystemRelationTypeId(id));
+
+
+            id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
+            assertTrue(isp.isEdgeLabelId(id));
+            assertTrue(isp.isRelationTypeId(id));
+
+            id = eid.getTemporaryVertexID(IDManager.VertexIDType.Vertex,count);
+            assertTrue(eid.isTemporary(id));
+            assertTrue(IDManager.VertexIDType.Vertex.is(id));
+
+            id = eid.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,count);
+            assertTrue(eid.isTemporary(id));
+            assertTrue(IDManager.VertexIDType.UserEdgeLabel.is(id));
+
+            id = IDManager.getTemporaryRelationID(count);
+            assertTrue(eid.isTemporary(id));
+
+            id = IDManager.getTemporaryVertexID(IDManager.VertexIDType.HiddenVertex,count);
+            assertTrue(eid.isTemporary(id));
+            assertTrue(IDManager.VertexIDType.Hidden.is(id));
+
+        }
     }
 
     @Test
     public void edgeTypeIDTest() {
-        int partitionBits = 21;
+        int partitionBits = 16;
         IDManager eid = new IDManager(partitionBits);
         IDInspector isp = eid.getIdInspector();
         int trails = 1000000;
@@ -240,12 +246,11 @@ public class IDManagementTest {
     }
 
     @Test
-    public void keyTest() {
-        for (int t = 0; t < 1000000; t++) {
-            long i = Math.abs(random.nextLong());
-            assertEquals(i, IDHandler.getKeyID(IDHandler.getKey(i)));
+    public void testUserVertexBitWdith() {
+        for (IDManager.VertexIDType type : IDManager.VertexIDType.values()) {
+            if (IDManager.VertexIDType.UserVertex.is(type.suffix()) && type.isProper())
+                assert type.offset()==IDManager.USERVERTEX_PADDING_BITWIDTH;
         }
-        assertEquals(Long.MAX_VALUE, IDHandler.getKeyID(IDHandler.getKey(Long.MAX_VALUE)));
     }
 
     public String getBuffer(ReadBuffer r) {

@@ -174,6 +174,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return idManager.getIdInspector();
     }
 
+    public IDManager getIDManager() {
+        return idManager;
+    }
+
     public EdgeSerializer getEdgeSerializer() {
         return edgeSerializer;
     }
@@ -277,7 +281,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             @Override
             public Long next() {
-                return IDHandler.getKeyID(keyiter.next());
+                return idManager.getKeyID(keyiter.next());
             }
 
             @Override
@@ -294,7 +298,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public EntryList edgeQuery(long vid, SliceQuery query, BackendTransaction tx) {
         Preconditions.checkArgument(vid > 0);
-        return tx.edgeStoreQuery(new KeySliceQuery(IDHandler.getKey(vid), query));
+        return tx.edgeStoreQuery(new KeySliceQuery(idManager.getKey(vid), query));
     }
 
     public List<EntryList> edgeMultiQuery(LongArrayList vids, SliceQuery query, BackendTransaction tx) {
@@ -302,7 +306,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         List<StaticBuffer> vertexIds = new ArrayList<StaticBuffer>(vids.size());
         for (int i = 0; i < vids.size(); i++) {
             Preconditions.checkArgument(vids.get(i) > 0);
-            vertexIds.add(IDHandler.getKey(vids.get(i)));
+            vertexIds.add(idManager.getKey(vids.get(i)));
         }
         Map<StaticBuffer,EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         List<EntryList> resultList = new ArrayList<EntryList>(result.size());
@@ -346,7 +350,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (pos == 0 || !del.isLoop()) mutations.put(vertex, del);
                 if (acquireLock(del,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(del, pos, tx);
-                    mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry);
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(del));
@@ -361,7 +365,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 if (pos == 0 || !add.isLoop()) mutations.put(vertex, add);
                 if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
                     Entry entry = edgeSerializer.writeRelation(add, pos, tx);
-                    mutator.acquireEdgeLock(IDHandler.getKey(vertex.getID()), entry.getColumn());
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry.getColumn());
                 }
             }
             indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
@@ -414,7 +418,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
             }
 
-            StaticBuffer vertexKey = IDHandler.getKey(vertex.getID());
+            StaticBuffer vertexKey = idManager.getKey(vertex.getID());
             mutator.mutateEdges(vertexKey, additions, deletions);
         }
 

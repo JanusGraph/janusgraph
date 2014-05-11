@@ -317,14 +317,19 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 //        definition.setValue(TypeAttributeType.SORT_ORDER, Order.ASC);
 //    }
 
+    private static titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer convert(StaticBuffer buffer) {
+        return new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(buffer.as(StaticBuffer.ARRAY_FACTORY));
+
+    }
+
     @Override
     public RelationReader getRelationReader(final long vertexid) {
         return new RelationReader() {
 
             @Override
             public RelationCache parseRelation(Entry entry, boolean headerOnly, TypeInspector typeInspector) {
-                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getColumn().as(StaticBuffer.ARRAY_FACTORY));
-                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getValue().as(StaticBuffer.ARRAY_FACTORY));
+                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = convert(entry.getColumn());
+                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = convert(entry.getValue());
 
                 ImmutableLongObjectMap map = graph.getEdgeSerializer().parseProperties(vertexid, titan03.com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry.of(column, value), headerOnly, tx);
                 titan03.com.tinkerpop.blueprints.Direction dir = map.get(DIRECTION_ID);
@@ -437,7 +442,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         return new VertexReader() {
             @Override
             public long getVertexId(StaticBuffer key) {
-                return IDHandler.getKeyID(key);
+                return titan03.com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getKeyID(convert(key));
             }
         };
     }
