@@ -410,7 +410,8 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         }
     }
 
-    List<KeyRange> getLocalKeyPartition() {
+    @Override
+    public List<KeyRange> getLocalKeyPartition() {
 
         List<KeyRange> result = new LinkedList<KeyRange>();
 

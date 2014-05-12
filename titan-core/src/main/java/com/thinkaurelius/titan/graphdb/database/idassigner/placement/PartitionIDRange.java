@@ -1,7 +1,14 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -15,6 +22,10 @@ import java.util.Random;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class PartitionIDRange {
+
+
+    private static final Logger log =
+            LoggerFactory.getLogger(PartitionIDRange.class);
 
     private static final Random random = new Random();
 
@@ -62,6 +73,11 @@ public class PartitionIDRange {
         }
     }
 
+    @Override
+    public String toString() {
+        return "["+lowerID+","+upperID+")%"+idUpperBound;
+    }
+
     /**
      * Returns a random partition id that lies within this partition id range.
      *
@@ -76,6 +92,46 @@ public class PartitionIDRange {
         return (random.nextInt(partitionWidth) + lowerID) % idUpperBound;
     }
 
+
+    public static List<PartitionIDRange> getGlobalRange(final int partitionBits) {
+        Preconditions.checkArgument(partitionBits>0 && partitionBits<(Integer.SIZE-1));
+        final int partitionIdBound = (1 << (partitionBits));
+        return ImmutableList.of(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
+    }
+
+    public static List<PartitionIDRange> getIDRanges(final int partitionBits, final List<KeyRange> locals) {
+        Preconditions.checkArgument(partitionBits>0 && partitionBits<(Integer.SIZE-1));
+        Preconditions.checkArgument(locals!=null && !locals.isEmpty(),"KeyRanges are empty");
+        final int partitionIdBound = (1 << (partitionBits));
+        final int backShift = Integer.SIZE-partitionBits;
+        List<PartitionIDRange> partitionRanges = Lists.newArrayList();
+        for (KeyRange local : locals) {
+            Preconditions.checkArgument(local.getStart().length() >= 4);
+            Preconditions.checkArgument(local.getEnd().length() >= 4);
+
+            int startInt = local.getStart().getInt(0);
+            int lowerID = startInt >>> backShift;
+            assert lowerID>=0 && lowerID<partitionIdBound;
+            //Lower id must be inclusive, so check that we did not truncate anything!
+            boolean truncatedBits = (lowerID<<backShift)!=startInt;
+            StaticBuffer start = local.getAt(0);
+            for (int i=4;i<start.length() && !truncatedBits;i++) {
+                if (start.getByte(i)!=0) truncatedBits=true;
+            }
+            if (truncatedBits) lowerID+=1; //adjust to make sure we are inclusive
+            lowerID = lowerID%partitionIdBound; //ensure that lowerID remains within range
+
+            int upperID = local.getEnd().getInt(0) >>> backShift; //upper id is exclusive
+
+            if (lowerID==upperID || (Math.signum(Integer.compare(lowerID,upperID))!=Math.signum(local.getStart().compareTo(local.getEnd())))) {
+                log.warn("Individual key range is too small for partition block - result would be empty: {}",local);
+                continue;
+            } else {
+                partitionRanges.add(new PartitionIDRange(lowerID, upperID, partitionIdBound));
+            }
+        }
+        return partitionRanges;
+    }
 
 
 }

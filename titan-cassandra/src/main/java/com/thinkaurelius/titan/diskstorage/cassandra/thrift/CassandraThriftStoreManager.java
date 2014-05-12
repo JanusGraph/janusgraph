@@ -10,23 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
+import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CfDef;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.Deletion;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KsDef;
-import org.apache.cassandra.thrift.NotFoundException;
-import org.apache.cassandra.thrift.SchemaDisagreementException;
-import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
@@ -218,6 +211,35 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         return store;
     }
 
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        CTConnection conn = null;
+        IPartitioner<?> partitioner = getCassandraPartitioner();
+
+        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
+            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
+
+        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
+
+        try {
+            conn = pool.borrowObject(keySpaceName);
+            List<TokenRange> ranges  = conn.getClient().describe_ring(keySpaceName);
+            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
+
+            for (TokenRange range : ranges) {
+                if (!NetworkUtil.hasLocalAddress(range.endpoints))
+                    continue;
+
+                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
+            }
+
+            return keyRanges;
+        } catch (Exception e) {
+            throw CassandraThriftKeyColumnValueStore.convertException(e);
+        } finally {
+            pool.returnObjectUnsafe(keySpaceName, conn);
+        }
+    }
 
     /**
      * Connect to Cassandra via Thrift on the specified host and port and attempt to truncate the named keyspace.

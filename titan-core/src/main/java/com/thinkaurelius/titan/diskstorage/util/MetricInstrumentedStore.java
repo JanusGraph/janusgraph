@@ -178,11 +178,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return backend.getLocalKeyPartition();
-    }
-
-    @Override
     public String getName() {
         return backend.getName();
     }

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.traversal;
+package com.thinkaurelius.titan.graphdb.util;
 
 import com.google.common.collect.Iterators;
 import com.tinkerpop.blueprints.Direction;

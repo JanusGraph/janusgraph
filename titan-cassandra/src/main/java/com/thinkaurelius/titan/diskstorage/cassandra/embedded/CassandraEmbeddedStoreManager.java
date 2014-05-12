@@ -150,7 +150,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         return store;
     }
 
-    List<KeyRange> getLocalKeyPartition() throws StorageException {
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 

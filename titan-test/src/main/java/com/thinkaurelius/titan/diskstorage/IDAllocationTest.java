@@ -153,12 +153,12 @@ public abstract class IDAllocationTest {
     private class InnerIDBlockSizer implements IDBlockSizer {
 
         @Override
-        public long getBlockSize(int partitionID) {
+        public long getBlockSize(int idNamespace) {
             return blockSize;
         }
 
         @Override
-        public long getIdUpperBound(int partitionID) {
+        public long getIdUpperBound(int idNamespace) {
             return idUpperBound;
         }
     }
@@ -231,7 +231,7 @@ public abstract class IDAllocationTest {
         LongSet ids = new LongOpenHashSet((int)blockSize*numTrials);
         long previous = 0;
         for (int i=0;i<numTrials;i++) {
-            IDBlock block = idAuthorities[0].getIDBlock(0, GET_ID_BLOCK_TIMEOUT);
+            IDBlock block = idAuthorities[0].getIDBlock(0, 0, GET_ID_BLOCK_TIMEOUT);
             checkBlock(block,ids);
             if (hasEmptyUid) {
                 if (previous!=0)
@@ -246,31 +246,31 @@ public abstract class IDAllocationTest {
         final int chunks = 30;
         final IDBlockSizer blockSizer = new IDBlockSizer() {
             @Override
-            public long getBlockSize(int partitionID) {
+            public long getBlockSize(int idNamespace) {
                 return ((1l<<(idUpperBoundBitWidth-uidBitWidth))-1)/chunks;
             }
 
             @Override
-            public long getIdUpperBound(int partitionID) {
+            public long getIdUpperBound(int idNamespace) {
                 return idUpperBound;
             }
         };
         idAuthorities[0].setIDBlockSizer(blockSizer);
         if (hasFixedUid) {
             for (int i=0;i<chunks;i++) {
-                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
+                idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
             }
             try {
-                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
+                idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
         } else {
             for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)/10));i++) {
-                idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
+                idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
             }
             try {
                 for (int i=0;i<(chunks*Math.max(1,(1<<uidBitWidth)*9/10));i++) {
-                    idAuthorities[0].getIDBlock(0,GET_ID_BLOCK_TIMEOUT);
+                    idAuthorities[0].getIDBlock(0,0,GET_ID_BLOCK_TIMEOUT);
                 }
                 Assert.fail();
             } catch (IDPoolExhaustedException e) {}
@@ -304,6 +304,7 @@ public abstract class IDAllocationTest {
         final IDAuthority targetAuthority = idAuthorities[0];
         targetAuthority.setIDBlockSizer(new InnerIDBlockSizer());
         final int targetPartition = 0;
+        final int targetNamespace = 2;
 
         final ConcurrentLinkedQueue<IDBlock> blocks = new ConcurrentLinkedQueue<IDBlock>();
         final int blocksPerThread = 40;
@@ -325,7 +326,7 @@ public abstract class IDAllocationTest {
 
                 private void getBlock() throws StorageException {
                     for (int i = 0; i < blocksPerThread; i++) {
-                        IDBlock block = targetAuthority.getIDBlock(targetPartition,
+                        IDBlock block = targetAuthority.getIDBlock(targetPartition,targetNamespace,
                                GET_ID_BLOCK_TIMEOUT);
                         Assert.assertNotNull(block);
                         blocks.add(block);
@@ -453,7 +454,7 @@ public abstract class IDAllocationTest {
 
             IDBlock block;
             try {
-                block = authority.getIDBlock(partitionIndex,GET_ID_BLOCK_TIMEOUT);
+                block = authority.getIDBlock(partitionIndex,partitionIndex,GET_ID_BLOCK_TIMEOUT);
             } catch (StorageException e) {
                 log.error("Unexpected exception while getting ID block", e);
                 return null;

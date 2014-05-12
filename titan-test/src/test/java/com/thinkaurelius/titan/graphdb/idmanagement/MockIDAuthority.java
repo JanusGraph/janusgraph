@@ -23,7 +23,7 @@ public class MockIDAuthority implements IDAuthority {
 
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
-    private final ConcurrentHashMap<Integer, AtomicLong> ids = new ConcurrentHashMap<Integer, AtomicLong>();
+    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<Long, AtomicLong>();
     private IDBlockSizer blockSizer;
     private final int blockSizeLimit;
     private final int delayAcquisitionMS;
@@ -49,7 +49,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public IDBlock getIDBlock(int partition, Duration timeout) throws StorageException {
+    public IDBlock getIDBlock(int partition, final int idNamespace, Duration timeout) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -58,8 +58,10 @@ public class MockIDAuthority implements IDAuthority {
                 throw new TemporaryStorageException(e);
             }
         }
-        Integer p = Integer.valueOf(partition);
-        long size = blockSizer.getBlockSize(partition);
+        Preconditions.checkArgument(partition>=0 && partition<=Integer.MAX_VALUE);
+        Preconditions.checkArgument(idNamespace>=0 && idNamespace<=Integer.MAX_VALUE);
+        Long p = ((long)partition)<<Integer.SIZE + ((long)idNamespace);
+        long size = blockSizer.getBlockSize(idNamespace);
         AtomicLong id = ids.get(p);
         if (id == null) {
             ids.putIfAbsent(p, new AtomicLong(1));

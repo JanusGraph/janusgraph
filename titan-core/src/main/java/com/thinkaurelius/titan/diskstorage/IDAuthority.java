@@ -32,13 +32,14 @@ public interface IDAuthority {
      *
      * @param partition
      *            Partition for which to request an id block
+     * @param idNamespace namespace for ids within a partition
      * @param timeout
      *            When a call to this method is unable to return a id block
      *            before this timeout elapses, the implementation must give up
      *            and throw a {@code StorageException} ASAP
      * @return a range of ids for the {@code partition} parameter
      */
-    public IDBlock getIDBlock(int partition, Duration timeout)
+    public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout)
             throws StorageException;
 
     /**

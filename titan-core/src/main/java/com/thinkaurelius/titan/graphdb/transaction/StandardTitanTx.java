@@ -303,7 +303,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public TitanVertex getVertex(final long vertexid) {
         verifyOpen();
 
-        if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid)))
+        if (vertexid <= 0 || !(idInspector.isSchemaVertexId(vertexid) || idInspector.isUserVertexId(vertexid)))
             return null;
 
         if (null != config.getGroupName()) {
@@ -331,7 +331,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public InternalVertex get(Long vertexid) {
             Preconditions.checkNotNull(vertexid);
             Preconditions.checkArgument(vertexid > 0);
-            Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexid) || idInspector.isVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
+            Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexid) || idInspector.isUserVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
 
             byte lifecycle = ElementLifeCycle.Loaded;
             if (verifyExistence) {
@@ -357,7 +357,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 }
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
-            } else if (idInspector.isVertexId(vertexid)) {
+            } else if (idInspector.isUserVertexId(vertexid)) {
                 if (idInspector.isPartitionedVertex(vertexid)) {
                     throw new UnsupportedOperationException();
                 } else {
@@ -376,9 +376,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             vertexId = null;
         }
         Preconditions.checkArgument(vertexId != null || !graph.getConfiguration().allowVertexIdSetting(), "Must provide vertex id");
-        Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.Vertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
+        Preconditions.checkArgument(vertexId == null || IDManager.VertexIDType.NormalVertex.is(vertexId), "Not a valid vertex id: %s", vertexId);
         Preconditions.checkArgument(vertexId == null || !config.hasVerifyExternalVertexExistence() || !containsVertex(vertexId), "Vertex with given id already exists: %s", vertexId);
-        StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.Vertex, temporaryIds.nextID()), ElementLifeCycle.New);
+        StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setID(vertexId);
         } else if (config.hasAssignIDsImmediately()) {

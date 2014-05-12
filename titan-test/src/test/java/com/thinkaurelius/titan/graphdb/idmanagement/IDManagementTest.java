@@ -1,11 +1,14 @@
 package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
+import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
+import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -14,13 +17,13 @@ import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.types.system.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
-import com.tinkerpop.blueprints.Direction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -31,7 +34,7 @@ public class IDManagementTest {
 
     private static final Random random = new Random();
 
-    private static final IDManager.VertexIDType[] USER_VERTEX_TYPES = {IDManager.VertexIDType.Vertex,
+    private static final IDManager.VertexIDType[] USER_VERTEX_TYPES = {IDManager.VertexIDType.NormalVertex,
             IDManager.VertexIDType.PartitionedVertex, IDManager.VertexIDType.UnmodifiableVertex};
 
     @Before
@@ -69,7 +72,7 @@ public class IDManagementTest {
         assertTrue(eid.getPartitionBound()>0);
         assertTrue(eid.getPartitionBound()<=1l+Integer.MAX_VALUE);
         assertTrue(eid.getRelationCountBound()>0);
-        assertTrue(eid.getRelationTypeCountBound()>0);
+        assertTrue(eid.getSchemaCountBound()>0);
         assertTrue(eid.getVertexCountBound()>0);
 
         try {
@@ -81,7 +84,7 @@ public class IDManagementTest {
 
             for (IDManager.VertexIDType vtype : USER_VERTEX_TYPES) {
                 long id = eid.getVertexID(count, partition,vtype);
-                assertTrue(isp.isVertexId(id));
+                assertTrue(isp.isUserVertexId(id));
                 assertTrue(vtype.is(id));
                 assertEquals(eid.getPartitionId(id), partition);
                 assertEquals(id, eid.getKeyID(eid.getKey(id)));
@@ -105,9 +108,9 @@ public class IDManagementTest {
             assertTrue(isp.isEdgeLabelId(id));
             assertTrue(isp.isRelationTypeId(id));
 
-            id = eid.getTemporaryVertexID(IDManager.VertexIDType.Vertex,count);
+            id = eid.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex,count);
             assertTrue(eid.isTemporary(id));
-            assertTrue(IDManager.VertexIDType.Vertex.is(id));
+            assertTrue(IDManager.VertexIDType.NormalVertex.is(id));
 
             id = eid.getTemporaryVertexID(IDManager.VertexIDType.UserEdgeLabel,count);
             assertTrue(eid.isTemporary(id));
@@ -133,7 +136,7 @@ public class IDManagementTest {
 
         Serializer serializer = new StandardSerializer();
         for (int t = 0; t < trails; t++) {
-            long count = RandomGenerator.randomLong(1, eid.getRelationTypeCountBound());
+            long count = RandomGenerator.randomLong(1, eid.getSchemaCountBound());
             long id;
             IDHandler.DirectionID dirID;
             RelationCategory type;
@@ -250,8 +253,53 @@ public class IDManagementTest {
         for (IDManager.VertexIDType type : IDManager.VertexIDType.values()) {
             if (IDManager.VertexIDType.UserVertex.is(type.suffix()) && type.isProper())
                 assert type.offset()==IDManager.USERVERTEX_PADDING_BITWIDTH;
+            assertTrue(type.offset()<=IDManager.MAX_PADDING_BITWIDTH);
         }
     }
+
+    @Test
+    public void partitionIDRangeTest() {
+
+        List<PartitionIDRange> result = PartitionIDRange.getIDRanges(16, ImmutableList.of(getKeyRange(120<<16, 6, 140<<16, 8)));
+        assertTrue(result.size()==1);
+        PartitionIDRange r = result.get(0);
+        assertEquals(121,r.getLowerID());
+        assertEquals(140,r.getUpperID());
+        assertEquals(1<<16,r.getIdUpperBound());
+
+        result = PartitionIDRange.getIDRanges(16, ImmutableList.of(getKeyRange(120<<16, 0, 140<<16, 0)));
+        assertTrue(result.size()==1);
+        r = result.get(0);
+        assertEquals(120,r.getLowerID());
+        assertEquals(140,r.getUpperID());
+
+        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(250<<24, 0, 0<<24, 0)));
+        assertTrue(result.size()==1);
+        r = result.get(0);
+        assertEquals(250,r.getLowerID());
+        assertEquals(0,r.getUpperID());
+
+
+        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(1<<28, 6, 1<<28, 8)));
+        assertTrue(result.isEmpty());
+
+        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(33<<24, 6, 34<<24, 8)));
+        assertTrue(result.isEmpty());
+
+    }
+
+    private static KeyRange getKeyRange(int s1, long l1, int s2, long l2) {
+        return new KeyRange(getBufferOf(s1,l1),getBufferOf(s2,l2));
+
+    }
+
+    private static StaticBuffer getBufferOf(int s, long l) {
+        WriteBuffer out = new WriteByteBuffer(4+8);
+        out.putInt(s);
+        out.putLong(l);
+        return out.getStaticBuffer();
+    }
+
 
     public String getBuffer(ReadBuffer r) {
         String result = "";

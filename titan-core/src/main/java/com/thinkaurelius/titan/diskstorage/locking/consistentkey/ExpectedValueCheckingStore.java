@@ -148,11 +148,6 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return dataStore.getLocalKeyPartition();
-    }
-
-    @Override
     public String getName() {
         return dataStore.getName();
     }

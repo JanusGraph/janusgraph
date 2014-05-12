@@ -259,11 +259,6 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public String getName() {
         return columnFamilyName;
     }

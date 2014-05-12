@@ -30,8 +30,8 @@ public class IDPoolTest {
         final MockIDAuthority idauth = new MockIDAuthority(200);
         testIDPoolWith(new IDPoolFactory() {
             @Override
-            public StandardIDPool get(long partitionID) {
-                return new StandardIDPool(idauth, partitionID, Integer.MAX_VALUE, new StandardDuration(2000L, TimeUnit.MILLISECONDS), 0.2);
+            public StandardIDPool get(int partitionID) {
+                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, new StandardDuration(2000L, TimeUnit.MILLISECONDS), 0.2);
             }
         }, 1000, 6, 100000);
     }
@@ -41,8 +41,8 @@ public class IDPoolTest {
         final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 2000);
         testIDPoolWith(new IDPoolFactory() {
             @Override
-            public StandardIDPool get(long partitionID) {
-                return new StandardIDPool(idauth, partitionID, Integer.MAX_VALUE, new StandardDuration(4000, TimeUnit.MILLISECONDS), 0.1);
+            public StandardIDPool get(int partitionID) {
+                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, new StandardDuration(4000, TimeUnit.MILLISECONDS), 0.1);
             }
         }, 2, 5, 10000);
     }
@@ -52,8 +52,8 @@ public class IDPoolTest {
         final MockIDAuthority idauth = new MockIDAuthority(200);
         testIDPoolWith(new IDPoolFactory() {
             @Override
-            public StandardIDPool get(long partitionID) {
-                return new StandardIDPool(idauth, partitionID, Integer.MAX_VALUE, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
+            public StandardIDPool get(int partitionID) {
+                return new StandardIDPool(idauth, partitionID, partitionID, Integer.MAX_VALUE, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
             }
         }, 10, 20, 100000);
     }
@@ -105,7 +105,7 @@ public class IDPoolTest {
     @Test
     public void testAllocationTimeout() {
         final MockIDAuthority idauth = new MockIDAuthority(10000, Integer.MAX_VALUE, 5000);
-        StandardIDPool pool = new StandardIDPool(idauth, 1, Integer.MAX_VALUE, new StandardDuration(4000, TimeUnit.MILLISECONDS), 0.1);
+        StandardIDPool pool = new StandardIDPool(idauth, 1, 1, Integer.MAX_VALUE, new StandardDuration(4000, TimeUnit.MILLISECONDS), 0.1);
         try {
             pool.nextID();
             fail();
@@ -119,7 +119,7 @@ public class IDPoolTest {
     public void testPoolExhaustion1() {
         MockIDAuthority idauth = new MockIDAuthority(200);
         int idUpper = 10000;
-        StandardIDPool pool = new StandardIDPool(idauth, 0, idUpper, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
+        StandardIDPool pool = new StandardIDPool(idauth, 0, 1, idUpper, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
         for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
@@ -135,7 +135,7 @@ public class IDPoolTest {
     public void testPoolExhaustion2() {
         int idUpper = 10000;
         MockIDAuthority idauth = new MockIDAuthority(200, idUpper);
-        StandardIDPool pool = new StandardIDPool(idauth, 0, Integer.MAX_VALUE, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
+        StandardIDPool pool = new StandardIDPool(idauth, 0, 1, Integer.MAX_VALUE, new StandardDuration(2000, TimeUnit.MILLISECONDS), 0.2);
         for (int i = 1; i < idUpper * 2; i++) {
             try {
                 long id = pool.nextID();
@@ -148,7 +148,7 @@ public class IDPoolTest {
     }
 
     interface IDPoolFactory {
-        public StandardIDPool get(long partitionID);
+        public StandardIDPool get(int partitionID);
     }
 
 }

@@ -60,7 +60,8 @@ public class StandardIDPool implements IDPool {
 
     private final IDAuthority idAuthority;
     private final long idUpperBound; //exclusive
-    private final int partitionID;
+    private final int partition;
+    private final int idNamespace;
 
     private final Duration renewTimeout;
     private final double renewBufferPercentage;
@@ -78,11 +79,13 @@ public class StandardIDPool implements IDPool {
 
     private boolean initialized;
 
-    public StandardIDPool(IDAuthority idAuthority, long partitionID, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
+    public StandardIDPool(IDAuthority idAuthority, int partition, int idNamespace, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
         Preconditions.checkArgument(idUpperBound > 0);
         this.idAuthority = idAuthority;
-        Preconditions.checkArgument(partitionID<(1l<<32));
-        this.partitionID = (int) partitionID;
+        Preconditions.checkArgument(partition>=0);
+        this.partition = partition;
+        Preconditions.checkArgument(idNamespace>=0);
+        this.idNamespace = idNamespace;
         this.idUpperBound = idUpperBound;
         Preconditions.checkArgument(!renewTimeout.isZeroLength(), "Renew-timeout must be positive");
         this.renewTimeout = renewTimeout;
@@ -99,7 +102,7 @@ public class StandardIDPool implements IDPool {
         exec = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), new ThreadFactoryBuilder()
                         .setDaemon(false)
-                        .setNameFormat("TitanID[" + partitionID + "][%d]")
+                        .setNameFormat("TitanID(" + partition + ")("+idNamespace+")[%d]")
                         .build());
         //exec.allowCoreThreadTimeOut(false);
         //exec.prestartCoreThread();
@@ -115,18 +118,18 @@ public class StandardIDPool implements IDPool {
             try {
                 idBlockFuture.get(renewTimeout.getLength(SCHEDULING_TIME_UNIT), SCHEDULING_TIME_UNIT);
             } catch (ExecutionException e) {
-                String msg = String.format("ID block allocation on partition %d failed with an exception in %s",
-                        partitionID, sw.stop());
+                String msg = String.format("ID block allocation on partition(%d)-namespace(%d) failed with an exception in %s",
+                        partition, idNamespace, sw.stop());
                 throw new TitanException(msg, e);
             } catch (TimeoutException e) {
                 // Attempt to cancel the renewer
                 idBlockFuture.cancel(true);
-                String msg = String.format("ID block allocation on partition %d timed out in %s",
-                        partitionID, sw.stop());
+                String msg = String.format("ID block allocation on partition(%d)-namespace(%d) timed out in %s",
+                        partition, idNamespace, sw.stop());
                 throw new TitanException(msg, e);
             } catch (CancellationException e) {
-                String msg = String.format("ID block allocation on partition %d was cancelled after %s",
-                        partitionID, sw.stop());
+                String msg = String.format("ID block allocation on partition(%d)-namespace(%d) was cancelled after %s",
+                        partition, idNamespace, sw.stop());
                 throw new TitanException(msg, e);
             } finally {
                 idBlockFuture = null;
@@ -140,14 +143,14 @@ public class StandardIDPool implements IDPool {
 
         waitForIDRenewer();
         if (nextBlock == ID_POOL_EXHAUSTION)
-            throw new IDPoolExhaustedException("Exhausted ID Pool for partition: " + partitionID);
+            throw new IDPoolExhaustedException("Exhausted ID Pool for partition(" + partition+")-namespace("+idNamespace+")");
 
         Preconditions.checkArgument(nextBlock!=null);
 
         currentBlock = nextBlock;
         currentIndex = 0;
 
-        log.debug("[ID Partition {}] acquired block: [{}]", partitionID, currentBlock);
+        log.debug("ID partition({})-namespace({}) acquired block: [{}]", partition, idNamespace, currentBlock);
 
         assert currentBlock.numIds()>0;
 
@@ -162,8 +165,8 @@ public class StandardIDPool implements IDPool {
         Preconditions.checkArgument(nextBlock == null, nextBlock);
         try {
             Stopwatch sw = new Stopwatch().start();
-            IDBlock idBlock = idAuthority.getIDBlock(partitionID, renewTimeout);
-            log.debug("Retrieved ID block from authority on partition {} in {}", partitionID, sw.stop());
+            IDBlock idBlock = idAuthority.getIDBlock(partition, idNamespace, renewTimeout);
+            log.debug("Retrieved ID block from authority on partition({})-namespace({}) in {}", partition, idNamespace, sw.stop());
             Preconditions.checkArgument(idBlock!=null && idBlock.numIds()>0);
             nextBlock = idBlock;
         } catch (StorageException e) {
@@ -195,7 +198,7 @@ public class StandardIDPool implements IDPool {
         long returnId = currentBlock.getId(currentIndex);
         currentIndex++;
         if (returnId >= idUpperBound) throw new IDPoolExhaustedException("Reached id upper bound of " + idUpperBound);
-        log.trace("[{}] Returned id: {}", partitionID, returnId);
+        log.trace("partition({})-namespace({}) Returned id: {}", partition, idNamespace, returnId);
         return returnId;
     }
 
@@ -225,7 +228,8 @@ public class StandardIDPool implements IDPool {
         public void run() {
             Stopwatch running = new Stopwatch().start();
             renewBuffer();
-            log.debug("Renewed buffer: partition {}, exec time {}, exec+q time {}", partitionID, running.stop(), alive.stop());
+            log.debug("Renewed buffer: partition({})-namespace({}), exec time {}, exec+q time {}", partition, idNamespace,
+                    running.stop(), alive.stop());
         }
 
     }

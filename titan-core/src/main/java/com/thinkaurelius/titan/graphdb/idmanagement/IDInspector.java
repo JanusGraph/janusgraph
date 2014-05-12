@@ -19,7 +19,7 @@ public interface IDInspector {
 
     public boolean isGenericSchemaVertexId(long id);
 
-    public boolean isVertexId(long id);
+    public boolean isUserVertexId(long id);
 
     public boolean isUnmodifiableVertex(long id);
 

@@ -59,7 +59,7 @@ public class VertexIDAssignerTest {
         StoreFeatures features = fb.build();
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
-        config.set(GraphDatabaseConfiguration.IDS_PARTITION,partition);
+        config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,partition);
         idAssigner = new VertexIDAssigner(config, idAuthority, features);
         System.out.println("Partition: " + partition);
         System.out.println("partitionMax: " + partitionMax);

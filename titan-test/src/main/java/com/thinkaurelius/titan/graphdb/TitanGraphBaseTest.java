@@ -200,7 +200,7 @@ public abstract class TitanGraphBaseTest {
             }
             StoreFeatures f = logStoreManager.getFeatures();
             boolean part = f.isDistributed() && f.isKeyOrdered();
-            configuration.set(GraphDatabaseConfiguration.IDS_PARTITION, part);
+            configuration.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, part);
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
                 //Open log manager - only supports KCVSLog

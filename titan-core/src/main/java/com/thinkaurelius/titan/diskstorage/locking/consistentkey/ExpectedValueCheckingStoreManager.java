@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -77,6 +78,11 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     @Override
     public void clearStorage() throws StorageException {
         storeManager.clearStorage();
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return storeManager.getLocalKeyPartition();
     }
 
     @Override

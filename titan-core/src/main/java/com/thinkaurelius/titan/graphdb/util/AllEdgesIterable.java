@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.traversal;
+package com.thinkaurelius.titan.graphdb.util;
 
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
