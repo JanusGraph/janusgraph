@@ -148,6 +148,130 @@ As in the previous example, we first create an edge index for the property key `
 
 Read more about https://github.com/tinkerpop/blueprints/wiki/Graph-Indices[Blueprints indices] and note the following <<limitations,Titan-specific limitations>>: Key indices need to be created before the key is first used.
 
+
+Gremlin Query Language
+----------------------
+
+image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://gremlin.tinkerpop.com"]
+
+Titan supports the standard http://gremlin.tinkerpop.com[Gremlin] graph query language for complex graph traversal and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
+
+This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the http://gremlin.tinkerpop.com[online documentation]. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin.
+
+[NOTE]
+See the http://gremlin.tinkerpop.com[Gremlin Manual] to learn more about the language.
+
+Introductory Traversals
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+The query above can be read:
+
+. `g`: for the current graph.
+. `V('name','hercules')`: get all vertices with name property "hercules" (there is only one).
+. `out('father')`: traverse outgoing father edge's from Hercules.
+. `out('father')`: traverse outgoing father edge's from Hercules' father's vertex (i.e. Jupiter).
+. `name`: get the name property of the "hercules" vertex's grandfather.
+
+Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
+
+[source,gremlin]
+gremlin> g                                                            
+==>titangraph[cassandrathrift:127.0.0.1]
+gremlin> g.V('name','hercules')
+==>v[24]
+gremlin> g.V('name','hercules').out('father')
+==>v[16]
+gremlin> g.V('name','hercules').out('father').out('father')
+==>v[20]
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').name                            
+==>hercules
+gremlin> g.V('name','hercules').out('father').name              
+==>jupiter
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').out('father').loop(1){true}{true}.name
+==>jupiter
+==>saturn
+
+Some more traversal examples are provided below.
+
+[source,gremlin]
+gremlin> hercules = g.V('name','hercules').next() 
+==>v[24]
+gremlin> hercules.out('father','mother').type
+==>god
+==>human
+gremlin> hercules.out('battled').type
+==>monster
+==>monster
+==>monster
+gremlin> hercules.out('battled').map    
+==>{name=nemean, type=monster}
+==>{name=hydra, type=monster}
+==>{name=cerberus, type=monster}
+
+Traversing with Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin.
+
+[source,gremlin]
+gremlin> theseus = g.addVertex([name:'theseus',type:'human'])
+==>v[302]
+gremlin> cerberus = g.V('name','cerberus').next()
+==>v[48]
+gremlin> g.addEdge(theseus,cerberus,'battled')
+==>e[151200009:302:36028797018964038][302-battled->48]
+
+[source,gremlin]
+gremlin> hercules.out('battled').in('battled').except([hercules]).name
+==>theseus
+
+The example above has 4 chained functions: `out`, `in`, `except`, and `property` (i.e. `name` is shorthand for `property('name')`). The function signatures of each are itemized below, where `V` is vertex and `U` is any object, where `V` is a subset of `U`.
+
+. `out: V -> V`
+. `in: V -> V`
+. `except: U -> U`
+. `property: V -> U`
+
+When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
+
+Helper Configuration Files for Easy Local Connectivity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When working with Gremlin against a local instance of <<hbase,HBase>> or <<cassandra,Cassandra>>, the following behavior is constantly repeated. 
+
+[source,java]
+conf = new BaseConfiguration();
+conf.setProperty("storage.backend","cassandra");
+conf.setProperty("storage.hostname","127.0.0.1");
+
+To make this easier, there are two configuration files in the `bin/` directory: `cassandra.local` and `hbase.local`. These can be used as such:
+
+[source,java]
+TitanFactory.open("bin/cassandra.local")
+
+or
+
+[source,java]
+TitanFactory.open("bin/hbase.local")
+
 Transactions
 ------------
 
