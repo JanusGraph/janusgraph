@@ -98,6 +98,8 @@ public class IDManagementTest {
             assertTrue(isp.isRelationTypeId(id));
             assertFalse(isp.isSystemRelationTypeId(id));
 
+            assertEquals(id, eid.getKeyID(eid.getKey(id)));
+
             id = eid.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, count);
             assertTrue(isp.isPropertyKeyId(id));
             assertTrue(isp.isRelationTypeId(id));
@@ -107,6 +109,8 @@ public class IDManagementTest {
             id = eid.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,count);
             assertTrue(isp.isEdgeLabelId(id));
             assertTrue(isp.isRelationTypeId(id));
+
+            assertEquals(id, eid.getKeyID(eid.getKey(id)));
 
             id = eid.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex,count);
             assertTrue(eid.isTemporary(id));
@@ -279,6 +283,15 @@ public class IDManagementTest {
         assertEquals(250,r.getLowerID());
         assertEquals(0,r.getUpperID());
 
+        for (int i=0;i<255;i=i+5) {
+            result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(i<<24, 0, i<<24, 0)));
+            assertTrue(result.size()==1);
+            r = result.get(0);
+            for (int j=0;j<255;j++) assertTrue(r.contains(j));
+        }
+
+        result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(1<<24, 0, 1<<24, 1)));
+        assertTrue(result.isEmpty());
 
         result = PartitionIDRange.getIDRanges(8, ImmutableList.of(getKeyRange(1<<28, 6, 1<<28, 8)));
         assertTrue(result.isEmpty());

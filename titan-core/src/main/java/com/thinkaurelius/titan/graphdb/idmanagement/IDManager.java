@@ -431,20 +431,29 @@ public class IDManager {
     }
 
     public StaticBuffer getKey(long vertexid) {
-        VertexIDType type = getVertexIDType(vertexid);
-        long partition = getPartitionId(vertexid);
-        long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
-        assert count>0;
-        long keyid = (partition<<partitionOffset) | type.addPadding(count);
-        return BufferUtil.getLongBuffer(keyid);
+        if (VertexIDType.Schema.is(vertexid)) {
+            //No partition for schema vertices
+            return BufferUtil.getLongBuffer(vertexid);
+        } else {
+            VertexIDType type = getVertexIDType(vertexid);
+            long partition = getPartitionId(vertexid);
+            long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+            assert count>0;
+            long keyid = (partition<<partitionOffset) | type.addPadding(count);
+            return BufferUtil.getLongBuffer(keyid);
+        }
     }
 
     public long getKeyID(StaticBuffer b) {
         long value = b.getLong(0);
-        VertexIDType type = getVertexIDType(value);
-        long partition = partitionOffset<Long.SIZE?value>>>partitionOffset:0;
-        long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1l<<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
-        return constructId(count,partition,type);
+        if (VertexIDType.Schema.is(value)) {
+            return value;
+        } else {
+            VertexIDType type = getVertexIDType(value);
+            long partition = partitionOffset<Long.SIZE?value>>>partitionOffset:0;
+            long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1l<<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
+            return constructId(count,partition,type);
+        }
     }
 
     public long getRelationID(long count, long partition) {

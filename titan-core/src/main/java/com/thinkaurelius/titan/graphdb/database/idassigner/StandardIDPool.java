@@ -77,7 +77,8 @@ public class StandardIDPool implements IDPool {
     private Future<?> idBlockFuture;
     private final ThreadPoolExecutor exec;
 
-    private boolean initialized;
+    private volatile boolean initialized;
+    private volatile boolean closed;
 
     public StandardIDPool(IDAuthority idAuthority, int partition, int idNamespace, long idUpperBound, Duration renewTimeout, double renewBufferPercentage) {
         Preconditions.checkArgument(idUpperBound > 0);
@@ -109,6 +110,7 @@ public class StandardIDPool implements IDPool {
         idBlockFuture = null;
 
         initialized = false;
+        closed = false;
     }
 
     private void waitForIDRenewer() throws InterruptedException {
@@ -140,6 +142,8 @@ public class StandardIDPool implements IDPool {
 
     private synchronized void nextBlock() throws InterruptedException {
         assert currentIndex == currentBlock.numIds();
+        Preconditions.checkState(!closed,"ID Pool has been closed for partition(%s)-namespace(%s) - cannot apply for new id block",
+                partition,idNamespace);
 
         waitForIDRenewer();
         if (nextBlock == ID_POOL_EXHAUSTION)
@@ -204,6 +208,7 @@ public class StandardIDPool implements IDPool {
 
     @Override
     public synchronized void close() {
+        closed=true;
         //Wait for renewer to finish -- call exec.shutdownNow() instead?
         try {
             waitForIDRenewer();
@@ -215,6 +220,7 @@ public class StandardIDPool implements IDPool {
 
     private void startNextIDAcquisition() {
         Preconditions.checkArgument(idBlockFuture == null, idBlockFuture);
+        if (closed) return; //Don't renew anymore if closed
         //Renew buffer
         log.debug("Starting id block renewal thread upon {}", currentIndex);
         idBlockFuture = exec.submit(new IDBlockRunnable());

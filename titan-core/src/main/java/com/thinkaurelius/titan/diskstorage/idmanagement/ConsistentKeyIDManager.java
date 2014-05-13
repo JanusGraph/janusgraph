@@ -188,8 +188,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public synchronized IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
-        Preconditions.checkArgument(partition>0 && partition<(1<<partitionBitWdith),"Invalid partition id: %d",partition);
-        Preconditions.checkArgument(idNamespace>0); //can be any non-negative value
+        Preconditions.checkArgument(partition>=0 && partition<(1<<partitionBitWdith),"Invalid partition id [%s] for bit width [%s]",partition, partitionBitWdith);
+        Preconditions.checkArgument(idNamespace>=0); //can be any non-negative value
 
         final Timer methodTime = times.getTimer().start();
 

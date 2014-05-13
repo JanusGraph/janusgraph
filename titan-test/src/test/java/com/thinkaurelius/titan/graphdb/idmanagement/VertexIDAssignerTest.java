@@ -60,6 +60,7 @@ public class VertexIDAssignerTest {
 
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,partition);
+        config.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,1024);
         idAssigner = new VertexIDAssigner(config, idAuthority, features);
         System.out.println("Partition: " + partition);
         System.out.println("partitionMax: " + partitionMax);

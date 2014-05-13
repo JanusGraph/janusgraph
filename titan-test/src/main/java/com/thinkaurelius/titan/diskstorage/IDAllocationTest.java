@@ -49,6 +49,7 @@ public abstract class IDAllocationTest {
             LoggerFactory.getLogger(IDAllocationTest.class);
 
     public static final int CONCURRENCY = 8;
+    public static final int MAX_NUM_PARTITIONS = 4;
     public static final String DB_NAME = "test";
 
     public static final Duration GET_ID_BLOCK_TIMEOUT = new StandardDuration(300000L, TimeUnit.MILLISECONDS);
@@ -128,6 +129,8 @@ public abstract class IDAllocationTest {
                 log.debug("Setting unique instance id: {}", uniqueGraphId);
                 sc.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
             }
+            sc.set(GraphDatabaseConfiguration.CLUSTER_PARTITION,true);
+            sc.set(GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS,MAX_NUM_PARTITIONS);
 
             manager[i] = openStorageManager();
             StoreFeatures storeFeatures = manager[i].getFeatures();
@@ -352,7 +355,7 @@ public abstract class IDAllocationTest {
 
     @Test
     public void testMultiIDAcquisition() throws Throwable {
-        final int numPartitions = 4;
+        final int numPartitions = MAX_NUM_PARTITIONS;
         final int numAcquisitionsPerThreadPartition = 100;
         final IDBlockSizer blockSizer = new InnerIDBlockSizer();
         for (int i = 0; i < CONCURRENCY; i++) idAuthorities[i].setIDBlockSizer(blockSizer);

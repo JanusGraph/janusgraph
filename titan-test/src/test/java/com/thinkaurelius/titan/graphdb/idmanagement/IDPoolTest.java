@@ -61,13 +61,12 @@ public class IDPoolTest {
     private void testIDPoolWith(IDPoolFactory poolFactory, final int numPartitions,
                                        final int numThreads, final int attemptsPerThread) throws InterruptedException {
         final Random random = new Random();
-        final int[] partitions = new int[numPartitions];
         final IntSet[] ids = new IntSet[numPartitions];
         final StandardIDPool[] idPools = new StandardIDPool[numPartitions];
         for (int i = 0; i < numPartitions; i++) {
-            partitions[i] = random.nextInt();
             ids[i] = new IntHashSet(attemptsPerThread * numThreads / numPartitions);
-            idPools[i] = poolFactory.get(partitions[i]);
+            int partition = i*100;
+            idPools[i] = poolFactory.get(partition);
         }
 
         Thread[] threads = new Thread[numThreads];
@@ -77,7 +76,6 @@ public class IDPoolTest {
                 public void run() {
                     for (int attempt = 0; attempt < attemptsPerThread; attempt++) {
                         int offset = random.nextInt(numPartitions);
-                        int partition = partitions[offset];
                         long id = idPools[offset].nextID();
                         assertTrue(id < Integer.MAX_VALUE);
                         IntSet idset = ids[offset];
@@ -98,7 +96,7 @@ public class IDPoolTest {
             int max = 0;
             int[] all = set.getAll();
             for (int j=0;j<all.length;j++) if (all[j]>max) max=all[j];
-            for (int j=1;j<=max;j++) assertTrue(set.contains(j));
+            for (int j=1;j<=max;j++) assertTrue(i+ " contains: " + j,set.contains(j));
         }
     }
 

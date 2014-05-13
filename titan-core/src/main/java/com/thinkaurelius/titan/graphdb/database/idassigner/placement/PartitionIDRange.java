@@ -94,7 +94,7 @@ public class PartitionIDRange {
 
 
     public static List<PartitionIDRange> getGlobalRange(final int partitionBits) {
-        Preconditions.checkArgument(partitionBits>0 && partitionBits<(Integer.SIZE-1));
+        Preconditions.checkArgument(partitionBits>=0 && partitionBits<(Integer.SIZE-1),"Invalid partition bits: %s",partitionBits);
         final int partitionIdBound = (1 << (partitionBits));
         return ImmutableList.of(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
     }
@@ -108,6 +108,10 @@ public class PartitionIDRange {
         for (KeyRange local : locals) {
             Preconditions.checkArgument(local.getStart().length() >= 4);
             Preconditions.checkArgument(local.getEnd().length() >= 4);
+            if (local.getStart().equals(local.getEnd())) { //Partition spans entire range
+                partitionRanges.add(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
+                continue;
+            }
 
             int startInt = local.getStart().getInt(0);
             int lowerID = startInt >>> backShift;

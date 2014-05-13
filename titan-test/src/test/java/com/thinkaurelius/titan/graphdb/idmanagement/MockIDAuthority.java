@@ -49,7 +49,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public IDBlock getIDBlock(int partition, final int idNamespace, Duration timeout) throws StorageException {
+    public IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -60,7 +60,7 @@ public class MockIDAuthority implements IDAuthority {
         }
         Preconditions.checkArgument(partition>=0 && partition<=Integer.MAX_VALUE);
         Preconditions.checkArgument(idNamespace>=0 && idNamespace<=Integer.MAX_VALUE);
-        Long p = ((long)partition)<<Integer.SIZE + ((long)idNamespace);
+        Long p = (((long)partition)<<Integer.SIZE) + ((long)idNamespace);
         long size = blockSizer.getBlockSize(idNamespace);
         AtomicLong id = ids.get(p);
         if (id == null) {

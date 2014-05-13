@@ -100,13 +100,13 @@ public class VertexIDAssigner {
         setLocalPartitions(partitionBits);
     }
 
-    private void setLocalPartitionsToGlobal() {
-        placementStrategy.setLocalPartitionBounds(PartitionIDRange.getGlobalRange(partitionIdBound));
+    private void setLocalPartitionsToGlobal(int partitionBits) {
+        placementStrategy.setLocalPartitionBounds(PartitionIDRange.getGlobalRange(partitionBits));
     }
 
     private void setLocalPartitions(int partitionBits) {
         if (!hasLocalPartitions) {
-            setLocalPartitionsToGlobal();
+            setLocalPartitionsToGlobal(partitionBits);
         } else {
             List<PartitionIDRange> partitionRanges = ImmutableList.of();
             try {
@@ -119,7 +119,7 @@ public class VertexIDAssigner {
                 log.info("Setting individual partition bounds: {}", partitionRanges);
                 placementStrategy.setLocalPartitionBounds(partitionRanges);
             } else {
-                setLocalPartitionsToGlobal();
+                setLocalPartitionsToGlobal(partitionBits);
             }
         }
     }
@@ -357,16 +357,18 @@ public class VertexIDAssigner {
         }
 
         public IDPool getPool(PoolType type) {
-            Preconditions.checkArgument(!isExhausted() && type!=PoolType.SCHEMA);
+            Preconditions.checkArgument(!exhausted && type!=PoolType.SCHEMA);
             return super.get(type);
         }
 
         public void close() {
             for (IDPool pool : values()) pool.close();
+            super.clear();
         }
 
         public void exhaustedIdPool() {
             exhausted = true;
+            close();
         }
 
         public boolean isExhausted() {
