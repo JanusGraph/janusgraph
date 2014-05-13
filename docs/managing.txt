@@ -180,3 +180,4 @@ include::textsearch.txt[]
 
 include::directindex.txt[]
 
+include::typedef.txt[]
