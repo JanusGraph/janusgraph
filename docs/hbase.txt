@@ -5,7 +5,7 @@ HBase
 image::http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
 
 [quote,'http://hbase.apache.org/[Apache HBase Homepage]']
-HBase is the Hadoop database. Think of it as a distributed, scalable, big data store. Use HBase when you need random, realtime read/write access to your Big Data. This project's goal is the hosting of very large tables -- billions of rows X millions of columns -- atop clusters of commodity hardware. HBase is an open-source, distributed, versioned, column-oriented store modeled after Google's Bigtable. Just as Bigtable leverages the distributed data storage provided by the Google File System, HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
+Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.
 
 HBase Setup
 ^^^^^^^^^^^
@@ -64,7 +64,7 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-	In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the _TODO xref to Rexster-Graph-Server_ for a complete example.
+In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the _TODO xref to Rexster-Graph-Server_ for a complete example.
 
 [source,xml]
 <graph>
@@ -88,13 +88,32 @@ HBase Specific Configuration
 
 In addition to the general _TODO xref to Graph-Configuration_, there are the following HBase specific Titan configuration options:
 
-|_. Option |_. Description |_. Value |_. Default |_. Modifiable |
-| storage.tablename | Name of the HBase table in which to store the Titan specific column families | String | titan | No |
-| storage.hostname | Comma separated list of IP addresses or hostnames of the HBase cluster nodes that this Titan instance connects to | IP addresses or hostnames. Leave empty to connect to localhost. | - | Yes |
-| storage.port | Port on which to connect to HBase cluster nodes. Leave empty to use default port. | Integer | - | Yes |
-| storage.short&#8209;cf&#8209;names | True to replace Titan's conventional column family names by single character mnemonics. http://hbase.apache.org/book/rowkey.design.html#keysize.cf[Short CF names save space because HBase stores the CF in every KeyValue] | Boolean | false in 0.4.x, true in 0.5.x | No |
+[cols="4,7,2,2,1",options="header"]
+|==========================
+|Option |Description |Value |Default |Modifiable
 
-Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with _storage.hbase-config_ in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.
+|storage.tablename |
+Name of the HBase table in which to store the Titan specific column families
+|String |titan |No
+
+|storage.hostname |
+Comma separated list of IP addresses or hostnames of the HBase cluster
+nodes that this Titan instance connects to
+|IP addresses or hostnames. Leave empty to connect to localhost. |- |Yes
+
+|storage.port |
+Port on which to connect to HBase cluster nodes. Leave empty to use default port.
+|Integer |- |Yes
+
+| storage.short-cf-names |
+True to replace Titan's conventional column family names by single character
+mnemonics. http://hbase.apache.org/book/rowkey.design.html#keysize.cf[Short
+CF names save space because HBase stores the CF in every KeyValue].
+|Boolean |false in 0.4.x, true in 0.5.x |No
+
+|==========================
+
+Please refer to the http://hbase.apache.org/book/config.files.html[HBase configuration documentation] for more HBase configuration options and their description. By prefixing the respective HBase configuration option with `storage.hbase-config` in the Titan configuration it will be passed on to HBase at initialization time. This allows arbitrary HBase configuration options to be configured through Titan.
 
 Global Graph Operations
 ^^^^^^^^^^^^^^^^^^^^^^^
