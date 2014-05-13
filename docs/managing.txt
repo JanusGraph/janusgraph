@@ -285,11 +285,7 @@ To fix this, set the "broadcast-address" property for each instance in /etc/cass
 Changing the "broadcast-address" property allows you to connect to the cluster from outside ec2, but it might also mean that traffic originating within ec2 will have to round-trip to the internet and back before it gets to the cluster.  So, this approach is only useful for development and testing.
 
 
-[[hbase-storage]]
-HBase
-~~~~~
-
-Stub
+include::hbase.txt[]
 
 [[bdb-storage]]
 BerkeleyDB
