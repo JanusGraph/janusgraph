@@ -180,9 +180,15 @@ include::textsearch.txt[]
 
 include::directindex.txt[]
 
+Type Management
+---------------
+
 include::typedef.txt[]
 
 include::vertexcentric.txt[]
+
+Configuration and Tuning
+------------------------
 
 include::graphconfig.txt[]
 
