@@ -189,3 +189,5 @@ include::graphconfig.txt[]
 include::serializer.txt[]
 
 include::exampleconfig.txt[]
+
+include::caching.txt[]

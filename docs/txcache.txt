@@ -1,0 +1,26 @@
+[[tx-cache]]
+Transaction-Level Caching
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Within an open transaction, Titan maintains two caches:
+
+* Vertex Cache: Caches accessed vertices and their adjacency list (or subsets thereof) so that subsequent access is significantly faster within the same transaction. Hence, this cache speeds up iterative traversals.
+* Index Cache: Caches the results for index queries so that subsequent index calls can be served from the cache and do not requires invoking the indexing backend.
+
+The size of both of those is determined by the _transaction cache size_. The transaction cache size can be configured via `tx-cache-size` or on a per transaction basis by opening a transaction via the transaction builder `graph.buildTransction()` and using the `setCacheSize(int)` method.
+
+Vertex Cache
+++++++++++++
+
+The vertex cache contains vertices and the subset of their adjacency list that has been retrieved in a particular transaction. The maximum number of vertices maintained in this cache is equal to the transaction cache size. If the transaction workload is an iterative traversal, the vertex cache will significantly speed it up. If the same vertex is not accessed again in the transaction, the transaction level cache will make no difference.
+
+Note, that the size of the vertex cache on heap is not only determined by the number of vertices it may hold but also by the size of their adjacency list. In other words, vertices will large adjacency lists (i.e. many incident edges) will consume more space in this cache than those with smaller lists.
+
+Furthermore note, that modified vertices are _pinned_ in the cache, which means they cannot be evicted since that would entail loosing their changes. Therefore, transaction which contain a lot of modifications may end up with a larger than configured vertex cache.
+
+Index Cache
++++++++++++
+
+The index cache contains the results of index queries executed in the context of this transaction. Subsequent identical index calls will be served from this cache and are therefore significantly cheaper. If the same index call never occurs twice in the same transaction, the index cache makes no difference.
+
+Each entry in the index cache is given a weight equal to `2 + result set size` and the total weight of the cache will not exceed half of the transaction cache size.

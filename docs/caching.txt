@@ -1,0 +1,17 @@
+[[caching]]
+Caching
+~~~~~~~
+
+Titan employs multiple layers of data caching to facilitate fast graph traversals. The caching layers are listed here in the order they are accessed from within a Titan transaction. The closer the cache is to the transaction, the faster the cache access and the higher the memory footprint and maintenance overhead.
+
+include::txcache.txt[]
+
+include::dbcache.txt[]
+
+Storage Backend Caching
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Each storage backend maintains its own data caching layer. These caches benefit from compression, data compactness, coordinated expiration and are often maintained off heap which means that large caches can be used without running in garbage collection issues. While these caches can be significantly larger than the database level cache, they are also slower to access.
+
+The exact type of caching and its properties depends on the particular <<storage-backends,storage backend>>. Please refer to the respective documentation for more information about the caching infrastructure and how to optimize it.
+
