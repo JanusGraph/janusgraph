@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Timepoint;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 
 import java.util.concurrent.TimeUnit;
 

@@ -12,8 +12,8 @@ import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
-import com.thinkaurelius.titan.util.time.StandardDuration;
-import com.thinkaurelius.titan.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.*;

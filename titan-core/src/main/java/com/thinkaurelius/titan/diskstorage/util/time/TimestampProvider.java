@@ -1,4 +1,6 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
+
+import com.thinkaurelius.titan.core.attribute.Duration;
 
 import java.util.concurrent.TimeUnit;
 

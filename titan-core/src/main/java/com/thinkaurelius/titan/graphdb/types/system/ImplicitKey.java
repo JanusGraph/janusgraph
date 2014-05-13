@@ -3,7 +3,11 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
@@ -12,6 +16,7 @@ import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -28,11 +33,11 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
     //######### IMPLICIT KEYS WITH ID ############
 
-    public static final ImplicitKey TIMESTAMP = new ImplicitKey(8,"_timestamp",Long.class);
+    public static final ImplicitKey TIMESTAMP = new ImplicitKey(8,"_timestamp",Timestamp.class);
 
     public static final ImplicitKey VISIBILITY = new ImplicitKey(9,"_visibility",String.class);
 
-    public static final ImplicitKey TTL = new ImplicitKey(10,"_ttl",Long.class);
+    public static final ImplicitKey TTL = new ImplicitKey(10,"_ttl",Duration.class);
 
 
     public static final Map<EntryMetaData,ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
@@ -67,7 +72,16 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
             }
         } else if (this==TIMESTAMP || this==VISIBILITY || this==TTL) {
             if (e instanceof InternalRelation) {
-                return ((InternalRelation) e).getPropertyDirect(this);
+                InternalRelation r = (InternalRelation) e;
+                if (this==VISIBILITY) {
+                    return r.getPropertyDirect(this);
+                } else {
+                    assert this==TIMESTAMP || this==TTL;
+                    Long time = r.getPropertyDirect(this);
+                    TimeUnit unit = r.tx().getConfiguration().getStartTime().getNativeUnit();
+                    if (this==TIMESTAMP) return (O)new StandardTimestamp(time,unit);
+                    else return (O)new StandardDuration(time,unit);
+                }
             } else {
                 return null;
             }

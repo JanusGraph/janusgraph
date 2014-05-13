@@ -1,7 +1,8 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
 
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.attribute.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,30 +31,7 @@ public class StandardDuration implements Duration {
 
     @Override
     public int compareTo(Duration o) {
-        /*
-         * Don't do this:
-         *
-         * return (int)(o.getLength(unit) - getLength(unit));
-         *
-         * 2^31 ns = 2.14 seconds and 2^31 us = 36 minutes. The narrowing cast
-         * from long to integer is practically guaranteed to cause failures at
-         * either nanosecond resolution (where almost everything will fail) or
-         * microsecond resolution (where the failures would be more insidious;
-         * perhaps lock expiration malfunctioning).
-         *
-         * The following implementation is ugly, but unlike subtraction-based
-         * implementations, it is affected by neither arithmetic overflow
-         * (because it does no arithmetic) nor loss of precision from
-         * long-to-integer casts (because it does not cast).
-         */
-        final long mine = getLength(unit);
-        final long theirs = o.getLength(unit);
-        if (mine < theirs) {
-            return -1;
-        } else if (theirs < mine) {
-            return 1;
-        }
-        return 0;
+        return Durations.compare(length,unit,o.getLength(o.getNativeUnit()),o.getNativeUnit());
     }
 
     @Override

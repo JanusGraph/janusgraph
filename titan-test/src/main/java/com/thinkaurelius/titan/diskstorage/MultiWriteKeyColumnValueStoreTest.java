@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVEntryMutation;

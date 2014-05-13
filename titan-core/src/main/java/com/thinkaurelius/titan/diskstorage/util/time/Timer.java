@@ -1,8 +1,9 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
 
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.Duration;
 
 /**
  * A utility to measure time durations.

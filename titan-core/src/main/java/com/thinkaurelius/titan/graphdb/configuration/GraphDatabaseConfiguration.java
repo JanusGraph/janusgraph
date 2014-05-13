@@ -2,9 +2,10 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
-import com.thinkaurelius.titan.util.time.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;

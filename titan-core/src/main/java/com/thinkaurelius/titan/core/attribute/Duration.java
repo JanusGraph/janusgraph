@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.core.attribute;
 
 import java.util.concurrent.TimeUnit;
 

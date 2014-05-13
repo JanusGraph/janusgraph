@@ -8,7 +8,7 @@ import static org.junit.Assert.fail;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import org.junit.Test;
 
 import com.thinkaurelius.titan.core.TitanException;

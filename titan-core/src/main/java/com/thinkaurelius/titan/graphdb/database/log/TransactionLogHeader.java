@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.StandardTimepoint;
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 
 import java.util.EnumMap;
 import java.util.concurrent.TimeUnit;

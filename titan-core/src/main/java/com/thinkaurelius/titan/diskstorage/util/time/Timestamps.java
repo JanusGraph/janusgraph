@@ -1,7 +1,8 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
 
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.attribute.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

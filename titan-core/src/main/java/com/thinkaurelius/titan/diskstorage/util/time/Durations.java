@@ -1,13 +1,15 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility methods for dealing with {@link Duration}
+ * Utility methods for dealing with {@link com.thinkaurelius.titan.core.attribute.Duration}
  */
 public class Durations {
 
@@ -56,6 +58,32 @@ public class Durations {
         TimeUnit unit = unitNames.get(unitName.toLowerCase());
         Preconditions.checkArgument(unit!=null,"Unknown unit time: %s",unitName);
         return unit;
+    }
+
+    public static int compare(long length1, TimeUnit unit1, long length2, TimeUnit unit2) {
+        /*
+         * Don't do this:
+         *
+         * return (int)(o.getLength(unit) - getLength(unit));
+         *
+         * 2^31 ns = 2.14 seconds and 2^31 us = 36 minutes. The narrowing cast
+         * from long to integer is practically guaranteed to cause failures at
+         * either nanosecond resolution (where almost everything will fail) or
+         * microsecond resolution (where the failures would be more insidious;
+         * perhaps lock expiration malfunctioning).
+         *
+         * The following implementation is ugly, but unlike subtraction-based
+         * implementations, it is affected by neither arithmetic overflow
+         * (because it does no arithmetic) nor loss of precision from
+         * long-to-integer casts (because it does not cast).
+         */
+        final long length2Adj = unit1.convert(length2,unit2);
+        if (length1 < length2Adj) {
+            return -1;
+        } else if (length2Adj < length1) {
+            return 1;
+        }
+        return 0;
     }
 
 }

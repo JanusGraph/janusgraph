@@ -149,7 +149,7 @@ public class EdgeSerializer implements RelationReader {
                 for (Map.Entry<EntryMetaData,Object> metas : data.getMetaData().entrySet()) {
                     ImplicitKey key = ImplicitKey.MetaData2ImplicitKey.get(metas.getKey());
                     if (key!=null) {
-                        assert metas.getValue()!=null && metas.getValue().getClass().equals(key.getDataType());
+                        assert metas.getValue()!=null;
                         properties.put(key.getID(),metas.getValue());
                     }
                 }

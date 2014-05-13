@@ -1,9 +1,8 @@
-package com.thinkaurelius.titan.util.time;
+package com.thinkaurelius.titan.diskstorage.util.time;
+
+import com.thinkaurelius.titan.core.attribute.Duration;
 
 import java.util.concurrent.TimeUnit;
-
-import com.esotericsoftware.kryo.DefaultSerializer;
-import com.google.common.base.Preconditions;
 
 /**
  * An instant in time backed by a {@link TimestampProvider}

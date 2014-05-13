@@ -8,16 +8,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
-import com.thinkaurelius.titan.util.time.*;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
@@ -90,10 +91,12 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         Preconditions.checkNotNull(times);
 
         partitionBitWdith = config.has(CLUSTER_PARTITION)? NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS)):0;
-        Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=30);
+        Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
 
         uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUEID_BITS);
+        Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
+
 
         storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix);
 
@@ -169,20 +172,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     }
 
     private StaticBuffer getPartitionKey(int partition, int idNamespace, int uniqueId) {
-        assert partitionBitWdith>=0 && partitionBitWdith<30;
+        Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
+        Preconditions.checkArgument(partitionBitWdith<=16 && partitionBitWdith>=0);
         assert partition>=0 && partition<(1<<partitionBitWdith);
         assert idNamespace>=0;
         assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);
-        int[] components = new int[1+(partitionBitWdith>0?1:0)+(uniqueIdBitWidth>0?1:0)];
-        int pos = 0;
-        if (partitionBitWdith>0) {
-            //Left-align partition so it aligns with the cluster partitions
-            components[pos++]=partition<<(Integer.SIZE-partitionBitWdith);
-        }
-        if (uniqueIdBitWidth>0) {
-            components[pos++]=uniqueId;
-        }
-        components[pos]=idNamespace;
+
+        int[] components = new int[2];
+        components[0] = (partitionBitWdith>0?(partition<<(Integer.SIZE-partitionBitWdith)):0) + uniqueId;
+        components[1]=idNamespace;
         return BufferUtil.getIntBuffer(components);
     }
 
