@@ -1,4 +1,4 @@
-[[bdb-storage]]
+[[bdb]]
 BerkeleyDB
 ~~~~~~~~~~
 

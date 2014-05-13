@@ -1,4 +1,4 @@
-[[hbase-storage]]
+[[hbase]]
 HBase
 ~~~~~
 

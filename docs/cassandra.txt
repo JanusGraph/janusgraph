@@ -1,4 +1,4 @@
-[[cassandra-storage]]
+[[cassandra]]
 Cassandra
 ~~~~~~~~~
 
