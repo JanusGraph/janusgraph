@@ -173,6 +173,7 @@ g.commit()
 
 When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.getVertex(existingVertex)` or `g.getEdge(existingEdge)`.
 
+[[tx-config]]
 Transaction Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -6,3 +6,5 @@ include::intro.txt[]
 include::using.txt[]
 
 include::managing.txt[]
+
+include::advanced.txt[]
