@@ -54,6 +54,12 @@ div#main {
 
 .tss-floatright {
     float: right;
+    margin-left: 15px;
+}
+
+.tss-floatleft {
+    float: left;
+    margin-right: 15px;
 }
 
 .figure img {
