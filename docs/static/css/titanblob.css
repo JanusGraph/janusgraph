@@ -84,6 +84,7 @@ div.informaltable thead {
     border: 1px dashed #E10707;
     color: #000000;
     background-color: #F8F8F8;
+    overflow-x: auto;
 }
 
 div#main {
