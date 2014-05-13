@@ -24,6 +24,10 @@ div#main {
     color: #A02050;
 }
 
+.hl-attribute {
+    color: rgb(225,7,7);
+}
+
 .hl-comment {
     color: #007000;
 }

@@ -12,6 +12,12 @@
     </strong>
   </xsl:template>
 
+  <xsl:template match="xslthl:attribute" mode="xslthl">
+    <span class="hl-attribute">
+      <xsl:apply-templates mode="xslthl"/>
+    </span>
+  </xsl:template>
+
   <xsl:template match="xslthl:string" mode="xslthl">
     <span class="hl-string">
       <xsl:apply-templates mode="xslthl"/>
