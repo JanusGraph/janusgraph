@@ -1,0 +1,44 @@
+Generating Artificial Natural Graphs
+------------------------------------
+
+[.tss-floatleft.tss-width-125]
+image:splash-graph.png[]
+
+Real-world graphs are not http://en.wikipedia.org/wiki/Random_graph[random]. Example real-world graphs include social graphs, word graphs, neural graphs, airline graphs, water flow graphs, etc. Interestingly enough, there is a simple statistical understanding of most natural graphs. In short, many vertices have few connections and very few vertices have many connections. A popular algorithm to generate a graph that has this connectivity pattern is known as the http://en.wikipedia.org/wiki/Preferential_attachment[preferential attachment] algorithm which can be simply described with the colloquial phrase: "the rich get richer." This section provides some simple code to artificially generate a natural looking graph in Titan using http://gremlin.tinkerpop.com[Gremlin].
+
+Generating a Graph with Natural Statistics
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The first thing to do is to connect to a Cassandra cluster with Titan. In the example below, a local connection is used where `storage.batch-loading` ensures more speedy performance.
+
+[source,java]
+conf = new BaseConfiguration()
+conf.setProperty('storage.backend','cassandra')
+conf.setProperty('storage.hostname','127.0.0.1')
+conf.setProperty('storage.batch-loading','true');
+g = TitanFactory.open(conf)
+
+Next, the following script generates a graph with `size` number of edges.
+
+[source,gremlin]
+size = 100000; ids = [g.addVertex().id]; rand = new Random();
+(1..size).each{
+  v = g.addVertex();
+  u = g.v(ids.get(rand.nextInt(ids.size())))
+  g.addEdge(v,u,'linked');
+  ids.add(u.id);
+  ids.add(v.id);
+  if(it % 1000 == 0) 
+    g.commit()
+}
+
+Computing the In-Degree Distribution of the Graph
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,gremlin]
+indegree = [:].withDefault{0}
+ids.unique().each{ 
+  count = g.v(it).inE.count();
+  indegree[count] = indegree[count] + 1;
+}
+indegree.sort{a,b -> b.value <=> a.value}
