@@ -2,7 +2,7 @@
 Cassandra
 ~~~~~~~~~
 
-image:http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/"]
+image::http://cassandra.apache.org/media/img/cassandra_logo.png[link="http://cassandra.apache.org/",width=250]
 
 [quote,'http://cassandra.apache.org/[Apache Cassandra Homepage]']
 The Apache Cassandra database is the right choice when you need
