@@ -1,0 +1,6 @@
+[[graph-config]]
+Graph Configuration
+~~~~~~~~~~~~~~~~~~~
+
+Stub -- investigate generation by programmatic iteration over Titan's
+ConfigNamespace object

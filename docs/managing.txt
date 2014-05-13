@@ -181,3 +181,11 @@ include::textsearch.txt[]
 include::directindex.txt[]
 
 include::typedef.txt[]
+
+include::vertexcentric.txt[]
+
+include::graphconfig.txt[]
+
+include::serializer.txt[]
+
+include::exampleconfig.txt[]
