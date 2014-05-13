@@ -2,7 +2,8 @@
 HBase
 ~~~~~
 
-image::http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org",width=250]
+[.tss-center.tss-width-250]
+image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org"]
 
 [quote,'http://hbase.apache.org/[Apache HBase Homepage]']
 Apache HBase is an open-source, distributed, versioned, non-relational database modeled after http://static.googleusercontent.com/media/research.google.com/en/us/archive/bigtable-osdi06.pdf[Google's Bigtable: A Distributed Storage System for Structured Data by Chang et al.] Just as Bigtable leverages the distributed data storage provided by the Google File System, Apache HBase provides Bigtable-like capabilities on top of Hadoop and HDFS.

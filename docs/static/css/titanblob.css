@@ -34,12 +34,26 @@ div#main {
     margin-right: auto;
 }
 
-.tss-floatright {
-    float: right;
+.tss-center {
+    display: block;
 }
 
-.tss-floatright img {
-    max-height: 120px;
+.tss-center img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tss-width-125 img {
+    max-width: 125px;
+}
+
+.tss-width-250 img {
+    max-width: 250px;
+}
+
+.tss-floatright {
+    float: right;
 }
 
 .figure img {

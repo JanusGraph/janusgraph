@@ -27,7 +27,7 @@ General Titan Benefits
 Benefits of Titan with Cassandra
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[role="tss-floatright"]
+[.tss-floatright.tss-width-125]
 image:cassandra-small.svg[link="http://cassandra.apache.org/"]
 
 * http://en.wikipedia.org/wiki/Continuous_availability[Continuously available] with no single point of failure.
@@ -42,7 +42,7 @@ image:cassandra-small.svg[link="http://cassandra.apache.org/"]
 Benefits of Titan with HBase
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-[role="tss-floatright"]
+[.tss-floatright.tss-width-125]
 image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org/"]
 
 * Tight integration with the http://hadoop.apache.org/[Hadoop] ecosystem.
