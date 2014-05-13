@@ -13,7 +13,7 @@ include::tutorials.txt[]
 
 include::related.txt[]
 
-//include::versions.txt[]
+include::versions.txt[]
 
 //include::changelog.txt[]
 
