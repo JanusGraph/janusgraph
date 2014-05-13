@@ -35,7 +35,6 @@ public class VertexIDAssigner {
             LoggerFactory.getLogger(VertexIDAssigner.class);
 
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
-    private static final int DEFAULT_PARTITION = 0;
 
     public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<String>(IDS_NS,"placement",
             "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simplebulk");
@@ -94,7 +93,7 @@ public class VertexIDAssigner {
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
         idPools = new ConcurrentHashMap<Integer, PartitionIDPool>(partitionIdBound);
-        schemaIdPool = new StandardIDPool(idAuthority, DEFAULT_PARTITION, PoolType.SCHEMA.getIDNamespace(), idManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
+        schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(), idManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
 
 
         setLocalPartitions(partitionBits);
@@ -142,7 +141,7 @@ public class VertexIDAssigner {
             if (element instanceof InternalRelation) {
                 partitionID = placementStrategy.getPartition(element);
             } else if (element instanceof TitanSchemaVertex) {
-                partitionID = DEFAULT_PARTITION;
+                partitionID = IDManager.SCHEMA_PARTITION;
             } else {
                 partitionID = placementStrategy.getPartition(element);
             }
@@ -231,7 +230,7 @@ public class VertexIDAssigner {
 
         long count;
         if (element instanceof TitanSchemaVertex) {
-            Preconditions.checkArgument(partitionID==DEFAULT_PARTITION);
+            Preconditions.checkArgument(partitionID==IDManager.SCHEMA_PARTITION);
             count = schemaIdPool.nextID();
         } else {
             PartitionIDPool partitionPool = idPools.get(partitionID);

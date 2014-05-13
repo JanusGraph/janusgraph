@@ -327,6 +327,11 @@ public class IDManager {
     }
 
     /**
+     * Id of the partition that schema elements are assigned to
+     */
+    public static final int SCHEMA_PARTITION = 0;
+
+    /**
      * Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
     public static final int TYPE_LEN_RESERVE = 3;
@@ -428,6 +433,7 @@ public class IDManager {
     }
 
     public long getPartitionId(long vertexid) {
+        if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
         assert isUserVertex(vertexid) && getUserVertexIDType(vertexid)!=null;
         long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
         assert partition>=0;
