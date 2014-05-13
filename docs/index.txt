@@ -17,6 +17,6 @@ include::versions.txt[]
 
 include::changelog.txt[]
 
-//include::upgrade.txt[]
+include::upgrade.txt[]
 
 //include::acknowledgements.txt[]
