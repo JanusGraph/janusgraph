@@ -414,7 +414,7 @@ public class IDManager {
         return id;
     }
 
-    private static VertexIDType getVertexIDType(long vertexid) {
+    private static VertexIDType getUserVertexIDType(long vertexid) {
         VertexIDType type=null;
         if (VertexIDType.NormalVertex.is(vertexid)) type=VertexIDType.NormalVertex;
         else if (VertexIDType.PartitionedVertex.is(vertexid)) type=VertexIDType.PartitionedVertex;
@@ -423,8 +423,12 @@ public class IDManager {
         return type;
     }
 
+    private boolean isUserVertex(long vertexid) {
+        return VertexIDType.UserVertex.is(vertexid) && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+    }
+
     public long getPartitionId(long vertexid) {
-        assert getVertexIDType(vertexid)!=null;
+        assert isUserVertex(vertexid) && getUserVertexIDType(vertexid)!=null;
         long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
         assert partition>=0;
         return partition;
@@ -435,7 +439,8 @@ public class IDManager {
             //No partition for schema vertices
             return BufferUtil.getLongBuffer(vertexid);
         } else {
-            VertexIDType type = getVertexIDType(vertexid);
+            assert isUserVertex(vertexid);
+            VertexIDType type = getUserVertexIDType(vertexid);
             long partition = getPartitionId(vertexid);
             long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
@@ -449,7 +454,7 @@ public class IDManager {
         if (VertexIDType.Schema.is(value)) {
             return value;
         } else {
-            VertexIDType type = getVertexIDType(value);
+            VertexIDType type = getUserVertexIDType(value);
             long partition = partitionOffset<Long.SIZE?value>>>partitionOffset:0;
             long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1l<<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
             return constructId(count,partition,type);
@@ -598,17 +603,17 @@ public class IDManager {
 
         @Override
         public final boolean isUserVertexId(long id) {
-            return VertexIDType.UserVertex.is(id);
+            return IDManager.this.isUserVertex(id);
         }
 
         @Override
         public boolean isUnmodifiableVertex(long id) {
-            return VertexIDType.UnmodifiableVertex.is(id);
+            return isUserVertex(id) && VertexIDType.UnmodifiableVertex.is(id);
         }
 
         @Override
         public boolean isPartitionedVertex(long id) {
-            return VertexIDType.PartitionedVertex.is(id);
+            return isUserVertex(id) && VertexIDType.PartitionedVertex.is(id);
         }
 
     };
