@@ -11,7 +11,7 @@ include::advanced.txt[]
 
 include::tutorials.txt[]
 
-//include::related.txt[]
+include::related.txt[]
 
 //include::versions.txt[]
 
