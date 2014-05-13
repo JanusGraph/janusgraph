@@ -272,6 +272,231 @@ or
 [source,java]
 TitanFactory.open("bin/hbase.local")
 
+[[rexster]]
+Rexster Graph Server
+--------------------
+
+image:https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png[link="http://rexster.tinkerpop.com"]
+
+http://rexster.tinkerpop.com[Rexster] exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.  Rexster and Titan can be separately downloaded and configured to work together, or they can be downloaded together through the `titan-server` distribution on the _TODO xref to downloads_ page.
+
+The Benefits of Rexster
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.Rexster Dog House Visualization
+image::rexster-dog-house-viz.png[]
+
+.Rexster Dog House Gremlin Shell
+image::rexster-dog-house-gremlin.png[]
+
+The following is a list of the https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster[benefits of using Rexster].
+
+* https://github.com/tinkerpop/rexster/wiki/Mapping-a-URI-to-JSON[JSON-based REST interface] ensures language agnostic connectivity to Titan.
+** See http://bulbflow.com/[Bulbs] or https://github.com/StartTheShift/thunderdome[Thunderdome] for a Python connector.
+* HTML/JavaScript https://github.com/tinkerpop/rexster/wiki/The-Dog-House[graphical user interface] for graph administration and visualization.
+* Extend with more RESTful endpoints by adding https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension[Kibbles] to Rexster.
+** See https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster-Kibbles] provided by TinkerPop.
+* Remote Gremlin traversals via the https://github.com/tinkerpop/rexster/wiki/Gremlin-Extension[Gremlin extensions] and the https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster console].
+* https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Security support] via user authentification.
+
+Downloading and Starting Rexster with Titan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are two ways to download and install Rexster with Titan.
+
+To get started with Rexster and Titan quickly, consider the titan-server zip distribution.  This contains Rexster, Titan, Cassandra, and Elasticsearch in a single download, preconfigured to work together.  It also contains the convenience script `bin/titan.sh` to start and stop the Cassandra and Rexster services (ES runs embedded in the Titan + Rexster VM and doesn't use a separate process).
+
+To use Titan backends besides Cassandra and ES, or to run graph engines besides Titan within a shared Rexster server, download Rexster and Titan separately and then install Titan as a Rexster extension.
+
+Each of these approaches is described below.
+
+Getting started quickly with titan-server.zip
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Download a copy of the current `titan-server-$VERSION.zip` file from the _TODO xref to downloads_ page.
+* Unzip it and enter the `titan-server-$VERSION` directory
+* Run `bin/titan.sh start` to start a Rexster server with Titan + Cassandra, or run `bin/titan.sh -c cassandra-es start` to start a Rexster server with Titan + Cassandra + Elasticsearch.
+* Connect to Rexster using `bin/rexster-console.sh`, the REST API, or an application using RexsterClient (each method is described below in the "Connecting to Rexster" section)
+* Run `bin/titan.sh status` to check on the forked processes and `bin/titan.sh stop` to kill them
+
+*NOTE* - The Rexster working directory is in `TITAN_HOME/rexhome`.  Server-side Gremlin scripts should be defined in `rexster.xml` with a path starting from there.
+
+Downloading Rexster and Titan separately
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section describes the process of downloading a stock Rexster distribution, testing it in its default configuration, and then installing and configuring Titan as an extension.
+
+Rexster can be downloaded at https://github.com/tinkerpop/rexster/wiki/Downloads. Below is a snippet of shell commands that demonstrate the process for getting Rexster downloaded and started using a default configuration.
+
+[source,bourne]
+----
+$ curl -O -L http://tinkerpop.com/downloads/rexster/rexster-server-x.y.z.zip > rexster-server-x.y.z.zip
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current ...
+...
+$ unzip rexster-server-x.y.z.zip
+Archive:  rexster-server-x.y.z.zip
+   creating: rexster-server-x.y.z/
+...
+$ cd rexster-server-x.y.z
+$ ./bin/rexster.sh --start
+----
+
+Validate that it is working by opening a browser and navigating to `http://localhost:8182` which should present a Rexster landing page with links to the root of the REST API and to the Dog House.
+
+Use `CTRL-C` to kill the server. Now that Rexster is downloaded and verified to be working, it is necessary to configure Rexster to work with Titan.
+
+Configuring Rexster to use Titan
+++++++++++++++++++++++++++++++++
+
+This section explains how to configure Rexster to use a Titan graph database (see also Rexster's https://github.com/tinkerpop/rexster/wiki/Getting-Started[Getting Started page]).
+
+_PREREQUISITE:_ These instructions assume that a graph has been created in Titan as described in <<getting-started>>.
+
+Edit the `REXSTER_HOME/rexster.xml` and include the Titan configuration portion in the `graphs` section (see https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration[Rexster Configuration]).
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<rexster>
+  ...
+  <graphs>
+    <graph>
+      <graph-name>titanexample</graph-name>
+      <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+      <graph-location>/tmp/titan</graph-location>
+      <graph-read-only>false</graph-read-only>
+      <properties>
+            <storage.backend>local</storage.backend>
+            <storage.buffer-size>100</storage.buffer-size>
+      </properties>
+      <extensions>
+        <allows>
+          <allow>tp:gremlin</allow>
+        </allows>
+      </extensions>
+    </graph>
+  </graphs>
+</rexster>
+----
+
+// [[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-character-2.png|align=right|float|width=100px]]
+
+Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the <<graph-config,Titan configurations>> can be used here.
+
+Rexster needs to have Titan and its related library dependencies made available to it.  Rexster has an `ext` directory where https://github.com/tinkerpop/rexster/wiki/Extensions[extensions] and other related libraries can be put on Rexster's path for https://github.com/tinkerpop/rexster/wiki/Deploying-an-Extension[deployment].  All files in the root of that directory and sub-directories will be added to Rexster's classpath.
+
+To add Titan to Rexster, first make a directory as in:
+
+[source,text]
+mkdir REXSTER_HOME/ext/titan
+
+Then, if building Titan from source:
+
+[source,text]
+cp TITAN_HOME/target/titan-x.y.z-standalone/lib/*.* REXSTER_HOME/ext/titan
+
+or, if using the Titan zipped distribution download (use the titan-server distribution -- it contains necessary classes for Titan-Rexster integration):
+
+[source,text]
+cp TITAN_HOME/lib/*.* REXSTER_HOME/ext/titan
+
+Start Rexster with:
+
+[source,text]
+rexster$ bin/rexster.sh -s -c rexster.xml
+
+Access the Titan graph at the following URI:
+
+[source,text]
+http://localhost:8182/graphs/titanexample
+
+[NOTE]
+For those using ElasticSearch, Rexster includes lucene-core-3.5.0.jar (a neo4j dependency).  Assuming Neo4j is not being utilized in the Rexster instance, simply delete that file from the rexster `lib` directory.  Removing it will eliminate a conflict with Titan and allow ElasticSearch to start.  
+
+[NOTE]
+It is important to ensure that the `titan-rexster.jar` is in the `ext` directory as it is not available in all Titan distributions.  
+
+Connecting to Rexster
+~~~~~~~~~~~~~~~~~~~~~
+
+Regardless of the download and installation method chosen above, Rexster accepts connections through either RexPro or the REST API once started.
+
+Connect via rexster-console.sh
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Start https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster Console] with the default settings (127.0.0.0:8184) and then call `rexster.getGraph("graph")` to retrieve a Titan graph instance reference.
+
+[source,text]
+----
+$  bin/rexster-console.sh 
+        (l_(l
+(_______( 0 0
+(        (-Y-) <woof>
+l l-----l l
+l l,,   l l,,
+opening session [127.0.0.1:8184]
+[INFO] EngineController - ScriptEngineManager has factory for: ECMAScript
+[INFO] EngineController - ScriptEngineManager has factory for: Groovy
+[INFO] EngineController - ScriptEngineManager has factory for: gremlin-groovy
+[INFO] EngineController - Registered ScriptEngine for: gremlin-groovy
+[INFO] EngineHolder - Initializing gremlin-groovy engine with additional imports.
+[INFO] RexProSessions - RexPro Session created: 06885b49-71c4-49e6-9cc5-bd42b8c59740
+?h for help
+
+rexster[groovy]> g = rexster.getGraph("graph")
+==>titangraph[cassandra:null]
+rexster[groovy]> g.getClass()
+==>class com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
+rexster[groovy]>
+----
+
+Connecting to the https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST API]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[source,text]
+curl http://localhost:8182/graphs
+
+[source,javascript]
+----
+{
+    "version": "x.y.z",
+    "name": "Rexster: A Graph Server",
+    "graphs": [
+        "graph"
+    ],
+    "queryTime": 0.217059,
+    "upTime": "0[d]:00[h]:00[m]:05[s]"
+}
+----
+
+Connecting using RexsterClient
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+https://github.com/tinkerpop/rexster/wiki/RexPro-Java[RexsterClient] uses RexPro to talk to the Rexster server.  Here's sample code that uses RexsterClient to issue a query over a <<getting-started,Graph of the Gods>>.
+
+[source,java]
+----
+RexsterClient client = RexsterClientFactory.open("localhost", "graph");
+List<Map<String,Object>> result;
+result = client.execute("g.V('name','saturn').in('father').map");
+// result.toString(): [{name="jupiter", type="god"}]
+
+Map<String,Object> params = new HashMap<String,Object>();
+params.put("name","saturn");
+result = client.execute("g.V('name',name).in('father').map",params);
+client.close();
+----
+
+First above, a connection to the Titan Server is established. Gremlin queries are issued as strings using the `RexsterClient.execute()` methods. Each query is executed in its own transaction. Explicit transaction handling is not necessary. The result set is a list of query answers, where each query answer is represented as a map of key-value pairs. `RexsterClient` provides additional `execute()` methods where the signature of each query answer can be specified as a template. The second query is semantically identical to the first, but in this case we are passing in the name as a variable binding for the corresponding variable used in the query. Once all queries have been issued, the connection is closed.
+
+Limitations
+~~~~~~~~~~~
+
+Rexster has a rich https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[API] for working with Blueprints Graph implementations, but there are some limitations to consider when using Rexster with Titan:
+
+* Titan automatically assigns identifiers. Hence, the POST of an edge cannot be done with an identifier. In other words, POST to this: `http://localhost/graphs/titan/edges` and _not_ to this `http://localhost/graphs/titan/edges/1234`.
+* Titan uses key indices and does not support manual indices. Hence, all operations on the `indices` resource are not supported. Use key indexes instead.
+
 Transactions
 ------------
 
