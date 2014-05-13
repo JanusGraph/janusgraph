@@ -8,3 +8,15 @@ include::using.txt[]
 include::managing.txt[]
 
 include::advanced.txt[]
+
+include::tutorials.txt[]
+
+//include::related.txt[]
+
+//include::versions.txt[]
+
+//include::changelog.txt[]
+
+//include::upgrade.txt[]
+
+//include::acknowledgements.txt[]
