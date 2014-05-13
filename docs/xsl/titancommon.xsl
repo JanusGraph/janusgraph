@@ -12,6 +12,7 @@
   <xsl:param name="chunk.section.depth" select="0"/>
   <xsl:param name="chunk.toc" select="''"/>
   <xsl:param name="chunk.tocs.and.lots" select="0"/>
+  <xsl:param name="use.id.as.filename" select="1"/>
 
   <!-- Code syntax highlighting -->
   <xsl:param name="highlight.source" select="1"/>
