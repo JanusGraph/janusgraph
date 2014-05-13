@@ -18,6 +18,7 @@ Titan is a multi-client database in the classic sense. For performing global gra
 Please review Faunus documentation for instructions on how to connect https://github.com/thinkaurelius/faunus/wiki/Titan-Format[Titan to Faunus]. However, a short example is provided below. With Faunus it is possible to use Titan as the source of a http://hadoop.apache.org[Hadoop] MapReduce job chain. Like Titan, Faunus uses Gremlin as its traversal language. However, Faunus compiles its Gremlin statements down to MapReduce jobs. Assume the Titan/Cassandra maintains _The Graph of the Gods_. The Faunus/Gremlin shell can be used to create a `FaunusGraph`. When the traversal is evaluated, Titan serves as the data source and Hadoop serves as the data processing system.
 
 [source,text]
+----
 faunus$ bin/gremlin.sh 
 
          \,,,/
@@ -39,3 +40,4 @@ gremlin> g.V.count()
 12/12/15 23:59:16 INFO mapred.JobClient:     Map output records=12
 ==>12
 gremlin> 
+----

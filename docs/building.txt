@@ -58,7 +58,13 @@ cd ..
 TITAN_VERSION=0.4.2-SNAPSHOT
 # Install a fake titan-site in the local Maven repository
 touch emptyfile ; zip empty.zip emptyfile
-mvn install:install-file -DgroupId=com.thinkaurelius.titan -DartifactId=titan-site -Dversion=$TITAN_VERSION -Dclassifier=htdocs -Dpackaging=zip -Dfile=empty.zip
+mvn install:install-file \
+    -DgroupId=com.thinkaurelius.titan \
+    -DartifactId=titan-site \
+    -Dversion=$TITAN_VERSION \
+    -Dclassifier=htdocs \
+    -Dpackaging=zip \
+    -Dfile=empty.zip
 rm empty.zip
 
 # Build distributions *without documentation* -- not suitable for release
