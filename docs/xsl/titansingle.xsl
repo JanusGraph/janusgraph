@@ -14,7 +14,7 @@
     extension-element-prefixes="sbhl xslthl">
 
 <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
-<xsl:import href="titanhighlight.xsl"/>
+<xsl:import href="highlight/titanhighlight.xsl"/>
 <xsl:import href="titancommon.xsl"/>
 
 <xsl:output
@@ -29,9 +29,6 @@ book         toc,title
 book/part    title
 book/chapter title
 </xsl:param>
-
-<!-- <xsl:param name="highlight.xslthl.config">http://docbook.sourceforge.net/release/xsl/current/highlighting/xslthl-config.xml</xsl:param>--> 
-<xsl:param name="highlight.xslthl.config">file://$MAVEN{xsl.output.dir}/xslthl-config.xml</xsl:param>
 
 <xsl:template name="user.head.content">
   <xsl:call-template name="titan.head"/>

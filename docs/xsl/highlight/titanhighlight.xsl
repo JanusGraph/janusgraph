@@ -6,6 +6,8 @@
 
   <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/highlight.xsl"/>
 
+  <xsl:param name="highlight.xslthl.config">file://$MAVEN{xsl.output.dir}/highlight/xslthl-config.xml</xsl:param>
+
   <xsl:template match="xslthl:keyword" mode="xslthl">
     <strong class="hl-keyword">
       <xsl:apply-templates mode="xslthl"/>
