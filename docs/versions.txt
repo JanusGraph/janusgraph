@@ -24,6 +24,5 @@ The Titan project is growing along with the rest of the Aurelius Graph Cluster t
 | 0.4.2 | 0.4.2 | 1.2.z | 0.94.z | 0.90.3
 | 0.4.3 | 0.4.3 | 1.2.z | 0.94.z | 0.90.3
 | 0.4.4 | 0.4.4 | 1.2.z | 0.94.z | 0.90.3
+| 0.5.0 | 0.5.0 | 2.0.6 | 0.94.16, 0.96.1.1 | 1.0.1 
 |==========================
-
-Titan does not yet support ES 1.0.
