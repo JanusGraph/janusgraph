@@ -14,6 +14,14 @@
   <xsl:param name="chunk.tocs.and.lots" select="0"/>
   <xsl:param name="use.id.as.filename" select="1"/>
 
+  <!-- TOCs -->
+  <!-- For the distinction between toc.section.depth and
+       toc.max.depth, see:
+       http://www.sagehill.net/docbookxsl/TOCcontrol.html#TOClevels
+       -->
+  <!-- <xsl:param name="toc.section.depth" select="0"/> -->
+  <xsl:param name="toc.max.depth" select="2"/>
+
   <!-- Code syntax highlighting -->
   <xsl:param name="highlight.source" select="1"/>
 
