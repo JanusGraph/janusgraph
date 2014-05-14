@@ -13,83 +13,83 @@
     xmlns:xslthl="http://xslthl.sf.net"
     extension-element-prefixes="sbhl xslthl">
 
-<xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
-<xsl:import href="highlight/titanhighlight.xsl"/>
-<xsl:import href="titancommon.xsl"/>
-
-<xsl:output
-    method="html"
-    encoding="utf-8"
-    doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"
-    doctype-system="http://www.w3.org/TR/html4/loose.dtd"
-    indent="yes" />
-
-<xsl:param name="generate.toc">
-book         toc,title
-book/part    title
-book/chapter title
-</xsl:param>
-
-<xsl:template name="user.head.content">
-  <xsl:call-template name="titan.head"/>
-</xsl:template>
-
-<xsl:template match="*" mode="process.root">
-  <xsl:variable name="doc" select="self::*"/>
-  <xsl:variable name="content">
-    <xsl:apply-imports/>
-  </xsl:variable>
-
+  <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
+  <xsl:import href="highlight/titanhighlight.xsl"/>
+  <xsl:import href="titancommon.xsl"/>
+  
+  <xsl:output
+      method="html"
+      encoding="utf-8"
+      doctype-public="-//W3C//DTD HTML 4.01 Transitional//EN"
+      doctype-system="http://www.w3.org/TR/html4/loose.dtd"
+      indent="yes" />
+  
+  <xsl:param name="generate.toc">
+  book         toc,title
+  book/part    title
+  book/chapter title
+  </xsl:param>
+  
+  <xsl:template name="user.head.content">
+    <xsl:call-template name="titan.head"/>
+  </xsl:template>
+  
+  <xsl:template match="*" mode="process.root">
+    <xsl:variable name="doc" select="self::*"/>
+    <xsl:variable name="content">
+      <xsl:apply-imports/>
+    </xsl:variable>
+  
+    <!--
+    <xsl:call-template name="user.preroot"/>
+    <xsl:call-template name="root.messages"/>
+    -->
+  
+    <html>
+      <xsl:call-template name="root.attributes"/>
+      <head>
+        <xsl:call-template name="system.head.content">
+          <xsl:with-param name="node" select="$doc"/>
+        </xsl:call-template>
+        <xsl:call-template name="head.content">
+          <xsl:with-param name="node" select="$doc"/>
+        </xsl:call-template>
+        <xsl:call-template name="user.head.content">
+          <xsl:with-param name="node" select="$doc"/>
+        </xsl:call-template>
+      </head>
+  
+      <xsl:call-template name="titan.body">
+        <xsl:with-param name="maincontent" select="$content"/>
+      </xsl:call-template>
+    </html>
+  
+    <xsl:value-of select="$html.append"/>
+  
+    <!-- Generate any css files only once, not once per chunk -->
+    <xsl:call-template name="generate.css.files"/>
+  </xsl:template>
+  
   <!--
-  <xsl:call-template name="user.preroot"/>
-  <xsl:call-template name="root.messages"/>
+  <xsl:template match='xslthl:keyword'>
+     <b class="hl-keyword"><xsl:apply-templates mode="xslthl"/></b>
+  </xsl:template>
+  
+  <xsl:template match='xslthl:comment'>
+     <i class="hl-comment" style="color: black"><xsl:apply-templates mode="xslthl"/></i>
+  </xsl:template>
+  
+  <xsl:template match="xslthl:attribute" mode="xslthl">
+    <span class="hl-attribute" style="color: #F5844C"><xsl:apply-templates mode="xslthl"/></span>
+  </xsl:template>
+  
+  <xsl:template match="xslthl:string" mode="xslthl">
+    <b class="hl-string"><xsl:apply-templates mode="xslthl"/></b>
+  </xsl:template>
+  
+  <xsl:template match="xslthl:value" mode="xslthl">
+    <span class="hl-value" style="color: #993300"><xsl:apply-templates mode="xslthl"/></span>
+  </xsl:template>
   -->
-
-  <html>
-    <xsl:call-template name="root.attributes"/>
-    <head>
-      <xsl:call-template name="system.head.content">
-        <xsl:with-param name="node" select="$doc"/>
-      </xsl:call-template>
-      <xsl:call-template name="head.content">
-        <xsl:with-param name="node" select="$doc"/>
-      </xsl:call-template>
-      <xsl:call-template name="user.head.content">
-        <xsl:with-param name="node" select="$doc"/>
-      </xsl:call-template>
-    </head>
-
-    <xsl:call-template name="titan.body">
-      <xsl:with-param name="maincontent" select="$content"/>
-    </xsl:call-template>
-  </html>
-
-  <xsl:value-of select="$html.append"/>
-
-  <!-- Generate any css files only once, not once per chunk -->
-  <xsl:call-template name="generate.css.files"/>
-</xsl:template>
-
-<!--
-<xsl:template match='xslthl:keyword'>
-   <b class="hl-keyword"><xsl:apply-templates mode="xslthl"/></b>
-</xsl:template>
-
-<xsl:template match='xslthl:comment'>
-   <i class="hl-comment" style="color: black"><xsl:apply-templates mode="xslthl"/></i>
-</xsl:template>
-
-<xsl:template match="xslthl:attribute" mode="xslthl">
-  <span class="hl-attribute" style="color: #F5844C"><xsl:apply-templates mode="xslthl"/></span>
-</xsl:template>
-
-<xsl:template match="xslthl:string" mode="xslthl">
-  <b class="hl-string"><xsl:apply-templates mode="xslthl"/></b>
-</xsl:template>
-
-<xsl:template match="xslthl:value" mode="xslthl">
-  <span class="hl-value" style="color: #993300"><xsl:apply-templates mode="xslthl"/></span>
-</xsl:template>
--->
-
+  
 </xsl:stylesheet>
