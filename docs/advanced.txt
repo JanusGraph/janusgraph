@@ -17,4 +17,6 @@ include::monitoring.txt[]
 
 include::datamodel.txt[]
 
+include::generating.txt[]
+
 include::eventualconsistency.txt[]

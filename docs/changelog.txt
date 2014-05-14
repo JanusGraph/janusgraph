@@ -1,15 +1,7 @@
 [[changelog]]
+[appendix]
 Release Notes
-=============
-
-Titan: Distributed Graph Database
-
-http://titan.thinkaurelius.com
-
-image:titan-globe.png[]
-
-Titan 0.y.z
------------
+-------------
 
 Version 0.4.4 (April 22, 2014)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

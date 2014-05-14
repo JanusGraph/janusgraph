@@ -1,5 +1,7 @@
+[[version-compat]]
+[appendix]
 Version Compatibility
-=====================
+---------------------
 
 [.tss-floatright.tss-width-250]
 image:titan-logo.png[]

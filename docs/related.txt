@@ -1,5 +1,7 @@
+[[related-projects]]
+[appendix]
 Related Third-Party Projects
-============================
+----------------------------
 
 * http://bulbflow.com/[Bulbflow] (Python client)
 * https://github.com/clojurewerkz/titanium[Titanium] (Clojure client)
@@ -7,4 +9,3 @@ Related Third-Party Projects
 * https://github.com/StartTheShift/titan-tools[Titan Tools] (Collection of management tools for Titan)
 * https://github.com/bcajes/titan-cookbook[Titan Chef Cookbook] (Chef cookbook)
 * http://keylines.com/titan[KeyLines Graph Visualization] (GUI interface)
-

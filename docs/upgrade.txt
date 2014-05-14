@@ -1,11 +1,9 @@
 [[upgrade]]
+[appendix]
 Upgrade Instructions
-====================
+--------------------
 
 Please follow these instructions when upgrading from an older Titan release.
-
-Titan 0.y.z
------------
 
 Version 0.4.2 (December 30, 2013), Version 0.4.3 (April 21, 2013), and Version 0.4.4 (April 22, 2013)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
