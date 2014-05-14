@@ -292,7 +292,7 @@ image::rexster-dog-house-gremlin.png[]
 The following is a list of the https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster[benefits of using Rexster].
 
 * https://github.com/tinkerpop/rexster/wiki/Mapping-a-URI-to-JSON[JSON-based REST interface] ensures language agnostic connectivity to Titan.
-** See http://bulbflow.com/[Bulbs] or https://github.com/StartTheShift/thunderdome[Thunderdome] for a Python connector.
+** See http://bulbflow.com/[Bulbs] or https://pypi.python.org/pypi/mogwai[Mogwai] for a Python connector.
 * HTML/JavaScript https://github.com/tinkerpop/rexster/wiki/The-Dog-House[graphical user interface] for graph administration and visualization.
 * Extend with more RESTful endpoints by adding https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension[Kibbles] to Rexster.
 ** See https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster-Kibbles] provided by TinkerPop.
