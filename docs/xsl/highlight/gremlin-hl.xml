@@ -20,13 +20,12 @@
 		<suffix>l</suffix>
 		<ignoreCase />
 	</highlighter>
-<highlighter type="word">
-    <word>gremlin&gt;</word>
-    <style>keyword</style>
-</highlighter>
-
-<highlighter type="regex">
-    <pattern>==&gt;</pattern>
-    <style>keyword</style>
-</highlighter>
+	<highlighter type="word">
+		<word>gremlin&gt;</word>
+		<style>keyword</style>
+	</highlighter>
+	<highlighter type="regex">
+		<pattern>==&gt;</pattern>
+		<style>keyword</style>
+	</highlighter>
 </highlighters>

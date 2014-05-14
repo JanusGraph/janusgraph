@@ -30,7 +30,7 @@ Michiel Hendriks <elmuerte at users.sourceforge.net>
 -->
 <highlighters>
 	<highlighter type="oneline-comment">;</highlighter>
-	<highlighter type="regex">	
+	<highlighter type="regex">
 		<!-- ini sections -->
 		<pattern>^(\[.+\]\s*)$</pattern>
 		<style>keyword</style>
