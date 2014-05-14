@@ -16,6 +16,7 @@ Titan natively implements the Blueprints Interface which means that it supports 
 
 Being a native implementation means that Titan directly implements the Blueprints interface without an adapter. This makes Titan one of the most efficient Blueprints implementations which benefits the performance of all TinkerPop projects when running on Titan.
 
+[[blueprints]]
 Blueprints Interface
 --------------------
 
@@ -27,10 +28,9 @@ Titan natively implements the Blueprints API which means that Blueprints is the 
 . Any application written for Titan can be migrated to another Blueprints enabled graph database, so there is no vendor lock-in. 
 
 [NOTE]
-Consult the https://github.com/tinkerpop/blueprints/wiki/[Blueprints
-Manual] or the
-http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html[Blueprints
-Core API JavaDoc] for more information about Blueprints.
+Consult the https://github.com/tinkerpop/blueprints/wiki/[Blueprints Manual] or the
+http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html[Blueprints Core API JavaDoc]
+for more information about Blueprints.
 
 Introduction to TitanGraph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -148,7 +148,7 @@ As in the previous example, we first create an edge index for the property key `
 
 Read more about https://github.com/tinkerpop/blueprints/wiki/Graph-Indices[Blueprints indices] and note the following <<limitations,Titan-specific limitations>>: Key indices need to be created before the key is first used.
 
-
+[[gremlin]]
 Gremlin Query Language
 ----------------------
 
@@ -497,6 +497,7 @@ Rexster has a rich https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[API]
 * Titan automatically assigns identifiers. Hence, the POST of an edge cannot be done with an identifier. In other words, POST to this: `http://localhost/graphs/titan/edges` and _not_ to this `http://localhost/graphs/titan/edges/1234`.
 * Titan uses key indices and does not support manual indices. Hence, all operations on the `indices` resource are not supported. Use key indexes instead.
 
+[[tx]]
 Transactions
 ------------
 
@@ -736,6 +737,7 @@ Titan provides a batch loading mode that can be enabled through the _TODO: xref 
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
 
+[[common-problems]]
 Common Problems
 ---------------
 

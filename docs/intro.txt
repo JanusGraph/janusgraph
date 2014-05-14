@@ -5,6 +5,7 @@ This section gives an overview of Titan's architecture and benefits,
 followed by a quick tour of Titan features using a small example data
 set.
 
+[[benefits]]
 The Benefits of Titan
 ---------------------
 
@@ -75,8 +76,8 @@ image:titan-captheorem.png[]
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
 [[getting-started]]
-Getting Started with the Graph of the Gods sample data
-------------------------------------------------------
+Getting Started
+---------------
 
 [quote]
 _______
@@ -330,6 +331,7 @@ gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
 ==>[jupiter, loves fresh breezes, sky]
 ==>[neptune, loves waves, sea]
 
+[[related-links]]
 Related Slides, Videos, and Articles
 ------------------------------------
 
