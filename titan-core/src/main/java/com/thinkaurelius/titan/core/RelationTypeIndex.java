@@ -1,18 +1,17 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanTypeIndex extends TitanSchemaElement {
+public interface RelationTypeIndex extends TitanSchemaElement {
 
-    public TitanType getType();
+    public RelationType getType();
 
     public Order getSortOrder();
 
-    public TitanType[] getSortKey();
+    public RelationType[] getSortKey();
 
     public Direction getDirection();
 

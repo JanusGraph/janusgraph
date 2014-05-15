@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.tinkerpop.blueprints.Direction;
@@ -49,7 +49,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
         if (reltypecompare != 0) return reltypecompare;
 
         //3) TitanType
-        InternalType t1 = (InternalType) r1.getType(), t2 = (InternalType) r2.getType();
+        InternalRelationType t1 = (InternalRelationType) r1.getType(), t2 = (InternalRelationType) r2.getType();
         int typecompare = t1.compareTo(t2);
         if (typecompare != 0) return typecompare;
         assert t1.equals(t2);
@@ -85,7 +85,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
             Preconditions.checkArgument(o1 != null && o2 != null);
             if (!o1.equals(o2)) {
                 int objectcompare = 0;
-                if (Comparable.class.isAssignableFrom(((TitanKey) t1).getDataType())) {
+                if (Comparable.class.isAssignableFrom(((PropertyKey) t1).getDataType())) {
                     objectcompare = ((Comparable) o1).compareTo(o2);
                 } else {
                     objectcompare = System.identityHashCode(o1) - System.identityHashCode(o2);
@@ -121,17 +121,17 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
-        return compareOnKey(r1,r2,vertex.tx().getExistingType(typeid),order);
+        return compareOnKey(r1,r2,vertex.tx().getExistingRelationType(typeid),order);
     }
 
-    private int compareOnKey(TitanRelation r1, TitanRelation r2, TitanType type, Order order) {
+    private int compareOnKey(TitanRelation r1, TitanRelation r2, RelationType type, Order order) {
         Object v1, v2;
         if (type.isPropertyKey()) {
-            TitanKey key = (TitanKey) type;
+            PropertyKey key = (PropertyKey) type;
             v1 = r1.getProperty(key);
             v2 = r2.getProperty(key);
         } else {
-            TitanLabel label = (TitanLabel) type;
+            EdgeLabel label = (EdgeLabel) type;
             v1 = r1.getProperty(label);
             v2 = r2.getProperty(label);
         }

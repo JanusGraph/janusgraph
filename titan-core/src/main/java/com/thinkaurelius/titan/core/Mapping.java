@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link com.thinkaurelius.titan.core.KeyMaker#indexed(String, Class, com.thinkaurelius.titan.core.Parameter[])}.
+ * {@link PropertyKeyMaker#indexed(String, Class, com.thinkaurelius.titan.core.Parameter[])}.
  *
  * <p/>
  *

@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -9,18 +11,19 @@ import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 
 public enum TitanSchemaCategory {
 
-    LABEL, KEY, INDEX, MODIFIER;
+    EDGELABEL, PROPERTYKEY, VERTEXLABEL, GRAPHINDEX, MODIFIER;
 
 
     public boolean isRelationType() {
-        return this==LABEL || this==KEY;
+        return this== EDGELABEL || this== PROPERTYKEY;
     }
 
     public boolean hasName() {
         switch(this) {
-            case LABEL:
-            case KEY:
-            case INDEX:
+            case EDGELABEL:
+            case PROPERTYKEY:
+            case GRAPHINDEX:
+            case VERTEXLABEL:
                 return true;
             case MODIFIER:
                 return false;
@@ -28,20 +31,52 @@ public enum TitanSchemaCategory {
         }
     }
 
+    public String getSchemaName(String name) {
+        Preconditions.checkArgument(hasName() && StringUtils.isNotBlank(name));
+        String prefix;
+        switch(this) {
+            case EDGELABEL:
+            case PROPERTYKEY:
+                prefix = "rt";
+                break;
+            case GRAPHINDEX:
+                prefix = "gi";
+                break;
+            case VERTEXLABEL:
+                prefix = "vl";
+                break;
+            default: throw new AssertionError();
+        }
+        return Token.getSeparatedName(prefix,name);
+    }
+
+    public static String getRelationTypeName(String name) {
+        return EDGELABEL.getSchemaName(name);
+    }
+
+    public static String getName(String schemaName) {
+        String[] comps = Token.splitSeparatedName(schemaName);
+        Preconditions.checkArgument(comps.length==2);
+        return comps[1];
+    }
+
     public void verifyValidDefinition(TypeDefinitionMap definition) {
 
         switch(this) {
-            case LABEL:
-                definition.isValidDefinition(TypeDefinitionCategory.EDGE_LABEL_DEFINITION_CATEGORIES);
+            case EDGELABEL:
+                definition.isValidDefinition(TypeDefinitionCategory.EDGELABEL_DEFINITION_CATEGORIES);
                 break;
-            case KEY:
-                definition.isValidDefinition(TypeDefinitionCategory.PROPERTY_KEY_DEFINITION_CATEGORIES);
+            case PROPERTYKEY:
+                definition.isValidDefinition(TypeDefinitionCategory.PROPERTYKEY_DEFINITION_CATEGORIES);
                 break;
-            case INDEX:
+            case GRAPHINDEX:
                 definition.isValidDefinition(TypeDefinitionCategory.INDEX_DEFINITION_CATEGORIES);
                 break;
             case MODIFIER:
                 definition.isValidDefinition(TypeDefinitionCategory.CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES);
+                break;
+            case VERTEXLABEL:
+                definition.isValidDefinition(TypeDefinitionCategory.VERTEXLABEL_DEFINITION_CATEGORIES);
                 break;
             default: throw new AssertionError();
         }

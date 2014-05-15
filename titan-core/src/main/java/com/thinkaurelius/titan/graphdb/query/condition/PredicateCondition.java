@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.tinkerpop.blueprints.Direction;
@@ -23,7 +23,7 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
 
     public PredicateCondition(K key, TitanPredicate predicate, Object value) {
         Preconditions.checkNotNull(key);
-        Preconditions.checkArgument(key instanceof String || key instanceof TitanType);
+        Preconditions.checkArgument(key instanceof String || key instanceof RelationType);
         Preconditions.checkNotNull(predicate);
         this.key = key;
         this.predicate = predicate;
@@ -37,19 +37,19 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
 
     @Override
     public boolean evaluate(E element) {
-        TitanType type;
+        RelationType type;
         if (key instanceof String) {
-            type = ((InternalElement) element).tx().getType((String) key);
+            type = ((InternalElement) element).tx().getRelationType((String) key);
             if (type == null)
                 return satisfiesCondition(null);
         } else {
-            type = (TitanType) key;
+            type = (RelationType) key;
         }
 
         Preconditions.checkNotNull(type);
 
         if (type.isPropertyKey()) {
-            Iterator<Object> iter = ElementHelper.getValues(element,(TitanKey)type).iterator();
+            Iterator<Object> iter = ElementHelper.getValues(element,(PropertyKey)type).iterator();
             if (iter.hasNext()) {
                 while (iter.hasNext()) {
                     if (satisfiesCondition(iter.next()))
@@ -59,8 +59,8 @@ public class PredicateCondition<K, E extends TitanElement> extends Literal<E> {
             }
             return satisfiesCondition(null);
         } else {
-            assert ((InternalType)type).getMultiplicity().isUnique(Direction.OUT);
-            return satisfiesCondition(((TitanRelation) element).getProperty((TitanLabel) type));
+            assert ((InternalRelationType)type).getMultiplicity().isUnique(Direction.OUT);
+            return satisfiesCondition(((TitanRelation) element).getProperty((EdgeLabel) type));
         }
     }
 

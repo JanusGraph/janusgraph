@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction.indexcache;
 
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 
 /**
@@ -12,6 +12,6 @@ public interface IndexCache {
 
     public void remove(TitanProperty property);
 
-    public Iterable<TitanProperty> get(Object value, TitanKey key);
+    public Iterable<TitanProperty> get(Object value, PropertyKey key);
 
 }

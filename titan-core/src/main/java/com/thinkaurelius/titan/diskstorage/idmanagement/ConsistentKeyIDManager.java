@@ -172,8 +172,6 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     }
 
     private StaticBuffer getPartitionKey(int partition, int idNamespace, int uniqueId) {
-        Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
-        Preconditions.checkArgument(partitionBitWdith<=16 && partitionBitWdith>=0);
         assert partition>=0 && partition<(1<<partitionBitWdith);
         assert idNamespace>=0;
         assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);

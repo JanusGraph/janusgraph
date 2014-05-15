@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -17,7 +17,7 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     private final InternalVertex vertex;
     private final Object value;
 
-    public AbstractProperty(long id, TitanKey type, InternalVertex vertex, Object value) {
+    public AbstractProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
         super(id, type);
         Preconditions.checkNotNull(vertex);
         Preconditions.checkNotNull(value);
@@ -49,8 +49,8 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     }
 
     @Override
-    public TitanKey getPropertyKey() {
-        return (TitanKey)type;
+    public PropertyKey getPropertyKey() {
+        return (PropertyKey)type;
     }
 
     @Override

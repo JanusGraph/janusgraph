@@ -10,7 +10,6 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
@@ -21,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
+public class ImplicitKey extends EmptyRelationType implements SystemRelationType, PropertyKey {
 
     public static final ImplicitKey ID = new ImplicitKey(0,"id",Long.class);
 
@@ -33,11 +32,11 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
 
     //######### IMPLICIT KEYS WITH ID ############
 
-    public static final ImplicitKey TIMESTAMP = new ImplicitKey(8,"_timestamp",Timestamp.class);
+    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5,"_timestamp",Timestamp.class);
 
-    public static final ImplicitKey VISIBILITY = new ImplicitKey(9,"_visibility",String.class);
+    public static final ImplicitKey VISIBILITY = new ImplicitKey(6,"_visibility",String.class);
 
-    public static final ImplicitKey TTL = new ImplicitKey(10,"_ttl",Duration.class);
+    public static final ImplicitKey TTL = new ImplicitKey(7,"_ttl",Duration.class);
 
 
     public static final Map<EntryMetaData,ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
@@ -54,7 +53,7 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
         this.datatype=datatype;
         this.name=name;
         if (id>0) {
-            this.id=BaseType.getSystemTypeId(id, TitanSchemaCategory.KEY);
+            this.id= BaseRelationType.getSystemTypeId(id, TitanSchemaCategory.PROPERTYKEY);
         } else {
             this.id=-1;
         }
@@ -67,6 +66,8 @@ public class ImplicitKey extends EmptyType implements SystemType, TitanKey {
         } else if (this==LABEL) {
             if (e instanceof TitanEdge) {
                 return (O)((TitanEdge) e).getLabel();
+            } else if (e instanceof TitanVertex) {
+                return (O)((TitanVertex)e).getLabel();
             } else {
                 return null;
             }

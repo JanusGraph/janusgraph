@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -66,9 +66,9 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
 
 
     public void loadData(final int numVertices, final int numThreads) throws Exception {
-        graph.makeKey("w").dataType(Integer.class).make();
-        TitanKey time = graph.makeKey("t").dataType(Long.class).make();
-        graph.makeLabel("l").sortKey(time).make();
+        graph.makePropertyKey("w").dataType(Integer.class).make();
+        PropertyKey time = graph.makePropertyKey("t").dataType(Long.class).make();
+        graph.makeEdgeLabel("l").sortKey(time).make();
         graph.commit();
 
         final int maxQueue = 1000;

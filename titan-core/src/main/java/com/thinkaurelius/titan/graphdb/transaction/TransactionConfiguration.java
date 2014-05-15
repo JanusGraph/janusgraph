@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**
@@ -66,7 +66,7 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
     /**
      * @return The default edge type maker used to automatically create not yet existing edge types.
      */
-    public DefaultTypeMaker getAutoEdgeTypeMaker();
+    public DefaultSchemaMaker getAutoSchemaMaker();
 
     /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.

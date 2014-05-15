@@ -5,7 +5,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
@@ -34,7 +34,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean assignIDsImmediately = false;
 
-    private DefaultTypeMaker defaultTypeMaker;
+    private DefaultSchemaMaker defaultSchemaMaker;
 
     private boolean verifyExternalVertexExistence = true;
 
@@ -78,7 +78,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.times = graphConfig.getTimestampProvider();
-        this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
+        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
@@ -166,7 +166,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, groupName,
-                defaultTypeMaker, new BasicConfiguration(ROOT_NS,
+                defaultSchemaMaker, new BasicConfiguration(ROOT_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
         return graph.newTransaction(immutable);
@@ -208,8 +208,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final DefaultTypeMaker getAutoEdgeTypeMaker() {
-        return defaultTypeMaker;
+    public final DefaultSchemaMaker getAutoSchemaMaker() {
+        return defaultSchemaMaker;
     }
 
     @Override
@@ -303,7 +303,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int vertexCacheSize;
         private final int dirtyVertexSize;
         private final String logIdentifier;
-        private final DefaultTypeMaker defaultTypeMaker;
+        private final DefaultSchemaMaker defaultSchemaMaker;
 
         private final TransactionHandleConfig handleConfig;
 
@@ -316,7 +316,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
-                String groupName, DefaultTypeMaker defaultTypeMaker,
+                String groupName, DefaultSchemaMaker defaultSchemaMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -332,7 +332,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.vertexCacheSize = vertexCacheSize;
             this.dirtyVertexSize = dirtyVertexSize;
             this.logIdentifier = logIdentifier;
-            this.defaultTypeMaker = defaultTypeMaker;
+            this.defaultSchemaMaker = defaultSchemaMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
                     .startTime(startTime)
                     .commitTime(commitTime)
@@ -371,8 +371,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public DefaultTypeMaker getAutoEdgeTypeMaker() {
-            return defaultTypeMaker;
+        public DefaultSchemaMaker getAutoSchemaMaker() {
+            return defaultSchemaMaker;
         }
 
         @Override

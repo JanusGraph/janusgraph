@@ -14,66 +14,66 @@ import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.UNIDI
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardLabelMaker extends StandardTypeMaker implements LabelMaker {
+public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements EdgeLabelMaker {
 
     private Direction unidirectionality;
 
-    public StandardLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
-                              final AttributeHandling attributeHandler) {
+    public StandardEdgeLabelMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+                                  final AttributeHandling attributeHandler) {
         super(tx, indexSerializer, attributeHandler);
         unidirectionality = Direction.BOTH;
     }
 
     @Override
-    public StandardLabelMaker directed() {
+    public StandardEdgeLabelMaker directed() {
         unidirectionality = Direction.BOTH;
         return this;
     }
 
     @Override
-    public StandardLabelMaker unidirected() {
+    public StandardEdgeLabelMaker unidirected() {
         return unidirected(Direction.OUT);
     }
 
-    public StandardLabelMaker unidirected(Direction dir) {
+    public StandardEdgeLabelMaker unidirected(Direction dir) {
         Preconditions.checkNotNull(dir);
         unidirectionality = dir;
         return this;
     }
 
     @Override
-    public StandardLabelMaker multiplicity(Multiplicity multiplicity) {
+    public StandardEdgeLabelMaker multiplicity(Multiplicity multiplicity) {
         super.multiplicity(multiplicity);
         return this;
     }
 
     @Override
-    public StandardLabelMaker signature(TitanType... types) {
+    public StandardEdgeLabelMaker signature(RelationType... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public StandardLabelMaker sortKey(TitanType... types) {
+    public StandardEdgeLabelMaker sortKey(RelationType... types) {
         super.sortKey(types);
         return this;
     }
 
     @Override
-    public StandardLabelMaker sortOrder(Order order) {
+    public StandardEdgeLabelMaker sortOrder(Order order) {
         super.sortOrder(order);
         return this;
     }
 
     @Override
-    public StandardLabelMaker hidden() {
+    public StandardEdgeLabelMaker hidden() {
         super.hidden();
         return this;
     }
 
 
     @Override
-    public TitanLabel make() {
+    public EdgeLabel make() {
         TypeDefinitionMap definition = makeDefinition();
         Preconditions.checkArgument(unidirectionality==Direction.BOTH || !getMultiplicity().isUnique(unidirectionality.opposite()),
                 "Unidirectional labels cannot have restricted multiplicity at the other end");

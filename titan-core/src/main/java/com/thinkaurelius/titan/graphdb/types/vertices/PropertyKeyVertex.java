@@ -1,14 +1,14 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.tinkerpop.blueprints.Direction;
 
-public class TitanKeyVertex extends TitanTypeVertex implements TitanKey {
+public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey {
 
-    public TitanKeyVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public PropertyKeyVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

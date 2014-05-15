@@ -36,7 +36,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param type types to query for
      * @return this query
      */
-    public Q types(TitanType... type);
+    public Q types(RelationType... type);
 
     /**
      * Query for only those edges matching one of the given labels.
@@ -73,19 +73,19 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param value Value for the property of the given key to match
      * @return this query
      */
-    public Q has(TitanKey key, Object value);
+    public Q has(PropertyKey key, Object value);
 
     /**
      * Query only for edges that have a unidirected edge matching pointing to the given vertex
      * <p/>
-     * It is expected that this label is unidirected ({@link TitanLabel#isUnidirected()}
+     * It is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
      * and the query is restricted to edges having an incident unidirectional edge pointing to the given vertex.
      *
      * @param label  Label
      * @param vertex Vertex to point unidirectional edge to
      * @return this query
      */
-    public Q has(TitanLabel label, TitanVertex vertex);
+    public Q has(EdgeLabel label, TitanVertex vertex);
 
     public Q has(String key);
 
@@ -96,7 +96,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * <p/>
      * If type is a property key, then the query is restricted to edges having an incident property matching
      * this key-value pair.
-     * If type is an edge label, then it is expected that this label is unidirected ({@link TitanLabel#isUnidirected()}
+     * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
      * and the query is restricted to edges having an incident unidirectional edge pointing to the value which is
      * expected to be a {@link com.thinkaurelius.titan.core.TitanVertex}.
      *
@@ -109,7 +109,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
     public Q hasNot(String key, Object value);
 
 
-    public Q has(TitanKey key, Predicate predicate, Object value);
+    public Q has(PropertyKey key, Predicate predicate, Object value);
 
     public Q has(String key, Predicate predicate, Object value);
 
@@ -131,7 +131,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param end   value defining the end of the interval (exclusive)
      * @return this query
      */
-    public <T extends Comparable<?>> Q interval(TitanKey key, T start, T end);
+    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
 
     /**
      * Sets the retrieval limit for this query.
@@ -169,7 +169,7 @@ public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
      * @param order the ordering direction
      * @return
      */
-    public Q orderBy(TitanKey key, Order order);
+    public Q orderBy(PropertyKey key, Order order);
 
 
 }

@@ -20,9 +20,13 @@ import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.AbstractVertex;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -66,6 +70,18 @@ public class FulgoraVertex<S> extends CacheVertex {
     @Override
     public VertexCentricQueryBuilder query() {
         return new QueryBuilder();
+    }
+
+    /**
+     * Special handling to provide access to the label even though its a different vertex by accessing it directly
+     * in the enclosing transaction which will cache all vertex labels
+     * @return
+     */
+    @Override
+    public VertexLabel getVertexLabel() {
+        FulgoraNeighborVertex label = (FulgoraNeighborVertex)Iterables.getOnlyElement(query().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        else return (VertexLabelVertex)tx().getExistingVertex(label.getID());
     }
 
     /*

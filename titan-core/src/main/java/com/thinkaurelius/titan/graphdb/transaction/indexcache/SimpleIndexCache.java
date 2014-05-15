@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.transaction.indexcache;
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 
 import javax.annotation.Nullable;
@@ -31,7 +31,7 @@ public class SimpleIndexCache implements IndexCache {
     }
 
     @Override
-    public Iterable<TitanProperty> get(final Object value, final TitanKey key) {
+    public Iterable<TitanProperty> get(final Object value, final PropertyKey key) {
         return Iterables.filter(map.get(value),new Predicate<TitanProperty>() {
             @Override
             public boolean apply(@Nullable TitanProperty titanProperty) {

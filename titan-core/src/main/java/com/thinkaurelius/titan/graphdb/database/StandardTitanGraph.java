@@ -33,7 +33,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -43,8 +43,8 @@ import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.graphdb.types.system.BaseType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -247,13 +247,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private final SchemaCache.StoreRetrieval typeCacheRetrieval = new SchemaCache.StoreRetrieval() {
 
         @Override
-        public Long retrieveTypeByName(String typeName, StandardTitanTx tx) {
-            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.TypeName, typeName),null);
+        public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
+            TitanVertex v = Iterables.getOnlyElement(tx.getVertices(BaseKey.SchemaName, typeName),null);
             return v!=null?v.getID():null;
         }
 
         @Override
-        public EntryList retrieveTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
+        public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
             SliceQuery query = queryCache.getQuery(type,dir);
             return edgeQuery(schemaId, query, tx.getTxHandle());
         }
@@ -322,7 +322,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     }
 
     public static boolean acquireLock(InternalRelation relation, int pos, boolean acquireLocksConfig) {
-        InternalType type = (InternalType)relation.getType();
+        InternalRelationType type = (InternalRelationType)relation.getType();
         return acquireLocksConfig && type.getConsistencyModifier()==ConsistencyModifier.LOCK &&
                 ( type.getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))
                         || pos==0 && type.getMultiplicity()==Multiplicity.SIMPLE);
@@ -398,9 +398,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             List<Entry> additions = new ArrayList<Entry>(edges.size());
             List<Entry> deletions = new ArrayList<Entry>(Math.max(10, edges.size() / 10));
             for (InternalRelation edge : edges) {
-                InternalType baseType = (InternalType) edge.getType();
+                InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
-                for (InternalType type : baseType.getRelationIndexes()) {
+                for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
@@ -447,7 +447,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
     private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
         @Override
         public boolean apply(@Nullable InternalRelation internalRelation) {
-            return internalRelation.getType() instanceof BaseType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
+            return internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof TitanSchemaVertex;
         }
     };
 

@@ -46,7 +46,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     public TypeInspector getTypeInspector() {
         //Pre-load schema
         for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
-            for (TitanVertex k : tx.getVertices(BaseKey.TypeCategory, sc)) {
+            for (TitanVertex k : tx.getVertices(BaseKey.SchemaCategory, sc)) {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
                 String name = s.getName();
@@ -75,11 +75,11 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.TypeCategory.getID() ||
-                        typeid == BaseKey.TypeDefinitionProperty.getID() ||
-                        typeid == BaseKey.TypeDefinitionDesc.getID() ||
-                        typeid == BaseKey.TypeName.getID() ||
-                        typeid == BaseLabel.TypeDefinitionEdge.getID();
+                return typeid == BaseKey.SchemaCategory.getID() ||
+                        typeid == BaseKey.SchemaDefinitionProperty.getID() ||
+                        typeid == BaseKey.SchemaDefinitionDesc.getID() ||
+                        typeid == BaseKey.SchemaName.getID() ||
+                        typeid == BaseLabel.SchemaDefinitionEdge.getID();
             }
         };
     }

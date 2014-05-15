@@ -2,36 +2,37 @@ package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.core.TitanTypeIndex;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.internal.Token;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.RelationTypeIndex;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
 import com.tinkerpop.blueprints.Direction;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class TitanTypeIndexWrapper implements TitanTypeIndex {
+public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
-    private final InternalType type;
+    public static final char RELATION_INDEX_SEPARATOR = ':';
 
-    public TitanTypeIndexWrapper(InternalType type) {
+    private final InternalRelationType type;
+
+    public RelationTypeIndexWrapper(InternalRelationType type) {
         Preconditions.checkArgument(type!=null && type.getBaseType()!=null);
         this.type = type;
     }
 
     @Override
-    public TitanType getType() {
+    public RelationType getType() {
         return type.getBaseType();
     }
 
     @Override
     public String getName() {
-        String[] comps = Token.splitSeparatedName(type.getName());
-        assert comps.length==3;
-        return comps[2];
+        String typeName = type.getName();
+        int index = typeName.lastIndexOf(RELATION_INDEX_SEPARATOR);
+        Preconditions.checkArgument(index>0 && index<typeName.length()-1,"Invalid name encountered: %s",typeName);
+        return typeName.substring(index+1,typeName.length());
     }
 
     @Override
@@ -41,12 +42,12 @@ public class TitanTypeIndexWrapper implements TitanTypeIndex {
     }
 
     @Override
-    public TitanType[] getSortKey() {
+    public RelationType[] getSortKey() {
         StandardTitanTx tx = type.tx();
         long[] ids = type.getSortKey();
-        TitanType[] keys = new TitanType[ids.length];
+        RelationType[] keys = new RelationType[ids.length];
         for (int i = 0; i < keys.length; i++) {
-            keys[i]=tx.getExistingType(ids[i]);
+            keys[i]=tx.getExistingRelationType(ids[i]);
         }
         return keys;
     }

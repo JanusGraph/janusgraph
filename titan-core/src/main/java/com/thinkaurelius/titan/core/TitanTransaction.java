@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.types.StandardVertexLabelMaker;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
@@ -36,18 +39,34 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanVertex addVertex();
 
     /**
-     * Creates a new vertex in the graph with the given vertex id.
+     * Creates a new vertex in the graph with the given vertex label name.
+     *
+     * @return New vertex in the graph created in the context of this transaction.
+     */
+    public TitanVertex addVertex(String vertexLabel);
+
+    /**
+     * Creates a new vertex in the graph with the given vertex label.
+     *
+     * @return New vertex in the graph created in the context of this transaction.
+     */
+    public TitanVertex addVertex(VertexLabel vertexLabel);
+
+
+    /**
+     * Creates a new vertex in the graph with the given vertex id and the given vertex label.
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
      * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
      * @param id vertex id of the vertex to be created
+     * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
-    public TitanVertex addVertex(Long id);
+    public TitanVertex addVertex(Long id, VertexLabel vertexLabel);
 
     /**
      * Creates a new edge connecting the specified vertices.
@@ -60,7 +79,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param inVertex  incoming vertex of the edge
      * @return new edge
      */
-    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label);
+    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, EdgeLabel label);
 
     /**
      * Creates a new edge connecting the specified vertices.
@@ -89,7 +108,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return new property
      * @throws IllegalArgumentException if the attribute does not match the data type of the given property key.
      */
-    public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute);
+    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object attribute);
 
     /**
      * Creates a new property for the given vertex and key with the specified attribute.
@@ -163,9 +182,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param key       key
      * @param attribute attribute value
      * @return All vertices which have a property of the given key with the specified value.
-     * @see KeyMaker#indexed(Class)
+     * @see PropertyKeyMaker#indexed(Class)
      */
-    public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute);
+    public Iterable<TitanVertex> getVertices(PropertyKey key, Object attribute);
 
     /**
      * Retrieves all edges which have a property of the given key with the specified value.
@@ -176,9 +195,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param key       key
      * @param attribute attribute value
      * @return All edges which have a property of the given key with the specified value.
-     * @see KeyMaker#indexed(Class)
+     * @see PropertyKeyMaker#indexed(Class)
      */
-    public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute);
+    public Iterable<TitanEdge> getEdges(PropertyKey key, Object attribute);
 
     /**
      * Checks whether a type with the specified name exists.
@@ -186,7 +205,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param name name of the type
      * @return true, if a type with the given name exists, else false
      */
-    public boolean containsType(String name);
+    public boolean containsRelationType(String name);
 
     /**
      * Returns the type with the given name.
@@ -194,9 +213,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      *
      * @param name name of the type to return
      * @return The type with the given name, or null if such does not exist
-     * @see TitanType
+     * @see RelationType
      */
-    public TitanType getType(String name);
+    public RelationType getRelationType(String name);
 
     /**
      * Returns the property key with the given name.
@@ -205,9 +224,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see TitanKey
+     * @see PropertyKey
      */
-    public TitanKey getPropertyKey(String name);
+    public PropertyKey getPropertyKey(String name);
 
     /**
      * Returns the edge label with the given name.
@@ -216,35 +235,42 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return the edge label with the given name
      * @throws IllegalArgumentException if an edge label with the given name does not exist or if the
      *                                  type with the given name is not an edge label
-     * @see TitanLabel
+     * @see EdgeLabel
      */
-    public TitanLabel getEdgeLabel(String name);
+    public EdgeLabel getEdgeLabel(String name);
 
     /**
-     * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
+     * Returns a {@link PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
      * <p/>
      * The key constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link KeyMaker} linked to this transaction.
-     * @see KeyMaker
-     * @see TitanKey
+     * @return a {@link PropertyKeyMaker} linked to this transaction.
+     * @see PropertyKeyMaker
+     * @see PropertyKey
      */
-    public KeyMaker makeKey(String name);
+    public PropertyKeyMaker makePropertyKey(String name);
 
     /**
-     * Returns a {@link LabelMaker} instance to define a new {@link TitanLabel} with the given name.
+     * Returns a {@link EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
      * <p/>
      * The label constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link LabelMaker} linked to this transaction.
-     * @see LabelMaker
-     * @see TitanLabel
+     * @return a {@link EdgeLabelMaker} linked to this transaction.
+     * @see EdgeLabelMaker
+     * @see EdgeLabel
      */
-    public LabelMaker makeLabel(String name);
+    public EdgeLabelMaker makeEdgeLabel(String name);
+
+
+    public boolean containsVertexLabel(String name);
+
+    public VertexLabel getVertexLabel(String name);
+
+    public VertexLabelMaker makeVertexLabel(String name);
 
 
     /**

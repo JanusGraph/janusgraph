@@ -50,28 +50,52 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
     public void shutdown() throws TitanException;
 
     /**
-     * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
+     * Returns a {@link PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
      * <p/>
      *
-     * @return a {@link KeyMaker} instance
-     * @see KeyMaker
-     * @see TitanKey
+     * @return a {@link PropertyKeyMaker} instance
+     * @see PropertyKeyMaker
+     * @see PropertyKey
      */
-    public KeyMaker makeKey(String name);
+    public PropertyKeyMaker makePropertyKey(String name);
 
     /**
-     * Returns a {@link LabelMaker} instance to define a new {@link TitanLabel} with the given name.
+     * Returns a {@link EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
      * <p/>
      *
-     * @return a {@link LabelMaker} instance
-     * @see LabelMaker
-     * @see TitanLabel
+     * @return a {@link EdgeLabelMaker} instance
+     * @see EdgeLabelMaker
+     * @see EdgeLabel
      */
-    public LabelMaker makeLabel(String name);
+    public EdgeLabelMaker makeEdgeLabel(String name);
+
+
+    public boolean containsVertexLabel(String name);
+
+    public VertexLabel getVertexLabel(String name);
+
+    public VertexLabelMaker makeVertexLabel(String name);
+
+
+    /**
+     * Creates a new vertex in the graph with the given vertex label.
+     *
+     * @return New vertex in the graph created in the context of this transaction.
+     */
+    public TitanVertex addVertex(VertexLabel vertexLabel);
+
+
+    /**
+     * Returns the {@link RelationType} uniquely identified by the given name, or NULL if such does not exist.
+     *
+     * @param name
+     * @return
+     */
+    public RelationType getRelationType(String name);
 
     /**
      * Returns a {@link TitanGraphQuery} to query for vertices or edges in the graph by their properties.
@@ -111,15 +135,6 @@ public interface TitanGraph extends Graph, KeyIndexableGraph, ThreadedTransactio
      * @return
      */
     public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
-
-
-    /**
-     * Returns the {@link TitanType} uniquely identified by the given name, or NULL if such does not exist.
-     *
-     * @param name
-     * @return
-     */
-    public TitanType getType(String name);
 
 
     /**

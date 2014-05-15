@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.graphdb.types.vertices;
 
-import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.tinkerpop.blueprints.Direction;
 
-public class TitanLabelVertex extends TitanTypeVertex implements TitanLabel {
+public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
 
-    public TitanLabelVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public EdgeLabelVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 

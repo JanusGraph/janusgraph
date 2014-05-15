@@ -4,12 +4,14 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -86,6 +88,18 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
+    public String getLabel() {
+        return getVertexLabel().getName();
+    }
+
+    @Override
+    public VertexLabel getVertexLabel() {
+        Vertex label = Iterables.getOnlyElement(query().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        else return (VertexLabelVertex)label;
+    }
+
+    @Override
     public VertexCentricQueryBuilder query() {
         return tx().query(it());
     }
@@ -100,8 +114,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public <O> O getProperty(TitanKey key) {
-        if (!((InternalType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
+    public <O> O getProperty(PropertyKey key) {
+        if (!((InternalRelationType)key).isHiddenType() && tx().getConfiguration().hasPropertyPrefetching()) {
             getProperties().iterator().hasNext();
         }
         Iterator<TitanProperty> iter = query().type(key).properties().iterator();
@@ -119,7 +133,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O getProperty(String key) {
-        if (!tx().containsType(key)) return null;
+        if (!tx().containsRelationType(key)) return null;
         else return getProperty(tx().getPropertyKey(key));
     }
 
@@ -129,7 +143,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(TitanKey key) {
+    public Iterable<TitanProperty> getProperties(PropertyKey key) {
         return query().type(key).properties();
     }
 
@@ -146,7 +160,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
 
     @Override
-    public Iterable<TitanEdge> getTitanEdges(Direction dir, TitanLabel... labels) {
+    public Iterable<TitanEdge> getTitanEdges(Direction dir, EdgeLabel... labels) {
         return query().direction(dir).types(labels).titanEdges();
     }
 
@@ -195,7 +209,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 	 */
 
     @Override
-    public TitanProperty addProperty(TitanKey key, Object attribute) {
+    public TitanProperty addProperty(PropertyKey key, Object attribute) {
         return tx().addProperty(it(), key, attribute);
     }
 
@@ -211,13 +225,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public void setProperty(final TitanKey key, Object value) {
+    public void setProperty(final PropertyKey key, Object value) {
         tx().setProperty(it(),key,value);
     }
 
 
     @Override
-    public TitanEdge addEdge(TitanLabel label, TitanVertex vertex) {
+    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
         return tx().addEdge(it(), vertex, label);
     }
 
@@ -232,7 +246,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
-    public <O> O removeProperty(TitanType key) {
+    public <O> O removeProperty(RelationType key) {
         assert key.isPropertyKey();
 
         Object result = null;
@@ -245,7 +259,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O removeProperty(String key) {
-        if (!tx().containsType(key)) return null;
+        if (!tx().containsRelationType(key)) return null;
         else return removeProperty(tx().getPropertyKey(key));
     }
 }

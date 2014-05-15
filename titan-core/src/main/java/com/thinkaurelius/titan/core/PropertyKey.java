@@ -3,9 +3,9 @@ package com.thinkaurelius.titan.core;
 
 
 /**
- * TitanKey is an extension of {@link TitanType} for properties.
+ * TitanKey is an extension of {@link RelationType} for properties.
  * <p/>
- * In addition to {@link TitanType}, TitanKey defines:
+ * In addition to {@link RelationType}, TitanKey defines:
  * <ul>
  * <li><strong>Data Type:</strong> The accepted types of attribute values.</li>
  * <li><strong>Index:</strong> Whether attribute values are indexed. If a property key is configured to be indexed,
@@ -15,9 +15,9 @@ package com.thinkaurelius.titan.core;
  * </ul>
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com)
- * @see TitanType
+ * @see RelationType
  */
-public interface TitanKey extends TitanType {
+public interface PropertyKey extends RelationType {
 
     /**
      * Returns the data type for this property key.

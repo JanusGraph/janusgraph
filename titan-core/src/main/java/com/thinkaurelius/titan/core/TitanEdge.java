@@ -10,7 +10,7 @@ import com.tinkerpop.blueprints.Edge;
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see Edge
  * @see TitanRelation
- * @see TitanLabel
+ * @see EdgeLabel
  */
 public interface TitanEdge extends TitanRelation, Edge {
 
@@ -19,7 +19,7 @@ public interface TitanEdge extends TitanRelation, Edge {
      *
      * @return edge label of this edge
      */
-    public TitanLabel getTitanLabel();
+    public EdgeLabel getEdgeLabel();
 
     /**
      * Returns the vertex for the specified direction.

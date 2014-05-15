@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -33,8 +32,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     @Test
     public void degreeCount() throws Exception {
-        mgmt.makeKey("uid").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.makeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makePropertyKey("uid").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
         int numV = 400;
         int numE = 0;
@@ -122,9 +121,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     @Test
     public void pageRank() {
-        mgmt.makeKey("distance").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.makeLabel("knows").multiplicity(Multiplicity.MULTI).make();
-        mgmt.makeLabel("likes").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makePropertyKey("distance").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("likes").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
         final int branch = 5;
         final int diameter = 5;

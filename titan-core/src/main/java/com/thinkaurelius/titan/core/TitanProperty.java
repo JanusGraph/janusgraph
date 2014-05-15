@@ -7,7 +7,7 @@ package com.thinkaurelius.titan.core;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see TitanRelation
- * @see TitanKey
+ * @see PropertyKey
  */
 public interface TitanProperty extends TitanRelation {
 
@@ -15,9 +15,9 @@ public interface TitanProperty extends TitanRelation {
      * Returns the property key of this property
      *
      * @return property key of this property
-     * @see TitanKey
+     * @see PropertyKey
      */
-    public TitanKey getPropertyKey();
+    public PropertyKey getPropertyKey();
 
 
     /**

@@ -69,7 +69,7 @@ public class ManagementLogger implements MessageReader {
                 long numEvictions = VariableLong.readPositive(in);
                 for (int i = 0; i < numEvictions; i++) {
                     long typeId = VariableLong.readPositive(in);
-                    schemaCache.expireTypeRelations(typeId);
+                    schemaCache.expireSchemaRelations(typeId);
                 }
                 Thread ack = new Thread(new SendAckOnTxClose(evictionId,senderId,graph.getOpenTransactions()));
                 ack.setDaemon(true);

@@ -1,15 +1,13 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.CacheEdge;
 import com.thinkaurelius.titan.graphdb.relations.CacheProperty;
@@ -18,7 +16,6 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.tinkerpop.blueprints.Direction;
 
-import javax.annotation.Nullable;
 import java.util.Iterator;
 
 /**
@@ -75,21 +72,21 @@ public class RelationConstructor {
 
     private static InternalRelation readRelation(final InternalVertex vertex, final RelationCache relation,
                                          final Entry data, final TypeInspector types, final VertexFactory vertexFac) {
-        InternalType type = TypeUtil.getBaseType((InternalType) types.getExistingType(relation.typeId));
+        InternalRelationType type = TypeUtil.getBaseType((InternalRelationType) types.getExistingRelationType(relation.typeId));
 
         if (type.isPropertyKey()) {
             assert relation.direction == Direction.OUT;
-            return new CacheProperty(relation.relationId, (TitanKey) type, vertex, relation.getValue(), data);
+            return new CacheProperty(relation.relationId, (PropertyKey) type, vertex, relation.getValue(), data);
         }
 
         if (type.isEdgeLabel()) {
             InternalVertex otherVertex = vertexFac.getExistingVertex(relation.getOtherVertexId());
             switch (relation.direction) {
                 case IN:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, otherVertex, vertex, data);
+                    return new CacheEdge(relation.relationId, (EdgeLabel) type, otherVertex, vertex, data);
 
                 case OUT:
-                    return new CacheEdge(relation.relationId, (TitanLabel) type, vertex, otherVertex, data);
+                    return new CacheEdge(relation.relationId, (EdgeLabel) type, vertex, otherVertex, data);
 
                 default:
                     throw new AssertionError();

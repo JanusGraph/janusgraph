@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.tinkerpop.blueprints.Direction;
@@ -13,7 +13,7 @@ import com.tinkerpop.blueprints.Direction;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface InternalType extends TitanType, InternalVertex {
+public interface InternalRelationType extends RelationType, InternalVertex {
 
     public boolean isHiddenType();
 
@@ -30,9 +30,9 @@ public interface InternalType extends TitanType, InternalVertex {
 
     public boolean isUnidirected(Direction dir);
 
-    public InternalType getBaseType();
+    public InternalRelationType getBaseType();
 
-    public Iterable<InternalType> getRelationIndexes();
+    public Iterable<InternalRelationType> getRelationIndexes();
 
     public SchemaStatus getStatus();
 

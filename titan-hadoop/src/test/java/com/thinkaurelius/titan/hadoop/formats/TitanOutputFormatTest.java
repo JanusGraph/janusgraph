@@ -122,7 +122,7 @@ public class TitanOutputFormatTest extends BaseTest {
 
     public void testBulkVertexPropertyUpdates(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         TitanGraph g = TitanFactory.open(configuration);
-        g.makeKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
+        g.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
         g.commit();
 
         bulkLoadGraphOfTheGods(f1);
@@ -215,7 +215,7 @@ public class TitanOutputFormatTest extends BaseTest {
 
     public void testUnidirectionEdges(final BaseConfiguration configuration, final HadoopGraph f1, final HadoopGraph f2) throws Exception {
         TitanGraph g = TitanFactory.open(configuration);
-        g.makeLabel("father").unidirected().make();
+        g.makeEdgeLabel("father").unidirected().make();
         g.commit();
 
         bulkLoadGraphOfTheGods(f1);

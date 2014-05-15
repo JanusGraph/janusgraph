@@ -228,21 +228,21 @@ public class Schema {
 
         TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
-            TitanKey key = mgmt.makeKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.createInternalIndex("v-"+getVertexPropertyName(i),Vertex.class,key);
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            TitanKey key = mgmt.makeKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
             mgmt.createInternalIndex("e-"+getEdgePropertyName(i),Edge.class,key);
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
             String pkName = getSortKeyForLabel(labelName);
-            TitanKey pk = mgmt.getPropertyKey(pkName);
-            mgmt.makeLabel(getEdgeLabelName(i)).sortKey(pk).make();
+            PropertyKey pk = mgmt.getPropertyKey(pkName);
+            mgmt.makeEdgeLabel(getEdgeLabelName(i)).sortKey(pk).make();
         }
 
-        TitanKey uid = mgmt.makeKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
         mgmt.createInternalIndex("v-uid",Vertex.class,true,uid);
         mgmt.commit();
     }

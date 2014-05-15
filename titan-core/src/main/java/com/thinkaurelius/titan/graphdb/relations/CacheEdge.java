@@ -4,8 +4,8 @@ import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.ConsistencyModifier;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -23,7 +23,7 @@ import java.util.List;
 
 public class CacheEdge extends AbstractEdge {
 
-    public CacheEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, Entry data) {
+    public CacheEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end, Entry data) {
         super(id, label, start, end);
         assert data != null;
 
@@ -64,12 +64,12 @@ public class CacheEdge extends AbstractEdge {
 
     private void copyProperties(InternalRelation to) {
         for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            to.setPropertyDirect(tx().getExistingType(entry.key), entry.value);
+            to.setPropertyDirect(tx().getExistingRelationType(entry.key), entry.value);
         }
     }
 
     private synchronized InternalRelation update() {
-        StandardEdge copy = new StandardEdge(super.getID(), getTitanLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
+        StandardEdge copy = new StandardEdge(super.getID(), getEdgeLabel(), getVertex(0), getVertex(1), ElementLifeCycle.Loaded);
         copyProperties(copy);
         copy.remove();
 
@@ -90,29 +90,29 @@ public class CacheEdge extends AbstractEdge {
     }
 
     @Override
-    public <O> O getPropertyDirect(TitanType type) {
+    public <O> O getPropertyDirect(RelationType type) {
         return getPropertyMap().get(type.getID());
     }
 
     @Override
-    public Iterable<TitanType> getPropertyKeysDirect() {
+    public Iterable<RelationType> getPropertyKeysDirect() {
         RelationCache map = getPropertyMap();
-        List<TitanType> types = new ArrayList<TitanType>(map.numProperties());
+        List<RelationType> types = new ArrayList<RelationType>(map.numProperties());
 
         for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingType(entry.key));
+            types.add(tx().getExistingRelationType(entry.key));
         }
 
         return types;
     }
 
     @Override
-    public void setPropertyDirect(TitanType type, Object value) {
+    public void setPropertyDirect(RelationType type, Object value) {
         update().setPropertyDirect(type, value);
     }
 
     @Override
-    public <O> O removePropertyDirect(TitanType type) {
+    public <O> O removePropertyDirect(RelationType type) {
         return update().removePropertyDirect(type);
     }
 

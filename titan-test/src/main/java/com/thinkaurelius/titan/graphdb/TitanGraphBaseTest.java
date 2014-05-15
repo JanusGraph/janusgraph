@@ -219,23 +219,23 @@ public abstract class TitanGraphBaseTest {
     ========= Type Definition Helpers ============
      */
 
-    public TitanKey makeVertexIndexedKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
         mgmt.createInternalIndex(name,Vertex.class,key);
         return key;
     }
 
-    public TitanKey makeVertexIndexedUniqueKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
         mgmt.createInternalIndex(name,Vertex.class,true,key);
         return key;
     }
 
-    public void createExternalVertexIndex(TitanKey key, String backingIndex) {
+    public void createExternalVertexIndex(PropertyKey key, String backingIndex) {
         createExternalIndex(key,Vertex.class,backingIndex);
     }
 
-    public void createExternalEdgeIndex(TitanKey key, String backingIndex) {
+    public void createExternalEdgeIndex(PropertyKey key, String backingIndex) {
         createExternalIndex(key,Edge.class,backingIndex);
     }
 
@@ -248,21 +248,21 @@ public abstract class TitanGraphBaseTest {
         return index;
     }
 
-    private void createExternalIndex(TitanKey key, Class<? extends Element> clazz, String backingIndex) {
+    private void createExternalIndex(PropertyKey key, Class<? extends Element> clazz, String backingIndex) {
         mgmt.addIndexKey(getExternalIndex(clazz,backingIndex),key);
     }
 
-    public TitanKey makeKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
         return key;
     }
 
-    public TitanLabel makeLabel(String name) {
-        return mgmt.makeLabel(name).make();
+    public EdgeLabel makeLabel(String name) {
+        return mgmt.makeEdgeLabel(name).make();
     }
 
-    public TitanLabel makeKeyedEdgeLabel(String name, TitanKey sort, TitanKey signature) {
-        TitanLabel relType = tx.makeLabel(name).
+    public EdgeLabel makeKeyedEdgeLabel(String name, PropertyKey sort, PropertyKey signature) {
+        EdgeLabel relType = tx.makeEdgeLabel(name).
                 sortKey(sort).signature(signature).directed().make();
         return relType;
     }
@@ -291,7 +291,7 @@ public abstract class TitanGraphBaseTest {
         return getVertex(tx,key,value);
     }
 
-    public TitanVertex getVertex(TitanKey key, Object value) {
+    public TitanVertex getVertex(PropertyKey key, Object value) {
         return getVertex(tx,key,value);
     }
 
@@ -299,7 +299,7 @@ public abstract class TitanGraphBaseTest {
         return (TitanVertex)Iterables.getOnlyElement(tx.getVertices(key,value),null);
     }
 
-    public static TitanVertex getVertex(TitanTransaction tx, TitanKey key, Object value) {
+    public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
         return Iterables.getOnlyElement(tx.getVertices(key,value),null);
     }
 

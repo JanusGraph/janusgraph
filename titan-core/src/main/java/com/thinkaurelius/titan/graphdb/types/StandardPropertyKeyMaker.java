@@ -14,57 +14,57 @@ import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.DATAT
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardKeyMaker extends StandardTypeMaker implements KeyMaker {
+public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implements PropertyKeyMaker {
 
     private Class<?> dataType;
 
-    public StandardKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
-                            final AttributeHandling attributeHandler) {
+    public StandardPropertyKeyMaker(StandardTitanTx tx, IndexSerializer indexSerializer,
+                                    final AttributeHandling attributeHandler) {
         super(tx, indexSerializer, attributeHandler);
         dataType = null;
         cardinality(Cardinality.SINGLE);
     }
 
     @Override
-    public StandardKeyMaker dataType(Class<?> clazz) {
+    public StandardPropertyKeyMaker dataType(Class<?> clazz) {
         Preconditions.checkArgument(clazz != null, "Need to specify a data type");
         dataType = clazz;
         return this;
     }
 
     @Override
-    public StandardKeyMaker cardinality(Cardinality cardinality) {
+    public StandardPropertyKeyMaker cardinality(Cardinality cardinality) {
         super.multiplicity(Multiplicity.convert(cardinality));
         return this;
     }
 
 
     @Override
-    public StandardKeyMaker hidden() {
+    public StandardPropertyKeyMaker hidden() {
         super.hidden();
         return this;
     }
 
     @Override
-    public StandardKeyMaker signature(TitanType... types) {
+    public StandardPropertyKeyMaker signature(RelationType... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public StandardKeyMaker sortKey(TitanType... types) {
+    public StandardPropertyKeyMaker sortKey(RelationType... types) {
         super.sortKey(types);
         return this;
     }
 
     @Override
-    public StandardKeyMaker sortOrder(Order order) {
+    public StandardPropertyKeyMaker sortOrder(Order order) {
         super.sortOrder(order);
         return this;
     }
 
     @Override
-    public TitanKey make() {
+    public PropertyKey make() {
         Preconditions.checkArgument(dataType != null, "Need to specify a datatype");
         Preconditions.checkArgument(!dataType.isPrimitive(), "Primitive types are not supported. Use the corresponding object type, e.g. Integer.class instead of int.class [%s]", dataType);
         Preconditions.checkArgument(!dataType.isInterface(), "Datatype must be a class and not an interface: %s", dataType);

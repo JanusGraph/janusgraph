@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -81,7 +81,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder has(TitanKey key, TitanPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(PropertyKey key, TitanPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         return has(key.getName(), predicate, condition);
@@ -132,7 +132,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     }
 
     @Override
-    public GraphCentricQueryBuilder orderBy(TitanKey key, Order order) {
+    public GraphCentricQueryBuilder orderBy(PropertyKey key, Order order) {
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
@@ -198,9 +198,9 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             @Override
             public boolean apply(@Nullable Condition<TitanElement> condition) {
                 if (condition instanceof PredicateCondition) {
-                    TitanType type = ((PredicateCondition<TitanType,TitanElement>)condition).getKey();
+                    RelationType type = ((PredicateCondition<RelationType,TitanElement>)condition).getKey();
                     Preconditions.checkArgument(type!=null && type.isPropertyKey());
-                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalType) type).getKeyIndexes(), new Predicate<IndexType>() {
+                    Iterables.addAll(indexCandidates,Iterables.filter(((InternalRelationType) type).getKeyIndexes(), new Predicate<IndexType>() {
                         @Override
                         public boolean apply(@Nullable IndexType indexType) {
                             return indexType.getElement()==resultType;
@@ -312,7 +312,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             IndexField field = fields[i];
             for (Condition<TitanElement> subclause : condition.getChildren()) {
                 if (subclause instanceof PredicateCondition) {
-                    PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) subclause;
+                    PredicateCondition<RelationType, TitanElement> atom = (PredicateCondition) subclause;
                     if (atom.getPredicate()==Cmp.EQUAL && atom.getValue()!=null && atom.getKey().equals(field.getFieldKey())) {
                         indexCover[i]=atom.getValue();
                         coveredClauses[i]=subclause;
@@ -343,11 +343,11 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     private static final boolean coversAll(final ExternalIndexType index, Condition<TitanElement> condition, IndexSerializer indexInfo) {
         if (condition.getType()==Condition.Type.LITERAL) {
             if (!(condition instanceof  PredicateCondition)) return false;
-            PredicateCondition<TitanType, TitanElement> atom = (PredicateCondition) condition;
+            PredicateCondition<RelationType, TitanElement> atom = (PredicateCondition) condition;
             if (atom.getValue()==null) return false;
 
             Preconditions.checkArgument(atom.getKey().isPropertyKey());
-            TitanKey key = (TitanKey) atom.getKey();
+            PropertyKey key = (PropertyKey) atom.getKey();
             ParameterIndexField[] fields = index.getFieldKeys();
             ParameterIndexField match = null;
             for (int i = 0; i < fields.length; i++) {

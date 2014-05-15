@@ -284,6 +284,23 @@ public class IDManager {
             }
         },
 
+        VertexLabel {
+            @Override
+            final long offset() {
+                return 5l;
+            }
+
+            @Override
+            final long suffix() {
+                return 13l;
+            }    // 01101b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+
         GenericSchemaType {
             @Override
             final long offset() {
@@ -603,6 +620,11 @@ public class IDManager {
         @Override
         public boolean isGenericSchemaVertexId(long id) {
             return VertexIDType.GenericSchemaType.is(id);
+        }
+
+        @Override
+        public boolean isVertexLabelVertexId(long id) {
+            return VertexIDType.VertexLabel.is(id);
         }
 
 

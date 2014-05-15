@@ -8,19 +8,19 @@ import com.tinkerpop.blueprints.Element;
  */
 public interface TitanManagement extends TitanConfiguration {
 
-    public TitanTypeIndex createTypeIndex(TitanLabel label, String name, Direction direction, TitanType... sortKeys);
+    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys);
 
-    public TitanTypeIndex createTypeIndex(TitanLabel label, String name, Direction direction, Order sortOrder, TitanType... sortKeys);
+    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys);
 
-    public TitanTypeIndex createTypeIndex(TitanKey key, String name, TitanType... sortKeys);
+    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, RelationType... sortKeys);
 
-    public TitanTypeIndex createTypeIndex(TitanKey key, String name, Order sortOrder, TitanType... sortKeys);
+    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys);
 
-    public boolean containsTypeIndex(TitanType type, String name);
+    public boolean containsRelationIndex(RelationType type, String name);
 
-    public TitanTypeIndex getTypeIndex(TitanType type, String name);
+    public RelationTypeIndex getRelationIndex(RelationType type, String name);
 
-    public Iterable<TitanTypeIndex> getTypeIndexes(TitanType type);
+    public Iterable<RelationTypeIndex> getRelationIndexes(RelationType type);
 
 
     public boolean containsGraphIndex(String name);
@@ -31,11 +31,11 @@ public interface TitanManagement extends TitanConfiguration {
 
     public TitanGraphIndex createExternalIndex(String indexName, Class<? extends Element> elementType, String backingIndex);
 
-    public void addIndexKey(final TitanGraphIndex index, final TitanKey key, Parameter... parameters);
+    public void addIndexKey(final TitanGraphIndex index, final PropertyKey key, Parameter... parameters);
 
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, TitanKey... keys);
+    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, PropertyKey... keys);
 
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, TitanKey... keys);
+    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, PropertyKey... keys);
 
 
     public ConsistencyModifier getConsistency(TitanSchemaElement element);
@@ -44,27 +44,34 @@ public interface TitanManagement extends TitanConfiguration {
 
 
 
-    public boolean containsType(String name);
+    public boolean containsRelationType(String name);
 
-    public TitanType getType(String name);
+    public RelationType getRelationType(String name);
 
-    public TitanKey getPropertyKey(String name);
+    public PropertyKey getPropertyKey(String name);
 
-    public TitanLabel getEdgeLabel(String name);
+    public EdgeLabel getEdgeLabel(String name);
 
-    public KeyMaker makeKey(String name);
+    public PropertyKeyMaker makePropertyKey(String name);
 
-    public LabelMaker makeLabel(String name);
+    public EdgeLabelMaker makeEdgeLabel(String name);
 
     /**
-     * Returns an iterable over all defined types that have the given clazz (either {@link TitanLabel} which returns all labels,
-     * {@link TitanKey} which returns all keys, or {@link TitanType} which returns all types).
+     * Returns an iterable over all defined types that have the given clazz (either {@link EdgeLabel} which returns all labels,
+     * {@link PropertyKey} which returns all keys, or {@link RelationType} which returns all types).
      *
-     * @param clazz {@link TitanType} or sub-interface
+     * @param clazz {@link RelationType} or sub-interface
      * @param <T>
      * @return Iterable over all types for the given category (label, key, or both)
      */
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz);
+    public <T extends RelationType> Iterable<T> getRelationTypes(Class<T> clazz);
+
+
+    public boolean containsVertexLabel(String name);
+
+    public VertexLabel getVertexLabel(String name);
+
+    public VertexLabelMaker makeVertexLabel(String name);
 
 
     public void commit();

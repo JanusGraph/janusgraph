@@ -49,8 +49,8 @@ public class InternalIndexTypeWrapper extends IndexTypeWrapper implements Intern
                 Preconditions.checkNotNull(value);
                 int pos = value;
                 Preconditions.checkArgument(pos>=0 && pos<numFields,"Invalid field position: %s",pos);
-                assert entry.getSchemaType() instanceof TitanKey;
-                result[pos]=IndexField.of((TitanKey)entry.getSchemaType());
+                assert entry.getSchemaType() instanceof PropertyKey;
+                result[pos]=IndexField.of((PropertyKey)entry.getSchemaType());
             }
             fields=result;
         }

@@ -193,22 +193,22 @@ public class IDManagementTest {
         }
     }
 
-    private static final SystemType[] SYSTEM_TYPES = {BaseKey.VertexExists, BaseKey.TypeDefinitionProperty,
-            BaseLabel.TypeDefinitionEdge, ImplicitKey.VISIBILITY, ImplicitKey.TIMESTAMP};
+    private static final SystemRelationType[] SYSTEM_TYPES = {BaseKey.VertexExists, BaseKey.SchemaDefinitionProperty,
+            BaseLabel.SchemaDefinitionEdge, ImplicitKey.VISIBILITY, ImplicitKey.TIMESTAMP};
 
     @Test
     public void writingInlineEdgeTypes() {
         int numTries = 100;
         WriteBuffer out = new WriteByteBuffer(8*numTries);
-        for (SystemType t : SYSTEM_TYPES) {
+        for (SystemRelationType t : SYSTEM_TYPES) {
             IDHandler.writeInlineEdgeType(out,t.getID());
         }
         for (long i=1;i<=numTries;i++) {
-            IDHandler.writeInlineEdgeType(out,IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel,i*1000));
+            IDHandler.writeInlineEdgeType(out, IDManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, i * 1000));
         }
 
         ReadBuffer in = out.getStaticBuffer().asReadBuffer();
-        for (SystemType t : SYSTEM_TYPES) {
+        for (SystemRelationType t : SYSTEM_TYPES) {
             assertEquals(t, SystemTypeManager.getSystemType(IDHandler.readInlineEdgeType(in)));
         }
         for (long i=1;i<=numTries;i++) {
@@ -229,7 +229,7 @@ public class IDManagementTest {
 
     @Test
     public void testEdgeTypeWriting() {
-        for (SystemType t : SYSTEM_TYPES) {
+        for (SystemRelationType t : SYSTEM_TYPES) {
             testEdgeTypeWriting(t.getID());
         }
         for (int i=0;i<1000;i++) {

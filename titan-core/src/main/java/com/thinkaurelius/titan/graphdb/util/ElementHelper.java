@@ -14,7 +14,7 @@ import java.util.Collections;
  */
 public class ElementHelper {
 
-    public static final Iterable<Object> getValues(TitanElement element, TitanKey key) {
+    public static final Iterable<Object> getValues(TitanElement element, PropertyKey key) {
         if (element instanceof TitanRelation) {
             Object value = element.getProperty(key);
             if (value==null) return Collections.EMPTY_LIST;

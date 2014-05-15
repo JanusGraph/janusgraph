@@ -14,7 +14,6 @@ import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -49,7 +48,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     @Test
     public void testSimpleUpdate() {
-        TitanKey text = makeKey("name",String.class);
+        PropertyKey text = makeKey("name",String.class);
         mgmt.createInternalIndex("namev",Vertex.class,false,text);
         mgmt.createInternalIndex("namee",Edge.class,false,text);
         finishSchema();
@@ -72,28 +71,28 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testIndexing() {
 
-        TitanKey text = makeKey("text",String.class);
+        PropertyKey text = makeKey("text",String.class);
         createExternalVertexIndex(text,INDEX);
         createExternalEdgeIndex(text,INDEX);
 
-        TitanKey location = makeKey("location",Geoshape.class);
+        PropertyKey location = makeKey("location",Geoshape.class);
         createExternalVertexIndex(location,INDEX);
         createExternalEdgeIndex(location,INDEX);
 
-        TitanKey time = makeKey("time",Long.class);
+        PropertyKey time = makeKey("time",Long.class);
         createExternalVertexIndex(time,INDEX);
         createExternalEdgeIndex(time,INDEX);
 
-        TitanKey category = makeKey("category",Integer.class);
+        PropertyKey category = makeKey("category",Integer.class);
         mgmt.createInternalIndex("vcategory",Vertex.class,category);
         mgmt.createInternalIndex("ecategory",Edge.class,category);
 
-        TitanKey group = makeKey("group",Byte.class);
+        PropertyKey group = makeKey("group",Byte.class);
         createExternalVertexIndex(group,INDEX);
         createExternalEdgeIndex(group,INDEX);
 
-        TitanKey id = makeVertexIndexedKey("uid",Integer.class);
-        TitanLabel knows = mgmt.makeLabel("knows").sortKey(time).signature(location).make();
+        PropertyKey id = makeVertexIndexedKey("uid",Integer.class);
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").sortKey(time).signature(location).make();
         finishSchema();
 
         clopen();
@@ -268,13 +267,13 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     private void setupChainGraph(int numV, String[] strs) {
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
-        TitanKey name = makeKey("name",String.class);
+        PropertyKey name = makeKey("name",String.class);
         mgmt.addIndexKey(vindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
         mgmt.addIndexKey(eindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
-        TitanKey text = makeKey("text",String.class);
+        PropertyKey text = makeKey("text",String.class);
         mgmt.addIndexKey(vindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
         mgmt.addIndexKey(eindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
-        mgmt.makeLabel("knows").signature(name).make();
+        mgmt.makeEdgeLabel("knows").signature(name).make();
         finishSchema();
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
@@ -386,9 +385,9 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     @Test
     public void testIndexIteration() {
-        TitanKey objectType = makeKey("objectType",String.class);
+        PropertyKey objectType = makeKey("objectType",String.class);
         createExternalVertexIndex(objectType,INDEX);
-        TitanKey uid = makeKey("uid",Long.class);
+        PropertyKey uid = makeKey("uid",Long.class);
         createExternalVertexIndex(uid,INDEX);
         finishSchema();
         Vertex v = graph.addVertex(null);

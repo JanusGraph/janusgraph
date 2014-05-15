@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types.system;
 
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 
@@ -11,7 +11,7 @@ import java.util.Collections;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class EmptyType extends EmptyVertex implements InternalType {
+public abstract class EmptyRelationType extends EmptyVertex implements InternalRelationType {
 
     @Override
     public boolean isHidden() {
@@ -34,13 +34,13 @@ public abstract class EmptyType extends EmptyVertex implements InternalType {
     }
 
     @Override
-    public InternalType getBaseType() {
+    public InternalRelationType getBaseType() {
         return null;
     }
 
     @Override
-    public Iterable<InternalType> getRelationIndexes() {
-        return ImmutableSet.of((InternalType)this);
+    public Iterable<InternalRelationType> getRelationIndexes() {
+        return ImmutableSet.of((InternalRelationType)this);
     }
 
     @Override

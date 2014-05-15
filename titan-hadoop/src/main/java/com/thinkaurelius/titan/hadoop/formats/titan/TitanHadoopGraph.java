@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
@@ -59,7 +59,7 @@ public class TitanHadoopGraph {
                 }
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
-                final TitanType type = typeManager.getExistingType(relation.typeId);
+                final RelationType type = typeManager.getExistingRelationType(relation.typeId);
                 if (type.isPropertyKey()) {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
@@ -81,7 +81,7 @@ public class TitanHadoopGraph {
                         // load edge properties
                         for (final LongObjectCursor<Object> next : relation) {
                             assert next.value != null;
-                            edge.setProperty(typeManager.getExistingType(next.key).getName(), next.value);
+                            edge.setProperty(typeManager.getExistingRelationType(next.key).getName(), next.value);
                         }
                         for (final HadoopProperty p : edge.getProperties())
                             p.setState(ElementState.LOADED);

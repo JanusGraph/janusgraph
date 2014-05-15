@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -102,17 +101,17 @@ public final class RelationIdentifier {
         if (v == null) return null;
         TitanVertex typeVertex = tx.getVertex(typeId);
         if (typeVertex == null) return null;
-        if (!(typeVertex instanceof TitanType))
+        if (!(typeVertex instanceof RelationType))
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
 
-        TitanType type = (TitanType)typeVertex;
+        RelationType type = (RelationType)typeVertex;
         Iterable<? extends TitanRelation> rels;
-        if (((TitanType) typeVertex).isEdgeLabel()) {
+        if (((RelationType) typeVertex).isEdgeLabel()) {
             TitanVertex in = tx.getVertex(inVertexId);
             if (in==null) return null;
-            rels = v.query().types((TitanLabel)type).direction(Direction.OUT).adjacent(in).titanEdges();
+            rels = v.query().types((EdgeLabel)type).direction(Direction.OUT).adjacent(in).titanEdges();
         } else {
-            rels = v.query().types((TitanKey)type).properties();
+            rels = v.query().types((PropertyKey)type).properties();
         }
 
         for (TitanRelation r : rels) {

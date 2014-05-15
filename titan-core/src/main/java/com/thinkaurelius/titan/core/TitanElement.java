@@ -75,7 +75,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined single valued (see {@link com.thinkaurelius.titan.core.KeyMaker#single()}).
+     * The key must be defined single valued (see {@link PropertyKeyMaker#single()}).
      *
      * @param key   the string identifying the key
      * @param value the object value
@@ -84,12 +84,12 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined single valued (see {@link com.thinkaurelius.titan.core.KeyMaker#single()}).
+     * The key must be defined single valued (see {@link PropertyKeyMaker#single()}).
      *
      * @param key   the key
      * @param value the object value
      */
-    public void setProperty(TitanKey key, Object value);
+    public void setProperty(PropertyKey key, Object value);
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
@@ -100,7 +100,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      * @param key key
      * @return value or list of values associated with key
      */
-    public <O> O getProperty(TitanKey key);
+    public <O> O getProperty(PropertyKey key);
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
@@ -118,7 +118,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      *
      * @param key the string identifying the key
      * @return the object value associated with that key prior to removal, or NULL if such does not exist.
-     * @see #removeProperty(TitanType)
+     * @see #removeProperty(RelationType)
      */
     public <O> O removeProperty(String key);
 
@@ -130,7 +130,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      * @param type the key
      * @return the object value associated with that key prior to removal, or NULL if such does not exist.
      */
-    public <O> O removeProperty(TitanType type);
+    public <O> O removeProperty(RelationType type);
 
 
     //########### LifeCycle Status ##########

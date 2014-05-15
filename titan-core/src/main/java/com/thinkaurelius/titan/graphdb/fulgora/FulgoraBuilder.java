@@ -178,13 +178,13 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
          */
 
         @Override
-        public QueryBuilder has(TitanKey key, Object value) {
+        public QueryBuilder has(PropertyKey key, Object value) {
             super.has(key, value);
             return this;
         }
 
         @Override
-        public QueryBuilder has(TitanLabel label, TitanVertex vertex) {
+        public QueryBuilder has(EdgeLabel label, TitanVertex vertex) {
             super.has(label, vertex);
             return this;
         }
@@ -208,7 +208,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public QueryBuilder has(TitanKey key, Predicate predicate, Object value) {
+        public QueryBuilder has(PropertyKey key, Predicate predicate, Object value) {
             super.has(key, predicate, value);
             return this;
         }
@@ -226,7 +226,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public <T extends Comparable<?>> QueryBuilder interval(TitanKey key, T start, T end) {
+        public <T extends Comparable<?>> QueryBuilder interval(PropertyKey key, T start, T end) {
             super.interval(key, start, end);
             return this;
         }
@@ -238,7 +238,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public QueryBuilder types(TitanType... types) {
+        public QueryBuilder types(RelationType... types) {
             super.types(types);
             return this;
         }
@@ -255,7 +255,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
             return this;
         }
 
-        public QueryBuilder type(TitanType type) {
+        public QueryBuilder type(RelationType type) {
             super.type(type);
             return this;
         }

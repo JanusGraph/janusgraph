@@ -2,9 +2,9 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * TitanLabel is an extension of {@link TitanType} for edges.
+ * TitanLabel is an extension of {@link RelationType} for edges.
  * <p/>
- * In addition to {@link TitanType}, TitanLabel defines the directionality of edges:
+ * In addition to {@link RelationType}, TitanLabel defines the directionality of edges:
  * <ul>
  * <li><strong>Directed:</strong> An edge is directed if the order or position of its vertices matters.
  * For directed edges, the outgoing vertex is considered the <i>start</i> and the incoming vertex the <i>end</i>.
@@ -15,9 +15,9 @@ package com.thinkaurelius.titan.core;
  * </ul>
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com)
- * @see TitanType
+ * @see RelationType
  */
-public interface TitanLabel extends TitanType {
+public interface EdgeLabel extends RelationType {
 
     /**
      * Checks whether this labels is defined as directed.

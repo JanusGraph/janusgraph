@@ -84,9 +84,9 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphBaseTest 
 
     @Test
     public void testIncrementalSpeed() {
-        mgmt.makeKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
         makeVertexIndexedUniqueKey("uid", Long.class);
-        mgmt.makeLabel("activity").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("activity").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
 
         final int numV = 20;

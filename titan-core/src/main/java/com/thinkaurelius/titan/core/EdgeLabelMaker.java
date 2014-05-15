@@ -1,17 +1,17 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * Used to define new {@link TitanLabel}s
+ * Used to define new {@link EdgeLabel}s
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface LabelMaker extends TypeMaker {
+public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
      * Sets the multiplicity of this label. The default multiplicity is {@link Multiplicity#MULTI}.
      * @return
      */
-    public LabelMaker multiplicity(Multiplicity multiplicity);
+    public EdgeLabelMaker multiplicity(Multiplicity multiplicity);
 
     /**
      * Configures the label to be directed.
@@ -19,9 +19,9 @@ public interface LabelMaker extends TypeMaker {
      * By default, the label is directed.
      *
      * @return this LabelMaker
-     * @see com.thinkaurelius.titan.core.TitanLabel#isDirected()
+     * @see EdgeLabel#isDirected()
      */
-    public LabelMaker directed();
+    public EdgeLabelMaker directed();
 
     /**
      * Configures the label to be unidirected.
@@ -29,9 +29,9 @@ public interface LabelMaker extends TypeMaker {
      * By default, the type is directed.
      *
      * @return this LabelMaker
-     * @see com.thinkaurelius.titan.core.TitanLabel#isUnidirected()
+     * @see EdgeLabel#isUnidirected()
      */
-    public LabelMaker unidirected();
+    public EdgeLabelMaker unidirected();
 
 
     /**
@@ -42,7 +42,7 @@ public interface LabelMaker extends TypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link TitanVertexQuery#interval(TitanKey, Comparable, Comparable)}.
+     * time interval using {@link TitanVertexQuery#interval(PropertyKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -50,12 +50,12 @@ public interface LabelMaker extends TypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link TitanType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param types TitanTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
      */
-    public LabelMaker sortKey(TitanType... types);
+    public EdgeLabelMaker sortKey(RelationType... types);
 
     /**
      * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link Order#ASC}) or
@@ -65,9 +65,9 @@ public interface LabelMaker extends TypeMaker {
      *
      * @param order
      * @return
-     * @see #sortKey(TitanType...)
+     * @see #sortKey(RelationType...)
      */
-    public LabelMaker sortOrder(Order order);
+    public EdgeLabelMaker sortOrder(Order order);
 
     /**
      * Configures the signature of this label.
@@ -79,7 +79,7 @@ public interface LabelMaker extends TypeMaker {
      * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
      * (<i>createdOn</i>) as the signature for type <i>friend</i> allows friend edges to be stored more efficiently.
      * <br />
-     * {@link TitanType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
+     * {@link RelationType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
      * <br />
      * The signature should not contain any types already included in the sort key. The sort key provides the same
      * storage and retrieval efficiency.
@@ -89,14 +89,14 @@ public interface LabelMaker extends TypeMaker {
      * @param types TitanTypes composing the signature key. The order is irrelevant.
      * @return this LabelMaker
      */
-    public LabelMaker signature(TitanType... types);
+    public EdgeLabelMaker signature(RelationType... types);
 
     /**
-     * Defines the {@link TitanLabel} specified by this LabelMaker and returns the resulting TitanLabel
+     * Defines the {@link EdgeLabel} specified by this LabelMaker and returns the resulting TitanLabel
      *
      * @return
      */
     @Override
-    public TitanLabel make();
+    public EdgeLabel make();
 
 }

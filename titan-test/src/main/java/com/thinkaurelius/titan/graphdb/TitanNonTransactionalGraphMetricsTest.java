@@ -70,10 +70,10 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         metricsPrefix = "metrics1";
 
         TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        TitanVertex v = tx.addVertex(null);
+        TitanVertex v = tx.addVertex();
         verifyStoreMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
         ElementHelper.setProperties(v, "age", 25, "name", "john");
-        TitanVertex u = tx.addVertex(null);
+        TitanVertex u = tx.addVertex();
         ElementHelper.setProperties(u, "age", 35, "name", "mary");
         v.addEdge("knows", u);
         tx.commit();
@@ -190,7 +190,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
 
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
-        TitanKey uid = makeKey("uid",String.class);
+        PropertyKey uid = makeKey("uid",String.class);
         TitanGraphIndex index = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
         mgmt.setConsistency(index,ConsistencyModifier.LOCK);
         finishSchema();
@@ -199,9 +199,9 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         metricsPrefix = "metrics3"+fastProperty;
 
         TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        tx.makeKey("name").dataType(String.class).make();
-        tx.makeKey("age").dataType(Integer.class).make();
-        TitanVertex v = tx.addVertex(null);
+        tx.makePropertyKey("name").dataType(String.class).make();
+        tx.makePropertyKey("age").dataType(Integer.class).make();
+        TitanVertex v = tx.addVertex();
         ElementHelper.setProperties(v, "uid", "v1", "age", 25, "name", "john");
         tx.commit();
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 7l));

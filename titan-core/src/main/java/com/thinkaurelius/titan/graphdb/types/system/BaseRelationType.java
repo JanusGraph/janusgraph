@@ -3,18 +3,16 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import org.apache.commons.lang.StringUtils;
 
-public abstract class BaseType extends EmptyType implements SystemType {
+public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {
 
     private final String name;
     private final long id;
 
 
-    BaseType(String name, long id, TitanSchemaCategory type) {
+    BaseRelationType(String name, long id, TitanSchemaCategory type) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = SystemTypeManager.systemETprefix + name;
         this.id = getSystemTypeId(id, type);
@@ -55,9 +53,9 @@ public abstract class BaseType extends EmptyType implements SystemType {
         Preconditions.checkArgument(id > 0);
         Preconditions.checkArgument(type.isRelationType());
         switch (type) {
-            case LABEL:
+            case EDGELABEL:
                 return IDManager.getSchemaId(IDManager.VertexIDType.SystemEdgeLabel, id);
-            case KEY:
+            case PROPERTYKEY:
                 return IDManager.getSchemaId(IDManager.VertexIDType.SystemPropertyKey,id);
             default:
                 throw new AssertionError("Illegal argument: " + type);

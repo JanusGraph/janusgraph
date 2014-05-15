@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanKey;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,7 +23,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
     private List<OrderEntry> list = new ArrayList<OrderList.OrderEntry>(3);
     private boolean immutable = false;
 
-    public void add(TitanKey key, Order order) {
+    public void add(PropertyKey key, Order order) {
         Preconditions.checkArgument(!immutable, "This OrderList has been closed");
         list.add(new OrderEntry(key, order));
     }
@@ -32,7 +32,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
         return list.isEmpty();
     }
 
-    public TitanKey getKey(int position) {
+    public PropertyKey getKey(int position) {
         return list.get(position).getKey();
     }
 
@@ -114,17 +114,17 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
 
     public static class OrderEntry implements Comparator<TitanElement> {
 
-        private final TitanKey key;
+        private final PropertyKey key;
         private final Order order;
 
-        public OrderEntry(TitanKey key, Order order) {
+        public OrderEntry(PropertyKey key, Order order) {
             Preconditions.checkNotNull(key);
             Preconditions.checkNotNull(order);
             this.key = key;
             this.order = order;
         }
 
-        public TitanKey getKey() {
+        public PropertyKey getKey() {
             return key;
         }
 

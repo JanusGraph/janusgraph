@@ -7,7 +7,6 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import org.apache.commons.lang.StringUtils;
 
@@ -15,9 +14,9 @@ import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
-public abstract class StandardTypeMaker implements TypeMaker {
+public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
-    private static final char[] RESERVED_CHARS = {'{', '}', '"'};
+    static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;
@@ -25,13 +24,13 @@ public abstract class StandardTypeMaker implements TypeMaker {
 
     private String name;
     private boolean isHidden;
-    private List<TitanType> sortKey;
+    private List<RelationType> sortKey;
     private Order sortOrder;
-    private List<TitanType> signature;
+    private List<RelationType> signature;
     private Multiplicity multiplicity;
 
-    public StandardTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
-                             final AttributeHandling attributeHandler) {
+    public StandardRelationTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
+                                     final AttributeHandling attributeHandler) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(indexSerializer);
         Preconditions.checkNotNull(attributeHandler);
@@ -42,9 +41,9 @@ public abstract class StandardTypeMaker implements TypeMaker {
         //Default assignments
         name = null;
         isHidden = false;
-        sortKey = new ArrayList<TitanType>(4);
+        sortKey = new ArrayList<RelationType>(4);
         sortOrder = Order.ASC;
-        signature = new ArrayList<TitanType>(4);
+        signature = new ArrayList<RelationType>(4);
         multiplicity = Multiplicity.MULTI;
     }
 
@@ -66,7 +65,6 @@ public abstract class StandardTypeMaker implements TypeMaker {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
-        if (!isHidden) Token.verifyName(name);
         Preconditions.checkArgument(!name.startsWith(SystemTypeManager.systemETprefix),
                 "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase()),
@@ -80,24 +78,24 @@ public abstract class StandardTypeMaker implements TypeMaker {
         Preconditions.checkArgument(!hasSortKey() || !multiplicity.isConstrained(),"Cannot define a sort-key on constrained edge labels");
     }
 
-    private long[] checkSortKey(List<TitanType> sig) {
-        for (TitanType t : sig) {
+    private long[] checkSortKey(List<RelationType> sig) {
+        for (RelationType t : sig) {
             Preconditions.checkArgument(t.isEdgeLabel()
-                    || attributeHandler.isOrderPreservingDatatype(((TitanKey) t).getDataType()),
+                    || attributeHandler.isOrderPreservingDatatype(((PropertyKey) t).getDataType()),
                     "Key must have an order-preserving data type to be used as sort key: " + t);
         }
         return checkSignature(sig);
     }
 
-    private static long[] checkSignature(List<TitanType> sig) {
+    private static long[] checkSignature(List<RelationType> sig) {
         Preconditions.checkArgument(sig.size() == (Sets.newHashSet(sig)).size(), "Signature and sort key cannot contain duplicate types");
         long[] signature = new long[sig.size()];
         for (int i = 0; i < sig.size(); i++) {
-            TitanType et = sig.get(i);
+            RelationType et = sig.get(i);
             Preconditions.checkNotNull(et);
-            Preconditions.checkArgument(!et.isEdgeLabel() || ((TitanLabel) et).isUnidirected(),
+            Preconditions.checkArgument(!et.isEdgeLabel() || ((EdgeLabel) et).isUnidirected(),
                     "Label must be unidirectional: %s", et.getName());
-            Preconditions.checkArgument(!et.isPropertyKey() || !((TitanKey) et).getDataType().equals(Object.class),
+            Preconditions.checkArgument(!et.isPropertyKey() || !((PropertyKey) et).getDataType().equals(Object.class),
                     "Signature and sort keys must have a proper declared datatype: %s", et.getName());
             signature[i] = et.getID();
         }
@@ -116,37 +114,37 @@ public abstract class StandardTypeMaker implements TypeMaker {
         return def;
     }
 
-    public StandardTypeMaker multiplicity(Multiplicity multiplicity) {
+    public StandardRelationTypeMaker multiplicity(Multiplicity multiplicity) {
         Preconditions.checkNotNull(multiplicity);
         this.multiplicity=multiplicity;
         return this;
     }
 
-    public StandardTypeMaker signature(TitanType... types) {
+    public StandardRelationTypeMaker signature(RelationType... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         signature.addAll(Arrays.asList(types));
         return this;
     }
 
-    public StandardTypeMaker sortKey(TitanType... types) {
+    public StandardRelationTypeMaker sortKey(RelationType... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         sortKey.addAll(Arrays.asList(types));
         return this;
     }
 
-    public StandardTypeMaker sortOrder(Order order) {
+    public StandardRelationTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);
         this.sortOrder=order;
         return this;
     }
 
-    public StandardTypeMaker name(String name) {
+    public StandardRelationTypeMaker name(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
         this.name = name;
         return this;
     }
 
-    public StandardTypeMaker hidden() {
+    public StandardRelationTypeMaker hidden() {
         this.isHidden = true;
         return this;
     }

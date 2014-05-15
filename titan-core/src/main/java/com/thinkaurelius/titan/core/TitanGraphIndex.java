@@ -13,9 +13,9 @@ public interface TitanGraphIndex extends TitanSchemaElement {
 
     public Class<? extends Element> getIndexedElement();
 
-    public TitanKey[] getFieldKeys();
+    public PropertyKey[] getFieldKeys();
 
-    public Parameter[] getParametersFor(TitanKey key);
+    public Parameter[] getParametersFor(PropertyKey key);
 
     public boolean isUnique();
 

@@ -6,7 +6,7 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaSource;
@@ -20,9 +20,9 @@ import java.util.List;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanTypeVertex extends TitanSchemaVertex implements InternalType {
+public abstract class RelationTypeVertex extends TitanSchemaVertex implements InternalRelationType {
 
-    public TitanTypeVertex(StandardTitanTx tx, long id, byte lifecycle) {
+    public RelationTypeVertex(StandardTitanTx tx, long id, byte lifecycle) {
         super(tx, id, lifecycle);
     }
 
@@ -60,20 +60,20 @@ public abstract class TitanTypeVertex extends TitanSchemaVertex implements Inter
         return consistency;
     }
 
-    public InternalType getBaseType() {
+    public InternalRelationType getBaseType() {
         Entry entry = Iterables.getOnlyElement(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.IN),null);
         if (entry==null) return null;
-        assert entry.getSchemaType() instanceof InternalType;
-        return (InternalType)entry.getSchemaType();
+        assert entry.getSchemaType() instanceof InternalRelationType;
+        return (InternalRelationType)entry.getSchemaType();
     }
 
-    public Iterable<InternalType> getRelationIndexes() {
-        return Iterables.concat(ImmutableList.of(this),Iterables.transform(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.OUT),new Function<Entry, InternalType>() {
+    public Iterable<InternalRelationType> getRelationIndexes() {
+        return Iterables.concat(ImmutableList.of(this),Iterables.transform(getRelated(TypeDefinitionCategory.RELATIONTYPE_INDEX,Direction.OUT),new Function<Entry, InternalRelationType>() {
             @Nullable
             @Override
-            public InternalType apply(@Nullable Entry entry) {
-                assert entry.getSchemaType() instanceof InternalType;
-                return (InternalType)entry.getSchemaType();
+            public InternalRelationType apply(@Nullable Entry entry) {
+                assert entry.getSchemaType() instanceof InternalRelationType;
+                return (InternalRelationType)entry.getSchemaType();
             }
         }));
     }

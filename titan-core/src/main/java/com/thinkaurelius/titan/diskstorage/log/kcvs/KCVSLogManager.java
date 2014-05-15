@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -18,6 +19,7 @@ import com.thinkaurelius.titan.util.stats.NumberUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -37,6 +39,17 @@ public class KCVSLogManager implements LogManager {
             "Whether all log entries are written to one fixed partition even if the backend store is partitioned." +
                     "This can cause imbalanced loads and should only be used on low volume logs",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS,"max-partitions",
+            "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 1" +
+                    "and a power of 2.",
+            ConfigOption.Type.FIXED, Integer.class, new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer integer) {
+            return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
+        }
+    });
+
 
     /**
      * Configuration of this log manager
@@ -102,7 +115,12 @@ public class KCVSLogManager implements LogManager {
         Preconditions.checkNotNull(senderId);
 
         if (config.get(CLUSTER_PARTITION)) {
-            this.partitionBitWidth= NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
+            ConfigOption<Integer> maxPartitionConfig = config.has(LOG_MAX_PARTITIONS)?
+                                                        LOG_MAX_PARTITIONS:CLUSTER_MAX_PARTITIONS;
+            int maxPartitions = config.get(maxPartitionConfig);
+            Preconditions.checkArgument(maxPartitions<=config.get(CLUSTER_MAX_PARTITIONS),
+                    "Number of log partitions cannot be larger than number of cluster partitions");
+            this.partitionBitWidth= NumberUtil.getPowerOf2(maxPartitions);
         } else {
             this.partitionBitWidth=0;
         }

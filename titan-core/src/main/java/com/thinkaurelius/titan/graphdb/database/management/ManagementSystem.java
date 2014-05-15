@@ -17,7 +17,7 @@ import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -25,9 +25,10 @@ import com.thinkaurelius.titan.graphdb.types.*;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanTypeVertex;
+import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
@@ -41,9 +42,6 @@ import java.util.concurrent.Callable;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class ManagementSystem implements TitanManagement {
-
-    private static final String GRAPH_INDEX_NAME_PREFIX = "graphindex";
-    private static final String TYPE_INDEX_NAME_PREFIX = "typeindex";
 
     private final StandardTitanGraph graph;
     private final Log sysLog;
@@ -160,9 +158,9 @@ public class ManagementSystem implements TitanManagement {
     public TitanSchemaElement getSchemaElement(long id) {
         TitanVertex v = transaction.getVertex(id);
         if (v==null) return null;
-        if (v instanceof TitanType) {
-            if (((InternalType)v).getBaseType()==null) return (TitanType)v;
-            return new TitanTypeIndexWrapper((InternalType)v);
+        if (v instanceof RelationType) {
+            if (((InternalRelationType)v).getBaseType()==null) return (RelationType)v;
+            return new RelationTypeIndexWrapper((InternalRelationType)v);
         }
         if (v instanceof TitanSchemaVertex) {
             TitanSchemaVertex sv = (TitanSchemaVertex)v;
@@ -174,44 +172,44 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public TitanTypeIndex createTypeIndex(TitanLabel label, String name, Direction direction, TitanType... sortKeys) {
-        return createTypeIndex(label,name,direction,Order.ASC,sortKeys);
+    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, RelationType... sortKeys) {
+        return createEdgeIndex(label, name, direction, Order.ASC, sortKeys);
     }
 
     @Override
-    public TitanTypeIndex createTypeIndex(TitanLabel label, String name, Direction direction, Order sortOrder, TitanType... sortKeys) {
-        return createTypeIndexInternal(label, name, direction, sortOrder, sortKeys);
+    public RelationTypeIndex createEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
+        return createRelationTypeIndex(label, name, direction, sortOrder, sortKeys);
     }
 
     @Override
-    public TitanTypeIndex createTypeIndex(TitanKey key, String name, TitanType... sortKeys) {
-        return createTypeIndex(key,name,Order.ASC,sortKeys);
+    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, RelationType... sortKeys) {
+        return createPropertyIndex(key, name, Order.ASC, sortKeys);
     }
 
     @Override
-    public TitanTypeIndex createTypeIndex(TitanKey key, String name, Order sortOrder, TitanType... sortKeys) {
-        return createTypeIndexInternal(key,name,Direction.OUT,sortOrder,sortKeys);
+    public RelationTypeIndex createPropertyIndex(PropertyKey key, String name, Order sortOrder, RelationType... sortKeys) {
+        return createRelationTypeIndex(key, name, Direction.OUT, sortOrder, sortKeys);
     }
 
-    private TitanTypeIndex createTypeIndexInternal(TitanType type, String name, Direction direction, Order sortOrder, TitanType... sortKeys) {
+    private RelationTypeIndex createRelationTypeIndex(RelationType type, String name, Direction direction, Order sortOrder, RelationType... sortKeys) {
         Preconditions.checkArgument(type!=null && direction!=null && sortOrder!=null && sortKeys!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(name),"Name cannot be blank: %s",name);
         Token.verifyName(name);
         Preconditions.checkArgument(sortKeys.length>0,"Need to specify sort keys");
-        for (TitanType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
+        for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
         Preconditions.checkArgument(type.isNew(),"Can only install indexes on new types (current limitation)");
 
-        String composedName = Token.getSeparatedName(TYPE_INDEX_NAME_PREFIX, type.getName(), name);
-        StandardTypeMaker maker;
+        String composedName = composeRelationTypeIndexName(type,name);
+        StandardRelationTypeMaker maker;
         if (type.isEdgeLabel()) {
-            StandardLabelMaker lm = (StandardLabelMaker)transaction.makeLabel(composedName);
+            StandardEdgeLabelMaker lm = (StandardEdgeLabelMaker)transaction.makeEdgeLabel(composedName);
             lm.unidirected(direction);
             maker = lm;
         } else {
             assert type.isPropertyKey();
             assert direction==Direction.OUT;
-            StandardKeyMaker lm = (StandardKeyMaker)transaction.makeKey(composedName);
-            lm.dataType(((TitanKey)type).getDataType());
+            StandardPropertyKeyMaker lm = (StandardPropertyKeyMaker)transaction.makePropertyKey(composedName);
+            lm.dataType(((PropertyKey)type).getDataType());
             maker = lm;
         }
         maker.hidden();
@@ -220,52 +218,57 @@ public class ManagementSystem implements TitanManagement {
         maker.sortOrder(sortOrder);
 
         //Compose signature
-        long[] typeSig = ((InternalType)type).getSignature();
-        Set<TitanType> signature = Sets.newHashSet();
-        for (long typeId : typeSig) signature.add(transaction.getExistingType(typeId));
-        for (TitanType sortType : sortKeys) signature.remove(sortType);
+        long[] typeSig = ((InternalRelationType)type).getSignature();
+        Set<RelationType> signature = Sets.newHashSet();
+        for (long typeId : typeSig) signature.add(transaction.getExistingRelationType(typeId));
+        for (RelationType sortType : sortKeys) signature.remove(sortType);
         if (!signature.isEmpty()) {
-            TitanType[] sig = signature.toArray(new TitanType[signature.size()]);
+            RelationType[] sig = signature.toArray(new RelationType[signature.size()]);
             maker.signature(sig);
         }
-        TitanType typeIndex = maker.make();
+        RelationType typeIndex = maker.make();
         addSchemaEdge(type, typeIndex, TypeDefinitionCategory.RELATIONTYPE_INDEX, null);
-        return new TitanTypeIndexWrapper((InternalType)typeIndex);
+        return new RelationTypeIndexWrapper((InternalRelationType)typeIndex);
+    }
+
+    private static String composeRelationTypeIndexName(RelationType type, String name) {
+        return type.getName()+RELATION_INDEX_SEPARATOR+name;
     }
 
     private TitanEdge addSchemaEdge(TitanVertex out, TitanVertex in, TypeDefinitionCategory def, Object modifier) {
         assert def.isEdge();
-        TitanEdge edge = transaction.addEdge(out,in, BaseLabel.TypeDefinitionEdge);
+        TitanEdge edge = transaction.addEdge(out,in, BaseLabel.SchemaDefinitionEdge);
         TypeDefinitionDescription desc = new TypeDefinitionDescription(def,modifier);
-        edge.setProperty(BaseKey.TypeDefinitionDesc,desc);
+        edge.setProperty(BaseKey.SchemaDefinitionDesc,desc);
         return edge;
     }
 
     @Override
-    public boolean containsTypeIndex(TitanType type, String name) {
-        return getTypeIndex(type, name)!=null;
+    public boolean containsRelationIndex(RelationType type, String name) {
+        return getRelationIndex(type, name)!=null;
     }
 
     @Override
-    public TitanTypeIndex getTypeIndex(TitanType type, String name) {
+    public RelationTypeIndex getRelationIndex(RelationType type, String name) {
         Preconditions.checkArgument(type!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
-        String composedName = Token.getSeparatedName(TYPE_INDEX_NAME_PREFIX, type.getName(), name);
+        String composedName = composeRelationTypeIndexName(type, name);
 
-        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.TypeName,composedName),null);
+        //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
+        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.getRelationTypeName(composedName)),null);
         if (v==null) return null;
-        assert v instanceof InternalType;
-        return new TitanTypeIndexWrapper((InternalType)v);
+        assert v instanceof InternalRelationType;
+        return new RelationTypeIndexWrapper((InternalRelationType)v);
     }
 
     @Override
-    public Iterable<TitanTypeIndex> getTypeIndexes(TitanType type) {
-        assert type instanceof InternalType;
-        return Iterables.transform(((InternalType) type).getRelationIndexes(),new Function<InternalType, TitanTypeIndex>() {
+    public Iterable<RelationTypeIndex> getRelationIndexes(RelationType type) {
+        assert type instanceof InternalRelationType;
+        return Iterables.transform(((InternalRelationType) type).getRelationIndexes(),new Function<InternalRelationType, RelationTypeIndex>() {
             @Nullable
             @Override
-            public TitanTypeIndex apply(@Nullable InternalType internalType) {
-                return new TitanTypeIndexWrapper(internalType);
+            public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
+                return new RelationTypeIndexWrapper(internalType);
             }
         });
     }
@@ -275,17 +278,11 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name));
-        String composedName = composeIndexName(name);
-
-        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.TypeName,composedName),null);
+        //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
+        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.GRAPHINDEX.getSchemaName(name)),null);
         if (v==null) return null;
         assert v instanceof TitanSchemaVertex;
         return ((TitanSchemaVertex)v).asIndexType();
-    }
-
-    private static final String composeIndexName(String indexName) {
-        return Token.getSeparatedName(GRAPH_INDEX_NAME_PREFIX, indexName);
     }
 
     @Override
@@ -302,7 +299,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType) {
         return Iterables.transform(Iterables.filter(Iterables.transform(
-                transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.INDEX),
+                transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.GRAPHINDEX),
                 new Function<TitanVertex, IndexType>() {
                     @Nullable
                     @Override
@@ -337,12 +334,12 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,Cardinality.LIST);
         def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
-        TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.INDEX,composeIndexName(indexName),def);
+        TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
         return new TitanGraphIndexWrapper(v.asIndexType());
     }
 
     @Override
-    public void addIndexKey(final TitanGraphIndex index, final TitanKey key, Parameter... parameters) {
+    public void addIndexKey(final TitanGraphIndex index, final PropertyKey key, Parameter... parameters) {
         Preconditions.checkArgument(index!=null && key!=null && index instanceof TitanGraphIndexWrapper
                 && !(key instanceof BaseKey),"Need to provide valid index and key");
         if (parameters==null) parameters=new Parameter[0];
@@ -372,9 +369,9 @@ public class ManagementSystem implements TitanManagement {
 
     private class IndexRegistration {
         private final ExternalIndexType index;
-        private final TitanKey key;
+        private final PropertyKey key;
 
-        private IndexRegistration(ExternalIndexType index, TitanKey key) {
+        private IndexRegistration(ExternalIndexType index, PropertyKey key) {
             this.index = index;
             this.key = key;
         }
@@ -385,20 +382,20 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, TitanKey... keys) {
+    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, PropertyKey... keys) {
         return createInternalIndex(indexName, elementType, false, keys);
     }
 
     @Override
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, TitanKey... keys) {
+    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, PropertyKey... keys) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName)==null,"An index with name '%s' has already been defined",indexName);
         ElementCategory elementCategory = ElementCategory.getByClazz(elementType);
         Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index");
         boolean allSingleKeys = true;
         boolean oneNewKey = false;
-        for (TitanKey key : keys) {
-            Preconditions.checkArgument(key!=null && key instanceof TitanKeyVertex,"Need to provide valid keys: %s",key);
+        for (PropertyKey key : keys) {
+            Preconditions.checkArgument(key!=null && key instanceof PropertyKeyVertex,"Need to provide valid keys: %s",key);
             if (key.getCardinality()!=Cardinality.SINGLE) allSingleKeys=false;
             if (key.isNew()) oneNewKey = true;
         }
@@ -415,7 +412,7 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,indexCardinality);
         def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
-        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.INDEX,composeIndexName(indexName),def);
+        TitanSchemaVertex indexVertex = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
         for (int i = 0; i <keys.length; i++) {
             Parameter[] paras = {ParameterType.INDEX_POSITION.getParameter(i)};
             addSchemaEdge(indexVertex,keys[i],TypeDefinitionCategory.INDEX_FIELD,paras);
@@ -439,7 +436,7 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public ConsistencyModifier getConsistency(TitanSchemaElement element) {
         Preconditions.checkArgument(element!=null);
-        if (element instanceof TitanType) return ((InternalType)element).getConsistencyModifier();
+        if (element instanceof RelationType) return ((InternalRelationType)element).getConsistencyModifier();
         else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
             if (index.isExternalIndex()) return ConsistencyModifier.DEFAULT;
@@ -462,7 +459,7 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(consistency!=null);
         if (getConsistency(element)==consistency) return; //Already got the right consistency
         TitanSchemaVertex vertex;
-        if (element instanceof TitanType) vertex = (TitanTypeVertex)element;
+        if (element instanceof RelationType) vertex = (RelationTypeVertex)element;
         else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
             if (index.isExternalIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
@@ -486,47 +483,62 @@ public class ManagementSystem implements TitanManagement {
     // ###### TRANSACTION PROXY #########
 
     @Override
-    public boolean containsType(String name) {
-        return transaction.containsType(name);
+    public boolean containsRelationType(String name) {
+        return transaction.containsRelationType(name);
     }
 
     @Override
-    public TitanType getType(String name) {
-        return transaction.getType(name);
+    public RelationType getRelationType(String name) {
+        return transaction.getRelationType(name);
     }
 
     @Override
-    public TitanKey getPropertyKey(String name) {
+    public PropertyKey getPropertyKey(String name) {
         return transaction.getPropertyKey(name);
     }
 
     @Override
-    public TitanLabel getEdgeLabel(String name) {
+    public EdgeLabel getEdgeLabel(String name) {
         return transaction.getEdgeLabel(name);
     }
 
     @Override
-    public KeyMaker makeKey(String name) {
-        return transaction.makeKey(name);
+    public PropertyKeyMaker makePropertyKey(String name) {
+        return transaction.makePropertyKey(name);
     }
 
     @Override
-    public LabelMaker makeLabel(String name) {
-        return transaction.makeLabel(name);
+    public EdgeLabelMaker makeEdgeLabel(String name) {
+        return transaction.makeEdgeLabel(name);
     }
 
     @Override
-    public <T extends TitanType> Iterable<T> getTypes(Class<T> clazz) {
+    public <T extends RelationType> Iterable<T> getRelationTypes(Class<T> clazz) {
         Preconditions.checkNotNull(clazz);
         Iterable<? extends TitanVertex> types = null;
-        if (TitanKey.class.equals(clazz)) {
-            types = transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.KEY);
-        } else if (TitanLabel.class.equals(clazz)) {
-            types = transaction.getVertices(BaseKey.TypeCategory, TitanSchemaCategory.LABEL);
-        } else if (TitanType.class.equals(clazz)) {
-            types = Iterables.concat(getTypes(TitanLabel.class),getTypes(TitanKey.class));
+        if (PropertyKey.class.equals(clazz)) {
+            types = transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY);
+        } else if (EdgeLabel.class.equals(clazz)) {
+            types = transaction.getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.EDGELABEL);
+        } else if (RelationType.class.equals(clazz)) {
+            types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
         return Iterables.filter(types, clazz);
+    }
+
+    @Override
+    public boolean containsVertexLabel(String name) {
+        return transaction.containsVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel getVertexLabel(String name) {
+        return transaction.getVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabelMaker makeVertexLabel(String name) {
+        return transaction.makeVertexLabel(name);
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########

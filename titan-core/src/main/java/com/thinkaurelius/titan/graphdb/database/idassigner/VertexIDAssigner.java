@@ -250,7 +250,7 @@ public class VertexIDAssigner {
             } else {
                 Preconditions.checkArgument(element instanceof TitanVertex);
                 //TODO: check label to distinguish different vertex types
-                idPool = partitionPool.getPool(PoolType.NORMAL_VERTEX);
+                idPool = partitionPool.getPool(PoolType.getPoolTypeFor(getVertexIDType((TitanVertex)element)));
             }
             try {
                 count = idPool.nextID();
@@ -266,19 +266,31 @@ public class VertexIDAssigner {
         long vertexId;
         if (element instanceof InternalRelation) {
             vertexId = idManager.getRelationID(count, partitionID);
-        } else if (element instanceof TitanKey) {
+        } else if (element instanceof PropertyKey) {
             vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
-        } else if (element instanceof TitanLabel) {
+        } else if (element instanceof EdgeLabel) {
             vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
+        } else if (element instanceof VertexLabel) {
+            vertexId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
         } else if (element instanceof TitanSchemaVertex) {
             vertexId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
         } else {
-            //TODO: check label to distinguish different vertex types
-            vertexId = idManager.getVertexID(count, partitionID, IDManager.VertexIDType.NormalVertex);
+            vertexId = idManager.getVertexID(count, partitionID, getVertexIDType((TitanVertex)element));
         }
 
         Preconditions.checkArgument(vertexId >= 0);
         element.setID(vertexId);
+    }
+
+    private static IDManager.VertexIDType getVertexIDType(TitanVertex v) {
+        VertexLabel vlabel = v.getVertexLabel();
+        if (vlabel.isPartitioned()) {
+            return IDManager.VertexIDType.PartitionedVertex;
+        } else if (vlabel.isStatic()) {
+            return IDManager.VertexIDType.UnmodifiableVertex;
+        } else {
+            return IDManager.VertexIDType.NormalVertex;
+        }
     }
 
     private class SimpleVertexIDBlockSizer implements IDBlockSizer {
@@ -333,6 +345,14 @@ public class VertexIDAssigner {
                 case SCHEMA: return idManager.getSchemaCountBound();
                 default: throw new AssertionError("Unrecognized type: " + this);
             }
+        }
+
+        public static PoolType getPoolTypeFor(IDManager.VertexIDType idType) {
+            if (idType==IDManager.VertexIDType.NormalVertex) return NORMAL_VERTEX;
+            else if (idType== IDManager.VertexIDType.UnmodifiableVertex) return UNMODIFIABLE_VERTEX;
+            else if (idType== IDManager.VertexIDType.PartitionedVertex) return PARTITIONED_VERTEX;
+            else if (IDManager.VertexIDType.Schema.isSubType(idType)) return SCHEMA;
+            else throw new IllegalArgumentException("Invalid id type: " + idType);
         }
 
         public static PoolType getPoolType(int idNamespace) {

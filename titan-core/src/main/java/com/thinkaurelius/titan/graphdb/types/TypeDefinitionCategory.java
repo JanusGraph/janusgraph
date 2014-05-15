@@ -37,15 +37,20 @@ public enum TypeDefinitionCategory {
     //Consistency Types
     CONSISTENCY_LEVEL(ConsistencyModifier.class),
 
+    //Vertex Label
+    PARTITIONED(Boolean.class),
+    STATIC(Boolean.class),
+
     //Schema Edges
     RELATIONTYPE_INDEX(),
     CONSISTENCY_MODIFIER(),
     INDEX_FIELD(RelationCategory.EDGE,Parameter[].class);
 
-    public static final Set<TypeDefinitionCategory> PROPERTY_KEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    public static final Set<TypeDefinitionCategory> EDGE_LABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
+    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
+    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
     public static final Set<TypeDefinitionCategory> CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES = ImmutableSet.of(CONSISTENCY_LEVEL);
     public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
+    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED,STATIC);
 
 
 

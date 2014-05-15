@@ -6,8 +6,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.thinkaurelius.titan.core.*;
 import com.tinkerpop.gremlin.java.GremlinPipeline;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,12 +15,7 @@ import org.junit.experimental.categories.Category;
 import org.junit.rules.TestRule;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TypeMaker;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
@@ -28,7 +23,6 @@ import com.thinkaurelius.titan.testcategory.MemoryTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 
 @Category({MemoryTests.class})
@@ -158,8 +152,8 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
         makeVertexIndexedUniqueKey("uid",Long.class);
         makeKey("name",String.class);
 
-        TitanKey time = makeKey("time",Integer.class);
-        mgmt.makeLabel("friend").signature(time).directed().make();
+        PropertyKey time = makeKey("time",Integer.class);
+        mgmt.makeEdgeLabel("friend").signature(time).directed().make();
         finishSchema();
 
         final Random random = new Random();
@@ -234,7 +228,7 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
 
     @Test
     public void elementCreationPerformance() {
-        TitanLabel connect = tx.makeLabel("connect").make();
+        EdgeLabel connect = tx.makeEdgeLabel("connect").make();
         int noNodes = 20000;
         TitanVertex[] nodes = new TitanVertex[noNodes];
         PerformanceTest p = new PerformanceTest(true);

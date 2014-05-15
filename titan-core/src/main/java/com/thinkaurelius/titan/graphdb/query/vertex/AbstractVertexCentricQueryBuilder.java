@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
-import com.thinkaurelius.titan.core.attribute.Contain;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
@@ -19,7 +18,7 @@ import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.util.datastructures.ProperInterval;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Predicate;
@@ -101,12 +100,12 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     @Override
-    public Q has(TitanKey key, Object value) {
+    public Q has(PropertyKey key, Object value) {
         return has(key.getName(), value);
     }
 
     @Override
-    public Q has(TitanLabel label, TitanVertex vertex) {
+    public Q has(EdgeLabel label, TitanVertex vertex) {
         return has(label.getName(), vertex);
     }
 
@@ -126,7 +125,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     @Override
-    public Q has(TitanKey key, Predicate predicate, Object value) {
+    public Q has(PropertyKey key, Predicate predicate, Object value) {
         return has(key.getName(), predicate, value);
     }
 
@@ -141,7 +140,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     @Override
-    public <T extends Comparable<?>> Q interval(TitanKey key, T start, T end) {
+    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end) {
         return interval(key.getName(), start, end);
     }
 
@@ -157,7 +156,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     @Override
-    public Q types(TitanType... types) {
+    public Q types(RelationType... types) {
         String[] ts = new String[types.length];
         for (int i = 0; i < types.length; i++) {
             ts[i]=types[i].getName();
@@ -175,7 +174,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return types(keys);
     }
 
-    public Q type(TitanType type) {
+    public Q type(RelationType type) {
         return types(type.getName());
     }
 
@@ -206,12 +205,12 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     @Override
-    public Q orderBy(TitanKey key, Order order) {
+    public Q orderBy(PropertyKey key, Order order) {
         Preconditions.checkArgument(key!=null,"Cannot order on undefined key");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
-        Preconditions.checkArgument(!(key instanceof SystemType),"Cannot use system types in ordering: %s",key);
+        Preconditions.checkArgument(!(key instanceof SystemRelationType),"Cannot use system types in ordering: %s",key);
         Preconditions.checkArgument(!orders.containsKey(key.getName()));
         Preconditions.checkArgument(orders.isEmpty(),"Only a single sort order is supported on vertex queries");
         orders.add(key, order);
@@ -247,7 +246,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      */
     protected final boolean isImplicitKeyQuery(RelationCategory returnType) {
         if (returnType==RelationCategory.EDGE || types.length!=1 || !constraints.isEmpty()) return false;
-        return tx.getType(types[0]) instanceof ImplicitKey;
+        return tx.getRelationType(types[0]) instanceof ImplicitKey;
     }
 
     /**
@@ -263,7 +262,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     protected Iterable<TitanRelation> executeImplicitKeyQuery(InternalVertex v) {
         assert isImplicitKeyQuery(RelationCategory.PROPERTY);
         if (dir==Direction.IN || limit<1) return ImmutableList.of();
-        ImplicitKey key = (ImplicitKey)tx.getType(types[0]);
+        ImplicitKey key = (ImplicitKey)tx.getRelationType(types[0]);
         return ImmutableList.of((TitanRelation)new StandardProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
     }
 
@@ -331,16 +330,16 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             conditions.add(returnType);
             conditions.add(new HiddenFilterCondition<TitanRelation>()); //Need this to filter out newly created hidden relations in the transaction
         } else {
-            Set<TitanType> ts = new HashSet<TitanType>(types.length);
+            Set<RelationType> ts = new HashSet<RelationType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
-            Map<TitanType,ProperInterval> intervalConstraints = new HashMap<TitanType, ProperInterval>(conditions.size());
+            Map<RelationType,ProperInterval> intervalConstraints = new HashMap<RelationType, ProperInterval>(conditions.size());
             final boolean isIntervalFittedConditions = compileConstraints(conditions,intervalConstraints);
             for (ProperInterval pint : intervalConstraints.values()) { //Check if one of the constraints leads to an empty result set
                 if (pint.isEmpty()) return BaseVertexCentricQuery.emptyQuery();
             }
 
             for (String typeName : types) {
-                InternalType type = QueryUtil.getType(tx, typeName);
+                InternalRelationType type = QueryUtil.getType(tx, typeName);
                 if (type==null) continue;
                 if (type instanceof ImplicitKey) throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "+type);
                 ts.add(type);
@@ -380,10 +379,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
                         since they are more restrictive. We assign additional points if the sort key satisfies the order
                         of this query.
                         */
-                        InternalType bestCandidate = null;
+                        InternalRelationType bestCandidate = null;
                         int bestScore = Integer.MIN_VALUE;
                         boolean bestCandidateSupportsOrder = false;
-                        for (InternalType candidate : type.getRelationIndexes()) {
+                        for (InternalRelationType candidate : type.getRelationIndexes()) {
                             //Filter out those that don't apply
                             if (!candidate.isUnidirected(Direction.BOTH) && !candidate.isUnidirected(direction)) continue;
                             if (candidate.getStatus()!= SchemaStatus.ENABLED) continue;
@@ -392,10 +391,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
                             int currentOrder = 0;
 
                             int score = 0;
-                            TitanType[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
+                            RelationType[] extendedSortKey = getExtendedSortKey(candidate,direction,tx);
 
                             for (int i=0;i<extendedSortKey.length;i++) {
-                                TitanType keyType = extendedSortKey[i];
+                                RelationType keyType = extendedSortKey[i];
                                 if (currentOrder<orders.size() && orders.getKey(currentOrder).equals(keyType)) currentOrder++;
 
                                 ProperInterval interval = intervalConstraints.get(keyType);
@@ -418,14 +417,14 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
                         //Construct sort key constraints for the best candidate and then serialize into a SliceQuery
                         //that is wrapped into a BackendQueryHolder
-                        TitanType[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
+                        RelationType[] extendedSortKey = getExtendedSortKey(bestCandidate,direction,tx);
                         EdgeSerializer.TypedInterval[] sortKeyConstraints = new EdgeSerializer.TypedInterval[extendedSortKey.length];
                         int coveredTypes = 0;
                         for (int i = 0; i < extendedSortKey.length; i++) {
-                            TitanType keyType = extendedSortKey[i];
+                            RelationType keyType = extendedSortKey[i];
                             ProperInterval interval = intervalConstraints.get(keyType);
                             if (interval!=null) {
-                                sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalType) keyType,interval);
+                                sortKeyConstraints[i]=new EdgeSerializer.TypedInterval((InternalRelationType) keyType,interval);
                                 coveredTypes++;
                             }
                             if (interval==null || !interval.isPoint()) break;
@@ -459,16 +458,16 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      * @param tx
      * @return
      */
-    private static TitanType[] getExtendedSortKey(InternalType type, Direction dir, StandardTitanTx tx) {
+    private static RelationType[] getExtendedSortKey(InternalRelationType type, Direction dir, StandardTitanTx tx) {
         int additional = 0;
         if (!type.getMultiplicity().isUnique(dir)) {
             if (!type.getMultiplicity().isConstrained()) additional++;
             if (type.isEdgeLabel()) additional++;
         }
-        TitanType[] entireKey = new TitanType[type.getSortKey().length+additional];
+        RelationType[] entireKey = new RelationType[type.getSortKey().length+additional];
         int i;
         for (i=0;i<type.getSortKey().length;i++) {
-            entireKey[i]=tx.getExistingType(type.getSortKey()[i]);
+            entireKey[i]=tx.getExistingRelationType(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.getMultiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
         if (!type.getMultiplicity().isConstrained()) entireKey[i++]=ImplicitKey.ID;
@@ -488,12 +487,12 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      * @param constraintMap
      * @return
      */
-    private boolean compileConstraints(And<TitanRelation> conditions, Map<TitanType,ProperInterval> constraintMap) {
+    private boolean compileConstraints(And<TitanRelation> conditions, Map<RelationType,ProperInterval> constraintMap) {
         boolean isFitted = true;
         for (Condition<TitanRelation> condition : conditions.getChildren()) {
             if (!(condition instanceof PredicateCondition)) continue; //TODO: Should we optimize OR clauses?
-            PredicateCondition<TitanType, TitanRelation> atom = (PredicateCondition)condition;
-            TitanType type = atom.getKey();
+            PredicateCondition<RelationType, TitanRelation> atom = (PredicateCondition)condition;
+            RelationType type = atom.getKey();
             assert type!=null;
             ProperInterval pi = constraintMap.get(type);
             if (pi==null) {
@@ -510,7 +509,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return isFitted;
     }
 
-    private static boolean compileConstraint(ProperInterval pint, TitanType type, TitanPredicate predicate, Object value) {
+    private static boolean compileConstraint(ProperInterval pint, RelationType type, TitanPredicate predicate, Object value) {
         if (predicate instanceof Cmp) {
             Cmp cmp = (Cmp)predicate;
             if (cmp==Cmp.EQUAL) {
@@ -560,13 +559,13 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      * @param types
      * @return
      */
-    private static Condition<TitanRelation> getTypeCondition(Set<TitanType> types) {
+    private static Condition<TitanRelation> getTypeCondition(Set<RelationType> types) {
         assert !types.isEmpty();
         if (types.size() == 1)
             return new RelationTypeCondition<TitanRelation>(types.iterator().next());
 
         Or<TitanRelation> typeCond = new Or<TitanRelation>(types.size());
-        for (TitanType type : types)
+        for (RelationType type : types)
             typeCond.add(new RelationTypeCondition<TitanRelation>(type));
 
         return typeCond;

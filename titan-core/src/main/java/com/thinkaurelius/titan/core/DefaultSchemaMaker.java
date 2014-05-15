@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.core;
 
 /**
  * When a graph is configured to automatically create edge labels and property keys when they are first used,
- * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeLabel(LabelMaker)}
- * or {@link #makeKey(KeyMaker)} methods respectively.
+ * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeEdgeLabel(EdgeLabelMaker)}
+ * or {@link #makePropertyKey(PropertyKeyMaker)} methods respectively.
  * <br />
  * By providing a custom DefaultTypeMaker implementation, one can specify how these types should be defined by default.
  * A DefaultTypeMaker implementation is specified in the graph configuration using the full path which means the
@@ -11,28 +11,35 @@ package com.thinkaurelius.titan.core;
  * <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see TypeMaker
+ * @see RelationTypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  */
-public interface DefaultTypeMaker {
+public interface DefaultSchemaMaker {
 
     /**
-     * Creates a new label type with default settings against the provided {@link LabelMaker}.
+     * Creates a new label type with default settings against the provided {@link EdgeLabelMaker}.
      *
      * @param factory LabelMaker through which the edge label is created
      * @return A new edge label for the given name
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public TitanLabel makeLabel(LabelMaker factory);
+    public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory);
 
     /**
-     * Creates a new property key with default settings against the provided {@link KeyMaker}.
+     * Creates a new property key with default settings against the provided {@link PropertyKeyMaker}.
      *
      * @param factory TypeMaker through which the property key is created
      * @return A new property key for the given name
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
-    public TitanKey makeKey(KeyMaker factory);
+    public PropertyKey makePropertyKey(PropertyKeyMaker factory);
+
+    /**
+     * Creates a new
+     * @param factory
+     * @return
+     */
+    public VertexLabel makeVertexLabel(VertexLabelMaker factory);
 
     /**
      * Whether to ignore undefined types occurring in a query.

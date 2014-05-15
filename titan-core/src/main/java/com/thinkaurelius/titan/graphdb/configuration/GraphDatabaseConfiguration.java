@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.configuration;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
@@ -44,11 +46,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
-import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -75,7 +75,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     /**
-     * Configures the {@link DefaultTypeMaker} to be used by this graph. If set to 'none', automatic creation of types
+     * Configures the {@link com.thinkaurelius.titan.core.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
      * is disabled.
      */
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
@@ -89,9 +89,9 @@ public class GraphDatabaseConfiguration {
 //    public static final String AUTO_TYPE_KEY = "autotype";
 //    public static final String AUTO_TYPE_DEFAULT = "blueprints";
 
-    private static final Map<String, DefaultTypeMaker> preregisteredAutoType = new HashMap<String, DefaultTypeMaker>() {{
-        put("none", DisableDefaultTypeMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
+        put("none", DisableDefaultSchemaMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
     }};
 
     /**
@@ -1193,7 +1193,7 @@ public class GraphDatabaseConfiguration {
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
-    private DefaultTypeMaker defaultTypeMaker;
+    private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1345,9 +1345,9 @@ public class GraphDatabaseConfiguration {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         batchLoading = configuration.get(STORAGE_BATCH);
-        defaultTypeMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
+        defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
@@ -1483,8 +1483,8 @@ public class GraphDatabaseConfiguration {
         return metricsPrefix;
     }
 
-    public DefaultTypeMaker getDefaultTypeMaker() {
-        return defaultTypeMaker;
+    public DefaultSchemaMaker getDefaultSchemaMaker() {
+        return defaultSchemaMaker;
     }
 
     public boolean allowVertexIdSetting() {

@@ -23,7 +23,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q adjacent(TitanVertex vertex);
 
     @Override
-    public Q types(TitanType... type);
+    public Q types(RelationType... type);
 
     @Override
     public Q labels(String... labels);
@@ -35,10 +35,10 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q direction(Direction d);
 
     @Override
-    public Q has(TitanKey key, Object value);
+    public Q has(PropertyKey key, Object value);
 
     @Override
-    public Q has(TitanLabel label, TitanVertex vertex);
+    public Q has(EdgeLabel label, TitanVertex vertex);
 
     @Override
     public Q has(String key);
@@ -54,7 +54,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
 
 
     @Override
-    public Q has(TitanKey key, Predicate predicate, Object value);
+    public Q has(PropertyKey key, Predicate predicate, Object value);
 
     @Override
     public Q has(String key, Predicate predicate, Object value);
@@ -63,7 +63,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public <T extends Comparable<?>> Q interval(String key, T start, T end);
 
     @Override
-    public <T extends Comparable<?>> Q interval(TitanKey key, T start, T end);
+    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
 
     @Override
     public Q limit(int limit);
@@ -72,7 +72,7 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
     public Q orderBy(String key, Order order);
 
     @Override
-    public Q orderBy(TitanKey key, Order order);
+    public Q orderBy(PropertyKey key, Order order);
 
 
     /* ---------------------------------------------------------------

@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb
 
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration
 
-import static com.tinkerpop.blueprints.Direction.IN;
 import static org.junit.Assert.*
 
 import org.junit.FixMethodOrder;
@@ -10,7 +9,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.categories.Category
 import org.junit.rules.TestRule
-import org.junit.rules.TestName
 import org.junit.runners.MethodSorters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -20,13 +18,9 @@ import com.google.common.base.Preconditions
 import com.google.common.collect.Iterables
 import com.thinkaurelius.titan.core.TitanEdge
 import com.thinkaurelius.titan.core.TitanGraph
-import com.thinkaurelius.titan.core.TitanKey
-import com.thinkaurelius.titan.core.TitanMultiVertexQuery
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex
-import com.thinkaurelius.titan.graphdb.FakeVertex
 import com.thinkaurelius.titan.testcategory.PerformanceTests
-import com.thinkaurelius.titan.testutil.gen.GraphGenerator
 import com.thinkaurelius.titan.testutil.gen.Schema
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider
 import com.tinkerpop.blueprints.Vertex

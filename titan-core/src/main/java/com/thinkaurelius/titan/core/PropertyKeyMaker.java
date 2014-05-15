@@ -1,11 +1,11 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * Used to define new {@link TitanKey}s
+ * Used to define new {@link PropertyKey}s
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface KeyMaker extends TypeMaker {
+public interface PropertyKeyMaker extends RelationTypeMaker {
 
 
     /**
@@ -13,7 +13,7 @@ public interface KeyMaker extends TypeMaker {
      * @param cardinality
      * @return
      */
-    public KeyMaker cardinality(Cardinality cardinality);
+    public PropertyKeyMaker cardinality(Cardinality cardinality);
 
     /**
      * Configures the data type for this type.  This only applies to property keys.
@@ -25,9 +25,9 @@ public interface KeyMaker extends TypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this type maker
-     * @see TitanKey#getDataType()
+     * @see PropertyKey#getDataType()
      */
-    public KeyMaker dataType(Class<?> clazz);
+    public PropertyKeyMaker dataType(Class<?> clazz);
 
     /**
      * Configures the composite sort key for this label.
@@ -37,7 +37,7 @@ public interface KeyMaker extends TypeMaker {
      * <br />
      * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
      * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
-     * time interval using {@link TitanVertexQuery#interval(TitanKey, Comparable, Comparable)}.
+     * time interval using {@link TitanVertexQuery#interval(PropertyKey, Comparable, Comparable)}.
      * <br />
      * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
      * by default.
@@ -45,12 +45,12 @@ public interface KeyMaker extends TypeMaker {
      * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
      * in the given order.
      * <p/>
-     * {@link TitanType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     * {@link RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
      *
      * @param types TitanTypes composing the sort key. The order is relevant.
      * @return this LabelMaker
      */
-    public KeyMaker sortKey(TitanType... types);
+    public PropertyKeyMaker sortKey(RelationType... types);
 
     /**
      * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link Order#ASC}) or
@@ -60,9 +60,9 @@ public interface KeyMaker extends TypeMaker {
      *
      * @param order
      * @return
-     * @see #sortKey(TitanType...)
+     * @see #sortKey(RelationType...)
      */
-    public KeyMaker sortOrder(Order order);
+    public PropertyKeyMaker sortOrder(Order order);
 
     /**
      * Configures the signature of this label.
@@ -74,7 +74,7 @@ public interface KeyMaker extends TypeMaker {
      * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
      * (<i>createdOn</i>) as the signature for type <i>friend</i> allows friend edges to be stored more efficiently.
      * <br />
-     * {@link TitanType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
+     * {@link RelationType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
      * <br />
      * The signature should not contain any types already included in the sort key. The sort key provides the same
      * storage and retrieval efficiency.
@@ -84,14 +84,14 @@ public interface KeyMaker extends TypeMaker {
      * @param types TitanTypes composing the signature key. The order is irrelevant.
      * @return this LabelMaker
      */
-    public KeyMaker signature(TitanType... types);
+    public PropertyKeyMaker signature(RelationType... types);
 
 
     /**
-     * Defines the {@link TitanKey} specified by this KeyMaker and returns the resulting TitanKey
+     * Defines the {@link PropertyKey} specified by this KeyMaker and returns the resulting TitanKey
      *
      * @return
      */
     @Override
-    public TitanKey make();
+    public PropertyKey make();
 }

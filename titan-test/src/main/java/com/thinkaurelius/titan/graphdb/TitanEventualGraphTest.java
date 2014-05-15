@@ -191,11 +191,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     public void testBatchLoadingLocking(boolean batchloading) {
-        TitanKey uid = makeKey("uid",Long.class);
+        PropertyKey uid = makeKey("uid",Long.class);
         TitanGraphIndex uidIndex = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
         mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
-        TitanLabel knows = mgmt.makeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(knows,ConsistencyModifier.LOCK);
         finishSchema();
 
@@ -233,7 +233,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makeKey(prop).dataType(Integer.class).make();
+        graph.makePropertyKey(prop).dataType(Integer.class).make();
 
         final int numV = 100;
         final long[] vids = new long[numV];

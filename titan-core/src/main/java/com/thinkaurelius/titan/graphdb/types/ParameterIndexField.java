@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Parameter;
 import com.thinkaurelius.titan.core.ParameterType;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -12,7 +12,7 @@ public class ParameterIndexField extends IndexField {
 
     private final Parameter[] parameters;
 
-    private ParameterIndexField(TitanKey key, Parameter[] parameters) {
+    private ParameterIndexField(PropertyKey key, Parameter[] parameters) {
         super(key);
         Preconditions.checkNotNull(parameters);
         this.parameters=parameters;
@@ -26,7 +26,7 @@ public class ParameterIndexField extends IndexField {
         return parameters;
     }
 
-    public static ParameterIndexField of(TitanKey key, Parameter... parameters) {
+    public static ParameterIndexField of(PropertyKey key, Parameter... parameters) {
         return new ParameterIndexField(key,parameters);
     }
 

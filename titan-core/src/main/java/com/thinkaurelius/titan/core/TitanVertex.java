@@ -29,7 +29,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @param vertex incoming vertex of the edge to be created
      * @return new edge
      */
-    public TitanEdge addEdge(TitanLabel label, TitanVertex vertex);
+    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex);
 
     /**
      * Creates a new edge incident on this vertex.
@@ -57,7 +57,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @return New property
      * @throws IllegalArgumentException if the attribute does not match the data type of the property key.
      */
-    public TitanProperty addProperty(TitanKey key, Object attribute);
+    public TitanProperty addProperty(PropertyKey key, Object attribute);
 
     /**
      * Creates a new property for this vertex and given key with the specified attribute.
@@ -74,6 +74,15 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @throws IllegalArgumentException if the attribute does not match the data type of the property key.
      */
     public TitanProperty addProperty(String key, Object attribute);
+
+     /* ---------------------------------------------------------------
+      * Vertex Label
+      * ---------------------------------------------------------------
+      */
+
+    public String getLabel();
+
+    public VertexLabel getVertexLabel();
 
 	/* ---------------------------------------------------------------
      * Incident TitanRelation Access methods
@@ -107,10 +116,10 @@ public interface TitanVertex extends TitanElement, Vertex {
      * There is no guarantee concerning the order in which the properties are returned. All returned properties are
      * of the specified key.
      *
-     * @param key {@link TitanKey} of the returned properties
+     * @param key {@link PropertyKey} of the returned properties
      * @return {@link Iterable} over all properties of the specified key incident on this vertex
      */
-    public Iterable<TitanProperty> getProperties(TitanKey key);
+    public Iterable<TitanProperty> getProperties(PropertyKey key);
 
     /**
      * Returns an iterable over all properties of the specified property key incident on this vertex.
@@ -134,7 +143,7 @@ public interface TitanVertex extends TitanElement, Vertex {
      * @param d      Direction of the returned edges with respect to this vertex
      * @return {@link Iterable} over all edges with the given label and direction incident on this vertex
      */
-    public Iterable<TitanEdge> getTitanEdges(Direction d, TitanLabel... labels);
+    public Iterable<TitanEdge> getTitanEdges(Direction d, EdgeLabel... labels);
 
     /**
      * Returns an iterable over all edges of the specified edge label in the given direction incident on this vertex.

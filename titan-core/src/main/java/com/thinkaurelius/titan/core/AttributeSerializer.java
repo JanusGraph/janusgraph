@@ -14,14 +14,14 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br />
  * <p/>
- * When a {@link TitanKey} is defined using a data type specified via {@link TypeMaker} for which a custom serializer
+ * When a {@link PropertyKey} is defined using a data type specified via {@link RelationTypeMaker} for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations. For more information on how to
  * configure a custom serializer, refer to the
  * <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see TypeMaker
+ * @see RelationTypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  */
 public interface AttributeSerializer<V> extends AttributeHandler<V> {
