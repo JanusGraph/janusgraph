@@ -119,6 +119,7 @@ for(Vertex vertex : juno.query().labels("knows").has("since",2011).has("stars",5
 dido
 ----
 
+[[blueprints-vertex-index]]
 Graph Indices
 ~~~~~~~~~~~~~
 
@@ -601,7 +602,7 @@ Nested Transactions
 
 Another use case for thread independent transactions is nested transactions that ought to be independent from the surrounding transaction.
 
-For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see _TODO:Type Definition Overview xref_ for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
+For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<type-definition> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
 
 [source,java]
 Vertex v1 = g.addVertex(null);
@@ -717,7 +718,7 @@ limitations could reasonably be removed in upcoming versions of Titan.
 Key Index Must Be Created Prior to Key Being Used
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To index vertices or edges by key, the respective key index must be created before the key is first used in a vertex or edge property. Read more about creating _TODO: xref to Blueprints Interface called "vertex indexes"_.
+To index vertices or edges by key, the respective key index must be created before the key is first used in a vertex or edge property. Read more about creating <<blueprints-vertex-index,creating vertex indices through Blueprints>>.
 
 Unable to Drop Key Indices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -732,7 +733,7 @@ This pitfall constrains the graph schema. While the graph schema can be extended
 Batch Loading Speed
 ^^^^^^^^^^^^^^^^^^^
 
-Titan provides a batch loading mode that can be enabled through the _TODO: xref to Graph Configuration_. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. The _TODO: Bulk Loading xref_ documentation lists ways to speed up batch loading in Titan.
+Titan provides a batch loading mode that can be enabled through the _TODO: xref to Graph Configuration_. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in Titan.
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
 
@@ -748,12 +749,12 @@ Running multiple Titan instances on one machine backed by the *same* storage bac
 Accidental type creation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly _TODO: xref to Type-Definition-Overview called "defined types"_ and disable automatic type creation by setting the _TODO: xref to Graph-Configuration_ option `autotype = none`.
+By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly <<type-definition,define types>> and disable automatic type creation by setting the _TODO: xref to Graph-Configuration_ option `autotype = none`.
 
 Custom Class Datatype
 ~~~~~~~~~~~~~~~~~~~~~
 
-Titan supports arbitrary objects as attribute values on properties. To use a custom class as data type in Titan, either register a custom serializer or ensure that the class has a no-argument constructor and implements the `equals` method because Titan will verify that it can successfully de-/serialize objects of that class. Please read _TODO: xref to Datatype and Attribute Serializer Configuration_ for more information.
+Titan supports arbitrary objects as attribute values on properties. To use a custom class as data type in Titan, either register a custom serializer or ensure that the class has a no-argument constructor and implements the `equals` method because Titan will verify that it can successfully de-/serialize objects of that class. Please see <<serializer>> more information.
 
 Transactional Scope for Edges
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -763,7 +764,7 @@ Edges should not be accessed outside the scope in which they were originally cre
 Locking Exceptions
 ~~~~~~~~~~~~~~~~~~
 
-When defining unique _TODO: xref to Type Definition Overview called "Titan types"_ with locking enabled (i.e. requesting that Titan ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
+When defining unique <<type-definition,Titan types>> with locking enabled (i.e. requesting that Titan ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
 
 Such exceptions are to be expected, since Titan cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. It most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
 
@@ -776,9 +777,9 @@ Use `FullDouble` and `FullFloat` as data type to get the full precision of float
 Ghost Vertices
 ~~~~~~~~~~~~~~
 
-When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key _TODO: xref to Type Definition Overview called "out-uniqueness"_ but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/titan-tools[Titan tools].
+When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<type-definition,out-uniqueness>>_ but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/titan-tools[Titan tools].
 
-Another option is to detect them at read-time using the _TODO: xref to Transaction-Configuration_ option `checkInternalVertexExistence()`
+Another option is to detect them at read-time using the option `checkInternalVertexExistence()` documented in <<tx-config>>.
 
 Snappy 1.4 does not work with Java 1.7
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -793,7 +794,7 @@ When the log level is set to `debug` Titan produces *a lot* of logging output wh
 Titan OutOfMemoryException or excessive Garbage Collection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you experience memory issues or excessive garbage collection while running Titan it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. Read more about _TODO xref to Data Caching called "Titan's caching layers"_.
+If you experience memory issues or excessive garbage collection while running Titan it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. See <<caching>> for more information.
 
 JAMM Warning Messages
 ~~~~~~~~~~~~~~~~~~~~~

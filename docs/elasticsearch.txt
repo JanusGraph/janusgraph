@@ -10,7 +10,7 @@ Elasticsearch is a flexible and powerful open source, distributed real-time sear
 
 Titan supports http://elasticsearch.org[Elasticsearch] as an embedded or remote index backend. In embedded mode, Elasticsearch runs in the same JVM as Titan and stores data on the local machine. In remote mode, Titan connects to a running Elasticsearch cluster as a client. If not in embedded mode, be sure to have the Elasticsearch running and accessible.  
 
-Please see the _TODO xref Version Compatibility_ chart for details on what versions of ES will work with Titan.
+Please see <<version-compat>> for details on what versions of ES will work with Titan.
 
 Elasticsearch Embedded Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -129,7 +129,7 @@ Optimizing Elasticsearch
 Write Optimization
 ++++++++++++++++++
 
-For _TODO xref bulk loading_ or other write-intense applications, consider increasing Elasticsearch's refresh interval. Refer to "this discussion":https://groups.google.com/d/topic/elasticsearch/yp6bTiP2JYE/discussion on how to increase the refresh interval and its impact on write performance. Note, that a higher refresh interval means that it takes a longer time for graph mutations to be available in the index.
+For <<bulk-loading,bulk loading>> or other write-intense applications, consider increasing Elasticsearch's refresh interval. Refer to "this discussion":https://groups.google.com/d/topic/elasticsearch/yp6bTiP2JYE/discussion on how to increase the refresh interval and its impact on write performance. Note, that a higher refresh interval means that it takes a longer time for graph mutations to be available in the index.
 
 For additional suggestions on how to increase write performance in Elasticsearch with detailed instructions, please read "this blog post":http://blog.bugsense.com/post/35580279634/indexing-bigdata-with-elasticsearch .
 
@@ -137,4 +137,4 @@ Next Steps
 ^^^^^^^^^^
 
 * Please refer to the "Elasticsearch homepage":http://elasticsearch.org and available documentation for more information on Elasticsearch and how to setup an Elasticsearch cluster.
-* Check out _TODO xref Example Graph Configuration_ for complete configurations including the storage backend.
+* See [[example-config]] for complete configurations including the storage backend.

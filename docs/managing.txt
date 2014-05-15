@@ -144,7 +144,7 @@ The `Compare` enum specifies the following self-explanatory comparison predicate
 Text Predicate
 ^^^^^^^^^^^^^^
 
-The `Text` enum specifies the _TODO xref Full-Text-and-String-Search_ used to query for matching text or string values. We differentiate between two types of predicates:
+The `Text` enum specifies the <<text-search,search operator>> used to query for matching text or string values.  We differentiate between two types of predicates:
 
 * Text search predicates which match against the individual words inside a text string after it has been tokenized. These predicates are not case sensitive.
 ** CONTAINS: is true if (at least) one word inside the text string matches the query string
@@ -154,7 +154,7 @@ The `Text` enum specifies the _TODO xref Full-Text-and-String-Search_ used to qu
 ** PREFIX: if the string value starts with the given query string
 ** REGEX: if the string value matches the given regular expression in its entirety
 
-Read more about _TODO xref Full-Text-and-String-Search_ and how to specify whether to use full-text or string search.
+See <<text-search>> for more information about full-text and string search.
 
 Geo Predicate
 ^^^^^^^^^^^^^

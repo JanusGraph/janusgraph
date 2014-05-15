@@ -65,7 +65,7 @@ http://rexster.titan.machine1/mygraph/vertices/1
 http://rexster.titan.machine2/mygraph/tp/gremlin?script=g.v(1).out('follows').out('created')
 ----
 
-In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to the _TODO xref to Rexster-Graph-Server_ for a complete example.
+In this case, each Rexster server would be configured to connect to the HBase cluster. The following shows the graph specific fragment of the Rexster configuration. Refer to <<rexster>> for a complete example.
 
 [source,xml]
 <graph>
@@ -245,7 +245,7 @@ Targeting Hadoop 2
 
 Titan's HBase storage backend depends on the Apache HBase 0.94 Maven artifact.  This in turn depends on Hadoop 1.0.  However, http://hbase.apache.org/book/configuration.html#hadoop[HBase supports multiple Hadoop versions and recommends Hadoop 2].
 
-Titan is supported with its released version of HBase and the associated default Hadoop version (see the _TODO: xref to version compatibility page_).  Due to the sheer number of interoperable HBase and Hadoop versions, Titan's HBase backend is not tested in every version combination.  However, Titan attempts to maintain as wide a version compatibility range as possible by using only a minimal set of core Hadoop and HBase API classes and methods.  Furthermore, since version 0.4.1, Titan includes Maven build options to make targeting Hadoop 2.0 or 2.2 easier.  It should be possible to target any recent Hadoop version and compatible HBase version without modifying Titan's source code, though targeting Hadoop versions besides 1.0, 2.0, or 2.2 may require tweaking dependency versions in <code>titan-hbase/pom.xml</code>.
+Titan is supported with its released version of HBase and the associated default Hadoop version (see <<version-compat>>).  Due to the sheer number of interoperable HBase and Hadoop versions, Titan's HBase backend is not tested in every version combination.  However, Titan attempts to maintain as wide a version compatibility range as possible by using only a minimal set of core Hadoop and HBase API classes and methods.  Furthermore, since version 0.4.1, Titan includes Maven build options to make targeting Hadoop 2.0 or 2.2 easier.  It should be possible to target any recent Hadoop version and compatible HBase version without modifying Titan's source code, though targeting Hadoop versions besides 1.0, 2.0, or 2.2 may require tweaking dependency versions in <code>titan-hbase/pom.xml</code>.
 
 Broadly, targeting Titan for Hadoop 2 is a two step process:
 
