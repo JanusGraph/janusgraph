@@ -42,6 +42,7 @@ The external index interface is more flexible and supports retrieving vertices a
 
 The choice of index backend determines which search features are supported, as well as the performance and scalability of the index. Titan currently supports two index backends: <<elasticsearch,Elasticsearch>> and <<lucene,Lucene>>.
 
+[[index-creation]]
 Indexing Vertices and Edges
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -73,6 +74,7 @@ The name "standard" is always reserved for Titan's standard index backend. Exter
 
 _Note, this section assumes that an index backend named `search` has been defined in the graph configuration. Read "Next Steps" to find out how to configure an index backend._
 
+[[index-blueprints-query]]
 Querying an Index
 ~~~~~~~~~~~~~~~~~
 
@@ -106,6 +108,7 @@ g.query().has("age",GREATER_THAN,1000).has("name",EQUAL,"saturn").vertices()
 . The geo-index registered for `place` supports retrieving edges by specifying a circular shape as the search region. The circular region is defined by the latitude and longitude of its center (first two arguments) and the radius of the circle in kilometers (third argument).
 . The full-text index registered for `reason` supports retrieval by string containment. A property matches if it contains the given word (case insensitive). Note, that the text is tokenized when indexed and stop words as well as punctuation are removed. Two query for properties that contain two or more words, split them up into two separate `has()` clauses.
 . Multiple has clauses can be combined into a _composite_ index retrieval potentially spread across multiple index backends. In this example, the query contains a `name` and `age` constraint. Titan will optimize the query to find the optimal index retrieval plan.
+
 
 Dual Indexing
 ~~~~~~~~~~~~~
