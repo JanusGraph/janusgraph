@@ -226,8 +226,9 @@
                             <backend>docbook5</backend>
                             <doctype>book</doctype>
                             <attributes>
-                                <imagesdir>images</imagesdir>
                                 <encoding>UTF-8</encoding>
+                                <iconsdir>images/icons</iconsdir>
+                                <imagesdir>images</imagesdir>
                                 <toc>true</toc>
                             </attributes>
                         </configuration>

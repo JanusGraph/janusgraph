@@ -37,6 +37,9 @@
   <xsl:param name="html.cellpadding" select="'4px'"/>
   <xsl:param name="html.cellspacing" select="''"/>
 
+  <xsl:param name="admon.graphics" select="1"/>
+  <xsl:param name="admon.graphics.path">images/icons/</xsl:param>
+
   <!-- Titan-themed output templates -->
   <xsl:template name="titan.head">
     <script type='text/javascript' src='http://intelliscence.com/web/work/demos/titan/wp-includes/js/jquery/jquery.js?ver=1.11.0'></script>
