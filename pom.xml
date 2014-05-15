@@ -100,7 +100,6 @@
         <module>titan-lucene</module>
         <module>titan-rexster</module>
         <module>titan-all</module>
-        <module>titan-site</module>
         <module>titan-dist</module>
     </modules>
     <build>
@@ -882,6 +881,10 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- Quiet mode still shows warnings and errors -->
+                                    <quiet>true</quiet>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
