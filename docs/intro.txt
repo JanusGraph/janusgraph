@@ -75,6 +75,42 @@ image:titan-captheorem.png[]
 
 HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
 
+[[arch-overview]]
+Architectural Overview
+----------------------
+
+Titan is a graph database engine.  Titan itself is focused on compact
+graph serialization, rich graph data modeling, and efficient query
+execution.  Titan implements robust, modular interfaces for data
+persistence, data indexing, and client access.  Titan's modular
+architecture allows it to interoperate with a wide range of storage,
+index, and client technologies; it also eases the process of extending
+Titan to support new ones.
+
+Between Titan and the disks sits one or more storage and indexing
+adapters.  Titan comes standard with the following adapters, but
+Titan's modular architecture supports third-party adapters.
+
+* Data storage:
+** <<cassandra,Cassandra>>
+** <<hbase,HBase>>
+** <<bdb,BerkeleyDB>>
+* Indices, which speed up and enable more complex queries:
+** <<elasticsearch,Elasticsearch>>
+** <<lucene,Lucene>>
+
+Broadly speaking, applications can interact with Titan in two ways:
+
+* Method calls to its Java-language APIs, which include
+** Titan's native <<blueprints,Blueprints API>> implementation
+** A superset of Blueprints functionality called TitanGraph, which provides some Titan features that aren't part of the vendor-neutral Blueprints spec
+* TinkerPop stack utilities built atop Blueprints, such as
+** The <<gremlin,Gremlin query language>>
+** The <<rexster,Rexster graph server>>
+
+.High-level Titan Architecture and Context
+image::titan-architecture-layer-diagram.svg[]
+
 [[getting-started]]
 Getting Started
 ---------------
@@ -344,10 +380,9 @@ Articles & Posters
 
 * http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/[Titan Provides Real-Time Big Graph Data]: A thorough evaluation of Titan based on a social network benchmark using real Twitter network data. _(August 2012)_
 * http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/[Educating the Planet with Pearson Education]: Presents a large-scale benchmark of Titan with a 121 billion edge graph. _(May 2013, in collaboration with Pearson Education)_
+* http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
 * http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/[Brief Primer on Graph Databases]
 * https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model]
-* The http://gremlin.tinkerpop.com[Gremlin Wiki], http://gremlindocs.com[GremlinDocs], and http://sql2gremlin.com/[SQL2Gremlin]
-* http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
 
 Slide Presentations
 ~~~~~~~~~~~~~~~~~~~

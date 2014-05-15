@@ -1,15 +1,14 @@
 Using Titan
 ===========
 
-This section describes how to read and write graph data with Titan from a user's point of view.
+This section describes how to read and write graph data with Titan from an application's point of view.
 
 [[tinkerpop]]
 TinkerPop
 ---------
 
-Titan natively implements the Blueprints Interface which means that it supports all of the open-source technologies in the http://www.tinkerpop.com[TinkerPop] graph stack:
+Titan natively implements the http://blueprints.tinkerpop.com[Blueprints] interface.  This means that Titan supports all of the open-source technologies in the http://www.tinkerpop.com[TinkerPop] graph stack:
 
-* http://blueprints.tinkerpop.com[Blueprints] - The property graph model interface implemented by Titan which provides various utilities to aid developers.
 * http://gremlin.tinkerpop.com[Gremlin] - A graph traversal language for expressing complex walks through a graph.  http://gremlindocs.com/[GremlinDocs] is a cheat-sheet for the language.
 * http://frames.tinkerpop.com[Frames] - An object-to-graph mapper for rendering Java objects from graph data.
 * http://rexster.tinkerpop.com[Rexster] - A graph server for exposing the graph via REST, a binary protocol, and HTML-based GUI tools.
