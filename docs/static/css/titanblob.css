@@ -16,6 +16,10 @@ div#main {
     max-width: 940px;
 }
 
+.hl-number {
+    color: #A050A0;
+}
+
 .hl-string {
     color: #000080;
 }
@@ -30,6 +34,20 @@ div#main {
 
 .hl-comment {
     color: #007000;
+}
+
+.hl-repl-prompt {
+    color: #44AA44;
+    font-weight: bold;
+}
+
+.hl-repl-result {
+    color: #AAAAAA;
+    font-weight: bold;
+}
+
+.hl-gremlin-func {
+    color: #B04040;
 }
 
 .figure img,

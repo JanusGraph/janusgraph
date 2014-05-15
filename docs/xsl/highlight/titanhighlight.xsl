@@ -32,5 +32,23 @@
     </em>
   </xsl:template>
 
+  <xsl:template match="xslthl:repl-prompt" mode="xslthl">
+    <span class="hl-repl-prompt">
+      <xsl:apply-templates mode="xslthl"/>
+    </span>
+  </xsl:template>
+
+  <xsl:template match="xslthl:repl-result" mode="xslthl">
+    <span class="hl-repl-result">
+      <xsl:apply-templates mode="xslthl"/>
+    </span>
+  </xsl:template>
+
+  <xsl:template match="xslthl:gremlin-func" mode="xslthl">
+    <span class="hl-gremlin-func">
+      <xsl:apply-templates mode="xslthl"/>
+    </span>
+  </xsl:template>
+
 </xsl:stylesheet>
 
