@@ -6,8 +6,12 @@
     </formats>
     <fileSets>
         <fileSet>
-            <directory>${project.parent.basedir}/doc/html/</directory>
-            <outputDirectory>/</outputDirectory>
+            <directory>${project.build.directory}/docs/single/</directory>
+            <outputDirectory>/single</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}/docs/chunk/</directory>
+            <outputDirectory>/chunk</outputDirectory>
         </fileSet>
         <fileSet>
             <directory>${project.build.directory}/site/apidocs/</directory>

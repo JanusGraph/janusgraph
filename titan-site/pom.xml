@@ -16,23 +16,6 @@
 
     <build>
         <plugins>
-
-            <!--
-              Delete the html copy of the wiki generated with
-              gollum-site, if any exists.
-            -->
-            <plugin>
-                <artifactId>maven-clean-plugin</artifactId>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>${project.parent.basedir}/doc/html</directory>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                    </filesets>
-                </configuration>
-            </plugin>
-
             <!--
               Turn off default plugin goal bindings that we don't need
               for this module, which is almost all default bindings.
@@ -133,6 +116,17 @@
     <profiles>
         <profile>
             <id>aurelius-release</id>
+
+            <properties>
+                <asciidoc.input.dir>${project.parent.basedir}/docs</asciidoc.input.dir>
+                <xsl.input.dir>${project.parent.basedir}/docs/xsl</xsl.input.dir>
+                <asciidoc.output.dir>${project.basedir}/target/docs</asciidoc.output.dir>
+                <xsl.output.dir>${asciidoc.output.dir}/xsl</xsl.output.dir>
+                <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
+                <htmlsingle.output.dir>${project.basedir}/target/docs/single</htmlsingle.output.dir>
+                <htmlchunk.output.dir>${project.basedir}/target/docs/chunk</htmlchunk.output.dir>
+            </properties>
+
             <dependencies>
                 <dependency>
                     <groupId>${project.groupId}</groupId>
@@ -140,6 +134,7 @@
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
+
             <build>
                 <plugins>
                     <plugin>
@@ -154,6 +149,8 @@
                                 <configuration>
                                     <windowtitle>Titan ${project.version} API</windowtitle>
                                     <doctitle>Titan Graph Database ${project.version} API</doctitle>
+                                    <!-- Quiet mode still shows warnings and errors -->
+                                    <quiet>true</quiet>
                                     <includeDependencySources>true</includeDependencySources>
                                     <dependencySourceIncludes>
                                         <dependencySourceInclude>${project.groupId}:titan-core</dependencySourceInclude>
@@ -247,7 +244,61 @@
                                             <filtering>true</filtering>
                                         </resource>
                                     </resources>              
-                                </configuration>            
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>filter-doc-sources-and-xsl</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${asciidoc.output.dir}</outputDirectory>
+                                    <delimiters>
+                                        <delimiter>$MAVEN{*}</delimiter>
+                                    </delimiters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-static-assets-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlsingle.output.dir}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/static</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-static-assets-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlchunk.output.dir}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/static</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -256,62 +307,6 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <executions>
-                            <execution>
-                                <id>git-submodule-prep</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>git</executable>
-                                    <arguments>
-                                        <argument>submodule</argument>
-                                        <argument>update</argument>
-                                        <argument>--init</argument>
-                                    </arguments>
-                                    <workingDirectory>..</workingDirectory>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <!-- Gollum doesn't understand submodules.  It dies with a Grit [sic] error
-                                     error when run on a submodule.  This limitation is intrinsic to Gollum
-                                     and not just a limitation of gollum-site.  Poor submodule support has
-                                     appeared in at least two Gollum issues:
-        
-                                     https://github.com/gollum/gollum/issues/151
-                                     https://github.com/gollum/gollum/issues/438
-        
-                                     Gollum might eventually throw out Grit
-                                     in favor of an alternative project called Rugged that supposedly handles
-                                     submodules correctly:
-        
-                                     https://github.com/gollum/gollum-lib/pull/16
-        
-                                     For now, we're hacking around Gollum's limitation.  The doc submodule
-                                     .git file usually contains this:
-        
-                                     gitdir: ../.git/modules/doc
-        
-                                     This is a sort of pretend symlink.  Git is smart enough to handle an
-                                     actual symlink in a way functionally identical to the gitdir: ... file,
-                                     and making this a symlink placates Gollum and avoids the submodule Grit
-                                     error that would otherwise kill it.
-                                -->
-                                <id>hack-submodule-gitdir-for-gollum</id>
-                                <phase>initialize</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                                <configuration>
-                                    <executable>ln</executable>
-                                    <arguments>
-                                        <argument>-sf</argument>
-                                        <argument>../.git/modules/doc</argument>
-                                        <argument>.git</argument>
-                                    </arguments>
-                                    <workingDirectory>${project.parent.basedir}/doc</workingDirectory>
-                                </configuration>
-                            </execution>
                             <!-- 
                               We use maven-resources-plugin to filter a script
                               during pre-site, but that plugin has an open bug
@@ -338,17 +333,116 @@
                                 </configuration>
                             </execution>
                             <execution>
-                                <id>gollum-site</id>
-                                <phase>compile</phase>
+                                <id>generate-config-key-listing</id>
+                                <phase>generate-resources</phase>
                                 <goals>
-                                    <goal>exec</goal>
+                                    <goal>java</goal>
                                 </goals>
                                 <configuration>
-                                    <executable>${project.build.directory}/site-scripts/gollum-site-wrapper.sh</executable>
-                                    <workingDirectory>${project.parent.basedir}</workingDirectory>
+                                    <mainClass>com.thinkaurelius.titan.util.system.WriteConfiguration</mainClass>
+                                    <arguments>
+                                        <argument>${asciidoc.output.dir}/listings/configtable.txt</argument>
+                                    </arguments>
                                 </configuration>
                             </execution>
                         </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>asciidoc-to-docbook</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <sourceDirectory>${asciidoc.output.dir}</sourceDirectory>
+                                    <sourceDocumentName>index.txt</sourceDocumentName>
+                                    <outputDirectory>${docbook.output.dir}</outputDirectory>
+                                    <backend>docbook5</backend>
+                                    <doctype>book</doctype>
+                                    <attributes>
+                                        <imagesdir>images</imagesdir>
+                                        <encoding>UTF-8</encoding>
+                                        <toc>true</toc>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docbook-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <outputDir>${htmlsingle.output.dir}</outputDir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${xsl.output.dir}/titansingle.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docbook-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${xsl.output.dir}/titanchunk.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                                <version>6.5.3</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>

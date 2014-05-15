@@ -1,6 +1,8 @@
 Appendices
 ==========
 
+include::configref.txt[]
+
 include::related.txt[]
 
 include::versions.txt[]
