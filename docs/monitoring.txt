@@ -16,7 +16,7 @@ Configuring Metrics Collection
 
 To enable Metrics collection, set the following in Titan's properties file:
 
-[source,ini]
+[source,properties]
 ----
 # Required to enable Metrics in Titan
 storage.enable-basic-metrics = true
@@ -29,7 +29,7 @@ Customizing the Default Metric Names
 
 Titan prefixes all metric names with "com.thinkaurelius.titan" by default.  This prefix can be set through the `metrics.prefix` configuration property.  For example, to shorten the default "com.thinkaurelius.titan" prefix to just "titan":
 
-[source,ini]
+[source,properties]
 ----
 # Optional
 metrics.prefix = titan
@@ -83,7 +83,7 @@ Console Reporter Configuration
 
 Example titan.properties snippet that prints metrics to the console once a minute:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; specify logging interval in milliseconds
 metrics.console.interval = 60000
@@ -102,7 +102,7 @@ CSV File Reporter Configuration
 
 Example titan.properties snippet that writes CSV files once a minute to the directory `./foo/bar/` (relative to the process's working directory):
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; specify logging interval in milliseconds
 metrics.csv.interval = 60000
@@ -128,7 +128,7 @@ Ganglia Reporter Configuration
 
 Example titan.properties snippet that sends unicast UDP datagrams to localhost on the default port once every 30 seconds:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; IP or hostname string
 metrics.ganglia.hostname = 127.0.0.1 
@@ -137,7 +137,7 @@ metrics.ganglia.interval = 30000
 
 Example titan.properties snippet that sends unicast UDP datagrams to a non-default destination port and which also spoofs the IP and hostname reported to Ganglia:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; IP or hostname string
 metrics.ganglia.hostname = 1.2.3.4 
@@ -163,7 +163,7 @@ Graphite Reporter Configuration
 
 Example titan.properties snippet that sends metrics to a Graphite server on 192.168.0.1 every minute:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; IP or hostname string
 metrics.graphite.hostname = 192.168.0.1
@@ -185,7 +185,7 @@ JMX Reporter Configuration
 
 Example titan.properties snippet:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required
 metrics.jmx.enabled = true
@@ -207,7 +207,7 @@ Slf4j Reporter Configuration
 
 Example titan.properties snippet that logs metrics once a minute to the logger named `foo`:
 
-[source,ini]
+[source,properties]
 storage.enable-basic-metrics = true
 # Required; specify logging interval in milliseconds
 metrics.slf4j.interval = 60000

@@ -19,7 +19,7 @@ For single machine deployments, Elasticsearch can run embedded with Titan. In ot
 
 To run Elasticsearch embedded, add the following configuration options to the graph configuration file where `/tmp/searchindex/` specifies the directory where Elasticsearch should store the index data:
 
-[source,ini]
+[source,properties]
 storage.index.search.backend=elasticsearch
 storage.index.search.directory=/tmp/searchindex
 storage.index.search.client-only=false
@@ -36,7 +36,7 @@ Titan can connect to an external Elasticsearch cluster running remote on a separ
 
 To connect Titan to an external Elasticsearch cluster, add the following configuration options to the graph configuration file where `hostname` lists the IP addresses of the instances in the Elasticsearch cluster:
 
-[source,ini]
+[source,properties]
 storage.index.search.backend=elasticsearch
 storage.index.search.hostname=100.100.101.1,100.100.101.2
 storage.index.search.client-only=true

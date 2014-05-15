@@ -9,7 +9,7 @@ Also, note that the Titan distribution includes local configuration files in the
 BerkeleyDB
 ^^^^^^^^^^
 
-[source,ini]
+[source,properties]
 ----
 storage.backend=berkeleyje
 storage.directory=/tmp/graph
@@ -30,7 +30,7 @@ Cassandra
 Cassandra Remote
 ++++++++++++++++
 
-[source,ini]
+[source,properties]
 ----
 storage.backend=cassandra
 storage.hostname=100.100.100.1,100.100.100.2
@@ -47,7 +47,7 @@ In addition, this configures a remote <<elasticsearch,Elasticsearch>> index back
 Embedded Cassandra
 ++++++++++++++++++
 
-[source,ini]
+[source,properties]
 ----
 storage.backend=embeddedcassandra
 storage.cassandra-config-dir=config/cassandra.yaml
@@ -65,7 +65,7 @@ The optional index backend configuration is identical to embedded index configur
 HBase
 ^^^^^
 
-[source,ini]
+[source,properties]
 ----
 storage.backend=hbase
 storage.hostname=127.0.0.1

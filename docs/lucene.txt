@@ -17,7 +17,7 @@ For single machine deployments, Lucene runs embedded with Titan. Titan starts an
 
 To run Lucene embedded, add the following configuration options to the graph configuration file where @/tmp/searchindex/@ specifies the directory where Lucene should store the index data:
 
-[source,ini]
+[source,properties]
 storage.index.search.backend=lucene
 storage.index.search.directory=/tmp/searchindex
 
