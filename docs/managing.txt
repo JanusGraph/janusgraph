@@ -107,6 +107,25 @@ g.query().has("age",GREATER_THAN,1000).has("name",EQUAL,"saturn").vertices()
 . The full-text index registered for `reason` supports retrieval by string containment. A property matches if it contains the given word (case insensitive). Note, that the text is tokenized when indexed and stop words as well as punctuation are removed. Two query for properties that contain two or more words, split them up into two separate `has()` clauses.
 . Multiple has clauses can be combined into a _composite_ index retrieval potentially spread across multiple index backends. In this example, the query contains a `name` and `age` constraint. Titan will optimize the query to find the optimal index retrieval plan.
 
+Dual Indexing
+~~~~~~~~~~~~~
+
+For some use cases, it can be beneficial to register a property key with multiple index backends. This is supported by Titan.
+
+For instance, consider the scenario where user vertices have the property key `name` which stores the full name of the user - first, middle, and last name. We define the `name` key as follows:
+
+[source,java]
+g.makeType().name("name").dataType(String.class)
+ .indexed(Vertex.class).indexed("search",Vertex.class)
+ .unique(Direction.OUT).makePropertyKey();
+
+Registering the `name` key with the standard index _and_ an external full-text index has the following advantages:
+
+* Quick querying for users by their entire name using the standard index: `g.query().has("name",EQUAL,"John Doe").vertices()`
+* Using the full-text index to search for user's by any part of their name: `g.query().has("name",CONTAINS,"John").vertices()`
+
+Titan will automatically route the index request to the correct index backend. Likewise, Titan can also handle composite queries that cover multiple indexes. Titan will attempt to determine an optimal query execution plan.
+
 Compare Predicate
 ^^^^^^^^^^^^^^^^^
 
