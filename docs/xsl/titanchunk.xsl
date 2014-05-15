@@ -22,7 +22,7 @@
   <xsl:param name="base.dir">$MAVEN{htmlchunk.output.dir}</xsl:param>
   
   <xsl:param name="generate.toc">
-  book         toc,title,table
+  book         toc,title,table,figure
   book/part    toc,title
   book/chapter toc,title
   </xsl:param>

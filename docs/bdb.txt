@@ -42,6 +42,7 @@ BerkeleyDB Specific Configuration
 
 In addition to the general _TODO: xref to Graph-Configuration_, there are the following BerkeleyDB specific Titan configuration options:
 
+.BerkeleyDB Configuration Options
 [cols="4,7,2,2,1",options="header"]
 |==========================
 |Option |Description |Value |Default |Modifiable

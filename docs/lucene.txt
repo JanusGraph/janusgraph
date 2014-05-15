@@ -35,6 +35,7 @@ Feature Support
 Configuration Options
 ^^^^^^^^^^^^^^^^^^^^^
 
+.Lucene Configuration Options
 [cols="4,7,2,2,1",options="header"]
 |==========================
 |Option |Description |Value |Default |Modifiable

@@ -74,6 +74,7 @@ Each reporter type is independent of and can coexist with the others.  For examp
 Console Reporter Configuration
 ++++++++++++++++++++++++++++++
 
+.Metrics Console Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default
@@ -91,6 +92,7 @@ metrics.console.interval = 60000
 CSV File Reporter Configuration
 +++++++++++++++++++++++++++++++
 
+.Metrics CSV Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default
@@ -110,6 +112,7 @@ metrics.csv.dir = foo/bar
 Ganglia Reporter Configuration
 ++++++++++++++++++++++++++++++
 
+.Metrics Ganglia Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default
@@ -148,6 +151,7 @@ metrics.ganglia.spoof = 10.0.0.1:zombo.com
 Graphite Reporter Configuration
 +++++++++++++++++++++++++++++++
 
+.Metrics Graphite Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default
@@ -170,6 +174,7 @@ metrics.graphite.interval = 60000
 JMX Reporter Configuration
 ++++++++++++++++++++++++++
 
+.Metrics JMX Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default
@@ -192,6 +197,7 @@ metrics.jmx.agentid = baz
 Slf4j Reporter Configuration
 ++++++++++++++++++++++++++++
 
+.Metrics Slf4j Reporter Configuration Options
 [cols="2,1,5,1",options="header"]
 |==========================
 |Config Key |Required? |Value |Default

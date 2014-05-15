@@ -8,6 +8,7 @@ image:titan-logo.png[]
 
 The Titan project is growing along with the rest of the Aurelius Graph Cluster technology and utilized storage and indexing backends. Below are version compatibilities between the various versions of components.
 
+.Version Compabitility Matrix
 [options="header"]
 |==========================
 | Titan | Faunus | Cassandra | HBase | Elasticsearch
