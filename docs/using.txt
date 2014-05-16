@@ -735,6 +735,12 @@ Titan provides a batch loading mode that can be enabled through the _TODO: xref 
 
 Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
 
+
+include::typedef.txt[]
+
+include::vertexcentric.txt[]
+
+
 [[common-problems]]
 Common Problems
 ---------------

@@ -2,6 +2,8 @@
 Vertex-Centric Indices
 ~~~~~~~~~~~~~~~~~~~~~~
 
+// TODO gracefully integrate this into the schema definition section ... current transition is abrupt
+
 [.tss-floatleft.tss-width-125]
 image:vertex-centric-index.png[]
 
