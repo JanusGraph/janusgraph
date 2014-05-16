@@ -16,6 +16,10 @@ div#main {
     max-width: 940px;
 }
 
+div.note {
+    margin: 25px 40px;
+}
+
 .hl-number {
     color: #A050A0;
 }
