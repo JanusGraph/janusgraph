@@ -262,15 +262,13 @@ conf = new BaseConfiguration();
 conf.setProperty("storage.backend","cassandra");
 conf.setProperty("storage.hostname","127.0.0.1");
 
-To make this easier, there are two configuration files in the `bin/` directory: `cassandra.local` and `hbase.local`. These can be used as such:
+To make this easier, there are several configuration files in the `conf/` directory.  Paths to these files can be passed to `TitanFactory.open(...)` as shown below:
 
 [source,java]
-TitanFactory.open("bin/cassandra.local")
-
-or
-
-[source,java]
-TitanFactory.open("bin/hbase.local")
+// Connect to Cassandra on localhost using a default configuration
+graph = TitanFactory.open("conf/titan-cassandra.properties")
+// Connect to HBase on localhost using a default configuration
+graph = TitanFactory.open("conf/titan-hbase.properties")
 
 [[rexster]]
 Rexster Graph Server
