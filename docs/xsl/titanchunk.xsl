@@ -24,7 +24,7 @@
   <xsl:param name="generate.toc">
   book         toc,title,table,figure
   book/part    toc,title
-  book/chapter toc,title
+  book/part/chapter toc,title
   </xsl:param>
   
   <xsl:template match="figure[@role = 'tss-centeredfig']" mode="class.value">

@@ -16,6 +16,15 @@ div#main {
     max-width: 940px;
 }
 
+div#main > div.chapter > div.toc {
+    float: right;
+    margin-left: 25px;
+}
+
+div#main > div.chapter > div.section .title {
+    clear: none !important;
+}
+
 div.note {
     margin: 25px 40px;
 }
