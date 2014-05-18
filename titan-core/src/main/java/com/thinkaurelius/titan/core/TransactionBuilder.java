@@ -103,6 +103,15 @@ public interface TransactionBuilder {
      */
     public TransactionBuilder setLogIdentifier(String logName);
 
+    /**
+     * Configures this transaction such that queries against partitioned vertices are
+     * restricted to the given partitions.
+     *
+     * @param partitions
+     * @return
+     */
+    public TransactionBuilder setRestrictedPartitions(int[] partitions);
+
     public TransactionBuilder setCustomOption(String k, Object v);
 
     /**

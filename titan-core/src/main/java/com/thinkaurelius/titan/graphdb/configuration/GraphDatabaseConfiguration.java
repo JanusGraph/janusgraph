@@ -691,7 +691,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"idauthority-uniqueid-bits",
             "Configures the number of bits of Titan assigned ids that are reserved for a unique id marker",
-            ConfigOption.Type.FIXED, 0 , new Predicate<Integer>() {
+            ConfigOption.Type.FIXED, 5 , new Predicate<Integer>() {
         @Override
         public boolean apply(@Nullable Integer uniqueIdBitWidth) {
             return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;

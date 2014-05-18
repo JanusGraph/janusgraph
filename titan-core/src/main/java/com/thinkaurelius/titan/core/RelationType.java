@@ -24,7 +24,7 @@ package com.thinkaurelius.titan.core;
  * @see RelationTypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-configuration">Titan Type Wiki</a>
  */
-public interface RelationType extends TitanVertex, TitanSchemaElement {
+public interface RelationType extends TitanVertex, TitanSchemaType {
 
     /**
      * Checks if this type is a property key

@@ -53,61 +53,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
         if (query.isEmpty())
             return Iterators.emptyIterator();
 
-        return new OuterIterator();
-    }
-
-
-    private final class OuterIterator implements Iterator<R> {
-
-        private final Iterator<R> iter;
-        private final int limit;
-
-        private R current;
-        private R next;
-        private int count;
-
-
-        OuterIterator() {
-            this.iter = getUnfoldedIterator();
-            limit = (query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT;
-            count = 0;
-
-            this.current = null;
-            this.next = nextInternal();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        private R nextInternal() {
-            R r = null;
-            if (count < limit && iter.hasNext()) {
-                r = iter.next();
-            }
-            return r;
-        }
-
-        @Override
-        public R next() {
-            if (!hasNext())
-                throw new NoSuchElementException();
-
-            current = next;
-            count++;
-            next = nextInternal();
-            return current;
-        }
-
-        @Override
-        public void remove() {
-            if (current != null)
-                current.remove();
-            else
-                throw new UnsupportedOperationException();
-        }
-
+        return new ResultSetIterator(getUnfoldedIterator(),(query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT);
     }
 
     private Iterator<R> getUnfoldedIterator() {
@@ -125,7 +71,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
 
                 iter = (iter == null)
                         ? subqiter
-                        : new MergeSortIterator<R>(subqiter, iter, query.getSortOrder(), query.hasDuplicateResults());
+                        : new ResultMergeSortIterator<R>(subqiter, iter, query.getSortOrder(), query.hasDuplicateResults());
             }
 
             Preconditions.checkArgument(iter != null);
@@ -133,7 +79,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
             if (newElements.hasNext()) {
                 final List<R> allNew = Lists.newArrayList(newElements);
                 Collections.sort(allNew, query.getSortOrder());
-                iter = new MergeSortIterator<R>(allNew.iterator(), iter, query.getSortOrder(), query.hasDuplicateResults());
+                iter = new ResultMergeSortIterator<R>(allNew.iterator(), iter, query.getSortOrder(), query.hasDuplicateResults());
             }
         } else {
             final Set<R> allNew;
@@ -252,84 +198,6 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends TitanElement
     }
 
 
-    private static final class MergeSortIterator<R> implements Iterator<R> {
 
-
-        private final Iterator<R> first;
-        private final Iterator<R> second;
-        private final Comparator<R> comp;
-        private final boolean filterDuplicates;
-
-        private R nextFirst;
-        private R nextSecond;
-        private R next;
-
-        public MergeSortIterator(Iterator<R> first, Iterator<R> second, Comparator<R> comparator, boolean filterDuplicates) {
-            Preconditions.checkNotNull(first);
-            Preconditions.checkNotNull(second);
-            Preconditions.checkNotNull(comparator);
-            this.first = first;
-            this.second = second;
-            this.comp = comparator;
-            this.filterDuplicates = filterDuplicates;
-
-            nextFirst = null;
-            nextSecond = null;
-            next = nextInternal();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public R next() {
-            if (!hasNext()) throw new NoSuchElementException();
-            R current = next;
-            next = null;
-            do {
-                next = nextInternal();
-            } while (next != null && filterDuplicates && comp.compare(current, next) == 0);
-            return current;
-        }
-
-        public R nextInternal() {
-            if (nextFirst == null && first.hasNext()) {
-                nextFirst = first.next();
-                assert nextFirst != null;
-            }
-            if (nextSecond == null && second.hasNext()) {
-                nextSecond = second.next();
-                assert nextSecond != null;
-            }
-            R result = null;
-            if (nextFirst == null && nextSecond == null) {
-                return null;
-            } else if (nextFirst == null) {
-                result = nextSecond;
-                nextSecond = null;
-            } else if (nextSecond == null) {
-                result = nextFirst;
-                nextFirst = null;
-            } else {
-                //Compare
-                int c = comp.compare(nextFirst, nextSecond);
-                if (c <= 0) {
-                    result = nextFirst;
-                    nextFirst = null;
-                } else {
-                    result = nextSecond;
-                    nextSecond = null;
-                }
-            }
-            return result;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-    }
 
 }

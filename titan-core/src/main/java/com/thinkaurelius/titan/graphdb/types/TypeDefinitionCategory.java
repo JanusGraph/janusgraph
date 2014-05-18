@@ -44,7 +44,8 @@ public enum TypeDefinitionCategory {
     //Schema Edges
     RELATIONTYPE_INDEX(),
     CONSISTENCY_MODIFIER(),
-    INDEX_FIELD(RelationCategory.EDGE,Parameter[].class);
+    INDEX_FIELD(RelationCategory.EDGE,Parameter[].class),
+    INDEX_SCHEMA_CONSTRAINT();
 
     public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
     public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);

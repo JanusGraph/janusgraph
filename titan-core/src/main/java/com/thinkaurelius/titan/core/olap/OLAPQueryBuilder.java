@@ -10,7 +10,7 @@ import com.tinkerpop.blueprints.Predicate;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPQueryBuilder<S,Q extends OLAPQueryBuilder<S,Q>> extends BaseVertexQuery<Q> {
+public interface OLAPQueryBuilder<S extends State<S>,Q extends OLAPQueryBuilder<S,Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification

@@ -4,6 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.olap.State;
 import com.thinkaurelius.titan.core.olap.StateInitializer;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
@@ -38,7 +39,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraVertex<S> extends CacheVertex {
+public class FulgoraVertex<S extends State<S>> extends CacheVertex {
 
     private final FulgoraExecutor<S> executor;
 
@@ -79,7 +80,7 @@ public class FulgoraVertex<S> extends CacheVertex {
      */
     @Override
     public VertexLabel getVertexLabel() {
-        FulgoraNeighborVertex label = (FulgoraNeighborVertex)Iterables.getOnlyElement(query().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        FulgoraNeighborVertex label = (FulgoraNeighborVertex)getVertexLabelInternal();
         if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)tx().getExistingVertex(label.getID());
     }
@@ -135,7 +136,7 @@ public class FulgoraVertex<S> extends CacheVertex {
          */
 
         private Iterable<TitanRelation> relations(RelationCategory returnType) {
-            return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(constructQuery(returnType), executor.edgeProcessor);
+            return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(constructQuery(FulgoraVertex.this,returnType), executor.edgeProcessor);
         }
 
         @Override

@@ -7,9 +7,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexQuery;
-import com.thinkaurelius.titan.core.olap.OLAPJob;
-import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
-import com.thinkaurelius.titan.core.olap.StateInitializer;
+import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
@@ -28,7 +26,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     private static final double EPSILON = 0.00001;
 
-    protected abstract <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz);
+    protected abstract <S extends State<S>> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz);
 
     @Test
     public void degreeCount() throws Exception {
@@ -76,12 +74,12 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         });
         builder.addQuery().edges();
         Stopwatch w = new Stopwatch().start();
-        Map<Long,Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
+        OLAPResult<Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
         System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
         assertNotNull(degrees);
         assertEquals(numV,degrees.size());
         int totalCount = 0;
-        for (Map.Entry<Long,Degree> entry : degrees.entrySet()) {
+        for (Map.Entry<Long,Degree> entry : degrees.entries()) {
             Degree degree = entry.getValue();
             assertEquals(degree.in+degree.out,degree.both);
             Vertex v = tx.getVertex(entry.getKey().longValue());
@@ -92,7 +90,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(numV*(numV+1),totalCount);
     }
 
-    public class Degree {
+    public class Degree implements State<Degree> {
         public int in;
         public int out;
         public int both;
@@ -101,6 +99,22 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             in=0;
             out=0;
             both=0;
+        }
+
+        @Override
+        public Degree clone() {
+            Degree d = new Degree();
+            d.in=in;
+            d.out=out;
+            d.both=both;
+            return d;
+        }
+
+        @Override
+        public void merge(Degree other) {
+            in+=other.in;
+            out+=other.out;
+            both+=other.both;
         }
     }
 
@@ -144,10 +158,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
         Stopwatch w = new Stopwatch().start();
-        Map<Long,PageRank> ranks = computePageRank(graph,alpha,1,numV,"likes");
+        OLAPResult<PageRank> ranks = computePageRank(graph,alpha,1,numV,"likes");
         System.out.println(String.format("Computing PR on graph with %s vertices took: %s ms",numV,w.elapsed(TimeUnit.MILLISECONDS)));
         double totalPr = 0.0;
-        for (Map.Entry<Long,PageRank> entry : ranks.entrySet()) {
+        for (Map.Entry<Long,PageRank> entry : ranks.entries()) {
             Vertex u = tx.getVertex(entry.getKey());
             int distance = u.<Integer>getProperty("distance");
             double pr = entry.getValue().getPr();
@@ -161,7 +175,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     private static final double PR_TERMINATION_THRESHOLD = 0.01;
 
-    private Map<Long,PageRank> computePageRank(final StandardTitanGraph g, final double alpha, final int numThreads,
+    private OLAPResult<PageRank> computePageRank(final StandardTitanGraph g, final double alpha, final int numThreads,
                                                final int numVertices, final String... labels) {
         //Initializing
         OLAPJobBuilder<PageRank> builder = getOLAPBuilder(graph,PageRank.class);
@@ -182,7 +196,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 vertex.setProperty("pageRank",new PageRank(outDegree,1.0d/numVertices));
             }
         });
-        Map<Long,PageRank> ranks;
+        OLAPResult<PageRank> ranks;
         try {
             ranks = builder.execute().get();
         } catch (Exception e) {
@@ -210,7 +224,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                     for (Vertex v : query.vertices()) {
                         total+=v.<PageRank>getProperty("pageRank").getPrFlow();
                     }
-                    vertex.<PageRank>getProperty("pageRank").setPr(alpha * total + (1.0 - alpha) / numVertices);
+                    vertex.<PageRank>getProperty("pageRank").setPr(total);
                 }
             });
             Stopwatch w = new Stopwatch().start();
@@ -223,23 +237,30 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             assertEquals(numVertices,ranks.size());
             totalDelta = 0.0;
             for (PageRank pr : ranks.values()) {
-                totalDelta+=pr.completeIteration();
+                totalDelta+=pr.completeIteration(alpha,numVertices);
             }
 //            System.out.println(String.format("Completed iteration [%s] in time %s ms with delta PR=%s",iteration,w.elapsed(TimeUnit.MILLISECONDS),totalDelta));
         } while (totalDelta>PR_TERMINATION_THRESHOLD);
         return ranks;
     }
 
-    public class PageRank {
+    public class PageRank implements State<PageRank> {
 
-        public final double edgeCount;
+        private double edgeCount;
         private double oldPR;
         private double newPR;
+
+        private PageRank(double edgeCount, double oldPR, double newPR) {
+            this.edgeCount=edgeCount;
+            this.oldPR=oldPR;
+            this.newPR=newPR;
+        }
 
         public PageRank(long edgeCount, double initialPR) {
             Preconditions.checkArgument(edgeCount>=0 && initialPR>=0);
             this.edgeCount=edgeCount;
             this.oldPR = initialPR;
+            this.newPR = -1.0;
         }
 
         public void setPr(double pr) {
@@ -255,11 +276,28 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             return oldPR;
         }
 
-        public double completeIteration() {
+        public double completeIteration(double alpha, long numVertices) {
+            newPR = alpha * newPR + (1.0 - alpha) / numVertices;
             double delta = Math.abs(oldPR-newPR);
             oldPR=newPR;
             newPR=0.0;
             return delta;
+        }
+
+        @Override
+        public PageRank clone() {
+            return new PageRank(edgeCount,oldPR,newPR);
+        }
+
+        @Override
+        public void merge(PageRank other) {
+            if (newPR==-1.0) { //Initial state => sum up degrees
+                assert other.newPR==-1.0 && oldPR==other.oldPR;
+                edgeCount+=other.edgeCount;
+            } else {
+                assert edgeCount==other.edgeCount && oldPR==other.oldPR;
+                newPR+=other.newPR;
+            }
         }
 
     }

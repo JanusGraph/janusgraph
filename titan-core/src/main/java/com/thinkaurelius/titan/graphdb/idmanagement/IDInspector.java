@@ -27,6 +27,6 @@ public interface IDInspector {
 
     public boolean isPartitionedVertex(long id);
 
-    public long getPartitionId(long id);
+    public long getCanonicalVertexId(long partitionedVertexId);
 
 }

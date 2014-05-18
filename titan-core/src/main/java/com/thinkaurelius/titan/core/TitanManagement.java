@@ -29,13 +29,32 @@ public interface TitanManagement extends TitanConfiguration {
 
     public Iterable<TitanGraphIndex> getGraphIndexes(final Class<? extends Element> elementType);
 
-    public TitanGraphIndex createExternalIndex(String indexName, Class<? extends Element> elementType, String backingIndex);
+    public IndexBuilder buildIndex(String indexName, Class<? extends Element> elementType);
 
     public void addIndexKey(final TitanGraphIndex index, final PropertyKey key, Parameter... parameters);
 
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, PropertyKey... keys);
 
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, PropertyKey... keys);
+    public interface IndexBuilder {
+
+        public IndexBuilder indexKey(PropertyKey keys);
+
+        public IndexBuilder indexKey(PropertyKey keys, Parameter... parameters);
+
+        public IndexBuilder indexOnly(TitanSchemaType schemaType);
+
+        public IndexBuilder unique();
+
+        public TitanGraphIndex buildInternalIndex();
+
+        public TitanGraphIndex buildExternalIndex(String backingIndex);
+
+    }
+
+//    public TitanGraphIndex createExternalIndex(String indexName, Class<? extends Element> elementType, String backingIndex, );
+//
+//    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, PropertyKey... keys);
+//
+//    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, PropertyKey... keys);
 
 
     public ConsistencyModifier getConsistency(TitanSchemaElement element);

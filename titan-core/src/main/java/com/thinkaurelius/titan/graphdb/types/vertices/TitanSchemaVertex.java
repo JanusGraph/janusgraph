@@ -6,6 +6,7 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
@@ -128,7 +129,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     }
 
     public Iterable<TitanEdge> getEdges(final TypeDefinitionCategory def, final Direction dir, TitanSchemaVertex other) {
-        VertexCentricQueryBuilder query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
+        TitanVertexQuery query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
         if (other!=null) query.adjacent(other);
         return Iterables.filter(query.titanEdges(),new Predicate<TitanEdge>() {
             @Override

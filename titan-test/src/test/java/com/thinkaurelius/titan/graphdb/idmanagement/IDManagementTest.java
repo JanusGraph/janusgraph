@@ -184,10 +184,10 @@ public class IDManagementTest {
             assertEquals(b, out.getStaticBuffer());
 
             //Make sure the bounds are right
-            StaticBuffer[] bounds = IDHandler.getBounds(type);
+            StaticBuffer[] bounds = IDHandler.getBounds(type,false);
             assertTrue(bounds[0].compareTo(b)<0);
             assertTrue(bounds[1].compareTo(b)>0);
-            bounds = IDHandler.getBounds(RelationCategory.RELATION);
+            bounds = IDHandler.getBounds(RelationCategory.RELATION,false);
             assertTrue(bounds[0].compareTo(b)<0);
             assertTrue(bounds[1].compareTo(b)>0);
         }
@@ -219,11 +219,13 @@ public class IDManagementTest {
     @Test
     public void testDirectionPrefix() {
         for (RelationCategory type : RelationCategory.values()) {
-            StaticBuffer[] bounds = IDHandler.getBounds(type);
-            assertEquals(1,bounds[0].length());
-            assertEquals(1,bounds[1].length());
-            assertTrue(bounds[0].compareTo(bounds[1])<0);
-            assertTrue(bounds[1].compareTo(BufferUtil.oneBuffer(1))<0);
+            for (boolean system : new boolean[]{true,false}) {
+                StaticBuffer[] bounds = IDHandler.getBounds(type,system);
+                assertEquals(1,bounds[0].length());
+                assertEquals(1,bounds[1].length());
+                assertTrue(bounds[0].compareTo(bounds[1])<0);
+                assertTrue(bounds[1].compareTo(BufferUtil.oneBuffer(1))<0);
+            }
         }
     }
 

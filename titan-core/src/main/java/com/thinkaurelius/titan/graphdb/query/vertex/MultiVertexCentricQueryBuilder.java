@@ -1,30 +1,21 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
-import com.thinkaurelius.titan.graphdb.query.condition.DirectionCondition;
-import com.thinkaurelius.titan.graphdb.query.condition.IncidenceCondition;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 /**
  * Implementation of {@link TitanMultiVertexQuery} that extends {@link AbstractVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
- * {@link #relations(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}.
+ * {@link #execute(com.thinkaurelius.titan.graphdb.internal.RelationCategory, com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder.ResultConstructor)}.
  * </p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  *
@@ -86,74 +77,64 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
      * @param returnType
      * @return
      */
-    protected Map<TitanVertex, Iterable<? extends TitanRelation>> relations(RelationCategory returnType) {
+    protected<Q> Map<TitanVertex,Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
-        Map<TitanVertex, Iterable<? extends TitanRelation>> result = new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size());
-        if (isImplicitKeyQuery(returnType)) {
-            for (InternalVertex v : vertices ) result.put(v,executeImplicitKeyQuery(v));
-        } else {
-            BaseVertexCentricQuery vq = super.constructQuery(returnType);
-            if (!vq.isEmpty()) {
-                for (BackendQueryHolder<SliceQuery> sq : vq.getQueries()) {
-                    tx.executeMultiQuery(vertices, sq.getBackendQuery());
-                }
-
-                Condition<TitanRelation> condition = vq.getCondition();
+        Map<TitanVertex, Q> result = new HashMap<TitanVertex, Q>(vertices.size());
+        BaseVertexCentricQuery bq = super.constructQuery(returnType);
+        if (!bq.isEmpty()) {
+            for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
+                Set<InternalVertex> adjVertices = Sets.newHashSet(vertices);
                 for (InternalVertex v : vertices) {
-                    ///Add adjacent-vertex and direction related conditions (which depend on the base vertex) to the
-                    // condition. Need to copy the condition in order to not overwrite a previous one.
-                    And<TitanRelation> newcond = new And<TitanRelation>();
-                    if (condition instanceof And) newcond.addAll((And) condition);
-                    else newcond.add(condition);
-                    newcond.add(new DirectionCondition<TitanRelation>(v, getDirection()));
-                    if (getAdjacentVertex() != null)
-                        newcond.add(new IncidenceCondition<TitanRelation>(v,getAdjacentVertex()));
-                    VertexCentricQuery vqsingle = new VertexCentricQuery(v, newcond, vq.getDirection(), vq.getQueries(), vq.getOrders(), vq.getLimit());
-                    result.put(v, new QueryProcessor<VertexCentricQuery, TitanRelation, SliceQuery>(vqsingle, tx.edgeProcessor));
-
+                    if (tx.isPartitionedVertex(v)) {
+                        adjVertices.remove(v);
+                        adjVertices.addAll(allRepresentatives(v));
+                    }
                 }
-            } else {
-                for (TitanVertex v : vertices)
-                    result.put(v, Collections.EMPTY_LIST);
+                tx.executeMultiQuery(adjVertices, sq.getBackendQuery());
             }
+            for (InternalVertex v : vertices) {
+                result.put(v, resultConstructor.getResult(v, bq));
+            }
+        } else {
+            for (TitanVertex v : vertices)
+                result.put(v, resultConstructor.emptyResult());
         }
         return result;
     }
 
+    public Map<TitanVertex, Iterable<? extends TitanRelation>> executeImplicitKeyQuery() {
+        return new HashMap<TitanVertex, Iterable<? extends TitanRelation>>(vertices.size()){{
+            for (InternalVertex v : vertices ) put(v,executeImplicitKeyQuery(v));
+        }};
+    }
 
     @Override
     public Map<TitanVertex, Iterable<TitanEdge>> titanEdges() {
-        return (Map) relations(RelationCategory.EDGE);
+        return (Map) execute(RelationCategory.EDGE, new RelationConstructor());
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanProperty>> properties() {
-        return (Map) relations(RelationCategory.PROPERTY);
+        return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
+                executeImplicitKeyQuery():
+                execute(RelationCategory.PROPERTY, new RelationConstructor()));
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanRelation>> relations() {
-        return (Map) relations(RelationCategory.RELATION);
+        return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
+                executeImplicitKeyQuery():
+                execute(RelationCategory.RELATION, new RelationConstructor()));
     }
 
     @Override
     public Map<TitanVertex, Iterable<TitanVertex>> vertices() {
-        Map<TitanVertex, Iterable<TitanEdge>> base = titanEdges();
-        Map<TitanVertex, Iterable<TitanVertex>> result = new HashMap<TitanVertex, Iterable<TitanVertex>>(base.size());
-        for (Map.Entry<TitanVertex, Iterable<TitanEdge>> entry : base.entrySet()) {
-            result.put(entry.getKey(), edges2Vertices(entry.getValue(), entry.getKey()));
-        }
-        return result;
+        return execute(RelationCategory.EDGE, new VertexConstructor());
     }
 
     @Override
     public Map<TitanVertex, VertexList> vertexIds() {
-        Map<TitanVertex, Iterable<TitanEdge>> base = titanEdges();
-        Map<TitanVertex, VertexList> result = new HashMap<TitanVertex, VertexList>(base.size());
-        for (Map.Entry<TitanVertex, Iterable<TitanEdge>> entry : base.entrySet()) {
-            result.put(entry.getKey(), edges2VertexIds(entry.getValue(), entry.getKey()));
-        }
-        return result;
+        return execute(RelationCategory.EDGE, new VertexIdConstructor());
     }
 
 }

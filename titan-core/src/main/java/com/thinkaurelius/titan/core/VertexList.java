@@ -32,12 +32,28 @@ public interface VertexList extends Iterable<TitanVertex> {
     public TitanVertex get(int pos);
 
     /**
-     * Sorts this list according to vertex idAuthorities in increasing order.
+     * Sorts this list according to vertex ids in increasing order.
      * If the list is already sorted, invoking this method incurs no cost.
      *
      * @throws UnsupportedOperationException If not all vertices in this list have an id
      */
     public void sort();
+
+    /**
+     * Whether this list of vertices is sorted by id in increasing order.
+     *
+     * @return
+     */
+    public boolean isSorted();
+
+    /**
+     * Returns a sub list of this list of vertices from the given position with the given number of vertices.
+     *
+     * @param fromPosition
+     * @param length
+     * @return
+     */
+    public VertexList subList(int fromPosition, int length);
 
     /**
      * Returns a list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.

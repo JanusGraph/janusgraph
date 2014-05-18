@@ -126,6 +126,16 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         }
 
         @Override
+        public boolean hasSchemaTypeConstraint() {
+            return false;
+        }
+
+        @Override
+        public TitanSchemaType getSchemaTypeConstraint() {
+            return null;
+        }
+
+        @Override
         public boolean isInternalIndex() {
             return true;
         }

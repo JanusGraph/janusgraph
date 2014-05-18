@@ -348,6 +348,9 @@ public class IDManager {
      */
     public static final int SCHEMA_PARTITION = 0;
 
+    public static final int PARTITIONED_VERTEX_PARTITION = 1;
+
+
     /**
      * Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
@@ -493,7 +496,49 @@ public class IDManager {
     public long getVertexID(long count, long partition, VertexIDType vertexType) {
         Preconditions.checkArgument(VertexIDType.UserVertex.is(vertexType.suffix()),"Not a user vertex type: %s",vertexType);
         Preconditions.checkArgument(count>0 && count<vertexCountBound,"Invalid count for bound: %s", vertexCountBound);
-        return constructId(count, partition, vertexType);
+        if (vertexType==VertexIDType.PartitionedVertex) {
+            Preconditions.checkArgument(partition==PARTITIONED_VERTEX_PARTITION);
+            return getCanonicalVertexIdFromCount(count);
+        } else {
+            return constructId(count, partition, vertexType);
+        }
+    }
+
+    public long getPartitionHashForId(long id) {
+        Preconditions.checkArgument(id>0);
+        return Long.valueOf(id).hashCode() & (partitionIDBound-1);
+    }
+
+    private long getCanonicalVertexIdFromCount(long count) {
+        long partition = getPartitionHashForId(count);
+        return constructId(count,partition,VertexIDType.PartitionedVertex);
+    }
+
+    public long getCanonicalVertexId(long partitionedVertexId) {
+        Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
+        long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+        return getCanonicalVertexIdFromCount(count);
+    }
+
+    public long getPartitionedVertexId(long partitionedVertexId, long otherPartition) {
+        Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
+        long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+        assert count>0;
+        return constructId(count,otherPartition,VertexIDType.PartitionedVertex);
+    }
+
+    public long[] getPartitionedVertexRepresentatives(long partitionedVertexId) {
+        Preconditions.checkArgument(isPartitionedVertex(partitionedVertexId));
+        assert getPartitionBound()<Integer.MAX_VALUE;
+        long[] ids = new long[(int)getPartitionBound()];
+        for (int i=0;i<getPartitionBound();i++) {
+            ids[i]=getPartitionedVertexId(partitionedVertexId,i);
+        }
+        return ids;
+    }
+
+    public boolean isPartitionedVertex(long id) {
+        return isUserVertex(id) && VertexIDType.PartitionedVertex.is(id);
     }
 
     public long getRelationCountBound() {
@@ -588,11 +633,6 @@ public class IDManager {
     private final IDInspector inspector = new IDInspector() {
 
         @Override
-        public final long getPartitionId(long id) {
-            return IDManager.this.getPartitionId(id);
-        }
-
-        @Override
         public final boolean isSchemaVertexId(long id) {
             return VertexIDType.Schema.is(id);
         }
@@ -641,7 +681,12 @@ public class IDManager {
 
         @Override
         public boolean isPartitionedVertex(long id) {
-            return isUserVertex(id) && VertexIDType.PartitionedVertex.is(id);
+            return IDManager.this.isPartitionedVertex(id);
+        }
+
+        @Override
+        public long getCanonicalVertexId(long partitionedVertexId) {
+            return IDManager.this.getCanonicalVertexId(partitionedVertexId);
         }
 
     };

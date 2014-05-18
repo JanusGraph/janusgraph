@@ -14,7 +14,7 @@ import static com.tinkerpop.blueprints.util.StringFactory.*;
 
 public abstract class AbstractProperty extends AbstractTypedRelation implements TitanProperty {
 
-    private final InternalVertex vertex;
+    private InternalVertex vertex;
     private final Object value;
 
     public AbstractProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
@@ -30,6 +30,11 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
         String valueStr = String.valueOf(value);
         valueStr = valueStr.substring(0,Math.min(valueStr.length(),20));
         return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + valueStr + R_BRACKET;
+    }
+
+    public void setVertexAt(int pos, InternalVertex vertex) {
+        Preconditions.checkArgument(pos==0 && vertex!=null && this.vertex.equals(vertex));
+        this.vertex=vertex;
     }
 
     @Override

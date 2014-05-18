@@ -9,10 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
-import com.thinkaurelius.titan.graphdb.query.BackendQueryHolder;
-import com.thinkaurelius.titan.graphdb.query.Query;
-import com.thinkaurelius.titan.graphdb.query.QueryUtil;
-import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
+import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -72,6 +69,21 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      */
     private int limit = Query.NO_LIMIT;
 
+    /**
+     * Whether to query for system relations only
+     */
+    private boolean querySystem = false;
+    /**
+     Whether to query only for persisted edges, i.e. ignore any modifications to the vertex made in this transaction.
+     This is achieved by using the {@link SimpleVertexQueryProcessor} for execution.
+     */
+    private boolean queryOnlyLoaded = false;
+
+    /**
+     * Whether to restrict this query to the specified "local" partitions in this transaction
+     */
+    private boolean restrict2Partitions = true;
+
 
     public AbstractVertexCentricQueryBuilder(final StandardTitanTx tx) {
         Preconditions.checkArgument(tx!=null);
@@ -84,6 +96,36 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
      * Query Construction
 	 * ---------------------------------------------------------------
 	 */
+
+    /**
+     * Removes any query partition restriction for this query
+     *
+     * @return
+     */
+    public Q noPartitionRestriction() {
+        this.restrict2Partitions = false;
+        return getThis();
+    }
+
+    /**
+     * Restricts the result set of this query to only system types.
+     * @return
+     */
+    public Q system() {
+        this.querySystem = true;
+        return getThis();
+    }
+
+    /**
+     * Calling this method will cause this query to only included loaded (i.e. unmodified) relations in the
+     * result set.
+     * @return
+     */
+    public Q queryOnlyLoaded() {
+        queryOnlyLoaded=true;
+        return getThis();
+    }
+
 
     @Override
     public Q adjacent(TitanVertex vertex) {
@@ -219,20 +261,24 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
 
     /* ---------------------------------------------------------------
-     * Utility Methods
+     * Inspection Methods
 	 * ---------------------------------------------------------------
 	 */
 
-    protected Direction getDirection() {
-        return dir;
-    }
-
-    protected TitanVertex getAdjacentVertex() {
-        return adjacentVertex;
-    }
-
     protected final boolean hasTypes() {
         return types.length>0;
+    }
+
+    private boolean hasAllSingleKeys() {
+        for (String typeName : types) {
+            InternalRelationType type = QueryUtil.getType(tx, typeName);
+            if (type==null) continue;
+            if (!(type instanceof PropertyKey)) return false;
+            if (((PropertyKey) type).getCardinality()!=Cardinality.SINGLE) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -248,6 +294,32 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         if (returnType==RelationCategory.EDGE || types.length!=1 || !constraints.isEmpty()) return false;
         return tx.getRelationType(types[0]) instanceof ImplicitKey;
     }
+
+    /* ---------------------------------------------------------------
+     * Utility Methods
+	 * ---------------------------------------------------------------
+	 */
+
+    protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
+        return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
+            @Nullable
+            @Override
+            public TitanVertex apply(@Nullable TitanEdge titanEdge) {
+                return titanEdge.getOtherVertex(other);
+            }
+        });
+    }
+
+    protected VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
+        VertexArrayList vertices = new VertexArrayList(tx);
+        for (TitanEdge edge : edges) vertices.add(edge.getOtherVertex(other));
+        return vertices;
+    }
+
+    /* ---------------------------------------------------------------
+     * Query Execution (Helper methods)
+	 * ---------------------------------------------------------------
+	 */
 
     /**
      * If {@link #isImplicitKeyQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)} is true,
@@ -266,28 +338,184 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return ImmutableList.of((TitanRelation)new StandardProperty(0,key,v,key.computeProperty(v), v.isNew()?ElementLifeCycle.New:ElementLifeCycle.Loaded));
     }
 
-    protected static Iterable<TitanVertex> edges2Vertices(final Iterable<TitanEdge> edges, final TitanVertex other) {
-        return Iterables.transform(edges, new Function<TitanEdge, TitanVertex>() {
-            @Nullable
-            @Override
-            public TitanVertex apply(@Nullable TitanEdge titanEdge) {
-                return titanEdge.getOtherVertex(other);
-            }
-        });
+    protected interface ResultConstructor<Q> {
+
+        Q getResult(InternalVertex v, BaseVertexCentricQuery bq);
+
+        Q emptyResult();
+
     }
 
-    protected VertexList edges2VertexIds(final Iterable<TitanEdge> edges, final TitanVertex other) {
-        VertexArrayList vertices = new VertexArrayList();
-        for (TitanEdge edge : edges) vertices.add(edge.getOtherVertex(other));
-        return vertices;
+    protected class RelationConstructor implements ResultConstructor<Iterable<? extends TitanRelation>> {
+
+        @Override
+        public Iterable<? extends TitanRelation> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+            return executeRelations(v,bq);
+        }
+
+        @Override
+        public Iterable<? extends TitanRelation> emptyResult() {
+            return Collections.EMPTY_LIST;
+        }
+
     }
+
+    protected class VertexConstructor implements ResultConstructor<Iterable<TitanVertex>> {
+
+        @Override
+        public Iterable<TitanVertex> getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+            return executeVertices(v,bq);
+        }
+
+        @Override
+        public Iterable<TitanVertex> emptyResult() {
+            return Collections.EMPTY_LIST;
+        }
+
+    }
+
+    protected class VertexIdConstructor implements ResultConstructor<VertexList> {
+
+        @Override
+        public VertexList getResult(InternalVertex v, BaseVertexCentricQuery bq) {
+            return executeVertexIds(v,bq);
+        }
+
+        @Override
+        public VertexList emptyResult() {
+            return new VertexArrayList(tx);
+        }
+
+    }
+
+    protected List<InternalVertex> allRepresentatives(InternalVertex partitionedVertex) {
+        if (hasAllSingleKeys()) {
+            ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
+        }
+        return Arrays.asList(tx.getAllRepresentatives(partitionedVertex,restrict2Partitions));
+    }
+
+
+    protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
+        assert vertices.length>0;
+        if (!query.isSimple()) return false;
+        if (queryOnlyLoaded) return true;
+        for (InternalVertex vertex : vertices) if (!vertex.isLoaded()) return false;
+        return true;
+    }
+
+    protected Iterable<TitanRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        if (tx.isPartitionedVertex(vertex)) {
+            if (!hasAllSingleKeys()) {
+                InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+                Iterable<TitanRelation> merge = null;
+
+                for (InternalVertex rep : representatives) {
+                    Iterable<TitanRelation> iter = executeIndividualRelations(rep,baseQuery);
+                    if (merge==null) merge = iter;
+                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,(Comparator)orders,false);
+                }
+                return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+            } else vertex = tx.getCanonicalVertex(vertex);
+        }
+        return executeIndividualRelations(vertex,baseQuery);
+    }
+
+    private Iterable<TitanRelation> executeIndividualRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        VertexCentricQuery query = constructQuery(vertex, baseQuery);
+        if (useSimpleQueryProcessor(query,vertex)) return new SimpleVertexQueryProcessor(query,tx).relations();
+        else return new QueryProcessor<VertexCentricQuery,TitanRelation,SliceQuery>(query, tx.edgeProcessor);
+    }
+
+    public Iterable<TitanVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        if (tx.isPartitionedVertex(vertex)) {
+            //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
+            if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
+
+            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+            Iterable<TitanVertex> merge = null;
+
+            for (InternalVertex rep : representatives) {
+                Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
+                if (merge==null) merge = iter;
+                else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
+            }
+            return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+        }
+        return executeIndividualVertices(vertex,baseQuery);
+    }
+
+    private Iterable<TitanVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        VertexCentricQuery query = constructQuery(vertex, baseQuery);
+        if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
+        else return edges2Vertices((Iterable) executeRelations(vertex,baseQuery), query.getVertex());
+    }
+
+    public VertexList executeVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        if (tx.isPartitionedVertex(vertex)) {
+            //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
+            if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
+
+            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+            VertexListInternal merge = null;
+
+            for (InternalVertex rep : representatives) {
+                if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
+                VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
+                if (merge==null) merge = (VertexListInternal)vlist;
+                else merge.addAll(vlist);
+            }
+            if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+            return merge;
+        }
+        return executeIndividualVertexIds(vertex,baseQuery);
+    }
+
+    private VertexList executeIndividualVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        VertexCentricQuery query = constructQuery(vertex, baseQuery);
+        if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
+        return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
+    }
+
 
     /* ---------------------------------------------------------------
-     * Query Optimization
+     * Query Optimization and Construction
 	 * ---------------------------------------------------------------
 	 */
 
     private static final int HARD_MAX_LIMIT   = 300000;
+
+    /**
+     * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
+     * logic is taken from {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+     * This method only adds the additional conditions that are based on the base vertex.
+     *
+     * @param vertex for which to construct this query
+     * @param baseQuery as constructed by {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
+     * @return
+     */
+    protected VertexCentricQuery constructQuery(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
+        Condition<TitanRelation> condition = baseQuery.getCondition();
+        if (!baseQuery.isEmpty()) {
+            //Add adjacent-vertex and direction related conditions; copy conditions to so that baseQuery does not change
+            And<TitanRelation> newcond = new And<TitanRelation>();
+            if (condition instanceof And) newcond.addAll((And) condition);
+            else newcond.add(condition);
+
+            newcond.add(new DirectionCondition<TitanRelation>(vertex,dir));
+            if (adjacentVertex != null)
+                newcond.add(new IncidenceCondition<TitanRelation>(vertex,adjacentVertex));
+
+            condition = newcond;
+        }
+        VertexCentricQuery query = new VertexCentricQuery(vertex, condition, baseQuery.getDirection(), baseQuery.getQueries(),baseQuery.getOrders(), baseQuery.getLimit());
+        Preconditions.checkArgument(!queryOnlyLoaded || query.isSimple(),"Query-only-loaded only works on simple queries");
+        return query;
+    }
+
+    protected VertexCentricQuery constructQuery(InternalVertex vertex, RelationCategory returnType) {
+        return constructQuery(vertex,constructQuery(returnType));
+    }
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         assert returnType != null;
@@ -317,7 +545,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         EdgeSerializer serializer = tx.getEdgeSerializer();
         List<BackendQueryHolder<SliceQuery>> queries;
         if (!hasTypes()) {
-            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType),
+            BackendQueryHolder<SliceQuery> query = new BackendQueryHolder<SliceQuery>(serializer.getQuery(returnType, querySystem),
                     ((dir == Direction.BOTH || (returnType == RelationCategory.PROPERTY && dir == Direction.OUT))
                             && !conditions.hasChildren()), orders.isEmpty(), null);
             if (sliceLimit!=Query.NO_LIMIT && sliceLimit<Integer.MAX_VALUE/3) {
@@ -328,7 +556,8 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             query.getBackendQuery().setLimit(computeLimit(conditions.size(),sliceLimit));
             queries = ImmutableList.of(query);
             conditions.add(returnType);
-            conditions.add(new HiddenFilterCondition<TitanRelation>()); //Need this to filter out newly created hidden relations in the transaction
+            conditions.add(new VisibilityFilterCondition<TitanRelation>(  //Need this to filter out newly created hidden relations in the transaction
+                    querySystem? VisibilityFilterCondition.Visibility.SYSTEM: VisibilityFilterCondition.Visibility.NORMAL));
         } else {
             Set<RelationType> ts = new HashSet<RelationType>(types.length);
             queries = new ArrayList<BackendQueryHolder<SliceQuery>>(types.length + 2);
@@ -341,6 +570,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             for (String typeName : types) {
                 InternalRelationType type = QueryUtil.getType(tx, typeName);
                 if (type==null) continue;
+                Preconditions.checkArgument(!querySystem || (type instanceof SystemRelationType),"Can only query for system types: %s",type);
                 if (type instanceof ImplicitKey) throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "+type);
                 ts.add(type);
 
@@ -589,10 +819,5 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return baseLimit;
     }
 
-    protected static<E extends TitanElement> Condition<E> addAndCondition(Condition<E> base, Condition<E> add) {
-        And<E> newcond = (base instanceof And) ? (And) base : new And<E>(base);
-        newcond.add(add);
-        return newcond;
-    }
 
 }

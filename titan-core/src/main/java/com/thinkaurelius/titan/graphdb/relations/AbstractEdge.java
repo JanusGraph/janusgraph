@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanVertex;
@@ -13,8 +14,8 @@ import com.tinkerpop.blueprints.util.StringFactory;
 
 public abstract class AbstractEdge extends AbstractTypedRelation implements TitanEdge {
 
-    private final InternalVertex start;
-    private final InternalVertex end;
+    private InternalVertex start;
+    private InternalVertex end;
 
     public AbstractEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end) {
         super(id, label);
@@ -34,15 +35,25 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
         return type.getName();
     }
 
+    public void setVertexAt(int pos, InternalVertex vertex) {
+        Preconditions.checkArgument(vertex != null && getVertex(pos).equals(vertex));
+        switch (pos) {
+            case 0:
+                start = vertex;
+            case 1:
+                end = vertex;
+            default:
+                throw new IllegalArgumentException("Invalid position: " + pos);
+        }
+    }
+
     @Override
     public InternalVertex getVertex(int pos) {
         switch (pos) {
             case 0:
                 return start;
-
             case 1:
                 return end;
-
             default:
                 throw new IllegalArgumentException("Invalid position: " + pos);
         }

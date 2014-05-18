@@ -31,7 +31,7 @@ public class RelationQueryCache {
                 .concurrencyLevel(2).build();
         relationTypes = new EnumMap<RelationCategory, SliceQuery>(RelationCategory.class);
         for (RelationCategory rt : RelationCategory.values()) {
-            relationTypes.put(rt,edgeSerializer.getQuery(rt));
+            relationTypes.put(rt,edgeSerializer.getQuery(rt,false));
         }
     }
 

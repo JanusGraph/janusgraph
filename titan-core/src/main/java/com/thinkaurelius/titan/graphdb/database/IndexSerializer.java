@@ -221,6 +221,12 @@ public class IndexSerializer {
         return (relation.isNew()? IndexUpdate.Type.ADD : IndexUpdate.Type.DELETE);
     }
 
+    private static boolean indexAppliesTo(IndexType index, TitanElement element) {
+        return index.getElement().isInstance(element) && (
+                        !index.hasSchemaTypeConstraint() ||
+                        index.getElement().matchesConstraint(index.getSchemaTypeConstraint(),element));
+    }
+
     public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation) {
         assert relation.isNew() || relation.isRemoved();
         Set<IndexUpdate> updates = Sets.newHashSet();
@@ -229,7 +235,7 @@ public class IndexSerializer {
             if (!(type instanceof PropertyKey)) continue;
             PropertyKey key = (PropertyKey)type;
             for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
-                if (!index.getElement().isInstance(relation)) continue;
+                if (!indexAppliesTo(index,relation)) continue;
                 if (index instanceof InternalIndexType) {
                     InternalIndexType iIndex= (InternalIndexType) index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -256,7 +262,7 @@ public class IndexSerializer {
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             IndexUpdate.Type updateType = getUpateType(rel);
             for (IndexType index : ((InternalRelationType)p.getPropertyKey()).getKeyIndexes()) {
-                if (index.getElement()!=ElementCategory.VERTEX) continue;
+                if (!indexAppliesTo(index,vertex)) continue;
                 if (index.isInternalIndex()) { //Gather internal indexes
                     InternalIndexType iIndex = (InternalIndexType)index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -359,7 +365,7 @@ public class IndexSerializer {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<RecordEntry>();
-            VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query()).type(key);
+            VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query()).noPartitionRestriction().type(key);
             if (onlyLoaded) qb.queryOnlyLoaded();
             for (TitanProperty p : qb.properties()) {
                 assert p.isNew() || p.isLoaded(); assert !onlyLoaded || p.isLoaded();

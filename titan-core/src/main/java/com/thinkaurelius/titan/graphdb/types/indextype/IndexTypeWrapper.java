@@ -1,14 +1,21 @@
 package com.thinkaurelius.titan.graphdb.types.indextype;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.ParameterType;
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaSource;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Map;
 
@@ -56,7 +63,7 @@ public abstract class IndexTypeWrapper implements IndexType {
         return base.getName();
     }
 
-    private Map<PropertyKey,IndexField> fieldMap = null;
+    private volatile Map<PropertyKey,IndexField> fieldMap = null;
 
     @Override
     public IndexField getField(PropertyKey key) {
@@ -69,6 +76,32 @@ public abstract class IndexTypeWrapper implements IndexType {
         }
         assert result!=null;
         return result.get(key);
+    }
+
+    private volatile Optional<TitanSchemaType> schemaTypeConstraint = Optional.absent();
+
+    @Override
+    public boolean hasSchemaTypeConstraint() {
+        return getSchemaTypeConstraint()!=null;
+    }
+
+    @Override
+    public TitanSchemaType getSchemaTypeConstraint() {
+        TitanSchemaType constraint;
+        if (!schemaTypeConstraint.isPresent()) {
+            Iterable<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
+            if (Iterables.isEmpty(related)) {
+                constraint=null;
+            } else {
+                constraint =
+                        (TitanSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
+                assert constraint!=null;
+            }
+            schemaTypeConstraint = Optional.of(constraint);
+        } else {
+            constraint = schemaTypeConstraint.get();
+        }
+        return constraint;
     }
 
     @Override

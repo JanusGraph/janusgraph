@@ -83,6 +83,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
      */
     public VertexList vertexIds() {
         AbstractLongList list = new LongArrayList();
+        long previousId = 0;
         for (Long id : Iterables.transform(this,new Function<Entry, Long>() {
             @Nullable
             @Override
@@ -91,8 +92,10 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
             }
         })) {
             list.add(id);
+            if (id>=previousId && previousId>=0) previousId=id;
+            else previousId=-1;
         }
-        return new VertexLongList(tx,list);
+        return new VertexLongList(tx,list,previousId>=0);
     }
 
     /**

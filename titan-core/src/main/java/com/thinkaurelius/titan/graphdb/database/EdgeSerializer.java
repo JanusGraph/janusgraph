@@ -381,9 +381,9 @@ public class EdgeSerializer implements RelationReader {
         }
     }
 
-    public SliceQuery getQuery(RelationCategory resultType) {
+    public SliceQuery getQuery(RelationCategory resultType, boolean querySystemTypes) {
         Preconditions.checkNotNull(resultType);
-        StaticBuffer[] bound = getBounds(resultType);
+        StaticBuffer[] bound = getBounds(resultType, querySystemTypes);
         return new SliceQuery(bound[0], bound[1]);
     }
 

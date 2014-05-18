@@ -12,15 +12,16 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
+public class
+        DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
-    private final TitanVertex vertex;
+    private final TitanVertex baseVertex;
     private final int relationPos;
     private final Direction direction;
 
     public DirectionCondition(TitanVertex vertex, Direction dir) {
         assert vertex != null && dir != null;
-        this.vertex = vertex;
+        this.baseVertex = vertex;
         this.direction = dir;
         this.relationPos = (dir == Direction.BOTH) ? -1 : EdgeDirection.position(dir);
     }
@@ -31,7 +32,7 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
         if (element instanceof CacheEdge) {
             return direction==((CacheEdge)element).getVertexCentricDirection();
         }
-        return ((InternalRelation) element).getVertex(relationPos).equals(vertex);
+        return ((InternalRelation) element).getVertex(relationPos).equals(baseVertex);
     }
 
     public Direction getDirection() {
@@ -40,7 +41,7 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder().append(getType()).append(relationPos).append(vertex).toHashCode();
+        return new HashCodeBuilder().append(getType()).append(relationPos).append(baseVertex).toHashCode();
     }
 
     @Override
@@ -52,7 +53,7 @@ public class DirectionCondition<E extends TitanRelation> extends Literal<E> {
             return false;
 
         DirectionCondition oth = (DirectionCondition)other;
-        return relationPos == oth.relationPos && vertex.equals(oth.vertex);
+        return relationPos == oth.relationPos && baseVertex.equals(oth.baseVertex);
     }
 
     @Override

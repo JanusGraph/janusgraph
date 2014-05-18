@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.util.encoding.LongEncoding;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -109,9 +111,14 @@ public final class RelationIdentifier {
         if (((RelationType) typeVertex).isEdgeLabel()) {
             TitanVertex in = tx.getVertex(inVertexId);
             if (in==null) return null;
-            rels = v.query().types((EdgeLabel)type).direction(Direction.OUT).adjacent(in).titanEdges();
+            if (((StandardTitanTx)tx).isPartitionedVertex(v)) { //Swap for likely better performance
+                TitanVertex tmp = in;
+                in = v;
+                v = tmp;
+            }
+            rels = ((VertexCentricQueryBuilder)v.query()).noPartitionRestriction().types((EdgeLabel)type).direction(Direction.OUT).adjacent(in).titanEdges();
         } else {
-            rels = v.query().types((PropertyKey)type).properties();
+            rels = ((VertexCentricQueryBuilder)v.query()).noPartitionRestriction().types((PropertyKey)type).properties();
         }
 
         for (TitanRelation r : rels) {

@@ -34,7 +34,9 @@ import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -321,12 +323,12 @@ public class ManagementSystem implements TitanManagement {
         });
     }
 
-    @Override
-    public TitanGraphIndex createExternalIndex(String indexName, Class<? extends Element> elementType, String backingIndex) {
+    private TitanGraphIndex createExternalIndex(String indexName, ElementCategory elementCategory,
+                                                TitanSchemaType constraint, String backingIndex) {
         Preconditions.checkArgument(graph.getIndexSerializer().containsIndex(backingIndex),"Unknown external index backend: %s",backingIndex);
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName)==null,"An index with name '%s' has already been defined",indexName);
-        ElementCategory elementCategory = ElementCategory.getByClazz(elementType);
+
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(TypeDefinitionCategory.INTERNAL_INDEX,false);
         def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY,elementCategory);
@@ -335,6 +337,12 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,Cardinality.LIST);
         def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
         TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
+
+        Preconditions.checkArgument(constraint==null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
+        if (constraint!=null) {
+            addSchemaEdge(v,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
+        }
+
         return new TitanGraphIndexWrapper(v.asIndexType());
     }
 
@@ -381,16 +389,9 @@ public class ManagementSystem implements TitanManagement {
         }
     }
 
-    @Override
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, PropertyKey... keys) {
-        return createInternalIndex(indexName, elementType, false, keys);
-    }
-
-    @Override
-    public TitanGraphIndex createInternalIndex(String indexName, Class<? extends Element> elementType, boolean unique, PropertyKey... keys) {
+    private TitanGraphIndex createInternalIndex(String indexName, ElementCategory elementCategory, boolean unique, TitanSchemaType constraint, PropertyKey... keys) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
-        Preconditions.checkArgument(getGraphIndex(indexName)==null,"An index with name '%s' has already been defined",indexName);
-        ElementCategory elementCategory = ElementCategory.getByClazz(elementType);
+        Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
         Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index");
         boolean allSingleKeys = true;
         boolean oneNewKey = false;
@@ -418,8 +419,83 @@ public class ManagementSystem implements TitanManagement {
             addSchemaEdge(indexVertex,keys[i],TypeDefinitionCategory.INDEX_FIELD,paras);
         }
 
-        return new TitanGraphIndexWrapper(indexVertex.asIndexType());
+        Preconditions.checkArgument(constraint==null || (elementCategory.isValidConstraint(constraint) && constraint instanceof TitanSchemaVertex));
+        if (constraint!=null) {
+            addSchemaEdge(indexVertex,(TitanSchemaVertex)constraint,TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT,null);
+        }
 
+        return new TitanGraphIndexWrapper(indexVertex.asIndexType());
+    }
+
+    @Override
+    public TitanManagement.IndexBuilder buildIndex(String indexName, Class<? extends Element> elementType) {
+        return new IndexBuilder(indexName,ElementCategory.getByClazz(elementType));
+    }
+
+    private class IndexBuilder implements TitanManagement.IndexBuilder {
+
+        private final String indexName;
+        private final ElementCategory elementCategory;
+        private boolean unique = false;
+        private TitanSchemaType constraint = null;
+        private Map<PropertyKey,Parameter[]> keys = new HashMap<PropertyKey, Parameter[]>();
+
+        private IndexBuilder(String indexName, ElementCategory elementCategory) {
+            this.indexName = indexName;
+            this.elementCategory = elementCategory;
+        }
+
+        @Override
+        public TitanManagement.IndexBuilder indexKey(PropertyKey key) {
+            Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
+            keys.put(key,null);
+            return this;
+        }
+
+        @Override
+        public TitanManagement.IndexBuilder indexKey(PropertyKey key, Parameter... parameters) {
+            Preconditions.checkArgument(key!=null && (key instanceof PropertyKeyVertex),"Key must be a user defined key: %s",key);
+            keys.put(key,parameters);
+            return this;
+        }
+
+        @Override
+        public TitanManagement.IndexBuilder indexOnly(TitanSchemaType schemaType) {
+            Preconditions.checkNotNull(schemaType);
+            Preconditions.checkArgument(elementCategory.isValidConstraint(schemaType),"Need to specify a valid schema type for this index definition: %s",schemaType);
+            constraint = schemaType;
+            return this;
+        }
+
+        @Override
+        public TitanManagement.IndexBuilder unique() {
+            unique = true;
+            return this;
+        }
+
+        @Override
+        public TitanGraphIndex buildInternalIndex() {
+            Preconditions.checkArgument(!keys.isEmpty(),"Need to specify at least one key for the composite index");
+            PropertyKey[] keyArr = new PropertyKey[keys.size()];
+            int pos = 0;
+            for (Map.Entry<PropertyKey,Parameter[]> entry : keys.entrySet()) {
+                Preconditions.checkArgument(entry.getValue()==null,"Cannot specify parameters for composite index: %s",entry.getKey());
+                keyArr[pos++]=entry.getKey();
+            }
+            return createInternalIndex(indexName,elementCategory,unique,constraint,keyArr);
+        }
+
+        @Override
+        public TitanGraphIndex buildExternalIndex(String backingIndex) {
+            Preconditions.checkArgument(StringUtils.isNotBlank(backingIndex),"Need to specify backing index name");
+            Preconditions.checkArgument(!unique,"An external index cannot be unique");
+
+            TitanGraphIndex index = createExternalIndex(indexName,elementCategory,constraint,backingIndex);
+            for (Map.Entry<PropertyKey,Parameter[]> entry : keys.entrySet()) {
+                addIndexKey(index,entry.getKey(),entry.getValue());
+            }
+            return index;
+        }
     }
 
 

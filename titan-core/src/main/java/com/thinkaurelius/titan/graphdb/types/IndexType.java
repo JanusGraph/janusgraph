@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 
 /**
@@ -19,6 +20,10 @@ public interface IndexType {
     public boolean isInternalIndex();
 
     public boolean isExternalIndex();
+
+    public boolean hasSchemaTypeConstraint();
+
+    public TitanSchemaType getSchemaTypeConstraint();
 
     public String getBackingIndexName();
 

@@ -48,6 +48,12 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     @Override
+    public long getCompareId() {
+        if (tx.isPartitionedVertex(this)) return tx.getIdInspector().getCanonicalVertexId(getID());
+        else return getID();
+    }
+
+    @Override
     public String toString() {
         return StringFactory.vertexString(this);
     }
@@ -63,6 +69,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
 
+
+
 	/* ---------------------------------------------------------------
      * Changing Edges
 	 * ---------------------------------------------------------------
@@ -71,13 +79,15 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public synchronized void remove() {
         if (it().isRemoved()) return;
-        Iterator<TitanRelation> iter = it().getRelations().iterator();
+        Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
             iter.remove();
         }
-        //Finally remove internal/hidden relations
-        for (TitanProperty r : it().query().type(BaseKey.VertexExists).properties()) {
+        //Remove all system types on the vertex
+        for (TitanRelation r : it().query().noPartitionRestriction().system().relations()) {
+            RelationType t = r.getType();
+            assert t==BaseLabel.VertexLabelEdge || t==BaseKey.VertexExists;
             r.remove();
         }
     }
@@ -92,9 +102,13 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         return getVertexLabel().getName();
     }
 
+    protected Vertex getVertexLabelInternal() {
+        return Iterables.getOnlyElement(query().noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+    }
+
     @Override
     public VertexLabel getVertexLabel() {
-        Vertex label = Iterables.getOnlyElement(query().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        Vertex label = getVertexLabelInternal();
         if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)label;
     }

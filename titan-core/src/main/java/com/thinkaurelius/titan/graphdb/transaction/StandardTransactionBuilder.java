@@ -58,6 +58,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String logIdentifier;
 
+    private int[] restrictedPartitions = new int[0];
+
     private Timepoint userCommitTime = null;
 
     private String groupName;
@@ -153,6 +155,14 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setRestrictedPartitions(int[] partitions) {
+        Preconditions.checkNotNull(partitions);
+        this.restrictedPartitions=partitions;
+        return this;
+    }
+
+
+    @Override
     public TransactionBuilder setCustomOption(String k, Object v) {
         storageConfiguration.set(k, v);
         return this;
@@ -165,7 +175,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
-                logIdentifier, groupName,
+                logIdentifier, restrictedPartitions, groupName,
                 defaultSchemaMaker, new BasicConfiguration(ROOT_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
@@ -252,6 +262,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public int[] getRestrictedPartitions() {
+        return restrictedPartitions;
+    }
+
+    @Override
+    public boolean hasRestrictedPartitions() {
+        return restrictedPartitions.length>0;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -303,6 +323,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int vertexCacheSize;
         private final int dirtyVertexSize;
         private final String logIdentifier;
+        private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
 
         private final TransactionHandleConfig handleConfig;
@@ -316,6 +337,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
                 boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
+                int[] restrictedPartitions,
                 String groupName, DefaultSchemaMaker defaultSchemaMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
@@ -332,6 +354,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.vertexCacheSize = vertexCacheSize;
             this.dirtyVertexSize = dirtyVertexSize;
             this.logIdentifier = logIdentifier;
+            this.restrictedPartitions=restrictedPartitions;
             this.defaultSchemaMaker = defaultSchemaMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
                     .startTime(startTime)
@@ -413,6 +436,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public String getLogIdentifier() {
             return logIdentifier;
+        }
+
+        @Override
+        public int[] getRestrictedPartitions() {
+            return restrictedPartitions;
+        }
+
+        @Override
+        public boolean hasRestrictedPartitions() {
+            return restrictedPartitions.length>0;
         }
 
         @Override

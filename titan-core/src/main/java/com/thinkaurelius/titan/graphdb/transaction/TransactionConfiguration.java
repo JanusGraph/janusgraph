@@ -130,4 +130,18 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      */
     public String getLogIdentifier();
 
+
+    /**
+     * Querying of partitioned vertices is restricted to the partitions returned by this
+     * method. If the return value has length 0 all partitions are queried (i.e. unrestricted).
+     *
+     * @return
+     */
+    public int[] getRestrictedPartitions();
+
+    /**
+     * Returns true of the queryied partitions should be restricted in this transaction
+     */
+    public boolean hasRestrictedPartitions();
+
 }

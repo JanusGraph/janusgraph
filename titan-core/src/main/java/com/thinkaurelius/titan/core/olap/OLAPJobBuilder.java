@@ -11,7 +11,7 @@ import java.util.concurrent.Future;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPJobBuilder<S> {
+public interface OLAPJobBuilder<S extends State<S>> {
 
     /**
      * Configures the {@link OLAPJob} vertex-centric program to execute on all vertices.
@@ -40,15 +40,23 @@ public interface OLAPJobBuilder<S> {
     /**
      * Set the initial state of the vertices where the key is the vertex id and the value is the state
      * of the vertex.
-     * </p>
-     * Note, that the OLAP executor might operate directly on the provided map to preserve memory. Providing an immutable map
-     * can therefore lead to exceptions. If you wish to preserve the map (or use it elsewhere independently) make sure
-     * to pass in a copy of the map.
      *
      * @param values
      * @return
      */
     public OLAPJobBuilder<S> setInitialState(Map<Long,S> values);
+
+    /**
+     * Sets the initial state of the vertices to the result from a previous OLAP computation.
+     * <p />
+     * Note, that the data structures underlying the {@link OLAPResult} may be removed to be memory efficient
+     * which means that the previous state can be overwritten and is therefore lost.b
+     *
+     * @param values
+     * @return
+     */
+    public OLAPJobBuilder<S> setInitialState(OLAPResult<S> values);
+
 
     /**
      * If the exact number of vertices to be processed is know a priori, it can be specified
@@ -83,6 +91,6 @@ public interface OLAPJobBuilder<S> {
      *
      * @return
      */
-    public Future<Map<Long,S>> execute();
+    public Future<OLAPResult<S>> execute();
 
 }

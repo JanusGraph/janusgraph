@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Comparator;
@@ -19,6 +20,7 @@ import java.util.Comparator;
  */
 public class RelationComparator implements Comparator<InternalRelation> {
 
+    private final StandardTitanTx tx;
     private final InternalVertex vertex;
     private final OrderList orders;
 
@@ -29,6 +31,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
     public RelationComparator(InternalVertex v, OrderList orders) {
         Preconditions.checkArgument(v!=null && orders!=null);
         this.vertex = v;
+        this.tx = v.tx();
         this.orders = orders;
     }
 
@@ -121,7 +124,7 @@ public class RelationComparator implements Comparator<InternalRelation> {
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, long typeid, Order order) {
-        return compareOnKey(r1,r2,vertex.tx().getExistingRelationType(typeid),order);
+        return compareOnKey(r1,r2,tx.getExistingRelationType(typeid),order);
     }
 
     private int compareOnKey(TitanRelation r1, TitanRelation r2, RelationType type, Order order) {

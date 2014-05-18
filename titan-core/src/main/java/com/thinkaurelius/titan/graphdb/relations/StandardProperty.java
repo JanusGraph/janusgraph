@@ -16,7 +16,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardProperty extends AbstractProperty implements StandardRelation {
+public class StandardProperty extends AbstractProperty implements StandardRelation, ReassignableRelation {
 
     public StandardProperty(long id, PropertyKey type, InternalVertex vertex, Object value, byte lifecycle) {
         super(id, type, vertex, value);

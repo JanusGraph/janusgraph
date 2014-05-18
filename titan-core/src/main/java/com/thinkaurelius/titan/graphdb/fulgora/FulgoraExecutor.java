@@ -7,6 +7,8 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.olap.OLAPJob;
+import com.thinkaurelius.titan.core.olap.OLAPResult;
+import com.thinkaurelius.titan.core.olap.State;
 import com.thinkaurelius.titan.core.olap.StateInitializer;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -43,37 +45,37 @@ import java.util.concurrent.*;
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
-class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable {
+class FulgoraExecutor<S extends State<S>> extends AbstractFuture<OLAPResult<S>> implements Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
     private static final int TIMEOUT_MS = 60000; // 60 seconds
-    private static final int NUM_VERTEX_DEFAULT = 10000;
 
     private final SliceQuery[] queries;
     private final List<BlockingQueue<QueryResult>> dataQueues;
     private final DataPuller[] pullThreads;
     private final ThreadPoolExecutor processor;
     private final StandardTitanTx tx;
+    private final IDManager idManager;
     private final OLAPJob job;
 
-    final ConcurrentMap<Long,S> vertexStates;
+    final FulgoraResult<S> vertexStates;
     final String stateKey;
     final StateInitializer<S> initializer;
 
     private boolean processingException = false;
 
     FulgoraExecutor(final List<SliceQuery> sliceQueries, final StandardTitanTx tx, final IDManager idManager,
-                    final int numVertices, final int numProcessors,
-                    final String stateKey, final OLAPJob job,
-                    final StateInitializer<S> initializer, final Map<Long,S> initialState) {
+                    final int numProcessors, final String stateKey, final OLAPJob job,
+                    final StateInitializer<S> initializer, final FulgoraResult<S> initialState) {
         this.tx=tx;
         this.stateKey = stateKey;
         this.job = job;
         this.initializer = initializer;
         BackendTransaction btx = tx.getTxHandle();
+        this.idManager = idManager;
 
         //The first (0th) query is the grounding query
         dataQueues = new ArrayList<BlockingQueue<QueryResult>>(sliceQueries.size()+1);
@@ -87,16 +89,8 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             pullThreads[i]=new DataPuller(idManager,queue,btx.edgeStoreKeys(queries[i]));
             pullThreads[i].start();
         }
-        //Prepare vertex state
-        if (initialState!=null && !initialState.isEmpty() && initialState instanceof ConcurrentMap && initialState.size()>= numVertices) {
-            vertexStates = (ConcurrentMap<Long, S>) initialState;
-        } else {
-            vertexStates = new NonBlockingHashMapLong<S>(numVertices>0?numVertices:NUM_VERTEX_DEFAULT);
-            if (initialState!=null && !initialState.isEmpty()) {
-                for (Map.Entry<Long,S> entry : initialState.entrySet())
-                    vertexStates.put(entry.getKey(),entry.getValue());
-            }
-        }
+        vertexStates = initialState;
+
 
         processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
         processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
@@ -106,19 +100,20 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         S state = vertexStates.get(vertexId);
         if (state==null) {
             state = initializer.initialState();
-            vertexStates.put(vertexId,state);
+            vertexStates.set(vertexId,state);
         }
         return state;
     }
 
     void setVertexState(long vertexId, S state) {
-        vertexStates.put(vertexId,state);
+        vertexStates.set(vertexId,state);
     }
 
     @Override
     public void run() {
         try {
             QueryResult[] currentResults = new QueryResult[queries.length];
+            boolean encounteredPartitionedVertex = false;
             while (true) {
                 for (int i = 0; i < queries.length; i++) {
                     if (currentResults[i]!=null) continue;
@@ -150,6 +145,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                     }
                 } else {
                     FulgoraVertex vertex = new FulgoraVertex(tx,conditionQuery.vertexId,this);
+                    if (idManager.isPartitionedVertex(conditionQuery.vertexId)) encounteredPartitionedVertex=true;
                     for (int i=1;i<currentResults.length;i++) {
                         if (currentResults[i]!=null && currentResults[i].vertexId==vertex.getID()) {
                             vertex.addToQueryCache(queries[i],currentResults[i].entries);
@@ -168,6 +164,10 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 if (pullThreads[i].isAlive()) throw new TitanException("Could not join data pulling thread");
             }
             tx.rollback();
+            //Consolidate partitioned vertex states if such exist
+            if (encounteredPartitionedVertex) {
+                vertexStates.mergePartitionedVertexStates();
+            }
             set(vertexStates);
         } catch (Throwable e) {
             log.error("Exception occured during job execution: {}",e);
@@ -239,7 +239,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
             } catch (Throwable e) {
                 log.error("Exception processing vertex ["+vertex.getID()+"]: ",e);
                 processingException = true;
-                vertexStates.put(vertex.getID(),null); //Invalidate state
+                vertexStates.set(vertex.getID(),null); //Invalidate state
             }
 
         }

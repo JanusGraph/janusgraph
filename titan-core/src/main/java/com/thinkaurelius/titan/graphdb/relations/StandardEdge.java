@@ -16,7 +16,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardEdge extends AbstractEdge implements StandardRelation {
+public class StandardEdge extends AbstractEdge implements StandardRelation, ReassignableRelation {
 
     public StandardEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end, byte lifecycle) {
         super(id, label, start, end);
