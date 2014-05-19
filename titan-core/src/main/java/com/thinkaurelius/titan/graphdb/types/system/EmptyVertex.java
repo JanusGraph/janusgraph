@@ -68,7 +68,7 @@ public class EmptyVertex implements InternalVertex {
 
     @Override
     public VertexLabel getVertexLabel() {
-        return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        return BaseVertexLabel.DEFAULT_VERTEXLABEL;
     }
 
     @Override

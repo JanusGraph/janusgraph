@@ -49,8 +49,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Test
     public void testSimpleUpdate() {
         PropertyKey text = makeKey("name",String.class);
-        mgmt.createInternalIndex("namev",Vertex.class,false,text);
-        mgmt.createInternalIndex("namee",Edge.class,false,text);
+        mgmt.buildIndex("namev",Vertex.class).indexKey(text).buildInternalIndex();
+        mgmt.buildIndex("namee",Edge.class).indexKey(text).buildInternalIndex();
         finishSchema();
 
         Vertex v = tx.addVertex();
@@ -84,8 +84,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalEdgeIndex(time,INDEX);
 
         PropertyKey category = makeKey("category",Integer.class);
-        mgmt.createInternalIndex("vcategory",Vertex.class,category);
-        mgmt.createInternalIndex("ecategory",Edge.class,category);
+        mgmt.buildIndex("vcategory",Vertex.class).indexKey(category).buildInternalIndex();
+        mgmt.buildIndex("ecategory",Edge.class).indexKey(category).buildInternalIndex();
 
         PropertyKey group = makeKey("group",Byte.class);
         createExternalVertexIndex(group,INDEX);

@@ -36,19 +36,17 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final TitanGraph graph) {
         TitanManagement mgmt = graph.getManagementSystem();
-        TitanGraphIndex vindex = mgmt.createExternalIndex("vertices",Vertex.class,INDEX_NAME);
-        TitanGraphIndex eindex = mgmt.createExternalIndex("edges",Edge.class,INDEX_NAME);
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.createInternalIndex("name",Vertex.class,true,name);
+        mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.addIndexKey(vindex,age);
         mgmt.makePropertyKey("type").dataType(String.class).make();
+        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildExternalIndex(INDEX_NAME);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
-        mgmt.addIndexKey(eindex,reason);
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
-        mgmt.addIndexKey(eindex,place);
+        TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
+                .indexKey(reason).indexKey(place).buildExternalIndex(INDEX_NAME);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();

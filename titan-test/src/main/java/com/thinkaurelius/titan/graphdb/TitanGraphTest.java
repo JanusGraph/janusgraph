@@ -549,9 +549,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight,Integer.class);
         PropertyKey f = mgmt.makePropertyKey(foo).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
-        mgmt.createInternalIndex(foo,Vertex.class,f);
+        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildInternalIndex();
         PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
-        mgmt.createInternalIndex(bar,Vertex.class,b);
+        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildInternalIndex();
         finishSchema();
 
         TitanVertex v = tx.addVertex();
@@ -959,12 +959,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testIndexRetrieval() {
         PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
-        mgmt.createInternalIndex("vuid",Vertex.class,true,id);
-        mgmt.createInternalIndex("euid",Edge.class,id);
+        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildInternalIndex();
+        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildInternalIndex();
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.createInternalIndex("vname",Vertex.class,name);
-        mgmt.createInternalIndex("ename",Edge.class,name);
+        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildInternalIndex();
+        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildInternalIndex();
         mgmt.makeEdgeLabel("connect").signature(id, name).make();
         finishSchema();
 
@@ -1010,7 +1010,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
-        mgmt.createInternalIndex("etype",Edge.class,t);
+        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildInternalIndex();
         mgmt.makeEdgeLabel("friend").sortKey(t).make();
         finishSchema();
 

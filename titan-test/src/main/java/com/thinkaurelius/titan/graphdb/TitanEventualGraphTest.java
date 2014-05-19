@@ -192,7 +192,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     public void testBatchLoadingLocking(boolean batchloading) {
         PropertyKey uid = makeKey("uid",Long.class);
-        TitanGraphIndex uidIndex = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
+        TitanGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
         mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();

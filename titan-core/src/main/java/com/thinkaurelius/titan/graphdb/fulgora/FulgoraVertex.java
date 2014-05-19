@@ -23,6 +23,7 @@ import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.graphdb.vertices.AbstractVertex;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -81,7 +82,7 @@ public class FulgoraVertex<S extends State<S>> extends CacheVertex {
     @Override
     public VertexLabel getVertexLabel() {
         FulgoraNeighborVertex label = (FulgoraNeighborVertex)getVertexLabelInternal();
-        if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)tx().getExistingVertex(label.getID());
     }
 

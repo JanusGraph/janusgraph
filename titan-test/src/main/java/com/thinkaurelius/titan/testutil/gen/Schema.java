@@ -229,11 +229,11 @@ public class Schema {
         TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.createInternalIndex("v-"+getVertexPropertyName(i),Vertex.class,key);
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgePropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.createInternalIndex("e-"+getEdgePropertyName(i),Edge.class,key);
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
@@ -243,7 +243,7 @@ public class Schema {
         }
 
         PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.createInternalIndex("v-uid",Vertex.class,true,uid);
+        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
         mgmt.commit();
     }
 

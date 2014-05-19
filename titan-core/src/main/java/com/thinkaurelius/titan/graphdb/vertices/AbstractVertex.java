@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -109,7 +110,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     @Override
     public VertexLabel getVertexLabel() {
         Vertex label = getVertexLabelInternal();
-        if (label==null) return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
         else return (VertexLabelVertex)label;
     }
 

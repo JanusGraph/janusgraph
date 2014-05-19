@@ -191,7 +191,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
         PropertyKey uid = makeKey("uid",String.class);
-        TitanGraphIndex index = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
+        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
         mgmt.setConsistency(index,ConsistencyModifier.LOCK);
         finishSchema();
 

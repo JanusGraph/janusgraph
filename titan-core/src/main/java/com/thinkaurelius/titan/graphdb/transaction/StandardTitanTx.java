@@ -409,7 +409,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public TitanVertex addVertex(Long vertexId, VertexLabel label) {
         verifyWriteAccess();
-        if (label==null) label=SystemTypeManager.DEFAULT_VERTEXLABEL;
+        if (label==null) label=BaseVertexLabel.DEFAULT_VERTEXLABEL;
         if (vertexId != null && !graph.getConfiguration().allowVertexIdSetting()) {
             log.info("Provided vertex id [{}] is ignored because vertex id setting is not enabled", vertexId);
             vertexId = null;
@@ -425,7 +425,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             graph.assignID(vertex);
         }
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
-        if (label!=SystemTypeManager.DEFAULT_VERTEXLABEL) { //Add label
+        if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
             Preconditions.checkArgument(label instanceof VertexLabelVertex);
             addEdge(vertex, (VertexLabelVertex) label, BaseLabel.VertexLabelEdge);
         }
@@ -436,7 +436,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public TitanVertex addVertex() {
-        return addVertex(SystemTypeManager.DEFAULT_VERTEXLABEL);
+        return addVertex(BaseVertexLabel.DEFAULT_VERTEXLABEL);
     }
 
     @Override
@@ -840,7 +840,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     @Override
     public boolean containsVertexLabel(String name) {
         verifyOpen();
-        if (SystemTypeManager.DEFAULT_VERTEXLABEL.getName().equals(name)) return true;
+        if (BaseVertexLabel.DEFAULT_VERTEXLABEL.getName().equals(name)) return true;
 
         name = TitanSchemaCategory.VERTEXLABEL.getSchemaName(name);
         return (newTypeCache.containsKey(name) || graph.getSchemaCache().getSchemaId(name, this)!=null);
@@ -850,7 +850,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public VertexLabel getVertexLabel(String name) {
         verifyOpen();
 
-        if (SystemTypeManager.DEFAULT_VERTEXLABEL.getName().equals(name)) return SystemTypeManager.DEFAULT_VERTEXLABEL;
+        if (BaseVertexLabel.DEFAULT_VERTEXLABEL.getName().equals(name)) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
 
         name = TitanSchemaCategory.getRelationTypeName(name);
         VertexLabel vlabel = (VertexLabel)getSchemaVertex(name);

@@ -48,27 +48,4 @@ public abstract class SystemTypeManager {
     }
 
 
-    public static final InternalVertexLabel DEFAULT_VERTEXLABEL = new InternalVertexLabel() {
-
-        @Override
-        public boolean isPartitioned() {
-            return false;
-        }
-
-        @Override
-        public boolean isStatic() {
-            return false;
-        }
-
-        @Override
-        public String getName() {
-            return "_default";
-        }
-
-        @Override
-        public boolean hasDefaultConfiguration() {
-            return true;
-        }
-    };
-
 }
