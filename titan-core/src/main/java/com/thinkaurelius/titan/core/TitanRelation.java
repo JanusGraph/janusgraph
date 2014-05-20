@@ -14,7 +14,7 @@ import com.tinkerpop.blueprints.Direction;
  * A TitanRelation has a type which is either a label or key depending on the implementation.
  * <br />
  * A TitanRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
- * with an attribute). A unidirected edge is a special type of directed edge where the connection is only established from the
+ * with a value). A unidirected edge is a special type of directed edge where the connection is only established from the
  * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)

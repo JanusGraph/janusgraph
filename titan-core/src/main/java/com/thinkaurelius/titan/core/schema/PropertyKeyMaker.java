@@ -23,10 +23,10 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
     /**
      * Configures the data type for this type.  This only applies to property keys.
      * <p/>
-     * Property instances for this key will only accept attribute values that are instances of this class.
+     * Property instances for this key will only accept values that are instances of this class.
      * Every property key must have its data type configured. Setting the data type to Object.class allows
-     * any type of attribute but comes at the expense of longer serialization because class information
-     * is stored with the attribute value.
+     * any type of value but comes at the expense of longer serialization because class information
+     * is stored with the value.
      *
      * @param clazz Data type to be configured.
      * @return this type maker

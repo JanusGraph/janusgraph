@@ -104,33 +104,33 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label);
 
     /**
-     * Creates a new property for the given vertex and key with the specified attribute.
+     * Creates a new property for the given vertex and key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
+     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
      *
      * @param key       key of the property to be created
      * @param vertex    vertex for which to create the property
-     * @param attribute attribute of the property to be created
+     * @param value value of the property to be created
      * @return new property
-     * @throws IllegalArgumentException if the attribute does not match the data type of the given property key.
+     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
      */
-    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object attribute);
+    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value);
 
     /**
-     * Creates a new property for the given vertex and key with the specified attribute.
+     * Creates a new property for the given vertex and key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
+     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
      * <br />
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
      * this method with throw an {@link IllegalArgumentException}.
      *
      * @param key       key of the property to be created
      * @param vertex    vertex for which to create the property
-     * @param attribute attribute of the property to be created
+     * @param value value of the property to be created
      * @return new property
-     * @throws IllegalArgumentException if the attribute does not match the data type of the given property key.
+     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
      */
-    public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute);
+    public TitanProperty addProperty(TitanVertex vertex, String key, Object value);
 
     /**
      * Retrieves the vertex for the specified id.
@@ -186,11 +186,11 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
-     * @param attribute attribute value
+     * @param value value value
      * @return All vertices which have a property of the given key with the specified value.
      * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
-    public Iterable<TitanVertex> getVertices(PropertyKey key, Object attribute);
+    public Iterable<TitanVertex> getVertices(PropertyKey key, Object value);
 
     /**
      * Retrieves all vertices which have a property of the given key with the specified value.
@@ -199,11 +199,11 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
-     * @param attribute attribute value
+     * @param value value value
      * @return All edges which have a property of the given key with the specified value.
      * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
-    public Iterable<TitanEdge> getEdges(PropertyKey key, Object attribute);
+    public Iterable<TitanEdge> getEdges(PropertyKey key, Object value);
 
    /* ---------------------------------------------------------------
     * Schema

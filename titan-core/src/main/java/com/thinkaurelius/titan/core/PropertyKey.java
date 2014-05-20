@@ -20,7 +20,7 @@ public interface PropertyKey extends RelationType {
 
     /**
      * Returns the data type for this property key.
-     * The attributes of all properties of this type must be an instance of this data type.
+     * The values of all properties of this type must be an instance of this data type.
      *
      * @return Data type for this property key.
      */

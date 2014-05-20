@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.core;
 
 /**
  * TitanProperty is a {@link TitanRelation} connecting a vertex to a value.
- * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's attribute and key.
+ * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's value and key.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see TitanRelation
