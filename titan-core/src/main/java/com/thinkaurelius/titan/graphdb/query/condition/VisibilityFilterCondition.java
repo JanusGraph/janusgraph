@@ -28,7 +28,8 @@ public class VisibilityFilterCondition<E extends TitanElement> extends Literal<E
     public boolean evaluate(E element) {
         switch(visibility) {
             case NORMAL: return !((InternalElement)element).isHidden();
-            case SYSTEM: return (element instanceof TitanRelation && element instanceof SystemRelationType)
+            case SYSTEM: return (element instanceof TitanRelation &&
+                                    ((TitanRelation)element).getType() instanceof SystemRelationType)
                     || (element instanceof TitanVertex && element instanceof TitanSchemaElement);
             default: throw new AssertionError("Unrecognized visibility: " + visibility);
         }
@@ -47,6 +48,6 @@ public class VisibilityFilterCondition<E extends TitanElement> extends Literal<E
 
     @Override
     public String toString() {
-        return "!hidden";
+        return "visibility:"+visibility.toString().toLowerCase();
     }
 }

@@ -85,7 +85,7 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
             for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
                 Set<InternalVertex> adjVertices = Sets.newHashSet(vertices);
                 for (InternalVertex v : vertices) {
-                    if (tx.isPartitionedVertex(v)) {
+                    if (isPartitionedVertex(v)) {
                         adjVertices.remove(v);
                         adjVertices.addAll(allRepresentatives(v));
                     }

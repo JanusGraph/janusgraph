@@ -144,7 +144,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     public TitanVertex getProperty(EdgeLabel label) {
         Object val = it().getPropertyDirect(label);
         if (val==null) return null;
-        else if (val instanceof Number) return tx().getExistingVertex(((Number)val).longValue());
+        else if (val instanceof Number) return tx().getInternalVertex(((Number) val).longValue());
         else if (val instanceof TitanVertex) return (TitanVertex) val;
         else throw new IllegalStateException("Invalid object found instead of vertex: " + val);
     }

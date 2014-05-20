@@ -78,7 +78,8 @@ public abstract class IndexTypeWrapper implements IndexType {
         return result.get(key);
     }
 
-    private volatile Optional<TitanSchemaType> schemaTypeConstraint = Optional.absent();
+    private volatile boolean cachedTypeConstraint = false;
+    private volatile TitanSchemaType schemaTypeConstraint = null;
 
     @Override
     public boolean hasSchemaTypeConstraint() {
@@ -88,7 +89,7 @@ public abstract class IndexTypeWrapper implements IndexType {
     @Override
     public TitanSchemaType getSchemaTypeConstraint() {
         TitanSchemaType constraint;
-        if (!schemaTypeConstraint.isPresent()) {
+        if (!cachedTypeConstraint) {
             Iterable<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
             if (Iterables.isEmpty(related)) {
                 constraint=null;
@@ -97,9 +98,10 @@ public abstract class IndexTypeWrapper implements IndexType {
                         (TitanSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
                 assert constraint!=null;
             }
-            schemaTypeConstraint = Optional.of(constraint);
+            schemaTypeConstraint = constraint;
+            cachedTypeConstraint = true;
         } else {
-            constraint = schemaTypeConstraint.get();
+            constraint = schemaTypeConstraint;
         }
         return constraint;
     }

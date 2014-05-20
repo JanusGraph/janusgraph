@@ -53,7 +53,6 @@ import com.thinkaurelius.titan.graphdb.types.system.*;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.graphdb.util.ElementHelper;
 import com.thinkaurelius.titan.graphdb.util.IndexHelper;
 import com.thinkaurelius.titan.graphdb.util.VertexCentricEdgeIterable;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -209,7 +208,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         }
 
         externalVertexRetriever = new VertexConstructor(config.hasVerifyExternalVertexExistence());
-        internalVertexRetriever = new VertexConstructor(false);
+        internalVertexRetriever = new VertexConstructor(config.hasVerifyInternalVertexExistence());
 
         vertexCache = new GuavaVertexCache(config.getVertexCacheSize(),concurrencyLevel,config.getDirtyVertexSize());
         indexCache = CacheBuilder.newBuilder().weigher(new Weigher<JointIndexQuery.Subquery, List<Object>>() {
@@ -295,7 +294,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     }
 
     public boolean isPartitionedVertex(TitanVertex vertex) {
-        return !vertex.isNew() && vertex.hasId() && idInspector.isPartitionedVertex(vertex.getID());
+        return vertex.hasId() && idInspector.isPartitionedVertex(vertex.getID());
     }
 
     public InternalVertex getCanonicalVertex(InternalVertex partitionedVertex) {
@@ -303,6 +302,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         long canonicalId = idManager.getCanonicalVertexId(partitionedVertex.getID());
         if (canonicalId==partitionedVertex.getID()) return partitionedVertex;
         else return getExistingVertex(canonicalId);
+    }
+
+    public InternalVertex getOtherPartitionVertex(TitanVertex partitionedVertex, long otherPartition) {
+        Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
+        return getExistingVertex(idManager.getPartitionedVertexId(partitionedVertex.getID(), otherPartition));
     }
 
     public InternalVertex[] getAllRepresentatives(TitanVertex partitionedVertex, boolean ignoreLocalRestriction) {
@@ -350,8 +354,13 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return (v.isRemoved()) ? null : v;
     }
 
-    public InternalVertex getExistingVertex(long vertexid) {
+    private InternalVertex getExistingVertex(long vertexid) {
         //return vertex no matter what, even if deleted, and assume the id has the correct format
+        return vertexCache.get(vertexid, existingVertexRetriever);
+    }
+
+    public InternalVertex getInternalVertex(long vertexid) {
+        //return vertex but potentially check for existence
         return vertexCache.get(vertexid, internalVertexRetriever);
     }
 
@@ -371,7 +380,9 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
             byte lifecycle = ElementLifeCycle.Loaded;
             if (verifyExistence) {
-                if (graph.edgeQuery(vertexid, graph.vertexExistenceQuery, txHandle).isEmpty())
+                long queryVertexId = vertexid;
+                if (idInspector.isPartitionedVertex(vertexid)) queryVertexId = idManager.getCanonicalVertexId(vertexid);
+                if (graph.edgeQuery(queryVertexId, graph.vertexExistenceQuery, txHandle).isEmpty())
                     lifecycle = ElementLifeCycle.Removed;
             }
 
@@ -792,7 +803,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (idInspector.isSystemRelationTypeId(typeid)) {
             return SystemTypeManager.getSystemType(typeid);
         } else {
-            InternalVertex v = getExistingVertex(typeid);
+            InternalVertex v = getInternalVertex(typeid);
             assert v instanceof RelationType;
             return (RelationType) v;
         }
@@ -1145,7 +1156,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public TitanVertex apply(@Nullable Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof Long);
-            return getExistingVertex((Long) id);
+            return getInternalVertex((Long) id);
         }
     };
 

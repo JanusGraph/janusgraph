@@ -396,6 +396,10 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
 
+    protected final boolean isPartitionedVertex(InternalVertex vertex) {
+        return tx.isPartitionedVertex(vertex) && !vertex.isNew();
+    }
+
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
         assert vertices.length>0;
         if (!query.isSimple()) return false;
@@ -405,7 +409,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     protected Iterable<TitanRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
-        if (tx.isPartitionedVertex(vertex)) {
+        if (isPartitionedVertex(vertex)) {
             if (!hasAllSingleKeys()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
                 Iterable<TitanRelation> merge = null;
@@ -428,7 +432,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     public Iterable<TitanVertex> executeVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
-        if (tx.isPartitionedVertex(vertex)) {
+        if (isPartitionedVertex(vertex)) {
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
@@ -452,7 +456,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     public VertexList executeVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
-        if (tx.isPartitionedVertex(vertex)) {
+        if (isPartitionedVertex(vertex)) {
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 

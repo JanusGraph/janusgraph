@@ -83,10 +83,12 @@ public class IDManagementTest {
         for (long count=minCount;count<maxCount;count++) {
 
             for (IDManager.VertexIDType vtype : USER_VERTEX_TYPES) {
+                if (partitionBits==0 && vtype== IDManager.VertexIDType.PartitionedVertex) continue;
+                if (vtype== IDManager.VertexIDType.PartitionedVertex) partition=IDManager.PARTITIONED_VERTEX_PARTITION;
                 long id = eid.getVertexID(count, partition,vtype);
                 assertTrue(isp.isUserVertexId(id));
                 assertTrue(vtype.is(id));
-                assertEquals(eid.getPartitionId(id), partition);
+                if (vtype != IDManager.VertexIDType.PartitionedVertex) assertEquals(eid.getPartitionId(id), partition);
                 assertEquals(id, eid.getKeyID(eid.getKey(id)));
             }
 

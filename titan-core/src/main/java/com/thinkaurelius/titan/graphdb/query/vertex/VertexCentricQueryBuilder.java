@@ -65,7 +65,7 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     protected<Q> Q execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         if (bq.isEmpty()) return resultConstructor.emptyResult();
-        if (tx.isPartitionedVertex(vertex)) {
+        if (isPartitionedVertex(vertex)) {
             List<InternalVertex> vertices = allRepresentatives(vertex);
             if (vertices.size()>1) {
                 for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {

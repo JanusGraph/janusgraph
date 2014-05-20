@@ -180,7 +180,7 @@ public class VertexIDAssigner {
                 long move2Partition = -1;
                 for (int pos = 0; pos < relation.getArity(); pos++) {
                     InternalVertex incident = relation.getVertex(pos);
-                    if (IDManager.VertexIDType.PartitionedVertex.is(incident.getID())) {
+                    if (idManager.isPartitionedVertex(incident.getID())) {
                         if (relation.isProperty()) {
                             //We assign a property to the canonical representative if its cardinality=single, else to
                             //the one that has the hash of the property id
@@ -193,7 +193,7 @@ public class VertexIDAssigner {
                         } else {
                             assert relation.isEdge();
                             InternalVertex other = relation.getVertex((pos+1)%2);
-                            if (IDManager.VertexIDType.PartitionedVertex.is(other.getID())) {
+                            if (idManager.isPartitionedVertex(other.getID())) {
                                 //It's an edge and one of its end points is not a partitioned vertex => make sure the partitioned
                                 //vertex representative has the same partition as the other vertex
                                 move2Partition = getPartitionID(other);
@@ -208,8 +208,8 @@ public class VertexIDAssigner {
                 if (move2Partition>=0) {
                     for (int pos = 0; pos < relation.getArity(); pos++) {
                         InternalVertex incident = relation.getVertex(pos);
-                        if (IDManager.VertexIDType.PartitionedVertex.is(incident.getID())) {
-                            ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getExistingVertex(idManager.getPartitionedVertexId(incident.getID(),move2Partition)));
+                        if (idManager.isPartitionedVertex(incident.getID())) {
+                            ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, move2Partition));
                         }
                     }
                 }

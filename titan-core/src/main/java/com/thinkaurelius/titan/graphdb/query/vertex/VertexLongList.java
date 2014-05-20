@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.query.vertex;
 
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
-import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.VertexList;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -51,7 +50,7 @@ public class VertexLongList implements VertexListInternal {
 
     @Override
     public TitanVertex get(int pos) {
-        return tx.getExistingVertex(getID(pos));
+        return tx.getInternalVertex(getID(pos));
     }
 
     @Override

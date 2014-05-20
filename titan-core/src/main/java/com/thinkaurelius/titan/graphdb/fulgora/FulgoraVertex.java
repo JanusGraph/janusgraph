@@ -2,40 +2,25 @@ package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.State;
-import com.thinkaurelius.titan.core.olap.StateInitializer;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
-import com.thinkaurelius.titan.graphdb.query.QueryExecutor;
 import com.thinkaurelius.titan.graphdb.query.QueryProcessor;
-import com.thinkaurelius.titan.graphdb.query.vertex.SimpleVertexQueryProcessor;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
-import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
-import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
-import com.thinkaurelius.titan.graphdb.vertices.AbstractVertex;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -83,7 +68,7 @@ public class FulgoraVertex<S extends State<S>> extends CacheVertex {
     public VertexLabel getVertexLabel() {
         FulgoraNeighborVertex label = (FulgoraNeighborVertex)getVertexLabelInternal();
         if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
-        else return (VertexLabelVertex)tx().getExistingVertex(label.getID());
+        else return (VertexLabelVertex)tx().getInternalVertex(label.getID());
     }
 
     /*

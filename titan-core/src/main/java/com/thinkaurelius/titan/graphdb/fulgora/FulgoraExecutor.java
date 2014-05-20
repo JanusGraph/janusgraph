@@ -100,13 +100,13 @@ class FulgoraExecutor<S extends State<S>> extends AbstractFuture<OLAPResult<S>> 
         S state = vertexStates.get(vertexId);
         if (state==null) {
             state = initializer.initialState();
-            vertexStates.set(vertexId,state);
+            vertexStates.set(vertexId, state);
         }
         return state;
     }
 
     void setVertexState(long vertexId, S state) {
-        vertexStates.set(vertexId,state);
+        vertexStates.set(vertexId, state);
     }
 
     @Override
@@ -218,7 +218,7 @@ class FulgoraExecutor<S extends State<S>> extends AbstractFuture<OLAPResult<S>> 
 
     private final VertexFactory neighborVertices = new VertexFactory() {
         @Override
-        public InternalVertex getExistingVertex(long id) {
+        public InternalVertex getInternalVertex(long id) {
             return new FulgoraNeighborVertex(id,FulgoraExecutor.this);
         }
     };

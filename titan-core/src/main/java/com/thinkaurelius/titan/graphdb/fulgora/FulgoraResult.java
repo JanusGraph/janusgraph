@@ -58,24 +58,23 @@ public class FulgoraResult<S extends State<S>> implements OLAPResult<S> {
         }
     }
 
-
     @Override
     public Iterable<S> values() {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return vertexStates.values();
     }
 
     @Override
     public Iterable<Map.Entry<Long, S>> entries() {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return vertexStates.entrySet();
     }
 
     @Override
     public long size() {
-        return 0;  //To change body of implemented methods use File | Settings | File Templates.
+        return vertexStates.size();
     }
 
     @Override
     public S get(long vertexid) {
-        return null;  //To change body of implemented methods use File | Settings | File Templates.
+        return vertexStates.get(vertexid);
     }
 }

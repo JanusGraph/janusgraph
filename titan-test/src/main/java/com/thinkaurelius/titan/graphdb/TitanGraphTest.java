@@ -698,6 +698,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertFalse(v3.isRemoved());
         newTx();
 
+
         TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence().start();
         v21 = tx3.getVertex(v21.getID());
         v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));

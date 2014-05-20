@@ -80,7 +80,7 @@ public class RelationConstructor {
         }
 
         if (type.isEdgeLabel()) {
-            InternalVertex otherVertex = vertexFac.getExistingVertex(relation.getOtherVertexId());
+            InternalVertex otherVertex = vertexFac.getInternalVertex(relation.getOtherVertexId());
             switch (relation.direction) {
                 case IN:
                     return new CacheEdge(relation.relationId, (EdgeLabel) type, otherVertex, vertex, data);
