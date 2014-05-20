@@ -322,13 +322,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         /*
          * Background: https://issues.apache.org/jira/browse/CASSANDRA-5566
          *
-         * This hack can go away when we upgrade to or past 1.2.5. But as I
-         * write this comment, we're still stuck on 1.2.2 because Astyanax
-         * hasn't upgraded and tries to call an undefined thrift constructor
-         * when I try running against Cassandra 1.2.10. I haven't tried 1.2.5.
-         * However, I think it's not worth breaking from Astyanax's supported
-         * Cassandra version unless we can break all the way to the latest
-         * Cassandra version, and 1.2.5 is not the latest anyway.
+         * This check is useful for compatibility with Cassandra server versions
+         * 1.2.4 and earlier.
          */
         String st = tok.toString();
         if (!(tok instanceof BytesToken))
