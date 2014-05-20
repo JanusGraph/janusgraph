@@ -134,7 +134,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     .put(ID_STORE_NAME, "i")
                     .put(EDGESTORE_NAME, "s")
                     .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "w")
-                    .put(ID_STORE_NAME + LOCK_STORE_SUFFIX, "j")
                     .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "t")
                     .put(SYSTEM_PROPERTIES_STORE_NAME, "c")
                     .build();
