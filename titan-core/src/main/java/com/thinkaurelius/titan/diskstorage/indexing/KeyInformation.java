@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 
 /**
  * Helper class that provides information on the data type and additional parameters that

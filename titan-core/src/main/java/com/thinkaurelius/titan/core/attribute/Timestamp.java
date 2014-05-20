@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.core.attribute;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A point in time as measured in elasped time since UNIX Epoch time
+ * A point in time as measured in elapsed time since UNIX Epoch time
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

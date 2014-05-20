@@ -6,6 +6,9 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
@@ -193,7 +196,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     public void testBatchLoadingLocking(boolean batchloading) {
         PropertyKey uid = makeKey("uid",Long.class);
         TitanGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
-        mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
+        mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
         EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(knows,ConsistencyModifier.LOCK);

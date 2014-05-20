@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.types.vertices;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;

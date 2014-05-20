@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanSchemaType;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 
 /**

@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.vertices;
 
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -12,7 +13,6 @@ import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -134,7 +134,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             getProperties().iterator().hasNext();
         }
         Iterator<TitanProperty> iter = query().type(key).properties().iterator();
-        if (key.getCardinality()==Cardinality.SINGLE) {
+        if (key.getCardinality()== Cardinality.SINGLE) {
             if (iter.hasNext()) return (O)iter.next().getValue();
             else return null;
         } else {

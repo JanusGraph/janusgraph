@@ -3,13 +3,14 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.*;
 
 /**
- * TitanQuery constructs and executes a query over incident edges from the perspective of a vertex.
- * <p/>
- * A TitanQuery extends Blueprint's {@link Query} by some Titan specific convenience methods. Using TitanQuery proceeds
- * in two steps: 1) Define the query by specifying what to retrieve and 2) execute the query.
- * <br />
- * A TitanQuery is initialized by calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} on the vertex itself.
+ * A TitanVertexQuery is a VertexQuery executed for a single vertex.
+ * <p />
+ * Calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} builds such a query against the vertex
+ * this method is called on. This query builder provides the methods to specify which indicent edges or
+ * properties to query for.
  *
+ *
+ * @see BaseVertexQuery
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
 public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVertexQuery<Q>, VertexQuery {
@@ -124,18 +125,15 @@ public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVer
      */
     public long propertyCount();
 
-
     /**
-     * Retrieves all vertices connected to this query's central vertex by edges
+     * Retrieves all vertices connected to this query's base vertex by edges
      * matching the conditions defined in this query.
-     * <p/>
-     * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
-     * to sort by vertex idAuthorities most efficiently.
      * <p/>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *
-     * @return A list of all vertices connected to this query's central vertex by matching edges
+     * @return A list of all vertices connected to this query's base vertex by matching edges
      */
+    @Override
     public VertexList vertexIds();
 
 

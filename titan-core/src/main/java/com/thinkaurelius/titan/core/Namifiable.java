@@ -8,9 +8,9 @@ package com.thinkaurelius.titan.core;
 public interface Namifiable {
 
     /**
-     * Returns the unique name of this type.
+     * Returns the unique name of this entity.
      *
-     * @return Name of this type.
+     * @return Name of this entity.
      */
     public String getName();
 

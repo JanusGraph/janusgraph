@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.example;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;

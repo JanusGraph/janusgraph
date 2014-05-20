@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
-import com.thinkaurelius.titan.core.DefaultSchemaMaker;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;

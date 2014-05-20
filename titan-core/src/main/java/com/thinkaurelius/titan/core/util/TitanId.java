@@ -5,9 +5,10 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 
 /**
+ * Utility methods for handling Titan ids and converting them between indexing and storage backend representations.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class TitanId {
 
     /**

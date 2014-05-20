@@ -1,20 +1,15 @@
 package com.thinkaurelius.titan.graphdb.types.indextype;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Parameter;
-import com.thinkaurelius.titan.core.ParameterType;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanSchemaType;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaSource;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.Map;

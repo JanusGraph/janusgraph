@@ -3,6 +3,10 @@ package com.thinkaurelius.titan.graphdb.types.indextype;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.schema.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.blueprints.Direction;
 

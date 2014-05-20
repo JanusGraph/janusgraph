@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;

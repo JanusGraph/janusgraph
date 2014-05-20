@@ -11,6 +11,7 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
@@ -631,7 +632,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
     @Override
     public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value) {
-        if (key.getCardinality()==Cardinality.SINGLE) return setProperty(vertex, key, value);
+        if (key.getCardinality()== Cardinality.SINGLE) return setProperty(vertex, key, value);
         else return addPropertyInternal(vertex, key, value);
     }
 

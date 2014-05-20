@@ -1,11 +1,11 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.schema;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link PropertyKeyMaker#indexed(String, Class, com.thinkaurelius.titan.core.Parameter[])}.
+ * {@link PropertyKeyMaker#indexed(String, Class, Parameter[])}.
  *
  * <p/>
  *

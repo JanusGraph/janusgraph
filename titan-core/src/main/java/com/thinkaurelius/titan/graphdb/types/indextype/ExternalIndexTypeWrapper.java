@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.blueprints.Direction;

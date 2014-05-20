@@ -6,6 +6,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
@@ -334,7 +335,7 @@ public class ManagementSystem implements TitanManagement {
         def.setValue(TypeDefinitionCategory.ELEMENT_CATEGORY,elementCategory);
         def.setValue(TypeDefinitionCategory.BACKING_INDEX,backingIndex);
         def.setValue(TypeDefinitionCategory.INDEXSTORE_NAME,indexName);
-        def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY,Cardinality.LIST);
+        def.setValue(TypeDefinitionCategory.INDEX_CARDINALITY, Cardinality.LIST);
         def.setValue(TypeDefinitionCategory.STATUS,SchemaStatus.ENABLED);
         TitanSchemaVertex v = transaction.makeSchemaVertex(TitanSchemaCategory.GRAPHINDEX,indexName,def);
 
@@ -363,7 +364,7 @@ public class ManagementSystem implements TitanManagement {
 
         Parameter[] extendedParas = new Parameter[parameters.length+1];
         System.arraycopy(parameters,0,extendedParas,0,parameters.length);
-        extendedParas[parameters.length]=ParameterType.STATUS.getParameter(SchemaStatus.ENABLED);
+        extendedParas[parameters.length]= ParameterType.STATUS.getParameter(SchemaStatus.ENABLED);
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         indexType.resetCache();
         try {

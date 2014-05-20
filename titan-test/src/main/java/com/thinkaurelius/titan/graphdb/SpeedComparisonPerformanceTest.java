@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;

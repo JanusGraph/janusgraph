@@ -2,7 +2,9 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
@@ -75,7 +77,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     /**
-     * Configures the {@link com.thinkaurelius.titan.core.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
+     * Configures the {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
      * is disabled.
      */
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",

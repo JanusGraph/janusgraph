@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.core.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;

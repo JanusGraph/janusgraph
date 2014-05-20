@@ -6,6 +6,8 @@ import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -281,7 +283,7 @@ public class EdgeSerializer implements RelationReader {
                 }
                 VariableLong.writePositive(out, relationId);
             } else {
-                assert multiplicity.getCardinality()==Cardinality.LIST;
+                assert multiplicity.getCardinality()== Cardinality.LIST;
                 VariableLong.writePositiveBackward(out, relationId);
                 valuePosition = out.getPosition();
                 writePropertyValue(out,key,value);

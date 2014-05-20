@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
-import com.thinkaurelius.titan.core.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.tinkerpop.blueprints.Direction;

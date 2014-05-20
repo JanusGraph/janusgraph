@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -192,7 +194,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
     public void checkFastPropertyAndLocking(boolean fastProperty) {
         PropertyKey uid = makeKey("uid",String.class);
         TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
-        mgmt.setConsistency(index,ConsistencyModifier.LOCK);
+        mgmt.setConsistency(index, ConsistencyModifier.LOCK);
         finishSchema();
 
         clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING), fastProperty);

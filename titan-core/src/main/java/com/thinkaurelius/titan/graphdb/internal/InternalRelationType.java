@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
-import com.thinkaurelius.titan.core.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;

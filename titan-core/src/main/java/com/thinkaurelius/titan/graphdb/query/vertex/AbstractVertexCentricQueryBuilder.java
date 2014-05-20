@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
@@ -251,7 +252,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         Preconditions.checkArgument(key!=null,"Cannot order on undefined key");
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
-        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
+        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
         Preconditions.checkArgument(!(key instanceof SystemRelationType),"Cannot use system types in ordering: %s",key);
         Preconditions.checkArgument(!orders.containsKey(key.getName()));
         Preconditions.checkArgument(orders.isEmpty(),"Only a single sort order is supported on vertex queries");

@@ -5,7 +5,8 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
 /**
- * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge}.
+ * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
+ * is a special case of a {@link TitanRelation}.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see Edge

@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.VertexLabelMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import org.apache.commons.lang.StringUtils;

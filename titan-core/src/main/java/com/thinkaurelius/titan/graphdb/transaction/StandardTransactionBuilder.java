@@ -5,7 +5,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.DefaultSchemaMaker;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;

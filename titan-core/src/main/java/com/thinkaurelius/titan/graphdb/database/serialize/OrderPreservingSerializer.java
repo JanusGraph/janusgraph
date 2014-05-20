@@ -1,16 +1,14 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 
 /**
- * Marker interface to indicate that a given serializer preserves the natural
- * order of the elements (as given by its {@link Comparable} implementation)
- * in the binary representation.
+ * Interface that extends {@link AttributeSerializer} to provide a serialization that is byte order preserving, i.e. the
+ * order of the elements (as given by its {@link Comparable} implementation) corresponds to the natural order of the
+ * serialized byte representation representation.
  *
- * In other words, the byte order of the serialized representation is equal
- * to the natural order.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -18,7 +16,7 @@ public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
 
 
     /**
-     * Reads an attribute from the given ReadBuffer assume it was written in byte order.
+     * Reads an attribute from the given ReadBuffer assuming it was written in byte order.
      * <p/>
      * It is expected that this read operation adjusts the position in the ReadBuffer to after the attribute value.
      *

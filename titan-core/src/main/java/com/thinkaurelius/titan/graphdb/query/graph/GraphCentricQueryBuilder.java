@@ -5,6 +5,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -135,7 +136,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
     public GraphCentricQueryBuilder orderBy(PropertyKey key, Order order) {
         Preconditions.checkArgument(Comparable.class.isAssignableFrom(key.getDataType()),
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
-        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
+        Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
         Preconditions.checkArgument(!orders.containsKey(key.getName()));
         orders.add(key, order);
         return this;

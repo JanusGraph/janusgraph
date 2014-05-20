@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.attribute;
 
 /**
  * Allows custom handling of attributes inside Titan when it comes to a) data validation and b) conversion
@@ -19,7 +19,7 @@ public interface AttributeHandler<V> {
     public void verifyAttribute(V value);
 
     /**
-     * Converts the given (not-null) value to the this datatype V.
+     * Converts the given (not-null) value to the expected datatype V.
      * The given object will NOT be of type V.
      * Throws an {@link IllegalArgumentException} if it cannot be converted.
      *

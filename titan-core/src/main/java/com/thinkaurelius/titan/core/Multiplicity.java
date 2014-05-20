@@ -12,7 +12,7 @@ public enum Multiplicity {
 
     /**
      * The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
-     * there may be multiple edges of this label between a given pair of vertices.
+     * there may be multiple edges of this label between any given pair of vertices.
      *
      * @link http://en.wikipedia.org/wiki/Multigraph
      */
@@ -39,18 +39,36 @@ public enum Multiplicity {
      */
     ONE2ONE;
 
-    public Cardinality getCardinality() {
-        switch (this) {
-            case MULTI: return Cardinality.LIST;
-            case SIMPLE: return Cardinality.SET;
-            case MANY2ONE: return Cardinality.SINGLE;
-            default: throw new AssertionError("Invalid multiplicity: " + this);
-        }
-    }
 
+    /**
+     * Whether this multiplicity imposes any constraint on the number of edges that may exist between a pair of vertices.
+     *
+     * @return
+     */
     public boolean isConstrained() {
         return this!=MULTI;
     }
+
+
+    /**
+     * If this multiplicity implies edge uniqueness in the given direction for any given vertex.
+     *
+     * @param direction
+     * @return
+     */
+    public boolean isUnique(Direction direction) {
+        switch (direction) {
+            case IN:
+                return this==ONE2MANY || this==ONE2ONE;
+            case OUT:
+                return this==MANY2ONE || this==ONE2ONE;
+            case BOTH:
+                return this==ONE2ONE;
+            default: throw new AssertionError("Unknown direction: " + direction);
+        }
+    }
+
+    //######### CONVERTING MULTIPLICITY <-> CARDINALITY ########
 
     public static Multiplicity convert(Cardinality cardinality) {
         Preconditions.checkNotNull(cardinality);
@@ -62,15 +80,12 @@ public enum Multiplicity {
         }
     }
 
-    public boolean isUnique(Direction direction) {
-        switch (direction) {
-            case IN:
-                return this==ONE2MANY || this==ONE2ONE;
-            case OUT:
-                return this==MANY2ONE || this==ONE2ONE;
-            case BOTH:
-                return this==ONE2ONE;
-            default: throw new AssertionError("Unknown direction: " + direction);
+    public Cardinality getCardinality() {
+        switch (this) {
+            case MULTI: return Cardinality.LIST;
+            case SIMPLE: return Cardinality.SET;
+            case MANY2ONE: return Cardinality.SINGLE;
+            default: throw new AssertionError("Invalid multiplicity: " + this);
         }
     }
 

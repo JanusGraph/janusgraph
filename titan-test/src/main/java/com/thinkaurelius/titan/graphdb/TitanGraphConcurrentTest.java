@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

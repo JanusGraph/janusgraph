@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.graphdb.relations.ReassignableRelation;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -185,7 +186,7 @@ public class VertexIDAssigner {
                             //We assign a property to the canonical representative if its cardinality=single, else to
                             //the one that has the hash of the property id
                             PropertyKey key = ((TitanProperty)relation).getPropertyKey();
-                            if (key.getCardinality()==Cardinality.SINGLE) {
+                            if (key.getCardinality()== Cardinality.SINGLE) {
                                 move2Partition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getID()));
                             } else {
                                 move2Partition = idManager.getPartitionHashForId(relation.getID());

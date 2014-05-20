@@ -7,7 +7,15 @@ import com.tinkerpop.blueprints.Predicate;
 /**
  * Builds a vertex-centric query to define the edges and/or properties that will be accessible during the execution
  * of an {@link OLAPJob} as defined through the associated {@link OLAPQueryBuilder}.
+ * <p/>
+ * The query builder is identical to {@link TitanVertexQuery} in how the query is defined. The query is completed
+ * by calling either {@link #edges}, {@link #properties()}, or {@link #relations()} to configure this query to retrieve
+ * edges, properties, or relations, respectively.
+ * <p/>
+ * Note, that this query is not executed. It simply defines what types of queries can be answered during the execution
+ * of the {@link OLAPJob}. Only the data matching those queries will be loaded and available.
  *
+ * @see TitanVertexQuery
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface OLAPQueryBuilder<S extends State<S>,Q extends OLAPQueryBuilder<S,Q>> extends BaseVertexQuery<Q> {
@@ -72,10 +80,25 @@ public interface OLAPQueryBuilder<S extends State<S>,Q extends OLAPQueryBuilder<
     @Override
     public Q orderBy(PropertyKey key, Order order);
 
+    /**
+     * Adds this query as an edge query to the list of available queries for OLAPJob
+     *
+     * @return the builder for this OLAPJob
+     */
     public OLAPJobBuilder<S> edges();
 
+    /**
+     * Adds this query as a property query to the list of available queries for OLAPJob
+     *
+     * @return the builder for this OLAPJob
+     */
     public OLAPJobBuilder<S> properties();
 
+    /**
+     * Adds this query as a relation query to the list of available queries for OLAPJob
+     *
+     * @return the builder for this OLAPJob
+     */
     public OLAPJobBuilder<S> relations();
 
 

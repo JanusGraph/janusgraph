@@ -1,6 +1,8 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.schema;
 
 /**
+ *
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface TitanConfiguration {

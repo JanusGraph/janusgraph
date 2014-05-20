@@ -1,5 +1,7 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.schema;
 
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.RelationType;
 import com.tinkerpop.blueprints.Direction;
 
 /**

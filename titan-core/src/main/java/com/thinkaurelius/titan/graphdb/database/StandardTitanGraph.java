@@ -5,6 +5,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -44,7 +48,6 @@ import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
@@ -323,14 +326,14 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public static boolean acquireLock(InternalRelation relation, int pos, boolean acquireLocksConfig) {
         InternalRelationType type = (InternalRelationType)relation.getType();
-        return acquireLocksConfig && type.getConsistencyModifier()==ConsistencyModifier.LOCK &&
+        return acquireLocksConfig && type.getConsistencyModifier()== ConsistencyModifier.LOCK &&
                 ( type.getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))
-                        || pos==0 && type.getMultiplicity()==Multiplicity.SIMPLE);
+                        || pos==0 && type.getMultiplicity()== Multiplicity.SIMPLE);
     }
 
     public static boolean acquireLock(InternalIndexType index, boolean acquireLocksConfig) {
         return acquireLocksConfig && index.getConsistencyModifier()==ConsistencyModifier.LOCK
-                && index.getCardinality()!=Cardinality.LIST;
+                && index.getCardinality()!= Cardinality.LIST;
     }
 
     public boolean prepareCommit(final Collection<InternalRelation> addedRelations,

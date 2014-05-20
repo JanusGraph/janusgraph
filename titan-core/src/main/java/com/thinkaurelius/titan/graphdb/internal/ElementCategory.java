@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;

@@ -1,5 +1,6 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.schema;
 
+import com.thinkaurelius.titan.core.*;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Element;
 

@@ -5,6 +5,8 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 

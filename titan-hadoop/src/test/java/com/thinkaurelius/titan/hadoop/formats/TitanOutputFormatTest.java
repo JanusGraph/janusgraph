@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.hadoop.BaseTest;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.HadoopPipeline;

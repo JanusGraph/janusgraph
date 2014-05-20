@@ -2,16 +2,17 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * TitanLabel is an extension of {@link RelationType} for edges.
+ * EdgeLabel is an extension of {@link RelationType} for edges. Each edge in Titan has a label.
  * <p/>
- * In addition to {@link RelationType}, TitanLabel defines the directionality of edges:
+ * An edge label defines the following characteristics of an edge:
  * <ul>
- * <li><strong>Directed:</strong> An edge is directed if the order or position of its vertices matters.
- * For directed edges, the outgoing vertex is considered the <i>start</i> and the incoming vertex the <i>end</i>.
- * By default, labels and therefore edges are directed. <i>Father</i> is an example of a directed label.</li>
- * <li><strong>Unidirected:</strong> An edge is unidirected if it is directed but only pointing in one direction.
- * This means, the edge can only be traversed in the outgoing direction. As an example, a hyperlink is a unidirected
- * edge. Unidirected edges can be stored more efficiently.</li>
+ * <li><strong>Directionality:</strong> An edge is either directed or unidirected. A directed edge can be thought of
+ * as a "normal" edge: it points from one vertex to another and both vertices are aware of the edge's existence. Hence
+ * the edge can be traversed in both directions. A unidirected edge is like a hyperlink in that only the out-going
+ * vertex is aware of its existence and it can only be traversed in the outgoing direction.</li>
+ * <li><strong>Multiplicity:</strong> The multiplicity of an edge imposes restrictions on the number of edges
+ * for a particular label that are allowed on a vertex. This allows the definition and enforcement of domain constraints.
+ * </li>
  * </ul>
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com)

@@ -1,6 +1,10 @@
 package com.thinkaurelius.titan.graphdb.types.typemaker;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

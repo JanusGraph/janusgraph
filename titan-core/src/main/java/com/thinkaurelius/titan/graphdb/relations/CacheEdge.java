@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;

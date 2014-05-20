@@ -2,11 +2,10 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanSchemaElement;
+import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
-import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**

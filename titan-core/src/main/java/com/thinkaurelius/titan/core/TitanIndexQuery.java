@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;

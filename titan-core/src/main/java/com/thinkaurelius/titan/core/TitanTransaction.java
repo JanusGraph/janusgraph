@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.types.StandardVertexLabelMaker;
-import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
@@ -30,6 +30,12 @@ import java.util.Collection;
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
 public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph {
+
+   /* ---------------------------------------------------------------
+    * Modifications
+    * ---------------------------------------------------------------
+    */
+
 
     /**
      * Creates a new vertex in the graph.
@@ -176,28 +182,33 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     /**
      * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed for vertices using a <i>standard</i> index.
+     * For this operation to be efficient, please ensure that the given property key is indexed.
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
      * @param attribute attribute value
      * @return All vertices which have a property of the given key with the specified value.
-     * @see PropertyKeyMaker#indexed(Class)
+     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
     public Iterable<TitanVertex> getVertices(PropertyKey key, Object attribute);
 
     /**
-     * Retrieves all edges which have a property of the given key with the specified value.
+     * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed for edges using a <i>standard</i> index.
+     * For this operation to be efficient, please ensure that the given property key is indexed.
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
      * @param attribute attribute value
      * @return All edges which have a property of the given key with the specified value.
-     * @see PropertyKeyMaker#indexed(Class)
+     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
     public Iterable<TitanEdge> getEdges(PropertyKey key, Object attribute);
+
+   /* ---------------------------------------------------------------
+    * Schema
+    * ---------------------------------------------------------------
+    */
 
     /**
      * Checks whether a type with the specified name exists.
@@ -240,38 +251,63 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public EdgeLabel getEdgeLabel(String name);
 
     /**
-     * Returns a {@link PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
+     * Returns a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
      * <p/>
      * The key constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link PropertyKeyMaker} linked to this transaction.
-     * @see PropertyKeyMaker
+     * @return a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} linked to this transaction.
+     * @see com.thinkaurelius.titan.core.schema.PropertyKeyMaker
      * @see PropertyKey
      */
     public PropertyKeyMaker makePropertyKey(String name);
 
     /**
-     * Returns a {@link EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
+     * Returns a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
      * <p/>
      * The label constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link EdgeLabelMaker} linked to this transaction.
-     * @see EdgeLabelMaker
+     * @return a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} linked to this transaction.
+     * @see com.thinkaurelius.titan.core.schema.EdgeLabelMaker
      * @see EdgeLabel
      */
     public EdgeLabelMaker makeEdgeLabel(String name);
 
-
+    /**
+     * Whether a vertex label with the given name exists in the graph.
+     *
+     * @param name
+     * @return
+     */
     public boolean containsVertexLabel(String name);
 
+    /**
+     * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
+     * automatically created through the registered {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker}.
+     * <p />
+     * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
+     *
+     * @param name
+     * @return
+     */
     public VertexLabel getVertexLabel(String name);
 
+    /**
+     * Returns a {@link VertexLabelMaker} to define a new vertex label with the given name. Note, that the name must
+     * be unique.
+     *
+     * @param name
+     * @return
+     */
     public VertexLabelMaker makeVertexLabel(String name);
 
+   /* ---------------------------------------------------------------
+    * Closing and admin
+    * ---------------------------------------------------------------
+    */
 
     /**
      * Commits and closes the transaction.

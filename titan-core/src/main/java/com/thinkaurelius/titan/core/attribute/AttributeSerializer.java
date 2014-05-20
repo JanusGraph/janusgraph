@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.core;
+package com.thinkaurelius.titan.core.attribute;
 
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
@@ -8,20 +8,18 @@ import com.thinkaurelius.titan.diskstorage.WriteBuffer;
  * Allows custom serializer definitions for attribute values.
  * <p/>
  * For most data types (i.e. classes) used with properties, using the default serializer when registering the type with the
- * graph database will be sufficient and efficient in practice. However, for certain data types, it can be more
+ * Titan will be sufficient and efficient in practice. However, for certain data types, it can be more
  * efficient to provide custom serializers implementing this interface.
  * Such custom serializers are registered in the configuration file by specifying their path and loaded when
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br />
  * <p/>
- * When a {@link PropertyKey} is defined using a data type specified via {@link RelationTypeMaker} for which a custom serializer
- * is configured, then it will use this custom serializer for persistence operations. For more information on how to
- * configure a custom serializer, refer to the
- * <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
+ * When a {@link com.thinkaurelius.titan.core.PropertyKey} is defined using a data type specified via {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} for which a custom serializer
+ * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
- * @see RelationTypeMaker
+ * @see com.thinkaurelius.titan.core.schema.RelationTypeMaker
  * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  */
 public interface AttributeSerializer<V> extends AttributeHandler<V> {

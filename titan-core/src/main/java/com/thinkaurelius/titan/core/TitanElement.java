@@ -32,7 +32,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
      * <p/>
      * The unique identifier may only be set when the transaction in which entity is created commits.
      * The <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a> explains
-     * how to configure when entity idAuthorities are assigned.
+     * how to configure when entity ids are assigned.
      * Some entities are never assigned a unique identifier if they depend on a parent entity.
      * <p/>
      *
@@ -62,11 +62,8 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
     public boolean hasId();
 
     /**
-     * Deletes this entity from the graph.
+     * Deletes this entity and any incident edges or properties from the graph.
      * <p/>
-     * Removing an entity assumes that the entity does not have any incident TitanRelations.
-     * Use {@link com.tinkerpop.blueprints.Graph#removeEdge(com.tinkerpop.blueprints.Edge)} or {@link com.tinkerpop.blueprints.Graph#removeEdge(com.tinkerpop.blueprints.Edge)}
-     * to remove an entity unconditionally.
      *
      * @throws IllegalStateException if the entity cannot be deleted or if the user does not
      *                               have permission to remove the entity
@@ -75,7 +72,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined single valued (see {@link PropertyKeyMaker#single()}).
+     * The key must be defined to have {@link Cardinality#SINGLE}, otherwise this method throws an exception.
      *
      * @param key   the string identifying the key
      * @param value the object value
@@ -84,7 +81,7 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Sets the value for the given key on this element.
-     * The key must be defined single valued (see {@link PropertyKeyMaker#single()}).
+     * The key must be defined to have {@link Cardinality#SINGLE}, otherwise this method throws an exception.
      *
      * @param key   the key
      * @param value the object value
@@ -93,8 +90,8 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
-     * If the key is single-valued, then there can be at most one value and this value is returned (or null).
-     * If the key is list-valued, then a list of all associated values is returned, or an empty list of non exist.
+     * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
+     * Otherwise a list of all associated values is returned, or an empty list if non exist.
      * <p/>
      *
      * @param key key
@@ -104,8 +101,8 @@ public interface TitanElement extends Element, Idfiable, Comparable<TitanElement
 
     /**
      * Retrieves the value associated with the given key on this vertex and casts it to the specified type.
-     * If the key is single-valued, then there can be at most one value and this value is returned (or null).
-     * If the key is list-valued, then a list of all associated values is returned, or an empty list of non exist.
+     * If the key has cardinality SINGLE, then there can be at most one value and this value is returned (or null).
+     * Otherwise a list of all associated values is returned, or an empty list if non exist.
      * <p/>
      *
      * @param key string identifying a key

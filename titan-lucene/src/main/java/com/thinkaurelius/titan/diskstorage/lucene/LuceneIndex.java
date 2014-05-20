@@ -7,7 +7,7 @@ import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;

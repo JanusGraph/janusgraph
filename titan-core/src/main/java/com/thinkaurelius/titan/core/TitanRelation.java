@@ -7,7 +7,7 @@ import com.tinkerpop.blueprints.Direction;
  * TitanRelation is the most abstract form of a relation between a vertex and some other entity, where
  * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
  * <br />
- * A TitanRelation extends {@link TitanVertex} which means it is an entity in its own right. This means, a TitanRelation
+ * A TitanRelation extends {@link TitanElement} which means it is an entity in its own right. This means, a TitanRelation
  * can have properties and unidirectional edges connecting it to other vertices.
  * <br />
  * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanProperty} or a {@link TitanEdge}.

@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.thinkaurelius.titan.core.DefaultSchemaMaker;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 
 /**

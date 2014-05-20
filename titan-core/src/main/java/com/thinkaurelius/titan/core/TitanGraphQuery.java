@@ -10,8 +10,9 @@ import com.tinkerpop.blueprints.Vertex;
  * Constructs a query against an external index to retrieve all elements (either vertices or edges)
  * that match all conditions.
  * <p/>
- * Finding matching elements using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link PropertyKeyMaker#indexed(Class)} and {@link PropertyKeyMaker#indexed(String, Class)}.
+ * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
+ * been defined for the keys. See {@link com.thinkaurelius.titan.core.schema.TitanManagement} for more information
+ * on how to define index structures in Titan.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  * @since 0.3.0

@@ -6,18 +6,20 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A MultiVertexQuery is identical to a {@link VertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link TitanMultiVertexQuery} allows identical {@link VertexQuery} executed against a non-trivial set
+ * A MultiVertexQuery is identical to a {@link TitanVertexQuery} but executed against a set of vertices simultaneously.
+ * In other words, {@link TitanMultiVertexQuery} allows identical {@link TitanVertexQuery} executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p/>
- * The query specification methods are identical to {@link VertexQuery}. The result set method return Maps from the specified
+ * The query specification methods are identical to {@link TitanVertexQuery}. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
+ * <p/>
+ * Call {@link TitanTransaction#multiQuery(java.util.Collection)} to construct a multi query in the enclosing transaction.
  * <p/>
  * Note, that the {@link #limit(int)} constraint applies to each individual result set.
  *
+ * @see TitanVertexQuery
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
@@ -125,10 +127,9 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     public Map<TitanVertex, Iterable<TitanRelation>> relations();
 
     /**
-     * Retrieves all vertices connected to each of the query's central vertices by edges
+     * Retrieves all vertices connected to each of the query's base vertices by edges
      * matching the conditions defined in this query.
      * <p/>
-     * No guarantee is made as to the order in which the vertices are returned.
      *
      * @return An iterable of all vertices connected to each of the query's central vertices by matching edges
      */
@@ -137,9 +138,6 @@ public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> exten
     /**
      * Retrieves all vertices connected to each of the query's central vertices by edges
      * matching the conditions defined in this query.
-     * <p/>
-     * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
-     * to sort by vertex idAuthorities most efficiently.
      * <p/>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *

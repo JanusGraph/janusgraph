@@ -3,6 +3,8 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.blueprints.Direction;
@@ -59,7 +61,7 @@ public class TypeUtil {
             if (index.isInternalIndex()) {
                 InternalIndexType iIndex = (InternalIndexType)index;
                 assert index.indexesKey(key);
-                if (iIndex.getCardinality()==Cardinality.SINGLE) {
+                if (iIndex.getCardinality()== Cardinality.SINGLE) {
                     assert iIndex.getElement()==ElementCategory.VERTEX;
                     indexes.add(iIndex);
                 }

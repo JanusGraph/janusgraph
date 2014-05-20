@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;

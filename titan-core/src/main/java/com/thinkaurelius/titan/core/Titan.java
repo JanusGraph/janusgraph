@@ -10,6 +10,11 @@ import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
  */
 public class Titan {
 
+    /**
+     * The version of this Titan graph database
+     *
+     * @return
+     */
     public static String version() {
         return TitanConstants.VERSION;
     }

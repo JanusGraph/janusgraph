@@ -4,6 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -401,7 +403,7 @@ public class IndexSerializer {
                         results.add(bytebuffer2RelationId(entryValue));
                 }
             }
-            boolean hasCardinalitySize = ((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1;
+            boolean hasCardinalitySize = ((InternalIndexType)index).getCardinality()!= Cardinality.SINGLE || results.size() <= 1;
             Preconditions.checkArgument(((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1);
             return results;
         } else {

@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 /**
- * Builder to define and configure an {@link OLAPJob} execution.
+ * Builder to define and configure an {@link OLAPJob} for execution.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
