@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil;
@@ -171,7 +172,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        final Timestamp timestamp = getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
@@ -191,14 +192,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.getAdditionTime(times.getUnit()));
+                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()));
 
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.getDeletionTime(times.getUnit()));
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), commitTime.getDeletionTime(times.getUnit()));
                     }
                 }
 
@@ -207,7 +208,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
