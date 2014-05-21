@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 
@@ -34,10 +35,9 @@ public interface TransactionHandleConfig {
     public boolean hasCommitTime();
 
     /**
-     * Returns the timepoint at which this transaction was started
-     * @return
+     * Returns the timestamp provider of this transaction.
      */
-    public Timepoint getStartTime();
+    public TimestampProvider getTimestampProvider();
 
     /**
      * Returns the (possibly null) group name for this transaction.

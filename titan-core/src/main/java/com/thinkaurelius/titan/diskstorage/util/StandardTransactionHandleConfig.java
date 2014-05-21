@@ -14,17 +14,19 @@ import com.thinkaurelius.titan.util.time.TimestampProvider;
  */
 public class StandardTransactionHandleConfig implements TransactionHandleConfig {
 
-    private final Timepoint startTime;
-    private Timepoint commitTime;
+    private volatile Timepoint commitTime;
+    private final TimestampProvider times;
     private final String groupName;
     private final Configuration customOptions;
 
-    private StandardTransactionHandleConfig(String groupName, Timepoint startTime,
+    private StandardTransactionHandleConfig(String groupName,
+                                            TimestampProvider times,
                                             Timepoint commitTime,
                                             Configuration customOptions) {
-        Preconditions.checkArgument(startTime!=null && customOptions!=null);
+        Preconditions.checkArgument(customOptions!=null);
+        Preconditions.checkArgument(null != times || null != commitTime);
         this.groupName = groupName;
-        this.startTime = startTime;
+        this.times = times;
         this.commitTime = commitTime;
         this.customOptions = customOptions;
     }
@@ -33,7 +35,7 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
     public synchronized Timepoint getCommitTime() {
         if (commitTime==null) {
             //set commit time to current time
-            commitTime = startTime.getProvider().getTime();
+            commitTime = times.getTime();
         }
         return commitTime;
     }
@@ -50,8 +52,8 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
     }
 
     @Override
-    public Timepoint getStartTime() {
-        return startTime;
+    public TimestampProvider getTimestampProvider() {
+        return times;
     }
 
     @Override
@@ -74,20 +76,27 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
         return customOptions;
     }
 
-
-
     public static class Builder {
 
-        private Timepoint startTime = null;
         private Timepoint commitTime = null;
+        private TimestampProvider times;
         private String groupName = GraphDatabaseConfiguration.getSystemMetricsPrefix();
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
 
+        /**
+         * Copies everything from {@code template} to this builder except for
+         * the {@code commitTime}.
+         *
+         * @param template
+         *            an existing transaction from which this builder will take
+         *            its values
+         */
         public Builder(TransactionHandleConfig template) {
             customOptions(template.getCustomOptions());
             groupName(template.getGroupName());
+            timestampProvider(template.getTimestampProvider());
         }
 
         public Builder groupName(String group) {
@@ -95,13 +104,13 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
             return this;
         }
 
-        public Builder startTime(Timepoint start) {
-            startTime = start;
+        public Builder commitTime(Timepoint commit) {
+            commitTime = commit;
             return this;
         }
 
-        public Builder commitTime(Timepoint commit) {
-            commitTime = commit;
+        public Builder timestampProvider(TimestampProvider times) {
+            this.times = times;
             return this;
         }
 
@@ -112,16 +121,16 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
         }
 
         public StandardTransactionHandleConfig build() {
-            return new StandardTransactionHandleConfig(groupName, startTime, commitTime, customOptions);
+            return new StandardTransactionHandleConfig(groupName, times, commitTime, customOptions);
         }
     }
 
     public static StandardTransactionHandleConfig of(TimestampProvider times) {
-        return new Builder().startTime(times.getTime()).build();
+        return new Builder().timestampProvider(times).build();
     }
 
     public static StandardTransactionHandleConfig of(TimestampProvider times, Configuration customOptions) {
-        return new Builder().startTime(times.getTime()).customOptions(customOptions).build();
+        return new Builder().timestampProvider(times).customOptions(customOptions).build();
     }
 
 }
