@@ -140,8 +140,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 			 */
             Map<StaticBuffer, EntryList> results = new HashMap<StaticBuffer, EntryList>();
 
-            ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
-
             for (ByteBuffer key : rows.keySet()) {
                 results.put(StaticArrayBuffer.of(key),
                         CassandraHelper.makeEntryList(rows.get(key), entryGetter, query.getSliceEnd(), query.getLimit()));
