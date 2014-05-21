@@ -30,8 +30,12 @@ public class HDFSToolsTest extends BaseTest {
         FileSystem local = FileSystem.getLocal(new Configuration());
         File root = computeTestDataRoot();
         new File(root.getAbsolutePath() + "/test.bz2").createNewFile();
-        for (FileStatus status : local.globStatus(new Path(root.getAbsolutePath() + "/*"))) {
-            assertEquals(status.getPath().getName(), "test.bz2");
+        FileStatus statuses[] = local.globStatus(new Path(root.getAbsolutePath() + "/*"));
+        assertTrue(0 < statuses.length);
+        boolean found = false;
+        for (FileStatus status : statuses) {
+            found |= status.getPath().getName().equals("test.bz2");
         }
+        assertTrue(found);
     }
 }
