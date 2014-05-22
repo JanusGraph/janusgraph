@@ -15,7 +15,7 @@ import java.io.IOException;
 public class HBaseBlueprintsTest extends TitanBlueprintsTest {
 
     @Override
-    public void startUp() {
+    public void beforeSuite() {
         try {
             HBaseStorageSetup.startHBase();
         } catch (IOException e) {
@@ -24,7 +24,7 @@ public class HBaseBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    public void shutDown() {
+    public void afterSuite() {
         // we don't need to restart on each test because cleanup is in please
     }
 

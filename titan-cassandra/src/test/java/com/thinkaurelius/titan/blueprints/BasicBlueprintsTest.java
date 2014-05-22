@@ -15,12 +15,12 @@ import com.tinkerpop.blueprints.Graph;
 public abstract class BasicBlueprintsTest  extends TitanBlueprintsTest {
 
     @Override
-    public void shutDown() {
+    public void afterSuite() {
         //Do nothing
     }
 
     @Override
-    public void startUp() {
+    public void beforeSuite() {
         //Do nothing
     }
 

@@ -19,7 +19,7 @@ import com.tinkerpop.blueprints.Graph;
 public class InternalCassandraBlueprintsTest extends BasicBlueprintsTest {
 
     @Override
-    public void startUp() {
+    public void beforeSuite() {
         CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 
