@@ -140,6 +140,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private static final Random random = new Random();
 
+    private static final Duration TWO_MICROSECONDS =
+            new StandardDuration(2L, TimeUnit.MICROSECONDS);
+
     /**
      * Associated {@link LogManager}
      */
@@ -395,6 +398,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         } else {
             try {
                 outgoingMsg.put(envelope); //Produces back pressure when full
+                log.debug("Enqueued {} for partition {}", envelope, partitionId);
             } catch (InterruptedException e) {
                 throw new TitanException("Got interrupted waiting to send message",e);
             }
@@ -515,6 +519,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             if (!toSend.isEmpty() && (maxSendDelay.compareTo(timeSinceFirstMsg()) <= 0 || toSend.size() >= sendBatchSize)) {
                 try {
                     sendMessages(toSend);
+                    log.debug("Sent {} messages", toSend.size());
                 } finally {
                     toSend.clear();
                 }
@@ -609,31 +614,53 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private final int partitionId;
 
         private Timepoint nextTimepoint;
-        private long nextTimestamp;
 
         private MessagePuller(final int partitionId, final int bucketId) {
             this.bucketId = bucketId;
             this.partitionId = partitionId;
-            if (!readMarker.hasIdentifier()) {
-                this.nextTimepoint = readMarker.getStartTime(times);
-            } else {
-                long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),readMarker.getStartTime(times).getNativeTimestamp());
-                this.nextTimepoint = new StandardTimepoint(savedTimestamp, times);
-            }
-            this.nextTimestamp = nextTimepoint.getTimestamp(times.getUnit());
         }
 
         @Override
         public void run() {
-            if (allowReadMarkerRecovery) setReadMarker();
             try {
+                if (null == nextTimepoint) initializeTimepoint();
+
+                if (allowReadMarkerRecovery) setReadMarker();
+
                 final int timeslice = getTimeSlice(nextTimepoint);
-                long tdelta = times.getTime().sub(readLagTime).getTimestamp(times.getUnit());
-                long maxTime = Math.min(tdelta, (timeslice + 1) * TIMESLICE_INTERVAL);
-                // maxTime must be at least nextTimestamp, or else we will have a slice start after slice end
-                maxTime = Math.max(maxTime, nextTimestamp);
+                final Timepoint currentTime = times.getTime();
+                Timepoint timeWindowEnd = currentTime.sub(readLagTime);
+                final Timepoint timeWindowStart;
+                if (0 >  nextTimepoint.compareTo(timeWindowEnd)) {
+                    // nextTimepoint is strictly earlier than timeWindowEnd
+                    timeWindowStart = nextTimepoint;
+                    log.debug("MessagePuller time window: [{}, {})", timeWindowStart, timeWindowEnd);
+                } else {
+                    /*
+                     * nextTimepoint is equal to or later than timeWindowEnd. We
+                     * can't run a column slice using these timestamps, since
+                     * the start would be greater than the end.
+                     *
+                     * This could happen during a brief window right after
+                     * startup with ReadMarker.fromNow(). However, if
+                     * nextTimestamp is much later than timeWindowEnd, then
+                     * something is probably misconfigured.
+                     */
+                    final long delta = nextTimepoint.getNativeTimestamp() - timeWindowEnd.getNativeTimestamp();
+
+                    if (delta / 3 > readLagTime.getLength(times.getUnit())) {
+                        log.warn("MessagePuller configured with ReadMarker timestamp in the improbably distant future: {} (current time is {})", nextTimepoint, currentTime);
+                    } else {
+                        log.debug("MessagePuller configured with ReadMarker timestamp slightly ahead of current time; waiting for the clock to catch up");
+                    }
+
+                    return;
+                }
+                Preconditions.checkState(timeWindowStart.compareTo(timeWindowEnd) < 0);
+                Preconditions.checkState(timeWindowEnd.compareTo(times.getTime()) <= 0);
+
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
-                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimestamp), BufferUtil.getLongBuffer(maxTime));
+                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimepoint.getNativeTimestamp()), BufferUtil.getLongBuffer(timeWindowEnd.getNativeTimestamp()));
                 query.setLimit(maxReadMsg);
                 List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                 prepareMessageProcessing(entries);
@@ -642,16 +669,27 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     Since we have reached the request limit, it may be possible that there are additional messages
                     with the same timestamp which we would miss on subsequent iterations */
                     Entry lastEntry = entries.get(entries.size()-1);
-                    maxTime = lastEntry.getLong(0)+2; //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
+                    //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
+                    timeWindowEnd = timeWindowEnd.add(TWO_MICROSECONDS);
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
-                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(maxTime));
+                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(timeWindowEnd.getNativeTimestamp()));
                     List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                     prepareMessageProcessing(extraEntries);
                 }
-                nextTimepoint = new StandardTimepoint(maxTime, times);
-                nextTimestamp = maxTime;
+                nextTimepoint = timeWindowEnd;
             } catch (Throwable e) {
-                log.error("Could not read messages for timestamp ["+nextTimepoint+"] - will attempt again",e);
+                log.warn("Could not read messages for timestamp ["+nextTimepoint+"] (this read will be retried)",e);
+            }
+        }
+
+        private void initializeTimepoint() {
+            Preconditions.checkState(null == this.nextTimepoint);
+
+            if (!readMarker.hasIdentifier()) {
+                this.nextTimepoint = readMarker.getStartTime(times);
+            } else {
+                long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),readMarker.getStartTime(times).getNativeTimestamp());
+                this.nextTimepoint = new StandardTimepoint(savedTimestamp, times);
             }
         }
 
@@ -667,7 +705,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private void setReadMarker() {
             if (readMarker.hasIdentifier()) {
                 try {
-                    writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), nextTimestamp);
+                    writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), nextTimepoint.getNativeTimestamp());
                 } catch (Throwable e) {
                     log.error("Could not persist read marker [" + readMarker.getIdentifier() + "] on bucket ["+bucketId+"] + partition ["+partitionId+"]",e);
                 }

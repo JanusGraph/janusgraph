@@ -31,7 +31,7 @@ public abstract class LogTest {
 
     public static final String DEFAULT_SENDER_ID = "sender";
 
-    private static final long TIMEOUT_MS = 22000;
+    private static final long TIMEOUT_MS = 30000;
 
     public abstract LogManager openLogManager(String senderId) throws StorageException;
 
@@ -58,7 +58,7 @@ public abstract class LogTest {
 
     @Test
     public void mediumSendReceive() throws Exception {
-        simpleSendReceive(2000,5);
+        simpleSendReceive(2000,1);
     }
 
     @Test
@@ -105,14 +105,24 @@ public abstract class LogTest {
     public void testMultipleLogsWithSingleReader() throws Exception {
         final int nl = 3;
         Log logs[] = new Log[nl];
-        long value = 1L;
         CountingReader count = new CountingReader(3, false);
+
+        // Open all logs up front. This gets any ColumnFamily creation overhead
+        // out of the way. This is particularly useful on HBase.
         for (int i = 0; i < nl; i++) {
             logs[i] = manager.openLog("ml" + i, ReadMarker.fromNow());
+        }
+        // Register readers
+        for (int i = 0; i < nl; i++) {
             logs[i].registerReader(count);
+        }
+        // Send messages
+        long value = 1L;
+        for (int i = 0; i < nl; i++) {
             logs[i].add(BufferUtil.getLongBuffer(value));
             value <<= 1;
         }
+        // Await receipt
         count.await(TIMEOUT_MS);
         assertEquals(3, count.totalMsg.get());
         assertEquals(value - 1, count.totalValue.get());
@@ -126,10 +136,14 @@ public abstract class LogTest {
         for (int i = 0; i < n; i++) {
             counts[i] = new CountingReader(1, true);
             logs[i] = manager.openLog("loner" + i, ReadMarker.fromNow());
+        }
+        for (int i = 0; i < n; i++) {
             logs[i].registerReader(counts[i]);
             logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
         }
+        // Check message receipt.
         for (int i = 0; i < n; i++) {
+            log.debug("Awaiting CountingReader[{}]", i);
             counts[i].await(TIMEOUT_MS);
             assertEquals(1L << (i + 1), counts[i].totalValue.get());
             assertEquals(1, counts[i].totalMsg.get());
