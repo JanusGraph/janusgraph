@@ -23,7 +23,7 @@ public class HBaseCompatLoader {
         String hbaseVersion = VersionInfo.getVersion();
         HBaseCompat compat = null;
 
-        for (String supportedVersion : Arrays.asList("0.94", "0.96")) {
+        for (String supportedVersion : Arrays.asList("0.94", "0.96", "0.98")) {
             if (hbaseVersion.startsWith(supportedVersion + ".")) {
                 String className = "com.thinkaurelius.titan.diskstorage.hbase.HBaseCompat" + supportedVersion.replaceAll("\\.", "_");
                 try {
