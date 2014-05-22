@@ -17,7 +17,7 @@
         <hbase.version>${hbase.version.base}-hadoop2</hbase.version>
         <!-- <hadoop.version>2.2.0</hadoop.version> -->
         <jruby.version>1.6.8</jruby.version>
-        <zookeeper.version>3.4.5</zookeeper.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
     
