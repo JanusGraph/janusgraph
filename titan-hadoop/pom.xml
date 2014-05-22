@@ -15,7 +15,7 @@
         <tinkerpop.version>2.4.0</tinkerpop.version>
         <skipCassandra>true</skipCassandra>
         <skipHBase>true</skipHBase>
-        <skipPipeline>false</skipPipeline>
+        <skipPipeline>${skipTests}</skipPipeline>
     </properties>
 
     <developers>
