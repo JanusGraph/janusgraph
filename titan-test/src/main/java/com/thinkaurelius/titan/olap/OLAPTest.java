@@ -239,7 +239,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             for (PageRank pr : ranks.values()) {
                 totalDelta+=pr.completeIteration(alpha,numVertices);
             }
-//            System.out.println(String.format("Completed iteration [%s] in time %s ms with delta PR=%s",iteration,w.elapsed(TimeUnit.MILLISECONDS),totalDelta));
+            System.out.println(String.format("Completed iteration [%s] in time %s ms with delta PR=%s",iteration,w.elapsed(TimeUnit.MILLISECONDS),totalDelta));
         } while (totalDelta>PR_TERMINATION_THRESHOLD);
         return ranks;
     }
