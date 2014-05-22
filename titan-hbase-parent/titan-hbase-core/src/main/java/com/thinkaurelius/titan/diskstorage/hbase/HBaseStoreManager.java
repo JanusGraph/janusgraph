@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.util.time.TimestampProvider;
 import com.thinkaurelius.titan.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -134,7 +135,6 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                     .put(ID_STORE_NAME, "i")
                     .put(EDGESTORE_NAME, "s")
                     .put(INDEXSTORE_NAME + LOCK_STORE_SUFFIX, "w")
-                    .put(ID_STORE_NAME + LOCK_STORE_SUFFIX, "j")
                     .put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, "t")
                     .put(SYSTEM_PROPERTIES_STORE_NAME, "c")
                     .build();
@@ -261,11 +261,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        final Timestamp timestamp = super.getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
         // http://hbase.apache.org/book/versions.html#d244e4250
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.getAdditionTime(times.getUnit()), timestamp.getDeletionTime(times.getUnit()));
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey =
+                convertToCommands(
+                        mutations,
+                        commitTime.getAdditionTime(times.getUnit()),
+                        commitTime.getDeletionTime(times.getUnit()));
 
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -294,7 +298,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     @Override

@@ -149,7 +149,6 @@ public class ConsistentKeyLockerTest {
         Method timeInSpecifiedUnit = FakeTimestampProvider.class.getMethod("getTime", long.class, TimeUnit.class);
         Method sleepPast = FakeTimestampProvider.class.getMethod("sleepPast", Timepoint.class);
 
-//        times = EasyMock.createMockBuilder(FakeTimestampProvider.class).addMockedMethods(timeInNativeUnit, timeInSpecifiedUnit, sleepPast).createStrictMock();
         times = ctrl.createMock(FakeTimestampProvider.class, timeInNativeUnit, timeInSpecifiedUnit, sleepPast);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
@@ -159,8 +158,8 @@ public class ConsistentKeyLockerTest {
         ctrl.verify();
         ctrl.reset();
 
-        expect(defaultTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
-        expect(otherTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
+        expect(defaultTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
+        expect(otherTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
 
         relaxedCtrl.replay();
     }

@@ -59,10 +59,8 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
-        TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
-                .groupName(configuration.getGroupName())
+        TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder(configuration)
                 .customOptions(customOptions)
-                .startTime(configuration.getStartTime())
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
         StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);

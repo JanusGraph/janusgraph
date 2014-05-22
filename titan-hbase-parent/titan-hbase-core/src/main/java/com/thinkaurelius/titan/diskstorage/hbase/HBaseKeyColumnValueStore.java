@@ -6,7 +6,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -168,13 +167,20 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
             assert results.length==keys.size();
 
-            for (int i=0; i<results.length; i++) {
+            for (int i = 0; i < results.length; i++) {
                 Result result = results[i];
-                Map<byte[], byte[]> fmap = result.getFamilyMap(columnFamilyBytes);
-                EntryList entries;
-                if (fmap == null) entries = EntryList.EMPTY_LIST;
-                else entries = StaticArrayEntryList.ofBytes(fmap.entrySet(),entryGetter);
-                resultMap.put(keys.get(i), entries);
+                NavigableMap<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> f = result.getMap();
+
+                if (f == null) { // no result for this key
+                    resultMap.put(keys.get(i), EntryList.EMPTY_LIST);
+                    continue;
+                }
+
+                // actual key with <timestamp, value>
+                NavigableMap<byte[], NavigableMap<Long, byte[]>> r = f.get(columnFamilyBytes);
+                resultMap.put(keys.get(i), (r == null)
+                                            ? EntryList.EMPTY_LIST
+                                            : StaticArrayEntryList.ofBytes(r.entrySet(), entryGetter));
             }
 
             return resultMap;
@@ -256,7 +262,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             ensureOpen();
 
             return new RecordIterator<Entry>() {
-                private final Iterator<Map.Entry<byte[], byte[]>> kv = currentRow.getFamilyMap(columnFamilyBytes).entrySet().iterator();
+                private final Iterator<Map.Entry<byte[], NavigableMap<Long, byte[]>>> kv = currentRow.getMap().get(columnFamilyBytes).entrySet().iterator();
 
                 @Override
                 public boolean hasNext() {
@@ -267,8 +273,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 @Override
                 public Entry next() {
                     ensureOpen();
-                    Map.Entry<byte[], byte[]> column = kv.next();
-                    return StaticArrayEntry.ofBytes(column, entryGetter);
+                    return StaticArrayEntry.ofBytes(kv.next(), entryGetter);
                 }
 
                 @Override
@@ -315,7 +320,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static class HBaseGetter implements StaticArrayEntry.GetColVal<Map.Entry<byte[],byte[]>,byte[]> {
+    private static class HBaseGetter implements StaticArrayEntry.GetColVal<Map.Entry<byte[], NavigableMap<Long, byte[]>>, byte[]> {
 
         private final EntryMetaData[] schema;
 
@@ -324,25 +329,25 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         @Override
-        public byte[] getColumn(Map.Entry<byte[], byte[]> element) {
+        public byte[] getColumn(Map.Entry<byte[], NavigableMap<Long, byte[]>> element) {
             return element.getKey();
         }
 
         @Override
-        public byte[] getValue(Map.Entry<byte[], byte[]> element) {
-            return element.getValue();
+        public byte[] getValue(Map.Entry<byte[], NavigableMap<Long, byte[]>> element) {
+            return element.getValue().lastEntry().getValue();
         }
 
         @Override
-        public EntryMetaData[] getMetaSchema(Map.Entry<byte[],byte[]> element) {
+        public EntryMetaData[] getMetaSchema(Map.Entry<byte[], NavigableMap<Long, byte[]>> element) {
             return schema;
         }
 
         @Override
-        public Object getMetaData(Map.Entry<byte[],byte[]> element, EntryMetaData meta) {
+        public Object getMetaData(Map.Entry<byte[], NavigableMap<Long, byte[]>> element, EntryMetaData meta) {
             switch(meta) {
-//                case TIMESTAMP:
-//                    return element.getColumn().getTimestamp();
+                case TIMESTAMP:
+                    return element.getValue().lastEntry().getKey();
                 default:
                     throw new UnsupportedOperationException("Unsupported meta data: " + meta);
             }

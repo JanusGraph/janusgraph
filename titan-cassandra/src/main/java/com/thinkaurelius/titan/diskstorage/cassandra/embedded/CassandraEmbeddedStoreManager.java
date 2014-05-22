@@ -25,7 +25,6 @@ import org.apache.cassandra.db.ReadCommand;
 import org.apache.cassandra.db.RowMutation;
 import org.apache.cassandra.db.SliceByNamesReadCommand;
 import org.apache.cassandra.db.filter.NamesQueryFilter;
-import org.apache.cassandra.db.filter.QueryPath;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.db.marshal.BytesType;
 import org.apache.cassandra.dht.IPartitioner;
@@ -38,8 +37,6 @@ import org.apache.cassandra.scheduler.IRequestScheduler;
 import org.apache.cassandra.service.MigrationManager;
 import org.apache.cassandra.service.StorageProxy;
 import org.apache.cassandra.service.StorageService;
-import org.apache.cassandra.thrift.ColumnParent;
-import org.apache.cassandra.utils.FBUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,11 +147,17 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         return store;
     }
 
+    /*
+     * Raw type warnings are suppressed in this method because
+     * {@link StorageService#getLocalPrimaryRanges(String)} returns a raw
+     * (unparameterized) type.
+     */
     List<KeyRange> getLocalKeyPartition() throws StorageException {
+        @SuppressWarnings("rawtypes")
         Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
 
-        for (Range<Token> range : ranges) {
+        for (@SuppressWarnings("rawtypes") Range<Token> range : ranges) {
             keyRanges.add(CassandraHelper.transformRange(range));
         }
 
@@ -171,7 +174,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        final Timestamp timestamp = getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         int size = 0;
         for (Map<StaticBuffer, KCVMutation> mutation : mutations.values()) size += mutation.size();
@@ -191,14 +194,14 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
                 if (mut.hasAdditions()) {
                     for (Entry e : mut.getAdditions()) {
-                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), timestamp.getAdditionTime(times.getUnit()));
+                        rm.add(columnFamily, e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY), commitTime.getAdditionTime(times.getUnit()));
 
                     }
                 }
 
                 if (mut.hasDeletions()) {
                     for (StaticBuffer col : mut.getDeletions()) {
-                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), timestamp.getDeletionTime(times.getUnit()));
+                        rm.delete(columnFamily, col.as(StaticBuffer.BB_FACTORY), commitTime.getDeletionTime(times.getUnit()));
                     }
                 }
 
@@ -207,7 +210,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         mutate(new ArrayList<RowMutation>(rowMutations.values()), getTx(txh).getWriteConsistencyLevel().getDB());
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
@@ -263,9 +266,9 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
         // Keyspace not found; create it
         String strategyName = "org.apache.cassandra.locator.SimpleStrategy";
-        Map<String, String> options = new HashMap<String, String>() {{
-            put("replication_factor", String.valueOf(replicationFactor));
-        }};
+        Map<String, String> options = ImmutableMap.of(
+            "replication_factor", String.valueOf(replicationFactor)
+        );
 
         KSMetaData ksm;
         try {
@@ -285,7 +288,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType comparator) throws StorageException {
+    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType<?> comparator) throws StorageException {
         if (null != Schema.instance.getCFMetaData(keyspaceName, columnfamilyName))
             return;
 
