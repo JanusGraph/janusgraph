@@ -155,7 +155,6 @@ public class IDHandler {
         return new StaticArrayBuffer(arr);
     }
 
-    //Assumes not hidden!
     public static StaticBuffer[] getBounds(RelationCategory type, boolean systemTypes) {
         int start, end;
         switch (type) {

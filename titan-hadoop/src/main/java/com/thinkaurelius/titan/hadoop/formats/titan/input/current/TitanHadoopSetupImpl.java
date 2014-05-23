@@ -102,7 +102,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     @Override
     public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
         if (inputFilter.limit == 0) {
-            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY);
+            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY,false);
             return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
         } else {
             return super.inputSlice(inputFilter);
