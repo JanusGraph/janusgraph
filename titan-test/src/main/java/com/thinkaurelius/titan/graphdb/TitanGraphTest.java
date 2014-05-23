@@ -32,6 +32,8 @@ import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -287,13 +289,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
         tx.makeEdgeLabel("test").make();
         try {
-            tx.makeEdgeLabel("link2").unidirected().
+            ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().
                     sortKey(name, weight).signature(name).make();
             fail();
         } catch (IllegalArgumentException e) {
         }
         try {
-            tx.makeEdgeLabel("link2").unidirected().
+            ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().
                     sortKey(tx.getPropertyKey("int"), weight).make();
             fail();
         } catch (IllegalArgumentException e) {
@@ -304,7 +306,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 //            fail();
 //        } catch (IllegalArgumentException e) {
 //        }
-        EdgeLabel link2 = tx.makeEdgeLabel("link2").unidirected().sortKey(name, weight).make();
+        EdgeLabel link2 = ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().sortKey(name, weight).make();
 
         // Data types and serialization
         TitanVertex v = tx.addVertex();
@@ -550,7 +552,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight,Integer.class);
-        PropertyKey f = mgmt.makePropertyKey(foo).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
+        PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
         mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildInternalIndex();
         PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
         mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildInternalIndex();
@@ -715,7 +717,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testCreateDelete() {
         makeKey("weight",Double.class);
         PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
-        mgmt.makeEdgeLabel("knows").sortKey(id).sortOrder(Order.DESC).directed().make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(id).sortOrder(Order.DESC).directed().make();
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         finishSchema();
 
@@ -882,7 +884,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testUnidirectional() {
         EdgeLabel link = tx.makeEdgeLabel("link").unidirected().multiplicity(Multiplicity.MANY2ONE).make();
-        EdgeLabel connect = tx.makeEdgeLabel("connect").sortKey(link).make();
+        EdgeLabel connect = ((StandardEdgeLabelMaker)tx.makeEdgeLabel("connect")).sortKey(link).make();
 
         TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
         TitanEdge e = v1.addEdge(link, v2);
@@ -1014,7 +1016,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
         mgmt.buildIndex("etype",Edge.class).indexKey(t).buildInternalIndex();
-        mgmt.makeEdgeLabel("friend").sortKey(t).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
         finishSchema();
 
         Vertex v1 = graph.addVertex(null);
@@ -1111,7 +1113,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         makeVertexIndexedUniqueKey("name",String.class);
         PropertyKey weight = makeKey("weight",Double.class);
         PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
-        mgmt.makeEdgeLabel("knows").sortKey(id).signature(weight).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(id).signature(weight).make();
         finishSchema();
 
         PropertyKey name = tx.getPropertyKey("name");
@@ -1224,11 +1226,11 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         EdgeLabel author = mgmt.makeEdgeLabel("author").multiplicity(Multiplicity.MANY2ONE).unidirected().make();
 
-        mgmt.makeEdgeLabel("connect").sortKey(time).make();
-        mgmt.makeEdgeLabel("connectDesc").sortKey(time).sortOrder(Order.DESC).make();
-        mgmt.makeEdgeLabel("friend").sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
-        mgmt.makeEdgeLabel("friendDesc").sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
-        mgmt.makeEdgeLabel("knows").sortKey(author, weight).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connect")).sortKey(time).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connectDesc")).sortKey(time).sortOrder(Order.DESC).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friendDesc")).sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(author, weight).make();
         mgmt.makeEdgeLabel("follows").make();
         finishSchema();
 
@@ -1543,7 +1545,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         makeVertexIndexedUniqueKey("name",String.class);
         PropertyKey weight = makeKey("weight",Double.class);
         PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
-        mgmt.makeEdgeLabel("knows").sortKey(id).signature(weight).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(id).signature(weight).make();
         finishSchema();
 
         //Create Nodes

@@ -228,17 +228,21 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return buildTransaction().threadBound().start();
     }
 
-    public StandardTitanTx newTransaction(TransactionConfiguration configuration) {
+    public StandardTitanTx newTransaction(final TransactionConfiguration configuration) {
         if (!isOpen) ExceptionFactory.graphShutdown();
         try {
-            IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever();
-            StandardTitanTx tx = new StandardTitanTx(this, configuration, backend.beginTransaction(configuration,retriever));
-            retriever.setTransaction(tx);
+            StandardTitanTx tx = new StandardTitanTx(this, configuration);
+            tx.setBackendTransaction(openBackendTransaction(tx));
             openTransactions.add(tx);
             return tx;
         } catch (StorageException e) {
             throw new TitanException("Could not start new transaction", e);
         }
+    }
+
+    private BackendTransaction openBackendTransaction(StandardTitanTx tx) throws StorageException {
+        IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
+        return backend.beginTransaction(tx.getConfiguration(),retriever);
     }
 
     public void closeTransaction(StandardTitanTx tx) {
@@ -483,19 +487,30 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         //3.1 Commit schema elements and their associated relations
         try {
-            //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
-            boolean hasSchemaElements = prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, mutator, tx, acquireLocks);
+            boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
+                    || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
             if (hasSchemaElements) {
                 Preconditions.checkArgument(!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks,"Attempting to create schema elements in inconsistent state");
+                //Create separate backend transaction for schema aspects to make sure that those are persisted prior to and independently of other mutations in the tx
+                BackendTransaction schemaMutator = openBackendTransaction(tx);
 
-                if (logTransaction) {
-                    //[FAILURE] If transaction logging fails immediately, abort - nothing persisted yet
-                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PREFLUSH_SYSTEM);
+                try {
+                    //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
+                    prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, schemaMutator, tx, acquireLocks);
+
+                    if (logTransaction) {
+                        //[FAILURE] If transaction logging fails immediately, abort - nothing persisted yet
+                        logTransaction(txLog,schemaMutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PREFLUSH_SYSTEM);
+                    }
+                } catch (Throwable e) {
+                    //Roll back schema tx and escalate exception
+                    schemaMutator.rollback();
+                    throw e;
                 }
 
                 LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
                 try {
-                    mutator.flushStorage();
+                    schemaMutator.commit();
                 } catch (Throwable e) {
                     //[FAILURE] Primary persistence failed => abort but log failure (if possible)
                     status = LogTxStatus.FAILURE_SYSTEM;
@@ -504,7 +519,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 } finally {
                     if (logTransaction) {
                         DataOutput out = txLogHeader.serializeHeader(serializer,20,status);
-                        //[FAILURE] An exception here will swallow any (very likely) previous exception in mutator.flushStorage()
+                        //[FAILURE] An exception here will swallow any (very likely) previous exception in schemaMutator.commit()
                         //which then has to be looked up from the error log
                         txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
                     }

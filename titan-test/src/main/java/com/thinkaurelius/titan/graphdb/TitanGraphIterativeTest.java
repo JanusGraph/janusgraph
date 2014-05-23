@@ -15,6 +15,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -68,7 +69,7 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
     public void loadData(final int numVertices, final int numThreads) throws Exception {
         graph.makePropertyKey("w").dataType(Integer.class).make();
         PropertyKey time = graph.makePropertyKey("t").dataType(Long.class).make();
-        graph.makeEdgeLabel("l").sortKey(time).make();
+        ((StandardEdgeLabelMaker)graph.makeEdgeLabel("l")).sortKey(time).make();
         graph.commit();
 
         final int maxQueue = 1000;

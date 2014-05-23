@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -241,7 +242,7 @@ public class Schema {
             String labelName = getEdgeLabelName(i);
             String pkName = getSortKeyForLabel(labelName);
             PropertyKey pk = mgmt.getPropertyKey(pkName);
-            mgmt.makeEdgeLabel(getEdgeLabelName(i)).sortKey(pk).make();
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel(getEdgeLabelName(i))).sortKey(pk).make();
         }
 
         PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();

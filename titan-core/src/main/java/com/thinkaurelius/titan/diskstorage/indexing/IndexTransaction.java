@@ -94,12 +94,6 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
         indexTx.rollback();
     }
 
-    @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        indexTx.flush();
-    }
-
     private void flushInternal() throws StorageException {
         if (mutations!=null && !mutations.isEmpty()) {
             BackendOperation.execute(new Callable<Boolean>() {

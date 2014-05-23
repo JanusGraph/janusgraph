@@ -18,7 +18,32 @@ import com.thinkaurelius.titan.core.RelationType;
  */
 public interface RelationTypeMaker {
 
+    /**
+     * Returns the name of this configured relation type.
+     *
+     * @return
+     */
     public String getName();
+
+    /**
+     * Configures the signature of this relation type.
+     * <p/>
+     * Specifying the signature of a type tells the graph database to <i>expect</i> that relations of this type
+     * always have or are likely to have an incident property or unidirected edge of the type included in the
+     * signature. This allows the graph database to store such relations more compactly and retrieve them more quickly.
+     * <br />
+     * For instance, if all edges with label <i>friend</i> have a property with key <i>createdOn</i>, then specifying
+     * (<i>createdOn</i>) as the signature for label <i>friend</i> allows friend edges to be stored more efficiently.
+     * <br />
+     * {@link RelationType}s used in the signature must be either property out-unique keys or out-unique unidirected edge labels.
+     * <br />
+     * The signature is empty by default.
+     *
+     * @param types TitanTypes composing the signature key. The order is irrelevant.
+     * @return this relation type builder
+     */
+    public RelationTypeMaker signature(RelationType... types);
+
 
     public RelationType make();
 }

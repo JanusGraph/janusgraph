@@ -49,6 +49,13 @@ public enum Multiplicity {
         return this!=MULTI;
     }
 
+    public boolean isConstrained(Direction direction) {
+        if (direction==Direction.BOTH) return isConstrained();
+        if (this==MULTI) return false;
+        if (this==SIMPLE) return true;
+        return isUnique(direction);
+    }
+
 
     /**
      * If this multiplicity implies edge uniqueness in the given direction for any given vertex.

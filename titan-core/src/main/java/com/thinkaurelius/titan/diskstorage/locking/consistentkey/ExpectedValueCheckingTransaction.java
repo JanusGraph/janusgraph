@@ -164,12 +164,6 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         consistentTx.commit();
     }
 
-    @Override
-    public void flush() throws StorageException {
-        baseTx.flush();
-        consistentTx.flush();
-    }
-
 
     /**
      * Tells whether this transaction has been used in a

@@ -204,12 +204,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        tx.flush();
-    }
-
-    @Override
     public void commit() throws StorageException {
         flushInternal();
         tx.commit();

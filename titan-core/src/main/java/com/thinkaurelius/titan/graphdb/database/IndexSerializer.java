@@ -91,19 +91,16 @@ public class IndexSerializer {
         return new StandardKeyInformation(field.getFieldKey().getDataType(),field.getParameters());
     }
 
-    public IndexInfoRetriever getIndexInfoRetriever() {
-        return new IndexInfoRetriever();
+    public IndexInfoRetriever getIndexInfoRetriever(StandardTitanTx tx) {
+        return new IndexInfoRetriever(tx);
     }
 
     public static class IndexInfoRetriever implements KeyInformation.Retriever {
 
-        private StandardTitanTx transaction;
+        private final StandardTitanTx transaction;
 
-        private IndexInfoRetriever() {}
-
-        public void setTransaction(StandardTitanTx tx) {
+        private IndexInfoRetriever(StandardTitanTx tx) {
             Preconditions.checkNotNull(tx);
-            Preconditions.checkArgument(transaction==null);
             transaction=tx;
         }
 

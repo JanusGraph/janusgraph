@@ -92,7 +92,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private final IDManager idManager;
     private final IDInspector idInspector;
     private final AttributeHandling attributeHandler;
-    private final BackendTransaction txHandle;
+    private BackendTransaction txHandle;
     private final EdgeSerializer edgeSerializer;
     private final IndexSerializer indexSerializer;
 
@@ -165,18 +165,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     private final Retriever<Long, InternalVertex> externalVertexRetriever;
     private final Retriever<Long, InternalVertex> internalVertexRetriever;
 
-    public StandardTitanTx(StandardTitanGraph graph, TransactionConfiguration config, BackendTransaction txHandle) {
+    public StandardTitanTx(StandardTitanGraph graph, TransactionConfiguration config) {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph.isOpen());
         Preconditions.checkNotNull(config);
-        Preconditions.checkNotNull(txHandle);
         this.graph = graph;
         this.times = graph.getConfiguration().getTimestampProvider();
         this.config = config;
         this.idManager = graph.getIDManager();
         this.idInspector = idManager.getIdInspector();
         this.attributeHandler = graph.getDataSerializer();
-        this.txHandle = txHandle;
         this.edgeSerializer = graph.getEdgeSerializer();
         this.indexSerializer = graph.getIndexSerializer();
 
@@ -231,6 +229,11 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             elementProcessor = elementProcessorImpl;
             edgeProcessor    = edgeProcessorImpl;
         }
+    }
+
+    public void setBackendTransaction(BackendTransaction txHandle) {
+        Preconditions.checkArgument(this.txHandle==null && txHandle!=null);
+        this.txHandle = txHandle;
     }
 
     /*

@@ -514,11 +514,6 @@ public class LuceneIndex implements IndexProvider {
             close();
         }
 
-        @Override
-        public void flush() throws StorageException {
-
-        }
-
         private void close() throws StorageException {
             try {
                 for (IndexSearcher searcher : searchers.values()) {

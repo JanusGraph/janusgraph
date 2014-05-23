@@ -29,11 +29,6 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
     }
 
     @Override
-    public void flush() throws StorageException {
-    }
-
-
-    @Override
     public TransactionHandleConfig getConfiguration() {
         return config;
     }

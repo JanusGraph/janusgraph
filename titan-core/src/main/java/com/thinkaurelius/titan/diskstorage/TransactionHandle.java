@@ -9,7 +9,7 @@ package com.thinkaurelius.titan.diskstorage;
 public interface TransactionHandle {
 
     /**
-     * Commits the transaction.  This implies a {@link #flush()}.
+     * Commits the transaction and persists all modifications to the backend.
      * 
      * Call either this method or {@link #rollback()} at most once per instance.
      *
@@ -27,17 +27,6 @@ public interface TransactionHandle {
     public void rollback() throws StorageException;
 
     /**
-     * Forces all buffered writes to be sent to underlying storage.
-     * 
-     * It is not necessary or meaningful to call this method on a
-     * {@code TransactionHandle} instance after calling {@link #commit()} or
-     * {@link #rollback()} on the instance.
-     * 
-     * @throws StorageException
-     */
-    public void flush() throws StorageException;
-
-    /**
      * No-op transaction. This transaction's methods return without doing
      * anything.
      */
@@ -50,9 +39,6 @@ public interface TransactionHandle {
         public void rollback() throws StorageException {
         }
 
-        @Override
-        public void flush() throws StorageException {
-        }
     };
 
 }

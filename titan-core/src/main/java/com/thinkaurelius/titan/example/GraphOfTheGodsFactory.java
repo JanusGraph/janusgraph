@@ -5,6 +5,7 @@ import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -53,7 +54,7 @@ public class GraphOfTheGodsFactory {
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
-        mgmt.makeEdgeLabel("battled").sortKey(time).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("battled")).sortKey(time).make();
         mgmt.makeEdgeLabel("lives").signature(reason).make();
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();

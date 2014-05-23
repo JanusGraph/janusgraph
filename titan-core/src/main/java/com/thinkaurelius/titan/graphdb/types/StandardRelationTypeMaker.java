@@ -122,18 +122,50 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         return this;
     }
 
+    @Override
     public StandardRelationTypeMaker signature(RelationType... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         signature.addAll(Arrays.asList(types));
         return this;
     }
 
+    /**
+     * Configures the composite sort key for this label.
+     * <p/>
+     * Specifying the sort key of a type allows relations of this type to be efficiently retrieved in the order of
+     * the sort key.
+     * <br />
+     * For instance, if the edge label <i>friend</i> has the sort key (<i>since</i>), which is a property key
+     * with a timestamp data type, then one can efficiently retrieve all edges with label <i>friend</i> in a specified
+     * time interval using {@link com.thinkaurelius.titan.core.TitanVertexQuery#interval(com.thinkaurelius.titan.core.PropertyKey, Comparable, Comparable)}.
+     * <br />
+     * In other words, relations are stored on disk in the order of the configured sort key. The sort key is empty
+     * by default.
+     * <br />
+     * If multiple types are specified as sort key, then those are considered as a <i>composite</i> sort key, i.e. taken jointly
+     * in the given order.
+     * <p/>
+     * {@link com.thinkaurelius.titan.core.RelationType}s used in the sort key must be either property out-unique keys or out-unique unidirected edge lables.
+     *
+     * @param types TitanTypes composing the sort key. The order is relevant.
+     * @return this LabelMaker
+     */
     public StandardRelationTypeMaker sortKey(RelationType... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         sortKey.addAll(Arrays.asList(types));
         return this;
     }
 
+    /**
+     * Defines in which order to sort the relations for efficient retrieval, i.e. either increasing ({@link com.thinkaurelius.titan.core.Order#ASC}) or
+     * decreasing ({@link com.thinkaurelius.titan.core.Order#DESC}).
+     *
+     * Note, that only one sort order can be specified and that a sort key must be defined to use a sort order.
+     *
+     * @param order
+     * @return
+     * @see #sortKey(RelationType...)
+     */
     public StandardRelationTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);
         this.sortOrder=order;

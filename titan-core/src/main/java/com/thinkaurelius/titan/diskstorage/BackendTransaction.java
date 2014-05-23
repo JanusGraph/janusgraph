@@ -113,16 +113,6 @@ public class BackendTransaction implements LoggableTransaction {
         for (IndexTransaction itx : indexTx.values()) itx.commit();
     }
 
-    public void flushStorage() throws StorageException {
-        storeTx.flush();
-    }
-
-    @Override
-    public void flush() throws StorageException {
-        storeTx.flush();
-        for (IndexTransaction itx : indexTx.values()) itx.flush();
-    }
-
     /**
      * Rolls back all transactions and makes sure that this does not get cut short
      * by exceptions. If exceptions occur, the storage exception takes priority on re-throw.

@@ -201,6 +201,8 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(sortKeys.length>0,"Need to specify sort keys");
         for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
         Preconditions.checkArgument(type.isNew(),"Can only install indexes on new types (current limitation)");
+        Preconditions.checkArgument(!((InternalRelationType)type).getMultiplicity().isConstrained(direction),
+                "The relation type [%s] has a multiplicity or cardinality constrained in direction [%s] and can therefore not be indexed",type,direction);
 
         String composedName = composeRelationTypeIndexName(type,name);
         StandardRelationTypeMaker maker;
@@ -281,7 +283,7 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
-        //Don't use SchemaCache to make code more compact and since we don't need the extra performance here
+        //TODO: Use SchemaCache since this will be called frequently
         TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.GRAPHINDEX.getSchemaName(name)),null);
         if (v==null) return null;
         assert v instanceof TitanSchemaVertex;

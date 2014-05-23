@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.core.attribute.Text;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.ParameterType;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -94,7 +95,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalEdgeIndex(group,INDEX);
 
         PropertyKey id = makeVertexIndexedKey("uid",Integer.class);
-        EdgeLabel knows = mgmt.makeEdgeLabel("knows").sortKey(time).signature(location).make();
+        EdgeLabel knows = ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(time).signature(location).make();
         finishSchema();
 
         clopen();
