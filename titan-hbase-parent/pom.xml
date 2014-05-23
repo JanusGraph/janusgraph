@@ -145,6 +145,9 @@
                                     <fileset>
                                         <directory>conf/</directory>
                                     </fileset>
+                                    <fileset>
+                                        <directory>logs/</directory>
+                                    </fileset>
                                 </filesets>
                             </configuration>
                         </execution>
