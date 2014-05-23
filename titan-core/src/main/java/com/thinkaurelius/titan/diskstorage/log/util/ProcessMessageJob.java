@@ -28,6 +28,7 @@ public class ProcessMessageJob implements Runnable {
     @Override
     public void run() {
         try {
+            log.debug("Passing {} to {}", message, reader);
             reader.read(message);
         } catch (Throwable e) {
             log.error("Encountered exception when processing message ["+message+"] by reader ["+reader+"]:",e);
