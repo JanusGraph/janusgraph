@@ -82,7 +82,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 } else {
                     assert this==TIMESTAMP || this==TTL;
                     Long time = r.getPropertyDirect(this);
-                    TimeUnit unit = r.tx().getConfiguration().getStartTime().getNativeUnit();
+                    TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
                     if (this==TIMESTAMP) return (O)new StandardTimestamp(time,unit);
                     else return (O)new StandardDuration(time,unit);
                 }
