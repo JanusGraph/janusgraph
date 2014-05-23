@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.util.time.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -420,6 +419,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             this.key = key;
             this.entry = entry;
         }
+
+        @Override
+        public String toString() {
+            return "MessageEnvelope[message=" + message + ",key=" + key
+                    + ",entry=" + entry + "]";
+        }
     }
 
     /**
@@ -435,13 +440,17 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     ListMultimap<StaticBuffer,Entry> mutations = ArrayListMultimap.create();
                     for (MessageEnvelope env : msgEnvelopes) {
                         mutations.put(env.key,env.entry);
+                        long ts = env.entry.getColumn().getLong(0);
+                        log.debug("Preparing to write {} to storage with column/timestamp {}", env, new StandardTimepoint(ts, times));
                     }
 
                     Map<StaticBuffer,KCVMutation> muts = new HashMap<StaticBuffer, KCVMutation>(mutations.keySet().size());
                     for (StaticBuffer key : mutations.keySet()) {
                         muts.put(key,new KCVMutation(mutations.get(key),KeyColumnValueStore.NO_DELETIONS));
+                        log.debug("Built mutation on key {} with {} additions", key, mutations.get(key).size());
                     }
                     manager.storeManager.mutateMany(ImmutableMap.of(store.getName(),muts),txh);
+                    log.debug("Wrote {} total envelopes with operation timestamp {}", msgEnvelopes.size(), txh.getConfiguration().getCommitTime());
                     return Boolean.TRUE;
                 }
                 @Override
@@ -519,7 +528,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             if (!toSend.isEmpty() && (maxSendDelay.compareTo(timeSinceFirstMsg()) <= 0 || toSend.size() >= sendBatchSize)) {
                 try {
                     sendMessages(toSend);
-                    log.debug("Sent {} messages", toSend.size());
                 } finally {
                     toSend.clear();
                 }
@@ -613,7 +621,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private final int bucketId;
         private final int partitionId;
 
-        private Timepoint nextTimepoint;
+        private Timepoint messageTimeStart;
 
         private MessagePuller(final int partitionId, final int bucketId) {
             this.bucketId = bucketId;
@@ -623,18 +631,26 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         @Override
         public void run() {
             try {
-                if (null == nextTimepoint) initializeTimepoint();
+                if (null == messageTimeStart) initializeTimepoint();
 
                 if (allowReadMarkerRecovery) setReadMarker();
 
-                final int timeslice = getTimeSlice(nextTimepoint);
+                final int timeslice = getTimeSlice(messageTimeStart);
+
+                // Setup time range we're about to query
                 final Timepoint currentTime = times.getTime();
-                Timepoint timeWindowEnd = currentTime.sub(readLagTime);
-                final Timepoint timeWindowStart;
-                if (0 >  nextTimepoint.compareTo(timeWindowEnd)) {
+                // Can only read messages stamped up to the following time without violating design constraints
+                final Timepoint maxSafeMessageTime = currentTime.sub(readLagTime);
+                // We also have to stay inside the current timeslice or we could drop messages
+                final Timepoint timesliceEnd = new StandardTimepoint((timeslice + 1) * TIMESLICE_INTERVAL, times);
+
+                Timepoint messageTimeEnd =
+                        0 > maxSafeMessageTime.compareTo(timesliceEnd) /* maxSafeMessageTime < timesliceEnd */ ?
+                        maxSafeMessageTime : timesliceEnd;
+
+                if (0 >  messageTimeStart.compareTo(messageTimeEnd)) {
                     // nextTimepoint is strictly earlier than timeWindowEnd
-                    timeWindowStart = nextTimepoint;
-                    log.debug("MessagePuller time window: [{}, {})", timeWindowStart, timeWindowEnd);
+                    log.debug("MessagePuller time window: [{}, {})", messageTimeStart, messageTimeEnd);
                 } else {
                     /*
                      * nextTimepoint is equal to or later than timeWindowEnd. We
@@ -646,22 +662,26 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                      * nextTimestamp is much later than timeWindowEnd, then
                      * something is probably misconfigured.
                      */
-                    final long delta = nextTimepoint.getNativeTimestamp() - timeWindowEnd.getNativeTimestamp();
+                    final long delta = messageTimeStart.getNativeTimestamp() - messageTimeEnd.getNativeTimestamp();
 
                     if (delta / 3 > readLagTime.getLength(times.getUnit())) {
-                        log.warn("MessagePuller configured with ReadMarker timestamp in the improbably distant future: {} (current time is {})", nextTimepoint, currentTime);
+                        log.warn("MessagePuller configured with ReadMarker timestamp in the improbably distant future: {} (current time is {})", messageTimeStart, currentTime);
                     } else {
-                        log.debug("MessagePuller configured with ReadMarker timestamp slightly ahead of current time; waiting for the clock to catch up");
+                        log.debug("MessagePuller configured with ReadMarker timestamp slightly ahead of read lag time; waiting for the clock to catch up");
                     }
 
                     return;
                 }
-                Preconditions.checkState(timeWindowStart.compareTo(timeWindowEnd) < 0);
-                Preconditions.checkState(timeWindowEnd.compareTo(times.getTime()) <= 0);
+                Preconditions.checkState(messageTimeStart.compareTo(messageTimeEnd) < 0);
+                Preconditions.checkState(messageTimeEnd.compareTo(currentTime) <= 0, "Attempting to read messages from the future: messageTimeEnd=% vs currentTime=%s", messageTimeEnd, currentTime);
+                Preconditions.checkState(times.getUnit().equals(messageTimeStart.getNativeUnit()), "Expected TimestampProvider TimeUnit %s to match nextTimepoint unit %s", times.getUnit(), messageTimeStart.getNativeUnit());
+                Preconditions.checkState(times.getUnit().equals(messageTimeEnd.getNativeUnit()), "Expected Timestampprovider TimeUnit %s to match timeWindowEnd unit %s", times.getUnit(), messageTimeStart.getNativeUnit());
 
                 StaticBuffer logKey = getLogKey(partitionId,bucketId,timeslice);
-                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(nextTimepoint.getNativeTimestamp()), BufferUtil.getLongBuffer(timeWindowEnd.getNativeTimestamp()));
+                KeySliceQuery query = new KeySliceQuery(logKey, BufferUtil.getLongBuffer(messageTimeStart.getNativeTimestamp()), BufferUtil.getLongBuffer(messageTimeEnd.getNativeTimestamp()));
                 query.setLimit(maxReadMsg);
+                log.debug("Converted MessagePuller time window to {}", query);
+
                 List<Entry> entries= BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                 prepareMessageProcessing(entries);
                 if (entries.size()>=maxReadMsg) {
@@ -670,32 +690,37 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     with the same timestamp which we would miss on subsequent iterations */
                     Entry lastEntry = entries.get(entries.size()-1);
                     //Adding 2 microseconds (=> very few extra messages), not adding one to avoid that the slice is possibly empty
-                    timeWindowEnd = timeWindowEnd.add(TWO_MICROSECONDS);
+                    messageTimeEnd = messageTimeEnd.add(TWO_MICROSECONDS);
+                    log.debug("Extended time window to {}", messageTimeEnd);
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
-                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(timeWindowEnd.getNativeTimestamp()));
+                    query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(messageTimeEnd.getNativeTimestamp()));
+                    log.debug("Converted extended MessagePuller time window to {}", query);
                     List<Entry> extraEntries = BackendOperation.execute(getOperation(query),KCVSLog.this,times,maxReadTime);
                     prepareMessageProcessing(extraEntries);
                 }
-                nextTimepoint = timeWindowEnd;
+                messageTimeStart = messageTimeEnd;
             } catch (Throwable e) {
-                log.warn("Could not read messages for timestamp ["+nextTimepoint+"] (this read will be retried)",e);
+                log.warn("Could not read messages for timestamp ["+messageTimeStart+"] (this read will be retried)",e);
             }
         }
 
         private void initializeTimepoint() {
-            Preconditions.checkState(null == this.nextTimepoint);
+            Preconditions.checkState(null == this.messageTimeStart);
 
             if (!readMarker.hasIdentifier()) {
-                this.nextTimepoint = readMarker.getStartTime(times);
+                this.messageTimeStart = readMarker.getStartTime(times);
+                log.info("Loaded unidentified ReadMarker start time {} into {}", messageTimeStart, this);
             } else {
                 long savedTimestamp = readSetting(readMarker.getIdentifier(),getMarkerColumn(partitionId,bucketId),readMarker.getStartTime(times).getNativeTimestamp());
-                this.nextTimepoint = new StandardTimepoint(savedTimestamp, times);
+                this.messageTimeStart = new StandardTimepoint(savedTimestamp, times);
+                log.info("Loaded indentified ReadMarker start time {} into {}", messageTimeStart, this);
             }
         }
 
         private void prepareMessageProcessing(List<Entry> entries) {
             for (Entry entry : entries) {
                 KCVSMessage message = parseMessage(entry);
+                log.debug("Parsed message {}, about to submit this message to the reader executor", message);
                 for (MessageReader reader : readers) {
                     readExecutor.submit(new ProcessMessageJob(message,reader));
                 }
@@ -705,7 +730,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private void setReadMarker() {
             if (readMarker.hasIdentifier()) {
                 try {
-                    writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), nextTimepoint.getNativeTimestamp());
+                    log.debug("Attempting to persist read marker with identifier {}", readMarker.getIdentifier());
+                    writeSetting(readMarker.getIdentifier(), getMarkerColumn(partitionId, bucketId), messageTimeStart.getNativeTimestamp());
+                    log.debug("Persisted read marker: identifier={} partitionId={} buckedId={} nextTimepoint={}",
+                            readMarker.getIdentifier(), partitionId, bucketId, messageTimeStart);
                 } catch (Throwable e) {
                     log.error("Could not persist read marker [" + readMarker.getIdentifier() + "] on bucket ["+bucketId+"] + partition ["+partitionId+"]",e);
                 }

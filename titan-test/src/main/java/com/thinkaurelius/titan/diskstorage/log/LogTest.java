@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
 import org.junit.*;
+import org.junit.rules.TestName;
 
 import static org.junit.Assert.*;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public abstract class LogTest {
 
-    private Logger log = LoggerFactory.getLogger(LogTest.class);
+    private static final Logger log = LoggerFactory.getLogger(LogTest.class);
 
     public static final String DEFAULT_SENDER_ID = "sender";
 
@@ -37,14 +38,21 @@ public abstract class LogTest {
 
     private LogManager manager;
 
+    // This TestName field must be public.  Exception when I tried private:
+    // "java.lang.Exception: The @Rule 'testName' must be public."
+    @Rule
+    public TestName testName = new TestName();
+
     @Before
     public void setup() throws Exception {
+        log.debug("Starting {}.{}", getClass().getSimpleName(), testName.getMethodName());
         manager = openLogManager(DEFAULT_SENDER_ID);
     }
 
     @After
     public void shutdown() throws Exception {
         close();
+        log.debug("Finished {}.{}", getClass().getSimpleName(), testName.getMethodName());
     }
 
     public void close() throws Exception {
@@ -265,8 +273,11 @@ public abstract class LogTest {
             if (latch.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
                 return;
             }
-            throw new AssertionError("Did not read expected number of messages before timeout " +
-                                     "was reached.");
+            long c = latch.getCount();
+            Preconditions.checkState(0 < c); // TODO remove this, it's not technically correct
+            String msg = "Did not read expected number of messages before timeout was reached (latch count is " + c + ")";
+            log.error(msg);
+            throw new AssertionError(msg);
         }
     }
 
