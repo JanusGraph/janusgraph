@@ -97,8 +97,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-
-        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix);
+        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID),"Conflicting configuration: a unique id and randomization have been set");
@@ -139,7 +138,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(storeTxConfigBuilder.startTime(times.getTime()).build());
+        return manager.beginTransaction(storeTxConfigBuilder.build());
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {

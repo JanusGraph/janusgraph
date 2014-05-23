@@ -36,6 +36,15 @@ public interface TransactionBuilder {
      */
     public TransactionBuilder setVertexCacheSize(int size);
 
+    /**
+     * Configures the initial size of the map of modified vertices held by this
+     * transaction. This is a performance hint, not a hard upper bound. The map
+     * will grow if the transaction ends up modifying more vertices than
+     * expected.
+     *
+     * @param size initial size of the transaction's dirty vertex collection
+     * @return
+     */
     public TransactionBuilder setDirtyVertexSize(int size);
 
     /**

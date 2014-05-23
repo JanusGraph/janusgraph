@@ -127,7 +127,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        final Timestamp timestamp = getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThrift();
 
@@ -161,7 +161,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         SlicePredicate sp = new SlicePredicate();
                         sp.addToColumn_names(buf.as(StaticBuffer.BB_FACTORY));
                         d.setPredicate(sp);
-                        d.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
+                        d.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setDeletion(d);
                         thriftMutation.add(m);
@@ -173,7 +173,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         ColumnOrSuperColumn cosc = new ColumnOrSuperColumn();
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
-                        column.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
+                        column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
                         cosc.setColumn(column);
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setColumn_or_supercolumn(cosc);
@@ -196,7 +196,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             pool.returnObjectUnsafe(keySpaceName, conn);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap

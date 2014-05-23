@@ -68,8 +68,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final StandardTitanGraph graph;
 
-    private final TimestampProvider times;
-
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
      */
@@ -79,7 +77,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
-        this.times = graphConfig.getTimestampProvider();
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.groupName = graphConfig.getMetricsPrefix();
@@ -133,7 +130,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit) {
-        this.userCommitTime = times.getTime(timestampSinceEpoch,unit);
+        this.userCommitTime = getTimestampProvider().getTime(timestampSinceEpoch,unit);
         return this;
     }
 
@@ -173,7 +170,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
+                propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
                 logIdentifier, restrictedPartitions, groupName,
                 defaultSchemaMaker, new BasicConfiguration(ROOT_NS,
@@ -292,11 +289,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Timepoint getStartTime() {
-        throw new IllegalStateException("Start time is set when transaction starts");
-    }
-
-    @Override
     public <V> V getCustomOption(ConfigOption<V> opt) {
         return getCustomOptions().get(opt);
     }
@@ -305,6 +297,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public Configuration getCustomOptions() {
         return new BasicConfiguration(ROOT_NS,
                 storageConfiguration.getConfiguration(), Restriction.NONE);
+    }
+
+    @Override
+    public TimestampProvider getTimestampProvider() {
+        return graph.getConfiguration().getTimestampProvider();
     }
 
     private static class ImmutableTxCfg implements TransactionConfiguration {
@@ -335,7 +332,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
+                boolean isThreadBound, TimestampProvider times, Timepoint commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                 int[] restrictedPartitions,
                 String groupName, DefaultSchemaMaker defaultSchemaMaker,
@@ -357,8 +354,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.restrictedPartitions=restrictedPartitions;
             this.defaultSchemaMaker = defaultSchemaMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
-                    .startTime(startTime)
                     .commitTime(commitTime)
+                    .timestampProvider(times)
                     .groupName(groupName)
                     .customOptions(storageConfiguration).build();
         }
@@ -464,11 +461,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public Timepoint getStartTime() {
-            return handleConfig.getStartTime();
-        }
-
-        @Override
         public String getGroupName() {
             return handleConfig.getGroupName();
         }
@@ -486,6 +478,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public Configuration getCustomOptions() {
             return handleConfig.getCustomOptions();
+        }
+
+        @Override
+        public TimestampProvider getTimestampProvider() {
+            return handleConfig.getTimestampProvider();
         }
     }
 }

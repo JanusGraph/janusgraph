@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -24,6 +25,7 @@ import com.thinkaurelius.titan.util.system.NetworkUtil;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Pair;
+import org.apache.hadoop.hbase.util.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,6 +125,39 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             "The number of regions per regionserver to set when creating Titan's HBase table",
             ConfigOption.Type.MASKABLE, Integer.class);
 
+    /**
+     * If this key is present in either the JVM system properties or the process
+     * environment (checked in the listed order, first hit wins), then its value
+     * must be the full package and class name of an implementation of
+     * {@link HBaseCompat} that has a no-arg public constructor.
+     * <p>
+     * When this <b>is not</b> set, Titan attempts to automatically detect the
+     * HBase runtime version by calling {@link VersionInfo#getVersion()}. Titan
+     * then checks the returned version string against a hard-coded list of
+     * supported version prefixes and instantiates the associated compat layer
+     * if a match is found.
+     * <p>
+     * When this <b>is</b> set, Titan will not call
+     * {@code VersionInfo.getVersion()} or read its hard-coded list of supported
+     * version prefixes. Titan will instead attempt to instantiate the class
+     * specified (via the no-arg constructor which must exist) and then attempt
+     * to cast it to HBaseCompat and use it as such. Titan will assume the
+     * supplied implementation is compatible with the runtime HBase version and
+     * make no attempt to verify that assumption.
+     * <p>
+     * Setting this key incorrectly could cause runtime exceptions at best or
+     * silent data corruption at worst. This setting is intended for users
+     * running exotic HBase implementations that don't support VersionInfo or
+     * implementations which return values from {@code VersionInfo.getVersion()}
+     * that are inconsistent with Apache's versioning convention. It may also be
+     * useful to users who want to run against a new release of HBase that Titan
+     * doesn't yet officially support.
+     *
+     */
+    public static final ConfigOption<String> HBASE_COMPAT_CLASS = new ConfigOption<String>(STORAGE_NS, "hbase-compat-class",
+            "The package and class name of the HBaseCompat implementation",
+            ConfigOption.Type.MASKABLE, String.class);
+
     public static final int PORT_DEFAULT = 9160;
 
     public static final ConfigNamespace HBASE_CONFIGURATION_NAMESPACE =
@@ -157,6 +192,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final org.apache.hadoop.conf.Configuration hconf;
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
+    private final String compatClass;
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -171,6 +207,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.regionCount = config.has(REGION_COUNT) ? config.get(REGION_COUNT) : -1;
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
         this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
+        this.compatClass = config.has(HBASE_COMPAT_CLASS) ? config.get(HBASE_COMPAT_CLASS) : null;
 
         /*
          * Specifying both region count options is permitted but may be
@@ -260,11 +297,15 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
-        final Timestamp timestamp = super.getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         // In case of an addition and deletion with identical timestamps, the
         // deletion tombstone wins.
         // http://hbase.apache.org/book/versions.html#d244e4250
-        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey = convertToCommands(mutations, timestamp.getAdditionTime(times.getUnit()), timestamp.getDeletionTime(times.getUnit()));
+        Map<StaticBuffer, Pair<Put, Delete>> commandsPerKey =
+                convertToCommands(
+                        mutations,
+                        commitTime.getAdditionTime(times.getUnit()),
+                        commitTime.getDeletionTime(times.getUnit()));
 
         List<Row> batch = new ArrayList<Row>(commandsPerKey.size()); // actual batch operation
 
@@ -293,7 +334,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     @Override
@@ -692,7 +733,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
                 adm.disableTable(tableName);
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
                 if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
-                    HBaseCompatLoader.getCompat().setCompression(cdesc, compression);
+                    HBaseCompatLoader.getCompat(compatClass).setCompression(cdesc, compression);
                 adm.addColumn(tableName, cdesc);
 
                 try {
