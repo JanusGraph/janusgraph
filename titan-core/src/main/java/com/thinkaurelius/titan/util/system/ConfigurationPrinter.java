@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
@@ -23,13 +24,12 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * the AsciiDoc documentation.
  */
 public class ConfigurationPrinter {
-
-    private static final String HEADER = "[cols=\"2,3,1,1,1\",options=\"header\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
+    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
     private static final String DELIM = "|";
     private static final String DELIM_PADDING = " ";
-    private static final String FOOTER = "|=====";
-    private static boolean DELIM_AT_START = true;
-    private static boolean DELIM_AT_END = false;
+    private static final String TABLE_FOOTER_LINES = "|=====\n";
+    private static boolean DELIM_AT_LINE_START = true;
+    private static boolean DELIM_AT_LINE_END = false;
 
     private final PrintStream stream;
 
@@ -58,16 +58,75 @@ public class ConfigurationPrinter {
     }
 
     private void write(ConfigNamespace root) {
-        stream.println(HEADER);
         printNamespace(root, "");
-        stream.println(FOOTER);
     }
 
     private void printNamespace(ConfigNamespace n, String prefix) {
 
+        stream.println(getNamespaceSectionHeader(n));
+        stream.println(TABLE_HEADER_LINES);
+        for (ConfigOption<?> o : getSortedChildOptions(n)) {
+            stream.println(getTableLineForOption(o, prefix));
+        }
+        stream.println(TABLE_FOOTER_LINES);
+
+        for (ConfigNamespace cn : getSortedChildNamespaces(n)) {
+            final String newPrefix = prefix + cn.getName() + ".";
+            printNamespace(cn, newPrefix);
+        }
+    }
+
+    private String getNamespaceSectionHeader(ConfigNamespace n) {
+        String fullName = ConfigElement.getPath(n);
+        return "=== " + fullName + " ===\n" + n.getDescription() + "\n";
+    }
+
+    private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {
+        return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
+            @Override
+            public Boolean apply(ConfigElement arg0) {
+                return arg0.isOption();
+            }
+        });
+    }
+
+    private List<ConfigNamespace> getSortedChildNamespaces(ConfigNamespace n) {
+        return getSortedChildren(n, new Function<ConfigElement, Boolean>() {
+            @Override
+            public Boolean apply(ConfigElement arg0) {
+                return arg0.isNamespace();
+            }
+        });
+    }
+
+        private String getTableLineForOption(ConfigOption o, String prefix) {
+
+            String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(
+                    prefix + o.getName(),
+                    removeDelim(o.getDescription()),
+                    o.getDatatype().getSimpleName(),
+                    removeDelim(getStringForDefaultValue(o)),
+                    o.getType());
+
+            if (DELIM_AT_LINE_START) {
+                line = DELIM + DELIM_PADDING + line;
+            }
+
+            if (DELIM_AT_LINE_END) {
+                line = line + DELIM_PADDING + DELIM;
+            }
+
+            return line;
+        }
+
+    @SuppressWarnings("unchecked")
+    private <E> List<E> getSortedChildren(ConfigNamespace n, Function<ConfigElement, Boolean> predicate) {
         List<ConfigElement> sortedElements = new ArrayList<ConfigElement>();
+
         for (ConfigElement e : n.getChildren()) {
-            sortedElements.add(e);
+            if (predicate.apply(e)) {
+                sortedElements.add(e);
+            }
         }
         Collections.sort(sortedElements, new Comparator<ConfigElement>() {
             @Override
@@ -75,32 +134,8 @@ public class ConfigurationPrinter {
                 return o1.getName().compareTo(o2.getName());
             }
         });
-        for (ConfigElement e : sortedElements) {
-            if (e.isNamespace()) {
-                ConfigNamespace next = (ConfigNamespace)e;
-                final String newPrefix = prefix + next.getName() + ".";
-                printNamespace(next, newPrefix);
-            } else if (e.isOption()) {
-                ConfigOption<?> o = (ConfigOption<?>)e;
 
-                String line = Joiner.on(DELIM_PADDING + DELIM + DELIM_PADDING).join(
-                        prefix + o.getName(),
-                        removeDelim(o.getDescription()),
-                        o.getDatatype().getSimpleName(),
-                        removeDelim(getStringForDefaultValue(o)),
-                        o.getType());
-
-                if (DELIM_AT_START) {
-                    line = DELIM + DELIM_PADDING + line;
-                }
-
-                if (DELIM_AT_END) {
-                    line = line + DELIM_PADDING + DELIM;
-                }
-
-                stream.println(line);
-            }
-        }
+        return (List<E>)sortedElements;
     }
 
     private String removeDelim(String s) {

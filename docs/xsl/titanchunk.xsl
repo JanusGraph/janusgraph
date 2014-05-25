@@ -30,6 +30,10 @@
   <xsl:template match="figure[@role = 'tss-centeredfig']" mode="class.value">
     <xsl:value-of select="'tss-centeredfig'"/>
   </xsl:template>
+
+  <xsl:template match="informaltable[@role = 'tss-config-table']" mode="class.value">
+    <xsl:value-of select="'tss-config-table'"/>
+  </xsl:template>
   
   <xsl:template name="chunk-element-content">
     <xsl:param name="prev"/>
