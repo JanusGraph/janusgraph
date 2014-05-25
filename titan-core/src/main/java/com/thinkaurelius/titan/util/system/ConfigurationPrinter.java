@@ -24,7 +24,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * the AsciiDoc documentation.
  */
 public class ConfigurationPrinter {
-    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
+    private static final String TABLE_HEADER_LINES = "[role=\"tss-config-table\",cols=\"2,3,1,1,1\",options=\"header\",width=\"100%\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
     private static final String DELIM = "|";
     private static final String DELIM_PADDING = " ";
     private static final String TABLE_FOOTER_LINES = "|=====\n";
@@ -78,7 +78,7 @@ public class ConfigurationPrinter {
 
     private String getNamespaceSectionHeader(ConfigNamespace n) {
         String fullName = ConfigElement.getPath(n);
-        return "=== " + fullName + " ===\n" + n.getDescription() + "\n";
+        return "==== " + fullName + " ====\n" + n.getDescription() + "\n";
     }
 
     private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {
