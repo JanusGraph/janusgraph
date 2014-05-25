@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.graphdb.database;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.blueprints.Direction;
 
@@ -31,7 +31,7 @@ public class RelationQueryCache {
                 .concurrencyLevel(2).build();
         relationTypes = new EnumMap<RelationCategory, SliceQuery>(RelationCategory.class);
         for (RelationCategory rt : RelationCategory.values()) {
-            relationTypes.put(rt,edgeSerializer.getQuery(rt));
+            relationTypes.put(rt,edgeSerializer.getQuery(rt,false));
         }
     }
 
@@ -39,7 +39,7 @@ public class RelationQueryCache {
         return relationTypes.get(type);
     }
 
-    public SliceQuery getQuery(final InternalType type, Direction dir) {
+    public SliceQuery getQuery(final InternalRelationType type, Direction dir) {
         CacheEntry ce;
         try {
             ce = cache.get(type.getID(),new Callable<CacheEntry>() {
@@ -66,18 +66,18 @@ public class RelationQueryCache {
         private final SliceQuery out;
         private final SliceQuery both;
 
-        public CacheEntry(EdgeSerializer edgeSerializer, InternalType t) {
+        public CacheEntry(EdgeSerializer edgeSerializer, InternalRelationType t) {
             if (t.isPropertyKey()) {
-                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
+                out = edgeSerializer.getQuery(t, Direction.OUT,new EdgeSerializer.TypedInterval[t.getSortKey().length]);
                 in = out;
                 both = out;
             } else {
                 out = edgeSerializer.getQuery(t,Direction.OUT,
-                            new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
+                            new EdgeSerializer.TypedInterval[t.getSortKey().length]);
                 in = edgeSerializer.getQuery(t,Direction.IN,
-                        new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
+                        new EdgeSerializer.TypedInterval[t.getSortKey().length]);
                 both = edgeSerializer.getQuery(t,Direction.BOTH,
-                        new EdgeSerializer.TypedInterval[t.getSortKey().length],null);
+                        new EdgeSerializer.TypedInterval[t.getSortKey().length]);
             }
         }
 

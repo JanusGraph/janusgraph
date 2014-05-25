@@ -4,17 +4,19 @@ import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Precision;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
@@ -80,23 +82,23 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         return new TypeInspector() {
 
             @Override
-            public TitanType getExistingType(long id) {
+            public RelationType getExistingRelationType(long id) {
                 return convert(tx.getExistingType(id));
             }
 
             @Override
-            public boolean containsType(String name) {
+            public boolean containsRelationType(String name) {
                 return tx.containsType(name);
             }
 
             @Override
-            public TitanType getType(String name) {
+            public RelationType getRelationType(String name) {
                 return convert(tx.getType(name));
             }
         };
     }
 
-    private TitanType convert(titan03.com.thinkaurelius.titan.core.TitanType base) {
+    private RelationType convert(titan03.com.thinkaurelius.titan.core.TitanType base) {
         if (base instanceof titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex) {
             return new TitanLabelWrapper((titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex)base);
         } else if (base instanceof titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex) {
@@ -105,11 +107,11 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     }
 
 
-    private abstract class TitanTypeWrapper extends EmptyVertex implements InternalType {
+    private abstract class RelationTypeWrapper extends EmptyVertex implements InternalRelationType {
 
         protected final TitanTypeVertex base;
 
-        private TitanTypeWrapper(TitanTypeVertex base) {
+        private RelationTypeWrapper(TitanTypeVertex base) {
             this.base = base;
         }
 
@@ -139,13 +141,13 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         }
 
         @Override
-        public InternalType getBaseType() {
+        public InternalRelationType getBaseType() {
             return null;
         }
 
         @Override
-        public Iterable<InternalType> getRelationIndexes() {
-            return ImmutableSet.of((InternalType) this);
+        public Iterable<InternalRelationType> getRelationIndexes() {
+            return ImmutableSet.of((InternalRelationType) this);
         }
 
         @Override
@@ -181,7 +183,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
     }
 
-    private class TitanLabelWrapper extends TitanTypeWrapper implements TitanLabel {
+    private class TitanLabelWrapper extends RelationTypeWrapper implements EdgeLabel {
 
         protected final titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanLabelVertex base;
 
@@ -227,7 +229,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         }
     }
 
-    private class TitanKeyWrapper extends TitanTypeWrapper implements TitanKey {
+    private class TitanKeyWrapper extends RelationTypeWrapper implements PropertyKey {
 
         protected final titan03.com.thinkaurelius.titan.graphdb.types.vertices.TitanKeyVertex base;
 
@@ -317,14 +319,19 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 //        definition.setValue(TypeAttributeType.SORT_ORDER, Order.ASC);
 //    }
 
+    private static titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer convert(StaticBuffer buffer) {
+        return new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(buffer.as(StaticBuffer.ARRAY_FACTORY));
+
+    }
+
     @Override
-    public RelationReader getRelationReader() {
+    public RelationReader getRelationReader(final long vertexid) {
         return new RelationReader() {
 
             @Override
-            public RelationCache parseRelation(long vertexid, Entry entry, boolean headerOnly, TypeInspector typeInspector) {
-                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getColumn().as(StaticBuffer.ARRAY_FACTORY));
-                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = new titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer(entry.getValue().as(StaticBuffer.ARRAY_FACTORY));
+            public RelationCache parseRelation(Entry entry, boolean headerOnly, TypeInspector typeInspector) {
+                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer column = convert(entry.getColumn());
+                titan03.com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer value = convert(entry.getValue());
 
                 ImmutableLongObjectMap map = graph.getEdgeSerializer().parseProperties(vertexid, titan03.com.thinkaurelius.titan.diskstorage.keycolumnvalue.StaticBufferEntry.of(column, value), headerOnly, tx);
                 titan03.com.tinkerpop.blueprints.Direction dir = map.get(DIRECTION_ID);
@@ -437,7 +444,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         return new VertexReader() {
             @Override
             public long getVertexId(StaticBuffer key) {
-                return IDHandler.getKeyID(key);
+                return titan03.com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getKeyID(convert(key));
             }
         };
     }

@@ -4,7 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
@@ -65,10 +65,10 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
     @Override
     public TitanVertex addVertex(Object id) {
         if (id instanceof Number && AttributeUtil.isWholeNumber((Number) id)) {
-            return addVertex(((Number) id).longValue());
+            return addVertex(((Number) id).longValue(),null);
         } else {
 //            if (id != null) log.warn("Provided vertex id [{}] is not supported by Titan and hence ignored.", id);
-            return addVertex(null);
+            return addVertex(null,null);
         }
 
     }
@@ -97,7 +97,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Iterable<Vertex> getVertices(String key, Object attribute) {
-        if (!containsType(key)) return IterablesUtil.emptyIterable();
+        if (!containsRelationType(key)) return IterablesUtil.emptyIterable();
         else return (Iterable) getVertices(getPropertyKey(key), attribute);
     }
 
@@ -150,7 +150,7 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
 
     @Override
     public Iterable<Edge> getEdges(String key, Object value) {
-        if (!containsType(key)) return IterablesUtil.emptyIterable();
+        if (!containsRelationType(key)) return IterablesUtil.emptyIterable();
         else return (Iterable) getEdges(getPropertyKey(key), value);
     }
 
@@ -228,9 +228,9 @@ public abstract class TitanBlueprintsTransaction implements TitanTransaction {
         Preconditions.checkArgument(elementClass == Vertex.class || elementClass == Edge.class, "Must provide either Vertex.class or Edge.class as an argument");
 
         Set<String> indexedkeys = new HashSet<String>();
-        for (TitanVertex k : getVertices(BaseKey.TypeCategory, TitanSchemaCategory.KEY)) {
-            assert k instanceof InternalType;
-            if (!Iterables.isEmpty(((InternalType) k).getKeyIndexes())) indexedkeys.add(((TitanKey)k).getName());
+        for (TitanVertex k : getVertices(BaseKey.SchemaCategory, TitanSchemaCategory.PROPERTYKEY)) {
+            assert k instanceof InternalRelationType;
+            if (!Iterables.isEmpty(((InternalRelationType) k).getKeyIndexes())) indexedkeys.add(((PropertyKey)k).getName());
         }
         return indexedkeys;
     }

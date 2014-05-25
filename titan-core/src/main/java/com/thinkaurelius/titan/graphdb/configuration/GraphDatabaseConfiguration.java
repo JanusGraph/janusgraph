@@ -2,8 +2,14 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.util.time.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.core.attribute.AttributeHandler;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
+import com.thinkaurelius.titan.util.stats.NumberUtil;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
@@ -42,11 +48,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
-import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -73,7 +77,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     /**
-     * Configures the {@link DefaultTypeMaker} to be used by this graph. If set to 'none', automatic creation of types
+     * Configures the {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
      * is disabled.
      */
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
@@ -87,9 +91,9 @@ public class GraphDatabaseConfiguration {
 //    public static final String AUTO_TYPE_KEY = "autotype";
 //    public static final String AUTO_TYPE_DEFAULT = "blueprints";
 
-    private static final Map<String, DefaultTypeMaker> preregisteredAutoType = new HashMap<String, DefaultTypeMaker>() {{
-        put("none", DisableDefaultTypeMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
+        put("none", DisableDefaultSchemaMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
     }};
 
     /**
@@ -142,6 +146,16 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
             "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
+
+    /**
+     * A locally unique identifier for a particular TitanGraph instance. This only needs to be configured
+     * when multiple @TitanGraph@ instances are running on the same machine. A unique machine specific appendix
+     * guarantees a globally unique identifier.
+     */
+//    public static final String INSTANCE_RID_SHORT_KEY = "machine-id-appendix";
+    public static final ConfigOption<Short> INSTANCE_RID_SHORT = new ConfigOption<Short>(ROOT_NS,"machine-id-appendix",
+            "A locally unique identifier for a particular TitanGraph instance",
+            ConfigOption.Type.LOCAL, Short.class);
 
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
             "The version of Titan with which this database was created", ConfigOption.Type.FIXED, String.class);
@@ -375,167 +389,6 @@ public class GraphDatabaseConfiguration {
 //            ConfigOption.Type.LOCAL, String.class);
 //    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
 
-
-    /**
-     * A locally unique identifier for a particular TitanGraph instance. This only needs to be configured
-     * when multiple @TitanGraph@ instances are running on the same machine. A unique machine specific appendix
-     * guarantees a globally unique identifier.
-     */
-//    public static final String INSTANCE_RID_SHORT_KEY = "machine-id-appendix";
-    public static final ConfigOption<Short> INSTANCE_RID_SHORT = new ConfigOption<Short>(STORAGE_NS,"machine-id-appendix",
-            "A locally unique identifier for a particular TitanGraph instance",
-            ConfigOption.Type.LOCAL, Short.class);
-
-    /**
-     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
-     */
-    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
-            "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 3);
-//    public static final String LOCK_RETRY_COUNT = "lock-retries";
-//    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
-    /**
-     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
-     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
-     * This value should be a small multiple of the average consistent write time.
-     */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
-//    public static final String LOCK_WAIT_MS = "lock-wait-time";
-//    public static final long LOCK_WAIT_MS_DEFAULT = 100;
-
-    /**
-     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
-     * are considered expired after this time and released.
-     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
-     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
-     */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
-//    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
-//    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
-
-    /**
-     * Whether to attempt to delete expired locks from the storage backend. True
-     * will attempt to delete expired locks in a background daemon thread. False
-     * will never attempt to delete expired locks. This option is only
-     * meaningful for the default lock backend.
-     *
-     * @see #LOCK_BACKEND
-     */
-    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
-            "Whether to delete expired locks from the storage backend",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
-     */
-    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
-            "Locker type to use",
-            ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
-//    public static final String LOCK_BACKEND = "lock-backend";
-//    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
-
-    /**
-     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
-     * Also, the time waited after the application before verifying that the application was successful.
-     */
-    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(STORAGE_NS,"idauthority-wait-time",
-            "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
-//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
-
-    /**
-     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
-     * enabled, it picks a random unique ID marker and attempts to allocate IDs
-     * from a partition using the marker. The ID markers function as
-     * subpartitions with each ID partition. If the attempt fails because that
-     * partition + uniqueid combination is already completely allocated, then
-     * Titan will generate a new random unique ID and try again. This controls
-     * the maximum number of attempts before Titan assumes the entire partition
-     * is allocated and fails the request. It must be set to at least 1 and
-     * should generally be set to 3 or more.
-     * <p/>
-     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
-     * is disabled.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_RETRY_COUNT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-retries",
-            "Number of times the system attempts attempts ID block allocations with random uniqueids before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 5);
-//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
-//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
-
-    /**
-     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
-     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
-     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
-     *
-     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
-     * same value. Otherwise, data corruption will occur.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID_BITS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-bits",
-            "Configures the number of bits of Titan assigned ids that are reserved for a unique id marker",
-            ConfigOption.Type.FIXED, 0 , new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer uniqueIdBitWidth) {
-            return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
-        }
-    });
-//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
-//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
-
-    /**
-     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
-     * must be non-negative and fit within the number of unique id bits configured.
-     * By assigning different unique id markers to individual Titan instances it can be assured
-     * that those instances don't conflict with one another when attempting to allocate new id blocks.
-     *
-     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid",
-            "Unique id marker to be used by this Titan instance when allocating ids",
-            ConfigOption.Type.LOCAL, 0);
-//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
-//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
-
-    /**
-     * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
-     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUE_ID} where the
-     * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
-     * instances.
-     *
-     * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
-     * this option must be configured accordingly.
-     */
-    public static final ConfigOption<Boolean> IDAUTHORITY_RANDOMIZE_UNIQUE_ID = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-uniqueid-random",
-            "Configures this Titan instance to use a random unique id marker each time it attempts to allocate a new id block",
-            ConfigOption.Type.MASKABLE, false);
-//    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
-//    public static final boolean IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT = false;
-
-    /**
-     * Configures this Titan instance to use local consistency guarantees when allocating ids. This is useful
-     * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
-     * In this case, the consistency is only ensured within the local sub-clusters which does not require
-     * acquiring global locks that can be too expensive to acquire.
-     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUE_ID} is configured
-     * that fits within the bit width {@link #IDAUTHORITY_UNIQUE_ID_BITS} and that each local cluster of Titan
-     * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
-     *
-     * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in
-     * data corruption.
-     *
-     */
-    public static final ConfigOption<Boolean> IDAUTHORITY_USE_LOCAL_CONSISTENCY = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-local-consistency",
-            "Configures this Titan instance to use local consistency guarantees when allocating ids",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
-//    public static final String IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY = "idauthority-local-consistency";
-//    public static final boolean IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT = false;
-
-
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
             "Configuration key for the hostname or list of hostname of remote storage backend servers to connect to",
             ConfigOption.Type.LOCAL, new String[]{NetworkUtil.getLoopbackAddress()});
@@ -644,6 +497,61 @@ public class GraphDatabaseConfiguration {
 //    public static final int PAGE_SIZE_DEFAULT = 100;
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
+
+
+    /**
+     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
+     */
+    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
+            "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
+            ConfigOption.Type.MASKABLE, 3);
+//    public static final String LOCK_RETRY_COUNT = "lock-retries";
+//    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+    /**
+     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
+     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
+     * This value should be a small multiple of the average consistent write time.
+     */
+    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
+            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+//    public static final String LOCK_WAIT_MS = "lock-wait-time";
+//    public static final long LOCK_WAIT_MS_DEFAULT = 100;
+
+    /**
+     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
+     * are considered expired after this time and released.
+     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
+     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
+     */
+    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
+            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
+//    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
+//    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
+
+    /**
+     * Whether to attempt to delete expired locks from the storage backend. True
+     * will attempt to delete expired locks in a background daemon thread. False
+     * will never attempt to delete expired locks. This option is only
+     * meaningful for the default lock backend.
+     *
+     * @see #LOCK_BACKEND
+     */
+    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
+            "Whether to delete expired locks from the storage backend",
+            ConfigOption.Type.MASKABLE, false);
+
+    /**
+     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
+     */
+    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
+            "Locker type to use",
+            ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
+//    public static final String LOCK_BACKEND = "lock-backend";
+//    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
+
+
     // ################ STORAGE - META #######################
 
     public static final ConfigNamespace STORE_META_NS = new ConfigNamespace(STORAGE_NS,"meta","Meta data to include in storage backend retrievals",true);
@@ -659,6 +567,33 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<Boolean>(STORE_META_NS,"visibility",
             "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
             ConfigOption.Type.GLOBAL, true);
+
+    // ################ CLUSTERING ###########################
+    // ################################################
+
+    public static final ConfigNamespace CLUSTER_NS = new ConfigNamespace(ROOT_NS,"cluster","Configuration options for multi-machine deployments");
+
+    /**
+     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
+     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
+     * of de-congesting a single id pool in the database.
+     */
+    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
+            "Whether the graph should be partitioned for equal distribution of keys",
+            ConfigOption.Type.FIXED, false);
+//    public static final String IDS_PARTITION_KEY = "partition";
+//    public static final boolean IDS_PARTITION_DEFAULT = false;
+
+    public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
+            "The maximum number of partitions in the graph. Setting up this many actual or virtual partitions. Must be bigger than 1" +
+                    "and a power of 2.",
+            ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer integer) {
+            return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
+        }
+    });
+
 
 
     // ################ IDS ###########################
@@ -678,17 +613,6 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, 10000);
 //    public static final String IDS_BLOCK_SIZE_KEY = "block-size";
 //    public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
-
-    /**
-     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
-     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
-     * of de-congesting a single id pool in the database.
-     */
-    public static final ConfigOption<Boolean> IDS_PARTITION = new ConfigOption<Boolean>(IDS_NS,"partition",
-            "Whether the id space should be partitioned for equal distribution of keys",
-            ConfigOption.Type.FIXED, false);
-//    public static final String IDS_PARTITION_KEY = "partition";
-//    public static final boolean IDS_PARTITION_DEFAULT = false;
 
     /**
      * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
@@ -721,6 +645,110 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.MASKABLE, 0.3);
 //    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
 //    public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
+
+    // ################ IDAUTHROITY #######################
+    // ################################################
+
+    //    public static final String STORAGE_NAMESPACE = "storage";
+    public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(ROOT_NS,"idauthority","Configuration options for the id allocation");
+
+
+    /**
+     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
+     * Also, the time waited after the application before verifying that the application was successful.
+     */
+    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(IDAUTHORITY_NS,"idauthority-wait-time",
+            "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
+//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
+//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
+
+    /**
+     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
+     * enabled, it picks a random unique ID marker and attempts to allocate IDs
+     * from a partition using the marker. The ID markers function as
+     * subpartitions with each ID partition. If the attempt fails because that
+     * partition + uniqueid combination is already completely allocated, then
+     * Titan will generate a new random unique ID and try again. This controls
+     * the maximum number of attempts before Titan assumes the entire partition
+     * is allocated and fails the request. It must be set to at least 1 and
+     * should generally be set to 3 or more.
+     * <p/>
+     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
+     * is disabled.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_RETRY_COUNT = new ConfigOption<Integer>(IDAUTHORITY_NS,"idauthority-uniqueid-retries",
+            "Number of times the system attempts attempts ID block allocations with random uniqueids before giving up and throwing an exception",
+            ConfigOption.Type.MASKABLE, 5);
+//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
+//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
+
+    /**
+     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
+     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
+     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
+     *
+     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
+     * same value. Otherwise, data corruption will occur.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"idauthority-uniqueid-bits",
+            "Configures the number of bits of Titan assigned ids that are reserved for a unique id marker",
+            ConfigOption.Type.FIXED, 5 , new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer uniqueIdBitWidth) {
+            return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
+        }
+    });
+//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
+//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
+
+    /**
+     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
+     * must be non-negative and fit within the number of unique id bits configured.
+     * By assigning different unique id markers to individual Titan instances it can be assured
+     * that those instances don't conflict with one another when attempting to allocate new id blocks.
+     *
+     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID = new ConfigOption<Integer>(IDAUTHORITY_NS,"idauthority-uniqueid",
+            "Unique id marker to be used by this Titan instance when allocating ids",
+            ConfigOption.Type.LOCAL, 0);
+//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
+//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
+
+    /**
+     * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
+     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUEID} where the
+     * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
+     * instances.
+     *
+     * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
+     * this option must be configured accordingly.
+     */
+    public static final ConfigOption<Boolean> IDAUTHORITY_RANDOMIZE_UNIQUEID = new ConfigOption<Boolean>(IDAUTHORITY_NS,"idauthority-uniqueid-random",
+            "Configures this Titan instance to use a random unique id marker each time it attempts to allocate a new id block",
+            ConfigOption.Type.MASKABLE, false);
+//    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
+//    public static final boolean IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT = false;
+
+    /**
+     * Configures this Titan instance to use local consistency guarantees when allocating ids. This is useful
+     * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
+     * In this case, the consistency is only ensured within the local sub-clusters which does not require
+     * acquiring global locks that can be too expensive to acquire.
+     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUEID} is configured
+     * that fits within the bit width {@link #IDAUTHORITY_UNIQUEID_BITS} and that each local cluster of Titan
+     * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
+     *
+     * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in
+     * data corruption.
+     *
+     */
+    public static final ConfigOption<Boolean> IDAUTHORITY_USE_LOCAL_CONSISTENCY = new ConfigOption<Boolean>(IDAUTHORITY_NS,"idauthority-local-consistency",
+            "Configures this Titan instance to use local consistency guarantees when allocating ids",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+//    public static final String IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY = "idauthority-local-consistency";
+//    public static final boolean IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT = false;
 
     // ############## External Index ######################
     // ################################################
@@ -1167,7 +1195,7 @@ public class GraphDatabaseConfiguration {
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
-    private DefaultTypeMaker defaultTypeMaker;
+    private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
@@ -1212,13 +1240,13 @@ public class GraphDatabaseConfiguration {
                 globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
 
                 // If partitioning is unspecified, specify it now
-                if (!localbc.has(IDS_PARTITION)) {
+                if (!localbc.has(CLUSTER_PARTITION)) {
                     StoreFeatures f = storeManager.getFeatures();
                     boolean part = f.isDistributed() && f.isKeyOrdered();
-                    globalWrite.set(IDS_PARTITION, part);
-                    log.info("Enabled ID partitioning", part);
+                    globalWrite.set(CLUSTER_PARTITION, part);
+                    log.info("Enabled partitioning", part);
                 } else {
-                    log.info("Disabled ID partitioning");
+                    log.info("Disabled partitioning");
                 }
 
                 globalWrite.freezeConfiguration();
@@ -1319,9 +1347,9 @@ public class GraphDatabaseConfiguration {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         batchLoading = configuration.get(STORAGE_BATCH);
-        defaultTypeMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
+        defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
@@ -1457,8 +1485,8 @@ public class GraphDatabaseConfiguration {
         return metricsPrefix;
     }
 
-    public DefaultTypeMaker getDefaultTypeMaker() {
-        return defaultTypeMaker;
+    public DefaultSchemaMaker getDefaultSchemaMaker() {
+        return defaultSchemaMaker;
     }
 
     public boolean allowVertexIdSetting() {

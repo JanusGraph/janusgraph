@@ -17,6 +17,13 @@ public enum Order {
      */
     DESC;
 
+    /**
+     * Modulates the result of a {@link Comparable#compareTo(Object)} execution for this specific
+     * order, i.e. it negates the result if the order is {@link #DESC}.
+     *
+     * @param compare
+     * @return
+     */
     public int modulateNaturalOrder(int compare) {
         switch (this) {
             case ASC:
@@ -27,5 +34,10 @@ public enum Order {
                 throw new AssertionError("Unrecognized order: " + this);
         }
     }
+
+    /**
+     * The default order when none is specified
+     */
+    public static final Order DEFAULT = ASC;
 
 }

@@ -11,6 +11,7 @@ import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
@@ -104,6 +106,11 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     @Override
     public StoreFeatures getFeatures() {
         return features;
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

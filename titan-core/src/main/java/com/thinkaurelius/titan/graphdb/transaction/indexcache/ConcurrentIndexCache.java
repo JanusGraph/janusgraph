@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction.indexcache;
 
 import com.google.common.collect.HashMultimap;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ public class ConcurrentIndexCache implements IndexCache {
     }
 
     @Override
-    public synchronized Iterable<TitanProperty> get(final Object value, final TitanKey key) {
+    public synchronized Iterable<TitanProperty> get(final Object value, final PropertyKey key) {
         List<TitanProperty> result = new ArrayList<TitanProperty>(4);
         for (TitanProperty p : map.get(value)) {
             if (p.getPropertyKey().equals(key)) result.add(p);

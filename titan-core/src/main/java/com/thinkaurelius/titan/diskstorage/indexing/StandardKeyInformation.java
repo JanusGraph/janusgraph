@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

@@ -5,10 +5,10 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
@@ -18,7 +18,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 
 /**
  * Used to configure a {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -34,7 +34,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private boolean assignIDsImmediately = false;
 
-    private DefaultTypeMaker defaultTypeMaker;
+    private DefaultSchemaMaker defaultSchemaMaker;
 
     private boolean verifyExternalVertexExistence = true;
 
@@ -58,6 +58,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String logIdentifier;
 
+    private int[] restrictedPartitions = new int[0];
+
     private Timepoint userCommitTime = null;
 
     private String groupName;
@@ -65,8 +67,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
-
-    private final TimestampProvider times;
 
     /**
      * Constructs a new TitanTransaction configuration with default configuration parameters.
@@ -77,8 +77,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
-        this.times = graphConfig.getTimestampProvider();
-        this.defaultTypeMaker = graphConfig.getDefaultTypeMaker();
+        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
@@ -131,7 +130,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public StandardTransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit) {
-        this.userCommitTime = times.getTime(timestampSinceEpoch,unit);
+        this.userCommitTime = getTimestampProvider().getTime(timestampSinceEpoch,unit);
         return this;
     }
 
@@ -153,6 +152,14 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public TransactionBuilder setRestrictedPartitions(int[] partitions) {
+        Preconditions.checkNotNull(partitions);
+        this.restrictedPartitions=partitions;
+        return this;
+    }
+
+
+    @Override
     public TransactionBuilder setCustomOption(String k, Object v) {
         storageConfiguration.set(k, v);
         return this;
@@ -163,10 +170,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
-                propertyPrefetching, singleThreaded, threadBound, times.getTime(), userCommitTime,
+                propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
-                logIdentifier, groupName,
-                defaultTypeMaker, new BasicConfiguration(ROOT_NS,
+                logIdentifier, restrictedPartitions, groupName,
+                defaultSchemaMaker, new BasicConfiguration(ROOT_NS,
                         storageConfiguration.getConfiguration(),
                         Restriction.NONE));
         return graph.newTransaction(immutable);
@@ -208,8 +215,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public final DefaultTypeMaker getAutoEdgeTypeMaker() {
-        return defaultTypeMaker;
+    public final DefaultSchemaMaker getAutoSchemaMaker() {
+        return defaultSchemaMaker;
     }
 
     @Override
@@ -252,6 +259,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
+    public int[] getRestrictedPartitions() {
+        return restrictedPartitions;
+    }
+
+    @Override
+    public boolean hasRestrictedPartitions() {
+        return restrictedPartitions.length>0;
+    }
+
+    @Override
     public String getGroupName() {
         return groupName;
     }
@@ -272,11 +289,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public Timepoint getStartTime() {
-        throw new IllegalStateException("Start time is set when transaction starts");
-    }
-
-    @Override
     public <V> V getCustomOption(ConfigOption<V> opt) {
         return getCustomOptions().get(opt);
     }
@@ -285,6 +297,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public Configuration getCustomOptions() {
         return new BasicConfiguration(ROOT_NS,
                 storageConfiguration.getConfiguration(), Restriction.NONE);
+    }
+
+    @Override
+    public TimestampProvider getTimestampProvider() {
+        return graph.getConfiguration().getTimestampProvider();
     }
 
     private static class ImmutableTxCfg implements TransactionConfiguration {
@@ -303,7 +320,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int vertexCacheSize;
         private final int dirtyVertexSize;
         private final String logIdentifier;
-        private final DefaultTypeMaker defaultTypeMaker;
+        private final int[] restrictedPartitions;
+        private final DefaultSchemaMaker defaultSchemaMaker;
 
         private final TransactionHandleConfig handleConfig;
 
@@ -314,9 +332,10 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
                 boolean hasPropertyPrefetching, boolean isSingleThreaded,
-                boolean isThreadBound,Timepoint startTime, Timepoint commitTime,
+                boolean isThreadBound, TimestampProvider times, Timepoint commitTime,
                 long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
-                String groupName, DefaultTypeMaker defaultTypeMaker,
+                int[] restrictedPartitions,
+                String groupName, DefaultSchemaMaker defaultSchemaMaker,
                 Configuration storageConfiguration) {
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
@@ -332,10 +351,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.vertexCacheSize = vertexCacheSize;
             this.dirtyVertexSize = dirtyVertexSize;
             this.logIdentifier = logIdentifier;
-            this.defaultTypeMaker = defaultTypeMaker;
+            this.restrictedPartitions=restrictedPartitions;
+            this.defaultSchemaMaker = defaultSchemaMaker;
             this.handleConfig = new StandardTransactionHandleConfig.Builder()
-                    .startTime(startTime)
                     .commitTime(commitTime)
+                    .timestampProvider(times)
                     .groupName(groupName)
                     .customOptions(storageConfiguration).build();
         }
@@ -371,8 +391,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
-        public DefaultTypeMaker getAutoEdgeTypeMaker() {
-            return defaultTypeMaker;
+        public DefaultSchemaMaker getAutoSchemaMaker() {
+            return defaultSchemaMaker;
         }
 
         @Override
@@ -416,6 +436,16 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         }
 
         @Override
+        public int[] getRestrictedPartitions() {
+            return restrictedPartitions;
+        }
+
+        @Override
+        public boolean hasRestrictedPartitions() {
+            return restrictedPartitions.length>0;
+        }
+
+        @Override
         public Timepoint getCommitTime() {
             return handleConfig.getCommitTime();
         }
@@ -428,11 +458,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasCommitTime() {
             return handleConfig.hasCommitTime();
-        }
-
-        @Override
-        public Timepoint getStartTime() {
-            return handleConfig.getStartTime();
         }
 
         @Override
@@ -453,6 +478,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public Configuration getCustomOptions() {
             return handleConfig.getCustomOptions();
+        }
+
+        @Override
+        public TimestampProvider getTimestampProvider() {
+            return handleConfig.getTimestampProvider();
         }
     }
 }

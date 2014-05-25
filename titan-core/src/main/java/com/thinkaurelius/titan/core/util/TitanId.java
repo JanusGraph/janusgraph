@@ -5,9 +5,10 @@ import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 
 /**
+ * Utility methods for handling Titan ids and converting them between indexing and storage backend representations.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class TitanId {
 
     /**
@@ -19,8 +20,8 @@ public class TitanId {
      */
     public static final long toVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Vertex id must be positive: %s", id);
-        Preconditions.checkArgument(IDManager.VertexIDType.Vertex.removePadding(Long.MAX_VALUE) >= id, "Vertex id is too large: %s", id);
-        return IDManager.VertexIDType.Vertex.addPadding(id);
+        Preconditions.checkArgument(IDManager.VertexIDType.NormalVertex.removePadding(Long.MAX_VALUE) >= id, "Vertex id is too large: %s", id);
+        return IDManager.VertexIDType.NormalVertex.addPadding(id);
     }
 
     /**
@@ -31,7 +32,7 @@ public class TitanId {
      */
     public static final long fromVertexId(long id) {
         Preconditions.checkArgument(id > 0, "Invalid vertex id provided: %s", id);
-        return IDManager.VertexIDType.Vertex.removePadding(id);
+        return IDManager.VertexIDType.NormalVertex.removePadding(id);
     }
 
     /**

@@ -1,9 +1,13 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
@@ -16,6 +20,7 @@ import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestGraphConfigs;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
@@ -199,7 +204,7 @@ public abstract class TitanGraphBaseTest {
             }
             StoreFeatures f = logStoreManager.getFeatures();
             boolean part = f.isDistributed() && f.isKeyOrdered();
-            configuration.set(GraphDatabaseConfiguration.IDS_PARTITION, part);
+            configuration.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, part);
             assert logStoreManager!=null;
             if (!logManagers.containsKey(logManagerName)) {
                 //Open log manager - only supports KCVSLog
@@ -218,23 +223,23 @@ public abstract class TitanGraphBaseTest {
     ========= Type Definition Helpers ============
      */
 
-    public TitanKey makeVertexIndexedKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.createInternalIndex(name,Vertex.class,key);
+    public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(name,Vertex.class).indexKey(key).buildInternalIndex();
         return key;
     }
 
-    public TitanKey makeVertexIndexedUniqueKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.createInternalIndex(name,Vertex.class,true,key);
+    public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex(name,Vertex.class).indexKey(key).unique().buildInternalIndex();
         return key;
     }
 
-    public void createExternalVertexIndex(TitanKey key, String backingIndex) {
+    public void createExternalVertexIndex(PropertyKey key, String backingIndex) {
         createExternalIndex(key,Vertex.class,backingIndex);
     }
 
-    public void createExternalEdgeIndex(TitanKey key, String backingIndex) {
+    public void createExternalEdgeIndex(PropertyKey key, String backingIndex) {
         createExternalIndex(key,Edge.class,backingIndex);
     }
 
@@ -242,26 +247,26 @@ public abstract class TitanGraphBaseTest {
         String indexName = (Vertex.class.isAssignableFrom(clazz)?"v":"e")+backingIndex;
         TitanGraphIndex index = mgmt.getGraphIndex(indexName);
         if (index==null) {
-            index = mgmt.createExternalIndex(indexName,clazz,backingIndex);
+            index = mgmt.buildIndex(indexName,clazz).buildExternalIndex(backingIndex);
         }
         return index;
     }
 
-    private void createExternalIndex(TitanKey key, Class<? extends Element> clazz, String backingIndex) {
+    private void createExternalIndex(PropertyKey key, Class<? extends Element> clazz, String backingIndex) {
         mgmt.addIndexKey(getExternalIndex(clazz,backingIndex),key);
     }
 
-    public TitanKey makeKey(String name, Class datatype) {
-        TitanKey key = mgmt.makeKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
+    public PropertyKey makeKey(String name, Class datatype) {
+        PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
         return key;
     }
 
-    public TitanLabel makeLabel(String name) {
-        return mgmt.makeLabel(name).make();
+    public EdgeLabel makeLabel(String name) {
+        return mgmt.makeEdgeLabel(name).make();
     }
 
-    public TitanLabel makeKeyedEdgeLabel(String name, TitanKey sort, TitanKey signature) {
-        TitanLabel relType = tx.makeLabel(name).
+    public EdgeLabel makeKeyedEdgeLabel(String name, PropertyKey sort, PropertyKey signature) {
+        EdgeLabel relType = ((StandardEdgeLabelMaker)tx.makeEdgeLabel(name)).
                 sortKey(sort).signature(signature).directed().make();
         return relType;
     }
@@ -284,6 +289,22 @@ public abstract class TitanGraphBaseTest {
         value = value % maxValue;
         if (value < 0) value = value + maxValue;
         return value;
+    }
+
+    public TitanVertex getVertex(String key, Object value) {
+        return getVertex(tx,key,value);
+    }
+
+    public TitanVertex getVertex(PropertyKey key, Object value) {
+        return getVertex(tx,key,value);
+    }
+
+    public static TitanVertex getVertex(TitanTransaction tx, String key, Object value) {
+        return (TitanVertex)Iterables.getOnlyElement(tx.getVertices(key,value),null);
+    }
+
+    public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
+        return Iterables.getOnlyElement(tx.getVertices(key,value),null);
     }
 
 }

@@ -4,6 +4,11 @@ import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
@@ -64,8 +69,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        tx1.getVertex("uid", "v").setProperty("value", 11);
-        tx2.getVertex("uid", "v").setProperty("value", 11);
+        getVertex(tx1, "uid", "v").setProperty("value", 11);
+        getVertex(tx2, "uid", "v").setProperty("value", 11);
         tx1.commit();
         tx2.commit();
 
@@ -103,10 +108,16 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         v1 = tx2.getVertex(id1);
         v2 = tx2.getVertex(id2);
         for (TitanProperty prop : v1.getProperties(name)) {
-            if (features.hasTimestamps())
-                assertEquals(TimeUnit.MICROSECONDS.convert(100,unit)+1,prop.getProperty("_timestamp"));
-            if (features.hasTTL())
-                assertEquals(0l,prop.getProperty("_ttl"));
+            if (features.hasTimestamps()) {
+                Timestamp t = prop.getProperty("_timestamp");
+                assertEquals(100,t.sinceEpoch(unit));
+                assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
+            }
+            if (features.hasTTL()) {
+                Duration d = prop.getProperty("_ttl");
+                assertEquals(0l,d.getLength(unit));
+                assertTrue(d.isZeroLength());
+            }
         }
         v1.removeProperty(name);
         v1.setProperty(address, "xyz");
@@ -183,11 +194,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     public void testBatchLoadingLocking(boolean batchloading) {
-        TitanKey uid = makeKey("uid",Long.class);
-        TitanGraphIndex uidIndex = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
-        mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
+        PropertyKey uid = makeKey("uid",Long.class);
+        TitanGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
-        TitanLabel knows = mgmt.makeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(knows,ConsistencyModifier.LOCK);
         finishSchema();
 
@@ -207,8 +218,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 //        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
-            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices()));
-            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices().iterator().next().getEdges(Direction.OUT,"knows")));
+            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
+            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices().iterator().next().getEdges(Direction.OUT, "knows")));
         }
     }
 
@@ -225,7 +236,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makeKey(prop).dataType(Integer.class).make();
+        graph.makePropertyKey(prop).dataType(Integer.class).make();
 
         final int numV = 100;
         final long[] vids = new long[numV];

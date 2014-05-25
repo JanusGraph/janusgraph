@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.core.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;

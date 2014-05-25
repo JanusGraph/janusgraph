@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.base.Joiner;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.util.time.Duration;
 
 /**
  * Recursively dump the root configuration namespace to either System.out or the

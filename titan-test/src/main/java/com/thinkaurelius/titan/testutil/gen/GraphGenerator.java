@@ -9,9 +9,10 @@ import java.util.Random;
 import java.util.zip.GZIPOutputStream;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -91,11 +92,11 @@ public class GraphGenerator {
         // Add a vertex that has an out edge to every other vertex
         Vertex hiOutDeg = tx.addVertex(Schema.SUPERNODE_UID);
         String label = schema.getSupernodeOutLabel();
-        TitanKey uidKey = tx.getPropertyKey(Schema.UID_PROP);
+        PropertyKey uidKey = tx.getPropertyKey(Schema.UID_PROP);
         hiOutDeg.setProperty(Schema.UID_PROP, Schema.SUPERNODE_UID);
         String pKey = schema.getSortKeyForLabel(label);
         for (long i = INITIAL_VERTEX_UID; i < schema.getVertexCount(); i++) {
-            Vertex in = tx.getVertex(uidKey, i);
+            Vertex in = Iterables.getOnlyElement(tx.getVertices(uidKey, i));
             Edge e = hiOutDeg.addEdge(label, in);
             e.setProperty(pKey, (int) i);
         }

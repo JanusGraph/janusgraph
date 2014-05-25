@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database;
 
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.RelationType;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -13,7 +13,7 @@ public interface RelationFactory {
 
     public void setDirection(Direction dir);
 
-    public void setType(TitanType type);
+    public void setType(RelationType type);
 
     public void setRelationID(long relationID);
 
@@ -21,6 +21,6 @@ public interface RelationFactory {
 
     public void setValue(Object value);
 
-    public void addProperty(TitanType type, Object value);
+    public void addProperty(RelationType type, Object value);
 
 }

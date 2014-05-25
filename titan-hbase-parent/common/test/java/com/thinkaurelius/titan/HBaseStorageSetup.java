@@ -66,7 +66,7 @@ public class HBaseStorageSetup {
     public static ModifiableConfiguration getHBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_BACKEND, "hbase");
-        config.set(GraphDatabaseConfiguration.IDS_PARTITION, true);
+        config.set(GraphDatabaseConfiguration.CLUSTER_PARTITION, true);
         config.set(SimpleBulkPlacementStrategy.CONCURRENT_PARTITIONS, 1);
         return config;
     }

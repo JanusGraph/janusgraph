@@ -7,6 +7,6 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
  */
 public interface VertexFactory {
 
-    public InternalVertex getExistingVertex(long id);
+    public InternalVertex getInternalVertex(long id);
 
 }

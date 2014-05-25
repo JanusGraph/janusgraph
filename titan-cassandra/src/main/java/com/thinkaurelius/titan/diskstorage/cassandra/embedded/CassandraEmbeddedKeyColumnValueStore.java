@@ -4,7 +4,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -28,7 +28,6 @@ import org.apache.cassandra.service.StorageService;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.cassandra.thrift.ThriftValidation;
-import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +36,7 @@ import javax.annotation.Nullable;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 
@@ -87,11 +87,23 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize(), txh);
     }
 
+
+    /**
+     * Create a RangeSliceCommand and run it against the StorageProxy.
+     * <p>
+     * To match the behavior of the standard Cassandra thrift API endpoint, the
+     * {@code nowMillis} argument should be the number of milliseconds since the
+     * UNIX Epoch (e.g. System.currentTimeMillis() or equivalent obtained
+     * through a {@link TimestampProvider}). This is per
+     * {@link org.apache.cassandra.thrift.CassandraServer#get_range_slices(ColumnParent, SlicePredicate, KeyRange, ConsistencyLevel)},
+     * which passes the server's System.currentTimeMillis() to the
+     * {@code RangeSliceCommand} constructor.
+     */
     private List<Row> getKeySlice(Token start,
                                   Token end,
                                   @Nullable SliceQuery sliceQuery,
                                   int pageSize,
-                                  long timestamp) throws StorageException {
+                                  long nowMillis) throws StorageException {
         IPartitioner<?> partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
@@ -115,7 +127,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         try {
             CFMetaData cfm = Schema.instance.getCFMetaData(keyspace, columnFamily);
             IDiskAtomFilter filter = ThriftValidation.asIFilter(predicate, cfm, null);
-            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, timestamp, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
+
+            RangeSliceCommand cmd = new RangeSliceCommand(keyspace, columnFamily, nowMillis, filter, new Bounds<RowPosition>(startPosition, endPosition), pageSize);
 
             rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
@@ -126,12 +139,6 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return storeManager.getLocalKeyPartition();
-    }
-
-
-    @Override
     public String getName() {
         return columnFamily;
     }
@@ -139,10 +146,17 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
 
-        final long ts = getTime(txh);
-
+        /**
+         * This timestamp mimics the timestamp used by
+         * {@link org.apache.cassandra.thrift.CassandraServer#get(ByteBuffer,ColumnPath,ConsistencyLevel)}.
+         *
+         * That method passes the server's System.currentTimeMillis() to
+         * {@link ReadCommand#create(String, ByteBuffer, String, long, IDiskAtomFilter)}.
+         * {@code create(...)} in turn passes that timestamp to the SliceFromReadCommand constructor.
+         */
+        final long nowMillis = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
         SliceQueryFilter sqf = new SliceQueryFilter(query.getSliceStart().asByteBuffer(), query.getSliceEnd().asByteBuffer(), false, query.getLimit() + (query.hasLimit()?1:0));
-        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, ts, sqf);
+        ReadCommand sliceCmd = new SliceFromReadCommand(keyspace, query.getKey().asByteBuffer(), columnFamily, nowMillis, sqf);
 
         List<Row> slice = read(sliceCmd, getTx(txh).getReadConsistencyLevel().getDB());
 
@@ -171,7 +185,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return EntryList.EMPTY_LIST;
 
         return CassandraHelper.makeEntryList(
-                Iterables.filter(cf.getSortedColumns(), new FilterDeletedColumns(ts)),
+                Iterables.filter(cf.getSortedColumns(), new FilterDeletedColumns(nowMillis)),
                 entryGetter,
                 query.getSliceEnd(),
                 query.getLimit());
@@ -271,21 +285,45 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
     }
 
-    private long getTime(StoreTransaction txh) {
-        //TODO: Use actual start time and do so consistently across the different adapters
-        return times.getTime().getNativeTimestamp();
-    }
-
     private class RowIterator implements KeyIterator {
         private final Token maximumToken;
         private final SliceQuery sliceQuery;
         private final StoreTransaction txh;
 
+        /**
+         * This RowIterator will use this timestamp for its entire lifetime,
+         * even if the iterator runs more than one distinct slice query while
+         * paging. <b>This field must be in units of milliseconds since
+         * the UNIX Epoch</b>.
+         * <p>
+         * This timestamp is passed to three methods/constructors:
+         * <ul>
+         *  <li>{@link org.apache.cassandra.db.Column#isMarkedForDelete(long now)}</li>
+         *  <li>{@link org.apache.cassandra.db.ColumnFamily#hasOnlyTombstones(long)}</li>
+         *  <li>
+         *   the {@link RangeSliceCommand} constructor via the last argument
+         *   to {@link CassandraEmbeddedKeyColumnValueStore#getKeySlice(Token, Token, SliceQuery, int, long)}
+         *  </li>
+         * </ul>
+         * The second list entry just calls the first and almost doesn't deserve
+         * a mention at present, but maybe the implementation will change in the future.
+         * <p>
+         * When this value needs to be compared to TTL seconds expressed in seconds,
+         * Cassandra internals do the conversion.
+         * Consider {@link ExpiringColumn#isMarkedForDelete(long)}, which is implemented,
+         * as of 2.0.6, by the following one-liner:
+         * <p>
+         * {@code return (int) (now / 1000) >= getLocalDeletionTime()}
+         * <p>
+         * The {@code now / 1000} does the conversion from milliseconds to seconds
+         * (the units of getLocalDeletionTime()).
+         */
+        private final long nowMillis;
+
         private Iterator<Row> keys;
         private ByteBuffer lastSeenKey = null;
         private Row currentRow;
         private int pageSize;
-        private final long ts;
 
         private boolean isClosed;
 
@@ -298,12 +336,12 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
 
         public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize, StoreTransaction txh) throws StorageException {
-            this.ts = getTime(txh);
-            this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize, ts));
             this.pageSize = pageSize;
             this.sliceQuery = sliceQuery;
             this.maximumToken = maximum;
             this.txh = txh;
+            this.nowMillis = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+            this.keys = getRowsIterator(getKeySlice(minimum, maximum, sliceQuery, pageSize, nowMillis));
         }
 
         @Override
@@ -351,7 +389,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns = CassandraHelper.makeEntryIterator(
-                        Iterables.filter(currentRow.cf.getSortedColumns(), new FilterDeletedColumns(ts)),
+                        Iterables.filter(currentRow.cf.getSortedColumns(), new FilterDeletedColumns(nowMillis)),
                         entryGetter,
                         sliceQuery.getSliceEnd(),
                         sliceQuery.getLimit());
@@ -399,7 +437,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                     return false;
                 }
 
-                List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize, ts);
+                List<Row> newKeys = getKeySlice(StorageService.getPartitioner().getToken(lastSeenKey), maximumToken, sliceQuery, pageSize, nowMillis);
 
                 keys = getRowsIterator(newKeys, lastSeenKey);
                 hasNext = keys.hasNext();
@@ -420,7 +458,8 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             return Iterators.filter(rows.iterator(), new Predicate<Row>() {
                 @Override
                 public boolean apply(@Nullable Row row) {
-                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones(ts));
+                    // The hasOnlyTombstones(x) call below ultimately calls Column.isMarkedForDelete(x)
+                    return !(row == null || row.cf == null || row.cf.isMarkedForDelete() || row.cf.hasOnlyTombstones(nowMillis));
                 }
             });
         }

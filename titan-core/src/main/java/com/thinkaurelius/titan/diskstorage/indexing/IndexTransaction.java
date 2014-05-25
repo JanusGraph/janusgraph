@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
@@ -92,12 +92,6 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     public void rollback() throws StorageException {
         mutations=null;
         indexTx.rollback();
-    }
-
-    @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        indexTx.flush();
     }
 
     private void flushInternal() throws StorageException {

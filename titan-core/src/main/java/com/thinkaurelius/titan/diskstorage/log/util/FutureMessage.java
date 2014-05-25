@@ -46,4 +46,8 @@ public class FutureMessage<M extends Message> extends AbstractFuture<Message> {
         super.setException(exception);
     }
 
+    @Override
+    public String toString() {
+        return "FutureMessage[" + message + "]";
+    }
 }

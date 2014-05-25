@@ -1,12 +1,12 @@
 package com.thinkaurelius.titan.util.datastructures;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Utility class for interacting with {@link Iterable}.
@@ -68,6 +68,36 @@ public class IterablesUtil {
             if (count>=limit) return true;
         }
         return false;
+    }
+
+    public static<E> List<E> mergeSort(Collection<E> a, Collection<E> b, Comparator<E> comp) {
+        Iterator<E> itera = a.iterator(), iterb = b.iterator();
+        E heada = itera.hasNext()?itera.next():null;
+        E headb = iterb.hasNext()?iterb.next():null;
+        List<E> result = new ArrayList(a.size()+b.size());
+        while (heada!=null || headb!=null) {
+            E next;
+            if (heada==null) {
+                next=headb;
+                headb = null;
+            } else if (headb==null) {
+                next=heada;
+                heada=null;
+            } else if (comp.compare(heada,headb)<=0) {
+                next=heada;
+                heada=null;
+            } else {
+                next=headb;
+                headb=null;
+            }
+            assert next!=null;
+            Preconditions.checkArgument(result.isEmpty() || comp.compare(result.get(result.size()-1),next)<=0,
+                    "The input collections are not sorted");
+            result.add(next);
+            if (heada==null) heada=itera.hasNext()?itera.next():null;
+            if (headb==null) headb=iterb.hasNext()?iterb.next():null;
+        }
+        return result;
     }
 
 

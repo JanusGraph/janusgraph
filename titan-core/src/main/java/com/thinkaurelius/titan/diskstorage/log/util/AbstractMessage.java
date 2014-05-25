@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Message;
 

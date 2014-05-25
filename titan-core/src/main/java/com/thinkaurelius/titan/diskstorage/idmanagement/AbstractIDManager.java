@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -29,7 +29,6 @@ public abstract class AbstractIDManager implements IDAuthority {
     protected static final long BASE_ID = 1;
 
     protected final Duration idApplicationWaitMS;
-    protected final int randomUniqueIDLimit;
 
     protected final String uid;
     protected final byte[] uidBytes;
@@ -48,9 +47,6 @@ public abstract class AbstractIDManager implements IDAuthority {
 
         this.idApplicationWaitMS =
                 config.get(GraphDatabaseConfiguration.IDAUTHORITY_WAIT);
-
-        this.randomUniqueIDLimit =
-                config.get(GraphDatabaseConfiguration.IDAUTHORITY_UNIQUEID_RETRY_COUNT);
 
         this.metricsPrefix = GraphDatabaseConfiguration.getSystemMetricsPrefix();
     }
@@ -78,23 +74,23 @@ public abstract class AbstractIDManager implements IDAuthority {
 
     /**
      * Returns the block size of the specified partition as determined by the configured {@link IDBlockSizer}.
-     * @param partition
+     * @param idNamespace
      * @return
      */
-    protected long getBlockSize(final int partition) {
+    protected long getBlockSize(final int idNamespace) {
         Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
         isActive = true;
-        long blockSize = blockSizer.getBlockSize(partition);
+        long blockSize = blockSizer.getBlockSize(idNamespace);
         Preconditions.checkArgument(blockSize>0,"Invalid block size: %s",blockSize);
-        Preconditions.checkArgument(blockSize<getIdUpperBound(partition),
-                "Block size [%s] cannot be larger than upper bound [%s] for partition [%s]",blockSize,getIdUpperBound(partition),partition);
+        Preconditions.checkArgument(blockSize<getIdUpperBound(idNamespace),
+                "Block size [%s] cannot be larger than upper bound [%s] for partition [%s]",blockSize,getIdUpperBound(idNamespace),idNamespace);
         return blockSize;
     }
 
-    protected long getIdUpperBound(final int partition) {
+    protected long getIdUpperBound(final int idNamespace) {
         Preconditions.checkArgument(blockSizer != null, "Blocksizer has not yet been initialized");
         isActive = true;
-        long upperBound = blockSizer.getIdUpperBound(partition);
+        long upperBound = blockSizer.getIdUpperBound(idNamespace);
         Preconditions.checkArgument(upperBound>0,"Invalid upper bound: %s",upperBound);
         return upperBound;
     }

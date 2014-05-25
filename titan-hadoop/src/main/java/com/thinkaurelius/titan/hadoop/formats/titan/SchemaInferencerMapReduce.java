@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.hadoop.formats.titan;
 
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.BlueprintsGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -86,21 +86,21 @@ public class SchemaInferencerMapReduce {
         @Override
         public void reduce(final LongWritable key, final Iterable<HadoopVertex> value, final Reducer<LongWritable, HadoopVertex, NullWritable, HadoopVertex>.Context context) throws IOException, InterruptedException {
             if (key.get() == funnyLong) {
-                final DefaultTypeMaker typeMaker = BlueprintsDefaultTypeMaker.INSTANCE;
+                final DefaultSchemaMaker typeMaker = BlueprintsDefaultSchemaMaker.INSTANCE;
                 for (final HadoopVertex vertex : value) {
                     for (final String property : vertex.getPropertyKeys()) {
                         final String property2 = property.substring(1);
                         if (property.startsWith("t")) {
-                            if (null == graph.getType(property2)) {
+                            if (null == graph.getRelationType(property2)) {
                                 // TODO: Automated type inference
                                 // typeMaker.makeKey(property2, graph.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
-                                typeMaker.makeKey(graph.makeKey(property2));
+                                typeMaker.makePropertyKey(graph.makePropertyKey(property2));
                                 context.getCounter(Counters.PROPERTY_KEYS_CREATED).increment(1l);
                             }
                         } else {
-                            if (null == graph.getType(property2)) {
+                            if (null == graph.getRelationType(property2)) {
                                 //typeMaker.makeLabel(property2, graph.makeType());
-                                typeMaker.makeLabel(graph.makeLabel(property2));
+                                typeMaker.makeEdgeLabel(graph.makeEdgeLabel(property2));
                                 context.getCounter(Counters.EDGE_LABELS_CREATED).increment(1l);
                             }
                         }

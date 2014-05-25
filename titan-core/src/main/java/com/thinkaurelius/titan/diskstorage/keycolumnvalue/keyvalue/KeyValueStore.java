@@ -59,16 +59,6 @@ public interface KeyValueStore {
     public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
 
     /**
-     * Returns the range of keys that are stored locally.
-     *
-     * This is an optional operation and only makes sense in the context of distributed stores.
-     *
-     * @return
-     * @throws StorageException
-     */
-    public List<KeyRange> getLocalKeyPartition() throws StorageException;
-
-    /**
      * Returns the name of this store
      *
      * @return

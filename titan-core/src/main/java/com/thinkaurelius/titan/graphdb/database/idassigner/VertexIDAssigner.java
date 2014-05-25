@@ -1,23 +1,18 @@
 package com.thinkaurelius.titan.graphdb.database.idassigner;
 
 
-import cern.colt.list.ObjectArrayList;
-import cern.colt.map.AbstractIntObjectMap;
-import cern.colt.map.OpenIntObjectHashMap;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.graphdb.relations.ReassignableRelation;
+import com.thinkaurelius.titan.util.stats.NumberUtil;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.*;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -29,12 +24,9 @@ import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -44,11 +36,7 @@ public class VertexIDAssigner {
     private static final Logger log =
             LoggerFactory.getLogger(VertexIDAssigner.class);
 
-    private static final Object EXHAUSTED_ID_POOL = new Object();
-
-    private static final int DEFAULT_PARTITION_BITS = 30;
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
-    private static final int DEFAULT_PARTITION = 0;
 
     public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<String>(IDS_NS,"placement",
             "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simplebulk");
@@ -57,8 +45,10 @@ public class VertexIDAssigner {
             "simplebulk", SimpleBulkPlacementStrategy.class.getName()
     );
 
-    final AbstractIntObjectMap idPools;
-    final ReadWriteLock idPoolsLock;
+
+    final ConcurrentMap<Integer,PartitionIDPool> idPools;
+    final StandardIDPool schemaIdPool;
+    final StandardIDPool partitionVertexIdPool;
 
     private final IDAuthority idAuthority;
     private final IDManager idManager;
@@ -75,11 +65,11 @@ public class VertexIDAssigner {
         Preconditions.checkNotNull(idAuthority);
         this.idAuthority = idAuthority;
 
-        long partitionBits;
-        boolean partitionIDs = config.get(IDS_PARTITION);
+        int partitionBits;
+        boolean partitionIDs = config.get(CLUSTER_PARTITION);
         if (partitionIDs) {
             //Use a placement strategy that balances partitions
-            partitionBits = DEFAULT_PARTITION_BITS;
+            partitionBits = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
             hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
 
             placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY),
@@ -95,7 +85,7 @@ public class VertexIDAssigner {
         }
         log.debug("Partition IDs? [{}], Local Partitions? [{}]",partitionIDs,hasLocalPartitions);
         idManager = new IDManager(partitionBits);
-        Preconditions.checkArgument(idManager.getPartitionBound() <= Integer.MAX_VALUE);
+        Preconditions.checkArgument(idManager.getPartitionBound() <= Integer.MAX_VALUE && idManager.getPartitionBound()>0);
         this.partitionIdBound = (int)idManager.getPartitionBound();
 
         long baseBlockSize = config.get(IDS_BLOCK_SIZE);
@@ -104,55 +94,40 @@ public class VertexIDAssigner {
         renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
 
-        idPools = new OpenIntObjectHashMap();
-        idPoolsLock = new ReentrantReadWriteLock();
+        idPools = new ConcurrentHashMap<Integer, PartitionIDPool>(partitionIdBound);
+        schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
+                idManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
+        if (partitionIDs) {
+            partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
+                    PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage);
+        } else {
+            partitionVertexIdPool = null;
+        }
+
 
         setLocalPartitions(partitionBits);
     }
 
-    private void setLocalPartitionsToGlobal() {
-        placementStrategy.setLocalPartitionBounds(ImmutableList.of(new PartitionIDRange(0, partitionIdBound, partitionIdBound)));
+    private void setLocalPartitionsToGlobal(int partitionBits) {
+        placementStrategy.setLocalPartitionBounds(PartitionIDRange.getGlobalRange(partitionBits));
     }
 
-    private void setLocalPartitions(long partitionBits) {
+    private void setLocalPartitions(int partitionBits) {
         if (!hasLocalPartitions) {
-            setLocalPartitionsToGlobal();
+            setLocalPartitionsToGlobal(partitionBits);
         } else {
-            Preconditions.checkArgument(partitionBits==30); //The adjustment code below assume a 30 bit partition id size
-            List<PartitionIDRange> partitionRanges = Lists.newArrayList();
+            List<PartitionIDRange> partitionRanges = ImmutableList.of();
             try {
-                List<KeyRange> locals = idAuthority.getLocalIDPartition();
-                if (locals==null || locals.isEmpty()) throw new IllegalStateException("Returned partitions were empty");
-                log.debug("Processing {} local ID partition range(s)", locals.size());
-                for (KeyRange local : locals) {
-                    Preconditions.checkArgument(local.getStart().length() >= 4);
-                    Preconditions.checkArgument(local.getEnd().length() >= 4);
-                    int[] partition = new int[2];
-                    for (int i = 0; i < 2; i++) {
-                        partition[i] = local.getAt(i).getInt(0);
-                    }
-                    //Adjust lower end if necessary (needs to be inclusive)
-                    if ((partition[0] & 3) > 0) partition[0] = (partition[0] >>> 2) + 1;
-                    else partition[0] = (partition[0] >>> 2);
-                    //Upper bound needs to be exclusive
-                    partition[1] = (partition[1] >>> 2) - 1;
-                    partition[1] &= 0x3FFFFFFF;
-                    if (partition[0]==partition[1]) {
-                        log.warn("Individual key range is too small for partition block: {}",local);
-                        continue;
-                    } else {
-                        log.info("Setting individual partition bound [{},{}]", partition[0], partition[1]);
-                        partitionRanges.add(new PartitionIDRange(partition[0], partition[1], partitionIdBound));
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Could not read local id partitions: {}", e);
+                partitionRanges = PartitionIDRange.getIDRanges(partitionBits,idAuthority.getLocalIDPartition());
+            } catch (Throwable e) {
+                log.error("Could not process local id partitions",e);
             }
 
             if (!partitionRanges.isEmpty()) {
+                log.info("Setting individual partition bounds: {}", partitionRanges);
                 placementStrategy.setLocalPartitionBounds(partitionRanges);
             } else {
-                setLocalPartitionsToGlobal();
+                setLocalPartitionsToGlobal(partitionBits);
             }
         }
     }
@@ -162,33 +137,85 @@ public class VertexIDAssigner {
     }
 
     public synchronized void close() {
-        idPoolsLock.writeLock().lock();
-        try {
-            ObjectArrayList pools = idPools.values();
-            for (int i = 0; i < pools.size(); i++) {
-                ((PartitionPool) pools.get(i)).close();
-            }
-            idPools.clear();
-        } finally {
-            idPoolsLock.writeLock().unlock();
+        schemaIdPool.close();
+        for (PartitionIDPool pool : idPools.values()) {
+            pool.close();
         }
+        idPools.clear();
     }
 
-    public void assignID(InternalElement vertex) {
+    public void assignID(InternalElement element) {
         for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS; attempt++) {
             long partitionID = -1;
-            if (vertex instanceof InternalRelation) {
-                partitionID = placementStrategy.getPartition(vertex);
-            } else if (vertex instanceof TitanSchemaVertex) {
-                partitionID = DEFAULT_PARTITION;
-            } else {
-                partitionID = placementStrategy.getPartition(vertex);
+            if (element instanceof TitanSchemaVertex) {
+                partitionID = IDManager.SCHEMA_PARTITION;
+            } else if (element instanceof TitanVertex) {
+                if (((TitanVertex)element).getVertexLabel().isPartitioned())
+                    partitionID = IDManager.PARTITIONED_VERTEX_PARTITION;
+                else
+                    partitionID = placementStrategy.getPartition(element);
+            } else if (element instanceof InternalRelation) {
+                InternalRelation relation = (InternalRelation)element;
+                if (attempt < relation.getArity()) { //On the first attempts, try to use partition of incident vertices
+                    InternalVertex incident = relation.getVertex(attempt);
+                    Preconditions.checkArgument(incident.hasId());
+                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.getID())) {
+                        partitionID = getPartitionID(incident);
+                    } else {
+                        continue;
+                    }
+                } else {
+                    partitionID = placementStrategy.getPartition(element);
+                }
             }
             try {
-                assignID(vertex, partitionID);
-                return;
+                assignID(element, partitionID);
             } catch (IDPoolExhaustedException e) {
+                continue; //try again on a different partition
             }
+            assert element.hasId();
+
+            //Check if we should assign a different representative of a potential partitioned vertex
+            if (element instanceof InternalRelation) {
+                InternalRelation relation = (InternalRelation)element;
+                long move2Partition = -1;
+                for (int pos = 0; pos < relation.getArity(); pos++) {
+                    InternalVertex incident = relation.getVertex(pos);
+                    if (idManager.isPartitionedVertex(incident.getID())) {
+                        if (relation.isProperty()) {
+                            //We assign a property to the canonical representative if its cardinality=single, else to
+                            //the one that has the hash of the property id
+                            PropertyKey key = ((TitanProperty)relation).getPropertyKey();
+                            if (key.getCardinality()== Cardinality.SINGLE) {
+                                move2Partition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getID()));
+                            } else {
+                                move2Partition = idManager.getPartitionHashForId(relation.getID());
+                            }
+                        } else {
+                            assert relation.isEdge();
+                            InternalVertex other = relation.getVertex((pos+1)%2);
+                            if (idManager.isPartitionedVertex(other.getID())) {
+                                //It's an edge and one of its end points is not a partitioned vertex => make sure the partitioned
+                                //vertex representative has the same partition as the other vertex
+                                move2Partition = getPartitionID(other);
+                            } else {
+                                //Both are partitioned vertices => use hash of edge id as partition
+                                move2Partition = idManager.getPartitionHashForId(relation.getID());
+                            }
+                        }
+                        break;
+                    }
+                }
+                if (move2Partition>=0) {
+                    for (int pos = 0; pos < relation.getArity(); pos++) {
+                        InternalVertex incident = relation.getVertex(pos);
+                        if (idManager.isPartitionedVertex(incident.getID())) {
+                            ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, move2Partition));
+                        }
+                    }
+                }
+            }
+            return;
         }
         throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
     }
@@ -205,17 +232,17 @@ public class VertexIDAssigner {
                 assignID(relation);
             }
         } else {
-            //First, only assign idAuthorities to (real) vertices and types
+            //2) only assign ids to (user) vertices
             Map<InternalVertex, PartitionAssignment> assignments = new HashMap<InternalVertex, PartitionAssignment>();
             for (InternalRelation relation : addedRelations) {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        if (vertex instanceof TitanType) {
-                            assignID(vertex, DEFAULT_PARTITION);
-                        } else {
+                        assert !(vertex instanceof TitanSchemaVertex); //Those are assigned ids immediately in the transaction
+                        if (vertex.getVertexLabel().isPartitioned())
+                            assignID(vertex); //Assign partitioned vertex ids immediately
+                        else
                             assignments.put(vertex, PartitionAssignment.EMPTY);
-                        }
                     }
                 }
             }
@@ -243,95 +270,95 @@ public class VertexIDAssigner {
             }
             if (assignments != null && !assignments.isEmpty())
                 throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
-            //Second, assign idAuthorities to relations
+            //3) assign ids to relations
             for (InternalRelation relation : addedRelations) {
-                for (int pos = 0; pos < relation.getArity(); pos++) {
-                    try {
-                        Preconditions.checkArgument(relation.getVertex(pos).hasId());
-                        assignID(relation, getPartitionID(relation.getVertex(pos)));
-                        break;
-                    } catch (IDPoolExhaustedException e) {
-                    }
-                }
-                if (!relation.hasId()) assignID(relation);
+                assignID(relation);
             }
         }
     }
 
     private final long getPartitionID(final InternalVertex v) {
         long vid = v.getID();
-        if (IDManager.VertexIDType.Schema.is(vid)) return 0;
+        if (IDManager.VertexIDType.Schema.is(vid)) return IDManager.SCHEMA_PARTITION;
         else return idManager.getPartitionId(vid);
     }
 
-    private void assignID(final InternalElement vertex, final long partitionIDl) {
-        Preconditions.checkNotNull(vertex);
-        Preconditions.checkArgument(!vertex.hasId());
+    private void assignID(final InternalElement element, final long partitionIDl) {
+        Preconditions.checkNotNull(element);
+        Preconditions.checkArgument(!element.hasId());
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl < partitionIdBound, partitionIDl);
         final int partitionID = (int) partitionIDl;
-        long id = -1;
 
-        Object poolObj = null;
-        idPoolsLock.readLock().lock();
-        try {
-            poolObj = idPools.get(partitionID);
-        } finally {
-            idPoolsLock.readLock().unlock();
-        }
-        if (poolObj == null) {
-            idPoolsLock.writeLock().lock();
-            try {
-                if (idPools.containsKey(partitionID)) {
-                    poolObj = idPools.get(partitionID);
-                } else {
-                    poolObj = new PartitionPool(partitionID, idAuthority, idManager, partitionID == DEFAULT_PARTITION, renewTimeoutMS, renewBufferPercentage);
-                    idPools.put(partitionID, poolObj);
-                }
-            } finally {
-                idPoolsLock.writeLock().unlock();
-            }
-        }
-        Preconditions.checkNotNull(poolObj);
-        if (poolObj == EXHAUSTED_ID_POOL) {
-            placementStrategy.exhaustedPartition(partitionID);
-            throw new IDPoolExhaustedException("Exhausted id pool for partition: " + partitionID);
+        long count;
+        IDManager.VertexIDType userVertexIDType = (element instanceof TitanVertex)?getVertexIDType((TitanVertex)element):null;
+        if (element instanceof TitanSchemaVertex) {
+            Preconditions.checkArgument(partitionID==IDManager.SCHEMA_PARTITION);
+            count = schemaIdPool.nextID();
+        } else if (userVertexIDType==IDManager.VertexIDType.PartitionedVertex) {
+            Preconditions.checkArgument(partitionID==IDManager.PARTITIONED_VERTEX_PARTITION);
+            Preconditions.checkArgument(partitionVertexIdPool!=null);
+            count = partitionVertexIdPool.nextID();
         } else {
-            PartitionPool pool = (PartitionPool) poolObj;
+            PartitionIDPool partitionPool = idPools.get(partitionID);
+            if (partitionPool == null) {
+                partitionPool = new PartitionIDPool(partitionID, idAuthority, idManager, renewTimeoutMS, renewBufferPercentage);
+                idPools.putIfAbsent(partitionID,partitionPool);
+                partitionPool = idPools.get(partitionID);
+            }
+            Preconditions.checkNotNull(partitionPool);
+            if (partitionPool.isExhausted()) {
+                placementStrategy.exhaustedPartition(partitionID);
+                throw new IDPoolExhaustedException("Exhausted id pool for partition: " + partitionID);
+            }
+            IDPool idPool;
+            if (element instanceof TitanRelation) {
+                idPool = partitionPool.getPool(PoolType.RELATION);
+            } else {
+                Preconditions.checkArgument(userVertexIDType!=null);
+                idPool = partitionPool.getPool(PoolType.getPoolTypeFor(userVertexIDType));
+            }
             try {
-                if (vertex instanceof InternalRelation) {
-                    id = idManager.getRelationID(pool.relation.nextID(), partitionID);
-                } else if (vertex instanceof TitanKey) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,pool.relationType.nextID());
-                } else if (vertex instanceof TitanLabel) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, pool.relationType.nextID());
-                } else if (vertex instanceof TitanSchemaVertex) {
-                    id = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,pool.genericType.nextID()<<1);
-                } else {
-                    id = idManager.getVertexID(pool.vertex.nextID(), partitionID);
-                }
-                pool.accessed();
+                count = idPool.nextID();
+                partitionPool.accessed();
             } catch (IDPoolExhaustedException e) {
                 log.debug("Pool exhausted for partition id {}", partitionID);
                 placementStrategy.exhaustedPartition(partitionID);
-                //Close and remove pool
-                idPoolsLock.writeLock().lock();
-                try {
-                    idPools.put(partitionID, EXHAUSTED_ID_POOL);
-                    pool.close();
-                } finally {
-                    idPoolsLock.writeLock().unlock();
-                }
+                partitionPool.exhaustedIdPool();
                 throw e;
             }
         }
-        Preconditions.checkArgument(id >= 0);
-        vertex.setID(id);
+
+        long vertexId;
+        if (element instanceof InternalRelation) {
+            vertexId = idManager.getRelationID(count, partitionID);
+        } else if (element instanceof PropertyKey) {
+            vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
+        } else if (element instanceof EdgeLabel) {
+            vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
+        } else if (element instanceof VertexLabel) {
+            vertexId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
+        } else if (element instanceof TitanSchemaVertex) {
+            vertexId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
+        } else {
+            vertexId = idManager.getVertexID(count, partitionID, userVertexIDType);
+        }
+
+        Preconditions.checkArgument(vertexId >= 0);
+        element.setID(vertexId);
+    }
+
+    private static IDManager.VertexIDType getVertexIDType(TitanVertex v) {
+        VertexLabel vlabel = v.getVertexLabel();
+        if (vlabel.isPartitioned()) {
+            return IDManager.VertexIDType.PartitionedVertex;
+        } else if (vlabel.isStatic()) {
+            return IDManager.VertexIDType.UnmodifiableVertex;
+        } else {
+            return IDManager.VertexIDType.NormalVertex;
+        }
     }
 
     private class SimpleVertexIDBlockSizer implements IDBlockSizer {
-
-        private static final int AVG_EDGES_PER_VERTEX = 10;
-        private static final int DEFAULT_NUM_TYPES = 12;
 
         private final long baseBlockSize;
 
@@ -341,15 +368,18 @@ public class VertexIDAssigner {
         }
 
         @Override
-        public long getBlockSize(int fullPartitionID) {
-            switch (PoolType.getPoolType(fullPartitionID)) {
-                case VERTEX:
+        public long getBlockSize(int idNamespace) {
+            switch (PoolType.getPoolType(idNamespace)) {
+                case NORMAL_VERTEX:
                     return baseBlockSize;
+                case UNMODIFIABLE_VERTEX:
+                    return Math.max(10,baseBlockSize/10);
+                case PARTITIONED_VERTEX:
+                    return Math.max(10,baseBlockSize/100);
                 case RELATION:
-                    return baseBlockSize * AVG_EDGES_PER_VERTEX;
-                case RELATIONTYPE:
-                case GENERICTYPE:
-                    return DEFAULT_NUM_TYPES;
+                    return baseBlockSize * 8;
+                case SCHEMA:
+                    return 50;
 
                 default:
                     throw new IllegalArgumentException("Unrecognized pool type");
@@ -357,98 +387,98 @@ public class VertexIDAssigner {
         }
 
         @Override
-        public long getIdUpperBound(int fullPartitionID) {
-            switch (PoolType.getPoolType(fullPartitionID)) {
-                case VERTEX:
-                    return idManager.getVertexCountBound();
-                case RELATION:
-                    return idManager.getRelationCountBound();
-                case RELATIONTYPE:
-                    return idManager.getRelationTypeCountBound();
-                case GENERICTYPE:
-                    return idManager.getGenericTypeCountBound()>>1;
-                default:
-                    throw new IllegalArgumentException("Unrecognized pool type");
-            }
+        public long getIdUpperBound(int idNamespace) {
+            return PoolType.getPoolType(idNamespace).getCountBound(idManager);
         }
     }
 
-    private static class PartitionPool {
+    private enum PoolType {
 
-        final IDPool vertex;
-        final IDPool relation;
-        final IDPool relationType;
-        final IDPool genericType;
+        NORMAL_VERTEX, UNMODIFIABLE_VERTEX, PARTITIONED_VERTEX, RELATION, SCHEMA;
 
-        long lastAccess;
+        public int getIDNamespace() {
+            return ordinal();
+        }
 
-        PartitionPool(int partitionID, IDAuthority idAuthority, IDManager idManager, boolean includeType, Duration renewTimeoutMS, double renewBufferPercentage) {
-            vertex = new StandardIDPool(idAuthority, PoolType.VERTEX.getFullPartitionID(partitionID), idManager.getVertexCountBound(), renewTimeoutMS, renewBufferPercentage);
-            relation = new StandardIDPool(idAuthority, PoolType.RELATION.getFullPartitionID(partitionID), idManager.getRelationCountBound(), renewTimeoutMS, renewBufferPercentage);
-            if (includeType) {
-                relationType = new StandardIDPool(idAuthority, PoolType.RELATIONTYPE.getFullPartitionID(partitionID), idManager.getRelationTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
-                genericType = new StandardIDPool(idAuthority, PoolType.GENERICTYPE.getFullPartitionID(partitionID), idManager.getGenericTypeCountBound(), renewTimeoutMS, renewBufferPercentage);
-            } else {
-                relationType = null;
-                genericType = null;
+        public long getCountBound(IDManager idManager) {
+            switch (this) {
+                case NORMAL_VERTEX:
+                case UNMODIFIABLE_VERTEX:
+                case PARTITIONED_VERTEX:
+                    return idManager.getVertexCountBound();
+                case RELATION: return idManager.getRelationCountBound();
+                case SCHEMA: return idManager.getSchemaCountBound();
+                default: throw new AssertionError("Unrecognized type: " + this);
             }
         }
 
+        public boolean hasOnePerPartition() {
+            switch(this) {
+                case NORMAL_VERTEX:
+                case UNMODIFIABLE_VERTEX:
+                case RELATION:
+                    return true;
+                default: return false;
+            }
+        }
+
+        public static PoolType getPoolTypeFor(IDManager.VertexIDType idType) {
+            if (idType==IDManager.VertexIDType.NormalVertex) return NORMAL_VERTEX;
+            else if (idType== IDManager.VertexIDType.UnmodifiableVertex) return UNMODIFIABLE_VERTEX;
+            else if (idType== IDManager.VertexIDType.PartitionedVertex) return PARTITIONED_VERTEX;
+            else if (IDManager.VertexIDType.Schema.isSubType(idType)) return SCHEMA;
+            else throw new IllegalArgumentException("Invalid id type: " + idType);
+        }
+
+        public static PoolType getPoolType(int idNamespace) {
+            Preconditions.checkArgument(idNamespace>=0 && idNamespace<values().length);
+            return values()[idNamespace];
+        }
+
+    }
+
+    private static class PartitionIDPool extends EnumMap<PoolType,IDPool> {
+
+        private volatile long lastAccess;
+        private volatile boolean exhausted;
+
+        PartitionIDPool(int partitionID, IDAuthority idAuthority, IDManager idManager, Duration renewTimeoutMS, double renewBufferPercentage) {
+            super(PoolType.class);
+            for (PoolType type : PoolType.values()) {
+                if (!type.hasOnePerPartition()) continue;
+                put(type,new StandardIDPool(idAuthority, partitionID, type.getIDNamespace(), type.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage));
+            }
+        }
+
+        public IDPool getPool(PoolType type) {
+            Preconditions.checkArgument(!exhausted && type.hasOnePerPartition());
+            return super.get(type);
+        }
+
         public void close() {
-            vertex.close();
-            relation.close();
-            if (relationType != null) relationType.close();
-            if (genericType != null) genericType.close();
+            for (IDPool pool : values()) pool.close();
+            super.clear();
+        }
+
+        public void exhaustedIdPool() {
+            exhausted = true;
+            close();
+        }
+
+        public boolean isExhausted() {
+            return exhausted;
         }
 
         public void accessed() {
             lastAccess = System.currentTimeMillis();
         }
 
-    }
-
-    private enum PoolType {
-        VERTEX, RELATION, RELATIONTYPE, GENERICTYPE;
-
-        private int getID() {
-            switch (this) {
-                case VERTEX:
-                    return 0;
-                case RELATION:
-                    return 1;
-                case RELATIONTYPE:
-                    return 2;
-                case GENERICTYPE:
-                    return 3;
-                default:
-                    throw new IllegalArgumentException("Unrecognized PoolType: " + this);
-            }
-        }
-
-        public int getFullPartitionID(int partitionID) {
-            Preconditions.checkArgument(partitionID < (1 << 30), partitionID);
-            return (partitionID << 2) | getID();
-        }
-
-        public static int getPartitionID(int fullPartitionID) {
-            return fullPartitionID >>> 2;
-        }
-
-        public static PoolType getPoolType(int fullPartitionID) {
-            switch (fullPartitionID & 3) { // & 11b (last two bits)
-                case 0:
-                    return VERTEX;
-                case 1:
-                    return RELATION;
-                case 2:
-                    return RELATIONTYPE;
-                case 3:
-                    return GENERICTYPE;
-                default:
-                    throw new IllegalArgumentException("Unrecognized partition id: " + fullPartitionID);
-            }
+        public long getLastAccess() {
+            return lastAccess;
         }
 
     }
+
+
 
 }

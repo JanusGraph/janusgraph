@@ -41,4 +41,6 @@ public interface KeyColumnValueStoreManager extends StoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException;
 
 
+
+
 }

@@ -3,10 +3,10 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.StandardDuration;
-import com.thinkaurelius.titan.util.time.Timer;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timer;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.Message;
@@ -69,7 +69,7 @@ public class ManagementLogger implements MessageReader {
                 long numEvictions = VariableLong.readPositive(in);
                 for (int i = 0; i < numEvictions; i++) {
                     long typeId = VariableLong.readPositive(in);
-                    schemaCache.expireTypeRelations(typeId);
+                    schemaCache.expireSchemaRelations(typeId);
                 }
                 Thread ack = new Thread(new SendAckOnTxClose(evictionId,senderId,graph.getOpenTransactions()));
                 ack.setDaemon(true);

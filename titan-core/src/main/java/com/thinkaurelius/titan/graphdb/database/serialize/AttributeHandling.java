@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

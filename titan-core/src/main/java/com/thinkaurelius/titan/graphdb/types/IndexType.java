@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.thinkaurelius.titan.core.TitanGraphIndex;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.query.condition.And;
-
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -16,13 +13,17 @@ public interface IndexType {
 
     public IndexField[] getFieldKeys();
 
-    public IndexField getField(TitanKey key);
+    public IndexField getField(PropertyKey key);
 
-    public boolean indexesKey(TitanKey key);
+    public boolean indexesKey(PropertyKey key);
 
     public boolean isInternalIndex();
 
     public boolean isExternalIndex();
+
+    public boolean hasSchemaTypeConstraint();
+
+    public TitanSchemaType getSchemaTypeConstraint();
 
     public String getBackingIndexName();
 

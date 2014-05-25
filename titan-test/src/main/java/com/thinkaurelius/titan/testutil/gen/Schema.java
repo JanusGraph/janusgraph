@@ -5,6 +5,9 @@ import java.util.Map;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 
@@ -228,22 +231,22 @@ public class Schema {
 
         TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
-            TitanKey key = mgmt.makeKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.createInternalIndex("v-"+getVertexPropertyName(i),Vertex.class,key);
+            PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgePropKeys; i++) {
-            TitanKey key = mgmt.makeKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.createInternalIndex("e-"+getEdgePropertyName(i),Edge.class,key);
+            PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
             String pkName = getSortKeyForLabel(labelName);
-            TitanKey pk = mgmt.getPropertyKey(pkName);
-            mgmt.makeLabel(getEdgeLabelName(i)).sortKey(pk).make();
+            PropertyKey pk = mgmt.getPropertyKey(pkName);
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel(getEdgeLabelName(i))).sortKey(pk).make();
         }
 
-        TitanKey uid = mgmt.makeKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.createInternalIndex("v-uid",Vertex.class,true,uid);
+        PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
         mgmt.commit();
     }
 

@@ -20,10 +20,12 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
+import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import org.apache.cassandra.dht.IPartitioner;
@@ -301,8 +303,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate());
 
-        final Timestamp timestamp = getTimestamp(txh);
-
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
@@ -320,7 +321,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
-                    dels.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
+                    dels.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
 
                     for (StaticBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
@@ -328,7 +329,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
-                    upds.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
+                    upds.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
 
                     for (Entry e : titanMutation.getAdditions())
                         upds.putColumn(e.getColumnAs(StaticBuffer.BB_FACTORY), e.getValueAs(StaticBuffer.BB_FACTORY));
@@ -342,7 +343,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

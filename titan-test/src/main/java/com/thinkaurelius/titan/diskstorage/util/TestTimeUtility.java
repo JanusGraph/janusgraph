@@ -1,12 +1,11 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import org.junit.Test;
 
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
 

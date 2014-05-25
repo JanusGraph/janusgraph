@@ -2,11 +2,8 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDBlockSizer;
@@ -26,7 +23,7 @@ public class MockIDAuthority implements IDAuthority {
 
     private static final int BLOCK_SIZE_LIMIT = Integer.MAX_VALUE;
 
-    private final ConcurrentHashMap<Integer, AtomicLong> ids = new ConcurrentHashMap<Integer, AtomicLong>();
+    private final ConcurrentHashMap<Long, AtomicLong> ids = new ConcurrentHashMap<Long, AtomicLong>();
     private IDBlockSizer blockSizer;
     private final int blockSizeLimit;
     private final int delayAcquisitionMS;
@@ -52,7 +49,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public long[] getIDBlock(int partition, Duration timeout) throws StorageException {
+    public IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
@@ -61,8 +58,10 @@ public class MockIDAuthority implements IDAuthority {
                 throw new TemporaryStorageException(e);
             }
         }
-        Integer p = Integer.valueOf(partition);
-        long size = blockSizer.getBlockSize(partition);
+        Preconditions.checkArgument(partition>=0 && partition<=Integer.MAX_VALUE);
+        Preconditions.checkArgument(idNamespace>=0 && idNamespace<=Integer.MAX_VALUE);
+        Long p = (((long)partition)<<Integer.SIZE) + ((long)idNamespace);
+        long size = blockSizer.getBlockSize(idNamespace);
         AtomicLong id = ids.get(p);
         if (id == null) {
             ids.putIfAbsent(p, new AtomicLong(1));
@@ -73,7 +72,29 @@ public class MockIDAuthority implements IDAuthority {
         if (lowerBound >= blockSizeLimit) {
             throw new IDPoolExhaustedException("Reached partition limit: " + blockSizeLimit);
         }
-        return new long[]{lowerBound, Math.min(lowerBound + size, blockSizeLimit)};
+        return new MockIDBlock(lowerBound,Math.min(size,blockSizeLimit-lowerBound));
+    }
+
+    private static class MockIDBlock implements IDBlock {
+
+        private final long start;
+        private final long numIds;
+
+        private MockIDBlock(long start, long numIds) {
+            this.start = start;
+            this.numIds = numIds;
+        }
+
+        @Override
+        public long numIds() {
+            return numIds;
+        }
+
+        @Override
+        public long getId(long index) {
+            if (index<0 || index>=numIds) throw new ArrayIndexOutOfBoundsException((int)index);
+            return start+index;
+        }
     }
 
     public void setLocalPartition(int[] local) {

@@ -1,16 +1,16 @@
 package com.thinkaurelius.titan.graphdb.types;
 
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.RelationType;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface TypeInspector {
 
-    public TitanType getExistingType(long id);
+    public RelationType getExistingRelationType(long id);
 
-    public boolean containsType(String name);
+    public boolean containsRelationType(String name);
 
-    public TitanType getType(String name);
+    public RelationType getRelationType(String name);
 
 }

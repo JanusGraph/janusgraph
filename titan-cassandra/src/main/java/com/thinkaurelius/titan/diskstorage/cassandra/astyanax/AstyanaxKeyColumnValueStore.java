@@ -8,7 +8,6 @@ import com.netflix.astyanax.connectionpool.OperationResult;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.model.*;
 import com.netflix.astyanax.query.AllRowsQuery;
-import com.netflix.astyanax.query.RowQuery;
 import com.netflix.astyanax.query.RowSliceQuery;
 import com.netflix.astyanax.retry.RetryPolicy;
 import com.netflix.astyanax.serializers.ByteBufferSerializer;
@@ -29,16 +28,12 @@ import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction
 
 public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
 
-    private static final ByteBuffer EMPTY = ByteBuffer.allocate(0);
-
-
     private final Keyspace keyspace;
     private final String columnFamilyName;
     private final ColumnFamily<ByteBuffer, ByteBuffer> columnFamily;
     private final RetryPolicy retryPolicy;
     private final AstyanaxStoreManager storeManager;
     private final AstyanaxGetter entryGetter;
-
 
     AstyanaxKeyColumnValueStore(String columnFamilyName,
                                 Keyspace keyspace,
@@ -256,11 +251,6 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         Iterator<Row<ByteBuffer, ByteBuffer>> i =
                 Iterators.filter(r.iterator(), new KeySkipPredicate(query.getKeyEnd().asByteBuffer()));
         return new RowIterator(i, query);
-    }
-
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
     }
 
     @Override

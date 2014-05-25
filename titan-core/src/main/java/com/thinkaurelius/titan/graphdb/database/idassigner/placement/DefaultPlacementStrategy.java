@@ -27,7 +27,7 @@ public class DefaultPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public int getPartition(InternalElement vertex) {
+    public int getPartition(InternalElement element) {
         return partitionID;
     }
 

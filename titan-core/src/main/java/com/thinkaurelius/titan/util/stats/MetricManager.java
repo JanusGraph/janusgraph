@@ -29,7 +29,7 @@ import com.codahale.metrics.ganglia.GangliaReporter;
 import com.codahale.metrics.graphite.Graphite;
 import com.codahale.metrics.graphite.GraphiteReporter;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 
 /**
  * Singleton that contains and configures Titan's {@code MetricRegistry}.

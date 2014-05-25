@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanConfiguration;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
+import com.thinkaurelius.titan.core.schema.TitanConfiguration;
 
 import java.lang.reflect.Array;
 

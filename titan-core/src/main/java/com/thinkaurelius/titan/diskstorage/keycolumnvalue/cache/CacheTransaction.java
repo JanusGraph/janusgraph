@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -201,12 +201,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private void logMutatedEntries(DataOutput out, List<Entry> entries) {
         VariableLong.writePositive(out,entries.size());
         for (Entry add : entries) BufferUtil.writeEntry(out,add);
-    }
-
-    @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        tx.flush();
     }
 
     @Override

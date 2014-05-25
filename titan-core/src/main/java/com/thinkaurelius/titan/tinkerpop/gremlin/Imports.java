@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.tinkerpop.gremlin;
 
-import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Text;
 import com.tinkerpop.blueprints.Query;

@@ -2,13 +2,15 @@ package com.thinkaurelius.titan.graphdb.types.indextype;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaSource;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.tinkerpop.blueprints.Direction;
 
 import java.util.Map;
 
@@ -53,24 +55,50 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public String getName() {
-        String[] comps = Token.splitSeparatedName(base.getName());
-        assert comps.length==2;
-        return comps[1];
+        return base.getName();
     }
 
-    private Map<TitanKey,IndexField> fieldMap = null;
+    private volatile Map<PropertyKey,IndexField> fieldMap = null;
 
     @Override
-    public IndexField getField(TitanKey key) {
-        Map<TitanKey,IndexField> result = fieldMap;
+    public IndexField getField(PropertyKey key) {
+        Map<PropertyKey,IndexField> result = fieldMap;
         if (result==null) {
-            ImmutableMap.Builder<TitanKey,IndexField> b = ImmutableMap.builder();
+            ImmutableMap.Builder<PropertyKey,IndexField> b = ImmutableMap.builder();
             for (IndexField f : getFieldKeys()) b.put(f.getFieldKey(),f);
             result=b.build();
             fieldMap=result;
         }
         assert result!=null;
         return result.get(key);
+    }
+
+    private volatile boolean cachedTypeConstraint = false;
+    private volatile TitanSchemaType schemaTypeConstraint = null;
+
+    @Override
+    public boolean hasSchemaTypeConstraint() {
+        return getSchemaTypeConstraint()!=null;
+    }
+
+    @Override
+    public TitanSchemaType getSchemaTypeConstraint() {
+        TitanSchemaType constraint;
+        if (!cachedTypeConstraint) {
+            Iterable<SchemaSource.Entry> related = base.getRelated(TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, Direction.OUT);
+            if (Iterables.isEmpty(related)) {
+                constraint=null;
+            } else {
+                constraint =
+                        (TitanSchemaType)Iterables.getOnlyElement(related,null).getSchemaType();
+                assert constraint!=null;
+            }
+            schemaTypeConstraint = constraint;
+            cachedTypeConstraint = true;
+        } else {
+            constraint = schemaTypeConstraint;
+        }
+        return constraint;
     }
 
     @Override
@@ -80,7 +108,7 @@ public abstract class IndexTypeWrapper implements IndexType {
     }
 
     @Override
-    public boolean indexesKey(TitanKey key) {
+    public boolean indexesKey(PropertyKey key) {
         return getField(key)!=null;
     }
 

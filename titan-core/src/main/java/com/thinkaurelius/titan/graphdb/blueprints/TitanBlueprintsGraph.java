@@ -1,6 +1,9 @@
 package com.thinkaurelius.titan.graphdb.blueprints;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
@@ -168,17 +171,37 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public KeyMaker makeKey(String name) {
-        return getAutoStartTx().makeKey(name);
+    public PropertyKeyMaker makePropertyKey(String name) {
+        return getAutoStartTx().makePropertyKey(name);
     }
 
     @Override
-    public LabelMaker makeLabel(String name) {
-        return getAutoStartTx().makeLabel(name);
+    public EdgeLabelMaker makeEdgeLabel(String name) {
+        return getAutoStartTx().makeEdgeLabel(name);
     }
 
     @Override
-    public TitanGraphQuery query() {
+    public boolean containsVertexLabel(String name) {
+        return getAutoStartTx().containsVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabel getVertexLabel(String name) {
+        return getAutoStartTx().getVertexLabel(name);
+    }
+
+    @Override
+    public VertexLabelMaker makeVertexLabel(String name) {
+        return getAutoStartTx().makeVertexLabel(name);
+    }
+
+    @Override
+    public TitanVertex addVertex(VertexLabel vertexLabel) {
+        return getAutoStartTx().addVertex(vertexLabel);
+    }
+
+    @Override
+    public TitanGraphQuery<? extends TitanGraphQuery> query() {
         return getAutoStartTx().query();
     }
 
@@ -198,8 +221,8 @@ public abstract class TitanBlueprintsGraph implements TitanGraph {
     }
 
     @Override
-    public TitanType getType(String name) {
-        return getAutoStartTx().getType(name);
+    public RelationType getRelationType(String name) {
+        return getAutoStartTx().getRelationType(name);
     }
 
     @Override

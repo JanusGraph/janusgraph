@@ -1,10 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.idmanagement;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_RANDOMIZE_UNIQUE_ID;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_UNIQUE_ID;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_UNIQUE_ID_BITS;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_USE_LOCAL_CONSISTENCY;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,19 +8,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.util.*;
-import com.thinkaurelius.titan.util.time.*;
+import com.thinkaurelius.titan.util.stats.NumberUtil;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
@@ -78,11 +72,13 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final int rollbackAttempts = 5;
     private final Duration rollbackWaitTime = new StandardDuration(200L, TimeUnit.MILLISECONDS);
 
+    private final int partitionBitWdith;
+
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
     private final int uniqueId;
     private final boolean randomizeUniqueId;
-    //private final ConsistencyLevel consistencLevel;
+    protected final int randomUniqueIDLimit;
 
     private final Random random = new Random();
 
@@ -94,35 +90,45 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         this.times = config.get(TIMESTAMP_PROVIDER);
         Preconditions.checkNotNull(times);
 
-        uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUE_ID_BITS);
+        partitionBitWdith = config.has(CLUSTER_PARTITION)? NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS)):0;
+        Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
+
+        uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUEID_BITS);
+        Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix);
+        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
-        if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUE_ID)) {
-            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUE_ID),"Conflicting configuration: a unique id and randomization have been set");
+        if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID)) {
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID),"Conflicting configuration: a unique id and randomization have been set");
             Preconditions.checkArgument(!config.has(IDAUTHORITY_USE_LOCAL_CONSISTENCY),
                     "Cannot use local consistency with randomization - this leads to data corruption");
             randomizeUniqueId = true;
+            randomUniqueIDLimit = config.get(IDAUTHORITY_UNIQUEID_RETRY_COUNT);
+            Preconditions.checkArgument(randomUniqueIDLimit<uniqueIDUpperBound,"Cannot have more uid retries [%d] than available values [%d]",
+                    randomUniqueIDLimit,uniqueIDUpperBound);
             uniqueId = -1;
             storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
         } else {
             randomizeUniqueId = false;
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID_RETRY_COUNT),"Setting the unique id retry count without enabling randomization is inconsistent");
+            randomUniqueIDLimit = 0;
             if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
-                Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUE_ID),"Need to configure a unique id in order to use local consistency");
+                Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUEID),"Need to configure a unique id in order to use local consistency");
                 storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig());
             } else {
                 storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
             }
-            uniqueId = config.get(IDAUTHORITY_UNIQUE_ID);
+            uniqueId = config.get(IDAUTHORITY_UNIQUEID);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
             Preconditions.checkArgument(uniqueId<uniqueIDUpperBound,"Unique id is too large for bit width [%s]: %s",uniqueIdBitWidth,uniqueId);
         }
+        Preconditions.checkArgument(randomUniqueIDLimit>=0);
     }
 
     @Override
     public List<KeyRange> getLocalIDPartition() throws StorageException {
-        return idStore.getLocalKeyPartition();
+        return manager.getLocalKeyPartition();
     }
 
     @Override
@@ -132,7 +138,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        return manager.beginTransaction(storeTxConfigBuilder.startTime(times.getTime()).build());
+        return manager.beginTransaction(storeTxConfigBuilder.build());
     }
 
     private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
@@ -164,27 +170,33 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return id;
     }
 
-    protected StaticBuffer getPartitionKey(int partition, int uniqueId) {
-        if (uniqueIdBitWidth==0)
-            return BufferUtil.getIntBuffer(partition);
-        return BufferUtil.getIntBuffer(new int[]{partition, uniqueId});
+    private StaticBuffer getPartitionKey(int partition, int idNamespace, int uniqueId) {
+        assert partition>=0 && partition<(1<<partitionBitWdith);
+        assert idNamespace>=0;
+        assert uniqueId>=0 && uniqueId<(1<<uniqueIdBitWidth);
+
+        int[] components = new int[2];
+        components[0] = (partitionBitWdith>0?(partition<<(Integer.SIZE-partitionBitWdith)):0) + uniqueId;
+        components[1]=idNamespace;
+        return BufferUtil.getIntBuffer(components);
     }
 
     @Override
-    public synchronized long[] getIDBlock(final int partition, Duration timeout) throws StorageException {
-        //partition id can be any integer, even negative, its only a partition identifier
+    public synchronized IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
+        Preconditions.checkArgument(partition>=0 && partition<(1<<partitionBitWdith),"Invalid partition id [%s] for bit width [%s]",partition, partitionBitWdith);
+        Preconditions.checkArgument(idNamespace>=0); //can be any non-negative value
 
         final Timer methodTime = times.getTimer().start();
 
-        final long blockSize = getBlockSize(partition);
-        final long idUpperBound = getIdUpperBound(partition);
+        final long blockSize = getBlockSize(idNamespace);
+        final long idUpperBound = getIdUpperBound(idNamespace);
 
-        final int bitOffset = (VariableLong.unsignedBitLength(idUpperBound)-1)-uniqueIdBitWidth;
-        Preconditions.checkArgument(bitOffset>0,"Unique id bit width [%s] is too wide for partition [%s] id bound [%s]"
-                                                ,uniqueIdBitWidth,partition,idUpperBound);
-        final long idBlockUpperBound = (1l<<bitOffset);
+        final int maxAvailableBits = (VariableLong.unsignedBitLength(idUpperBound)-1)-uniqueIdBitWidth;
+        Preconditions.checkArgument(maxAvailableBits>0,"Unique id bit width [%s] is too wide for id-namespace [%s] id bound [%s]"
+                                                ,uniqueIdBitWidth,idNamespace,idUpperBound);
+        final long idBlockUpperBound = (1l<<maxAvailableBits);
 
-        final List<String> exhausted = new ArrayList<String>(randomUniqueIDLimit);
+        final List<Integer> exhaustedUniquePIDs = new ArrayList<Integer>(randomUniqueIDLimit);
 
         Duration backoffMS = idApplicationWaitMS;
 
@@ -193,22 +205,23 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
         while (methodTime.elapsed().compareTo(timeout) < 0) {
             final int uniquePID = getUniquePartitionID();
-            final StaticBuffer partitionKey = getPartitionKey(partition,uniquePID);
+            final StaticBuffer partitionKey = getPartitionKey(partition,idNamespace,uniquePID);
             try {
                 long nextStart = getCurrentID(partitionKey);
                 if (idBlockUpperBound - blockSize <= nextStart) {
-                    log.info("ID overflow detected on partition {} with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
-                            partition, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
+                    log.info("ID overflow detected on partition({})-namespace({}) with uniqueid {}. Current id {}, block size {}, and upper bound {} for bit width {}.",
+                            partition, idNamespace, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
                     if (randomizeUniqueId) {
-                        exhausted.add(partition + "." + uniquePID);
-                        if (exhausted.size() == randomUniqueIDLimit)
-                            throw new IDPoolExhaustedException(String.format("Exhausted %d partition.uniqueid pair(s): %s", exhausted.size(), Joiner.on(",").join(exhausted)));
+                        exhaustedUniquePIDs.add(uniquePID);
+                        if (exhaustedUniquePIDs.size() == randomUniqueIDLimit)
+                            throw new IDPoolExhaustedException(String.format("Exhausted %d uniqueid(s) on partition(%d)-namespace(%d): %s",
+                                    exhaustedUniquePIDs.size(), partition, idNamespace, Joiner.on(",").join(exhaustedUniquePIDs)));
                         else
                             throw new UniqueIDExhaustedException(
-                                    String.format("Exhausted ID partition %d with uniqueid %d (uniqueid attempt %d/%d)",
-                                            partition, uniquePID, exhausted.size(), randomUniqueIDLimit));
+                                    String.format("Exhausted ID partition(%d)-namespace(%d) with uniqueid %d (uniqueid attempt %d/%d)",
+                                            partition, idNamespace, uniquePID, exhaustedUniquePIDs.size(), randomUniqueIDLimit));
                     }
-                    throw new IDPoolExhaustedException("Exhausted id block for partition ["+partition+"] with upper bound: " + idBlockUpperBound);
+                    throw new IDPoolExhaustedException("Exhausted id block for partition("+partition+")-namespace("+idNamespace+") with upper bound: " + idBlockUpperBound);
                 }
 
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
@@ -262,21 +275,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          */
                         if (target.equals(blocks.get(0).getColumnAs(StaticBuffer.STATIC_FACTORY))) {
 
-                            long result[] = new long[2];
-                            result[0] = nextStart;
-                            result[1] = nextEnd;
+                            ConsistentKeyIDBlock idblock = new ConsistentKeyIDBlock(nextStart,blockSize,uniqueIdBitWidth,uniquePID);
 
                             if (log.isDebugEnabled()) {
-                                log.debug("Acquired ID block [{},{}) on partition {} (my rid is {})",
-                                        new Object[]{nextStart, nextEnd, partition, new String(uid)});
+                                log.debug("Acquired ID block [{}] on partition({})-namespace({}) (my rid is {})",
+                                        new Object[]{idblock, partition, idNamespace, new String(uid)});
                             }
 
                             success = true;
-                            //Pad ids
-                            for (int i=0;i<result.length;i++) {
-                                result[i] = (((long)uniquePID)<<bitOffset) + result[i];
-                            }
-                            return result;
+                            return idblock;
                         } else {
                             // Another claimant beat us to this id block -- try again.
                             log.debug("Failed to acquire ID block [{},{}) (another host claimed it first)", nextStart, nextEnd);
@@ -321,8 +328,8 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
             }
         }
 
-        throw new TemporaryLockingException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition %d",
-                timeout, methodTime.toString(), partition));
+        throw new TemporaryLockingException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition(%d)-namespace(%d)",
+                timeout, methodTime.toString(), partition, idNamespace));
     }
 
 
@@ -364,5 +371,42 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
             super(msg);
         }
 
+    }
+
+    private static class ConsistentKeyIDBlock implements IDBlock {
+
+        private final long startIDCound;
+        private final long numIds;
+        private final int uniqueIDBitWidth;
+        private final int uniqueID;
+
+
+        private ConsistentKeyIDBlock(long startIDCound, long numIDs, int uniqueIDBitWidth, int uniqueID) {
+            this.startIDCound = startIDCound;
+            this.numIds = numIDs;
+            this.uniqueIDBitWidth = uniqueIDBitWidth;
+            this.uniqueID = uniqueID;
+        }
+
+
+        @Override
+        public long numIds() {
+            return numIds;
+        }
+
+        @Override
+        public long getId(long index) {
+            if (index<0 || index>= numIds) throw new ArrayIndexOutOfBoundsException((int)index);
+            assert uniqueID<(1<<uniqueIDBitWidth);
+            long id = ((startIDCound+index)<<uniqueIDBitWidth) + uniqueID;
+            return id;
+        }
+
+        @Override
+        public String toString() {
+            String interval = "["+startIDCound+","+(startIDCound+ numIds)+")";
+            if (uniqueIDBitWidth>0) interval+="/"+uniqueID+":"+uniqueIDBitWidth;
+            return interval;
+        }
     }
 }

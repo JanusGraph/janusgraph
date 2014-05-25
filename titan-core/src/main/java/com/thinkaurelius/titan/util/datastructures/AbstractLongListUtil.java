@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.util.datastructures;
 import cern.colt.list.AbstractIntList;
 import cern.colt.list.AbstractLongList;
 import cern.colt.list.LongArrayList;
+import com.google.common.base.Preconditions;
 
 /**
  * Utility class for merging and sorting lists of longs
@@ -24,19 +25,28 @@ public class AbstractLongListUtil {
         return isSorted(l, false);
     }
 
-    public static boolean isSorted(AbstractIntList l, final boolean unique) {
-        int[] values = l.elements();
-        for (int i = 1; i < l.size(); i++) {
-            if (values[i] < values[i - 1] || (unique && values[i] == values[i - 1])) return false;
+    public static AbstractLongList mergeSort(AbstractLongList a, AbstractLongList b) {
+        int posa=0, posb=0;
+        AbstractLongList result = new LongArrayList(a.size()+b.size());
+        while (posa<a.size() || posb<b.size()) {
+            long next;
+            if (posa>=a.size()) {
+                next=b.get(posb++);
+            } else if (posb>=b.size()) {
+                next=a.get(posa++);
+            } else if (a.get(posa)<=b.get(posb)) {
+                next=a.get(posa++);
+            } else {
+                next=b.get(posb++);
+            }
+            Preconditions.checkArgument(result.isEmpty() || result.get(result.size()-1)<=next,
+                    "The input lists are not sorted");
+            result.add(next);
         }
-        return true;
+        return result;
     }
 
-    public static boolean isSorted(AbstractIntList l) {
-        return isSorted(l, false);
-    }
-
-    public static LongArrayList mergeJoin(AbstractLongList a, AbstractLongList b, final boolean unique) {
+    public static AbstractLongList mergeJoin(AbstractLongList a, AbstractLongList b, final boolean unique) {
         assert isSorted(a) : a.toString();
         assert isSorted(b) : b.toString();
         int counterA = 0, counterB = 0;

@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -108,6 +109,11 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
         } else {
             return new OrderedKeyValueStoreAdapter(store);
         }
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return manager.getLocalKeyPartition();
     }
 
     @Override

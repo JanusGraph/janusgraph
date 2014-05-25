@@ -8,19 +8,53 @@ import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Query;
 
 /**
+ * Titan's extension of Blueprint's {@link Predicate} interface. Contains some custom methods that Titan needs for
+ * query answering and evaluation.
+ * </p>
+ * This class contains a subclass used to convert Blueprint's {@link Predicate} to the corresponding Titan predicates.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public interface TitanPredicate extends Predicate {
 
+    /**
+     * Whether the given condition is a valid condition for this predicate.
+     * </p>
+     * For instance, the {@link Cmp#GREATER_THAN} would require that the condition is comparable and not null.
+     *
+     * @param condition
+     * @return
+     */
     public boolean isValidCondition(Object condition);
 
+    /**
+     * Whether the given class is a valid data type for a value to which this predicate may be applied.
+     * </p>
+     * For instance, the {@link Cmp#GREATER_THAN} can only be applied to {@link Comparable} values.
+     *
+     * @param clazz
+     * @return
+     */
     public boolean isValidValueType(Class<?> clazz);
 
+    /**
+     * Whether this predicate has a predicate that is semantically its negation.
+     * For instance, {@link Cmp#EQUAL} and {@link Cmp#NOT_EQUAL} are negatives of each other.
+     *
+     * @return
+     */
     public boolean hasNegation();
 
+    /**
+     * Returns the negation of this predicate if it exists, otherwise an exception is thrown. Check {@link #hasNegation()} first.
+     * @return
+     */
     public TitanPredicate negate();
 
+    /**
+     * Returns true if this predicate is in query normal form.
+     * @return
+     */
     public boolean isQNF();
 
     @Override
