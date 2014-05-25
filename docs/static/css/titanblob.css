@@ -29,6 +29,10 @@ div.note {
     margin: 25px 40px;
 }
 
+.breadcrumbs {
+    margin-bottom: 5px;
+}
+
 .hl-number {
     color: #A050A0;
 }
