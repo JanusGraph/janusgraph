@@ -199,7 +199,7 @@
                             <goal>java</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.WriteConfiguration</mainClass>
+                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
                             <arguments>
                                 <argument>${asciidoc.output.dir}/listings/configtable.txt</argument>
                             </arguments>

@@ -22,7 +22,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  * footer. Used to generate a table of all configuration keys for inclusion in
  * the AsciiDoc documentation.
  */
-public class WriteConfiguration {
+public class ConfigurationPrinter {
 
     private static final String HEADER = "[cols=\"2,3,1,1,1\",options=\"header\"]\n|=====\n| Name | Description | Datatype | Default Value | Mutability";
     private static final String DELIM = "|";
@@ -47,13 +47,13 @@ public class WriteConfiguration {
             stream = System.out;
         }
 
-        new WriteConfiguration(stream).write(GraphDatabaseConfiguration.ROOT_NS);
+        new ConfigurationPrinter(stream).write(GraphDatabaseConfiguration.ROOT_NS);
 
         stream.flush();
         stream.close();
     }
 
-    private WriteConfiguration(PrintStream stream) {
+    private ConfigurationPrinter(PrintStream stream) {
         this.stream = stream;
     }
 
