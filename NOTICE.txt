@@ -19,7 +19,6 @@ It also includes software from other open source projects including, but not lim
  * TinkerPop Frames [http://frames.tinkerpop.com]
  * Apache Commons [http://commons.apache.org/]
  * Google Guava [http://code.google.com/p/guava-libraries/]
- * Cern Colt [http://acs.lbl.gov/software/colt/]
  * HPPC [http://labs.carrotsearch.com/hppc.html]
  * Junit Benchmark [http://labs.carrotsearch.com/junit-benchmarks.html]
  * Kryo [http://code.google.com/p/kryo/]
@@ -37,8 +36,6 @@ It also includes software from other open source projects including, but not lim
  * Astyanax [https://github.com/Netflix/astyanax]
  * JUnit [http://www.junit.org/]
  * Mockito [http://code.google.com/p/mockito/]
- * Hazelcast [https://github.com/hazelcast/hazelcast]
- * Infinispan [http://www.infinispan.org]
  * Oracle's BerkeleyDB [http://www.oracle.com/technetwork/products/berkeleydb/] (see license below)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
