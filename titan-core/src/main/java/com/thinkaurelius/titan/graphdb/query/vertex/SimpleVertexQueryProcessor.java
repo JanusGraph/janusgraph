@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
-import cern.colt.list.AbstractLongList;
-import cern.colt.list.LongArrayList;
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
@@ -82,7 +81,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
      * @return
      */
     public VertexList vertexIds() {
-        AbstractLongList list = new LongArrayList();
+        LongArrayList list = new LongArrayList();
         long previousId = 0;
         for (Long id : Iterables.transform(this,new Function<Entry, Long>() {
             @Nullable

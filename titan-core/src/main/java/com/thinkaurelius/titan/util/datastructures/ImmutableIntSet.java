@@ -47,11 +47,6 @@ public class ImmutableIntSet implements IntSet {
     }
 
     @Override
-    public boolean remove(int value) {
-        throw new UnsupportedOperationException("This IntSet is immutable");
-    }
-
-    @Override
     public int size() {
         return values.length;
     }

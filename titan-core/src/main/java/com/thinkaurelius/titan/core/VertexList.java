@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.core;
 
-import cern.colt.list.AbstractLongList;
+import com.carrotsearch.hppc.LongArrayList;
 
 /**
  * List of {@link TitanVertex}s.
@@ -63,7 +63,7 @@ public interface VertexList extends Iterable<TitanVertex> {
      * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
      * @see AbstractLongList
      */
-    public AbstractLongList getIDs();
+    public LongArrayList getIDs();
 
     /**
      * Returns the id of the vertex at the specified position

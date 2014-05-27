@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.util.datastructures;
 
-import cern.colt.list.AbstractIntList;
-import cern.colt.list.AbstractLongList;
-import cern.colt.list.LongArrayList;
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 
 /**
@@ -13,21 +11,20 @@ import com.google.common.base.Preconditions;
 public class AbstractLongListUtil {
 
 
-    public static boolean isSorted(AbstractLongList l, final boolean unique) {
-        long[] values = l.elements();
+    public static boolean isSorted(LongArrayList l, final boolean unique) {
         for (int i = 1; i < l.size(); i++) {
-            if (values[i] < values[i - 1] || (unique && values[i] == values[i - 1])) return false;
+            if (l.get(i) < l.get(i - 1) || (unique && l.get(i) == l.get(i - 1))) return false;
         }
         return true;
     }
 
-    public static boolean isSorted(AbstractLongList l) {
+    public static boolean isSorted(LongArrayList l) {
         return isSorted(l, false);
     }
 
-    public static AbstractLongList mergeSort(AbstractLongList a, AbstractLongList b) {
+    public static LongArrayList mergeSort(LongArrayList a, LongArrayList b) {
         int posa=0, posb=0;
-        AbstractLongList result = new LongArrayList(a.size()+b.size());
+        LongArrayList result = new LongArrayList(a.size()+b.size());
         while (posa<a.size() || posb<b.size()) {
             long next;
             if (posa>=a.size()) {
@@ -46,19 +43,17 @@ public class AbstractLongListUtil {
         return result;
     }
 
-    public static AbstractLongList mergeJoin(AbstractLongList a, AbstractLongList b, final boolean unique) {
+    public static LongArrayList mergeJoin(LongArrayList a, LongArrayList b, final boolean unique) {
         assert isSorted(a) : a.toString();
         assert isSorted(b) : b.toString();
         int counterA = 0, counterB = 0;
         int sizeA = a.size();
         int sizeB = b.size();
-        long[] valuesA = a.elements();
-        long[] valuesB = b.elements();
         LongArrayList merge = new LongArrayList(Math.min(sizeA, sizeB));
         int resultSize = 0;
         while (counterA < sizeA && counterB < sizeB) {
-            if (valuesA[counterA] == valuesB[counterB]) {
-                long value = valuesA[counterA];
+            if (a.get(counterA) == b.get(counterB)) {
+                long value = a.get(counterA);
                 if (!unique) {
                     merge.add(value);
                     resultSize++;
@@ -70,10 +65,10 @@ public class AbstractLongListUtil {
                 }
                 counterA++;
                 counterB++;
-            } else if (valuesA[counterA] < valuesB[counterB]) {
+            } else if (a.get(counterA) < b.get(counterB)) {
                 counterA++;
             } else {
-                assert valuesA[counterA] > valuesB[counterB];
+                assert a.get(counterA) > b.get(counterB);
                 counterB++;
             }
         }

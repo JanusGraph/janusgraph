@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.util.stats;
 
-import cern.colt.list.IntArrayList;
-import cern.colt.map.AbstractIntDoubleMap;
-import cern.colt.map.OpenIntDoubleHashMap;
+
+import com.carrotsearch.hppc.IntCollection;
+import com.carrotsearch.hppc.IntDoubleMap;
+import com.carrotsearch.hppc.IntDoubleOpenHashMap;
 
 /**
  * Count relative integer frequencies
@@ -11,11 +12,11 @@ import cern.colt.map.OpenIntDoubleHashMap;
  */
 public class IntegerDoubleFrequency {
 
-    private final AbstractIntDoubleMap counts;
+    private final IntDoubleMap counts;
     private double total;
 
     public IntegerDoubleFrequency() {
-        counts = new OpenIntDoubleHashMap();
+        counts = new IntDoubleOpenHashMap();
         total = 0;
     }
 
@@ -24,7 +25,7 @@ public class IntegerDoubleFrequency {
         total += amount;
     }
 
-    public IntArrayList getValues() {
+    public IntCollection getValues() {
         return counts.keys();
     }
 

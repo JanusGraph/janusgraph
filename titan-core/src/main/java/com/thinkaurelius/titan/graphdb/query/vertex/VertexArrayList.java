@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
-import cern.colt.list.AbstractLongList;
-import cern.colt.list.LongArrayList;
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -58,7 +57,7 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     @Override
-    public AbstractLongList getIDs() {
+    public LongArrayList getIDs() {
         return toLongList(vertices);
     }
 
@@ -104,7 +103,7 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     public VertexLongList toVertexLongList() {
-        AbstractLongList list = toLongList(vertices);
+        LongArrayList list = toLongList(vertices);
         return new VertexLongList(tx,list,sorted);
     }
 
@@ -119,8 +118,8 @@ public class VertexArrayList implements VertexListInternal {
      * @param vertices
      * @return
      */
-    private static final AbstractLongList toLongList(List<TitanVertex> vertices) {
-        AbstractLongList result = new LongArrayList(vertices.size());
+    private static final LongArrayList toLongList(List<TitanVertex> vertices) {
+        LongArrayList result = new LongArrayList(vertices.size());
         for (TitanVertex n : vertices) {
             result.add(n.getID());
         }
