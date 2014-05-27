@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -87,6 +88,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
-        }
+        } else throw InvalidElementException.removedException(this);
     }
 }

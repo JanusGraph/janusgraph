@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.RelationType;
@@ -127,7 +128,7 @@ public class CacheEdge extends AbstractEdge {
     public void remove() {
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
-        }
+        } else throw InvalidElementException.removedException(this);
     }
 
 }

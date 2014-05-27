@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.core.InvalidElementException;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
@@ -87,6 +88,6 @@ public class StandardProperty extends AbstractProperty implements StandardRelati
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
-        }
+        } else throw InvalidElementException.removedException(this);
     }
 }

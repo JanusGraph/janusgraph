@@ -33,4 +33,8 @@ public class InvalidElementException extends TitanException {
         return super.toString() + " [" + element.toString() + "]";
     }
 
+    public static IllegalStateException removedException(TitanElement element) {
+        return new IllegalStateException("Element has been removed");
+    }
+
 }

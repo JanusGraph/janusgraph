@@ -16,6 +16,7 @@ import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import com.tinkerpop.blueprints.util.ElementHelper;
 import com.tinkerpop.blueprints.util.StringFactory;
 
 import java.util.*;
@@ -79,7 +80,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
-        if (it().isRemoved()) return;
+        if (it().isRemoved()) throw InvalidElementException.removedException(this);
         Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();
