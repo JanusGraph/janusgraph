@@ -37,7 +37,7 @@ public class GuavaVertexCache implements VertexCache {
                         //Should only get evicted based on size constraint or replaced through add
                         assert (notification.getCause() == RemovalCause.SIZE || notification.getCause() == RemovalCause.REPLACED) : "Cause: " + notification.getCause();
                         InternalVertex v = notification.getValue();
-                        if (v.hasAddedRelations()) {
+                        if (v.isModified()) {
                             volatileVertices.putIfAbsent(notification.getKey(), v);
                         }
                     }

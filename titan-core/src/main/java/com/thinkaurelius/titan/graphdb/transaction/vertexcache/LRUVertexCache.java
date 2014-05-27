@@ -27,7 +27,7 @@ public class LRUVertexCache implements VertexCache {
                         if (vertexId == null || vertex == null)
                             return;
 
-                        if (vertex.hasAddedRelations()) {
+                        if (vertex.isModified()) {
                             volatileVertices.putIfAbsent(vertexId, vertex);
                         }
                     }
