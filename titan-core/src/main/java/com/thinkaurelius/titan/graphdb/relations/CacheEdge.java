@@ -128,7 +128,7 @@ public class CacheEdge extends AbstractEdge {
     public void remove() {
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
-        } else throw InvalidElementException.removedException(this);
+        }// else throw InvalidElementException.removedException(this);
     }
 
 }

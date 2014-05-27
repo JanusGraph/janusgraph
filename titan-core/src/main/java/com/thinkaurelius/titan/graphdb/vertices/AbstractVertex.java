@@ -38,9 +38,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
             return this;
 
         InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(getID());
-        if (next == null)
-            throw new InvalidElementException("Vertex has been removed", this);
-
+        if (next == null) throw InvalidElementException.removedException(this);
         else return next;
     }
 
@@ -80,7 +78,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public synchronized void remove() {
-        if (it().isRemoved()) throw InvalidElementException.removedException(this);
+        if (isRemoved()) throw InvalidElementException.removedException(this);
         Iterator<TitanRelation> iter = it().query().noPartitionRestriction().relations().iterator();
         while (iter.hasNext()) {
             iter.next();

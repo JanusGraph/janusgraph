@@ -88,6 +88,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
-        } else throw InvalidElementException.removedException(this);
+        } //else throw InvalidElementException.removedException(this);
     }
 }
