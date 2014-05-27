@@ -37,4 +37,19 @@ public class ElasticSearchBerkeleyDBTest extends TitanIndexTest {
     public boolean supportsLuceneStyleQueries() {
         return true;
     }
+
+    @Override
+    public void testDeleteVertexThenDeleteProperty() {
+
+    }
+
+    @Override
+    public void testDeleteVertexThenModifyProperty() {
+
+    }
+
+    @Override
+    public void testDeleteVertexThenAddProperty() {
+
+    }
 }

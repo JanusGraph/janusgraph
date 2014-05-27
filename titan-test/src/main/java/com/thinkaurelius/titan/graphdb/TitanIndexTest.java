@@ -409,4 +409,69 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     }
 
+    /**
+     * Create a vertex with an indexed property and commit. Open two new
+     * transactions; delete vertex in one and delete just the property in the
+     * other, then commit in the same order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenDeleteProperty() {
+        testNestedWrites("x", null);
+    }
+
+    /**
+     * Create a vertex and commit. Open two new transactions; delete vertex in
+     * one and add an indexed property in the other, then commit in the same
+     * order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenAddProperty() {
+        testNestedWrites(null, "y");
+    }
+
+    /**
+     * Create a vertex with an indexed property and commit. Open two new
+     * transactions; delete vertex in one and modify the property in the other,
+     * then commit in the same order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenModifyProperty() {
+        testNestedWrites("x", "y");
+    }
+
+    private void testNestedWrites(String initialValue, String updatedValue) {
+        final String propName = "foo";
+
+        // Write schema and one vertex
+        PropertyKey prop = makeKey(propName, String.class);
+        createExternalVertexIndex(prop, INDEX);
+        finishSchema();
+        TitanVertex v = graph.addVertex(null);
+        if (null != initialValue)
+            ElementHelper.setProperties(v, propName, initialValue);
+        graph.commit();
+
+        Object id = v.getId();
+
+        // Open two transactions and modify the same vertex
+        TitanTransaction vertexDeleter = graph.newTransaction();
+        TitanTransaction propDeleter = graph.newTransaction();
+
+        vertexDeleter.removeVertex(vertexDeleter.getVertex(id));
+        if (null == updatedValue)
+            propDeleter.getVertex(propDeleter.getVertex(id)).removeProperty(propName);
+        else
+            propDeleter.getVertex(propDeleter.getVertex(id)).setProperty(propName, updatedValue);
+
+        vertexDeleter.commit();
+        propDeleter.commit();
+
+        // The vertex must not exist after deletion
+        graph.rollback();
+        assertEquals(null,  graph.getVertex(id));
+        assertEquals(false, graph.query().has(propName).vertices().iterator().hasNext());
+        if (null != updatedValue)
+            assertEquals(false, graph.query().has(propName, updatedValue).vertices().iterator().hasNext());
+        graph.rollback();
+    }
 }
