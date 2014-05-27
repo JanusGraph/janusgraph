@@ -26,19 +26,4 @@ public interface TransactionHandle {
      */
     public void rollback() throws StorageException;
 
-    /**
-     * No-op transaction. This transaction's methods return without doing
-     * anything.
-     */
-    public static final TransactionHandle NO_TRANSACTION = new TransactionHandle() {
-        @Override
-        public void commit() throws StorageException {
-        }
-
-        @Override
-        public void rollback() throws StorageException {
-        }
-
-    };
-
 }

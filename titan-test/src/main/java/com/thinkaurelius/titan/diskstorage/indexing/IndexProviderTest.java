@@ -8,8 +8,11 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -89,7 +92,8 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After

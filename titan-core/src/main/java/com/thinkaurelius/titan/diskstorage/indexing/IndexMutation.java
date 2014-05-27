@@ -1,8 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Mutation;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -46,4 +48,23 @@ public class IndexMutation extends Mutation<IndexEntry,IndexEntry> {
     public boolean isDeleted() {
         return isDeleted;
     }
+
+    public static final Function<IndexEntry,String> ENTRY2FIELD_FCT = new Function<IndexEntry, String>() {
+        @Nullable
+        @Override
+        public String apply(@Nullable IndexEntry indexEntry) {
+            return indexEntry.field;
+        }
+    };
+
+    @Override
+    public void consolidate() {
+        super.consolidate(ENTRY2FIELD_FCT,ENTRY2FIELD_FCT);
+    }
+
+    @Override
+    public boolean isConsolidated() {
+        return super.isConsolidated(ENTRY2FIELD_FCT,ENTRY2FIELD_FCT);
+    }
+
 }

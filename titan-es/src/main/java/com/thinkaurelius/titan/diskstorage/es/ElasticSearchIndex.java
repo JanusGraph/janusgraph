@@ -8,13 +8,11 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
+import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -328,6 +326,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
+                    assert mutation.isConsolidated();
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
@@ -338,29 +337,14 @@ public class ElasticSearchIndex implements IndexProvider {
                             brb.add(new DeleteRequest(indexName, storename, docid));
                             bulkrequests++;
                         } else {
-                            Set<String> deletions = Sets.newHashSet(Iterables.transform(mutation.getDeletions(),new Function<IndexEntry, String>() {
-                                @Nullable
-                                @Override
-                                public String apply(@Nullable IndexEntry indexEntry) {
-                                    return indexEntry.field;
-                                }
-                            }));
-                            if (mutation.hasAdditions()) {
-                                for (IndexEntry ie : mutation.getAdditions()) {
-                                    deletions.remove(ie.field);
-                                }
+                            StringBuilder script = new StringBuilder();
+                            for (String key : Iterables.transform(mutation.getDeletions(),IndexMutation.ENTRY2FIELD_FCT)) {
+                                script.append("ctx._source.remove(\"" + key + "\"); ");
+                                log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
-                            if (!deletions.isEmpty()) {
-                                StringBuilder script = new StringBuilder();
-                                for (String key : deletions) {
-                                    script.append("ctx._source.remove(\"" + key + "\"); ");
-                                }
-                                log.trace("Deleting individual fields [{}] for document {}", deletions, docid);
-                                brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
-                            }
+                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
                         }
                     }
-
                     if (mutation.hasAdditions()) {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
@@ -559,8 +543,8 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public TransactionHandle beginTransaction() throws StorageException {
-        return TransactionHandle.NO_TRANSACTION;
+    public TransactionHandleConfigurable beginTransaction(TransactionHandleConfig config) throws StorageException {
+        return new DefaultTransaction(config);
     }
 
     @Override

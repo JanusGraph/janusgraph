@@ -446,7 +446,7 @@ public class Backend implements LockerProvider {
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<String, IndexTransaction>(indexes.size());
         for (Map.Entry<String, IndexProvider> entry : indexes.entrySet()) {
-            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), maxWriteTime));
+            indexTx.put(entry.getKey(), new IndexTransaction(entry.getValue(), indexKeyRetriever.get(entry.getKey()), configuration, maxWriteTime));
         }
 
         return new BackendTransaction(cacheTx, configuration, storeFeatures,

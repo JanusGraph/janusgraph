@@ -9,6 +9,11 @@ package com.thinkaurelius.titan.diskstorage;
  */
 public interface TransactionHandleConfigurable extends TransactionHandle {
 
+    /**
+     * Get the configuration for this transaction
+     *
+     * @return
+     */
     public TransactionHandleConfig getConfiguration();
 
 }

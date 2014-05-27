@@ -16,7 +16,7 @@ import java.util.Set;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class Mutation<E,K> {
+public abstract class Mutation<E,K> {
 
     private List<E> additions;
 
@@ -143,5 +143,26 @@ public class Mutation<E,K> {
             }
         }
     }
+
+    public abstract void consolidate();
+
+    /**
+     * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
+     * This should only be used in assertions and tests due to the performance penalty.
+     *
+     * @param convertAdds
+     * @param convertDels
+     * @param <V>
+     * @return
+     */
+    public<V> boolean isConsolidated(Function<E,V> convertAdds, Function<K,V> convertDels) {
+        int delBefore = getDeletions().size();
+        consolidate(convertAdds,convertDels);
+        return getDeletions().size()==delBefore;
+    }
+
+    public abstract boolean isConsolidated();
+
+
 
 }

@@ -17,13 +17,5 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
  */
 public interface StoreTransaction extends TransactionHandleConfigurable {
 
-    /**
-     * Get the configuration for this transaction
-     *
-     * @return
-     */
-    @Override
-    public TransactionHandleConfig getConfiguration();
-
 
 }
