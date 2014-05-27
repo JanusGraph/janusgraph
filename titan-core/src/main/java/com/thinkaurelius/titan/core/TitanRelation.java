@@ -7,14 +7,14 @@ import com.tinkerpop.blueprints.Direction;
  * TitanRelation is the most abstract form of a relation between a vertex and some other entity, where
  * relation is understood in its mathematical sense. It generalizes the notion of an edge and a property.
  * <br />
- * A TitanRelation extends {@link TitanVertex} which means it is an entity in its own right. This means, a TitanRelation
+ * A TitanRelation extends {@link TitanElement} which means it is an entity in its own right. This means, a TitanRelation
  * can have properties and unidirectional edges connecting it to other vertices.
  * <br />
  * A TitanRelation is an abstract concept. A TitanRelation is either a {@link TitanProperty} or a {@link TitanEdge}.
  * A TitanRelation has a type which is either a label or key depending on the implementation.
  * <br />
  * A TitanRelation is either directed, or unidirected. Properties are always directed (connecting a vertex
- * with an attribute). A unidirected edge is a special type of directed edge where the connection is only established from the
+ * with a value). A unidirected edge is a special type of directed edge where the connection is only established from the
  * perspective of the outgoing vertex. In that sense, a unidirected edge is akin to a link.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
@@ -25,12 +25,12 @@ public interface TitanRelation extends TitanElement {
 
     /**
      * Establishes a unidirectional edge between this relation and the given vertex for the specified label.
-     * The label must be defined {@link com.thinkaurelius.titan.core.TitanLabel#isUnidirected()}.
+     * The label must be defined {@link EdgeLabel#isUnidirected()}.
      *
      * @param label
      * @param vertex
      */
-    public void setProperty(TitanLabel label, TitanVertex vertex);
+    public void setProperty(EdgeLabel label, TitanVertex vertex);
 
     /**
      * Returns the vertex associated to this relation by a unidirected edge of the given label or NULL if such does not exist.
@@ -38,17 +38,17 @@ public interface TitanRelation extends TitanElement {
      * @param label
      * @return
      */
-    public TitanVertex getProperty(TitanLabel label);
+    public TitanVertex getProperty(EdgeLabel label);
 
     /**
      * Returns the type of this relation.
      * <p/>
-     * The type is either a label ({@link TitanLabel} if this relation is an edge or a key ({@link TitanKey}) if this
+     * The type is either a label ({@link EdgeLabel} if this relation is an edge or a key ({@link PropertyKey}) if this
      * relation is a property.
      *
      * @return Type of this relation
      */
-    public TitanType getType();
+    public RelationType getType();
 
     /**
      * Returns the direction of this relation from the perspective of the specified vertex.

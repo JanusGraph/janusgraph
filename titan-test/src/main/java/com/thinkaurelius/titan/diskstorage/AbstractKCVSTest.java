@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 
 /**

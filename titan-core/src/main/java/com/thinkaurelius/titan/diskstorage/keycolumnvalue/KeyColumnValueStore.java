@@ -159,19 +159,6 @@ public interface KeyColumnValueStore {
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException;
     // like current getKeys if column-slice is such that it queries for vertex state property
 
-
-    /**
-     * Returns {@code KeyRange}s locally hosted on this machine. The start of
-     * each {@code KeyRange} is inclusive. The end is exclusive. The start and
-     * end must each be at least 4 bytes in length.
-     *
-     * @return A list of local key ranges
-     * @throws UnsupportedOperationException
-     *             if the underlying store does not support this operation.
-     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
-     */
-    public List<KeyRange> getLocalKeyPartition() throws StorageException;
-
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.
      *

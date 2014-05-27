@@ -104,11 +104,6 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return storeManager.getLocalKeyPartition();
-    }
-
-    @Override
     public String getName() {
         return storeName;
     }

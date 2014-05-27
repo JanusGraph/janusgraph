@@ -152,7 +152,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * {@link StorageService#getLocalPrimaryRanges(String)} returns a raw
      * (unparameterized) type.
      */
-    List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
         @SuppressWarnings("rawtypes")
         Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());

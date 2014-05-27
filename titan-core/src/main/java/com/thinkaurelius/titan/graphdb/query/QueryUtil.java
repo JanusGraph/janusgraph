@@ -6,13 +6,18 @@ import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Contain;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
+/**
+ * Utility methods used in query optimization and processing.
+ *
+ * @author Matthias Broecheler (me@matthiasb.com)
+ */
 public class QueryUtil {
 
     public static int adjustLimitForTxModifications(StandardTitanTx tx, int uncoveredAndConditions, int limit) {
@@ -30,12 +35,12 @@ public class QueryUtil {
         return limit;
     }
 
-    public static InternalType getType(StandardTitanTx tx, String typeName) {
-        TitanType t = tx.getType(typeName);
-        if (t == null && !tx.getConfiguration().getAutoEdgeTypeMaker().ignoreUndefinedQueryTypes()) {
+    public static InternalRelationType getType(StandardTitanTx tx, String typeName) {
+        RelationType t = tx.getRelationType(typeName);
+        if (t == null && !tx.getConfiguration().getAutoSchemaMaker().ignoreUndefinedQueryTypes()) {
             throw new IllegalArgumentException("Undefined type used in query: " + typeName);
         }
-        return (InternalType) t;
+        return (InternalRelationType) t;
     }
 
     /**
@@ -124,7 +129,7 @@ public class QueryUtil {
     public static <E extends TitanElement> And<E> constraints2QNF(StandardTitanTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<E>(constraints.size() + 4);
         for (PredicateCondition<String, E> atom : constraints) {
-            TitanType type = getType(tx, atom.getKey());
+            RelationType type = getType(tx, atom.getKey());
 
             if (type == null) {
                 if (atom.getPredicate() == Cmp.EQUAL && atom.getValue() == null)
@@ -138,11 +143,11 @@ public class QueryUtil {
 
 
             if (type.isPropertyKey()) {
-                TitanKey key = (TitanKey) type;
+                PropertyKey key = (PropertyKey) type;
                 assert predicate.isValidCondition(value);
                 Preconditions.checkArgument(key.getDataType()==Object.class || predicate.isValidValueType(key.getDataType()), "Data type of key is not compatible with condition");
             } else { //its a label
-                Preconditions.checkArgument(((TitanLabel) type).isUnidirected());
+                Preconditions.checkArgument(((EdgeLabel) type).isUnidirected());
                 Preconditions.checkArgument(predicate.isValidValueType(TitanVertex.class), "Data type of key is not compatible with condition");
             }
 
@@ -170,15 +175,15 @@ public class QueryUtil {
         return conditions;
     }
 
-    private static <E extends TitanElement> void addConstraint(TitanType type, TitanPredicate predicate,
+    private static <E extends TitanElement> void addConstraint(RelationType type, TitanPredicate predicate,
                                                                Object value, MultiCondition<E> conditions, StandardTitanTx tx) {
         if (type.isPropertyKey()) {
             if (value != null)
-                value = tx.verifyAttribute((TitanKey) type, value);
+                value = tx.verifyAttribute((PropertyKey) type, value);
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof TitanVertex);
         }
-        PredicateCondition<TitanType, E> pc = new PredicateCondition<TitanType, E>(type, predicate, value);
+        PredicateCondition<RelationType, E> pc = new PredicateCondition<RelationType, E>(type, predicate, value);
         if (!conditions.contains(pc)) conditions.add(pc);
     }
 

@@ -232,37 +232,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        CTConnection conn = null;
-        IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
-
-        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
-            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
-
-        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
-
-        try {
-            conn = pool.borrowObject(keyspace);
-            List<TokenRange> ranges  = conn.getClient().describe_ring(keyspace);
-            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
-
-            for (TokenRange range : ranges) {
-                if (!NetworkUtil.hasLocalAddress(range.endpoints))
-                    continue;
-
-                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
-            }
-
-            return keyRanges;
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            pool.returnObjectUnsafe(keyspace, conn);
-        }
-    }
-
-
-    @Override
     public String getName() {
         return columnFamily;
     }

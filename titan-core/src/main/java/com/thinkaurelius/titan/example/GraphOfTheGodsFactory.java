@@ -2,7 +2,10 @@ package com.thinkaurelius.titan.example;
 
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -37,26 +40,24 @@ public class GraphOfTheGodsFactory {
 
     public static void load(final TitanGraph graph) {
         TitanManagement mgmt = graph.getManagementSystem();
-        TitanGraphIndex vindex = mgmt.createExternalIndex("vertices",Vertex.class,INDEX_NAME);
-        TitanGraphIndex eindex = mgmt.createExternalIndex("edges",Edge.class,INDEX_NAME);
-        final TitanKey name = mgmt.makeKey("name").dataType(String.class).make();
-        mgmt.createInternalIndex("name",Vertex.class,true,name);
-        final TitanKey age = mgmt.makeKey("age").dataType(Integer.class).make();
-        mgmt.addIndexKey(vindex,age);
-        mgmt.makeKey("type").dataType(String.class).make();
+        final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
+        final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
+        mgmt.makePropertyKey("type").dataType(String.class).make();
+        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildExternalIndex(INDEX_NAME);
 
-        final TitanKey time = mgmt.makeKey("time").dataType(Integer.class).make();
-        final TitanKey reason = mgmt.makeKey("reason").dataType(String.class).make();
-        mgmt.addIndexKey(eindex,reason);
-        final TitanKey place = mgmt.makeKey("place").dataType(Geoshape.class).make();
-        mgmt.addIndexKey(eindex,place);
+        final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
+        final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
+        TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
+                .indexKey(reason).indexKey(place).buildExternalIndex(INDEX_NAME);
 
-        mgmt.makeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
-        mgmt.makeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
-        mgmt.makeLabel("battled").sortKey(time).make();
-        mgmt.makeLabel("lives").signature(reason).make();
-        mgmt.makeLabel("pet").make();
-        mgmt.makeLabel("brother").make();
+        mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("battled")).sortKey(time).make();
+        mgmt.makeEdgeLabel("lives").signature(reason).make();
+        mgmt.makeEdgeLabel("pet").make();
+        mgmt.makeEdgeLabel("brother").make();
 
         graph.commit();
 

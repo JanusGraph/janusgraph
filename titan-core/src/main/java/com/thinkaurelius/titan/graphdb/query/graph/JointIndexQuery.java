@@ -15,9 +15,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
+ * by the query processor of the enclosing transaction.
+ * </p>
+ * This query itself can contain multiple sub-queries which are individually executed by the {@link com.thinkaurelius.titan.graphdb.database.IndexSerializer}
+ * and the result sets merged.
+ * </p>
+ * Those sub-queries are either targeting an external indexing backend or the internal index store which is a distinction this
+ * query keeps track of through the sub-class {@link Subquery}, since their definition and execution differs starkly.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery> {
 
     private final List<Subquery> queries;
@@ -26,7 +34,6 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         Preconditions.checkArgument(queries!=null);
         this.queries = queries;
     }
-
 
     public JointIndexQuery() {
         this.queries = new ArrayList<Subquery>(4);
@@ -51,8 +58,6 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
     public boolean isEmpty() {
         return queries.isEmpty();
     }
-
-
 
     @Override
     public int hashCode() {

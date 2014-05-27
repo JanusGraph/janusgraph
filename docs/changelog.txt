@@ -1,0 +1,439 @@
+[[changelog]]
+[appendix]
+Release Notes
+-------------
+
+Version 0.4.4 (April 22, 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.4</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Bugfixes:*
+
+Added 0.4.2 to compatible-version string (and 0.4.3)
+
+Version 0.4.3 (April 21, 2014)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.3</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Can configure the serializer for strings to get better string compression. ONLY ENABLE THIS IF STRINGS ARE NOT USED AS SORT KEYS since the sort order is no longer guaranteed.
+* Added Blueprints RDF dependency
+
+*Bugfixes:*
+
+* Use all hosts for establishing thrift connection to Cassandra
+* A number of bug fixes and improvements for the Cassandra adapter
+* A number of bug fixes and improvements for the HBase adapter
+* Fixed background pool thread size
+* Improved ID Allocation
+
+
+Version 0.4.2 (December 30, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.2</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Finer-grained Thrift connection pooling that gracefully handles failure to close result iterators
+* Optionally silently ignore unrecognized fields on index queries instead of throwing an exception
+* Configurable Astyanax RetryBackoffStrategy
+* Allow comparison of heterogeneous numeric types
+* Added Codahale-Metrics coverage for query, locker, and get-vertex-by-id activity
+
+*Bugfixes:*
+
+* Deleting edges with multiple properties
+* Deleting edges labeled with a reverse-ordered sort key
+* Avoid NullPointerException during graph shutdown when running without a Backend threadpool
+* Shell portability improvement and shutdown race condition fix in titan.sh
+
+Version 0.4.1 (November 24, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.1</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.12
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Property pre-fetching to speed up multiple property lookups per vertex. Configurable through `fast-property` option.
+* Shortened HBase column-family names to reduce the HBase storage footprint. This feature is disabled by default for backwards-compatibility. Enable it via `storage.short-cf-names`
+* Metrics per Transaction: Gathering measurements on the transaction level and group them by transaction template name configurable through `graph.buildTransaction().setMetricsPrefix(String)`
+* Metrics Ganglia and Graphite support
+* Improvements to the internal memory structures and algorithms of a Titan transaction which lead to much improved traversal times (a lot of credit goes to Pavel for these optimizations!!)
+* Added database level cache for lower latency query answering against warm data. Enable via `cache.db-cache`. Learn more about [[Database Cache]].
+* Better caching implementation for relations (RelationCache) to provide faster de-serialization performance
+* Addition of a new query optimizer that can significantly speed up a subset of traversals
+* Support for reverse ordering in vertex centric queries by defining: makeLabel(..).sortKey(..).sortOrder(Order.DESC).make()
+* Support for index configuration parameters passed into KeyMaker.indexed(String,Class,Parameter...) to change the default indexing behavior of an indexing backend.
+* Support for TEXT and STRING mapping of strings in both Lucene and ElasticSearch configurable as a parameter. Learn more about [[Full Text and String Search]]
+* Refactored Text.REGEX/PREFIX to Text.CONTAINS_REGEX/CONTAINS_PREFIX to accurately reflect their semantics. Added Text.REGEX/PREFIX for full string matching. See [[Indexing Backend Overview]]
+* Added support for scaling the id allocation to hundreds of parallel Titan instances through additional configuration options. See [[Bulk Loading]].
+
+*Bugfixes:*
+
+* Fixed multiQuery() for specific has() conditions. Added support for multiQuery(Collection).
+* Fixed limit adjustment issue for unconstraint IN/OUT queries
+* Fixed packaging issues
+* Fixed cache misses due to wrong limit interpretation
+
+Version 0.4.0 (October 16, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.4.0</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.7
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.5
+* Lucene 4.4.0
+* Persistit 3.3.0
+* Hazelcast 3.0.2
+* Java 1.7+ (partially compatible with Java 1.6)
+
+*Features:*
+
+* Initial Fulgora (alpha) release: Added CacheStore interface and adapter as well as a specific implementation based on the Hazelcast distributed data grid
+* Configurable LRU transaction cache for all data loaded into a transaction which allows rolling transactions without memory exceptions
+* MultiQuery which allows combining multiple queries into one request to speed up deep traversals by orders of magnitude against remote backends
+* Completely refactored query optimization and execution framework which makes query answering faster
+* GraphQuery optimizer combines multiple indexing backends to determine the result set most efficiently
+* Support for ordering in GraphQuery
+* Persistit storage adapter for local graph storage
+* Metrics integration for monitoring
+* Support for regular expressions in GraphQuery
+* Refactoring and improvement of the locking protocol
+* Renaming of type definition methods to reduce the confusion surrounding this topic (see UPGRADE for more detail)
+* Re-implemented scanning operations in storage backends to make getVertices() and getEdges() more efficient and functionally correct
+* Added performance test suite and automatic benchmark execution framework
+* Refactored attribute handling and made it explicit
+* Transactions are configurable by the user
+* Titan interprets relative paths in configuration files relative to the directory containing said configuration file (instead of the directory from which e.g. Gremlin was invoked)
+* Attribute Handling has been refactored and extended to allow custom converters and data type checkers
+
+*Bugfixes:*
+
+* Cassandra compression
+* Resolution of elements across transaction boundaries
+* Tokenization of strings for full text search
+* Explicit mapping of elasticsearch elements
+* Changed index format to ensure uniqueness
+* Correct limit behavior for queries
+* Fixed incorrect query caching behavior
+* Correct string serialization
+* Correct handling of hybrid GraphQuery
+* Better handling of data degradation issues
+
+
+Check the issue tracker for a full list of fixed issues.
+
+*Special Thanks to:*
+
+* Blake Eggleston (https://github.com/bdeggleston[bdeggleston])
+* Erick Tryzelaar (https://github.com/erickt[erickt])
+* Zach Kinstner (https://github.com/zachkinstner[zachkinstner])
+* https://github.com/jkschneider[jkschneider]
+* https://github.com/gwhitehawk[gwhitehawk]
+* https://github.com/mamccr[mamccr]
+* https://github.com/akeffalas[akeffalas]
+
+Version 0.3.2 (July 29, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.2</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.1
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.0
+* Lucene 4.1.0
+* Java 1.6+
+
+*Features:*
+
+* Support for multiple standard index conditions in queries
+
+*Bugfixes:*
+
+* Fixed potential transaction leak when using thread-bound transactions
+* Let vertex.removeProperty(...) kill multivalued properties as the javadoc says
+* Avoided two spurious cases of "timestamp mismatch" exception
+* Removed unchecked cast in AbstractElement.equals(...)
+* Adjusted default Astyanax exponential backoff settings to avoid integer overflow against a dead peer
+* Fixed Astyanax config regression that caused node discovery and connection pool type to be ignored
+* Fixed double-checked locking on StandardVertex's added relations
+
+Check the issue tracker for a full list of fixed issues.
+
+Version 0.3.1 (May 14, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.1</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94.1
+* BerkeleyJE 5.0.73
+* Elasticsearch 0.90.0
+* Lucene 4.1.0
+* Java 1.6+
+
+*Features:*
+
+* Improved in-transaction index handling for equality matches
+* Support for Lucene 4 throughout
+* Storage backend compression enabled by default where applicable
+* Removed RexsterTitanClient since all the functionality has been rolled into RexsterClient
+* Automatic type-casting of most primitive types and Geoshape where possible
+* Refactored to using immutable data structures for storage backend communication
+* Re-implemented InMemory storage backend for better performance
+
+*Bugfixes:*
+
+* Launching multiple Titan servers in one cluster with RF>1
+* Updated and improved the Astyanax adapter for Cassandra
+* Improved robustness of ID allocation
+* Vertex iteration in embedded Cassandra with BoP
+* Updated Titan server scripts and configuration files
+* Fixed issues around automatic transaction migration of vertices and edges
+* Fixed BerkeleyJE concurrency clean-up issue
+* Cleaned up and trimmed storage backend interfaces
+* Fixed ghost vertex issue when iterating over vertices
+* Fixed datatype conversion issues
+
+Check the issue tracker for a full list of fixed issues.
+
+Version 0.3.0 (March 29, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.3.0</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.2
+* HBase 0.94
+* BerkeleyJE 5.0.73
+
+*Features:*
+
+* Geo, numeric range, and full-text indexing supporting multiple index backends
+* Edge Indexing
+* Refactoring of Titan-core for enhanced performance due to selective de-serialization
+* New query optimizer for vertex-centric and graph queries
+* Vertex centric query caching for selective queries
+* InMemoryGraph implementation
+* IdGraph support
+* Relaxed transactional scope requirement for vertices
+* Edge no longer extends Vertex
+* Updated to Kryo 2
+
+*Bugfixes:*
+
+* Cassandra Thrift Max-Message-Size issue
+* JMX settings for Titan Server
+* Out-unique edges
+* Modified state in global graph operations
+* see issue tracker for a full list
+
+Version 0.2.1 (March 22, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>0.2.1</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.2.0
+* HBase 0.94
+* BerkeleyJE 5.0.58
+
+*Features:*
+
+* Refactored POM into multi-module project
+* Support for global vertex (g.V) and edge (g.E) iteration for cassandra and hbase backends
+* Compatible with Cassandra 1.2.0 for all three storage adapters: embedded, thrift, astyanax
+* Improved HBase adapter:
+** Automatic Master launch for testing
+** Refactored batch mutation and reading
+** Optimized HBase operations
+* Updated to Blueprints 2.3.0
+* Better integration with Rexster Rexpro
+* Automatic directory creation for local storage backends
+* Internal Titan version handling and compatibility checks
+* Added additional performance tests
+
+*Bugfixes:*
+
+* Resolved issues around Java 1.7
+* Shutdown error in astyanax adapter
+* Made thrift frame and message size configurable for cassandra adapters
+* see issue tracker for a full list
+
+*Special Thanks to:*
+
+* Pavel Yaskevich (https://github.com/xedin[xedin])
+
+Version 0.2.0 (December 24, 2012)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.2.0</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.1.3 & 1.1.4
+* HBase 0.94.1
+* BerkeleyDB 5.0.58
+* TinkerPop (Blueprints, Gremlin, Rexster) 2.2.0
+
+* This version is incompatible with the previous version of Titan. Please follow the [[Upgrade Instructions]] to switch to the new version.
+
+*Features:*
+
+* Embedded Cassandra: Titan can be embedded with Cassandra, that means, Titan starts a Cassandra node in the same JVM and uses efficient in process communication to store and retrieve data.
+* [[Titan Server]]: Titan comes with a light-weight Gremlin query server.
+* Streamlined configuration settings. Please review the new configuration options if you are upgrading from an older version of Titan.
+* Many small performance improvements throughout the code. Please review the issue tracker and the commit log for more details.
+
+*Bugfixes:*
+
+* Fixed edge sorting bug which caused edges to be returned in a random order even when a vertex centric index was defined.
+* Fixed id allocation bug that causes Titan to read the entire row during id allocation which can lead to id allocation failures.
+* Completely refactored diskstorage package for better code quality and performance.
+* Fixed edge caching bug for composite primary keys on edges.
+* Fixed a number of smaller bugs. Please review the issue tracker and the commit log for more details.
+
+*Special Thanks to:*
+
+* Zack Maril (https://github.com/zmaril[zmaril])
+* Nicolas LaCasse (https://github.com/nlacasse[nlacasse])
+* Vadas Gintautas (https://github.com/vadasg[vadasg])
+
+Version 0.1.0 (September 7, 2012)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[source,m2]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan</artifactId>
+   <version>0.1.0</version>
+</dependency>
+
+*Tested Compatibility:*
+
+* Cassandra 1.1.3 & 1.1.4
+* HBase 0.94.1
+* BerkeleyDB 5.0.58
+
+*Features:*
+
+* The focus of the initial Titan release was on building a stable and robust graph database as well as incorporating community feature suggestions and feedback from early adopters of Titan.
+
+*Bugfixes:*
+
+* Fixed concurrency and synchronization issues
+
+*Special Thanks to:*
+
+* Danny Thomas (https://github.com/BinaryRage[BinaryRage])
+* https://github.com/jramsdale[jramsdale]
+* Cristofer (https://github.com/crisweber[crisweber])
+* https://github.com/tedoc2000[tedoc2000]
+* Dan Forest-Barbier (https://github.com/DPanth3r[DPanth3r])
+* https://github.com/jncorpron[jncorpron]
+* Marc Abramowitz (https://github.com/msabramo[msabramo])

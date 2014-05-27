@@ -100,11 +100,6 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
                                                   KeySelector selector, StoreTransaction txh) throws StorageException {
         log.trace("Get slice query");

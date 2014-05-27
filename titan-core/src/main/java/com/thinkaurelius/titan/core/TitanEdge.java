@@ -5,12 +5,13 @@ import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 
 /**
- * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge}.
+ * A TitanEdge connects two {@link TitanVertex}. It extends the functionality provided by Blueprint's {@link Edge} and
+ * is a special case of a {@link TitanRelation}.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see Edge
  * @see TitanRelation
- * @see TitanLabel
+ * @see EdgeLabel
  */
 public interface TitanEdge extends TitanRelation, Edge {
 
@@ -19,7 +20,7 @@ public interface TitanEdge extends TitanRelation, Edge {
      *
      * @return edge label of this edge
      */
-    public TitanLabel getTitanLabel();
+    public EdgeLabel getEdgeLabel();
 
     /**
      * Returns the vertex for the specified direction.

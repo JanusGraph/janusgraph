@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.junit.Test;
 

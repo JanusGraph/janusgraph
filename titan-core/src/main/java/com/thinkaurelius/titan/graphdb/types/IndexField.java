@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
@@ -9,18 +9,18 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
  */
 public class IndexField {
 
-    private final TitanKey key;
+    private final PropertyKey key;
 
-    IndexField(TitanKey key) {
+    IndexField(PropertyKey key) {
         Preconditions.checkNotNull(key);
         this.key = key;
     }
 
-    public TitanKey getFieldKey() {
+    public PropertyKey getFieldKey() {
         return key;
     }
 
-    public static IndexField of(TitanKey key) {
+    public static IndexField of(PropertyKey key) {
         return new IndexField(key);
     }
 

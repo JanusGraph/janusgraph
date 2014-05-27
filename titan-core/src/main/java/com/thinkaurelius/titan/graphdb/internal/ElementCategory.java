@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanProperty;
-import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
+import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
@@ -23,7 +25,29 @@ public enum ElementCategory {
         }
     }
 
-    public boolean isInstance(Element element) {
+    public boolean isValidConstraint(TitanSchemaType type) {
+        Preconditions.checkNotNull(type);
+        switch(this) {
+            case VERTEX: return (type instanceof VertexLabelVertex);
+            case EDGE: return (type instanceof EdgeLabelVertex);
+            case PROPERTY: return (type instanceof PropertyKeyVertex);
+            default: throw new IllegalArgumentException();
+        }
+    }
+
+    public boolean matchesConstraint(TitanSchemaType type, TitanElement element) {
+        Preconditions.checkArgument(type != null && element!=null);
+        assert isInstance(element);
+        assert isValidConstraint(type);
+        switch(this) {
+            case VERTEX: return ((TitanVertex)element).getVertexLabel().equals(type);
+            case EDGE: return ((TitanEdge)element).getEdgeLabel().equals(type);
+            case PROPERTY: return ((TitanProperty)element).getPropertyKey().equals(type);
+            default: throw new IllegalArgumentException();
+        }
+    }
+
+    public boolean isInstance(TitanElement element) {
         Preconditions.checkNotNull(element);
         return getElementType().isAssignableFrom(element.getClass());
     }

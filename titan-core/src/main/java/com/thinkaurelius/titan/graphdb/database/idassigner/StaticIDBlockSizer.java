@@ -20,12 +20,12 @@ public class StaticIDBlockSizer implements IDBlockSizer {
     }
 
     @Override
-    public long getBlockSize(int partitionID) {
+    public long getBlockSize(int idNamespace) {
         return blockSize;
     }
 
     @Override
-    public long getIdUpperBound(int partitionID) {
+    public long getIdUpperBound(int idNamespace) {
         return blockSizeLimit;
     }
 }

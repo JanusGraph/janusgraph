@@ -30,11 +30,6 @@ public abstract class BaseKeyColumnValueAdapter implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return store.getLocalKeyPartition();
-    }
-
-    @Override
     public String getName() {
         return store.getName();
     }

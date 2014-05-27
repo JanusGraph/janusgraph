@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.database.serialize;
 
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import org.slf4j.Logger;
@@ -78,7 +78,7 @@ public class AttributeUtil {
         }
     }
 
-    public static boolean hasGenericDataType(TitanKey key) {
+    public static boolean hasGenericDataType(PropertyKey key) {
         return key.getDataType().equals(Object.class);
     }
 }

@@ -2,6 +2,9 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 
 /**
  * Handles the allocation of ids based on the type of element
@@ -14,7 +17,11 @@ public class IDManager {
     /**
      *bit mask- Description (+ indicates defined type, * indicates proper & defined type)
      *
-     *      0 - * Normal (user created) Vertex
+     *      0 - + User created Vertex
+     *    000 -     * Normal vertices
+     *    010 -     * Partitioned vertices
+     *    100 -     * Unmodifiable (e.g. TTL'ed) vertices
+     *    110 -     Reserved for additional vertex type
      *      1 - + Hidden
      *     11 -     * Hidden (user created/triggered) Vertex [for later]
      *     01 -     + Schema related vertices
@@ -27,7 +34,7 @@ public class IDManager {
      * 010101 -                     * User Edge Label
      * 110101 -                     * System Edge Label
      *   1101 -             Other Type vertices
-     *  01101 -                   Vertex Type (future???)
+     *  01101 -                 + Vertex Label
      *    001 -         Non-Type vertices
      *   1001 -             * Generic Schema Vertex
      *   0001 -             Reserved for future
@@ -35,7 +42,7 @@ public class IDManager {
      *
      */
     public enum VertexIDType {
-        Vertex {
+        UserVertex {
             @Override
             final long offset() {
                 return 1l;
@@ -45,6 +52,54 @@ public class IDManager {
             final long suffix() {
                 return 0l;
             } // 0b
+
+            @Override
+            final boolean isProper() {
+                return false;
+            }
+        },
+        NormalVertex {
+            @Override
+            final long offset() {
+                return 3l;
+            }
+
+            @Override
+            final long suffix() {
+                return 0l;
+            } // 000b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+        PartitionedVertex {
+            @Override
+            final long offset() {
+                return 3l;
+            }
+
+            @Override
+            final long suffix() {
+                return 2l;
+            } // 010b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+        UnmodifiableVertex {
+            @Override
+            final long offset() {
+                return 3l;
+            }
+
+            @Override
+            final long suffix() {
+                return 4l;
+            } // 100b
 
             @Override
             final boolean isProper() {
@@ -229,6 +284,23 @@ public class IDManager {
             }
         },
 
+        VertexLabel {
+            @Override
+            final long offset() {
+                return 5l;
+            }
+
+            @Override
+            final long suffix() {
+                return 13l;
+            }    // 01101b
+
+            @Override
+            final boolean isProper() {
+                return true;
+            }
+        },
+
         GenericSchemaType {
             @Override
             final long offset() {
@@ -272,26 +344,48 @@ public class IDManager {
     }
 
     /**
+     * Id of the partition that schema elements are assigned to
+     */
+    public static final int SCHEMA_PARTITION = 0;
+
+    public static final int PARTITIONED_VERTEX_PARTITION = 1;
+
+
+    /**
      * Number of bits that need to be reserved from the type ids for storing additional information during serialization
      */
-    public static final int TYPE_LEN_RESERVE = 2;
+    public static final int TYPE_LEN_RESERVE = 3;
 
     /**
      * Total number of bits available to a Titan assigned id
      * We use only 63 bits to make sure that all ids are positive
      *
-     * @see com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler#getKey(long)
      */
-    private static final long TOTAL_BITS = 63;
+    private static final long TOTAL_BITS = Long.SIZE-1;
 
     /**
      * Maximum number of bits that can be used for the partition prefix of an id
      */
-    private static final long MAX_PARTITION_BITS = 30;
+    private static final long MAX_PARTITION_BITS = 16;
     /**
      * Default number of bits used for the partition prefix. 0 means there is no partition prefix
      */
     private static final long DEFAULT_PARTITION_BITS = 0;
+    /**
+     * The padding bit with for user vertices
+     */
+    public static final long USERVERTEX_PADDING_BITWIDTH = VertexIDType.NormalVertex.offset();
+
+    /**
+     * The maximum number of padding bits of any type
+     */
+    public static final long MAX_PADDING_BITWIDTH = VertexIDType.UserEdgeLabel.offset();
+
+    /**
+     * Bound on the maximum count for a schema id
+     */
+    private static final long SCHEMA_COUNT_BOUND = (1l << (TOTAL_BITS - MAX_PADDING_BITWIDTH - TYPE_LEN_RESERVE));
+
 
     @SuppressWarnings("unused")
     private final long partitionBits;
@@ -311,47 +405,148 @@ public class IDManager {
         partitionIDBound = (1l << (partitionBits));
 
         relationCountBound = partitionBits==0?Long.MAX_VALUE:(1l << (TOTAL_BITS - partitionBits));
-        assert VertexIDType.Vertex.offset()>0;
-        vertexCountBound = (1l << (TOTAL_BITS - partitionBits - VertexIDType.Vertex.offset()));
+        assert VertexIDType.NormalVertex.offset()>0;
+        vertexCountBound = (1l << (TOTAL_BITS - partitionBits - USERVERTEX_PADDING_BITWIDTH));
 
-        partitionOffset = TOTAL_BITS - partitionBits;
+
+        partitionOffset = Long.SIZE - partitionBits;
     }
 
     public IDManager() {
         this(DEFAULT_PARTITION_BITS);
     }
 
-    private static long prefixWithOffset(long id, long prefixid, long prefixOffset, long partitionIDBound) {
-        assert partitionIDBound >= 0 && prefixOffset < 64;
-        if (id < 0) throw new IllegalArgumentException("ID cannot be negative: " + id);
-        if (prefixid < 0) throw new IllegalArgumentException("Prefix ID cannot be negative: " + prefixid);
-        if (prefixid == 0) return id;
-        Preconditions.checkArgument(prefixid<partitionIDBound,"Prefix ID exceeds limit of: %s",partitionIDBound);
-        assert id < (1l << prefixOffset) : "ID is too large for prefix offset: " + id + " ( " + prefixOffset + " )";
-        return (prefixid << prefixOffset) | id;
+    public long getPartitionBound() {
+        return partitionIDBound;
     }
 
+    /* ########################################################
+                   User Relations and Vertices
+       ########################################################  */
 
-    private long addPartition(long id, long partitionID) {
-        assert id > 0;
-        assert partitionID >= 0;
-        return prefixWithOffset(id, partitionID, partitionOffset, partitionIDBound);
-    }
-
-    /*		--- TitanElement id bit format ---
-      *  [ 0 | partitionID | count | ID padding ]
+     /*		--- TitanElement id bit format ---
+      *  [ 0 | count | partition | ID padding (if any) ]
      */
 
+    private long constructId(long count, long partition, VertexIDType type) {
+        Preconditions.checkArgument(partition<partitionIDBound && partition>=0,"Invalid partition: %s",partition);
+        Preconditions.checkArgument(count>=0);
+        Preconditions.checkArgument(VariableLong.unsignedBitLength(count)+partitionBits+
+                (type==null?0:type.offset())<=TOTAL_BITS);
+        Preconditions.checkArgument(type==null || type.isProper());
+        long id = (count<<partitionBits)+partition;
+        if (type!=null) id = type.addPadding(id);
+        return id;
+    }
+
+    private static VertexIDType getUserVertexIDType(long vertexid) {
+        VertexIDType type=null;
+        if (VertexIDType.NormalVertex.is(vertexid)) type=VertexIDType.NormalVertex;
+        else if (VertexIDType.PartitionedVertex.is(vertexid)) type=VertexIDType.PartitionedVertex;
+        else if (VertexIDType.UnmodifiableVertex.is(vertexid)) type=VertexIDType.UnmodifiableVertex;
+        Preconditions.checkArgument(type!=null,"Vertex id has unrecognized type: %s",vertexid);
+        return type;
+    }
+
+    private boolean isUserVertex(long vertexid) {
+        return VertexIDType.UserVertex.is(vertexid) && ((vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH))>0);
+    }
+
+    public long getPartitionId(long vertexid) {
+        if (VertexIDType.Schema.is(vertexid)) return SCHEMA_PARTITION;
+        assert isUserVertex(vertexid) && getUserVertexIDType(vertexid)!=null;
+        long partition = (vertexid>>>USERVERTEX_PADDING_BITWIDTH) & (partitionIDBound-1);
+        assert partition>=0;
+        return partition;
+    }
+
+    public StaticBuffer getKey(long vertexid) {
+        if (VertexIDType.Schema.is(vertexid)) {
+            //No partition for schema vertices
+            return BufferUtil.getLongBuffer(vertexid);
+        } else {
+            assert isUserVertex(vertexid);
+            VertexIDType type = getUserVertexIDType(vertexid);
+            long partition = getPartitionId(vertexid);
+            long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+            assert count>0;
+            long keyid = (partition<<partitionOffset) | type.addPadding(count);
+            return BufferUtil.getLongBuffer(keyid);
+        }
+    }
+
+    public long getKeyID(StaticBuffer b) {
+        long value = b.getLong(0);
+        if (VertexIDType.Schema.is(value)) {
+            return value;
+        } else {
+            VertexIDType type = getUserVertexIDType(value);
+            long partition = partitionOffset<Long.SIZE?value>>>partitionOffset:0;
+            long count = (value>>>USERVERTEX_PADDING_BITWIDTH) & ((1l<<(partitionOffset-USERVERTEX_PADDING_BITWIDTH))-1);
+            return constructId(count,partition,type);
+        }
+    }
 
     public long getRelationID(long count, long partition) {
         Preconditions.checkArgument(count>0 && count< relationCountBound,"Invalid count for bound: %s", relationCountBound);
-        return addPartition(count, partition);
+        return constructId(count, partition, null);
     }
 
 
-    public long getVertexID(long count, long partition) {
+    public long getVertexID(long count, long partition, VertexIDType vertexType) {
+        Preconditions.checkArgument(VertexIDType.UserVertex.is(vertexType.suffix()),"Not a user vertex type: %s",vertexType);
         Preconditions.checkArgument(count>0 && count<vertexCountBound,"Invalid count for bound: %s", vertexCountBound);
-        return addPartition(VertexIDType.Vertex.addPadding(count), partition);
+        if (vertexType==VertexIDType.PartitionedVertex) {
+            Preconditions.checkArgument(partition==PARTITIONED_VERTEX_PARTITION);
+            return getCanonicalVertexIdFromCount(count);
+        } else {
+            return constructId(count, partition, vertexType);
+        }
+    }
+
+    public long getPartitionHashForId(long id) {
+        Preconditions.checkArgument(id>0);
+        return Long.valueOf(id).hashCode() & (partitionIDBound-1);
+    }
+
+    private long getCanonicalVertexIdFromCount(long count) {
+        long partition = getPartitionHashForId(count);
+        return constructId(count,partition,VertexIDType.PartitionedVertex);
+    }
+
+    public long getCanonicalVertexId(long partitionedVertexId) {
+        Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
+        long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+        return getCanonicalVertexIdFromCount(count);
+    }
+
+    public long getPartitionedVertexId(long partitionedVertexId, long otherPartition) {
+        Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
+        long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
+        assert count>0;
+        return constructId(count,otherPartition,VertexIDType.PartitionedVertex);
+    }
+
+    public long[] getPartitionedVertexRepresentatives(long partitionedVertexId) {
+        Preconditions.checkArgument(isPartitionedVertex(partitionedVertexId));
+        assert getPartitionBound()<Integer.MAX_VALUE;
+        long[] ids = new long[(int)getPartitionBound()];
+        for (int i=0;i<getPartitionBound();i++) {
+            ids[i]=getPartitionedVertexId(partitionedVertexId,i);
+        }
+        return ids;
+    }
+
+    public boolean isPartitionedVertex(long id) {
+        return isUserVertex(id) && VertexIDType.PartitionedVertex.is(id);
+    }
+
+    public long getRelationCountBound() {
+        return relationCountBound;
+    }
+
+    public long getVertexCountBound() {
+        return vertexCountBound;
     }
 
     /*
@@ -374,23 +569,25 @@ public class IDManager {
         return (1l<<63) | id; //make negative but preserve bit pattern
     }
 
+    public static boolean isTemporary(long id) {
+        return id<0;
+    }
+
+    /* ########################################################
+               Schema Vertices
+   ########################################################  */
+
     /* --- TitanRelation Type id bit format ---
       *  [ 0 | count | ID padding ]
       *  (there is no partition)
      */
 
-    private static long getSchemaIdBound(VertexIDType type) {
-        assert VertexIDType.Schema.isSubType(type) : "Expected schema type but got: " + type;
-        assert TYPE_LEN_RESERVE>0;
-        return (1l << (TOTAL_BITS - type.offset() - TYPE_LEN_RESERVE));
-    }
 
     private static void checkSchemaTypeId(VertexIDType type, long count) {
         Preconditions.checkArgument(VertexIDType.Schema.is(type.suffix()),"Expected schema vertex but got: %s",type);
         Preconditions.checkArgument(type.isProper(),"Expected proper type but got: %s",type);
-        long idBound = getSchemaIdBound(type);
-        Preconditions.checkArgument(count > 0 && count < idBound,
-                "Invalid id [%s] for type [%s] bound: %s", count, type, idBound);
+        Preconditions.checkArgument(count > 0 && count < SCHEMA_COUNT_BOUND,
+                "Invalid id [%s] for type [%s] bound: %s", count, type, SCHEMA_COUNT_BOUND);
     }
 
     public static long getSchemaId(VertexIDType type, long count) {
@@ -423,36 +620,15 @@ public class IDManager {
         return VertexIDType.SystemEdgeLabel.is(id) || VertexIDType.SystemPropertyKey.is(id);
     }
 
-    public long getRelationCountBound() {
-        return relationCountBound;
-    }
-
-    public long getRelationTypeCountBound() {
-        return getSchemaIdBound(VertexIDType.UserEdgeLabel);
-    }
-
-    public long getGenericTypeCountBound() {
-        return getSchemaIdBound(VertexIDType.GenericSchemaType);
-    }
-
-    public long getVertexCountBound() {
-        return vertexCountBound;
-    }
-
-    public long getPartitionBound() {
-        return partitionIDBound;
+    public static long getSchemaCountBound() {
+        return SCHEMA_COUNT_BOUND;
     }
 
 
-    public long getPartitionId(long id) {
-        //Cannot do this check because it does not apply to edges which are in a different id space
-        //Preconditions.checkArgument(!VertexIDType.Schema.is(id), "Schema vertices don't have a partition: %s", id);
-        return (id >>> partitionOffset);
-    }
+    /* ########################################################
+               Inspector
+   ########################################################  */
 
-    public long isolatePartitionId(long id) {
-        return getPartitionId(id) << partitionOffset;
-    }
 
     private final IDInspector inspector = new IDInspector() {
 
@@ -482,19 +658,37 @@ public class IDManager {
         }
 
         @Override
-        public final boolean isVertexId(long id) {
-            return VertexIDType.Vertex.is(id);
-        }
-
-        @Override
         public boolean isGenericSchemaVertexId(long id) {
             return VertexIDType.GenericSchemaType.is(id);
         }
 
         @Override
-        public final long getPartitionId(long id) {
-            return IDManager.this.getPartitionId(id);
+        public boolean isVertexLabelVertexId(long id) {
+            return VertexIDType.VertexLabel.is(id);
         }
+
+
+
+        @Override
+        public final boolean isUserVertexId(long id) {
+            return IDManager.this.isUserVertex(id);
+        }
+
+        @Override
+        public boolean isUnmodifiableVertex(long id) {
+            return isUserVertex(id) && VertexIDType.UnmodifiableVertex.is(id);
+        }
+
+        @Override
+        public boolean isPartitionedVertex(long id) {
+            return IDManager.this.isPartitionedVertex(id);
+        }
+
+        @Override
+        public long getCanonicalVertexId(long partitionedVertexId) {
+            return IDManager.this.getCanonicalVertexId(partitionedVertexId);
+        }
+
     };
 
     public IDInspector getIdInspector() {

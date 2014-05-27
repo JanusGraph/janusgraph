@@ -3,7 +3,8 @@ package com.thinkaurelius.titan.graphdb.database.cache;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 
@@ -22,15 +23,15 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     public MetricInstrumentedSchemaCache(final StoreRetrieval retriever) {
         cache = new StandardSchemaCache(new StoreRetrieval() {
             @Override
-            public Long retrieveTypeByName(String typeName, StandardTitanTx tx) {
+            public Long retrieveSchemaByName(String typeName, StandardTitanTx tx) {
                 incAction(METRICS_TYPENAME,CacheMetricsAction.MISS,tx);
-                return retriever.retrieveTypeByName(typeName,tx);
+                return retriever.retrieveSchemaByName(typeName, tx);
             }
 
             @Override
-            public EntryList retrieveTypeRelations(long schemaId, SystemType type, Direction dir, StandardTitanTx tx) {
+            public EntryList retrieveSchemaRelations(long schemaId, BaseRelationType type, Direction dir, StandardTitanTx tx) {
                 incAction(METRICS_RELATIONS,CacheMetricsAction.MISS,tx);
-                return retriever.retrieveTypeRelations(schemaId,type,dir,tx);
+                return retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
             }
         });
     }
@@ -42,25 +43,25 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     }
 
     @Override
-    public Long getTypeId(String typeName, StandardTitanTx tx) {
+    public Long getSchemaId(String schemaName, StandardTitanTx tx) {
         incAction(METRICS_TYPENAME,CacheMetricsAction.RETRIEVAL,tx);
-        return cache.getTypeId(typeName,tx);
+        return cache.getSchemaId(schemaName, tx);
     }
 
     @Override
-    public EntryList getTypeRelations(long schemaId, SystemType type, Direction dir, StandardTitanTx tx) {
+    public EntryList getSchemaRelations(long schemaId, BaseRelationType type, Direction dir, StandardTitanTx tx) {
         incAction(METRICS_RELATIONS,CacheMetricsAction.RETRIEVAL,tx);
-        return cache.getTypeRelations(schemaId, type, dir, tx);
+        return cache.getSchemaRelations(schemaId, type, dir, tx);
     }
 
     @Override
-    public void expireTypeName(String name) {
-        cache.expireTypeName(name);
+    public void expireSchemaName(String name) {
+        cache.expireSchemaName(name);
     }
 
     @Override
-    public void expireTypeRelations(long schemaId) {
-        cache.expireTypeRelations(schemaId);
+    public void expireSchemaRelations(long schemaId) {
+        cache.expireSchemaRelations(schemaId);
     }
 
 }

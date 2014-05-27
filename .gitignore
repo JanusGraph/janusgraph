@@ -38,3 +38,5 @@ titan-*/pom.xml.versionsBackup
 /debian/
 /redhat/
 /pkgcommon/
+# Emacs file backups
+*~

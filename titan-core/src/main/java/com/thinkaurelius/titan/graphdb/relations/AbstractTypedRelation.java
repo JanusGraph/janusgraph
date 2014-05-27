@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.graphdb.internal.AbstractElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
@@ -15,12 +15,12 @@ import java.util.Set;
 
 public abstract class AbstractTypedRelation extends AbstractElement implements InternalRelation {
 
-    protected final InternalType type;
+    protected final InternalRelationType type;
 
-    public AbstractTypedRelation(final long id, final TitanType type) {
+    public AbstractTypedRelation(final long id, final RelationType type) {
         super(id);
-        assert type != null && type instanceof InternalType;
-        this.type = (InternalType) type;
+        assert type != null && type instanceof InternalRelationType;
+        this.type = (InternalRelationType) type;
     }
 
     @Override
@@ -73,7 +73,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public TitanType getType() {
+    public RelationType getType() {
         return type;
     }
 
@@ -89,18 +89,18 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
 
     @Override
     public <O> O removeProperty(String key) {
-        if (!tx().containsType(key)) return null;
-        else return removeProperty(tx().getType(key));
+        if (!tx().containsRelationType(key)) return null;
+        else return removeProperty(tx().getRelationType(key));
     }
 
     @Override
-    public <O> O removeProperty(TitanType type) {
+    public <O> O removeProperty(RelationType type) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         return it().removePropertyDirect(type);
     }
 
     @Override
-    public void setProperty(TitanLabel label, TitanVertex vertex) {
+    public void setProperty(EdgeLabel label, TitanVertex vertex) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         Preconditions.checkArgument(label.isUnidirected(),"Label must be unidirected");
         Preconditions.checkArgument(vertex!=null,"Vertex cannot be null");
@@ -108,18 +108,18 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public void setProperty(TitanKey key, Object value) {
+    public void setProperty(PropertyKey key, Object value) {
         Preconditions.checkArgument(!it().isRemoved(),"Cannot modified removed relation");
         it().setPropertyDirect(key,tx().verifyAttribute(key,value));
     }
 
     @Override
     public void setProperty(String key, Object value) {
-        TitanType type = tx().getType(key);
-        if (type instanceof TitanKey) setProperty((TitanKey)type,value);
-        else if (type instanceof TitanLabel) {
+        RelationType type = tx().getRelationType(key);
+        if (type instanceof PropertyKey) setProperty((PropertyKey)type,value);
+        else if (type instanceof EdgeLabel) {
             Preconditions.checkArgument(value instanceof TitanVertex,"Value must be a vertex");
-            setProperty((TitanLabel) type, (InternalVertex) value);
+            setProperty((EdgeLabel) type, (InternalVertex) value);
         } else if (type==null) {
             if (value instanceof TitanVertex) setProperty(tx().getEdgeLabel(key),(TitanVertex)value);
             setProperty(tx().getPropertyKey(key),value);
@@ -127,32 +127,32 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     }
 
     @Override
-    public <O> O getProperty(TitanKey key) {
+    public <O> O getProperty(PropertyKey key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         return it().getPropertyDirect(key);
     }
 
     @Override
     public <O> O getProperty(String key) {
-        TitanType type = tx().getType(key);
+        RelationType type = tx().getRelationType(key);
         if (type==null) return null;
-        else if (type.isPropertyKey()) return getProperty((TitanKey) type);
-        else return (O)getProperty((TitanLabel)type);
+        else if (type.isPropertyKey()) return getProperty((PropertyKey) type);
+        else return (O)getProperty((EdgeLabel)type);
     }
 
     @Override
-    public TitanVertex getProperty(TitanLabel label) {
+    public TitanVertex getProperty(EdgeLabel label) {
         Object val = it().getPropertyDirect(label);
         if (val==null) return null;
-        else if (val instanceof Number) return tx().getExistingVertex(((Number)val).longValue());
+        else if (val instanceof Number) return tx().getInternalVertex(((Number) val).longValue());
         else if (val instanceof TitanVertex) return (TitanVertex) val;
         else throw new IllegalStateException("Invalid object found instead of vertex: " + val);
     }
 
     @Override
-    public <O> O getProperty(TitanType type) {
-        if (type.isEdgeLabel()) return (O)getProperty((TitanLabel)type);
-        else return getProperty((TitanKey)type);
+    public <O> O getProperty(RelationType type) {
+        if (type.isEdgeLabel()) return (O)getProperty((EdgeLabel)type);
+        else return getProperty((PropertyKey)type);
     }
 
 
@@ -160,7 +160,7 @@ public abstract class AbstractTypedRelation extends AbstractElement implements I
     @Override
     public Set<String> getPropertyKeys() {
         Set<String> result = Sets.newHashSet();
-        for (TitanType type : it().getPropertyKeysDirect()) result.add(type.getName());
+        for (RelationType type : it().getPropertyKeysDirect()) result.add(type.getName());
         return result;
     }
 

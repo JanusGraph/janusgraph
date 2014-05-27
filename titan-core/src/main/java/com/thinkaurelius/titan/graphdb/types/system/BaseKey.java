@@ -3,8 +3,11 @@ package com.thinkaurelius.titan.graphdb.types.system;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.types.*;
@@ -12,7 +15,7 @@ import com.tinkerpop.blueprints.Direction;
 
 import java.util.Collections;
 
-public class BaseKey extends BaseType implements TitanKey {
+public class BaseKey extends BaseRelationType implements PropertyKey {
 
     private enum Index { NONE, STANDARD, UNIQUE }
 
@@ -20,17 +23,17 @@ public class BaseKey extends BaseType implements TitanKey {
     public static final BaseKey VertexExists =
             new BaseKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
 
-    public static final BaseKey TypeName =
-            new BaseKey("TypeName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
+    public static final BaseKey SchemaName =
+            new BaseKey("SchemaName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
 
-    public static final BaseKey TypeDefinitionProperty =
-            new BaseKey("TypeDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
+    public static final BaseKey SchemaDefinitionProperty =
+            new BaseKey("SchemaDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
 
-    public static final BaseKey TypeCategory =
-            new BaseKey("TypeCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
+    public static final BaseKey SchemaCategory =
+            new BaseKey("SchemaCategory", TitanSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
 
-    public static final BaseKey TypeDefinitionDesc =
-            new BaseKey("TypeDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
+    public static final BaseKey SchemaDefinitionDesc =
+            new BaseKey("SchemaDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
 
 
     private final Class<?> dataType;
@@ -38,7 +41,7 @@ public class BaseKey extends BaseType implements TitanKey {
     private final Cardinality cardinality;
 
     private BaseKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
-        super(name, id, TitanSchemaCategory.KEY);
+        super(name, id, TitanSchemaCategory.PROPERTYKEY);
         Preconditions.checkArgument(index!=null && cardinality!=null);
         this.dataType = dataType;
         this.index = index;
@@ -97,13 +100,13 @@ public class BaseKey extends BaseType implements TitanKey {
         }
 
         @Override
-        public IndexField getField(TitanKey key) {
+        public IndexField getField(PropertyKey key) {
             if (key.equals(BaseKey.this)) return fields[0];
             else return null;
         }
 
         @Override
-        public boolean indexesKey(TitanKey key) {
+        public boolean indexesKey(PropertyKey key) {
             return getField(key)!=null;
         }
 
@@ -124,6 +127,16 @@ public class BaseKey extends BaseType implements TitanKey {
         @Override
         public ElementCategory getElement() {
             return ElementCategory.VERTEX;
+        }
+
+        @Override
+        public boolean hasSchemaTypeConstraint() {
+            return false;
+        }
+
+        @Override
+        public TitanSchemaType getSchemaTypeConstraint() {
+            return null;
         }
 
         @Override

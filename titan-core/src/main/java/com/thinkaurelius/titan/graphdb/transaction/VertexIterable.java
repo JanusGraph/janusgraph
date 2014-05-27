@@ -36,7 +36,7 @@ public class VertexIterable implements Iterable<InternalVertex> {
                     //Filter out hidden vertices
                     if (IDManager.VertexIDType.Hidden.is(nextId)) continue;
 
-                    v = tx.getExistingVertex(nextId);
+                    v = tx.getInternalVertex(nextId);
                     //Filter out deleted vertices and types
                     if (v.isRemoved()) v = null;
                 }

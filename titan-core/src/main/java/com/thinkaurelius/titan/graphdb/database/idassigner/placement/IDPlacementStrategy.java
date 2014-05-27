@@ -20,10 +20,10 @@ public interface IDPlacementStrategy {
     /**
      * Individually assigns an id to the given vertex or relation.
      *
-     * @param vertex Vertex or relation to assign id to.
+     * @param element Vertex or relation to assign id to.
      * @return
      */
-    public int getPartition(InternalElement vertex);
+    public int getPartition(InternalElement element);
 
     /**
      * Bulk assignment of idAuthorities to vertices.

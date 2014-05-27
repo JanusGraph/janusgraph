@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.Durations;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.Durations;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 

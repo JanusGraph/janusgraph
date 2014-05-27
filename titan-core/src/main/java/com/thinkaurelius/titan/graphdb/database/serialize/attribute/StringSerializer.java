@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.database.serialize.attribute;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.Namifiable;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -74,7 +74,9 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
     @Override
     public String convert(Object value) {
         Preconditions.checkNotNull(value);
-        return value.toString();
+        if (value instanceof String) return (String)value;
+        else if (value instanceof Namifiable) return ((Namifiable)value).getName();
+        else return value.toString();
     }
 
 

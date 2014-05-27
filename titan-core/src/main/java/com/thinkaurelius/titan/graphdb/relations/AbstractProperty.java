@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -14,10 +14,10 @@ import static com.tinkerpop.blueprints.util.StringFactory.*;
 
 public abstract class AbstractProperty extends AbstractTypedRelation implements TitanProperty {
 
-    private final InternalVertex vertex;
+    private InternalVertex vertex;
     private final Object value;
 
-    public AbstractProperty(long id, TitanKey type, InternalVertex vertex, Object value) {
+    public AbstractProperty(long id, PropertyKey type, InternalVertex vertex, Object value) {
         super(id, type);
         Preconditions.checkNotNull(vertex);
         Preconditions.checkNotNull(value);
@@ -30,6 +30,11 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
         String valueStr = String.valueOf(value);
         valueStr = valueStr.substring(0,Math.min(valueStr.length(),20));
         return E + L_BRACKET + getId() + R_BRACKET + L_BRACKET + getVertex().getId() + DASH + getPropertyKey() + ARROW + valueStr + R_BRACKET;
+    }
+
+    public void setVertexAt(int pos, InternalVertex vertex) {
+        Preconditions.checkArgument(pos==0 && vertex!=null && this.vertex.equals(vertex));
+        this.vertex=vertex;
     }
 
     @Override
@@ -49,8 +54,8 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     }
 
     @Override
-    public TitanKey getPropertyKey() {
-        return (TitanKey)type;
+    public PropertyKey getPropertyKey() {
+        return (PropertyKey)type;
     }
 
     @Override

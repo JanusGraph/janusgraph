@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
@@ -18,7 +20,7 @@ import static org.junit.Assert.assertEquals;
  */
 
 @Category({ PerformanceTests.class })
-public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommon {
+public abstract class SpeedComparisonPerformanceTest extends TitanGraphBaseTest {
 
     private static final int numVertices = 2000;
     private static final int edgesPerVertex = 400;
@@ -84,9 +86,9 @@ public abstract class SpeedComparisonPerformanceTest extends TitanGraphTestCommo
 
     @Test
     public void testIncrementalSpeed() {
-        mgmt.makeKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makePropertyKey("payload").dataType(String.class).cardinality(Cardinality.SINGLE).make();
         makeVertexIndexedUniqueKey("uid", Long.class);
-        mgmt.makeLabel("activity").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makeEdgeLabel("activity").multiplicity(Multiplicity.MULTI).make();
         finishSchema();
 
         final int numV = 20;

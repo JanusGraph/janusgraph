@@ -1,0 +1,25 @@
+[[acknowledgements]]
+[appendix]
+Acknowledgements
+----------------
+
+[.tss-center]
+image:titan-logo.png[]
+
+Titan is an ongoing effort by various developers, contributors, and organizations. Along with this explicit list of contributors, please also refer to the special thanks for individual contributions to each release in <<changelog>>. Titan would not be possible without the excellent open source products that compose Titan. Please see a list of these projects in the Titan https://github.com/thinkaurelius/titan/blob/master/NOTICE.txt[NOTICE.txt].
+
+People
+~~~~~~
+
+. http://matthiasb.com/[Matthias Broecheler]: Lead developer and theorist.
+. https://github.com/dalaro[Dan LaRocque]: Lead developer with special focus on Titan's storage backend adapters and deployment in cloud environments.
+. http://markorodriguez.com[Marko A. Rodriguez]: TinkerPop support, testing, and documentation.
+. https://github.com/xedin[Pavel Yaskevich]: Developer with major contributions to Titan's Cassandra and HBase backend adapters.
+. http://stephen.genoprime.com/[Stephen Mallette]: TinkerPop support, testing, and documentation.
+. http://www.ketrinayim.com/[Ketrina Yim]: Created the Titan logo.
+
+Organizations
+~~~~~~~~~~~~~
+
+. http://thinkaurelius.com[Aurelius]: Provides development team and maintains the Titan codebase.
+. http://www.pearson.com/[Pearson]: Use case development, customer feedback, and early adopter.

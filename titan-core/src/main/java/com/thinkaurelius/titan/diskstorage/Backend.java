@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanConfigurationException;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -91,7 +91,7 @@ public class Backend implements LockerProvider {
     public static final Map<String, Integer> STATIC_KEY_LENGTHS = new HashMap<String, Integer>() {{
         put(EDGESTORE_NAME, 8);
         put(EDGESTORE_NAME + LOCK_STORE_SUFFIX, 8);
-        put(ID_STORE_NAME, 4);
+        put(ID_STORE_NAME, 8);
     }};
 
     private final KeyColumnValueStoreManager storeManager;

@@ -1,0 +1,16 @@
+Titan Presentations
+-------------------
+
+* http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data[Titan: The Rise of Big Graph Data] (*presentation*): An Introduction to graphs, graph algorithms, and the Titan graph database. Also includes an overview of the graph database landscape. _(June 2012, hosted by http://www.jivesoftware.com/[Jive Software])_
+
+* http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
+
+* http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/[Titan Provides Real-Time Big Graph Data] (*article*): A thorough evaluation of Titan based on a social network benchmark using real Twitter network data. _(August 2012)_
+
+* http://www.youtube.com/watch?v=ZkAYA4Kd8JE&feature=youtu.be[Titan: Big Graph Data with Cassandra] (*video*, "slides":http://www.slideshare.net/knowfrominfo/titan-big-graph-data-with-cassandra): Presentation of graph database use cases and Titan. Discusses some of Titan's unique features and how Titan uses Cassandra to scale. _(August 2012, presented at http://www.datastax.com/events/cassandrasummit2012[Cassandra 2012 Summit])_
+
+* http://www.slideshare.net/knowfrominfo/big-graph-data[Big Graph Data: Understanding a Complex World] (*presentation*): Solving 21st century problems with graphs and an overview of Titan and Faunus. _(November 2012, presented at http://www.meetup.com/Bay-Area-Graph-Geeks/events/85936692/[Bay Area Graph Geeks])_
+
+* http://www.slideshare.net/knowfrominfo/titan-talk-ebaymarch2013[Data - Information - Knowledge: Adding Value through Graph Analysis] (*presentation*): Discusses how graph analysis can add value to information and new advancements in Titan and Faunus. _(March 2013, presented at Ebay)_
+
+* http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/[Educating the Planet with Pearson Education] (*article*): Presents a large-scale benchmark of Titan with a 121 billion edge graph. _(May 2013, in collaboration with Pearson Education)_

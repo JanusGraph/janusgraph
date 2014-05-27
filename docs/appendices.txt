@@ -1,0 +1,14 @@
+Appendices
+==========
+
+include::configref.txt[]
+
+include::related.txt[]
+
+include::versions.txt[]
+
+include::changelog.txt[]
+
+include::upgrade.txt[]
+
+include::acknowledgements.txt[]

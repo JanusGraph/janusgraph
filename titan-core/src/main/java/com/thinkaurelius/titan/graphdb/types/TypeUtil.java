@@ -3,8 +3,10 @@ package com.thinkaurelius.titan.graphdb.types;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalType;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.blueprints.Direction;
 
 import java.util.ArrayList;
@@ -25,8 +27,8 @@ public class TypeUtil {
         return hasSimpleInternalVertexKeyIndex(prop.getPropertyKey());
     }
 
-    public static boolean hasSimpleInternalVertexKeyIndex(TitanKey key) {
-        InternalType type = (InternalType)key;
+    public static boolean hasSimpleInternalVertexKeyIndex(PropertyKey key) {
+        InternalRelationType type = (InternalRelationType)key;
         for (IndexType index : type.getKeyIndexes()) {
             if (index.getElement()== ElementCategory.VERTEX && index.isInternalIndex()) {
                 InternalIndexType iIndex = (InternalIndexType)index;
@@ -39,27 +41,27 @@ public class TypeUtil {
         return false;
     }
 
-    public static InternalType getBaseType(InternalType type) {
-        InternalType baseType = type.getBaseType();
+    public static InternalRelationType getBaseType(InternalRelationType type) {
+        InternalRelationType baseType = type.getBaseType();
         if (baseType == null) return type;
         else return baseType;
     }
 
-    public static Set<TitanKey> getIndexedKeys(IndexType index) {
-        Set<TitanKey> s = Sets.newHashSet();
+    public static Set<PropertyKey> getIndexedKeys(IndexType index) {
+        Set<PropertyKey> s = Sets.newHashSet();
         for (IndexField f : index.getFieldKeys()) {
             s.add(f.getFieldKey());
         }
         return s;
     }
 
-    public static List<InternalIndexType> getUniqueIndexes(TitanKey key) {
+    public static List<InternalIndexType> getUniqueIndexes(PropertyKey key) {
         List<InternalIndexType> indexes = new ArrayList<InternalIndexType>();
-        for (IndexType index : ((InternalType)key).getKeyIndexes()) {
+        for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
             if (index.isInternalIndex()) {
                 InternalIndexType iIndex = (InternalIndexType)index;
                 assert index.indexesKey(key);
-                if (iIndex.getCardinality()==Cardinality.SINGLE) {
+                if (iIndex.getCardinality()== Cardinality.SINGLE) {
                     assert iIndex.getElement()==ElementCategory.VERTEX;
                     indexes.add(iIndex);
                 }

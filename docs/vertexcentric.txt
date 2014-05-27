@@ -1,0 +1,65 @@
+[[vertex-centric-index]]
+Vertex-Centric Indices
+~~~~~~~~~~~~~~~~~~~~~~
+
+// TODO gracefully integrate this into the schema definition section ... current transition is abrupt
+
+[.tss-floatleft.tss-width-125]
+image:vertex-centric-index.png[]
+
+A vertex-centric index is specific to a vertex. Such indices are contrary to https://github.com/tinkerpop/blueprints/wiki/Graph-Indices[graph indices] which are global to the graph (i.e. indexing elements for fast global lookups). The purpose of vertex-centric indices is to sort and index the incident edges (and thus, adjacent vertices) of a vertex according to the incident edges' labels and properties. Given a https://github.com/tinkerpop/blueprints/wiki/Vertex-Query[vertex query], these indices are leveraged and, in doing so, linear scans of incident edges (`O(n)`) can be avoided and faster graph traversals ensue (`O(1)` or `O(log n)`). With traversals typically touching numerous vertices, the http://en.wikipedia.org/wiki/Combinatorial_explosion[combinatoric expense] of linear scans can bring a graph database to a halt. For more information on setting up vertex-centric indices, please see `sortKey()` in the <<type-definition,Type Definition Overview>>.  Note that vertex-centric indices overcome the infamous http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/[super node problem] found in many graph systems.
+
+h2. Real-World Benefits
+
+Assume 4 vertices each with 1k, 10k, 100k, and 1 million incident edges. Each edge represents a person tweeting a particular tweet vertex. Moreover, each edge has a `long` timestamp property on it. The http://gremlin.tinkerpop.com[Gremlin] Groovy code to create the 4 vertices and their respective edge sets is provided below, where the distinction between an index or not is the declaration of a `sortKey(time)` on an edge label.
+
+[source,groovy]
+----
+g = TitanFactory.open(conf)
+// graph schema construction
+g.makeKey('name').dataType(String.class).indexed(Vertex.class).make()
+time = g.makeKey('time').dataType(Long.class).make()
+if(useVertexCentricIndices)
+  g.makeLabel('tweets').sortKey(time).make()
+else 
+  g.makeLabel('tweets').make()
+g.commit()
+
+// graph instance construction
+g.addVertex([name:'v1000']);
+g.addVertex([name:'v10000']);
+g.addVertex([name:'v100000']);
+g.addVertex([name:'v1000000']);
+
+for(i=1000; i<1000001; i=i*10) {
+  v = g.V('name','v' + i).next();
+  (1..i).each {
+    v.addEdge('tweets',g.addVertex(),[time:it])
+    if(it % 10000 == 0) g.commit()
+  }; g.commit()
+}
+----
+
+Next, a query for the top 10 most recently tweeted adjacent vertices is enacted, where recency is defined by the `long` timestamp on the adjoining edge. If the vertices don't have vertex-centric indices, the query time grows by an order of magnitude to an order of magnitude increase in data size -- a near perfect relationship. With vertex-centric indices, runtimes are unaffected by the growth of the data size. The micro-benchmark results below are using the <<cassandra,Cassandra storage backend>> and the concluding code fragment.
+
+[options="header"]
+|==========================
+|Incident edge count |Without vertex-centric indices |With vertex-centric indices
+| 1000 | 0.82 ms | 0.50 ms
+| 10000 | 7.06 ms | 0.52 ms
+| 100000 | 70.90 ms | 0.46 ms
+| 1000000 | 778.94 ms | 0.46 ms
+|==========================
+
+[source,groovy]
+totalRuns = 50
+for(i=1000; i<1000001; i=i*10) {
+  v = g.V('name','v' + i).next();
+  totalTime = 0
+  (1..totalRuns).each {
+    t = System.currentTimeMillis();
+    v.outE('tweets').has('time',T.gt,i-10).inV.iterate()
+    totalTime += System.currentTimeMillis() - t;
+  }; null
+  System.out.println(i + ':' + totalTime / totalRuns);
+}

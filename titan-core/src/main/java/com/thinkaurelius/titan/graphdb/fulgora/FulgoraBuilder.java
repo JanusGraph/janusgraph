@@ -2,10 +2,7 @@ package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.olap.OLAPJob;
-import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
-import com.thinkaurelius.titan.core.olap.OLAPQueryBuilder;
-import com.thinkaurelius.titan.core.olap.StateInitializer;
+import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
@@ -26,14 +23,15 @@ import java.util.concurrent.Future;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
+public class FulgoraBuilder<S extends State<S>> implements OLAPJobBuilder<S> {
 
     public static final String STATE_KEY = "state";
     public static final int DEFAULT_HARD_QUERY_LIMIT = 100000;
+    private static final int NUM_VERTEX_DEFAULT = 10000;
 
     private static final StateInitializer NULL_STATE = new StateInitializer() {
         @Override
-        public Object initialState() {
+        public State initialState() {
             return null;
         }
     };
@@ -42,11 +40,11 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
     private OLAPJob olapJob;
     private String stateKey;
     private StateInitializer<S> initializer;
-    private Map<Long,S> initialState;
+    private FulgoraResult<S> initialState;
     private Map<String,Object> txOptions;
     private List<SliceQuery> queries;
     private int numProcessingThreads;
-    private long numVertices;
+    private int numVertices;
     private int hardQueryLimit;
 
     public FulgoraBuilder(StandardTitanGraph graph) {
@@ -86,7 +84,14 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
     @Override
     public FulgoraBuilder<S> setInitialState(Map<Long,S> values) {
         Preconditions.checkArgument(values!=null);
-        this.initialState=values;
+        this.initialState=new FulgoraResult<S>(values,graph.getIDManager());
+        return this;
+    }
+
+    @Override
+    public OLAPJobBuilder<S> setInitialState(OLAPResult<S> values) {
+        Preconditions.checkArgument(values!=null && values instanceof FulgoraResult,"Invalid result set provided: " + values);
+        this.initialState = (FulgoraResult)values;
         return this;
     }
 
@@ -94,7 +99,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
     public FulgoraBuilder<S> setNumVertices(long numVertices) {
         Preconditions.checkArgument(numVertices>0 && numVertices<Integer.MAX_VALUE,
                 "Invalid value for number of vertices: %s",numVertices);
-        this.numVertices=numVertices;
+        this.numVertices=(int)numVertices;
         return this;
     }
 
@@ -118,19 +123,20 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
     }
 
     @Override
-    public Future<Map<Long,S>> execute() {
+    public Future<OLAPResult<S>> execute() {
         Preconditions.checkArgument(!queries.isEmpty(),"Need to register at least one query");
         TransactionBuilder txBuilder = graph.buildTransaction().readOnly().setVertexCacheSize(100);
         for (Map.Entry<String,Object> txOption : txOptions.entrySet())
             txBuilder.setCustomOption(txOption.getKey(),txOption.getValue());
         final StandardTitanTx tx = (StandardTitanTx)txBuilder.start();
-        FulgoraExecutor executor = new FulgoraExecutor(queries,tx,(int)numVertices,numProcessingThreads,
-                stateKey, olapJob, initializer,initialState);
+        FulgoraResult<S> state = initialState!=null?initialState:new FulgoraResult<S>(numVertices>=0?numVertices:NUM_VERTEX_DEFAULT,graph.getIDManager());
+        FulgoraExecutor executor = new FulgoraExecutor(queries,tx,graph.getIDManager(),
+                numProcessingThreads, stateKey, olapJob, initializer, state);
         new Thread(executor).start();
         return executor;
     }
 
-    private class QueryBuilder extends AbstractVertexCentricQueryBuilder implements OLAPQueryBuilder<S> {
+    private class QueryBuilder extends AbstractVertexCentricQueryBuilder<QueryBuilder> implements OLAPQueryBuilder<S,QueryBuilder> {
 
         private final StandardTitanTx tx;
 
@@ -147,6 +153,11 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
                 queries.add(sq.updateLimit(bq.isFitted()?vq.getLimit():hardQueryLimit));
             }
             tx.rollback();
+        }
+
+        @Override
+        protected QueryBuilder getThis() {
+            return this;
         }
 
         @Override
@@ -172,13 +183,13 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
          */
 
         @Override
-        public QueryBuilder has(TitanKey key, Object value) {
+        public QueryBuilder has(PropertyKey key, Object value) {
             super.has(key, value);
             return this;
         }
 
         @Override
-        public QueryBuilder has(TitanLabel label, TitanVertex vertex) {
+        public QueryBuilder has(EdgeLabel label, TitanVertex vertex) {
             super.has(label, vertex);
             return this;
         }
@@ -202,7 +213,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public QueryBuilder has(TitanKey key, Predicate predicate, Object value) {
+        public QueryBuilder has(PropertyKey key, Predicate predicate, Object value) {
             super.has(key, predicate, value);
             return this;
         }
@@ -220,7 +231,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public <T extends Comparable<?>> QueryBuilder interval(TitanKey key, T start, T end) {
+        public <T extends Comparable<?>> QueryBuilder interval(PropertyKey key, T start, T end) {
             super.interval(key, start, end);
             return this;
         }
@@ -232,7 +243,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
         }
 
         @Override
-        public QueryBuilder types(TitanType... types) {
+        public QueryBuilder types(RelationType... types) {
             super.types(types);
             return this;
         }
@@ -249,7 +260,7 @@ public class FulgoraBuilder<S> implements OLAPJobBuilder<S> {
             return this;
         }
 
-        public QueryBuilder type(TitanType type) {
+        public QueryBuilder type(RelationType type) {
             super.type(type);
             return this;
         }

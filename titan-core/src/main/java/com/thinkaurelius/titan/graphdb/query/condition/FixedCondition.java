@@ -4,9 +4,10 @@ import com.thinkaurelius.titan.core.TitanElement;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
+ * A fixed valued literal, which always returns either true or false irrespective of the element which is evaluated.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class FixedCondition<E extends TitanElement> extends Literal<E> {
 
     private final boolean value;

@@ -1,8 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.core.TypeMaker;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
-import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.TransactionalGraphTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 
@@ -22,10 +20,10 @@ public class TransactionalTitanGraphTestSuite extends TransactionalGraphTestSuit
         TitanBlueprintsGraph graph = (TitanBlueprintsGraph) graphTest.generateGraph();
         //Need to define types before hand to avoid deadlock in transactions
 
-        graph.makeLabel("friend").make();
-        graph.makeKey("test").dataType(Long.class).make();
-        graph.makeKey("blah").dataType(Float.class).make();
-        graph.makeKey("bloop").dataType(Integer.class).make();
+        graph.makeEdgeLabel("friend").make();
+        graph.makePropertyKey("test").dataType(Long.class).make();
+        graph.makePropertyKey("blah").dataType(Float.class).make();
+        graph.makePropertyKey("bloop").dataType(Integer.class).make();
 
 
         graph.commit();

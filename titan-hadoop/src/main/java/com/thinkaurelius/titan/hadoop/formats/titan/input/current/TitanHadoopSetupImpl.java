@@ -46,7 +46,7 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     public TypeInspector getTypeInspector() {
         //Pre-load schema
         for (TitanSchemaCategory sc : TitanSchemaCategory.values()) {
-            for (TitanVertex k : tx.getVertices(BaseKey.TypeCategory, sc)) {
+            for (TitanVertex k : tx.getVertices(BaseKey.SchemaCategory, sc)) {
                 assert k instanceof TitanSchemaVertex;
                 TitanSchemaVertex s = (TitanSchemaVertex)k;
                 String name = s.getName();
@@ -75,11 +75,11 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
 
             @Override
             public boolean isTypeSystemType(long typeid) {
-                return typeid == BaseKey.TypeCategory.getID() ||
-                        typeid == BaseKey.TypeDefinitionProperty.getID() ||
-                        typeid == BaseKey.TypeDefinitionDesc.getID() ||
-                        typeid == BaseKey.TypeName.getID() ||
-                        typeid == BaseLabel.TypeDefinitionEdge.getID();
+                return typeid == BaseKey.SchemaCategory.getID() ||
+                        typeid == BaseKey.SchemaDefinitionProperty.getID() ||
+                        typeid == BaseKey.SchemaDefinitionDesc.getID() ||
+                        typeid == BaseKey.SchemaName.getID() ||
+                        typeid == BaseLabel.SchemaDefinitionEdge.getID();
             }
         };
     }
@@ -89,20 +89,20 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
         return new VertexReader() {
             @Override
             public long getVertexId(StaticBuffer key) {
-                return IDHandler.getKeyID(key);
+                return graph.getIDManager().getKeyID(key);
             }
         };
     }
 
     @Override
-    public RelationReader getRelationReader() {
+    public RelationReader getRelationReader(long vertexid) {
         return graph.getEdgeSerializer();
     }
 
     @Override
     public SliceQuery inputSlice(final VertexQueryFilter inputFilter) {
         if (inputFilter.limit == 0) {
-            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY);
+            final StaticBuffer[] endPoints = IDHandler.getBounds(RelationCategory.PROPERTY,false);
             return new SliceQuery(endPoints[0], endPoints[1]).setLimit(Integer.MAX_VALUE);
         } else {
             return super.inputSlice(inputFilter);
