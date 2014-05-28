@@ -231,8 +231,13 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 
         private final Timepoint t;
 
+        public MaskedTimestamp(Timepoint commitTime) {
+            Preconditions.checkNotNull(commitTime);
+            this.t=commitTime;
+        }
+
         public MaskedTimestamp(StoreTransaction txh) {
-            this.t = txh.getConfiguration().getCommitTime();
+            this(txh.getConfiguration().getCommitTime());
         }
 
         public long getDeletionTime(TimeUnit unit) {

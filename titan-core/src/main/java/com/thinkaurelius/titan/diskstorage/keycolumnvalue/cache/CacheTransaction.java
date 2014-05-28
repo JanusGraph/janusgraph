@@ -108,27 +108,19 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         return size;
     }
 
-    private static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = new Function<Entry, StaticBuffer>() {
-        @Nullable
-        @Override
-        public StaticBuffer apply(@Nullable Entry entry) {
-            return entry.getColumn();
-        }
-    };
-
     private KCVMutation convert(KCVEntryMutation mutation) {
         assert !mutation.isEmpty();
         if (!mutation.hasDeletions())
             return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
         else
-            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), ENTRY2COLUMN_FCT)));
+            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), KCVEntryMutation.ENTRY2COLUMN_FCT)));
     }
 
     private void flushInternal() throws StorageException {
         if (numMutations > 0) {
-            //Consolidate mutations
+            //Consolidate all mutations prior to persistence to ensure that no addition accidentally gets swallowed by a delete
             for (Map<StaticBuffer, KCVEntryMutation> store : mutations.values()) {
-                for (KCVEntryMutation mut : store.values()) mut.consolidate(ENTRY2COLUMN_FCT, ENTRY2COLUMN_FCT);
+                for (KCVEntryMutation mut : store.values()) mut.consolidate();
             }
 
             //Chunk up mutations

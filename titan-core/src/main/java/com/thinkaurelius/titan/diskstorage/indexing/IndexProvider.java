@@ -2,6 +2,8 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
 
 import java.util.List;
 import java.util.Map;
@@ -72,7 +74,7 @@ public interface IndexProvider extends IndexInformation {
      *
      * @return New Transaction Handle
      */
-    public TransactionHandle beginTransaction() throws StorageException;
+    public TransactionHandleConfigurable beginTransaction(TransactionHandleConfig config) throws StorageException;
 
     /**
      * Closes the index

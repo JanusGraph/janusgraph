@@ -8,8 +8,11 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -89,7 +92,8 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After
@@ -348,7 +352,8 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
         assertEquals(0, result.size());
 
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
         tx.commit();
@@ -358,7 +363,7 @@ public abstract class IndexProviderTest {
         clopen();
 
         // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
         assertEquals(0, result.size());
     }
@@ -381,7 +386,9 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
         assertEquals(0, result.size());
 
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
         tx.commit();
@@ -391,7 +398,7 @@ public abstract class IndexProviderTest {
         clopen();
 
         // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown"))); // would match original or updated value
         assertEquals(0, result.size());
     }
@@ -415,7 +422,9 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
         assertEquals(0, result.size());
 
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
         tx.commit();
@@ -425,7 +434,7 @@ public abstract class IndexProviderTest {
         clopen();
 
         // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
         assertEquals(0, result.size());
         result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));

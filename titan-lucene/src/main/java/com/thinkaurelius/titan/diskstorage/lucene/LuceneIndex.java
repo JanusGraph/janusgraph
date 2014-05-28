@@ -10,10 +10,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -415,8 +412,8 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public TransactionHandle beginTransaction() throws StorageException {
-        return new Transaction();
+    public TransactionHandleConfigurable beginTransaction(TransactionHandleConfig config) throws StorageException {
+        return new Transaction(config);
     }
 
     @Override
@@ -473,13 +470,15 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private class Transaction implements TransactionHandle {
+    private class Transaction implements TransactionHandleConfigurable {
 
+        private final TransactionHandleConfig config;
         private final Set<String> updatedStores = Sets.newHashSet();
-
-
         private final Map<String, IndexSearcher> searchers = new HashMap<String, IndexSearcher>(4);
 
+        private Transaction(TransactionHandleConfig config) {
+            this.config = config;
+        }
 
         private synchronized IndexSearcher getSearcher(String store) throws StorageException {
             IndexSearcher searcher = searchers.get(store);
@@ -522,6 +521,11 @@ public class LuceneIndex implements IndexProvider {
             } catch (IOException e) {
                 throw new PermanentStorageException("Could not close searcher", e);
             }
+        }
+
+        @Override
+        public TransactionHandleConfig getConfiguration() {
+            return config;
         }
     }
 
