@@ -12,7 +12,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class HBaseKeyColumnValueTest extends KeyColumnValueStoreTest {
+public class HBaseStoreTest extends KeyColumnValueStoreTest {
     @BeforeClass
     public static void startHBase() throws IOException {
         HBaseStorageSetup.startHBase();
