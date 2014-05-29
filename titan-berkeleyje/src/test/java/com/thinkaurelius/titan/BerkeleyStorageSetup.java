@@ -8,7 +8,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
-public class BerkeleyJeStorageSetup extends StorageSetup {
+public class BerkeleyStorageSetup extends StorageSetup {
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration(String dir) {
         return buildConfiguration()

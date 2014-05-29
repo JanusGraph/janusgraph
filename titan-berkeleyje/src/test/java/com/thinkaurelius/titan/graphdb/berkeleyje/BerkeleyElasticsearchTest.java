@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.berkeleyje;
 
-import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
+import com.thinkaurelius.titan.BerkeleyStorageSetup;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -16,15 +16,15 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ElasticSearchBerkeleyDBTest extends TitanIndexTest {
+public class BerkeleyElasticsearchTest extends TitanIndexTest {
 
-    public ElasticSearchBerkeleyDBTest() {
+    public BerkeleyElasticsearchTest() {
         super(true, true, true);
     }
 
     @Override
     public WriteConfiguration getConfiguration() {
-        ModifiableConfiguration config = BerkeleyJeStorageSetup.getBerkeleyJEConfiguration();
+        ModifiableConfiguration config = BerkeleyStorageSetup.getBerkeleyJEConfiguration();
         //Add index
         config.set(INDEX_BACKEND,"elasticsearch",INDEX);
         config.set(LOCAL_MODE,true,INDEX);

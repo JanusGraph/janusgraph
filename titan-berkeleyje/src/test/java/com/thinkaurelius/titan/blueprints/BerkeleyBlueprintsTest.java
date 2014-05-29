@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.BerkeleyJeStorageSetup;
+import com.thinkaurelius.titan.BerkeleyStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StorageException;
@@ -19,12 +19,12 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
+public class BerkeleyBlueprintsTest extends TitanBlueprintsTest {
 
     private static final String DEFAULT_SUBDIR = "standard";
 
     private static final Logger log =
-            LoggerFactory.getLogger(BerkeleyJEBlueprintsTest.class);
+            LoggerFactory.getLogger(BerkeleyBlueprintsTest.class);
 
     @Override
     public Graph generateGraph() {
@@ -35,12 +35,12 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
 
     @Override
     public Graph generateGraph(String uid) {
-        String dir = BerkeleyJeStorageSetup.getHomeDir(uid);
+        String dir = BerkeleyStorageSetup.getHomeDir(uid);
         synchronized (openGraphs) {
             if (!openGraphs.containsKey(dir)) {
                 log.debug("Cleaning directory {} before opening it for the first time", dir);
                 try {
-                    BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration(dir));
+                    BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
                     s.clearStorage();
                     s.close();
                     File dirFile = new File(dir);
@@ -57,7 +57,7 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
             }
         }
         log.info("Opening graph with uid={} in directory {}", uid, dir);
-        openGraphs.put(dir, TitanFactory.open(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration(dir)));
+        openGraphs.put(dir, TitanFactory.open(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir)));
         return openGraphs.get(dir);
     }
 
@@ -77,7 +77,7 @@ public class BerkeleyJEBlueprintsTest extends TitanBlueprintsTest {
                         getMostRecentMethodName(), dir);
                     g.shutdown();
                 }
-                BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyJeStorageSetup.getBerkeleyJEConfiguration(dir));
+                BerkeleyJEStoreManager s = new BerkeleyJEStoreManager(BerkeleyStorageSetup.getBerkeleyJEConfiguration(dir));
                 s.clearStorage();
                 s.close();
                 File dirFile = new File(dir);
