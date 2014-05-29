@@ -189,7 +189,6 @@
                         <runOrder>alphabetical</runOrder>
                         <failIfNoTests>false</failIfNoTests>
                         <excludes>
-                            <exclude>**/External*.java</exclude>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
                         </excludes>
@@ -1162,31 +1161,6 @@
             </build>
         </profile>
 
-        <profile>
-            <id>comprehensive-test</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m -ea</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <forkMode>always</forkMode>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        
         <profile>
             <id>target-jre6</id>
             <activation>
