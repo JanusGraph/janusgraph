@@ -7,13 +7,18 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
+import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.commons.io.FileUtils;
+import org.elasticsearch.common.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import test.java.com.thinkaurelius.titan.HBaseStatus;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -21,47 +26,16 @@ import java.io.RandomAccessFile;
 
 public class HBaseStorageSetup {
 
-    private static Process HBASE = null;
-    // amount of seconds to wait before assuming that HBase shutdown
-    private static final int SHUTDOWN_TIMEOUT_SEC = 20;
+    private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
 
     // hbase config for testing
     private static final String HBASE_CONFIG_DIR = "./conf";
 
-    // default pid file location
-    private static final String HBASE_PID_FILE = "/tmp/hbase-" + System.getProperty("user.name") + "-master.pid";
+    private static final String HBASE_PID_FILE = "/tmp/titan-hbase-test-daemon.pid";
 
-    private static final Logger log = LoggerFactory.getLogger(HBaseStorageSetup.class);
+    private static final String HBASE_TARGET_VERSION = VersionInfo.getVersion();
 
-    static {
-        try {
-            log.info("Deleting old test directories (if any).");
-
-            // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
-            File hbaseRoot = new File("./target/hbase-root");
-            File zookeeperDataDir = new File("./target/zk-data");
-
-            if (hbaseRoot.exists())
-                FileUtils.deleteDirectory(hbaseRoot);
-
-            if (zookeeperDataDir.exists())
-                FileUtils.deleteDirectory(zookeeperDataDir);
-        } catch (IOException e) {
-            log.error("Failed to delete old HBase test directories: '" + e.getMessage() + "', ignoring.");
-        }
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                log.info("All done. Shutting done HBase.");
-
-                try {
-                    HBaseStorageSetup.shutdownHBase();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-    }
+    private volatile static HBaseStatus HBASE = null;
 
     public static ModifiableConfiguration getHBaseConfiguration() {
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
@@ -75,120 +49,154 @@ public class HBaseStorageSetup {
         return getHBaseConfiguration().getConfiguration();
     }
 
-    public static void startHBase() throws IOException {
+    /**
+     * Starts the HBase version described by {@link #HBASE_TARGET_VERSION}
+     *
+     * @return a status object describing a successfully-started HBase daemon
+     * @throws IOException
+     *             passed-through
+     * @throws RuntimeException
+     *             if starting HBase fails for any other reason
+     */
+    public static HBaseStatus startHBase() throws IOException {
         if (HBASE != null) {
             log.info("HBase already started");
-            return; // already started, nothing to do
+            return HBASE;
         }
 
+        killIfRunning();
+
+        deleteData();
+
+        log.info("Starting HBase");
+        String scriptPath = HBaseStatus.getScriptDirForHBaseVersion(HBASE_TARGET_VERSION) + "/hbase-daemon.sh";
+        runCommand(scriptPath, "--config", HBASE_CONFIG_DIR, "start", "master");
+
+        HBASE = HBaseStatus.write(HBASE_PID_FILE, HBASE_TARGET_VERSION);
+
+        registerKillerHook(HBASE);
+
+        return HBASE;
+    }
+
+    /**
+     * Check whether {@link #HBASE_PID_FILE} describes an HBase daemon. If so,
+     * kill it. Otherwise, do nothing.
+     */
+    private static void killIfRunning() {
+        HBaseStatus stat = HBaseStatus.read(HBASE_PID_FILE);
+
+        if (null == stat) {
+            log.info("HBase is not running");
+            return;
+        }
+
+        shutdownHBase(stat);
+    }
+
+    /**
+     * Delete HBase data under the current working directory.
+     */
+    private static void deleteData() {
         try {
-            log.info("Starting HBase");
+            // please keep in sync with HBASE_CONFIG_DIR/hbase-site.xml, reading HBase XML config is huge pain.
+            File hbaseRoot = new File("./target/hbase-root");
+            File zookeeperDataDir = new File("./target/zk-data");
 
-            // start HBase instance with environment set
-            String cmd = String.format("./bin/hbase-daemon.sh --config %s start master", HBASE_CONFIG_DIR);
-            log.info("Executing {}", cmd);
-            HBASE = Runtime.getRuntime().exec(cmd);
-
-            try {
-                HBASE.waitFor(); // wait for script to return
-                log.info("HBase forked");
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            if (hbaseRoot.exists()) {
+                log.info("Deleting {}", hbaseRoot);
+                FileUtils.deleteDirectory(hbaseRoot);
             }
 
-            assert HBASE.exitValue() >= 0; // check if we have started successfully
+            if (zookeeperDataDir.exists()) {
+                log.info("Deleting {}", zookeeperDataDir);
+                FileUtils.deleteDirectory(zookeeperDataDir);
+            }
+
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to delete old HBase test data directories", e);
         }
     }
 
-    private static void shutdownHBase() throws IOException {
-        if (HBASE == null)
-            return; // HBase hasn't been started yet
+    /**
+     * Register a shutdown hook with the JVM that attempts to kill the external
+     * HBase daemon
+     *
+     * @param stat
+     *            the HBase daemon to kill
+     */
+    private static void registerKillerHook(final HBaseStatus stat) {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                shutdownHBase(stat);
+            }
+        });
+    }
+
+    /**
+     * Runs the {@code hbase-daemon.sh stop master} script corresponding to the
+     * HBase version described by the parameter.
+     *
+     * @param stat
+     *            the running HBase daemon to stop
+     */
+    private static void shutdownHBase(HBaseStatus stat) {
+
+        log.info("Shutting down HBase...");
 
         // First try graceful shutdown through the script...
-        String cmdParts[] = new String[]{ "./bin/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master" };
-        log.info("Executing {}", Joiner.on(" ").join(cmdParts));
-        ProcessBuilder pb = new ProcessBuilder(cmdParts);
+        runCommand(stat.getScriptDir() + "/hbase-daemon.sh", "--config", HBASE_CONFIG_DIR, "stop", "master");
+
+        log.info("Shutdown HBase");
+
+        stat.getFile().delete();
+
+        log.info("Deleted {}", stat.getFile());
+    }
+
+    /**
+     * Run the parameter as an external process. Returns if the command starts
+     * without throwing an exception and returns exit status 0. Throws an
+     * exception if there's any problem invoking the command or if it does not
+     * return zero exit status.
+     *
+     * Blocks indefinitely while waiting for the command to complete.
+     *
+     * @param argv
+     *            passed directly to {@link ProcessBuilder}'s constructor
+     */
+    private static void runCommand(String... argv) {
+
+        final String cmd = Joiner.on(" ").join(argv);
+        log.info("Executing {}", cmd);
+
+        ProcessBuilder pb = new ProcessBuilder(argv);
         pb.redirectErrorStream(true);
-        Process stopMaster = pb.start();
-        StreamLogger sl = new StreamLogger(stopMaster.getInputStream());
+        Process startup;
+        try {
+            startup = pb.start();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        StreamLogger sl = new StreamLogger(startup.getInputStream());
         sl.setDaemon(true);
         sl.start();
 
-        // ...but send SIGKILL if that times out
-        HBaseKiller killer = new HBaseKiller();
-        killer.start();
         try {
-            stopMaster.waitFor();
+            int exitcode = startup.waitFor(); // wait for script to return
+            if (0 == exitcode) {
+                log.info("Command \"{}\" exited with status 0", cmd);
+            } else {
+                throw new RuntimeException("Command \"" + cmd + "\" exited with status " + exitcode);
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        killer.abort();
-        killer.interrupt();
-        try {
-            killer.join();
-        } catch (InterruptedException e) {
-            log.warn("Failed to join HBase process killer thread", e);
-        }
 
-        // StreamLogger is a daemon thread, so failing to stop it isn't so bad
         try {
             sl.join(1000L);
         } catch (InterruptedException e) {
-            log.warn("Failed to stop HBase output logger thread", e);
-        }
-    }
-
-    private static class HBaseKiller extends Thread {
-
-        private volatile boolean proceed = true;
-
-        @Override
-        public void run() {
-            try {
-                log.info("Waiting {} seconds for HBase to shutdown...", SHUTDOWN_TIMEOUT_SEC);
-                Thread.sleep(SHUTDOWN_TIMEOUT_SEC * 1000L);
-            } catch (InterruptedException e) {
-                log.info("HBase killer thread interrupted");
-            }
-
-            if (proceed) {
-                try {
-                    readPidfileAndKill();
-                } catch (Exception e) {
-                    log.error("Failed to kill HBase", e);
-                }
-            } else {
-                log.info("HBase shutdown cleanly, not attempting to kill its process");
-            }
-        }
-
-        public void abort() {
-            proceed = false;
-        }
-
-        private void readPidfileAndKill() throws IOException, InterruptedException {
-            File pid = new File(HBASE_PID_FILE);
-
-            if (pid.exists()) {
-                RandomAccessFile pidFile = new RandomAccessFile(pid, "r");
-
-                StringBuilder b = new StringBuilder();
-
-                while (pidFile.getFilePointer() < (pidFile.length() - 1)) // we don't need newline
-                   b.append((char) pidFile.readByte());
-
-                String cmd = "kill -KILL " + b.toString();
-                log.info("Executing {}", cmd);
-                Process kill = Runtime.getRuntime().exec(cmd);
-                kill.waitFor();
-
-                pidFile.close();
-                pid.delete(); // delete pid file like nothing happened
-
-                return;
-            }
+            log.warn("Failed to cleanup stdin handler thread after running command \"{}\"", cmd, e);
         }
     }
 
