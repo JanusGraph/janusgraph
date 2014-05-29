@@ -105,6 +105,9 @@
                     <execution>
                         <id>generate-cached-classpath</id>
                     </execution>
+                    <execution>
+                        <id>unpack-common-test-classes</id>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>

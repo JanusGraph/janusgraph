@@ -116,6 +116,24 @@
                                 <outputFile>${project.basedir}/target/cached_classpath.txt</outputFile>
                             </configuration>
                         </execution>
+                        <execution>
+                            <id>unpack-common-test-classes</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>unpack</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>titan-hbase-core</artifactId>
+                                        <version>${project.version}</version>
+                                        <classifier>tests</classifier>
+                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
                     </executions>
                 </plugin>
                 <plugin>

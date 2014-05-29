@@ -31,6 +31,21 @@
             </exclusions>
         </dependency>
         <dependency>
+	    <groupId>${project.groupId}</groupId>
+	    <artifactId>titan-hbase-core</artifactId>
+	    <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+<!--
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-net</artifactId>
+                    <groupId>commons-net</groupId>
+                </exclusion>
+            </exclusions>
+-->
+        </dependency>
+        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
             <version>${hbase.version}</version>
@@ -73,7 +88,6 @@
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
             <testResource>
                 <directory>${project.basedir}/../common/test/resources</directory>
@@ -94,6 +108,9 @@
                 <executions>
                     <execution>
                         <id>generate-cached-classpath</id>
+                    </execution>
+                    <execution>
+                        <id>unpack-common-test-classes</id>
                     </execution>
                 </executions>
             </plugin>

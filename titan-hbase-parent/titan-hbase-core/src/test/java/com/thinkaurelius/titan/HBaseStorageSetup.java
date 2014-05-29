@@ -4,25 +4,20 @@ import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
 
 import org.apache.hadoop.hbase.util.VersionInfo;
 import org.apache.commons.io.FileUtils;
-import org.elasticsearch.common.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import test.java.com.thinkaurelius.titan.HBaseStatus;
+import com.thinkaurelius.titan.HBaseStatus;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.RandomAccessFile;
 
 public class HBaseStorageSetup {
 
