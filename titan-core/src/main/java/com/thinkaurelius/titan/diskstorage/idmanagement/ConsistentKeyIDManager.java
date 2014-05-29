@@ -44,13 +44,6 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
  * The partition id is used as the key and since key operations are considered
  * consistent, this protocol guarantees unique id block assignments.
  * <p/>
- * This class uses {@code System#currentTimeMillis()} internally, both for
- * timing writes and for the timestamp values written to the storage backend
- * during the lock application process. It always uses
- * {@code currentTimeMillis()} no matter what
- * {@link GraphDatabaseConfiguration#TIMESTAMP_PROVIDER} has been configured in
- * the enclosing graph.
- *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
@@ -79,6 +72,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
     private final int uniqueId;
     private final boolean randomizeUniqueId;
     protected final int randomUniqueIDLimit;
+    private final Duration waitGracePeriod;
 
     private final Random random = new Random();
 
@@ -88,6 +82,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         this.manager = manager;
         this.idStore = idStore;
         this.times = config.get(TIMESTAMP_PROVIDER);
+        this.waitGracePeriod = idApplicationWaitMS.multiply(0.1D);
         Preconditions.checkNotNull(times);
 
         partitionBitWdith = config.has(CLUSTER_PARTITION)? NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS)):0;
@@ -227,17 +222,18 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                 // calculate the start (inclusive) and end (exclusive) of the allocation we're about to attempt
                 assert idBlockUpperBound - blockSize > nextStart;
                 long nextEnd = nextStart + blockSize;
-                final StaticBuffer target = getBlockApplication(nextEnd);
-
+                StaticBuffer target = null;
 
                 // attempt to write our claim on the next id block
                 boolean success = false;
                 try {
                     Timer writeTimer = times.getTimer().start();
+                    target = getBlockApplication(nextEnd, writeTimer.getStartTime());
+                    final StaticBuffer finalTarget = target; // copy for the inner class
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
                         public Boolean call(StoreTransaction txh) throws StorageException {
-                            idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(target)), KeyColumnValueStore.NO_DELETIONS, txh);
+                            idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
                             return true;
                         }
                     },this,times);
@@ -256,7 +252,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                          * the same id block from another machine
                          */
 
-                        sleepAndConvertInterrupts(idApplicationWaitMS);
+                        sleepAndConvertInterrupts(idApplicationWaitMS.add(waitGracePeriod));
 
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
@@ -290,14 +286,15 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
                         }
                     }
                 } finally {
-                    if (!success) {
+                    if (!success && null != target) {
                         //Delete claim to not pollute id space
                         for (int attempt = 0; attempt < rollbackAttempts; attempt++) {
                             try {
+                                final StaticBuffer finalTarget = target; // copy for the inner class
                                 BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                                     @Override
                                     public Boolean call(StoreTransaction txh) throws StorageException {
-                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(target), txh);
+                                        idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
                                         return true;
                                     }
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
@@ -340,13 +337,13 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         return slice;
     }
 
-    private final StaticBuffer getBlockApplication(long blockValue) {
+    private final StaticBuffer getBlockApplication(long blockValue, Timepoint timestamp) {
         WriteByteBuffer bb = new WriteByteBuffer(
                 8 // counter long
                         + 8 // time in ms
                         + uidBytes.length);
 
-        bb.putLong(-blockValue).putLong(System.currentTimeMillis());
+        bb.putLong(-blockValue).putLong(timestamp.getNativeTimestamp());
         WriteBufferUtil.put(bb, uidBytes);
         return bb.getStaticBuffer();
     }
