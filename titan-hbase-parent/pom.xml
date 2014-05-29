@@ -104,6 +104,21 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>generate-cached-classpath</id>
+                            <phase>generate-test-resources</phase>
+                            <goals>
+                                <goal>build-classpath</goal>
+                            </goals>
+                            <configuration>
+                                <outputFile>${project.basedir}/target/cached_classpath.txt</outputFile>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <!-- Using assembly instead of resources because resources breaks filemodes and 
                          permissions: http://jira.codehaus.org/browse/MRESOURCES-132 -->
                     <artifactId>maven-assembly-plugin</artifactId>

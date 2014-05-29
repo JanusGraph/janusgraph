@@ -50,8 +50,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- HBase 0.94 is broken (master won't start) using Guava 15.0 or newer and this won't be fixed:
-             https://issues.apache.org/jira/browse/HBASE-10174
+        <!--
+          HBase 0.94 master can't start with Guava 15.0 or newer:
+          https://issues.apache.org/jira/browse/HBASE-10174
+          This is marked "Won't Fix"
         -->
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -84,6 +86,14 @@
                 <executions>
                     <execution>
                         <id>filter-hbase-conf</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-cached-classpath</id>
                     </execution>
                 </executions>
             </plugin>
