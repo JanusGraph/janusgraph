@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
@@ -42,10 +42,10 @@ import java.util.concurrent.TimeUnit;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 @RunWith(Parameterized.class)
-public abstract class IDAllocationTest {
+public abstract class IDAuthorityTest {
 
     private static final Logger log =
-            LoggerFactory.getLogger(IDAllocationTest.class);
+            LoggerFactory.getLogger(IDAuthorityTest.class);
 
     public static final int CONCURRENCY = 8;
     public static final int MAX_NUM_PARTITIONS = 4;
@@ -94,7 +94,7 @@ public abstract class IDAllocationTest {
     public final long idUpperBoundBitWidth;
     public final long idUpperBound;
 
-    public IDAllocationTest(WriteConfiguration baseConfig) {
+    public IDAuthorityTest(WriteConfiguration baseConfig) {
         Preconditions.checkNotNull(baseConfig);
         TestGraphConfigs.applyOverrides(baseConfig);
         this.baseStoreConfiguration = baseConfig;
@@ -135,7 +135,7 @@ public abstract class IDAllocationTest {
             StoreFeatures storeFeatures = manager[i].getFeatures();
             KeyColumnValueStore idStore = manager[i].openDatabase("ids");
             if (storeFeatures.isKeyConsistent())
-                idAuthorities[i] = new ConsistentKeyIDManager(idStore, manager[i], sc);
+                idAuthorities[i] = new ConsistentKeyIDAuthority(idStore, manager[i], sc);
             else throw new IllegalArgumentException("Cannot open id store");
         }
     }

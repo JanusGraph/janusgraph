@@ -1,14 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.IDAllocationTest;
+import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
-public class EmbeddedIDAllocationTest extends IDAllocationTest {
+public class EmbeddedIDAuthorityTest extends IDAuthorityTest {
 
-    public EmbeddedIDAllocationTest(WriteConfiguration baseConfig) {
+    public EmbeddedIDAuthorityTest(WriteConfiguration baseConfig) {
         super(baseConfig);
     }
 

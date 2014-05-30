@@ -47,9 +47,9 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ConsistentKeyIDManager extends AbstractIDManager implements BackendOperation.TransactionalProvider {
+public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements BackendOperation.TransactionalProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
+    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDAuthority.class);
 
     private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(16);
     private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(16);
@@ -76,7 +76,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final Random random = new Random();
 
-    public ConsistentKeyIDManager(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
+    public ConsistentKeyIDAuthority(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
         super(config);
         Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;

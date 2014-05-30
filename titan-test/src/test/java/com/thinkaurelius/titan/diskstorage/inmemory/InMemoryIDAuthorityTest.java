@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.inmemory;
 
-import com.thinkaurelius.titan.diskstorage.IDAllocationTest;
+import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStore
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class InMemoryIDAllocationTest extends IDAllocationTest {
+public class InMemoryIDAuthorityTest extends IDAuthorityTest {
 
     /**
      * The IDAllocationTest assumes that every StoreManager returned by
@@ -25,7 +25,7 @@ public class InMemoryIDAllocationTest extends IDAllocationTest {
      */
     private final InMemoryStoreManager sharedManager;
 
-    public InMemoryIDAllocationTest(WriteConfiguration baseConfig) {
+    public InMemoryIDAuthorityTest(WriteConfiguration baseConfig) {
         super(baseConfig);
         sharedManager = new InMemoryStoreManager();
     }

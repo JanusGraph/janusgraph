@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
@@ -213,7 +213,7 @@ public class Backend implements LockerProvider {
             }
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
-                idAuthority = new ConsistentKeyIDManager(idStore, storeManager, config);
+                idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, config);
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
