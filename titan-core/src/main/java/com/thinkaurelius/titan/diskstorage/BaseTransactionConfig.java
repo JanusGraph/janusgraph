@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public interface TransactionHandleConfig {
+public interface BaseTransactionConfig {
 
     /**
      * Returns the commit time of this transaction which is either a custom timestamp provided

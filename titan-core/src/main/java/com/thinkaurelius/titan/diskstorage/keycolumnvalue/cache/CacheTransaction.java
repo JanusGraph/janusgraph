@@ -57,7 +57,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVEntryMutation>>(expectedNumStores);
     }
 
-    public StoreTransaction getWrappedTransactionHandle() {
+    public StoreTransaction getWrappedTransaction() {
         return tx;
     }
 
@@ -208,7 +208,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     @Override
-    public TransactionHandleConfig getConfiguration() {
+    public BaseTransactionConfig getConfiguration() {
         return tx.getConfiguration();
     }
 

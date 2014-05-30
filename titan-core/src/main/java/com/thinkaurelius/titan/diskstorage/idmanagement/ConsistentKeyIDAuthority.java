@@ -26,7 +26,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -56,7 +56,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
-    private final StandardTransactionHandleConfig.Builder storeTxConfigBuilder;
+    private final StandardBaseTransactionConfig.Builder storeTxConfigBuilder;
     /**
      * This belongs in TitanConfig.
      */
@@ -92,7 +92,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
+        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID),"Conflicting configuration: a unique id and randomization have been set");

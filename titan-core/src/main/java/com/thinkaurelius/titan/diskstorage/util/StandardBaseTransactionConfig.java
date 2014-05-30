@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -12,17 +12,17 @@ import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
  * @author Matthias Broecheler (me@matthiasb.com)
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
-public class StandardTransactionHandleConfig implements TransactionHandleConfig {
+public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     private volatile Timepoint commitTime;
     private final TimestampProvider times;
     private final String groupName;
     private final Configuration customOptions;
 
-    private StandardTransactionHandleConfig(String groupName,
-                                            TimestampProvider times,
-                                            Timepoint commitTime,
-                                            Configuration customOptions) {
+    private StandardBaseTransactionConfig(String groupName,
+                                          TimestampProvider times,
+                                          Timepoint commitTime,
+                                          Configuration customOptions) {
         Preconditions.checkArgument(customOptions!=null);
         Preconditions.checkArgument(null != times || null != commitTime);
         this.groupName = groupName;
@@ -93,7 +93,7 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
          *            an existing transaction from which this builder will take
          *            its values
          */
-        public Builder(TransactionHandleConfig template) {
+        public Builder(BaseTransactionConfig template) {
             customOptions(template.getCustomOptions());
             groupName(template.getGroupName());
             timestampProvider(template.getTimestampProvider());
@@ -120,16 +120,16 @@ public class StandardTransactionHandleConfig implements TransactionHandleConfig 
             return this;
         }
 
-        public StandardTransactionHandleConfig build() {
-            return new StandardTransactionHandleConfig(groupName, times, commitTime, customOptions);
+        public StandardBaseTransactionConfig build() {
+            return new StandardBaseTransactionConfig(groupName, times, commitTime, customOptions);
         }
     }
 
-    public static StandardTransactionHandleConfig of(TimestampProvider times) {
+    public static StandardBaseTransactionConfig of(TimestampProvider times) {
         return new Builder().timestampProvider(times).build();
     }
 
-    public static StandardTransactionHandleConfig of(TimestampProvider times, Configuration customOptions) {
+    public static StandardBaseTransactionConfig of(TimestampProvider times, Configuration customOptions) {
         return new Builder().timestampProvider(times).customOptions(customOptions).build();
     }
 

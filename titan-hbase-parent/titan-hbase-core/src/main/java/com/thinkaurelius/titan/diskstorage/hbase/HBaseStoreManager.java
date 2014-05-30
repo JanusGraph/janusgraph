@@ -368,7 +368,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
         return new HBaseTransaction(config);
     }
 

@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
@@ -15,7 +15,7 @@ public class CassandraTransaction extends AbstractStoreTransaction {
 
     private static final Logger log = LoggerFactory.getLogger(CassandraTransaction.class);
 
-    public CassandraTransaction(TransactionHandleConfig c) {
+    public CassandraTransaction(BaseTransactionConfig c) {
         super(c);
     }
 

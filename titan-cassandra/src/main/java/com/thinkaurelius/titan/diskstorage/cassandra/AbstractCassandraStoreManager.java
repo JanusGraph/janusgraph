@@ -5,7 +5,7 @@ import java.util.Map;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -179,7 +179,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
 
     @Override
-    public StoreTransaction beginTransaction(final TransactionHandleConfig config) {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) {
         return new CassandraTransaction(config);
     }
 

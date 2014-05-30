@@ -22,13 +22,13 @@ import java.util.concurrent.Callable;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexTransaction implements TransactionHandle, LoggableTransaction {
+public class IndexTransaction implements BaseTransaction, LoggableTransaction {
 
     private static final int DEFAULT_OUTER_MAP_SIZE = 3;
     private static final int DEFAULT_INNER_MAP_SIZE = 5;
 
     private final IndexProvider index;
-    private final TransactionHandle indexTx;
+    private final BaseTransaction indexTx;
     private final KeyInformation.IndexRetriever keyInformations;
 
     private final Duration maxWriteTime;
@@ -36,7 +36,7 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
-                            TransactionHandleConfig config,
+                            BaseTransactionConfig config,
                             Duration maxWriteTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);

@@ -128,14 +128,14 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
@@ -262,7 +262,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         //Construct query
         Filter q = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
@@ -381,7 +381,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         Query q;
         try {
             q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
@@ -412,7 +412,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public TransactionHandleConfigurable beginTransaction(TransactionHandleConfig config) throws StorageException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
         return new Transaction(config);
     }
 
@@ -470,13 +470,13 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private class Transaction implements TransactionHandleConfigurable {
+    private class Transaction implements BaseTransactionConfigurable {
 
-        private final TransactionHandleConfig config;
+        private final BaseTransactionConfig config;
         private final Set<String> updatedStores = Sets.newHashSet();
         private final Map<String, IndexSearcher> searchers = new HashMap<String, IndexSearcher>(4);
 
-        private Transaction(TransactionHandleConfig config) {
+        private Transaction(BaseTransactionConfig config) {
             this.config = config;
         }
 
@@ -524,7 +524,7 @@ public class LuceneIndex implements IndexProvider {
         }
 
         @Override
-        public TransactionHandleConfig getConfiguration() {
+        public BaseTransactionConfig getConfiguration() {
             return config;
         }
     }
