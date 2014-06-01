@@ -13,10 +13,7 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,8 +35,8 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
     private final AtomicReference<Config> cfgRef;
 
-    public CTConnectionFactory(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
-        this.cfgRef = new AtomicReference<Config>(new Config(hostnames, port, username, password, timeoutMS, frameSize));
+    private CTConnectionFactory(Config config) {
+        this.cfgRef = new AtomicReference<Config>(config);
     }
 
     @Override
@@ -79,7 +76,18 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         if (log.isDebugEnabled())
             log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
 
-        TTransport transport = new TFramedTransport(new TSocket(hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
+
+        TSocket socket;
+        if (!cfg.sslTruststoreLocation.isEmpty()) {
+            TSSLTransportFactory.TSSLTransportParameters params = new TSSLTransportFactory.TSSLTransportParameters() {{
+               setKeyStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
+            }};
+            socket = TSSLTransportFactory.getClientSocket(hostname, cfg.port, cfg.timeoutMS, params);
+        } else {
+            socket = new TSocket(hostname, cfg.port, cfg.timeoutMS);
+        }
+
+        TTransport transport = new TFramedTransport(socket, cfg.frameSize);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
@@ -268,18 +276,22 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         private final String[] hostnames;
         private final int port;
-        private final int timeoutMS;
-        private final int frameSize;
         private final String username;
         private final String password;
 
-        public Config(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+        private int timeoutMS;
+        private int frameSize;
+
+        private String sslTruststoreLocation;
+        private String sslTruststorePassword;
+
+        private boolean isBuilt;
+
+        public Config(String[] hostnames, int port, String username, String password) {
             this.hostnames = hostnames;
             this.port = port;
             this.username = username;
             this.password = password;
-            this.timeoutMS = timeoutMS;
-            this.frameSize = frameSize;
         }
 
         // TODO: we don't really need getters/setters here as all of the fields are final and immutable
@@ -296,6 +308,41 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
             return hostnames.length == 1 ? hostnames[0] : hostnames[THREAD_LOCAL_RANDOM.get().nextInt(hostnames.length)];
         }
 
+        public Config setTimeoutMS(int timeoutMS) {
+            checkIfAlreadyBuilt();
+            this.timeoutMS = timeoutMS;
+            return this;
+        }
+
+        public Config setFrameSize(int frameSize) {
+            checkIfAlreadyBuilt();
+            this.frameSize = frameSize;
+            return this;
+        }
+
+        public Config setSSLTruststoreLocation(String location) {
+            checkIfAlreadyBuilt();
+            this.sslTruststoreLocation = location;
+            return this;
+        }
+
+        public Config setSSLTruststorePassword(String password) {
+            checkIfAlreadyBuilt();
+            this.sslTruststorePassword = password;
+            return this;
+        }
+
+        public CTConnectionFactory build() {
+            isBuilt = true;
+            return new CTConnectionFactory(this);
+        }
+
+
+        public void checkIfAlreadyBuilt() {
+            if (isBuilt)
+                throw new IllegalStateException("Can't accept modifications when used with built factory.");
+        }
+
         @Override
         public String toString() {
             return "Config[hostnames=" + StringUtils.join(hostnames, ',') + ", port=" + port
@@ -303,5 +350,6 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
                     + "]";
         }
     }
+
 }
 

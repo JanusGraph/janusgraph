@@ -67,8 +67,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
         int maxTotalConnections = config.get(GraphDatabaseConfiguration.CONNECTION_POOL_SIZE);
 
-        CTConnectionFactory factory = new CTConnectionFactory(hostnames, port, username, password, thriftTimeoutMS, thriftFrameSize);
-        CTConnectionPool p = new CTConnectionPool(factory);
+        CTConnectionFactory.Config factoryConfig = new CTConnectionFactory.Config(hostnames, port, username, password)
+                                                                            .setTimeoutMS(thriftTimeoutMS)
+                                                                            .setFrameSize(thriftFrameSize);
+
+        if (config.get(SSL_ENABLED)) {
+            factoryConfig.setSSLTruststoreLocation(config.get(SSL_TRUSTSTORE_LOCATION));
+            factoryConfig.setSSLTruststorePassword(config.get(SSL_TRUSTSTORE_PASSWORD));
+        }
+
+        CTConnectionPool p = new CTConnectionPool(factoryConfig.build());
         p.setTestOnBorrow(true);
         p.setTestOnReturn(true);
         p.setTestWhileIdle(false);

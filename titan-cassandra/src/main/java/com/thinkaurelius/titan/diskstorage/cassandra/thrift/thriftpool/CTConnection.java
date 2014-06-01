@@ -8,7 +8,7 @@ import java.io.Closeable;
 
 /**
  * Wraps a {@code Cassandra.Client} instance, its underlying {@code TTransport}
- * instance, and the {@link CTConnectionFactory.Config} instance used to setup
+ * instance, and the {@link com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory.Config} instance used to setup
  * the connection.
  * 
  * @see CTConnectionFactory

@@ -268,6 +268,8 @@ public class GraphDatabaseConfiguration {
 
 //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend");
+    public static final ConfigNamespace STORAGE_SSL_NS = new ConfigNamespace(STORAGE_NS, "ssl", "Configuration options for SSL");
+    public static final ConfigNamespace STORAGE_SSL_TRUSTSTORE = new ConfigNamespace(STORAGE_SSL_NS, "truststore", "Configuration options for SSL Truststore.");
 
 
     /**
