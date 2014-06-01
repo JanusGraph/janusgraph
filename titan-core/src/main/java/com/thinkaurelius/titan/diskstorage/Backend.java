@@ -496,11 +496,8 @@ public class Backend implements LockerProvider {
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
-        put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");

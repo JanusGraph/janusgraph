@@ -265,14 +265,11 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             return;
 
         // Keyspace not found; create it
-        String strategyName = "org.apache.cassandra.locator.SimpleStrategy";
-        Map<String, String> options = ImmutableMap.of(
-            "replication_factor", String.valueOf(replicationFactor)
-        );
+        String strategyName = storageConfig.get(REPLICATION_STRATEGY);
 
         KSMetaData ksm;
         try {
-            ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, options, true);
+            ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, strategyOptions, true);
         } catch (ConfigurationException e) {
             throw new PermanentStorageException("Failed to instantiate keyspace metadata for " + keyspaceName, e);
         }
