@@ -11,14 +11,14 @@ import java.util.concurrent.Future;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPJobBuilder<S extends State<S>> {
+public interface OLAPJobBuilder<S> {
 
     /**
      * Configures the {@link OLAPJob} vertex-centric program to execute on all vertices.
      * @param job
      * @return
      */
-    public OLAPJobBuilder<S> setJob(OLAPJob job);
+    public OLAPJobBuilder<S> setJob(OLAPJob<S> job);
 
     /**
      * Defines the name of the key to be used as the dedicated "state" key. Retrieving the property value for this
@@ -84,7 +84,7 @@ public interface OLAPJobBuilder<S extends State<S>> {
      *
      * @return
      */
-    public OLAPQueryBuilder<S,?> addQuery();
+    public OLAPQueryBuilder<S,?,?> addQuery();
 
     /**
      * Starts the execution of this job and returns the computed vertex states as a map.

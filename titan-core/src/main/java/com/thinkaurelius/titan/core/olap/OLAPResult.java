@@ -8,7 +8,7 @@ import java.util.Map;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPResult<S extends State<S>> {
+public interface OLAPResult<S> {
 
     /**
      * Returns an {@link Iterable} over all final vertex states.

@@ -7,7 +7,7 @@ package com.thinkaurelius.titan.core.olap;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface StateInitializer<S extends State<S>> {
+public interface StateInitializer<S> {
 
     public S initialState();
 

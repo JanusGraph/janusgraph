@@ -13,8 +13,8 @@ import com.thinkaurelius.titan.core.TitanVertex;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPJob {
+public interface OLAPJob<S> {
 
-    public void process(TitanVertex vertex);
+    public S process(TitanVertex vertex);
 
 }
