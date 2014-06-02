@@ -103,7 +103,8 @@ public class GraphDatabaseConfiguration {
      * increases latencies compared to a single property retrieval.
      */
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(ROOT_NS,"fast-property",
-            "Whether to pre-fetch all properties on first vertex property access",
+            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
+                    "property access for the same vertex at the expense of retrieving all properties at once.",
             ConfigOption.Type.MASKABLE, Boolean.class);
 //    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
@@ -116,7 +117,9 @@ public class GraphDatabaseConfiguration {
      * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
      */
     public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(ROOT_NS,"set-vertex-id",
-            "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled",
+            "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled. " +
+                "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
+                    "of Titan's advanced features.EXPERT FEATURE - USE WITH GREAT CARE",
             ConfigOption.Type.FIXED, false);
 //
 //    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
@@ -154,7 +157,7 @@ public class GraphDatabaseConfiguration {
      */
 //    public static final String INSTANCE_RID_SHORT_KEY = "machine-id-appendix";
     public static final ConfigOption<Short> INSTANCE_RID_SHORT = new ConfigOption<Short>(ROOT_NS,"machine-id-appendix",
-            "A locally unique identifier for a particular TitanGraph instance",
+            "A locally unique identifier for a particular Titan instance",
             ConfigOption.Type.LOCAL, Short.class);
 
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
@@ -193,7 +196,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
 //    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
     public static final ConfigOption<Double> DB_CACHE_SIZE = new ConfigOption<Double>(CACHE_NS,"db-cache-size",
-            "Size of Titan's database level cache (value in (0,1) => %, else absolute size in bytes)",
+            "Size of Titan's database level cache (value in (0,1) => % of heap, else absolute size in bytes)",
             ConfigOption.Type.MASKABLE, 0.3);
 
     /**
@@ -361,12 +364,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(100000L, TimeUnit.MILLISECONDS));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
 
 
     /**
@@ -631,7 +634,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(120000L, TimeUnit.MILLISECONDS));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
 //    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
 
