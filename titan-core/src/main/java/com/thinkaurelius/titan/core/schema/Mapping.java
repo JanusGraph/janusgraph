@@ -2,23 +2,14 @@ package com.thinkaurelius.titan.core.schema;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.indexing.KeyInformation;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link PropertyKeyMaker#indexed(String, Class, Parameter[])}.
- *
+ * {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}.
  * <p/>
- *
- * For instance, to configure that a string be indexed as a whole and not tokenized, pass in the following mapping parameter
- * configuration to the above mentioned method:
- *
- * <pre>
- *     {@code
- *      TitanKey name = graph.makeKey("name").dataType(String.class).indexed("search",Vertex.class,Parameter.of("mapping",Mapping.STRING)).make()
- *     }
- * </pre>
- *
- *
+ * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
+ * ({@link #TEXT}) or indexed as a whole ({@link #STRING}).
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -28,6 +19,15 @@ public enum Mapping {
     TEXT,
     STRING;
 
+    /**
+     * Returns the mapping as a parameter so that it can be passed to {@link TitanManagement#addIndexKey(TitanGraphIndex, com.thinkaurelius.titan.core.PropertyKey, Parameter[])}
+     * @return
+     */
+    public Parameter getParameter() {
+        return ParameterType.MAPPING.getParameter(this);
+    }
+
+    //------------ USED INTERNALLY -----------
 
     public static Mapping getMapping(KeyInformation information) {
         Object value = ParameterType.MAPPING.findParameter(information.getParameters(),null);

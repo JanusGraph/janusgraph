@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.ParameterType;
 import com.thinkaurelius.titan.core.PropertyKey;
 
 /**

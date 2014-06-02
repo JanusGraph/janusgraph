@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.Parameter;
-import com.thinkaurelius.titan.core.schema.ParameterType;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.blueprints.Direction;
 

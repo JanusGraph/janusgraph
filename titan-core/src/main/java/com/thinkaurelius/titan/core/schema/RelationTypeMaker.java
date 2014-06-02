@@ -3,18 +3,18 @@ package com.thinkaurelius.titan.core.schema;
 import com.thinkaurelius.titan.core.RelationType;
 
 /**
- * TypeMaker is a factory for {@link com.thinkaurelius.titan.core.RelationType}s. TitanTypes can be configured to provide data verification,
- * better storage efficiency, and higher performance. The TitanType defines the schema for all {@link com.thinkaurelius.titan.core.TitanRelation}s
+ * RelationTypeMaker is a factory for {@link com.thinkaurelius.titan.core.RelationType}s. RelationType can be configured to provide data verification,
+ * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link com.thinkaurelius.titan.core.TitanRelation}s
  * of that type.
- * </p>
- * All user defined types are configured using a TypeMaker instance returned by {@link com.thinkaurelius.titan.core.TitanTransaction#makePropertyKey(String)}}
- * or {@link com.thinkaurelius.titan.core.TitanTransaction#makeEdgeLabel(String)} where the string parameter is the name of the type to be created.
- * Hence, types are defined within the context of a transaction like every other object in a TitanGraph. The configuration
- * options available when defining a type depend on whether its a key or a label. See {@link PropertyKeyMaker} and {@link EdgeLabelMaker} for more details.
+ * <p/>
+ * There are two kinds of RelationTypes: {@link com.thinkaurelius.titan.core.EdgeLabel} and {@link com.thinkaurelius.titan.core.PropertyKey} which
+ * are defined via their builders {@link EdgeLabelMaker} and {@link PropertyKeyMaker} respectively. This interface just defines builder methods
+ * common to both of them.
+ * <p/>
+ *
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see com.thinkaurelius.titan.core.RelationType
- * @see <a href="https://github.com/thinkaurelius/titan/wiki/Type-Definition-Overview">Titan Type Wiki</a>
  */
 public interface RelationTypeMaker {
 
@@ -39,11 +39,15 @@ public interface RelationTypeMaker {
      * <br />
      * The signature is empty by default.
      *
-     * @param types TitanTypes composing the signature key. The order is irrelevant.
-     * @return this relation type builder
+     * @param types RelationTypes composing the signature for the configured relation type. The order is irrelevant.
+     * @return this RelationTypeMaker
      */
     public RelationTypeMaker signature(RelationType... types);
 
-
+    /**
+     * Builds the configured relation type
+     *
+     * @return the configured {@link RelationType}
+     */
     public RelationType make();
 }

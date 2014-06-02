@@ -5,26 +5,24 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.VertexLabel;
 
 /**
- * When a graph is configured to automatically create edge labels and property keys when they are first used,
- * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeEdgeLabel(EdgeLabelMaker)}
- * or {@link #makePropertyKey(PropertyKeyMaker)} methods respectively.
+ * When a graph is configured to automatically create vertex/edge labels and property keys when they are first used,
+ * a DefaultTypeMaker implementation is used to define them by invoking the {@link #makeVertexLabel(VertexLabelMaker)},
+ * {@link #makeEdgeLabel(EdgeLabelMaker)}, or {@link #makePropertyKey(PropertyKeyMaker)} methods respectively.
  * <br />
  * By providing a custom DefaultTypeMaker implementation, one can specify how these types should be defined by default.
  * A DefaultTypeMaker implementation is specified in the graph configuration using the full path which means the
- * implementation must be on the classpath. For more information, see the
- * <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
+ * implementation must be on the classpath.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  * @see RelationTypeMaker
- * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
  */
 public interface DefaultSchemaMaker {
 
     /**
-     * Creates a new label type with default settings against the provided {@link EdgeLabelMaker}.
+     * Creates a new edge label with default settings against the provided {@link EdgeLabelMaker}.
      *
-     * @param factory LabelMaker through which the edge label is created
-     * @return A new edge label for the given name
+     * @param factory EdgeLabelMaker through which the edge label is created
+     * @return A new edge label
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
     public EdgeLabel makeEdgeLabel(EdgeLabelMaker factory);
@@ -32,16 +30,18 @@ public interface DefaultSchemaMaker {
     /**
      * Creates a new property key with default settings against the provided {@link PropertyKeyMaker}.
      *
-     * @param factory TypeMaker through which the property key is created
-     * @return A new property key for the given name
+     * @param factory PropertyKeyMaker through which the property key is created
+     * @return A new property key
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
     public PropertyKey makePropertyKey(PropertyKeyMaker factory);
 
     /**
-     * Creates a new
-     * @param factory
-     * @return
+     * Creates a new vertex label with the default settings against the provided {@link VertexLabelMaker}.
+     *
+     * @param factory VertexLabelMaker through which the vertex label is created
+     * @return A new vertex label
+     * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
     public VertexLabel makeVertexLabel(VertexLabelMaker factory);
 
