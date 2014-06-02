@@ -1,19 +1,18 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
-import com.thinkaurelius.titan.diskstorage.IDAllocationTest;
+import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 import java.io.IOException;
 
-public class HBaseIDAllocationTest extends IDAllocationTest {
+public class HBaseIDAuthorityTest extends IDAuthorityTest {
 
-    public HBaseIDAllocationTest(WriteConfiguration baseConfig) {
+    public HBaseIDAuthorityTest(WriteConfiguration baseConfig) {
         super(baseConfig);
     }
 

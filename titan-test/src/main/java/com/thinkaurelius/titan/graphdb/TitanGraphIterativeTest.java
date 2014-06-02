@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 
@@ -42,7 +42,7 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
         query.setLimit(2);
         Stopwatch watch = new Stopwatch();
         watch.start();
-        StoreTransaction txh = manager.beginTransaction(StandardTransactionHandleConfig.of(Timestamps.MILLI));
+        StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MILLI));
         KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {

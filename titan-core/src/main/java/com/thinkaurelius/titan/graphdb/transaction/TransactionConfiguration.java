@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
 import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 
 /**
  * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see com.thinkaurelius.titan.core.TitanTransaction
  */
-public interface TransactionConfiguration extends TransactionHandleConfig {
+public interface TransactionConfiguration extends BaseTransactionConfig {
 
     /**
      * Checks whether the graph transaction is configured as read-only.

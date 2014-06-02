@@ -19,7 +19,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public abstract class AbstractIDManager implements IDAuthority {
+public abstract class AbstractIDAuthority implements IDAuthority {
 
     /* This value can't be changed without either
       * corrupting existing ID allocations or taking
@@ -38,7 +38,7 @@ public abstract class AbstractIDManager implements IDAuthority {
     private IDBlockSizer blockSizer;
     private volatile boolean isActive;
 
-    public AbstractIDManager(Configuration config) {
+    public AbstractIDAuthority(Configuration config) {
         this.uid = config.get(UNIQUE_INSTANCE_ID);
 
         this.uidBytes = uid.getBytes();

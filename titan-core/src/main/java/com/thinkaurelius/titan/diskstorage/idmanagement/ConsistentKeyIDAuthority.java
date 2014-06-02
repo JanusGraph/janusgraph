@@ -26,7 +26,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -47,16 +47,16 @@ import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class ConsistentKeyIDManager extends AbstractIDManager implements BackendOperation.TransactionalProvider {
+public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements BackendOperation.TransactionalProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDManager.class);
+    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyIDAuthority.class);
 
     private static final StaticBuffer LOWER_SLICE = BufferUtil.zeroBuffer(16);
     private static final StaticBuffer UPPER_SLICE = BufferUtil.oneBuffer(16);
 
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
-    private final StandardTransactionHandleConfig.Builder storeTxConfigBuilder;
+    private final StandardBaseTransactionConfig.Builder storeTxConfigBuilder;
     /**
      * This belongs in TitanConfig.
      */
@@ -76,7 +76,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
 
     private final Random random = new Random();
 
-    public ConsistentKeyIDManager(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
+    public ConsistentKeyIDAuthority(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
         super(config);
         Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;
@@ -92,7 +92,7 @@ public class ConsistentKeyIDManager extends AbstractIDManager implements Backend
         Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
-        storeTxConfigBuilder = new StandardTransactionHandleConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
+        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
         if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID)) {
             Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID),"Conflicting configuration: a unique id and randomization have been set");

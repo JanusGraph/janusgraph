@@ -6,7 +6,7 @@ package com.thinkaurelius.titan.diskstorage;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public interface TransactionHandle {
+public interface BaseTransaction {
 
     /**
      * Commits the transaction and persists all modifications to the backend.

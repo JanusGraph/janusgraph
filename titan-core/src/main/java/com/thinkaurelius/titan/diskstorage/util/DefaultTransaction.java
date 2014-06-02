@@ -2,23 +2,23 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfigurable;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class DefaultTransaction implements TransactionHandleConfigurable {
+public class DefaultTransaction implements BaseTransactionConfigurable {
 
-    private final TransactionHandleConfig config;
+    private final BaseTransactionConfig config;
 
-    public DefaultTransaction(TransactionHandleConfig config) {
+    public DefaultTransaction(BaseTransactionConfig config) {
         Preconditions.checkNotNull(config);
         this.config = config;
     }
 
     @Override
-    public TransactionHandleConfig getConfiguration() {
+    public BaseTransactionConfig getConfiguration() {
         return config;
     }
 

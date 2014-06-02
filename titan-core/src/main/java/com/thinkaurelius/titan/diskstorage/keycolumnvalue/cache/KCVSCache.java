@@ -58,7 +58,7 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     protected final StoreTransaction getTx(StoreTransaction txh) {
         assert txh instanceof CacheTransaction;
-        return ((CacheTransaction) txh).getWrappedTransactionHandle();
+        return ((CacheTransaction) txh).getWrappedTransaction();
     }
 
     @Override

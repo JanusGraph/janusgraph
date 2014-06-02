@@ -71,7 +71,7 @@ public class IndexSerializer {
     }
 
     public static void register(final ExternalIndexType index, final PropertyKey key, final BackendTransaction tx) throws StorageException {
-        tx.getIndexTransactionHandle(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
+        tx.getIndexTransaction(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
 
     }
 
