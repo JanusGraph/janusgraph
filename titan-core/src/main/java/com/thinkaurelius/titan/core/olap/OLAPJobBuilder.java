@@ -22,7 +22,7 @@ public interface OLAPJobBuilder<S> {
 
     /**
      * Defines the name of the key to be used as the dedicated "state" key. Retrieving the property value for this
-     * key will return the vertex state.
+     * key on any given vertex in an {@link OLAPJob} will return the current vertex state.
      *
      * @param stateKey
      * @return
@@ -50,7 +50,7 @@ public interface OLAPJobBuilder<S> {
      * Sets the initial state of the vertices to the result from a previous OLAP computation.
      * <p />
      * Note, that the data structures underlying the {@link OLAPResult} may be removed to be memory efficient
-     * which means that the previous state can be overwritten and is therefore lost.b
+     * which means that the previous state can be overwritten and is therefore lost.
      *
      * @param values
      * @return
@@ -87,7 +87,7 @@ public interface OLAPJobBuilder<S> {
     public OLAPQueryBuilder<S,?,?> addQuery();
 
     /**
-     * Starts the execution of this job and returns the computed vertex states as a map.
+     * Starts the execution of this job and returns the computed vertex states as a {@link OLAPResult}.
      *
      * @return
      */
