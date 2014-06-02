@@ -12,7 +12,6 @@ import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -260,8 +259,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     @Override
     public Deployment getDeployment() {
-        List<KeyRange> local = getLocalKeyPartition();
-        return null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
+        List<KeyRange> local;
+        try {
+            local = getLocalKeyPartition();
+            return null != local && !local.isEmpty() ? Deployment.LOCAL : Deployment.REMOTE;
+        } catch (StorageException e) {
+            // propagating StorageException might be a better approach
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -451,12 +456,14 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
 
         List<KeyRange> result = new LinkedList<KeyRange>();
 
         HTable table = null;
         try {
+            ensureTableExists(tableName);
+
             table = new HTable(hconf, tableName);
 
             Map<KeyRange, ServerName> normed =

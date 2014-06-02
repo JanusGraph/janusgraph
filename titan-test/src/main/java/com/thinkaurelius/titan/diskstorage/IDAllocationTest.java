@@ -367,13 +367,19 @@ public abstract class IDAllocationTest {
         final Collection<Future<?>> futures = new ArrayList<Future<?>>(CONCURRENCY);
         ExecutorService es = Executors.newFixedThreadPool(CONCURRENCY);
 
+        Set<String> uids = new HashSet<String>(CONCURRENCY);
         for (int i = 0; i < CONCURRENCY; i++) {
             final IDAuthority idAuthority = idAuthorities[i];
             final IDStressor stressRunnable = new IDStressor(
                     numAcquisitionsPerThreadPartition, numPartitions,
                     maxIterations, idAuthority, ids);
+            uids.add(idAuthority.getUniqueID());
             futures.add(es.submit(stressRunnable));
         }
+
+        // If this fails, it's likely to be a bug in the test rather than the
+        // IDAuthority (the latter is technically possible, just less likely)
+        assertEquals(CONCURRENCY, uids.size());
 
         for (Future<?> f : futures) {
             try {

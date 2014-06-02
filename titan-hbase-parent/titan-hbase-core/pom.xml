@@ -71,8 +71,8 @@
     
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-	<plugins>
-	    <plugin>
+        <plugins>
+            <plugin>
                 <artifactId>maven-deploy-plugin</artifactId>
                 <executions>
                     <execution>
@@ -81,7 +81,29 @@
                     </execution>
                 </executions>
             </plugin>
-	</plugins>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>pack-test-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!-- Can't run tests without a compatibility shim -->
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
     
     <profiles>
@@ -100,35 +122,35 @@
                 <hadoop.version>1.0.4</hadoop.version>
             </properties>
 
-	    <build>
-	      <plugins>
-		<plugin>
-		  <artifactId>maven-surefire-plugin</artifactId>
-		  <configuration>
-		    <additionalClasspathElements>
-		      <additionalClasspathElement>${project.basedir}/conf</additionalClasspathElement>
-		    </additionalClasspathElements>
-		  </configuration>
-		</plugin>
-	      </plugins>
-	    </build>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <additionalClasspathElements>
+                                <additionalClasspathElement>${project.basedir}/conf</additionalClasspathElement>
+                            </additionalClasspathElements>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
 
-	    <dependencyManagement>
-	      <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-client</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-	      </dependencies>
-	    </dependencyManagement>
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-core</artifactId>
+                        <version>${hadoop.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>hadoop-client</artifactId>
+                        <version>${hadoop.version}</version>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
 
-	    <dependencies>
+            <dependencies>
                 <dependency>
                     <groupId>org.apache.hadoop</groupId>
                     <artifactId>hadoop-core</artifactId>
@@ -147,7 +169,7 @@
                     <artifactId>netty</artifactId>
                     <optional>true</optional>
                 </dependency>
-	    </dependencies>
+            </dependencies>
         </profile>
 
         <profile>
