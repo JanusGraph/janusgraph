@@ -97,6 +97,10 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
         vertexStates = initialState;
     }
 
+    StandardTitanTx tx() {
+        return tx;
+    }
+
     private final DataPuller addDataPuller(String queryName, SliceQuery sq, BackendTransaction btx) {
         BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
         dataQueues.add(queue);

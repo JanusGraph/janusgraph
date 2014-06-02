@@ -133,7 +133,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
 
     @Override
     public StandardTitanTx tx() {
-        throw new UnsupportedOperationException("This vertex is not associated with a transaction");
+        return executor.tx();
     }
 
     @Override

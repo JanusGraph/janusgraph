@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.olap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
@@ -15,6 +16,7 @@ import static org.junit.Assert.*;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -24,6 +26,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     private static final double EPSILON = 0.00001;
 
     protected abstract <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz);
+
+    private static final Random random = new Random();
 
     @Test
     public void degreeCount() throws Exception {
@@ -37,7 +41,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             vs[i] = tx.addVertex();
             vs[i].setProperty("uid",i+1);
         }
-        Random random = new Random();
         for (int i=0;i<numV;i++) {
             int edges = i+1;
             TitanVertex v = vs[i];
@@ -295,5 +298,98 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         }
 
     }
+
+    @Test
+    public void singleSourceShortestPaths() throws Exception {
+        PropertyKey distance = mgmt.makePropertyKey("distance").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("connect").signature(distance).multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
+
+        int maxDepth = 16;
+        int maxBranch = 5;
+        TitanVertex vertex = tx.addVertex();
+        //Grow a star-shaped graph around vertex which will be the single-source for this shortest path computation
+        final int numV = growVertex(vertex,0,maxDepth, maxBranch);
+        final int numE = numV-1;
+        assertEquals(numV,Iterables.size(tx.getVertices()));
+        assertEquals(numE,Iterables.size(tx.getEdges()));
+
+        clopen();
+
+        OLAPResult<Integer> distances = null;
+        final AtomicBoolean done = new AtomicBoolean(false);
+
+        while (!done.get()) {
+            done.set(true);
+            OLAPJobBuilder<Integer> builder = getOLAPBuilder(graph,Integer.class);
+
+            if (distances==null) { //First iteration
+                builder.setInitializer(new StateInitializer<Integer>() {
+                    @Override
+                    public Integer initialState() {
+                        return Integer.MAX_VALUE;
+                    }
+                });
+                builder.setInitialState(ImmutableMap.of(vertex.getID(),0));
+            } else {
+                builder.setInitialState(distances);
+            }
+            builder.setNumProcessingThreads(2);
+            builder.setStateKey("dist");
+            builder.setJob(new OLAPJob<Integer>() {
+                @Override
+                public Integer process(TitanVertex vertex) {
+                    Integer d = vertex.getProperty("dist");
+                    assertNotNull(d);
+                    Integer c = vertex.getProperty("connect");
+                    int result = c==null?d:Math.min(c,d);
+                    if (result<d) done.set(false);
+                    return result;
+                }
+            });
+            builder.addQuery().labels("connect").direction(Direction.BOTH).edges(
+             new Gather<Integer, Integer>() {
+                 @Override
+                 public Integer apply(Integer state, TitanEdge edge, Direction dir) {
+                     assertNotNull(state);
+                     if (state.intValue() == Integer.MAX_VALUE)
+                         return state;
+                     else
+                         return state + edge.<Integer>getProperty("distance");
+                 }
+             }, new Combiner<Integer>() {
+                 @Override
+                 public Integer combine(Integer m1, Integer m2) {
+                     return Math.min(m1, m2);
+                 }
+             }
+            );
+            Stopwatch w = new Stopwatch().start();
+            distances = builder.execute().get(200, TimeUnit.SECONDS);
+            System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
+            assertEquals(numV,distances.size());
+        }
+        for (Map.Entry<Long,Integer> entry : distances.entries()) {
+            int dist = entry.getValue();
+            assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
+            Vertex v = tx.getVertex(entry.getKey().longValue());
+            assertEquals(v.<Integer>getProperty("distance").intValue(),dist);
+        }
+    }
+
+    private int growVertex(TitanVertex vertex, int depth, int maxDepth, int maxBranch) {
+        vertex.setProperty("distance",depth);
+        int total=1;
+        if (depth>=maxDepth) return total;
+
+        for (int i=0;i<random.nextInt(maxBranch)+1;i++) {
+            int dist = random.nextInt(3)+1;
+            TitanVertex n = tx.addVertex();
+            n.addEdge("connect",vertex).setProperty("distance",dist);
+            total+=growVertex(n,depth+dist,maxDepth,maxBranch);
+        }
+        return total;
+    }
+
 
 }
