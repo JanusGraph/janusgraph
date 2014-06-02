@@ -201,7 +201,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setJob(new OLAPJob() {
             @Override
             public PageRank process(TitanVertex vertex) {
-                return new PageRank(vertex.<Long>getProperty("degree"),1.0d/numVertices);
+                Long degree = vertex.<Long>getProperty("degree");
+                return new PageRank(degree==null?0:degree,1.0d/numVertices);
             }
         });
         OLAPResult<PageRank> ranks;
@@ -218,7 +219,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             builder.setNumProcessingThreads(numThreads);
             builder.setStateKey("pageRank");
             builder.setInitialState(ranks);
-            query = builder.addQuery().setName("energy").direction(Direction.OUT);
+            query = builder.addQuery().setName("energy").direction(Direction.IN);
             if (labels!=null && labels.length>0) {
                 query.labels(labels);
             }
