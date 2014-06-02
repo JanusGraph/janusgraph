@@ -24,7 +24,7 @@ import com.tinkerpop.blueprints.Element;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanManagement extends TitanConfiguration, BaseTransaction {
+public interface TitanManagement extends TitanConfiguration {
 
     /*
     ##################### RELATION TYPE INDEX ##########################
@@ -321,5 +321,17 @@ public interface TitanManagement extends TitanConfiguration, BaseTransaction {
      * @return
      */
     public boolean isOpen();
+
+    /**
+     * Commits this management transaction and persists all schema changes. Closes this transaction.
+     * @see com.thinkaurelius.titan.core.TitanTransaction#commit() 
+     */
+    public void commit();
+
+    /**
+     * Closes this management transaction and discards all changes.
+     * @see com.thinkaurelius.titan.core.TitanTransaction#rollback()
+     */
+    public void rollback();
 
 }
