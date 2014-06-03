@@ -122,7 +122,7 @@ public abstract class IDAuthorityTest {
         for (int i = 0; i < CONCURRENCY; i++) {
 
             ModifiableConfiguration sc = StorageSetup.getConfig(baseStoreConfiguration.copy());
-            sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
+            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX,(short)i);
             if (!sc.has(UNIQUE_INSTANCE_ID)) {
                 String uniqueGraphId = getOrGenerateUniqueInstanceId(sc);
                 log.debug("Setting unique instance id: {}", uniqueGraphId);

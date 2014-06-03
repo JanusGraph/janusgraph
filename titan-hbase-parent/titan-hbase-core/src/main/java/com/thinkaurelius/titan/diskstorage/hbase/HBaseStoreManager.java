@@ -18,6 +18,7 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.IOUtils;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
@@ -43,6 +44,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  *
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
+@PreInitializeConfigOptions
 public class HBaseStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HBaseStoreManager.class);

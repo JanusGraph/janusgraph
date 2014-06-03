@@ -1,6 +1,12 @@
 /* what is this i dont even */
 #header-sticky .logo a, #header .logo a { height: auto; }
 
+/* Break very wide default values */
+.font16  + .informaltable td:nth-child(4) {
+    word-break: break-all;
+    min-width: 25%;
+}
+
 .navheader {
     background-color: #F0F0F0;
     padding: 6px 30px;

@@ -232,7 +232,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
                 option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
                 option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                option(GraphDatabaseConfiguration.MERGE_BASIC_METRICS),false,
+                option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
@@ -413,7 +413,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                               option(GraphDatabaseConfiguration.DB_CACHE_TIME),timeOutTime,
                               option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),cleanTime,
                               option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                              option(GraphDatabaseConfiguration.MERGE_BASIC_METRICS),false,
+                              option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
                               option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         long[] vs = new long[numV];

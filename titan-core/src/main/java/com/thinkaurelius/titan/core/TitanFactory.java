@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
@@ -91,7 +92,7 @@ public class TitanFactory {
      * @return Titan graph database
      */
     public static TitanGraph open(ReadConfiguration configuration) {
-        preloadConfigOptions();
+        ReflectiveConfigOptionLoader.loadOnce();
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
 
@@ -142,51 +143,6 @@ public class TitanFactory {
     //###################################
     //          HELPER METHODS
     //###################################
-
-    private synchronized static void preloadConfigOptions() {
-
-        if (preloadedConfigOptions)
-            return;
-
-        final Stopwatch sw = new Stopwatch().start();
-
-        org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
-            .setUrls(ClasspathHelper.forJavaClassPath())
-            .setScanners(new TypeAnnotationsScanner());
-//      .setScanners(new SubTypesScanner(), new TypeAnnotationsScanner(), new FieldAnnotationsScanner());
-        Reflections reflections = new Reflections(rc);
-
-        int preloaded = 0;
-
-//        for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
-        for (Class<?> c : reflections.getTypesAnnotatedWith(PreInitializeConfigOptions.class)) {
-            log.trace("Looking for ConfigOption public static fields on class {}", c);
-            for (Field f : c.getDeclaredFields()) {
-                final boolean pub = Modifier.isPublic(f.getModifiers());
-                final boolean stat = Modifier.isStatic(f.getModifiers());
-                final boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
-
-                log.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
-                if (pub && stat && typeMatch) {
-                    try {
-                        Object o = f.get(null);
-                        Preconditions.checkNotNull(o);
-                        log.debug("Initialized {}={}", f, o);
-                        preloaded++;
-                    } catch (IllegalArgumentException e) {
-                        log.warn("ConfigOption initialization error", e);
-                    } catch (IllegalAccessException e) {
-                        log.warn("ConfigOption initialization error", e);
-                    }
-                }
-            }
-        }
-
-        preloadedConfigOptions = true;
-
-        log.debug("Preloaded {} config options via reflections in {} ms",
-                preloaded, sw.stop().elapsed(TimeUnit.MILLISECONDS));
-    }
 
     private static ReadConfiguration getLocalConfiguration(String shortcutOrFile) {
         File file = new File(shortcutOrFile);

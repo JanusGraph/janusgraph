@@ -50,7 +50,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         WriteConfiguration config = getBaseConfiguration();
         ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
         mconf.set(GraphDatabaseConfiguration.BASIC_METRICS,true);
-        mconf.set(GraphDatabaseConfiguration.MERGE_BASIC_METRICS,false);
+        mconf.set(GraphDatabaseConfiguration.METRICS_MERGE_STORES,false);
         mconf.set(GraphDatabaseConfiguration.PROPERTY_PREFETCHING,false);
         mconf.set(GraphDatabaseConfiguration.DB_CACHE,false);
         return config;
