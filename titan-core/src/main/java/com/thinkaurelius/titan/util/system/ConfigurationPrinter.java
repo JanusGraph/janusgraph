@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -34,6 +35,8 @@ public class ConfigurationPrinter {
     private final PrintStream stream;
 
     public static void main(String args[]) throws FileNotFoundException {
+
+        ReflectiveConfigOptionLoader.loadOnce();
 
         final PrintStream stream;
         if (args.length == 1) {

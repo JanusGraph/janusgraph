@@ -321,12 +321,12 @@ public class Backend implements LockerProvider {
     }
 
     private String getMetricsStoreName(String storeName) {
-        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_STORE : storeName;
+        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_STORE : storeName;
     }
 
     private String getMetricsCacheName(String storeName, boolean reportMetrics) {
         if (!reportMetrics) return null;
-        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
+        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
     public static LogManager getLogManager(Configuration config, String logName, KeyColumnValueStoreManager sm) {

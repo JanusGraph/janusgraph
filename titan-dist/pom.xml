@@ -192,15 +192,28 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
+                    <!-- This started out as an exec:java execution instead of exec:exec,
+                         but exec:java does something weird to the classpath that breaks
+                         reflections-based ConfigOption loading.  The classpath property
+                         in particular is just /usr/share/maven/boot/plexus-classworlds-2.x.jar
+                         on my system, and that seems to confuse reflections, at least in
+                         the way ReflectiveConfigOptionLoader uses it.
+
+                         Forking a separate JVM (which exec:exec does but exec:java cant do)
+                         makes these classpath problems go away.
+                    -->
                     <execution>
                         <id>generate-config-key-listing</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>java</goal>
+                            <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
+                            <executable>java</executable>
                             <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>${asciidoc.output.dir}/listings/configtable.txt</argument>
                             </arguments>
                         </configuration>
