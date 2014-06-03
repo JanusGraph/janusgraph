@@ -78,7 +78,7 @@ public class ConfigurationPrinter {
 
     private String getNamespaceSectionHeader(ConfigNamespace n) {
         String fullName = ConfigElement.getPath(n);
-        return "==== " + fullName + " ====\n" + n.getDescription() + "\n";
+        return "==== " + fullName + " ====\n[role=\"font16\"]\n" + n.getDescription() + "\n\n";
     }
 
     private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {

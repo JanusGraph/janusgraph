@@ -8,6 +8,10 @@
     border-bottom: 1px dotted #FF8080;
 }
 
+.font16 {
+    font-size: 16px;
+}
+
 div#main {
    /* padding-left: 30px;
     padding-right: 30px; */
