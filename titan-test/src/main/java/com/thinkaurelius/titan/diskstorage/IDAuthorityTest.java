@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
 import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -61,15 +62,16 @@ public abstract class IDAuthorityTest {
         configurations.add(new Object[]{c.getConfiguration()});
 
         c = getBasicConfig();
-        c.set(IDAUTHORITY_UNIQUEID_BITS,9);
-        c.set(IDAUTHORITY_UNIQUEID,511);
+        c.set(IDAUTHORITY_CAV_BITS,9);
+        c.set(IDAUTHORITY_CAV_TAG,511);
         configurations.add(new Object[]{c.getConfiguration()});
 
         c = getBasicConfig();
-        c.set(IDAUTHORITY_UNIQUEID_RETRY_COUNT,10);
+        c.set(IDAUTHORITY_CAV_RETRIES,10);
         c.set(IDAUTHORITY_WAIT, new StandardDuration(10L, TimeUnit.MILLISECONDS));
-        c.set(IDAUTHORITY_UNIQUEID_BITS,7);
-        c.set(IDAUTHORITY_RANDOMIZE_UNIQUEID,true);
+        c.set(IDAUTHORITY_CAV_BITS,7);
+        //c.set(IDAUTHORITY_RANDOMIZE_UNIQUEID,true);
+        c.set(IDAUTHORITY_CONFLICT_AVOIDANCE, ConflictAvoidanceMode.GLOBAL_AUTO);
         configurations.add(new Object[]{c.getConfiguration()});
 
         return configurations;
@@ -99,8 +101,9 @@ public abstract class IDAuthorityTest {
         TestGraphConfigs.applyOverrides(baseConfig);
         this.baseStoreConfiguration = baseConfig;
         Configuration config = StorageSetup.getConfig(baseConfig);
-        uidBitWidth = config.get(IDAUTHORITY_UNIQUEID_BITS);
-        hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID);
+        uidBitWidth = config.get(IDAUTHORITY_CAV_BITS);
+        //hasFixedUid = !config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID);
+        hasFixedUid = !ConflictAvoidanceMode.GLOBAL_AUTO.equals(config.get(IDAUTHORITY_CONFLICT_AVOIDANCE));
         hasEmptyUid = uidBitWidth==0;
         blockSize = config.get(IDS_BLOCK_SIZE);
         idUpperBoundBitWidth = 30;
@@ -122,7 +125,8 @@ public abstract class IDAuthorityTest {
         for (int i = 0; i < CONCURRENCY; i++) {
 
             ModifiableConfiguration sc = StorageSetup.getConfig(baseStoreConfiguration.copy());
-            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX,(short)i);
+            //sc.set(GraphDatabaseConfiguration.INSTANCE_RID_SHORT,(short)i);
+            sc.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX, (short)i);
             if (!sc.has(UNIQUE_INSTANCE_ID)) {
                 String uniqueGraphId = getOrGenerateUniqueInstanceId(sc);
                 log.debug("Setting unique instance id: {}", uniqueGraphId);

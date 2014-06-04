@@ -71,7 +71,10 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     public static final int MIN_REGION_COUNT = 3;
 
     public static final ConfigOption<Boolean> SKIP_SCHEMA_CHECK =  new ConfigOption<Boolean>(STORAGE_NS,"skip-schema-check",
-            "Assume that Titan's HBase table and column families already exist",
+            "Assume that Titan's HBase table and column families already exist. " +
+            "When this is true, Titan will not check for the existence of its table/CFs, " +
+            "nor will it attempt to create them under any circumstances.  This is useful " +
+            "when running Titan without HBase admin privileges.",
             ConfigOption.Type.MASKABLE, false);
 
     /**
@@ -156,7 +159,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
      *
      */
     public static final ConfigOption<String> HBASE_COMPAT_CLASS = new ConfigOption<String>(STORAGE_NS, "hbase-compat-class",
-            "The package and class name of the HBaseCompat implementation",
+            "The package and class name of the HBaseCompat implementation. HBaseCompat masks version-specific HBase API differences. " +
+            "When this option is unset, Titan calls HBase's VersionInfo.getVersion() and loads the matching compat class " +
+            "at runtime.  Setting this option forces Titan to instead reflectively load and instantiate the specified class.",
             ConfigOption.Type.MASKABLE, String.class);
 
     public static final int PORT_DEFAULT = 9160;

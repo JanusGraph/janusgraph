@@ -27,7 +27,6 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.idassigner.IDPoolExhaustedException;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 
@@ -67,6 +66,8 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private final int partitionBitWdith;
 
+    private final ConflictAvoidanceMode conflictAvoidanceMode;
+
     private final int uniqueIdBitWidth;
     private final int uniqueIDUpperBound;
     private final int uniqueId;
@@ -88,33 +89,33 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         partitionBitWdith = config.has(CLUSTER_PARTITION)? NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS)):0;
         Preconditions.checkArgument(partitionBitWdith>=0 && partitionBitWdith<=16);
 
-        uniqueIdBitWidth = config.get(IDAUTHORITY_UNIQUEID_BITS);
+        uniqueIdBitWidth = config.get(IDAUTHORITY_CAV_BITS);
         Preconditions.checkArgument(uniqueIdBitWidth<=16 && uniqueIdBitWidth>=0);
         uniqueIDUpperBound = 1<<uniqueIdBitWidth;
 
         storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
 
-        if (config.get(IDAUTHORITY_RANDOMIZE_UNIQUEID)) {
-            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID),"Conflicting configuration: a unique id and randomization have been set");
-            Preconditions.checkArgument(!config.has(IDAUTHORITY_USE_LOCAL_CONSISTENCY),
-                    "Cannot use local consistency with randomization - this leads to data corruption");
+        conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
+
+        if (conflictAvoidanceMode.equals(ConflictAvoidanceMode.GLOBAL_AUTO)) {
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_CAV_TAG),"Conflicting configuration: a unique id and randomization have been set");
             randomizeUniqueId = true;
-            randomUniqueIDLimit = config.get(IDAUTHORITY_UNIQUEID_RETRY_COUNT);
+            randomUniqueIDLimit = config.get(IDAUTHORITY_CAV_RETRIES);
             Preconditions.checkArgument(randomUniqueIDLimit<uniqueIDUpperBound,"Cannot have more uid retries [%d] than available values [%d]",
                     randomUniqueIDLimit,uniqueIDUpperBound);
             uniqueId = -1;
             storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
         } else {
             randomizeUniqueId = false;
-            Preconditions.checkArgument(!config.has(IDAUTHORITY_UNIQUEID_RETRY_COUNT),"Setting the unique id retry count without enabling randomization is inconsistent");
+            Preconditions.checkArgument(!config.has(IDAUTHORITY_CAV_RETRIES),"Retry count is only meaningful when " + IDAUTHORITY_CONFLICT_AVOIDANCE + " is set to " + ConflictAvoidanceMode.GLOBAL_AUTO);
             randomUniqueIDLimit = 0;
-            if (config.get(IDAUTHORITY_USE_LOCAL_CONSISTENCY)) {
-                Preconditions.checkArgument(config.has(IDAUTHORITY_UNIQUEID),"Need to configure a unique id in order to use local consistency");
+            if (conflictAvoidanceMode.equals(ConflictAvoidanceMode.LOCAL_MANUAL)) {
+                Preconditions.checkArgument(config.has(IDAUTHORITY_CAV_TAG),"Need to configure a unique id in order to use local consistency");
                 storeTxConfigBuilder.customOptions(manager.getFeatures().getLocalKeyConsistentTxConfig());
             } else {
                 storeTxConfigBuilder.customOptions(manager.getFeatures().getKeyConsistentTxConfig());
             }
-            uniqueId = config.get(IDAUTHORITY_UNIQUEID);
+            uniqueId = config.get(IDAUTHORITY_CAV_TAG);
             Preconditions.checkArgument(uniqueId>=0,"Invalid unique id: %s",uniqueId);
             Preconditions.checkArgument(uniqueId<uniqueIDUpperBound,"Unique id is too large for bit width [%s]: %s",uniqueIdBitWidth,uniqueId);
         }
