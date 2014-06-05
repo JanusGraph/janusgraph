@@ -22,10 +22,10 @@ Version:        %{titan_version}
 Release:        %{titan_release}
 Summary:        Titan Distributed Graph Database
 Requires:       java >= 1.6.0
+Requires(pre):  shadow-utils
 Group:          Applications/Databases
 License:        ASL 2.0
 URL:            http://titan.thinkaurelius.com/
-#Source0:        http://s3.thinkaurelius.com/downloads/titan/titan-all-%{version}.tar.bz2
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
@@ -45,6 +45,22 @@ mvn clean install --batch-mode -Dgpg.skip=true -Paurelius-release -DskipTests=tr
 
 %check
 
+
+
+# User & group creation based on Fedora guidelines:
+# https://fedoraproject.org/wiki/Packaging:UsersAndGroups?rd=Packaging/UsersAndGroups
+#
+# N.B. This user and group is deliberately left behind by uninstallation.
+# From the guidelines above:
+# "Do not remove users or groups. We never remove users or groups
+#  created by packages. There's no sane way to check if files owned
+#  by those users/groups are left behind..."
+%pre
+getent group titan >/dev/null || groupadd -r titan
+getent passwd titan >/dev/null || \
+    useradd -r -g titan -d /tmp -s /sbin/nologin \
+    -c "Titan graph database" titan
+exit 0
 
 
 %install
