@@ -111,10 +111,10 @@ launch_service()
 
     if [ "x$foreground" != "x" ]; then
         export CLASSPATH
-        exec $NUMACTL "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG"
+        exec "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG"
     else
         export CLASSPATH
-        exec $NUMACTL "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG" <&- &
+        exec "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG" <&- &
         [ ! -z "$pidpath" ] && printf "%d" $! > "$pidpath"
         true
     fi
