@@ -28,21 +28,11 @@ public interface TitanProperty extends TitanRelation {
     public TitanVertex getVertex();
 
     /**
-     * Returns the value of this property.
+     * Returns the value of this property (possibly cast to the expected type).
      *
      * @return value of this property
+     * @throws ClassCastException if the value cannot be cast to the expected type
      */
-    public Object getValue();
-
-    /**
-     * Returns the value of this property cast to the specified class.
-     *
-     * @param <O>   Class to cast the value to
-     * @param clazz Class to cast the value to
-     * @return Value of this property cast to the specified class.
-     * @throws ClassCastException if the value cannot be cast to clazz.
-     */
-    public <O> O getValue(Class<O> clazz);
-
+    public<O> O getValue();
 
 }

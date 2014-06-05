@@ -137,4 +137,14 @@ public class MultiVertexCentricQueryBuilder extends AbstractVertexCentricQueryBu
         return execute(RelationCategory.EDGE, new VertexIdConstructor());
     }
 
+    @Override
+    public QueryDescription describeForEdges() {
+        return describe(vertices.size(),RelationCategory.EDGE);
+    }
+
+    @Override
+    public QueryDescription describeForProperties() {
+        return describe(vertices.size(),RelationCategory.PROPERTY);
+    }
+
 }

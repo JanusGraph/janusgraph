@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.olap;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -11,6 +12,9 @@ import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Vertex;
 import org.junit.Test;
+
+import javax.annotation.Nullable;
+
 import static org.junit.Assert.*;
 
 import java.util.Map;
@@ -33,13 +37,20 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
     public void degreeCount() throws Exception {
         mgmt.makePropertyKey("uid").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
         mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.MULTI).make();
+        mgmt.makePropertyKey("values").cardinality(Cardinality.LIST).dataType(Integer.class).make();
+        mgmt.makePropertyKey("numvals").dataType(Integer.class).make();
         finishSchema();
-        int numV = 400;
+        int numV = 300;
         int numE = 0;
         TitanVertex[] vs = new TitanVertex[numV];
         for (int i=0;i<numV;i++) {
             vs[i] = tx.addVertex();
             vs[i].setProperty("uid",i+1);
+            int numVals = random.nextInt(5)+1;
+            vs[i].setProperty("numvals",numVals);
+            for (int j=0;j<numVals;j++) {
+                vs[i].addProperty("values",random.nextInt(100));
+            }
         }
         for (int i=0;i<numV;i++) {
             int edges = i+1;
@@ -67,21 +78,42 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             public Degree process(TitanVertex vertex) {
                 Degree d = vertex.getProperty("all");
                 assertNotNull(d);
+                Degree p = vertex.getProperty("values");
+                assertNotNull(p);
+                assertTrue(p.prop>0);
+                int numvals = vertex.getProperty("numvals");
+                assertEquals(numvals,p.prop);
+                d.add(p);
                 return d;
             }
         });
         builder.addQuery().setName("all").edges(new Gather<Degree, Degree>() {
+                                                    @Override
+                                                    public Degree apply(Degree state, TitanEdge edge, Direction dir) {
+                                                        return new Degree(dir == Direction.IN ? 1 : 0, dir == Direction.OUT ? 1 : 0, 0);
+                                                    }
+                                                }, new Combiner<Degree>() {
+                                                    @Override
+                                                    public Degree combine(Degree m1, Degree m2) {
+                                                        m1.add(m2);
+                                                        return m1;
+                                                    }
+                                                }
+        );
+        builder.addQuery().keys("values").properties(new Function<TitanProperty, Degree>() {
+            @Nullable
             @Override
-            public Degree apply(Degree state, TitanEdge edge, Direction dir) {
-                return new Degree(dir==Direction.IN?1:0,dir==Direction.OUT?1:0);
+            public Degree apply(@Nullable TitanProperty titanProperty) {
+                return new Degree(0,0,1);
             }
         }, new Combiner<Degree>() {
-            @Override
-            public Degree combine(Degree m1, Degree m2) {
-                m1.add(m2);
-                return m1;
-            }
-        });
+              @Override
+              public Degree combine(Degree m1, Degree m2) {
+                  m1.add(m2);
+                  return m1;
+              }
+          });
+        builder.addQuery().keys("numvals").properties();
         Stopwatch w = new Stopwatch().start();
         OLAPResult<Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
         System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
@@ -94,6 +126,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             Vertex v = tx.getVertex(entry.getKey().longValue());
             int count = v.getProperty("uid");
             assertEquals(count,degree.out);
+            int numvals = v.getProperty("numvals");
+            assertEquals(numvals,degree.prop);
             totalCount+= degree.both;
         }
         assertEquals(numV*(numV+1),totalCount);
@@ -103,21 +137,23 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         public int in;
         public int out;
         public int both;
+        public int prop;
 
-        public Degree(int in, int out) {
+        public Degree(int in, int out,int prop) {
             this.in=in;
             this.out=out;
             both=in+out;
         }
 
         public Degree() {
-            this(0,0);
+            this(0,0,0);
         }
 
         public void add(Degree d) {
             in+=d.in;
             out+=d.out;
             both+=d.both;
+            prop+=d.prop;
         }
 
     }
@@ -366,7 +402,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             );
             Stopwatch w = new Stopwatch().start();
             distances = builder.execute().get(200, TimeUnit.SECONDS);
-            System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
+            System.out.println("Execution time (ms) [" + numV + "|" + numE + "]: " + w.elapsed(TimeUnit.MILLISECONDS));
             assertEquals(numV,distances.size());
         }
         for (Map.Entry<Long,Integer> entry : distances.entries()) {

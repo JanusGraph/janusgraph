@@ -2,16 +2,18 @@ package com.thinkaurelius.titan.graphdb;
 
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -24,16 +26,24 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.internal.OrderList;
+import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
+import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
+import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
+import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -57,444 +67,75 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
 
+  /* ==================================================================================
+                            INDEXING
+     ==================================================================================*/
+
+    /**
+     * Just opens and closes the graph
+     */
     @Test
     public void testOpenClose() {
     }
 
+    /**
+     * Very simple graph operation to ensure minimal functionality and cleanup
+     */
     @Test
     public void testBasic() {
-        PropertyKey weight = tx.makePropertyKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
+        PropertyKey uid = makeVertexIndexedUniqueKey("name",String.class);
+        finishSchema();
+
         TitanVertex n1 = tx.addVertex();
-        n1.addProperty(weight, 10.5);
-        assertTrue(tx.containsRelationType("weight"));
+        n1.addProperty(uid.getName(), "abcd");
         clopen();
         long nid = n1.getID();
         assertTrue(tx.containsVertex(nid));
-        assertTrue(tx.containsVertex(weight.getID()));
+        assertTrue(tx.containsVertex(uid.getID()));
         assertFalse(tx.containsVertex(nid + 64));
-        assertFalse(tx.containsVertex(weight.getID() + 64));
-        assertTrue(tx.containsRelationType("weight"));
-        weight = tx.getPropertyKey("weight");
-        assertEquals(weight.getDataType(), Decimal.class);
-        assertEquals(weight.getName(), "weight");
+        uid = tx.getPropertyKey(uid.getName());
         n1 = tx.getVertex(nid);
-
-        for (TitanProperty prop : n1.getProperties()) {
-            Object o = prop.getValue();
-        }
-        n1.query().relations();
-        assertTrue(n1.getProperty(weight).equals(10.5));
-    }
-
-    @Test
-    public void simpleLogTest() throws InterruptedException {
-        final String triggerName = "test";
-        final Serializer serializer = graph.getDataSerializer();
-        final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
-        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        final TimeUnit unit = times.getUnit();
-        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
-//        System.out.println(startTime);
-        clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
-        testBasic();
-        //Transaction with custom triggerName
-        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
-        TitanVertex v1 = tx2.addVertex();
-        v1.setProperty("weight",111.1);
-        tx2.commit();
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
-        TitanVertex v2 = tx2.addVertex();
-        v2.setProperty("weight",222.2);
-        tx2.commit();
-        //Only read tx
-        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
-        v1 = tx2.getVertex(v1.getID());
-        assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
-        assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
-        tx2.commit();
+        assertEquals(n1,Iterables.getOnlyElement(tx.getVertices(uid, "abcd")));
+        assertEquals(1, Iterables.size(n1.query().relations()));
+        assertTrue(n1.getProperty(uid).equals("abcd"));
+        assertEquals(1,Iterables.size(tx.getVertices()));
         close();
-
-        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        final AtomicInteger txMsgCounter = new AtomicInteger(0);
-        final AtomicInteger triggerMeta = new AtomicInteger(0);
-        txlog.registerReader(new MessageReader() {
-            @Override
-            public void read(Message message) {
-                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime>=startTime);
-                assertNotNull(message.getSenderId());
-                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, times);
-                TransactionLogHeader header = txEntry.getHeader();
-//                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
-                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
-                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
-                assertNotNull(txEntry.getMetadata());
-                assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
-                if (!txEntry.hasContent()) {
-                    assertTrue(txEntry.getStatus().isSuccess());
-                } else {
-                    assertTrue(txEntry.getStatus().isPreCommit());
-                    Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
-                    if (logid!=null) {
-                        assertTrue(logid instanceof String);
-                        assertEquals(triggerName,logid);
-                        triggerMeta.incrementAndGet();
-                    }
-                    //TODO: Verify content parses correctly
-                }
-                txMsgCounter.incrementAndGet();
-            }
-        });
-        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
-        triggerLog.registerReader(new MessageReader() {
-            @Override
-            public void read(Message message) {
-                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
-                assertTrue(msgTime>=startTime);
-                assertNotNull(message.getSenderId());
-                StaticBuffer content = message.getContent();
-                assertTrue(content!=null && content.length()>0);
-                ReadBuffer read = content.asReadBuffer();
-                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
-                assertTrue(txTime<=msgTime);
-                assertTrue(txTime>=startTime);
-                long txid = read.getLong();
-                assertTrue(txid>0);
-                for (String type : new String[]{"add","del"}) {
-                    long num = VariableLong.readPositive(read);
-                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
-                    if (type.equals("add")) {
-                        assertEquals(2,num);
-                    } else {
-                        assertEquals(0,num);
-                    }
-                    for (int i=0; i<num;i++) {
-                        Long vertexid = VariableLong.readPositive(read);
-                        assertTrue(vertexid>0);
-                        Entry entry = BufferUtil.readEntry(read,serializer);
-                        assertNotNull(entry);
-                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
-                    }
-                }
-                triggerMsgCounter.incrementAndGet();
-            }
-        });
-        Thread.sleep(20000);
-        assertEquals(8, txMsgCounter.get());
-        assertEquals(2,triggerMsgCounter.get());
-        assertEquals(2,triggerMeta.get());
+        TitanCleanup.clear(graph);
+        open(config);
+        assertTrue(Iterables.isEmpty(tx.getVertices()));
     }
 
-
+    /**
+     * Tests the {@link GraphOfTheGodsFactory#load(com.thinkaurelius.titan.core.TitanGraph)}
+     * method used as the standard example that ships with Titan.
+     */
     @Test
-    public void testTypes() {
-        clopen(option(CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
-                option(CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
+    public void testGraphOfTheGods() {
+        GraphOfTheGodsFactory.load(graph);
 
-        EdgeLabel friend = mgmt.makeEdgeLabel("friend").directed().make();
-
-        PropertyKey id = makeVertexIndexedUniqueKey("uid",String.class);
-
-        PropertyKey name = makeKey("name",String.class);
-
-        PropertyKey weight = makeKey("weight",Decimal.class);
-
-        PropertyKey someid = makeVertexIndexedKey("someid",Object.class);
-
-        PropertyKey boolval = makeKey("boolval",Boolean.class);
-
-        PropertyKey sint = makeKey("int",SpecialInt.class);
-
-        EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().make();
-
-        EdgeLabel connect = mgmt.makeEdgeLabel("connect").signature(id, weight).multiplicity(Multiplicity.MANY2ONE).make();
-
-        EdgeLabel parent = mgmt.makeEdgeLabel("parent").multiplicity(Multiplicity.MANY2ONE).make();
-        assertTrue(parent.getMultiplicity().isUnique(OUT));
-        EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
-        assertTrue(child.getMultiplicity().isUnique(IN));
-        EdgeLabel spouse = mgmt.makeEdgeLabel("spouse").multiplicity(Multiplicity.ONE2ONE).make();
-        assertTrue(spouse.getMultiplicity().isUnique(IN));
-        assertTrue(spouse.getMultiplicity().isUnique(OUT));
-
-        assertEquals("weight",weight.toString());
-
-
-        try {
-            mgmt.makePropertyKey("pint").dataType(int.class).make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
-        try {
-            mgmt.makePropertyKey("number").dataType(Number.class).make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
-        PropertyKey arrType = mgmt.makePropertyKey("barr").dataType(byte[].class).make();
-
-        finishSchema();
-        clopen();
-
-        assertNull(getVertex(id, "v1"));
-
-        id = tx.getPropertyKey("uid");
-        assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
-        assertTrue(id.getCardinality()==Cardinality.SINGLE);
-        assertEquals(String.class, id.getDataType());
-
-        //Basic properties
-
-        friend = tx.getEdgeLabel("friend");
-        assertEquals("friend", friend.getName());
-        assertTrue(friend.isDirected());
-        assertFalse(friend.isUnidirected());
-        assertTrue(friend.isEdgeLabel());
-        assertFalse(friend.isPropertyKey());
-        assertFalse(friend.getMultiplicity().isUnique(Direction.OUT));
-        assertTrue(((InternalRelationType) friend).isHidden());
-        assertFalse(((InternalRelationType) friend).isHiddenType());
-
-        connect = tx.getEdgeLabel("connect");
-        assertEquals("connect", connect.getName());
-        assertFalse(connect.isUnidirected());
-        assertTrue(connect.isEdgeLabel());
-        assertFalse(connect.isPropertyKey());
-        assertTrue(connect.getMultiplicity().isUnique(Direction.OUT));
-        assertFalse(((InternalRelationType) connect).isHiddenType());
-
-        link = tx.getEdgeLabel("link");
-        assertTrue(link.isUnidirected());
-        assertFalse(link.getMultiplicity().isUnique(Direction.OUT));
-
-        weight = tx.getPropertyKey("weight");
-        assertEquals(Decimal.class, weight.getDataType());
-
-        boolval = tx.getPropertyKey("boolval");
-        assertEquals(Boolean.class, boolval.getDataType());
-
-        name = tx.getPropertyKey("name");
-        //Failures
-        try {
-            tx.makePropertyKey("fid").make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            tx.makeEdgeLabel("link").unidirected().make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        tx.makeEdgeLabel("test").make();
-        try {
-            ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().
-                    sortKey(name, weight).signature(name).make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().
-                    sortKey(tx.getPropertyKey("int"), weight).make();
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-//        try {
-//            tx.makeLabel("link2").unidirected().
-//                    sortKey(id, weight).make();
-//            fail();
-//        } catch (IllegalArgumentException e) {
-//        }
-        EdgeLabel link2 = ((StandardEdgeLabelMaker)tx.makeEdgeLabel("link2")).unidirected().sortKey(name, weight).make();
-
-        // Data types and serialization
-        TitanVertex v = tx.addVertex();
-        v.addProperty(id, "Hello");
-        v.addProperty(weight, 0.5);
-        v.addProperty(boolval, true);
-        try {
-            v.addProperty(weight, "x");
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
-        // Verify vertex in new transaction and functional edges
-        TitanVertex v1 = tx.addVertex();
-        v1.setProperty("uid", "v1");
-        v1.setProperty("someid", 100l);
-        try {
-            v1.addProperty("int", 10.5);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        v1.setProperty("int", new SpecialInt(77));
-        TitanVertex v12 = tx.addVertex(), v13 = tx.addVertex();
-        v12.setProperty("uid", "v12");
-        v13.setProperty("uid", "v13");
-        v12.addEdge("parent", v1).setProperty("weight", 3.5);
-        v13.addEdge("parent", v1).setProperty("weight", 10.5);
-        try {
-            v12.addEdge("parent", v13);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        assertEquals(2, Iterables.size(v1.query().direction(IN).labels("parent").edges()));
-        assertEquals(1, Iterables.size(v1.query().direction(IN).labels("parent").has("weight", Compare.GREATER_THAN, 10.0).edges()));
-        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight").edges()));
-        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
-        assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
-
-        v1.addEdge("child", v12);
-        v1.addEdge("child", v13);
-        try {
-            v13.addEdge("child", v12);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
-        v1.addEdge("spouse", v12);
-        try {
-            v13.addEdge("spouse", v12);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        try {
-            v1.addEdge("spouse", v13);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-
-        v1.addEdge("connect", v12);
-        Edge edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
-        assertEquals(0, edge.getPropertyKeys().size());
-
-        clopen();
-
-        id = tx.getPropertyKey("uid");
-        v1 = getVertex(id, "v1");
-        assertEquals(77, ((SpecialInt) v1.getProperty("int")).getValue());
-        assertEquals(v1, getVertex("someid", 100l));
-        assertEquals(v1, getVertex(id, "v1"));
-
-        v12 = (TitanVertex) tx.getVertex(v12);
-        v13 = (TitanVertex) tx.getVertex(v13);
-        assertEquals(2, Iterables.size(v1.query().direction(IN).labels("parent").edges()));
-        assertEquals(1, Iterables.size(v1.query().direction(IN).labels("parent").has("weight", Compare.GREATER_THAN, 10.0).edges()));
-        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight").edges()));
-        assertEquals(1, Iterables.size(v12.query().direction(OUT).labels("parent").has("weight", Compare.GREATER_THAN, 3).edges()));
-        assertEquals(1, Iterables.size(v13.query().direction(OUT).labels("parent").has("weight").edges()));
-
-        edge = Iterables.getOnlyElement(v1.getEdges(OUT, "connect"));
-        assertEquals(0, edge.getPropertyKeys().size());
-
-
-        // Verify vertex in current transaction
-        TitanVertex v2 = tx.addVertex();
-        v2.setProperty("uid", "v2");
-        v2.setProperty("someid", 200l);
-        try {
-            v2.addProperty("int", 10.5);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        v2.setProperty("int", new SpecialInt(154));
-
-        v2 = getVertex(id, "v2");
-        assertEquals(154, ((SpecialInt) v2.getProperty("int")).getValue());
-        assertEquals(v2, getVertex("someid", 200l));
-        assertEquals(v2, getVertex(id, "v2"));
-
-        assertEquals(5, Iterables.size(tx.getVertices()));
-
-        assertEquals(1, Iterables.size(tx.query().has("someid", Cmp.GREATER_THAN, 150).vertices()));
-        assertEquals(2, Iterables.size(tx.query().has("someid", Cmp.GREATER_THAN, 50).vertices()));
-
-        clopen();
-
-
-        v = tx.addVertex();
-        v.setProperty("uid", "unique1");
-        assertEquals(1, Iterables.size(tx.getVertices("uid", "unique1")));
-        clopen();
-
-        try {
-            v = tx.addVertex();
-            v.setProperty("uid", "unique1");
-            fail();
-        } catch (IllegalArgumentException e) {
-
-        } finally {
-            tx.rollback();
-            tx = null;
-        }
-        clopen();
-        v = tx.addVertex();
-        v.setProperty("uid", "unique2");
-        try {
-            v = tx.addVertex();
-            v.setProperty("uid", "unique2");
-            fail();
-        } catch (IllegalArgumentException e) {
-
-        } finally {
-            tx.rollback();
-            tx = null;
-        }
-
-
-        makeVertexIndexedUniqueKey("domain",String.class);
-        finishSchema();
-
-        v1 = tx.addVertex();
-        try {
-            v1.setProperty("domain", "unique1");
-        } catch (IllegalArgumentException e) {
-
-        } finally {
-            tx.rollback();
-            tx = null;
-        }
-        newTx();
-
-
-        v1 = tx.addVertex();
-        v1.addProperty("domain", "unique1");
-        try {
-            v2 = tx.addVertex();
-            v2.addProperty("domain", "unique1");
-            fail();
-        } catch (IllegalArgumentException e) {
-
-        } finally {
-            tx.rollback();
-            tx = null;
-        }
-        newTx();
-
-        clopen();
-        v1 = tx.addVertex();
-        v1.addProperty("domain", "unique1");
-        assertEquals(1, Iterables.size(tx.getVertices("domain", "unique1")));
-        try {
-            v2 = tx.addVertex();
-            v2.addProperty("domain", "unique1");
-            fail();
-        } catch (IllegalArgumentException e) {
-
-        } finally {
-            tx.rollback();
-            tx = null;
-        }
-        newTx();
+        assertEquals(12,Iterables.size(graph.getVertices()));
+        Vertex h = Iterables.getOnlyElement(graph.getVertices("name","hercules"));
+        assertEquals(30,h.getProperty("age"));
+        assertEquals(5,Iterables.size(h.getEdges(BOTH)));
     }
 
+    /**
+     * Adding a removing a vertex with index
+     */
     @Test
     public void testVertexRemoval() {
-        Vertex v1 = graph.addVertex(null);
-        Vertex v2 = graph.addVertex(null);
+        PropertyKey name = makeVertexIndexedUniqueKey("name",String.class);
+        finishSchema();
 
+
+        Vertex v1 = graph.addVertex(null);
+        v1.setProperty(name.getName(),"v1");
+        Vertex v2 = graph.addVertex(null);
+        v2.setProperty(name.getName(),"v2");
         Edge e = graph.addEdge(null, v1, v2, "knows");
+        assertEquals(2,Iterables.size(graph.getVertices()));
+        assertEquals(1,Iterables.size(graph.query().has(name,Cmp.EQUAL,"v2").vertices()));
+
         clopen();
 
         v1 = graph.getVertex(v1);
@@ -507,275 +148,24 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertEquals(0,Iterables.size(v2.getEdges(Direction.BOTH)));
             fail();
         } catch (IllegalArgumentException ex) {}
-
+        assertEquals(1,Iterables.size(graph.getVertices()));
+        assertEquals(1,Iterables.size(graph.query().has(name,Cmp.EQUAL,"v1").vertices()));
+        assertEquals(0,Iterables.size(graph.query().has(name,Cmp.EQUAL,"v2").vertices()));
 
         graph.commit();
+
         assertNull(graph.getVertex(v2));
+        assertEquals(1,Iterables.size(graph.getVertices()));
+        assertEquals(1,Iterables.size(graph.query().has(name,Cmp.EQUAL,"v1").vertices()));
+        assertEquals(0,Iterables.size(graph.query().has(name,Cmp.EQUAL,"v2").vertices()));
 
     }
 
+    /**
+     * Iterating over all vertices and edges in a graph
+     */
     @Test
-    public void testVertexDeletion() throws Exception {
-
-        PropertyKey name = makeVertexIndexedUniqueKey("name",String.class);
-        finishSchema();
-
-        TitanVertex v = tx.addVertex();
-        TitanProperty p = v.addProperty("name", "oldName");
-        newTx();
-
-        TitanVertex v1 = tx.getVertex(v.getID());
-
-        tx.removeVertex(v1);
-        newTx();
-        if (graph.getFeatures().supportsVertexIteration) {
-            int count = 0;
-            for (Vertex vertex : tx.getVertices()) count++;
-            assertEquals(0, count);
-        }
-    }
-
-    @Test
-    public void testMultivaluedVertexProperty() {
-
-        /*
-         * Constant test data
-         *
-         * The values list below must have at least two elements. The string
-         * literals were chosen arbitrarily and have no special significance.
-         */
-        final String foo = "foo", bar = "bar", weight = "weight";
-        final List<String> values =
-                ImmutableList.of("four", "score", "and", "seven");
-        assertTrue("Values list must have multiple elements for this test to make sense",
-                2 <= values.size());
-
-        // Create property with name pname and a vertex
-        PropertyKey w = makeKey(weight,Integer.class);
-        PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
-        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildInternalIndex();
-        PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
-        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildInternalIndex();
-        finishSchema();
-
-        TitanVertex v = tx.addVertex();
-
-        // Insert prop values
-        int i=0;
-        for (String s : values) {
-            TitanProperty p = v.addProperty(foo, s);
-            p.setProperty(weight,++i);
-            p = v.addProperty(bar, s);
-            p.setProperty(weight,i);
-        }
-
-        //Verify correct number of properties
-        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
-        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
-        //Verify order
-        for (String prop : new String[]{foo,bar}) {
-            int sum = 0;
-            int index = values.size();
-            for (TitanProperty p : v.getProperties(foo)) {
-                assertTrue(values.contains(p.getValue()));
-                int wint = p.getProperty(weight);
-                sum+=wint;
-                if (prop==foo) assertEquals(index,wint);
-                index--;
-            }
-            assertEquals(values.size()*(values.size()+1)/2,sum);
-        }
-
-
-        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
-        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
-
-        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
-        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
-
-        // Check that removeProperty(TitanKey) returns a valid value
-        String lastValueRemoved = v.removeProperty(foo);
-        assertNotNull(lastValueRemoved);
-        assertTrue(values.contains(lastValueRemoved));
-        // Check that the properties were actually deleted from v
-        assertFalse(v.getProperties(foo).iterator().hasNext());
-
-        // Reopen database
-        clopen();
-
-        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
-        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
-
-        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
-        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
-
-        // Retrieve and check our test vertex
-        v = tx.getVertex(v.getID());
-        Iterable<TitanProperty> iter = v.getProperties(foo);
-        assertFalse("Failed to durably remove multivalued property",
-                iter.iterator().hasNext());
-
-        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
-        // Reinsert prop values
-        for (String s : values) {
-            v.addProperty(foo, s);
-        }
-        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
-
-        // Test removeProperty(String) method on the vertex
-        lastValueRemoved = v.removeProperty(foo);
-        assertNotNull(lastValueRemoved);
-        assertTrue(values.contains(lastValueRemoved));
-        assertFalse(v.getProperties(foo).iterator().hasNext());
-    }
-
-    @Test
-    public void testDate() throws ParseException {
-        makeKey("birthday",GregorianCalendar.class);
-        finishSchema();
-
-        Vertex v = tx.addVertex();
-        Date date = new SimpleDateFormat("ddMMyyyy").parse("28101978");
-        Calendar c = Calendar.getInstance();
-        c.setTime(date);
-        v.setProperty("birthday", c);
-//        System.out.println(c); // prints Sat Oct 28 00:00:00 CET 1978
-
-        clopen();
-
-        v = tx.getVertex(v);
-//        System.out.println(v.getProperty("birthday")); // prints Wed Jan 16 18:49:44 CET 2013
-        assertEquals(c, v.getProperty("birthday"));
-    }
-
-    @Test
-    public void testConfiguration() {
-        //default type maker
-        //check GraphDatabaseConfiguration
-
-    }
-
-    @Test
-    public void testTransaction() {
-        TitanTransaction tx1 = graph.newTransaction();
-        TitanTransaction tx2 = graph.newTransaction();
-
-        TitanVertex v11 = tx1.addVertex();
-        TitanVertex v12 = tx1.addVertex();
-        tx1.addEdge(v11, v12, "knows");
-
-        TitanVertex v21 = tx2.addVertex();
-        try {
-            v21.addEdge("knows", v11);
-            fail();
-        } catch (IllegalArgumentException e) {
-        }
-        TitanVertex v22 = tx2.addVertex();
-        v21.addEdge("knows", v22);
-        tx2.commit();
-        try {
-            v22.addEdge("knows", v21);
-            fail();
-        } catch (IllegalStateException e) {
-        }
-        tx1.rollback();
-        try {
-            v11.setProperty("test", 5);
-            fail();
-        } catch (IllegalStateException e) {
-        }
-
-        //Test internal vertex id verification
-        newTx();
-        v21 = tx.getVertex(v21.getID());
-        tx.makeEdgeLabel("link").unidirected().make();
-        TitanVertex v3 = tx.addVertex();
-        v21.addEdge("link", v3);
-        newTx();
-        v21 = tx.getVertex(v21.getID());
-        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
-        assertFalse(v3.isRemoved());
-        v3.remove();
-        newTx();
-        v21 = tx.getVertex(v21.getID());
-        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
-        assertFalse(v3.isRemoved());
-        newTx();
-
-
-        TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence().start();
-        v21 = tx3.getVertex(v21.getID());
-        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
-        assertTrue(v3.isRemoved());
-        tx3.commit();
-
-
-    }
-
-    //Add more removal operations, different transaction contexts
-    @Test
-    public void testCreateDelete() {
-        makeKey("weight",Double.class);
-        PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(id).sortOrder(Order.DESC).directed().make();
-        mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
-        finishSchema();
-
-        id = tx.getPropertyKey("uid");
-        TitanVertex n1 = graph.addVertex(null), n3 = graph.addVertex(null);
-        TitanEdge e = n3.addEdge("knows", n1);
-        Edge e2 = n1.addEdge("friend",n3);
-        e.setProperty(id, 111);
-        n3.addProperty(id, 445);
-        assertEquals(111, e.getProperty(id));
-        graph.commit();
-
-        n3 = graph.getVertex(n3.getID());
-        assertEquals(445, n3.getProperty("uid"));
-        e = (TitanEdge) Iterables.getOnlyElement(n3.getEdges(OUT, "knows"));
-        assertEquals(111, e.getProperty("uid"));
-        assertEquals(e, graph.getEdge(e.getId()));
-        assertEquals(e, graph.getEdge(e.getId().toString()));
-        TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
-        p.remove();
-        n3.addProperty("uid", 353);
-
-        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
-        e.setProperty(id,222);
-
-        e2 = Iterables.getOnlyElement(n1.getEdges(OUT,"friend"));
-        e2.setProperty("uid", 1);
-        e2.setProperty("weight", 2.0);
-
-        assertEquals(1,e2.getProperty("uid"));
-        assertEquals(2.0,e2.getProperty("weight"));
-
-
-        clopen();
-
-        n3 = graph.getVertex(n3.getID());
-        assertEquals(353, n3.getProperty("uid"));
-
-        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
-        assertEquals(222,e.getProperty(id));
-    }
-
-    @Test
-    public void testSelfLoop() {
-        Vertex v = tx.addVertex();
-        tx.addEdge(null, v, v, "self");
-        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
-        clopen();
-        v = tx.getVertex(v.getId());
-        assertNotNull(v);
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
-        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
-    }
-
-    @Test
-    public void testIteration() {
+    public void testGlobalIteration() {
         int numV = 50;
         int deleteV = 5;
         if (graph.getFeatures().supportsVertexIteration) {
@@ -815,298 +205,20 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 tx.removeVertex(v);
             }
             assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
+            for (int i=0;i<10;i++) { //Repeated vertex counts
+                assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
+                for (Vertex v : tx.getVertices()) assertTrue(v.<Integer>getProperty("count")>=0);
+            }
+
             clopen();
             assertEquals(numV - deleteV, Iterables.size(graph.getVertices()));
-        }
-    }
-
-    @Test
-    public void testRepeatingIterationOverAllVertices() {
-        if (graph.getFeatures().supportsVertexIteration) {
-            TitanVertex vertex = tx.addVertex();
-            vertex.setProperty("key", "value");
-            tx.commit();
-            for (int i = 0; i < 100; i++) {
-                tx = graph.newTransaction();
-                Iterable<Vertex> vertices = tx.getVertices();
-                assertEquals(1, Iterables.size(vertices));
-                assertEquals("value", Iterables.getOnlyElement(vertices).getProperty("key"));
-                tx.commit();
+            for (int i=0;i<10;i++) {
+                assertEquals(numV - deleteV, Iterables.size(tx.getVertices()));
+                for (Vertex v : tx.getVertices()) assertTrue(v.<Integer>getProperty("count")>=0);
             }
         }
     }
 
-    @Test
-    public void testVertexDeletionWithIndex() {
-        PropertyKey name = tx.makePropertyKey("name").dataType(String.class).make();
-        Vertex v1 = tx.addVertex();
-        v1.setProperty("name", "v1");
-        Vertex v2 = tx.addVertex();
-        v2.setProperty("name", "v2");
-
-        Edge e = tx.addEdge(null, v1, v2, "some_edge");
-
-        clopen();
-
-        v1 = tx.getVertex(v1);
-        tx.removeVertex(v1);
-        v2 = tx.getVertices("name", "v2").iterator().next(); // generates IllegalArgumentException
-        assertNotNull(v2);
-        assertEquals(0, Iterables.size(tx.getVertices("name", "v1")));
-    }
-
-    @Test
-    public void testPropertyIndexPersistence() {
-        final String propName = "favorite_color";
-        final String sharedValue = "blue";
-
-        tx.makePropertyKey(propName).dataType(String.class).make();
-
-        TitanVertex alice = tx.addVertex();
-        TitanVertex bob = tx.addVertex();
-
-        alice.addProperty(propName, sharedValue);
-
-        clopen();
-
-        alice = tx.getVertex(alice.getID());
-        bob = tx.getVertex(bob.getID());
-
-        assertEquals(sharedValue, alice.getProperty(propName));
-        assertEquals(null, bob.getProperty(propName));
-
-        alice.removeProperty(propName);
-        bob.addProperty(propName, sharedValue);
-
-        clopen();
-    }
-
-    @Test
-    public void testUnidirectional() {
-        EdgeLabel link = tx.makeEdgeLabel("link").unidirected().multiplicity(Multiplicity.MANY2ONE).make();
-        EdgeLabel connect = ((StandardEdgeLabelMaker)tx.makeEdgeLabel("connect")).sortKey(link).make();
-
-        TitanVertex v1 = tx.addVertex(), v2 = tx.addVertex(), v3 = tx.addVertex();
-        TitanEdge e = v1.addEdge(link, v2);
-        e.setProperty("time", 5);
-        e = v1.addEdge(connect, v2);
-        e.setProperty("time", 10);
-        e.setProperty("link", v3);
-        e = v2.addEdge(connect, v3);
-        e.setProperty("time", 15);
-        e.setProperty("link", v1);
-
-        assertEquals(2, Iterables.size(v1.getEdges(Direction.OUT)));
-        assertEquals(1, Iterables.size(v2.getEdges(Direction.OUT)));
-        assertEquals(2, Iterables.size(v2.getEdges(Direction.BOTH)));
-
-        assertEquals(1, Iterables.size(v3.getEdges(Direction.BOTH)));
-        e = (TitanEdge) Iterables.getOnlyElement(v1.getEdges(Direction.OUT, "connect"));
-        assertEquals(10, e.getProperty("time"));
-        assertEquals(v3, e.getProperty("link"));
-
-        clopen();
-
-        v1 = (TitanVertex) tx.getVertex(v1);
-        v2 = (TitanVertex) tx.getVertex(v2);
-        v3 = (TitanVertex) tx.getVertex(v3);
-        assertEquals(2, Iterables.size(v1.getEdges(Direction.OUT)));
-        assertEquals(1, Iterables.size(v2.getEdges(Direction.OUT)));
-        assertEquals(2, Iterables.size(v2.getEdges(Direction.BOTH)));
-
-        assertEquals(1, Iterables.size(v3.getEdges(Direction.BOTH)));
-        e = (TitanEdge) Iterables.getOnlyElement(v1.getEdges(Direction.OUT, "connect"));
-        assertEquals(10, e.getProperty("time"));
-        assertEquals(v3, e.getProperty("link"));
-
-    }
-
-    @Test
-    public void testJointIndexRetrieval() {
-        makeVertexIndexedKey("name",String.class);
-        makeVertexIndexedKey("color",String.class);
-        finishSchema();
-
-        Vertex v = graph.addVertex(null);
-        v.setProperty("name", "ilya");
-        v.setProperty("color", "blue");
-        graph.commit();
-
-        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").vertices()));
-        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").has("color", "blue").vertices()));
-    }
-
-    @Test
-    public void testLargeJointIndexRetrieval() {
-        makeVertexIndexedKey("sid",Integer.class);
-        makeVertexIndexedKey("color",String.class);
-        finishSchema();
-
-        int sids = 17;
-        String[] colors = {"blue", "red", "yellow", "brown", "green", "orange", "purple"};
-        int multiplier = 200;
-        int numV = sids * colors.length * multiplier;
-        for (int i = 0; i < numV; i++) {
-            Vertex v = graph.addVertex(null);
-            v.setProperty("color", colors[i % colors.length]);
-            v.setProperty("sid", i % sids);
-        }
-        graph.commit();
-        clopen();
-
-        assertEquals(numV / sids, Iterables.size(graph.query().has("sid", 8).vertices()));
-        assertEquals(numV / colors.length, Iterables.size(graph.query().has("color", colors[2]).vertices()));
-
-        assertEquals(multiplier, Iterables.size(graph.query().has("sid", 11).has("color", colors[3]).vertices()));
-    }
-
-
-    @Test
-    public void testIndexRetrieval() {
-        PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
-        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildInternalIndex();
-        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildInternalIndex();
-
-        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildInternalIndex();
-        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildInternalIndex();
-        mgmt.makeEdgeLabel("connect").signature(id, name).make();
-        finishSchema();
-
-
-        int noNodes = 100;
-        int div = 10;
-        int mod = noNodes / div;
-        for (int i = 0; i < noNodes; i++) {
-            TitanVertex n = tx.addVertex();
-            n.addProperty("uid", i);
-            n.addProperty("name", "Name" + (i % mod));
-            TitanVertex other = getVertex("uid", Math.max(0, i - 1));
-            Preconditions.checkNotNull(other);
-            TitanEdge e = n.addEdge("connect", other);
-            e.setProperty("uid", i);
-            e.setProperty("name", "Edge" + (i % mod));
-        }
-        clopen();
-        for (int j = 0; j < mod; j++) {
-            Iterable<Vertex> nodes = tx.getVertices("name", "Name" + j);
-            assertEquals(div, Iterables.size(nodes));
-            for (Vertex n : nodes) {
-                int nid = ((Number) n.getProperty("uid")).intValue();
-                assertEquals(j, nid % mod);
-            }
-            Iterable<Edge> edges = tx.getEdges("name", "Edge" + j);
-            assertEquals(div, Iterables.size(edges));
-            for (Edge e : edges) {
-                int nid = ((Number) e.getProperty("uid")).intValue();
-                assertEquals(j, nid % mod);
-            }
-        }
-        clopen();
-        for (int i = 0; i < noNodes; i++) {
-            assertEquals(getVertex("uid", i).getProperty("name").toString().substring(4), String.valueOf(i % mod));
-        }
-        for (int i = 0; i < noNodes; i++) {
-            assertEquals(Iterables.getOnlyElement(tx.getEdges("uid", i)).getProperty("name").toString().substring(4), String.valueOf(i % mod));
-        }
-
-    }
-
-    @Test
-    public void testThreadBoundTx() {
-        PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
-        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildInternalIndex();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
-        finishSchema();
-
-        Vertex v1 = graph.addVertex(null);
-        Vertex v2 = graph.addVertex(null);
-        Vertex v3 = graph.addVertex(null);
-        v1.setProperty("name", "Vertex1");
-        v1.setProperty("age", 35);
-        v2.setProperty("name", "Vertex2");
-        v2.setProperty("age", 45);
-        v3.setProperty("name", "Vertex3");
-        v3.setProperty("age", 55);
-        Edge e1 = v1.addEdge("knows", v2);
-        e1.setProperty("time", 5);
-        Edge e2 = v2.addEdge("knows", v3);
-        e2.setProperty("time", 15);
-        Edge e3 = v3.addEdge("knows", v1);
-        e3.setProperty("time", 25);
-        Edge e4 = v2.addEdge("friend", v2);
-        e4.setProperty("type", 1);
-        for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
-            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
-            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
-        }
-        e3.setProperty("time", 35);
-        assertEquals(35, e3.getProperty("time"));
-
-        v1.addEdge("friend", v2).setProperty("type", 0);
-        graph.commit();
-        e4.setProperty("type", 2);
-        Edge ef = Iterables.getOnlyElement(v1.getEdges(OUT, "friend"));
-        assertEquals(ef, Iterables.getOnlyElement(graph.getEdges("type", 0)));
-        ef.setProperty("type", 1);
-        graph.commit();
-
-        assertEquals(35, e3.getProperty("time"));
-        e3 = graph.getEdge(e3);
-        e3.setProperty("time", 45);
-        assertEquals(45, e3.getProperty("time"));
-
-        assertEquals(15, e2.getProperty("time"));
-        e2.setProperty("time", 25);
-        assertEquals(25, e2.getProperty("time"));
-
-        assertEquals(35, v1.getProperty("age"));
-        assertEquals(55, v3.getProperty("age"));
-        v3.setProperty("age", 65);
-        assertEquals(65, v3.getProperty("age"));
-        e1 = graph.getEdge(e1);
-
-        for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
-            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
-            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
-        }
-
-        graph.commit();
-
-        assertEquals(45, e3.getProperty("time"));
-        assertEquals(5, e1.getProperty("time"));
-
-//        try {
-//            //TODO: how to address this? Only allow transactional passing for vertices?
-//            assertEquals(25, e2.getProperty("time"));
-//            fail();
-//        } catch (InvalidElementException e) {
-//        }
-
-        assertEquals(35, v1.getProperty("age"));
-        assertEquals(65, v3.getProperty("age"));
-
-        for (Vertex v : new Vertex[]{v1, v2, v3}) {
-            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
-            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
-            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
-        }
-
-        graph.commit();
-
-        v1 = graph.addVertex(null);
-        v2 = graph.addVertex(null);
-        graph.addEdge(null, v1, v2, "knows");
-        graph.commit();
-        v3 = graph.addVertex(null);
-        Edge e = graph.addEdge(null, v1, v3, "knows");
-        assertNull(e.getProperty("age"));
-    }
-
-
-    //Test all element methods: vertex, edge, property, relation, element
     @Test
     public void testCreateAndRetrieveComprehensive() {
         makeLabel("connect");
@@ -1218,328 +330,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     }
 
-    @Test
-    public void testQuery() {
-        makeVertexIndexedUniqueKey("name",String.class);
-        PropertyKey time = makeKey("time",Integer.class);
-        PropertyKey weight = makeKey("weight",Precision.class);
-
-        EdgeLabel author = mgmt.makeEdgeLabel("author").multiplicity(Multiplicity.MANY2ONE).unidirected().make();
-
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connect")).sortKey(time).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connectDesc")).sortKey(time).sortOrder(Order.DESC).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friendDesc")).sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(author, weight).make();
-        mgmt.makeEdgeLabel("follows").make();
-        finishSchema();
-
-        TitanVertex v = tx.addVertex();
-        v.addProperty("name","v");
-        TitanVertex u = tx.addVertex();
-        u.addProperty("name","u");
-        int noVertices = 10000;
-        assertEquals(0,(noVertices-1)%3);
-        TitanVertex[] vs = new TitanVertex[noVertices];
-        for (int i = 1; i < noVertices; i++) {
-            vs[i] = tx.addVertex();
-            vs[i].addProperty("name", "v" + i);
-        }
-        EdgeLabel[] labelsV = {tx.getEdgeLabel("connect"),tx.getEdgeLabel("friend"),tx.getEdgeLabel("knows")};
-        EdgeLabel[] labelsU = {tx.getEdgeLabel("connectDesc"),tx.getEdgeLabel("friendDesc"),tx.getEdgeLabel("knows")};
-        for (int i = 1; i < noVertices; i++) {
-            for (TitanVertex vertex : new TitanVertex[]{v,u}) {
-                for (Direction d : new Direction[]{OUT,IN}) {
-                    EdgeLabel label = vertex==v?labelsV[i%3]:labelsU[i%3];
-                    TitanEdge e = d==OUT?vertex.addEdge(label,vs[i]):
-                                         vs[i].addEdge(label,vertex);
-                    e.setProperty("time", i);
-                    e.setProperty("weight", i % 4 + 0.5);
-                    e.setProperty("name", "e" + i);
-                    e.setProperty("author", i%5==0?v:vs[i % 5]);
-                }
-            }
-        }
-        int edgesPerLabel = noVertices/3;
-
-
-
-        VertexList vl;
-        Map<TitanVertex, Iterable<TitanEdge>> results;
-        Map<TitanVertex, Iterable<TitanProperty>> results2;
-        TitanVertex[] qvs;
-        int lastTime;
-        Iterator<Edge> outer;
-
-        clopen();
-
-        long[] vidsubset = new long[31 - 3];
-        for (int i = 0; i < vidsubset.length; i++) vidsubset[i] = vs[i + 3].getID();
-        Arrays.sort(vidsubset);
-
-        //##################################################
-        //Queries from Cache
-        //##################################################
-        clopen();
-        for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
-        v = tx.getVertex(v.getID());
-        u = tx.getVertex(u.getID());
-        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
-
-        //To trigger queries from cache (don't copy!!!)
-        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
-
-
-        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
-        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-
-        lastTime = 0;
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
-            lastTime = nowTime;
-        }
-        lastTime = Integer.MAX_VALUE;
-        for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
-            lastTime = nowTime;
-        }
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-
-        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
-            assertEquals(e, outer.next());
-        }
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
-        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
-        assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
-        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
-        assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
-        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
-        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
-
-        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
-        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-        assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-        assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
-        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
-        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
-        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
-        assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
-
-        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
-        assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
-        assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
-        assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
-
-        assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
-        assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
-        assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
-
-        assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
-        assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-        assertEquals(1, v.query().direction(IN).has("time", 1).count());
-        assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
-        assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
-        assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
-        for (Direction dir : new Direction[]{IN,OUT}) {
-            vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
-            vl.sort();
-            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
-        }
-        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
-
-
-        //Property queries
-        assertEquals(1, Iterables.size(v.query().properties()));
-        assertEquals(1, Iterables.size(v.query().keys("name").properties()));
-
-        //MultiQueries
-        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
-        results = tx.multiQuery(qvs).labels("knows").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
-        results = tx.multiQuery(qvs).titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).keys("name").properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-
-        //##################################################
-        //Same queries as above but without memory loading (i.e. omitting the first query)
-        //##################################################
-        clopen();
-        for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
-        v = tx.getVertex(v.getID());
-        u = tx.getVertex(u.getID());
-        qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
-
-        assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
-        assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
-
-        lastTime = 0;
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
-            lastTime = nowTime;
-        }
-        lastTime = Integer.MAX_VALUE;
-        for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
-            int nowTime = e.getProperty("time");
-            assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
-            lastTime = nowTime;
-        }
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-        assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
-
-        outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
-        for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
-            assertEquals(e, outer.next());
-        }
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31).count());
-        assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
-        assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
-        assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
-        assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
-        assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
-        assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
-        assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
-        assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
-        assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
-        assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
-
-        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
-        assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
-        assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
-        assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
-        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
-        assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
-        assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
-        assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
-
-        assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
-        assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
-        assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
-        assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
-        assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
-
-        assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
-        assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
-        assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
-
-        assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
-        assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
-        assertEquals(1, v.query().direction(IN).has("time", 1).count());
-        assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
-        assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
-        assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
-        assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
-        for (Direction dir : new Direction[]{IN,OUT}) {
-            vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
-            vl.sort();
-            for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
-        }
-        assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
-
-
-        //Property queries
-        assertEquals(1, Iterables.size(v.query().properties()));
-        assertEquals(1, Iterables.size(v.query().keys("name").properties()));
-
-        //MultiQueries
-        results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-        results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
-        results = tx.multiQuery(qvs).labels("knows").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
-        results = tx.multiQuery(qvs).titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-        results2 = tx.multiQuery(qvs).keys("name").properties();
-        for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
-
-        //##################################################
-        //End copied queries
-        //##################################################
-
-        newTx();
-
-        v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
-        assertNotNull(v);
-        assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).vertexIds().size());
-        assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).vertexIds().size());
-
-        newTx();
-
-        v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
-        assertNotNull(v);
-        assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
-        assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).count());
-
-
-        newTx();
-        //Test partially new vertex queries
-        TitanVertex[] qvs2 = new TitanVertex[qvs.length+2];
-        qvs2[0]=tx.addVertex();
-        for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getID());
-        qvs2[qvs2.length-1]=tx.addVertex();
-        qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
-        qvs2[qvs2.length-1].addEdge("connect", qvs2[0]);
-        results = tx.multiQuery(qvs2).direction(IN).labels("connect").titanEdges();
-        for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
-
-    }
-
-    //Merge above
-    public void neighborhoodTest() {
-        testCreateAndRetrieveComprehensive();
-        log.debug("Neighborhood:");
-        TitanVertex n1 = getVertex("name", "Node1");
-        TitanVertexQuery q = n1.query().direction(OUT).types(tx.getEdgeLabel("connect"));
-        VertexList res = q.vertexIds();
-        assertEquals(1, res.size());
-        TitanVertex n2 = getVertex("name", "Node2");
-        assertEquals(n2.getID(), res.getID(0));
-    }
 
     /**
-     * Testing using hundreds of objects
+     * In purpose similar to {@link #testCreateAndRetrieveComprehensive()} but less focused on comprehensive feature
+     * coverage and more on using larger transaction sizes
      */
     @Test
-    public void createAndRetrieveMedium() {
+    public void testCreateAndRetrieveMedium() {
         //Create Graph
         makeLabel("connect");
         makeVertexIndexedUniqueKey("name",String.class);
@@ -1636,6 +433,2084 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
     }
 
+
+    /* ==================================================================================
+                            SCHEMA TESTS
+     ==================================================================================*/
+
+    /**
+     * Test the definition and inspection of various schema types and ensure their correct interpretation
+     * within the graph
+     */
+    @Test
+    public void testSchemaTypes() {
+        // ---------- PROPERTY KEYS ----------------
+        //Normal single-valued property key
+        PropertyKey weight = makeKey("weight",Decimal.class);
+        //Indexed unique property key
+        PropertyKey id = makeVertexIndexedUniqueKey("uid",String.class);
+        //Indexed but not unique
+        PropertyKey someid = makeVertexIndexedKey("someid", Object.class);
+        //Set-valued property key
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        //List-valued property key with signature
+        PropertyKey value = mgmt.makePropertyKey("value").dataType(Precision.class).signature(weight).cardinality(Cardinality.LIST).make();
+
+        // ---------- EDGE LABELS ----------------
+        //Standard edge label
+        EdgeLabel friend = mgmt.makeEdgeLabel("friend").make();
+        //Unidirected
+        EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().multiplicity(Multiplicity.MANY2ONE).make();
+        //Signature label
+        EdgeLabel connect = mgmt.makeEdgeLabel("connect").signature(id, link).multiplicity(Multiplicity.SIMPLE).make();
+        //Edge labels with different cardinalities
+        EdgeLabel parent = mgmt.makeEdgeLabel("parent").multiplicity(Multiplicity.MANY2ONE).make();
+        EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
+        EdgeLabel spouse = mgmt.makeEdgeLabel("spouse").multiplicity(Multiplicity.ONE2ONE).make();
+
+        // ---------- VERTEX LABELS ----------------
+
+        VertexLabel person = mgmt.makeVertexLabel("person").make();
+        VertexLabel tag = mgmt.makeVertexLabel("tag").partition().make();
+        VertexLabel tweet = mgmt.makeVertexLabel("tweet").setStatic().make();
+
+        long[] sig;
+
+        // ######### INSPECTION & FAILURE ############
+
+        assertTrue(mgmt.isOpen());
+        assertEquals("weight",weight.toString());
+        assertTrue(mgmt.containsRelationType("weight"));
+        assertFalse(mgmt.containsRelationType("bla"));
+        assertTrue(weight.isPropertyKey());
+        assertFalse(weight.isEdgeLabel());
+        assertEquals(Cardinality.SINGLE,weight.getCardinality());
+        assertEquals(Cardinality.SINGLE,someid.getCardinality());
+        assertEquals(Cardinality.SET,name.getCardinality());
+        assertEquals(Cardinality.LIST,value.getCardinality());
+        assertEquals(Object.class,someid.getDataType());
+        assertEquals(Decimal.class,weight.getDataType());
+        sig = ((InternalRelationType)value).getSignature();
+        assertEquals(1,sig.length);
+        assertEquals(weight.getID(),sig[0]);
+        assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
+        assertFalse(mgmt.getGraphIndex(someid.getName()).isUnique());
+
+        assertEquals("friend",friend.getName());
+        assertTrue(friend.isEdgeLabel());
+        assertFalse(friend.isPropertyKey());
+        assertEquals(Multiplicity.ONE2ONE,spouse.getMultiplicity());
+        assertEquals(Multiplicity.ONE2MANY,child.getMultiplicity());
+        assertEquals(Multiplicity.MANY2ONE,parent.getMultiplicity());
+        assertEquals(Multiplicity.MULTI,friend.getMultiplicity());
+        assertEquals(Multiplicity.SIMPLE, connect.getMultiplicity());
+        assertTrue(link.isUnidirected());
+        assertFalse(link.isDirected());
+        assertFalse(child.isUnidirected());
+        assertTrue(spouse.isDirected());
+        assertFalse(((InternalRelationType) friend).isHiddenType());
+        assertTrue(((InternalRelationType) friend).isHidden());
+        assertEquals(0,((InternalRelationType) friend).getSignature().length);
+        sig = ((InternalRelationType)connect).getSignature();
+        assertEquals(2,sig.length);
+        assertEquals(id.getID(),sig[0]);
+        assertEquals(link.getID(),sig[1]);
+        assertEquals(0,((InternalRelationType) friend).getSortKey().length);
+        assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
+        assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
+
+        assertEquals(5,Iterables.size(mgmt.getRelationTypes(PropertyKey.class)));
+        assertEquals(6,Iterables.size(mgmt.getRelationTypes(EdgeLabel.class)));
+        assertEquals(11,Iterables.size(mgmt.getRelationTypes(RelationType.class)));
+        assertEquals(3,Iterables.size(mgmt.getVertexLabels()));
+
+        assertEquals("tweet",tweet.getName());
+        assertTrue(mgmt.containsVertexLabel("person"));
+        assertFalse(mgmt.containsVertexLabel("bla"));
+        assertFalse(person.isPartitioned());
+        assertFalse(person.isStatic());
+        assertTrue(tag.isPartitioned());
+        assertTrue(tweet.isStatic());
+
+        //------ TRY INVALID STUFF --------
+
+        //Failures
+        try {
+            //No datatype
+            mgmt.makePropertyKey("fid").make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Already exists
+            mgmt.makeEdgeLabel("link").unidirected().make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //signature and sort-key collide
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
+                    sortKey(someid, weight).signature(someid).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //keys must be single-valued
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
+                    sortKey(name, weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //sort key requires the label to be non-constrained
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.SIMPLE).
+                    sortKey(weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //sort key requires the label to be non-constrained
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.MANY2ONE).
+                    sortKey(weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Already exists
+            mgmt.makeVertexLabel("tweet").make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //only unidrected, Many2One labels are allowed in signatures
+            mgmt.makeEdgeLabel("test").signature(friend).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        // ######### END INSPECTION ############
+
+
+        finishSchema();
+        clopen();
+
+        //Load schema types into current transaction
+        weight = mgmt.getPropertyKey("weight");
+        id = mgmt.getPropertyKey("uid");
+        someid = mgmt.getPropertyKey("someid");
+        name = mgmt.getPropertyKey("name");
+        value = mgmt.getPropertyKey("value");
+        friend = mgmt.getEdgeLabel("friend");
+        link = mgmt.getEdgeLabel("link");
+        connect = mgmt.getEdgeLabel("connect");
+        parent = mgmt.getEdgeLabel("parent");
+        child = mgmt.getEdgeLabel("child");
+        spouse = mgmt.getEdgeLabel("spouse");
+        person = mgmt.getVertexLabel("person");
+        tag = mgmt.getVertexLabel("tag");
+        tweet = mgmt.getVertexLabel("tweet");
+
+
+        // ######### INSPECTION & FAILURE (COPIED FROM ABOVE) ############
+
+        assertTrue(mgmt.isOpen());
+        assertEquals("weight",weight.toString());
+        assertTrue(mgmt.containsRelationType("weight"));
+        assertFalse(mgmt.containsRelationType("bla"));
+        assertTrue(weight.isPropertyKey());
+        assertFalse(weight.isEdgeLabel());
+        assertEquals(Cardinality.SINGLE,weight.getCardinality());
+        assertEquals(Cardinality.SINGLE,someid.getCardinality());
+        assertEquals(Cardinality.SET,name.getCardinality());
+        assertEquals(Cardinality.LIST,value.getCardinality());
+        assertEquals(Object.class,someid.getDataType());
+        assertEquals(Decimal.class,weight.getDataType());
+        sig = ((InternalRelationType)value).getSignature();
+        assertEquals(1,sig.length);
+        assertEquals(weight.getID(),sig[0]);
+        assertTrue(mgmt.getGraphIndex(id.getName()).isUnique());
+        assertFalse(mgmt.getGraphIndex(someid.getName()).isUnique());
+
+        assertEquals("friend",friend.getName());
+        assertTrue(friend.isEdgeLabel());
+        assertFalse(friend.isPropertyKey());
+        assertEquals(Multiplicity.ONE2ONE,spouse.getMultiplicity());
+        assertEquals(Multiplicity.ONE2MANY,child.getMultiplicity());
+        assertEquals(Multiplicity.MANY2ONE,parent.getMultiplicity());
+        assertEquals(Multiplicity.MULTI,friend.getMultiplicity());
+        assertEquals(Multiplicity.SIMPLE, connect.getMultiplicity());
+        assertTrue(link.isUnidirected());
+        assertFalse(link.isDirected());
+        assertFalse(child.isUnidirected());
+        assertTrue(spouse.isDirected());
+        assertFalse(((InternalRelationType) friend).isHiddenType());
+        assertTrue(((InternalRelationType) friend).isHidden());
+        assertEquals(0,((InternalRelationType) friend).getSignature().length);
+        sig = ((InternalRelationType)connect).getSignature();
+        assertEquals(2,sig.length);
+        assertEquals(id.getID(),sig[0]);
+        assertEquals(weight.getID(),sig[1]);
+        assertEquals(0,((InternalRelationType) friend).getSortKey().length);
+        assertEquals(Order.DEFAULT,((InternalRelationType) friend).getSortOrder());
+        assertEquals(SchemaStatus.ENABLED,((InternalRelationType)friend).getStatus());
+
+        assertEquals(5,Iterables.size(mgmt.getRelationTypes(PropertyKey.class)));
+        assertEquals(6,Iterables.size(mgmt.getRelationTypes(EdgeLabel.class)));
+        assertEquals(11,Iterables.size(mgmt.getRelationTypes(RelationType.class)));
+        assertEquals(3,Iterables.size(mgmt.getVertexLabels()));
+
+        assertEquals("tweet",tweet.getName());
+        assertTrue(mgmt.containsVertexLabel("person"));
+        assertFalse(mgmt.containsVertexLabel("bla"));
+        assertFalse(person.isPartitioned());
+        assertFalse(person.isStatic());
+        assertTrue(tag.isPartitioned());
+        assertTrue(tweet.isStatic());
+
+        //------ TRY INVALID STUFF --------
+
+        //Failures
+        try {
+            //No datatype
+            mgmt.makePropertyKey("fid").make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Already exists
+            mgmt.makeEdgeLabel("link").unidirected().make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //signature and sort-key collide
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
+                    sortKey(someid, weight).signature(someid).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //keys must be single-valued
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).
+                    sortKey(name, weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //sort key requires the label to be non-constrained
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.SIMPLE).
+                    sortKey(weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //sort key requires the label to be non-constrained
+            ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("other")).multiplicity(Multiplicity.MANY2ONE).
+                    sortKey(weight).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Already exists
+            mgmt.makeVertexLabel("tweet").make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //only unidrected, Many2One labels are allowed in signatures
+            mgmt.makeEdgeLabel("test").signature(friend).make();
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        // ######### END INSPECTION ############
+
+        /*
+          ####### Make sure schema semantics are honored in transactions ######
+        */
+
+        clopen();
+
+        weight = tx.getPropertyKey("weight");
+        id = tx.getPropertyKey("uid");
+        someid = tx.getPropertyKey("someid");
+        name = tx.getPropertyKey("name");
+        value = tx.getPropertyKey("value");
+        friend = tx.getEdgeLabel("friend");
+        link = tx.getEdgeLabel("link");
+        connect = tx.getEdgeLabel("connect");
+        parent = tx.getEdgeLabel("parent");
+        child = tx.getEdgeLabel("child");
+        spouse = tx.getEdgeLabel("spouse");
+        person = tx.getVertexLabel("person");
+        tag = tx.getVertexLabel("tag");
+        tweet = tx.getVertexLabel("tweet");
+
+        TitanTransaction tx2;
+        assertNull(getVertex(id, "v1")); //shouldn't exist
+
+        TitanVertex v = tx.addVertex();
+        //test property keys
+        v.addProperty(id, "v1");
+        v.addProperty(weight, 1.5);
+        v.setProperty(someid,"Hello");
+        v.addProperty(name,"Bob");
+        v.addProperty(name,"John");
+        TitanProperty p = v.addProperty(value,11);
+        p.setProperty(weight,22);
+        p = v.addProperty(value,33.3);
+        p.setProperty(weight,66.6);
+        p = v.addProperty(value,11); //same values are supported for list-properties
+        p.setProperty(weight,22);
+        //test edges
+        TitanVertex v12 = tx.addVertex(person), v13 = tx.addVertex(person);
+        v12.setProperty(id, "v12");
+        v13.setProperty(id, "v13");
+        v12.addEdge(parent, v).setProperty(weight, 4.5);
+        v13.addEdge(parent, v).setProperty(weight, 4.5);
+        v.addEdge(child, v12);
+        v.addEdge(child, v13);
+        v.addEdge(spouse, v12);
+        v.addEdge(friend,v12);
+        v.addEdge(friend,v12); //supports multi edges
+        TitanEdge edge = v.addEdge(connect, v12);
+        edge.setProperty(id,"e1");
+        edge.setProperty(link,v);
+        v.addEdge(link,v13);
+        TitanVertex v2 = tx.addVertex(tweet);
+        v2.addEdge(link,v13);
+
+        // ######### INSPECTION & FAILURE ############
+        assertEquals(v,Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v1").vertices()));
+        v = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v1").vertices());
+        v12 = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v12").vertices());
+        v13 = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v13").vertices());
+        try {
+            //Only one property for weight allowed
+            v.addProperty(weight, 1.0);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        v.setProperty(weight,0.5);
+        try {
+            //Invalid data type
+            v.setProperty(weight, "x");
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Only one "Bob" should be allowed
+            v.addProperty(name,"John");
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //setProperty not supported for multi-properties
+            v.setProperty(name,"Don");
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        tx2 = graph.newTransaction();
+        try {
+            TitanVertex vx = tx2.addVertex();
+            try {
+                //property is unique
+                vx.setProperty(id,"v1");
+                fail();
+            } catch (IllegalArgumentException e) {}
+            vx.setProperty(id,"unique");
+            TitanVertex vx2 = tx2.addVertex();
+            try {
+                //property unique
+                vx2.setProperty(id,"unique");
+                fail();
+            } catch (IllegalArgumentException e) {}
+        } finally {
+            tx2.rollback();
+        }
+
+        assertEquals(0.5,v.getProperty(weight));
+        assertEquals("v1",v.getProperties(id));
+        assertEquals(2,v.<List>getProperty(name).size());
+        for (TitanProperty prop : v.getProperties(name)) {
+            String nstr = prop.getValue();
+            assertTrue(nstr.equals("Bob") || nstr.equals("John"));
+        }
+        assertTrue(v.<List>getProperty(value).size()>=3);
+        for (TitanProperty prop : v.getProperties(value)) {
+            assertEquals(prop.<Number>getValue().doubleValue(),prop.<Double>getProperty(weight).doubleValue(),0.00001);
+        }
+        //Ensure we can add additional values
+        p = v.addProperty(value,44.4);
+        p.setProperty(weight,88.8);
+        assertEquals(v,Iterables.getOnlyElement(tx.query().has(someid,Cmp.EQUAL,"Hello").vertices()));
+
+        //------- EDGES -------
+        try {
+            //multiplicity violation
+            v12.addEdge(parent, v13);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v13.addEdge(child, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v13.addEdge(spouse, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v.addEdge(spouse, v13);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        assertEquals(2, Iterables.size(v.query().direction(IN).types(parent).edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
+        assertEquals(1, Iterables.size(v13.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
+        assertEquals(v12,Iterables.getOnlyElement(v.getVertices(OUT,spouse.getName())));
+        edge = (TitanEdge)Iterables.getOnlyElement(v.query().types(connect).direction(BOTH).edges());
+        assertEquals(2,edge.getPropertyKeys().size());
+        assertEquals("e1",edge.getProperty(id));
+        assertEquals(v,edge.getProperty(link));
+        try {
+            //connect is simple
+            v.addEdge(connect, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        //Make sure "link" is unidirected
+        assertEquals(1,v.query().types(link).direction(BOTH).edges());
+        assertEquals(0,v13.query().types(link).direction(BOTH).edges());
+        //Assert we can add more friendships
+        v.addEdge(friend,v12);
+        assertEquals(1,Iterables.getOnlyElement(v2.getEdges(OUT,link.getName())));
+
+        assertEquals(BaseVertexLabel.DEFAULT_VERTEXLABEL,v.getVertexLabel());
+        assertEquals(person,v12.getVertexLabel());
+        assertEquals(person,v13.getVertexLabel());
+
+        assertEquals(3, Iterables.size(tx.getVertices()));
+
+        // ######### END INSPECTION & FAILURE ############
+
+        clopen();
+
+        weight = tx.getPropertyKey("weight");
+        id = tx.getPropertyKey("uid");
+        someid = tx.getPropertyKey("someid");
+        name = tx.getPropertyKey("name");
+        value = tx.getPropertyKey("value");
+        friend = tx.getEdgeLabel("friend");
+        link = tx.getEdgeLabel("link");
+        connect = tx.getEdgeLabel("connect");
+        parent = tx.getEdgeLabel("parent");
+        child = tx.getEdgeLabel("child");
+        spouse = tx.getEdgeLabel("spouse");
+        person = tx.getVertexLabel("person");
+        tag = tx.getVertexLabel("tag");
+        tweet = tx.getVertexLabel("tweet");
+
+        // ######### INSPECTION & FAILURE (copied from above) ############
+        assertEquals(v,Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v1").vertices()));
+        v = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v1").vertices());
+        v12 = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v12").vertices());
+        v13 = (TitanVertex)Iterables.getOnlyElement(tx.query().has(id,Cmp.EQUAL,"v13").vertices());
+        try {
+            //Only one property for weight allowed
+            v.addProperty(weight, 1.0);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        v.setProperty(weight,0.5);
+        try {
+            //Invalid data type
+            v.setProperty(weight, "x");
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //Only one "Bob" should be allowed
+            v.addProperty(name,"John");
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            //setProperty not supported for multi-properties
+            v.setProperty(name,"Don");
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        tx2 = graph.newTransaction();
+        try {
+            TitanVertex vx = tx2.addVertex();
+            try {
+                //property is unique
+                vx.setProperty(id,"v1");
+                fail();
+            } catch (IllegalArgumentException e) {}
+            vx.setProperty(id,"unique");
+            TitanVertex vx2 = tx2.addVertex();
+            try {
+                //property unique
+                vx2.setProperty(id,"unique");
+                fail();
+            } catch (IllegalArgumentException e) {}
+        } finally {
+            tx2.rollback();
+        }
+
+        assertEquals(0.5,v.getProperty(weight));
+        assertEquals("v1",v.getProperties(id));
+        assertEquals(2,v.<List>getProperty(name).size());
+        for (TitanProperty prop : v.getProperties(name)) {
+            String nstr = prop.getValue();
+            assertTrue(nstr.equals("Bob") || nstr.equals("John"));
+        }
+        assertTrue(v.<List>getProperty(value).size()>=3);
+        for (TitanProperty prop : v.getProperties(value)) {
+            assertEquals(prop.<Number>getValue().doubleValue(),prop.<Double>getProperty(weight).doubleValue(),0.00001);
+        }
+        //Ensure we can add additional values
+        p = v.addProperty(value,44.4);
+        p.setProperty(weight,88.8);
+        assertEquals(v,Iterables.getOnlyElement(tx.query().has(someid,Cmp.EQUAL,"Hello").vertices()));
+
+        //------- EDGES -------
+        try {
+            //multiplicity violation
+            v12.addEdge(parent, v13);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v13.addEdge(child, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v13.addEdge(spouse, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            //multiplicity violation
+            v.addEdge(spouse, v13);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        assertEquals(2, Iterables.size(v.query().direction(IN).types(parent).edges()));
+        assertEquals(1, Iterables.size(v12.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
+        assertEquals(1, Iterables.size(v13.query().direction(OUT).types(parent).has(weight,Cmp.EQUAL,4.5).edges()));
+        assertEquals(v12,Iterables.getOnlyElement(v.getVertices(OUT,spouse.getName())));
+        edge = (TitanEdge)Iterables.getOnlyElement(v.query().types(connect).direction(BOTH).edges());
+        assertEquals(2,edge.getPropertyKeys().size());
+        assertEquals("e1",edge.getProperty(id));
+        assertEquals(v,edge.getProperty(link));
+        try {
+            //connect is simple
+            v.addEdge(connect, v12);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        //Make sure "link" is unidirected
+        assertEquals(1,v.query().types(link).direction(BOTH).edges());
+        assertEquals(0,v13.query().types(link).direction(BOTH).edges());
+        //Assert we can add more friendships
+        v.addEdge(friend,v12);
+        assertEquals(1,Iterables.getOnlyElement(v2.getEdges(OUT,link.getName())));
+
+        assertEquals(3, Iterables.size(tx.getVertices()));
+
+        // ######### END INSPECTION & FAILURE ############
+
+        //Ensure that v2 is really static
+        v2 = (TitanVertex)tx.getVertex(v2);
+        assertEquals(tweet,v2.getVertexLabel());
+        try {
+            v2.setProperty(weight,11);
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            v2.addEdge(friend,v12);
+            fail();
+        } catch (IllegalArgumentException e) {}
+
+        //Ensure that unidirected edges keep pointing to deleted vertices
+        tx.getVertex(v13).remove();
+        assertEquals(1,v.query().types(link).direction(BOTH).edges());
+
+    }
+
+    /**
+     * Test the different data types that Titan supports natively and ensure that invalid data types aren't allowed
+     */
+    @Test
+    public void testDataTypes() throws Exception {
+        clopen(option(CUSTOM_ATTRIBUTE_CLASS,"attribute10"),SpecialInt.class.getCanonicalName(),
+                option(CUSTOM_SERIALIZER_CLASS,"attribute10"),SpecialIntSerializer.class.getCanonicalName());
+
+        PropertyKey sint = makeKey("int",SpecialInt.class);
+
+        PropertyKey arrayKey = makeKey("barr",byte[].class);
+
+        PropertyKey boolKey = makeKey("boolval",Boolean.class);
+
+        PropertyKey birthday = makeKey("birthday",GregorianCalendar.class);
+
+        PropertyKey geo = makeKey("geo", Geoshape.class);
+
+        PropertyKey precision = makeKey("precise",Precision.class);
+
+        PropertyKey any = mgmt.makePropertyKey("any").cardinality(Cardinality.LIST).dataType(Object.class).make();
+
+        try {
+            //Not a valid data type - primitive
+            makeKey("pint",int.class);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+
+        try {
+            //Not a valid data type - interface
+            makeKey("number", Number.class);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+
+        finishSchema();
+        clopen();
+
+        boolKey = tx.getPropertyKey(boolKey.getName());
+        sint = tx.getPropertyKey(sint.getName());
+        arrayKey = tx.getPropertyKey(arrayKey.getName());
+        birthday = tx.getPropertyKey(birthday.getName());
+        geo = tx.getPropertyKey(geo.getName());
+        precision = tx.getPropertyKey(precision.getName());
+        any = tx.getPropertyKey(any.getName());
+
+        assertEquals(Boolean.class, boolKey.getDataType());
+        assertEquals(byte[].class, arrayKey.getDataType());
+        assertEquals(Object.class, any.getDataType());
+
+        final Calendar c = Calendar.getInstance();
+        c.setTime(new SimpleDateFormat("ddMMyyyy").parse("28101978"));
+        final Geoshape shape = Geoshape.box(10.0,10.0,20.0,20.0);
+
+        TitanVertex v = tx.addVertex();
+        v.addProperty(boolKey, true);
+        v.setProperty(birthday, c);
+        v.setProperty(sint,new SpecialInt(10));
+        v.setProperty(arrayKey,new byte[]{1,2,3,4});
+        v.setProperty(geo,shape);
+        v.setProperty(precision,10.12345);
+        v.addProperty(any,"Hello");
+        v.addProperty(any,10l);
+        v.addProperty(any, new HashMap<String,Integer>(){{ put("test",10); }});
+
+        // ######## VERIFICATION ##########
+        assertTrue(v.<Boolean>getProperty(boolKey));
+        assertEquals(10,v.<SpecialInt>getProperty(sint).getValue());
+        assertEquals(c, v.getProperty(birthday));
+        assertEquals(4, v.<byte[]>getProperty(arrayKey).length);
+        assertEquals(shape, v.<Geoshape>getProperty(geo));
+        assertEquals(10.12345,v.<Precision>getProperty(precision).doubleValue(),0.000001);
+        assertEquals(3,Iterables.size(v.getProperties(any)));
+        for (TitanProperty prop : v.getProperties(any)) {
+            Object value = prop.getValue();
+            if (value instanceof String) assertEquals("Hello",value);
+            else if (value instanceof Long) assertEquals(10l,value);
+            else if (value instanceof Map) {
+                HashMap<String,Integer> map = (HashMap<String,Integer>)value;
+                assertEquals(1,map.size());
+            } else fail();
+        }
+
+        clopen();
+
+        v = (TitanVertex)tx.getVertex(v);
+
+        // ######## VERIFICATION (copied from above) ##########
+        boolKey = tx.getPropertyKey(boolKey.getName());
+        sint = tx.getPropertyKey(sint.getName());
+        arrayKey = tx.getPropertyKey(arrayKey.getName());
+        birthday = tx.getPropertyKey(birthday.getName());
+        geo = tx.getPropertyKey(geo.getName());
+        precision = tx.getPropertyKey(precision.getName());
+        any = tx.getPropertyKey(any.getName());
+
+        assertTrue(v.<Boolean>getProperty(boolKey));
+        assertEquals(10,v.<SpecialInt>getProperty(sint).getValue());
+        assertEquals(c, v.getProperty(birthday));
+        assertEquals(4, v.<byte[]>getProperty(arrayKey).length);
+        assertEquals(shape, v.<Geoshape>getProperty(geo));
+        assertEquals(10.12345,v.<Precision>getProperty(precision).doubleValue(),0.000001);
+        assertEquals(3,Iterables.size(v.getProperties(any)));
+        for (TitanProperty prop : v.getProperties(any)) {
+            Object value = prop.getValue();
+            if (value instanceof String) assertEquals("Hello",value);
+            else if (value instanceof Long) assertEquals(10l,value);
+            else if (value instanceof Map) {
+                HashMap<String,Integer> map = (HashMap<String,Integer>)value;
+                assertEquals(1,map.size());
+            } else fail();
+        }
+    }
+
+    /**
+     * This tests a special scenario under which a schema type is defined in a (management) transaction
+     * and then accessed in a concurrent transaction.
+     * Also ensures that unique property values are enforced within and across transactions
+     */
+    @Test
+    public void testTransactionalScopeOfSchemaTypes() {
+        makeVertexIndexedUniqueKey("domain",String.class);
+        finishSchema();
+
+        TitanVertex v1,v2;
+        v1 = tx.addVertex();
+        try {
+            v1.setProperty("domain", "unique1");
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx = null;
+        }
+        newTx();
+
+
+        v1 = tx.addVertex();
+        v1.addProperty("domain", "unique1");
+        try {
+            v2 = tx.addVertex();
+            v2.addProperty("domain", "unique1");
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx = null;
+        }
+        newTx();
+
+        clopen();
+        v1 = tx.addVertex();
+        v1.addProperty("domain", "unique1");
+        assertEquals(1, Iterables.size(tx.getVertices("domain", "unique1")));
+        try {
+            v2 = tx.addVertex();
+            v2.addProperty("domain", "unique1");
+            fail();
+        } catch (IllegalArgumentException e) {
+
+        } finally {
+            tx.rollback();
+            tx = null;
+        }
+        newTx();
+    }
+
+   /* ==================================================================================
+                            ADVANCED
+     ==================================================================================*/
+
+    /**
+     * Tests that self-loop edges are handled and counted correctly
+     */
+    @Test
+    public void testSelfLoop() {
+        Vertex v = tx.addVertex();
+        tx.addEdge(null, v, v, "self");
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(2, Iterables.size(v.getEdges(BOTH,"self")));
+        clopen();
+        v = tx.getVertex(v.getId());
+        assertNotNull(v);
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.OUT, "self")));
+        assertEquals(1, Iterables.size(v.getEdges(Direction.IN, "self")));
+        assertEquals(2, Iterables.size(v.getEdges(BOTH,"self")));
+    }
+
+    /**
+     * Tests that elements can be accessed beyond their transactional boundaries if they
+     * are bound to single-threaded graph transactions
+     */
+    @Test
+    public void testThreadBoundTx() {
+        PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
+        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildInternalIndex();
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
+        finishSchema();
+
+        Vertex v1 = graph.addVertex(null);
+        Vertex v2 = graph.addVertex(null);
+        Vertex v3 = graph.addVertex(null);
+        v1.setProperty("name", "Vertex1");
+        v1.setProperty("age", 35);
+        v2.setProperty("name", "Vertex2");
+        v2.setProperty("age", 45);
+        v3.setProperty("name", "Vertex3");
+        v3.setProperty("age", 55);
+        Edge e1 = v1.addEdge("knows", v2);
+        e1.setProperty("time", 5);
+        Edge e2 = v2.addEdge("knows", v3);
+        e2.setProperty("time", 15);
+        Edge e3 = v3.addEdge("knows", v1);
+        e3.setProperty("time", 25);
+        Edge e4 = v2.addEdge("friend", v2);
+        e4.setProperty("type", 1);
+        for (Vertex v : new Vertex[]{v1, v2, v3}) {
+            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
+        }
+        e3.setProperty("time", 35);
+        assertEquals(35, e3.getProperty("time"));
+
+        v1.addEdge("friend", v2).setProperty("type", 0);
+        graph.commit();
+        e4.setProperty("type", 2);
+        Edge ef = Iterables.getOnlyElement(v1.getEdges(OUT, "friend"));
+        assertEquals(ef, Iterables.getOnlyElement(graph.getEdges("type", 0)));
+        ef.setProperty("type", 1);
+        graph.commit();
+
+        assertEquals(35, e3.getProperty("time"));
+        e3 = graph.getEdge(e3);
+        e3.setProperty("time", 45);
+        assertEquals(45, e3.getProperty("time"));
+
+        assertEquals(15, e2.getProperty("time"));
+        e2.setProperty("time", 25);
+        assertEquals(25, e2.getProperty("time"));
+
+        assertEquals(35, v1.getProperty("age"));
+        assertEquals(55, v3.getProperty("age"));
+        v3.setProperty("age", 65);
+        assertEquals(65, v3.getProperty("age"));
+        e1 = graph.getEdge(e1);
+
+        for (Vertex v : new Vertex[]{v1, v2, v3}) {
+            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
+        }
+
+        graph.commit();
+
+        assertEquals(45, e3.getProperty("time"));
+        assertEquals(5, e1.getProperty("time"));
+
+        assertEquals(35, v1.getProperty("age"));
+        assertEquals(65, v3.getProperty("age"));
+
+        for (Vertex v : new Vertex[]{v1, v2, v3}) {
+            assertEquals(2, v.query().direction(Direction.BOTH).labels("knows").count());
+            assertEquals(1, v.query().direction(Direction.OUT).labels("knows").count());
+            assertEquals(5, ((Number) Iterables.getOnlyElement(v.getEdges(Direction.OUT, "knows")).getProperty("time")).intValue() % 10);
+        }
+
+        graph.commit();
+
+        v1 = graph.addVertex(null);
+        v2 = graph.addVertex(null);
+        graph.addEdge(null, v1, v2, "knows");
+        graph.commit();
+        v3 = graph.addVertex(null);
+        Edge e = graph.addEdge(null, v1, v3, "knows");
+        assertNull(e.getProperty("age"));
+    }
+
+    /**
+     * Verifies transactional isolation and internal vertex existence checking
+     */
+    @Test
+    public void testTransactionIsolation() {
+        TitanTransaction tx1 = graph.newTransaction();
+        TitanTransaction tx2 = graph.newTransaction();
+
+        //Verify that using vertices across transactions is prohibited
+        TitanVertex v11 = tx1.addVertex();
+        TitanVertex v12 = tx1.addVertex();
+        tx1.addEdge(v11, v12, "knows");
+
+        TitanVertex v21 = tx2.addVertex();
+        try {
+            v21.addEdge("knows", v11);
+            fail();
+        } catch (IllegalArgumentException e) {
+        }
+        TitanVertex v22 = tx2.addVertex();
+        v21.addEdge("knows", v22);
+        tx2.commit();
+        try {
+            v22.addEdge("knows", v21);
+            fail();
+        } catch (IllegalStateException e) {
+        }
+        tx1.rollback();
+        try {
+            v11.setProperty("test", 5);
+            fail();
+        } catch (IllegalStateException e) {
+        }
+
+        //Test unidirected edge with and without internal existence check
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        tx.makeEdgeLabel("link").unidirected().make();
+        TitanVertex v3 = tx.addVertex();
+        v21.addEdge("link", v3);
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertFalse(v3.isRemoved());
+        v3.remove();
+        newTx();
+        v21 = tx.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertFalse(v3.isRemoved());
+        newTx();
+
+        TitanTransaction tx3 = graph.buildTransaction().checkInternalVertexExistence().start();
+        v21 = tx3.getVertex(v21.getID());
+        v3 = (TitanVertex) Iterables.getOnlyElement(v21.getVertices(OUT, "link"));
+        assertTrue(v3.isRemoved());
+        tx3.commit();
+    }
+
+
+    /**
+     * Tests multi-valued properties with special focus on indexing and incident unidirectional edges
+     * which is not tested in {@link #testSchemaTypes()}
+     *
+     * -->TODO: split and move this into other test cases: ordering to query, indexing to index
+     */
+    @Test
+    public void testMultivaluedVertexProperty() {
+        /*
+         * Constant test data
+         *
+         * The values list below must have at least two elements. The string
+         * literals were chosen arbitrarily and have no special significance.
+         */
+        final String foo = "foo", bar = "bar", weight = "weight";
+        final List<String> values =
+                ImmutableList.of("four", "score", "and", "seven");
+        assertTrue("Values list must have multiple elements for this test to make sense",
+                2 <= values.size());
+
+        // Create property with name pname and a vertex
+        PropertyKey w = makeKey(weight,Integer.class);
+        PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
+        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildInternalIndex();
+        PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
+        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildInternalIndex();
+        finishSchema();
+
+        TitanVertex v = tx.addVertex();
+
+        // Insert prop values
+        int i=0;
+        for (String s : values) {
+            TitanProperty p = v.addProperty(foo, s);
+            p.setProperty(weight,++i);
+            p = v.addProperty(bar, s);
+            p.setProperty(weight,i);
+        }
+
+        //Verify correct number of properties
+        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
+        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
+        //Verify order
+        for (String prop : new String[]{foo,bar}) {
+            int sum = 0;
+            int index = values.size();
+            for (TitanProperty p : v.getProperties(foo)) {
+                assertTrue(values.contains(p.getValue()));
+                int wint = p.getProperty(weight);
+                sum+=wint;
+                if (prop==foo) assertEquals(index,wint);
+                index--;
+            }
+            assertEquals(values.size()*(values.size()+1)/2,sum);
+        }
+
+
+        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
+
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
+
+        // Check that removeProperty(TitanKey) returns a valid value
+        String lastValueRemoved = v.removeProperty(foo);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        // Check that the properties were actually deleted from v
+        assertFalse(v.getProperties(foo).iterator().hasNext());
+
+        // Reopen database
+        clopen();
+
+        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(1)).vertices()));
+        assertEquals(0, Iterables.size(tx.query().has(foo, values.get(3)).vertices()));
+
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(1)).vertices()));
+        assertEquals(1, Iterables.size(tx.query().has(bar, values.get(3)).vertices()));
+
+        // Retrieve and check our test vertex
+        v = tx.getVertex(v.getID());
+        Iterable<TitanProperty> iter = v.getProperties(foo);
+        assertFalse("Failed to durably remove multivalued property",
+                iter.iterator().hasNext());
+
+        assertEquals(values.size(), Iterables.size(v.getProperties(bar)));
+        // Reinsert prop values
+        for (String s : values) {
+            v.addProperty(foo, s);
+        }
+        assertEquals(values.size(), Iterables.size(v.getProperties(foo)));
+
+        // Test removeProperty(String) method on the vertex
+        lastValueRemoved = v.removeProperty(foo);
+        assertNotNull(lastValueRemoved);
+        assertTrue(values.contains(lastValueRemoved));
+        assertFalse(v.getProperties(foo).iterator().hasNext());
+    }
+
+   /* ==================================================================================
+                            CONSISTENCY
+     ==================================================================================*/
+
+    /**
+     * Tests the correct application of ConsistencyModifiers across transactional boundaries
+     */
+    @Test
+    public void testConsistencyEnforcement() {
+        final PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        final PropertyKey name = makeKey("name",String.class);
+        mgmt.setConsistency(id, ConsistencyModifier.LOCK);
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.SIMPLE).make();
+        EdgeLabel spouse = mgmt.makeEdgeLabel("spouse").multiplicity(Multiplicity.ONE2ONE).make();
+        EdgeLabel connect = mgmt.makeEdgeLabel("connect").multiplicity(Multiplicity.MULTI).make();
+        EdgeLabel related = mgmt.makeEdgeLabel("related").multiplicity(Multiplicity.MULTI).make();
+        mgmt.setConsistency(knows, ConsistencyModifier.LOCK);
+        mgmt.setConsistency(spouse, ConsistencyModifier.LOCK);
+        mgmt.setConsistency(related,ConsistencyModifier.FORK);
+        finishSchema();
+
+        TitanVertex v1 = tx.addVertex();
+        v1.setProperty("uid",1);
+        TitanVertex v2 = tx.addVertex();
+        v2.setProperty("uid",2);
+        TitanVertex v3 = tx.addVertex();
+        v3.setProperty("uid",3);
+
+        TitanEdge e1 = v1.addEdge(connect.getName(),v2);
+        e1.setProperty(name.getName(),"e1");
+        TitanEdge e2 = v1.addEdge(related.getName(),v2);
+        e2.setProperty(name.getName(),"e2");
+
+        newTx();
+
+        /*
+         ==== check fork, no fork behavior
+         */
+        long e1id = e1.getID();
+        long e2id = e2.getID();
+        e1 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,connect.getName()));
+        assertEquals("e1",e1.getProperty(name.getName()));
+        assertEquals(e1id,e1.getID());
+        e2 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,related.getName()));
+        assertEquals("e2",e2.getProperty(name.getName()));
+        assertEquals(e2id,e2.getID());
+        //Update edges - one should simply update, the other fork
+        e1.setProperty(name.getName(),"e1.2");
+        e2.setProperty(name.getName(),"e2.2");
+
+        newTx();
+        e1 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,connect.getName()));
+        assertEquals("e1.2",e1.getProperty(name.getName()));
+        assertEquals(e1id,e1.getID()); //should have same id
+        e2 = (TitanEdge)Iterables.getOnlyElement(v1.getEdges(OUT,related.getName()));
+        assertEquals("e2.2",e2.getProperty(name.getName()));
+        assertNotEquals(e2id,e2.getID()); //should have different id since forked
+        newTx();
+
+        /*
+         === check cross transaction
+         */
+        final Random random = new Random();
+        //1) Index uniqueness
+        final long vids[] = {v1.getID(),v2.getID(),v3.getID()};
+        executeLockConflictingTransactionJobs(graph,new TransactionJob() {
+            private int pos = 0;
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex u = tx.getVertex(vids[pos++]);
+                u.setProperty("uid",5);
+            }
+        });
+        //2) Property out-uniqueness
+        executeLockConflictingTransactionJobs(graph,new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex u = tx.getVertex(vids[0]);
+                u.setProperty("uid",random.nextInt(10));
+            }
+        });
+        //3) knows simpleness
+        executeLockConflictingTransactionJobs(graph,new TransactionJob() {
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex u1 = tx.getVertex(vids[0]), u2 = tx.getVertex(vids[1]);
+                u1.addEdge("knows",u2);
+            }
+        });
+        //4) knows one2one (in 2 separate configurations)
+        executeLockConflictingTransactionJobs(graph,new TransactionJob() {
+            private int pos = 1;
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex u1 = tx.getVertex(vids[0]),
+                        u2 = tx.getVertex(vids[pos++]);
+                u1.addEdge("spouse",u2);
+            }
+        });
+        executeLockConflictingTransactionJobs(graph,new TransactionJob() {
+            private int pos = 1;
+            @Override
+            public void run(TitanTransaction tx) {
+                Vertex u1 = tx.getVertex(vids[pos++]),
+                        u2 = tx.getVertex(vids[0]);
+                u1.addEdge("spouse",u2);
+            }
+        });
+    }
+
+    /**
+     * A piece of logic to be executed in a transactional context
+     */
+    private static interface TransactionJob {
+        public void run(TitanTransaction tx);
+    }
+
+    /**
+     * Executes a transaction job in two parallel transactions under the assumptions that the two transactions
+     * should conflict and the one committed later should throw a locking exception.
+     *
+     * @param graph
+     * @param job
+     */
+    private static void executeLockConflictingTransactionJobs(TitanGraph graph, TransactionJob job) {
+        TitanTransaction tx1 = graph.newTransaction();
+        TitanTransaction tx2 = graph.newTransaction();
+        job.run(tx1);
+        job.run(tx2);
+        tx1.commit(); //Should commit fine
+        try {
+            tx2.commit();
+            fail();
+        } catch (TitanException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof PermanentLockingException);
+        }
+
+    }
+
+
+
+
+   /* ==================================================================================
+                            VERTEX CENTRIC QUERIES
+     ==================================================================================*/
+
+   @Test
+   public void testVertexCentricQuery() {
+       makeVertexIndexedUniqueKey("name",String.class);
+       PropertyKey time = makeKey("time",Integer.class);
+       PropertyKey weight = makeKey("weight",Precision.class);
+
+       EdgeLabel author = mgmt.makeEdgeLabel("author").multiplicity(Multiplicity.MANY2ONE).unidirected().make();
+
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connect")).sortKey(time).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("connectDesc")).sortKey(time).sortOrder(Order.DESC).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(weight, time).sortOrder(Order.ASC).signature(author).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friendDesc")).sortKey(weight, time).sortOrder(Order.DESC).signature(author).make();
+       ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(author, weight).make();
+       mgmt.makeEdgeLabel("follows").make();
+       finishSchema();
+
+       TitanVertex v = tx.addVertex();
+       v.addProperty("name","v");
+       TitanVertex u = tx.addVertex();
+       u.addProperty("name","u");
+       int noVertices = 10000;
+       assertEquals(0,(noVertices-1)%3);
+       TitanVertex[] vs = new TitanVertex[noVertices];
+       for (int i = 1; i < noVertices; i++) {
+           vs[i] = tx.addVertex();
+           vs[i].addProperty("name", "v" + i);
+       }
+       EdgeLabel[] labelsV = {tx.getEdgeLabel("connect"),tx.getEdgeLabel("friend"),tx.getEdgeLabel("knows")};
+       EdgeLabel[] labelsU = {tx.getEdgeLabel("connectDesc"),tx.getEdgeLabel("friendDesc"),tx.getEdgeLabel("knows")};
+       for (int i = 1; i < noVertices; i++) {
+           for (TitanVertex vertex : new TitanVertex[]{v,u}) {
+               for (Direction d : new Direction[]{OUT,IN}) {
+                   EdgeLabel label = vertex==v?labelsV[i%3]:labelsU[i%3];
+                   TitanEdge e = d==OUT?vertex.addEdge(label,vs[i]):
+                           vs[i].addEdge(label,vertex);
+                   e.setProperty("time", i);
+                   e.setProperty("weight", i % 4 + 0.5);
+                   e.setProperty("name", "e" + i);
+                   e.setProperty("author", i%5==0?v:vs[i % 5]);
+               }
+           }
+       }
+       int edgesPerLabel = noVertices/3;
+
+
+
+       VertexList vl;
+       Map<TitanVertex, Iterable<TitanEdge>> results;
+       Map<TitanVertex, Iterable<TitanProperty>> results2;
+       TitanVertex[] qvs;
+       int lastTime;
+       Iterator<Edge> outer;
+
+       clopen();
+
+       long[] vidsubset = new long[31 - 3];
+       for (int i = 0; i < vidsubset.length; i++) vidsubset[i] = vs[i + 3].getID();
+       Arrays.sort(vidsubset);
+
+       //##################################################
+       //Queries from Cache
+       //##################################################
+       clopen();
+       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
+       v = tx.getVertex(v.getID());
+       u = tx.getVertex(u.getID());
+       qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
+
+       //To trigger queries from cache (don't copy!!!)
+       assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
+
+       assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
+       assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+
+       lastTime = 0;
+       for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
+           int nowTime = e.getProperty("time");
+           assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
+           lastTime = nowTime;
+       }
+       lastTime = Integer.MAX_VALUE;
+       for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
+           int nowTime = e.getProperty("time");
+           assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
+           lastTime = nowTime;
+       }
+       assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+
+       outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
+       for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+           assertEquals(e, outer.next());
+       }
+
+       evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("connect").direction(OUT).has("time",15).has("weight",3.5),EDGE,1,1,new boolean[]{false,true});
+       evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
+       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
+       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
+       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
+       assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
+       assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
+       assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
+       assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5),EDGE,3,1,new boolean[]{true,true});
+       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
+       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
+       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+       assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
+       assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
+       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
+       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
+
+       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
+       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
+       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
+       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
+
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
+       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+
+       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+       assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
+       assertEquals(1, v.query().direction(IN).has("time", 1).count());
+       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
+       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+       assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
+       assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
+       for (Direction dir : new Direction[]{IN,OUT}) {
+           vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
+           vl.sort();
+           for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
+       }
+       assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
+
+       //Property queries
+       assertEquals(1, Iterables.size(v.query().properties()));
+       assertEquals(1, Iterables.size(v.query().keys("name").properties()));
+
+       //MultiQueries
+       results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+       results = tx.multiQuery(qvs).labels("knows").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
+       results = tx.multiQuery(qvs).titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
+       results2 = tx.multiQuery(qvs).properties();
+       for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+       results2 = tx.multiQuery(qvs).keys("name").properties();
+       for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+       //##################################################
+       //Same queries as above but without memory loading (i.e. omitting the first query)
+       //##################################################
+       clopen();
+       for (int i = 1; i < noVertices; i++) vs[i] = tx.getVertex(vs[i].getID());
+       v = tx.getVertex(v.getID());
+       u = tx.getVertex(u.getID());
+       qvs = new TitanVertex[]{vs[6], vs[9], vs[12], vs[15], vs[60]};
+
+       assertEquals(10, Iterables.size(v.query().labels("connect").limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").limit(10).vertices()));
+       assertEquals(10, Iterables.size(v.query().labels("connect").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").has("time", Compare.GREATER_THAN, 30).limit(10).vertices()));
+
+       lastTime = 0;
+       for (Edge e : v.query().labels("connect").direction(OUT).limit(20).edges()) {
+           int nowTime = e.getProperty("time");
+           assertTrue(lastTime + " vs. " + nowTime, lastTime <= nowTime);
+           lastTime = nowTime;
+       }
+       lastTime = Integer.MAX_VALUE;
+       for (Edge e : u.query().labels("connectDesc").direction(OUT).limit(20).edges()) {
+           int nowTime = e.getProperty("time");
+           assertTrue(lastTime + " vs. " + nowTime, lastTime >= nowTime);
+           lastTime = nowTime;
+       }
+       assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+       assertEquals(10, Iterables.size(u.query().labels("connectDesc").direction(OUT).has("time", Compare.GREATER_THAN, 60).limit(10).vertices()));
+
+       outer = v.query().labels("connect").direction(OUT).limit(20).edges().iterator();
+       for (Edge e : v.query().labels("connect").direction(OUT).limit(10).edges()) {
+           assertEquals(e, outer.next());
+       }
+
+       evaluateQuery(v.query().labels("connect").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("connect").direction(OUT).has("time",15).has("weight",3.5),EDGE,1,1,new boolean[]{false,true});
+       evaluateQuery(u.query().labels("connectDesc").direction(OUT).interval("time", 3, 31),EDGE,10,1,new boolean[]{true,true});
+       assertEquals(10, v.query().labels("connect").direction(IN).interval("time", 3, 31).count());
+       assertEquals(10, u.query().labels("connectDesc").direction(IN).interval("time", 3, 31).count());
+       assertEquals(0, v.query().labels("connect").direction(OUT).has("time", null).count());
+       assertEquals(10, v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertexIds().size());
+       assertEquals(edgesPerLabel-10, v.query().labels("connect").direction(OUT).has("time", Compare.GREATER_THAN, 31).count());
+       assertEquals(10, Iterables.size(v.query().labels("connect").direction(OUT).interval("time", 3, 31).vertices()));
+       assertEquals(3, v.query().labels("friend").direction(OUT).limit(3).count());
+       evaluateQuery(v.query().labels("friend").direction(OUT).has("weight", 0.5).limit(3),EDGE,3,1,new boolean[]{true,true});
+       evaluateQuery(v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5),EDGE,3,1,new boolean[]{true,true});
+       assertEquals(3, u.query().labels("friendDesc").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+       assertEquals(1, v.query().labels("friend").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+       assertEquals(1, u.query().labels("friendDesc").direction(OUT).has("weight", 0.5).interval("time", 4, 10).count());
+       assertEquals(3, v.query().labels("friend").direction(OUT).interval("time", 3, 33).has("weight", 0.5).count());
+       assertEquals(4, v.query().labels("friend").direction(OUT).has("time", Compare.LESS_THAN_EQUAL, 10).count());
+       assertEquals(edgesPerLabel-4, v.query().labels("friend").direction(OUT).has("time", Compare.GREATER_THAN, 10).count());
+       assertEquals(20, v.query().labels("friend", "connect").direction(OUT).interval("time", 3, 33).count());
+
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/5.0), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 4.0).count());
+       assertEquals((int)Math.ceil(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 0.0, 2.0).count());
+       assertEquals((int)Math.floor(edgesPerLabel/(5.0*2)), v.query().labels("knows").direction(OUT).has("author", v).interval("weight", 2.1, 4.0).count());
+       assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertices()));
+       assertEquals(20, Iterables.size(v.query().labels("connect", "friend").direction(OUT).interval("time", 3, 33).vertexIds()));
+       assertEquals(30, v.query().labels("friend", "connect", "knows").direction(OUT).interval("time", 3, 33).count());
+       assertEquals(noVertices-2, v.query().labels("friend", "connect", "knows").direction(OUT).has("time", Compare.NOT_EQUAL, 10).count());
+
+       assertEquals(0, v.query().has("age", null).labels("undefined").direction(OUT).count());
+       assertEquals(1, v.query().labels("connect").direction(OUT).adjacent(vs[6]).has("time", 6).count());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).count());
+       assertEquals(1, v.query().labels("knows").direction(OUT).adjacent(vs[11]).has("weight", 3.5).count());
+       assertEquals(2, v.query().labels("connect").adjacent(vs[6]).has("time", 6).count());
+       assertEquals(0, v.query().labels("connect").adjacent(vs[8]).has("time", 8).count());
+
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(OUT).count());
+       assertEquals(edgesPerLabel, v.query().labels("connect").direction(IN).count());
+       assertEquals(2*edgesPerLabel, v.query().labels("connect").direction(BOTH).count());
+
+       assertEquals(edgesPerLabel, v.query().labels("connect").has("undefined", null).direction(OUT).count());
+       assertEquals(2*(int)Math.ceil((noVertices-1)/4.0), Iterables.size(v.query().labels("connect", "friend", "knows").has("weight", 1.5).vertexIds()));
+       assertEquals(1, v.query().direction(IN).has("time", 1).count());
+       assertEquals(10, v.query().direction(OUT).interval("time", 4, 14).count());
+       assertEquals(9, v.query().direction(IN).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+       assertEquals(9, v.query().direction(OUT).interval("time", 4, 14).has("time", Compare.NOT_EQUAL, 10).count());
+       assertEquals(noVertices-1, Iterables.size(v.query().direction(OUT).vertices()));
+       assertEquals(noVertices-1, Iterables.size(v.query().direction(IN).vertices()));
+       for (Direction dir : new Direction[]{IN,OUT}) {
+           vl = v.query().labels().direction(dir).interval("time", 3, 31).vertexIds();
+           vl.sort();
+           for (int i = 0; i < vl.size(); i++) assertEquals(vidsubset[i], vl.getID(i));
+       }
+       assertEquals(2*(noVertices-1), Iterables.size(v.getEdges()));
+
+
+       //Property queries
+       assertEquals(1, Iterables.size(v.query().properties()));
+       assertEquals(1, Iterables.size(v.query().keys("name").properties()));
+
+       //MultiQueries
+       results = tx.multiQuery(qvs).direction(IN).labels("connect").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+       results = tx.multiQuery(Sets.newHashSet(qvs)).labels("connect").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(2, Iterables.size(result));
+       results = tx.multiQuery(qvs).labels("knows").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(0, Iterables.size(result));
+       results = tx.multiQuery(qvs).titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(4, Iterables.size(result));
+       results2 = tx.multiQuery(qvs).properties();
+       for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+       results2 = tx.multiQuery(qvs).keys("name").properties();
+       for (Iterable<TitanProperty> result : results2.values()) assertEquals(1, Iterables.size(result));
+
+       //##################################################
+       //End copied queries
+       //##################################################
+
+       newTx();
+
+       v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
+       assertNotNull(v);
+       assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).vertexIds().size());
+       assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).vertexIds().size());
+
+       newTx();
+
+       v = (TitanVertex) tx.getVertices("name", "v").iterator().next();
+       assertNotNull(v);
+       assertEquals(2, v.query().has("weight", 1.5).interval("time", 10, 30).limit(2).count());
+       assertEquals(10, v.query().has("weight", 1.5).interval("time", 10, 30).count());
+
+
+       newTx();
+       //Test partially new vertex queries
+       TitanVertex[] qvs2 = new TitanVertex[qvs.length+2];
+       qvs2[0]=tx.addVertex();
+       for (int i=0;i<qvs.length;i++) qvs2[i+1]=tx.getVertex(qvs[i].getID());
+       qvs2[qvs2.length-1]=tx.addVertex();
+       qvs2[0].addEdge("connect",qvs2[qvs2.length-1]);
+       qvs2[qvs2.length-1].addEdge("connect", qvs2[0]);
+       results = tx.multiQuery(qvs2).direction(IN).labels("connect").titanEdges();
+       for (Iterable<TitanEdge> result : results.values()) assertEquals(1, Iterables.size(result));
+
+   }
+
+    @Test
+    public void testRelationTypeIndexes() {
+        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey time = makeKey("time",Long.class);
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.LIST).make();
+        EdgeLabel connect = mgmt.makeEdgeLabel("connect").signature(time).make();
+        EdgeLabel child = mgmt.makeEdgeLabel("child").multiplicity(Multiplicity.ONE2MANY).make();
+        EdgeLabel link = mgmt.makeEdgeLabel("link").unidirected().make();
+
+        RelationTypeIndex name1 = mgmt.createPropertyIndex(name,"weightDesc",weight);
+
+        RelationTypeIndex connect1 = mgmt.createEdgeIndex(connect,"weightAsc",Direction.BOTH,Order.ASC,weight);
+        RelationTypeIndex connect2 = mgmt.createEdgeIndex(connect,"weightDesc",Direction.OUT,Order.DESC,weight);
+        RelationTypeIndex connect3 = mgmt.createEdgeIndex(connect,"time+weight",Direction.OUT,Order.DESC,time,weight);
+
+        RelationTypeIndex child1 = mgmt.createEdgeIndex(child,"time",Direction.OUT,time);
+
+        RelationTypeIndex link1 = mgmt.createEdgeIndex(link,"time",Direction.OUT,time);
+
+        // ########### INSPECTION & FAILURE ##############
+
+        assertTrue(mgmt.containsRelationIndex(name,"weightDesc"));
+        assertTrue(mgmt.containsRelationIndex(connect,"weightDesc"));
+        assertFalse(mgmt.containsRelationIndex(child,"weightDesc"));
+        assertEquals("time+weight",mgmt.getRelationIndex(connect,"time+weight"));
+        assertNotNull(mgmt.getRelationIndex(link,"time"));
+        assertNull(mgmt.getRelationIndex(name,"time"));
+        assertEquals(1,Iterables.size(mgmt.getRelationIndexes(child)));
+        assertEquals(3,Iterables.size(mgmt.getRelationIndexes(connect)));
+        assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
+        try {
+           //Name already exists
+           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Invalid key - must be single valued
+           mgmt.createEdgeIndex(connect,"blablub",Direction.OUT,name);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Not valid in this direction due to multiplicity constraint
+           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Not valid in this direction due to unidirectionality
+           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+
+        // ########## END INSPECTION ###########
+
+        finishSchema();
+
+        weight = mgmt.getPropertyKey("weight");
+        time = mgmt.getPropertyKey("time");
+
+        name = mgmt.getPropertyKey("name");
+        connect = mgmt.getEdgeLabel("connect");
+        child = mgmt.getEdgeLabel("parent");
+        link = mgmt.getEdgeLabel("link");
+
+        // ########### INSPECTION & FAILURE (copied from above) ##############
+
+        assertTrue(mgmt.containsRelationIndex(name,"weightDesc"));
+        assertTrue(mgmt.containsRelationIndex(connect,"weightDesc"));
+        assertFalse(mgmt.containsRelationIndex(child, "weightDesc"));
+        assertEquals("time+weight", mgmt.getRelationIndex(connect, "time+weight"));
+        assertNotNull(mgmt.getRelationIndex(link, "time"));
+        assertNull(mgmt.getRelationIndex(name, "time"));
+        assertEquals(1, Iterables.size(mgmt.getRelationIndexes(child)));
+        assertEquals(3,Iterables.size(mgmt.getRelationIndexes(connect)));
+        assertEquals(0,Iterables.size(mgmt.getRelationIndexes(weight)));
+        try {
+           //Name already exists
+           mgmt.createEdgeIndex(connect,"weightAsc",Direction.OUT,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Invalid key - must be single valued
+           mgmt.createEdgeIndex(connect,"blablub",Direction.OUT,name);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Not valid in this direction due to multiplicity constraint
+           mgmt.createEdgeIndex(child,"blablub",Direction.IN,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+           //Not valid in this direction due to unidirectionality
+           mgmt.createEdgeIndex(link,"blablub",Direction.BOTH,time);
+           fail();
+        } catch (IllegalArgumentException e) {}
+
+        // ########## END INSPECTION ###########
+
+        mgmt.rollback();
+
+        /*
+        ########## TEST WITHIN TRANSACTION ##################
+        */
+
+        weight = tx.getPropertyKey("weight");
+        time = tx.getPropertyKey("time");
+
+        name = tx.getPropertyKey("name");
+        connect = tx.getEdgeLabel("connect");
+        child = tx.getEdgeLabel("parent");
+        link = tx.getEdgeLabel("link");
+
+        final int numV = 100;
+        TitanVertex v = tx.addVertex();
+        TitanVertex ns[] = new TitanVertex[numV];
+
+        for (int i=0;i<numV;i++) {
+            double w = (i*0.5)%5;
+            long t = (i+77)%numV;
+            TitanProperty p = v.addProperty(name,"v"+i);
+            p.setProperty(weight,w);
+            p.setProperty(time,t);
+
+            ns[i]=tx.addVertex();
+            for (EdgeLabel label : new EdgeLabel[]{connect,child,link}) {
+                TitanEdge e = v.addEdge(label,ns[i]);
+                e.setProperty(weight,w);
+                e.setProperty(time,t);
+            }
+        }
+        TitanVertex u = ns[0];
+        VertexList vl;
+
+        //######### QUERIES ##########
+        v = (TitanVertex)tx.getVertex(v);
+        u = (TitanVertex)tx.getVertex(u);
+
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.GREATER_THAN,3.6),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.LESS_THAN,0.9).orderBy(weight,Order.ASC),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true},weight,Order.ASC);
+        evaluateQuery(v.query().keys(name.getName()).interval(weight, 1.1, 2.2).orderBy(weight,Order.DESC).limit(numV/10),
+                PROPERTY, numV/10, 1, new boolean[]{true,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()).interval(time,Cmp.EQUAL,5).orderBy(weight,Order.DESC),
+                PROPERTY, 1, 1, new boolean[]{false,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()),
+                PROPERTY, numV, 1, new boolean[]{true,true});
+
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,5),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH).has(time,Cmp.EQUAL,5),
+                EDGE, 1, 2 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,10,20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH).interval(weight, 0.0, 1.0).orderBy(weight, Order.DESC),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(weight, 0.0, 1.0),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH),
+                EDGE, numV, 1 , new boolean[]{true,true});
+        vl = v.query().labels(child.getName()).direction(BOTH).vertexIds();
+        assertEquals(numV,vl.size());
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+        evaluateQuery(v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,true});
+        vl = v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT).vertexIds();
+        assertEquals(2*numV/10,vl.size());
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+        evaluateQuery(v.query().labels(child.getName()).interval(time, 10, 20).direction(OUT).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,true});
+        vl = v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT).limit(5).vertexIds();
+        assertEquals(5,vl.size());
+        assertFalse(vl.isSorted());
+        assertFalse(isSortedByID(vl));
+        vl.sort();
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+
+        evaluateQuery(v.query().labels(connect.getName()).has(time,Cmp.EQUAL,5).interval(weight,0.0,5.0).direction(OUT),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).has(time,Cmp.EQUAL,5).interval(weight,0.0,5.0).direction(BOTH),
+                EDGE, 1, 2 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).interval(time,10,20).interval(weight,0.0,5.0).direction(OUT),
+                EDGE, 10, 1 , new boolean[]{false,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).orderBy(weight,Order.ASC).limit(10),
+                EDGE, 10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).orderBy(weight,Order.DESC).limit(10),
+                EDGE, 10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).interval(weight,1.4,2.75).orderBy(weight,Order.DESC),
+                EDGE, 3*numV/10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).has(time,Cmp.EQUAL,22).orderBy(weight,Order.DESC),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).has(time,Cmp.EQUAL,22).orderBy(weight,Order.ASC),
+                EDGE, 1, 1 , new boolean[]{true,false});
+
+
+        evaluateQuery(v.query(),
+                RELATION, numV*4, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().direction(OUT),
+                RELATION, numV*4, 1 , new boolean[]{false,true});
+
+        //--------------
+
+        clopen();
+
+        weight = tx.getPropertyKey("weight");
+        time = tx.getPropertyKey("time");
+
+        name = tx.getPropertyKey("name");
+        connect = tx.getEdgeLabel("connect");
+        child = tx.getEdgeLabel("parent");
+        link = tx.getEdgeLabel("link");
+
+        //######### QUERIES (copied from above) ##########
+        v = (TitanVertex)tx.getVertex(v);
+        u = (TitanVertex)tx.getVertex(u);
+
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.GREATER_THAN,3.6),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.LESS_THAN,0.9).orderBy(weight,Order.ASC),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true},weight,Order.ASC);
+        evaluateQuery(v.query().keys(name.getName()).interval(weight, 1.1, 2.2).orderBy(weight,Order.DESC).limit(numV/10),
+                PROPERTY, numV/10, 1, new boolean[]{true,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()).interval(time,Cmp.EQUAL,5).orderBy(weight,Order.DESC),
+                PROPERTY, 1, 1, new boolean[]{false,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()),
+                PROPERTY, numV, 1, new boolean[]{true,true});
+
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,5),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH).has(time,Cmp.EQUAL,5),
+                EDGE, 1, 2 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,10,20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH).interval(weight, 0.0, 1.0).orderBy(weight, Order.DESC),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(weight, 0.0, 1.0),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(BOTH),
+                EDGE, numV, 1 , new boolean[]{true,true});
+        vl = v.query().labels(child.getName()).direction(BOTH).vertexIds();
+        assertEquals(numV,vl.size());
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+        evaluateQuery(v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT),
+                EDGE, 2*numV/10, 1 , new boolean[]{false,true});
+        vl = v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT).vertexIds();
+        assertEquals(2*numV/10,vl.size());
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+        evaluateQuery(v.query().labels(child.getName()).interval(time, 10, 20).direction(OUT).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,true});
+        vl = v.query().labels(child.getName()).interval(weight, 0.0, 1.0).direction(OUT).limit(5).vertexIds();
+        assertEquals(5,vl.size());
+        assertFalse(vl.isSorted());
+        assertFalse(isSortedByID(vl));
+        vl.sort();
+        assertTrue(vl.isSorted());
+        assertTrue(isSortedByID(vl));
+
+        evaluateQuery(v.query().labels(connect.getName()).has(time,Cmp.EQUAL,5).interval(weight,0.0,5.0).direction(OUT),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).has(time,Cmp.EQUAL,5).interval(weight,0.0,5.0).direction(BOTH),
+                EDGE, 1, 2 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).interval(time,10,20).interval(weight,0.0,5.0).direction(OUT),
+                EDGE, 10, 1 , new boolean[]{false,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).orderBy(weight,Order.ASC).limit(10),
+                EDGE, 10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).orderBy(weight,Order.DESC).limit(10),
+                EDGE, 10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).interval(weight,1.4,2.75).orderBy(weight,Order.DESC),
+                EDGE, 3*numV/10, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).has(time,Cmp.EQUAL,22).orderBy(weight,Order.DESC),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(connect.getName()).direction(OUT).has(time,Cmp.EQUAL,22).orderBy(weight,Order.ASC),
+                EDGE, 1, 1 , new boolean[]{true,false});
+
+        evaluateQuery(v.query(),
+                RELATION, numV*4, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().direction(OUT),
+                RELATION, numV*4, 1 , new boolean[]{false,true});
+
+        //--------------
+
+    }
+
+    private boolean isSortedByID(VertexList vl) {
+        for (int i=1;i<vl.size();i++) {
+            if (vl.getID(i-1)>vl.getID(i)) return false;
+        }
+        return true;
+    }
+
+    private void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
+                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs) {
+        evaluateQuery(query,resultType,expectedResults,numSubQueries, subQuerySpecs, ImmutableMap.<PropertyKey,Order>of());
+    }
+
+    private void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
+                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs,
+                               PropertyKey orderKey, Order order) {
+        evaluateQuery(query,resultType,expectedResults,numSubQueries, subQuerySpecs, ImmutableMap.of(orderKey,order));
+    }
+
+
+    private void evaluateQuery(TitanVertexQuery query, RelationCategory resultType,
+                               int expectedResults, int numSubQueries, boolean[] subQuerySpecs,
+                               Map<PropertyKey,Order> orderMap) {
+        QueryDescription qd;
+        switch(resultType) {
+            case PROPERTY: qd = query.describeForProperties(); break;
+            case EDGE: qd = query.describeForEdges(); break;
+            case RELATION: qd = ((AbstractVertexCentricQueryBuilder)query).describeForRelations(); break;
+            default: throw new AssertionError();
+        }
+        assertEquals(1,qd.getNoCombinedQueries());
+        assertEquals(numSubQueries,qd.getNoSubQueries());
+        List<? extends QueryDescription.SubQuery> subqs = qd.getSubQueries();
+        assertEquals(numSubQueries,subqs.size());
+        for (int i=0;i<numSubQueries;i++) {
+            QueryDescription.SubQuery sq = subqs.get(i);
+            assertNotNull(sq);
+            if (subQuerySpecs.length==2) { //0=>fitted, 1=>ordered
+                assertEquals(subQuerySpecs[0],sq.isFitted());
+                assertEquals(subQuerySpecs[1],sq.isSorted());
+            }
+        }
+        //Check order
+        OrderList orders = ((StandardQueryDescription)qd).getQueryOrder();
+        assertNotNull(orders);
+        assertEquals(orderMap.size(),orders.size());
+        for (int i=0;i<orders.size();i++) {
+            assertEquals(orderMap.get(orders.getKey(i)),orders.getOrder(i));
+        }
+        for (PropertyKey key : orderMap.keySet()) assertTrue(orders.containsKey(key.getName()));
+
+        Iterable<? extends TitanElement> result;
+        switch(resultType) {
+            case PROPERTY: result = query.properties(); break;
+            case EDGE: result = query.edges(); break;
+            case RELATION: result = query.relations(); break;
+            default: throw new AssertionError();
+        }
+        int no = 0;
+        TitanElement previous = null;
+        for (TitanElement e : result) {
+            assertNotNull(e);
+            no++;
+            if (previous!=null && !orders.isEmpty()) {
+                assertTrue(orders.compare(previous,e)<=0);
+            }
+            previous = e;
+        }
+        assertEquals(expectedResults,no);
+    }
+
+
+   /* ==================================================================================
+                            LOGGING
+     ==================================================================================*/
+
+
+    @Test
+    public void simpleLogTest() throws InterruptedException {
+        final String triggerName = "test";
+        final Serializer serializer = graph.getDataSerializer();
+        final EdgeSerializer edgeSerializer = graph.getEdgeSerializer();
+        final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
+        final TimeUnit unit = times.getUnit();
+        final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
+//        System.out.println(startTime);
+        clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
+        testBasic();
+        //Transaction with custom triggerName
+        TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v1 = tx2.addVertex();
+        v1.setProperty("weight",111.1);
+        tx2.commit();
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        TitanVertex v2 = tx2.addVertex();
+        v2.setProperty("weight",222.2);
+        tx2.commit();
+        //Only read tx
+        tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
+        v1 = tx2.getVertex(v1.getID());
+        assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
+        assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
+        tx2.commit();
+        close();
+
+        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
+        final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        final AtomicInteger triggerMeta = new AtomicInteger(0);
+        txlog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                TransactionLogHeader.Entry txEntry = TransactionLogHeader.parse(message.getContent(),serializer, times);
+                TransactionLogHeader header = txEntry.getHeader();
+//                System.out.println(header.getTimestamp(TimeUnit.MILLISECONDS));
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS) >= startTime);
+                assertTrue(header.getTimestamp(TimeUnit.MILLISECONDS)<=msgTime);
+                assertNotNull(txEntry.getMetadata());
+                assertNull(txEntry.getMetadata().get(LogTxMeta.GROUPNAME));
+                if (!txEntry.hasContent()) {
+                    assertTrue(txEntry.getStatus().isSuccess());
+                } else {
+                    assertTrue(txEntry.getStatus().isPreCommit());
+                    Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
+                    if (logid!=null) {
+                        assertTrue(logid instanceof String);
+                        assertEquals(triggerName,logid);
+                        triggerMeta.incrementAndGet();
+                    }
+                    //TODO: Verify content parses correctly
+                }
+                txMsgCounter.incrementAndGet();
+            }
+        });
+        final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
+        triggerLog.registerReader(new MessageReader() {
+            @Override
+            public void read(Message message) {
+                long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
+                assertTrue(msgTime>=startTime);
+                assertNotNull(message.getSenderId());
+                StaticBuffer content = message.getContent();
+                assertTrue(content!=null && content.length()>0);
+                ReadBuffer read = content.asReadBuffer();
+                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
+                assertTrue(txTime<=msgTime);
+                assertTrue(txTime>=startTime);
+                long txid = read.getLong();
+                assertTrue(txid>0);
+                for (String type : new String[]{"add","del"}) {
+                    long num = VariableLong.readPositive(read);
+                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
+                    if (type.equals("add")) {
+                        assertEquals(2,num);
+                    } else {
+                        assertEquals(0,num);
+                    }
+                    for (int i=0; i<num;i++) {
+                        Long vertexid = VariableLong.readPositive(read);
+                        assertTrue(vertexid>0);
+                        Entry entry = BufferUtil.readEntry(read,serializer);
+                        assertNotNull(entry);
+                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
+                    }
+                }
+                triggerMsgCounter.incrementAndGet();
+            }
+        });
+        Thread.sleep(20000);
+        assertEquals(8, txMsgCounter.get());
+        assertEquals(2,triggerMsgCounter.get());
+        assertEquals(2,triggerMeta.get());
+    }
+
+
+   /* ==================================================================================
+                            GLOBAL GRAPH QUERIES
+     ==================================================================================*/
+
+    @Test
+    public void testPropertyIndexPersistence() {
+        final String propName = "favorite_color";
+        final String sharedValue = "blue";
+
+        tx.makePropertyKey(propName).dataType(String.class).make();
+
+        TitanVertex alice = tx.addVertex();
+        TitanVertex bob = tx.addVertex();
+
+        alice.addProperty(propName, sharedValue);
+
+        clopen();
+
+        alice = tx.getVertex(alice.getID());
+        bob = tx.getVertex(bob.getID());
+
+        assertEquals(sharedValue, alice.getProperty(propName));
+        assertEquals(null, bob.getProperty(propName));
+
+        alice.removeProperty(propName);
+        bob.addProperty(propName, sharedValue);
+
+        clopen();
+    }
+
+    @Test
+    public void testJointIndexRetrieval() {
+        makeVertexIndexedKey("name",String.class);
+        makeVertexIndexedKey("color",String.class);
+        finishSchema();
+
+        Vertex v = graph.addVertex(null);
+        v.setProperty("name", "ilya");
+        v.setProperty("color", "blue");
+        graph.commit();
+
+        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").vertices()));
+        assertEquals(1, Iterables.size(graph.query().has("name", "ilya").has("color", "blue").vertices()));
+    }
+
+    @Test
+    public void testLargeJointIndexRetrieval() {
+        makeVertexIndexedKey("sid",Integer.class);
+        makeVertexIndexedKey("color",String.class);
+        finishSchema();
+
+        int sids = 17;
+        String[] colors = {"blue", "red", "yellow", "brown", "green", "orange", "purple"};
+        int multiplier = 200;
+        int numV = sids * colors.length * multiplier;
+        for (int i = 0; i < numV; i++) {
+            Vertex v = graph.addVertex(null);
+            v.setProperty("color", colors[i % colors.length]);
+            v.setProperty("sid", i % sids);
+        }
+        graph.commit();
+        clopen();
+
+        assertEquals(numV / sids, Iterables.size(graph.query().has("sid", 8).vertices()));
+        assertEquals(numV / colors.length, Iterables.size(graph.query().has("color", colors[2]).vertices()));
+
+        assertEquals(multiplier, Iterables.size(graph.query().has("sid", 11).has("color", colors[3]).vertices()));
+    }
+
+    @Test
+    public void testIndexRetrieval() {
+        PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
+        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildInternalIndex();
+        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildInternalIndex();
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildInternalIndex();
+        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildInternalIndex();
+        mgmt.makeEdgeLabel("connect").signature(id, name).make();
+        finishSchema();
+
+
+        int noNodes = 100;
+        int div = 10;
+        int mod = noNodes / div;
+        for (int i = 0; i < noNodes; i++) {
+            TitanVertex n = tx.addVertex();
+            n.addProperty("uid", i);
+            n.addProperty("name", "Name" + (i % mod));
+            TitanVertex other = getVertex("uid", Math.max(0, i - 1));
+            Preconditions.checkNotNull(other);
+            TitanEdge e = n.addEdge("connect", other);
+            e.setProperty("uid", i);
+            e.setProperty("name", "Edge" + (i % mod));
+        }
+        clopen();
+        for (int j = 0; j < mod; j++) {
+            Iterable<Vertex> nodes = tx.getVertices("name", "Name" + j);
+            assertEquals(div, Iterables.size(nodes));
+            for (Vertex n : nodes) {
+                int nid = ((Number) n.getProperty("uid")).intValue();
+                assertEquals(j, nid % mod);
+            }
+            Iterable<Edge> edges = tx.getEdges("name", "Edge" + j);
+            assertEquals(div, Iterables.size(edges));
+            for (Edge e : edges) {
+                int nid = ((Number) e.getProperty("uid")).intValue();
+                assertEquals(j, nid % mod);
+            }
+        }
+        clopen();
+        for (int i = 0; i < noNodes; i++) {
+            assertEquals(getVertex("uid", i).getProperty("name").toString().substring(4), String.valueOf(i % mod));
+        }
+        for (int i = 0; i < noNodes; i++) {
+            assertEquals(Iterables.getOnlyElement(tx.getEdges("uid", i)).getProperty("name").toString().substring(4), String.valueOf(i % mod));
+        }
+
+    }
+
+
     @Test
     public void testLimitWithMixedIndexCoverage() {
         final String vt = "vt";
@@ -1718,15 +2593,75 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TestUtil.verifyElementOrder(graph.query().orderBy("kid",Order.DESC).limit(200).edges(),"kid",Order.DESC,200);
     }
 
+
+    //................................................
+
+
+
+    //Add more removal operations, different transaction contexts
     @Test
-    public void testSimpleGlobalVertexCount() {
-        final int n = 3;
-        for (int i = 0; i < n; i++) {
-            tx.addVertex();
-        }
-        assertEquals(n, Iterables.size(tx.getVertices()));
-        tx.commit();
-        tx = graph.newTransaction();
-        assertEquals(n, Iterables.size(tx.getVertices()));
+    public void testCreateDelete() {
+        makeKey("weight",Double.class);
+        PropertyKey id = makeVertexIndexedUniqueKey("uid",Integer.class);
+        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(id).sortOrder(Order.DESC).directed().make();
+        mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
+        finishSchema();
+
+        id = tx.getPropertyKey("uid");
+        TitanVertex n1 = graph.addVertex(null), n3 = graph.addVertex(null);
+        TitanEdge e = n3.addEdge("knows", n1);
+        Edge e2 = n1.addEdge("friend",n3);
+        e.setProperty(id, 111);
+        n3.addProperty(id, 445);
+        assertEquals(111, e.getProperty(id));
+        graph.commit();
+
+        n3 = graph.getVertex(n3.getID());
+        assertEquals(445, n3.getProperty("uid"));
+        e = (TitanEdge) Iterables.getOnlyElement(n3.getEdges(OUT, "knows"));
+        assertEquals(111, e.getProperty("uid"));
+        assertEquals(e, graph.getEdge(e.getId()));
+        assertEquals(e, graph.getEdge(e.getId().toString()));
+        TitanProperty p = Iterables.getOnlyElement(n3.getProperties("uid"));
+        p.remove();
+        n3.addProperty("uid", 353);
+
+        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
+        e.setProperty(id,222);
+
+        e2 = Iterables.getOnlyElement(n1.getEdges(OUT,"friend"));
+        e2.setProperty("uid", 1);
+        e2.setProperty("weight", 2.0);
+
+        assertEquals(1,e2.getProperty("uid"));
+        assertEquals(2.0,e2.getProperty("weight"));
+
+
+        clopen();
+
+        n3 = graph.getVertex(n3.getID());
+        assertEquals(353, n3.getProperty("uid"));
+
+        e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
+        assertEquals(222,e.getProperty(id));
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

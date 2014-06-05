@@ -23,9 +23,17 @@ import java.util.concurrent.*;
 import static org.junit.Assert.assertEquals;
 
 /**
+ * A benchmark to test the performance of sequential row retrieval from the
+ * underlying KeyColumnValueStore which is the basic operation underlying the
+ * Fulgora OLAP component of Titan.
+ * <p/>
+ * Hence, this is effectively a benchmark for {@link com.thinkaurelius.titan.olap.OLAPTest}
+ * or at least the primitive backend operations used therein.
+ * <p/>
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
+public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
 
     private static final Random random = new Random();
 

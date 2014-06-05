@@ -499,6 +499,25 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     private static final int HARD_MAX_LIMIT   = 300000;
 
+
+    @Override
+    public QueryDescription describeForEdges() {
+        return describe(1, RelationCategory.EDGE);
+    }
+
+    @Override
+    public QueryDescription describeForProperties() {
+        return describe(1,RelationCategory.PROPERTY);
+    }
+
+    public QueryDescription describeForRelations() {
+        return describe(1,RelationCategory.RELATION);
+    }
+
+    protected QueryDescription describe(int numVertices, RelationCategory returnType) {
+        return new StandardQueryDescription(numVertices,constructQuery(returnType));
+    }
+
     /**
      * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
      * logic is taken from {@link #constructQuery(com.thinkaurelius.titan.graphdb.internal.RelationCategory)}
@@ -527,9 +546,6 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return query;
     }
 
-    protected VertexCentricQuery constructQuery(InternalVertex vertex, RelationCategory returnType) {
-        return constructQuery(vertex,constructQuery(returnType));
-    }
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         assert returnType != null;

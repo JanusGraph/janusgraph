@@ -1122,6 +1122,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 List<Object> resultSet = QueryUtil.processIntersectingRetrievals(retrievals, indexQuery.getLimit());
                 iter = Iterators.transform(resultSet.iterator(), getConversionFunction(query.getResultType()));
             } else {
+                if (config.hasForceIndexUsage()) throw new TitanException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
                 log.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
                 switch (query.getResultType()) {

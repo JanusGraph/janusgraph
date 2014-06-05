@@ -165,6 +165,22 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return Iterables.filter(new QueryProcessor<GraphCentricQuery, TitanElement, JointIndexQuery>(query, tx.elementProcessor), TitanProperty.class);
     }
 
+    private QueryDescription describe(ElementCategory category) {
+        return new StandardQueryDescription(1,constructQuery(category));
+    }
+
+    public QueryDescription describeForVertices() {
+        return describe(ElementCategory.VERTEX);
+    }
+
+    public QueryDescription describeForEdges() {
+        return describe(ElementCategory.EDGE);
+    }
+
+    public QueryDescription describeForProperties() {
+        return describe(ElementCategory.PROPERTY);
+    }
+
     /* ---------------------------------------------------------------
      * Query Construction
 	 * ---------------------------------------------------------------

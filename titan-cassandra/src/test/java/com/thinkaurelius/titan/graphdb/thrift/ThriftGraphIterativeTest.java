@@ -6,11 +6,11 @@ import com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStore
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import com.thinkaurelius.titan.graphdb.TitanGraphIterativeTest;
+import com.thinkaurelius.titan.graphdb.TitanGraphIterativeBenchmark;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.BeforeClass;
 
-public class ThriftGraphIterativeTest extends TitanGraphIterativeTest {
+public class ThriftGraphIterativeTest extends TitanGraphIterativeBenchmark {
 
     @Override
     public WriteConfiguration getConfiguration() {

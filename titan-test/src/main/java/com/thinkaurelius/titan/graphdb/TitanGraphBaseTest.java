@@ -97,7 +97,7 @@ public abstract class TitanGraphBaseTest {
             tx.commit();
 
 
-        if (null != graph)
+        if (null != graph && graph.isOpen())
             graph.shutdown();
     }
 
@@ -220,7 +220,7 @@ public abstract class TitanGraphBaseTest {
     }
 
     /*
-    ========= Type Definition Helpers ============
+    ========= Schema Type Definition Helpers ============
      */
 
     public PropertyKey makeVertexIndexedKey(String name, Class datatype) {

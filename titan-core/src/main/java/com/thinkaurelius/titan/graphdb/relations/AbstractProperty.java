@@ -64,13 +64,8 @@ public abstract class AbstractProperty extends AbstractTypedRelation implements 
     }
 
     @Override
-    public Object getValue() {
-        return value;
-    }
-
-    @Override
-    public <O> O getValue(Class<O> clazz) {
-        return clazz.cast(value);
+    public<O> O getValue() {
+        return (O)value;
     }
 
     @Override

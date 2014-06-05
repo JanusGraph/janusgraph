@@ -201,8 +201,10 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(sortKeys.length>0,"Need to specify sort keys");
         for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
         Preconditions.checkArgument(type.isNew(),"Can only install indexes on new types (current limitation)");
+        Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel)type).isUnidirected() || direction==Direction.OUT,
+                "Can only index uni-directed labels in the out-direction: %s",type);
         Preconditions.checkArgument(!((InternalRelationType)type).getMultiplicity().isConstrained(direction),
-                "The relation type [%s] has a multiplicity or cardinality constrained in direction [%s] and can therefore not be indexed",type,direction);
+                "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed",type,direction);
 
         String composedName = composeRelationTypeIndexName(type,name);
         StandardRelationTypeMaker maker;
@@ -603,7 +605,13 @@ public class ManagementSystem implements TitanManagement {
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(types, clazz);
+        return Iterables.filter(Iterables.filter(types, clazz),new Predicate<T>() {
+            @Override
+            public boolean apply(@Nullable T t) {
+                //Filter out all relation type indexes
+                return ((InternalRelationType)t).getBaseType()==null;
+            }
+        });
     }
 
     @Override
@@ -619,6 +627,11 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public VertexLabelMaker makeVertexLabel(String name) {
         return transaction.makeVertexLabel(name);
+    }
+
+    @Override
+    public Iterable<VertexLabel> getVertexLabels() {
+        return Iterables.filter(transaction.getVertices(BaseKey.SchemaCategory,TitanSchemaCategory.VERTEXLABEL),VertexLabel.class);
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########
