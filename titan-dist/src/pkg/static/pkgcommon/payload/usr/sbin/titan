@@ -109,6 +109,12 @@ launch_service()
     #parms="-Dlog4j.configuration=file://"$TITAN_CONF"/log4j.properties -Dlog4j.defaultInitOverride=true"
     parms=''
 
+    # Rexster is  hardcoded to use either log4j.properties in the current
+    # working directory or to use the one shipped in its own jar.
+    # It always overrides the default log4j configuration mechanism (!) 
+    # Switch to the directory containing our log4j.properties as a workaround
+    cd "$TITAN_CONF"
+
     if [ "x$foreground" != "x" ]; then
         export CLASSPATH
         exec "$JAVA" $JVM_OPTS $parms $props "$class" -s -c "$REXSTER_CFG"
