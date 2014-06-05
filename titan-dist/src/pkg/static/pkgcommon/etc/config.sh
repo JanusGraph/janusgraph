@@ -13,7 +13,7 @@ export DEP_DIR PAYLOAD_DIR
 declare -r LOCAL_REPO_DIR=/srv/aureliuspkg
 declare -r LOCAL_REPO_DEB_DIR="$LOCAL_REPO_DIR"/deb
 declare -r LOCAL_REPO_RPM_DIR="$LOCAL_REPO_DIR"/rpm
-declare -r REPREPRO_CODENAME='aurelius'
+declare -r REPREPRO_CODENAME='unstable'
 declare -r RPM_TOPDIR=~/rpmbuild
 declare -r S3_REPO_BUCKET='s3://aureliuspkg/'
 export LOCAL_REPO_DIR LOCAL_REPO_DEB_DIR LOCAL_REPO_RPM_DIR \

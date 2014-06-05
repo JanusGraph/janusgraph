@@ -19,6 +19,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
 
+@PreInitializeConfigOptions
 public class BerkeleyJEStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);

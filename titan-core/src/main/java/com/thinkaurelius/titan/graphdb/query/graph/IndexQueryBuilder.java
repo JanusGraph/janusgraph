@@ -88,7 +88,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         this.serializer = serializer;
 
         parameters = Lists.newArrayList();
-        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeydName();
+        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
         this.offset=0;
     }
 

@@ -60,47 +60,41 @@ NAME=titan
 #lockfile="/var/lock/subsys/${NAME}"
 pidfile="/var/run/$NAME.pid"
 
+do_status() {
+    status -p "$PIDFILE" $NAME
+    return $?
+}
 
-start() {
+do_start() {
     local stat
     echo -n $"Starting $NAME: "
-    /usr/sbin/titan -p $pidfile >/var/log/titan/console.log 2>&1
+    daemon /usr/sbin/titan -p $pidfile '>/var/log/titan/console.log'
     stat=$?
-    if [ 0 -eq $stat ]; then
-	echo_success
-    else
-	stat=1 # "generic or unspecified error" in LSB
-	echo_failure
-    fi
+    echo
     return $stat
 }
 
-stop() {
+do_stop() {
     local errmsg stat
     echo -n $"Stopping $NAME: "
-    errmsg="`killproc -p $PIDFILE $PATHNAME 2>&1`"
+    killproc -p $pidfile
     stat=$?
-    if [ 0 -eq $stat ]; then
-	echo_success
-    else
-	stat=1 # "generic or unspecified error" in LSB
-	echo_failure
-    fi
+    echo
     return $stat
 }
 
-restart() {
-    stop # Try to start even if stop fails
-    start
+do_restart() {
+    do_stop # Try to start even if stop fails
+    do_start
 }
 
 case "$1" in
     status)
-        status -p "$PIDFILE" $NAME
+        do_status
         exit $?
         ;;
     start|stop|restart)
-        $1
+        do_$1
         exit $?
 	;;
     condrestart|try-restart)

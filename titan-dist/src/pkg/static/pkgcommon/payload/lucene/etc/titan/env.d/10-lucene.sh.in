@@ -1,4 +1,0 @@
-# Include Lucene jars
-for j in /usr/share/titan/lib/lucene/*.jar; do
-    CLASSPATH="$j:$CLASSPATH"
-done

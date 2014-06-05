@@ -3,7 +3,6 @@ package com.thinkaurelius.titan.diskstorage.cassandra;
 import java.util.Map;
 
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
@@ -14,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
@@ -23,7 +23,7 @@ import org.apache.cassandra.dht.Token;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
+@PreInitializeConfigOptions
 public abstract class AbstractCassandraStoreManager extends DistributedStoreManager implements KeyColumnValueStoreManager {
 
     public enum Partitioner {
@@ -66,7 +66,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * Note: property is sized in megabytes for user convenience (defaults are 15MB by cassandra.yaml).
      */
     public static final ConfigOption<Integer> CASSANDRA_THRIFT_FRAME_SIZE = new ConfigOption<Integer>(STORAGE_NS,"thrift-frame-size",
-            "The thrift frame size in mega byte",
+            "The thrift frame size in mega bytes",
             ConfigOption.Type.MASKABLE, 15);
 
 //    public static final String THRIFT_FRAME_SIZE_MB = "cassandra.thrift.frame_size_mb";
@@ -88,48 +88,31 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     /**
      * Controls the Cassandra sstable_compression for CFs created by Titan.
-     * <p/>
+     * <p>
      * If a CF already exists, then Titan will not modify its compressor
      * configuration. Put another way, this setting only affects a CF that Titan
      * created because it didn't already exist.
-     * <p/>
+     * <p>
      * Default: {@literal #DEFAULT_COMPRESSOR}
      */
     public static final ConfigOption<String> CASSANDRA_COMPRESSION_TYPE = new ConfigOption<String>(STORAGE_NS,"compression-type",
-            "The particular compression type to use for Cassandra sstable compression",
-            ConfigOption.Type.FIXED, "LZ4Compressor");
+            "The sstable_compression value to use when creating Titan's column families. " +
+            "This accepts any value allowed by Cassandra's sstable_compression option. " +
+            "Leave this unset to disable sstable_compression on Titan-created CFs.",
+            ConfigOption.Type.MASKABLE, "LZ4Compressor");
 
 //    public static final String COMPRESSION_KEY = "compression.sstable_compression";
 //    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
 //
-//
-//    public static final int THRIFT_DEFAULT_FRAME_SIZE = 15;
 
-    /*
-     * Any operation attempted with ConsistencyLevel.TWO
-     * against a single-node Cassandra cluster (like the one
-     * we use in a lot of our test cases) will fail with
-     * an UnavailableException.  In other words, if you
-     * set TWO here, Cassandra will require TWO nodes, even
-     * if only one node has ever been a member of the
-     * cluster in question.
-     */
-//    public static final String WRITE_CONSISTENCY_LEVEL_DEFAULT = "QUORUM";
-    /**
-     * Default name for the Cassandra keyspace
-     * <p/>
-     * Value = {@value}
-     */
     public static final ConfigOption<String> CASSANDRA_KEYSPACE = new ConfigOption<String>(STORAGE_NS,"keyspace",
-            "The name of the keyspace to store Titan's data in",
+            "The name of Titan's keyspace.  It will be created if it does not exist.",
             ConfigOption.Type.LOCAL, "titan");
 
-//    public static final String KEYSPACE_DEFAULT = "titan";
-//    public static final String KEYSPACE_KEY = "keyspace";
-
     /**
-     * Default port at which to attempt Cassandra Thrift connection.
-     * <p/>
+     * The default Thrift port used by Cassandra. Set
+     * {@link GraphDatabaseConfiguration#STORAGE_PORT} to override.
+     * <p>
      * Value = {@value}
      */
     public static final int PORT_DEFAULT = 9160;
