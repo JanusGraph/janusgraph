@@ -21,7 +21,7 @@ Name:           titan
 Version:        %{titan_version}
 Release:        %{titan_release}
 Summary:        Titan Distributed Graph Database
-Requires:       java >= 1.6.0
+Requires:       java >= 1.7.0
 Requires(pre):  shadow-utils
 Group:          Applications/Databases
 License:        ASL 2.0
