@@ -1,4 +1,0 @@
-# Include BDB JE jars
-for j in /usr/share/titan/lib/berkeleyje/*.jar; do
-    CLASSPATH="$j:$CLASSPATH"
-done

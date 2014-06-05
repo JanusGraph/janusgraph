@@ -22,7 +22,7 @@ build-arch:
 
 build-indep: changes
 	dh_testdir
-	$(MVN) $(MVN_OPTS) clean install -pl titan-dist/titan-dist-all -am -Paurelius-release -Dgpg.skip=true -DskipTests=true
+	$(MVN) $(MVN_OPTS) clean install -pl titan-dist -am -Paurelius-release -Dgpg.skip=true -DskipTests=true
 
 build: build-indep build-arch
 # No-op
@@ -31,10 +31,9 @@ install: build
 	dh_testdir
 	dh_testroot
 	mkdir debian/tmp 2>/dev/null || true
-	pkgcommon/bin/partition-jars.sh
 	dh_installdirs
-	pkgcommon/bin/install-jars.sh 'debian/titan$${m:+-$$m}/usr/share/titan/lib$${m:+/$$m}'
-	pkgcommon/bin/install-payload.sh 'debian/titan$${m:+-$$m}/'
+	pkgcommon/bin/install-jars.sh debian/titan/usr/share/titan/lib
+	pkgcommon/bin/install-payload.sh debian/titan
 	cp -a debian/titan.default debian/titan/etc/default/titan
 
 # Build architecture-independent files here.

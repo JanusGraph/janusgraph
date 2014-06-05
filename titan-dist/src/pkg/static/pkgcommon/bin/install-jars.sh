@@ -3,21 +3,25 @@
 set -u
 set -e
 
-[ -n "${1:-}" ] || { echo "Usage: $0 directory-pattern" >&2; exit 1; }
+if [ -z "${1:-}" ]; then
+    echo "Usage: $0 directory" >&2
+    echo "  Copies Titan's jars to the specified directory"
+    echo "  The directory is created if it does not exist"
+    exit 1
+fi
 
-. `dirname $0`/../etc/config.sh
+. "`dirname $0`"/../etc/config.sh
 
-unset m
-dir="`eval echo $1`"
-[ ! -e "$dir" ] && mkdir -p "$dir"
-for j in `cat $DEP_DIR/jar-main.txt`; do
-    cp "$j" "$dir"
-done
+[ ! -e "$1" ] && mkdir -p "$1"
 
-for m in $MODULES; do
-    dir="`eval echo $1`"
-    mkdir -p "$dir"
-    for j in `cat $DEP_DIR/jar-$m.txt`; do
-        cp "$j" "$dir"
-    done
-done
+cd "$1"
+absolutepath="`pwd`"
+cd - >/dev/null
+
+cd "`dirname $0`"/../../titan-dist
+
+mvn dependency:copy-dependencies $MVN_OPTS \
+    -Paurelius-release \
+    -DexcludeClassifiers=tests,test,javadoc \
+    -DincludeScope=runtime \
+    -DoutputDirectory="$absolutepath"

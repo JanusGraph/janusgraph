@@ -3,17 +3,15 @@
 set -u
 set -e
 
-[ -n "${1:-}" ] || { echo "Usage: $0 directory-pattern" >&2; exit 1; }
+if [ -z "${1:-}" ]; then
+    echo "Usage: $0 directory" >&2
+    echo "  Copies Titan's OS-agnostic files to the specified root"
+    echo "  The directory is created if it does not exist"
+    exit 1
+fi
 
-. `dirname $0`/../etc/config.sh
+. "`dirname $0`"/../etc/config.sh
 
-unset m
-dir="`eval echo $1`"
-[ ! -e "$dir" ] && mkdir -p "$dir"
-rsync -qa "$PAYLOAD_DIR"/main/ "$dir"
+[ ! -e "$1" ] && mkdir -p "$1"
 
-for m in $MODULES; do
-    dir="`eval echo $1`"
-    mkdir -p "$dir"
-    rsync -qa "$PAYLOAD_DIR/$m/" "$dir"
-done
+rsync -qa "$PAYLOAD_DIR"/ "$1"
