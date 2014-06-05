@@ -111,7 +111,7 @@ public final class RelationIdentifier {
         if (((RelationType) typeVertex).isEdgeLabel()) {
             TitanVertex in = tx.getVertex(inVertexId);
             if (in==null) return null;
-            if (((StandardTitanTx)tx).isPartitionedVertex(v)) { //Swap for likely better performance
+            if (((StandardTitanTx)tx).isPartitionedVertex(v) && !((StandardTitanTx)tx).isPartitionedVertex(in)) { //Swap for likely better performance
                 TitanVertex tmp = in;
                 in = v;
                 v = tmp;

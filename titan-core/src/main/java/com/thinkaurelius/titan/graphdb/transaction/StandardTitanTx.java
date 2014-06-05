@@ -1007,7 +1007,6 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         @Override
         public Iterator<TitanElement> getNew(final GraphCentricQuery query) {
-            Preconditions.checkArgument(query.getResultType() == ElementCategory.VERTEX || query.getResultType() == ElementCategory.EDGE);
             //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
             if (query.numSubQueries()==1 && query.getSubQuery(0).getBackendQuery().isEmpty()) return Iterators.emptyIterator();
             Preconditions.checkArgument(query.getCondition().hasChildren(),"If the query is non-empty it needs to have a condition");
@@ -1054,18 +1053,18 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                     });
                 }
 
-
                 return (Iterator) Iterators.filter(vertices, new Predicate<TitanVertex>() {
                     @Override
                     public boolean apply(@Nullable TitanVertex vertex) {
                         return query.matches(vertex);
                     }
                 });
-            } else if (query.getResultType() == ElementCategory.EDGE && !addedRelations.isEmpty()) {
+            } else if ( (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY)
+                                        && !addedRelations.isEmpty()) {
                 return (Iterator) addedRelations.getView(new Predicate<InternalRelation>() {
                     @Override
                     public boolean apply(@Nullable InternalRelation relation) {
-                        return (relation instanceof TitanEdge) && !relation.isHidden() && query.matches(relation);
+                        return query.getResultType().isInstance(relation) && !relation.isHidden() && query.matches(relation);
                     }
                 }).iterator();
             } else return Iterators.emptyIterator();
@@ -1086,7 +1085,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 if (v.hasAddedRelations() || v.hasRemovedRelations()) {
                     return !query.matches(result);
                 } else return false;
-            } else if (query.getResultType() == ElementCategory.EDGE) {
+            } else if (query.getResultType() == ElementCategory.EDGE || query.getResultType()==ElementCategory.PROPERTY) {
                 //Loaded edges are immutable and new edges are previously filtered
                 Preconditions.checkArgument(result.isLoaded() || result.isNew());
                 return false;

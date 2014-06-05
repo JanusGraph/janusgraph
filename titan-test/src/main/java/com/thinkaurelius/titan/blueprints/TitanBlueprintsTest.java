@@ -15,18 +15,26 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
 
 /**
+ * Blueprints test suite adapted for Titan. The following test suites are not supported:
+ * <ul>
+ *     <li>IndexableGraphTestSuite</li>
+ *     <li>IndexTestSuite</li>
+ *     <li>KeyIndexableGraphTestSuite</li>
+ * </ul>
+ * since Titan handles indexing through the schema which isn't supported in Blueprints.
+ *
  * @author Matthias Broecheler (http://www.matthiasb.com)
  */
-
 public abstract class TitanBlueprintsTest extends GraphTest {
 
     private static final Logger log =
             LoggerFactory.getLogger(TitanBlueprintsTest.class);
 
     private volatile String lastSeenMethodName;
+
+
 
     /*public void testTitanBenchmarkTestSuite() throws Exception {
         this.stopWatch();
@@ -40,6 +48,12 @@ public abstract class TitanBlueprintsTest extends GraphTest {
         printTestPerformance("VertexTestSuite", this.stopWatch());
     }
 
+    public void testVertexQueryTestSuite() throws Exception {
+        this.stopWatch();
+        doTestSuite(new VertexQueryTestSuite(this));
+        printTestPerformance("VertexQueryTestSuite", this.stopWatch());
+    }
+
     public void testEdgeTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TitanEdgeTestSuite(this));
@@ -48,21 +62,15 @@ public abstract class TitanBlueprintsTest extends GraphTest {
 
     public void testGraphTestSuite() throws Exception {
         this.stopWatch();                       //Excluded test case because toString representation is non-standard
-        doTestSuite(new GraphTestSuite(this), ImmutableSet.of("testStringRepresentation","testDataTypeValidationOnProperties"));
+        doTestSuite(new GraphTestSuite(this), ImmutableSet.of("testStringRepresentation"));
         printTestPerformance("GraphTestSuite", this.stopWatch());
     }
 
-    public void testQueryTestSuite() throws Exception {
+    public void testGraphQueryTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new TitanGraphQueryTestSuite(this));
         printTestPerformance("GraphQueryTestSuite", this.stopWatch());
     }
-
-//    public void testKeyIndexableGraphTestSuite() throws Exception {
-//        this.stopWatch();                                   //Excluded test cases because Titan does not yet support dropping or modifying key indexes
-//        doTestSuite(new KeyIndexableGraphTestSuite(this), ImmutableSet.of("testAutoIndexKeyDroppingWithPersistence", "testReIndexingOfElements"));
-//        printTestPerformance("KeyIndexableGraphTestSuite", this.stopWatch());
-//    }
 
     public void testTransactionalGraphTestSuite() throws Exception {
         this.stopWatch();
