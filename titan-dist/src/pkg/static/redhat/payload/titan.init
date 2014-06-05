@@ -39,12 +39,11 @@ NAME=titan
 #fi
 
 # For SELinux we need to use 'runuser' not 'su'
-#if [ -x /sbin/runuser ]
-#then
-#    SU=runuser
-#else
-#    SU=su
-#fi
+if [ -x /sbin/runuser ]; then
+    SU=runuser
+else
+    SU=su
+fi
 
 # Set defaults for configuration variables
 #PGENGINE=/usr/bin
@@ -58,17 +57,17 @@ NAME=titan
 [ -f /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
 
 #lockfile="/var/lock/subsys/${NAME}"
-pidfile="/var/run/$NAME.pid"
+pidfile="/var/run/$NAME/$NAME.pid"
 
 do_status() {
-    status -p "$PIDFILE" $NAME
+    status -p "$pidfile" $NAME
     return $?
 }
 
 do_start() {
     local stat
     echo -n $"Starting $NAME: "
-    daemon /usr/sbin/titan -p $pidfile '>/var/log/titan/console.log'
+    daemon $SU titan -c "/usr/sbin/titan\ -p\ $pidfile\ >/var/log/titan/console.log"
     stat=$?
     echo
     return $stat

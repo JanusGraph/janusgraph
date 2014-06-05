@@ -62,6 +62,9 @@ getent passwd titan >/dev/null || \
     -c "Titan graph database" titan
 exit 0
 
+%post
+chown titan:titan /var/lib/titan /var/log/titan /var/run/titan
+
 
 %install
 cd %{name}-%{version}
@@ -77,6 +80,7 @@ mkdir -p "$RPM_BUILD_ROOT"/usr/share/doc/%{name}-%{version}
 mkdir -p "$RPM_BUILD_ROOT"/usr/share/titan/lib
 mkdir -p "$RPM_BUILD_ROOT"/var/log/titan
 mkdir -p "$RPM_BUILD_ROOT"/var/lib/titan
+mkdir -p "$RPM_BUILD_ROOT"/var/run/titan
 
 # copy files
 pkgcommon/bin/install-payload.sh "$RPM_BUILD_ROOT"
@@ -116,8 +120,9 @@ rm -rf $RPM_BUILD_ROOT
 %attr(0644, root, root) %config /etc/sysconfig/titan
 %attr(0755, root, root) %config /etc/rc.d/init.d/titan
 %attr(0755, root, root) %dir /etc/titan/env.d/
-%attr(0755, root, root) %dir /var/log/titan/
-%attr(0755, root, root) %dir /var/lib/titan/
+%attr(0755, titan, titan) %dir /var/log/titan/
+%attr(0755, titan, titan) %dir /var/lib/titan/
+%attr(0755, titan, titan) %dir /var/run/titan/
 %attr(0755, root, root) /usr/bin/gremlin.sh
 %attr(0755, root, root) /usr/bin/rexster-console.sh
 %attr(0755, root, root) /usr/sbin/titan
