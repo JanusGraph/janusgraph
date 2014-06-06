@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -106,8 +107,11 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             "The replication strategy to use for Titan keyspace",
             ConfigOption.Type.FIXED, "org.apache.cassandra.locator.SimpleStrategy");
 
-    public static final ConfigOption<List<String>> REPLICATION_OPTIONS = new ConfigOption<List<String>>(STORAGE_NS,
-            "replication-strategy-options", "Replication Strategy options e.g. factor.", ConfigOption.Type.FIXED, new ArrayList<String>(0));
+    public static final ConfigOption<List<String>> REPLICATION_OPTIONS = new ConfigOption<List<String>>(STORAGE_NS, "replication-strategy-options",
+            "Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a " +
+            "map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set " +
+            "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
+            ConfigOption.Type.FIXED, new ArrayList<String>(0));
 
 //    public static final String COMPRESSION_KEY = "compression.sstable_compression";
 //    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
