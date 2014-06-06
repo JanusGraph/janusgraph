@@ -2,11 +2,9 @@ package com.thinkaurelius.titan.olap;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.TitanVertex;
-import com.thinkaurelius.titan.core.TitanVertexQuery;
+import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.olap.*;
 import com.thinkaurelius.titan.graphdb.TitanGraphBaseTest;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
@@ -18,6 +16,7 @@ import static org.junit.Assert.*;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -26,7 +25,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
 
     private static final double EPSILON = 0.00001;
 
-    protected abstract <S extends State<S>> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz);
+    protected abstract <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz);
+
+    private static final Random random = new Random();
 
     @Test
     public void degreeCount() throws Exception {
@@ -40,7 +41,6 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             vs[i] = tx.addVertex();
             vs[i].setProperty("uid",i+1);
         }
-        Random random = new Random();
         for (int i=0;i<numV;i++) {
             int edges = i+1;
             TitanVertex v = vs[i];
@@ -64,15 +64,24 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setStateKey("degree");
         builder.setJob(new OLAPJob() {
             @Override
-            public void process(TitanVertex vertex) {
-                Degree d = vertex.getProperty("degree");
+            public Degree process(TitanVertex vertex) {
+                Degree d = vertex.getProperty("all");
                 assertNotNull(d);
-                d.in+=vertex.query().direction(Direction.IN).count();
-                d.out+= Iterables.size(vertex.getEdges(Direction.OUT));
-                d.both+= vertex.query().count();
+                return d;
             }
         });
-        builder.addQuery().edges();
+        builder.addQuery().setName("all").edges(new Gather<Degree, Degree>() {
+            @Override
+            public Degree apply(Degree state, TitanEdge edge, Direction dir) {
+                return new Degree(dir==Direction.IN?1:0,dir==Direction.OUT?1:0);
+            }
+        }, new Combiner<Degree>() {
+            @Override
+            public Degree combine(Degree m1, Degree m2) {
+                m1.add(m2);
+                return m1;
+            }
+        });
         Stopwatch w = new Stopwatch().start();
         OLAPResult<Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
         System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
@@ -90,32 +99,27 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(numV*(numV+1),totalCount);
     }
 
-    public class Degree implements State<Degree> {
+    public class Degree {
         public int in;
         public int out;
         public int both;
 
+        public Degree(int in, int out) {
+            this.in=in;
+            this.out=out;
+            both=in+out;
+        }
+
         public Degree() {
-            in=0;
-            out=0;
-            both=0;
+            this(0,0);
         }
 
-        @Override
-        public Degree clone() {
-            Degree d = new Degree();
-            d.in=in;
-            d.out=out;
-            d.both=both;
-            return d;
+        public void add(Degree d) {
+            in+=d.in;
+            out+=d.out;
+            both+=d.both;
         }
 
-        @Override
-        public void merge(Degree other) {
-            in+=other.in;
-            out+=other.out;
-            both+=other.both;
-        }
     }
 
 
@@ -182,18 +186,26 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         builder.setNumProcessingThreads(numThreads);
         builder.setStateKey("pageRank");
         builder.setNumVertices(numVertices);
-        if (labels==null || labels.length==0) {
-            builder.addQuery().direction(Direction.OUT).edges();
-        } else {
-            builder.addQuery().direction(Direction.OUT).labels(labels).edges();
+        OLAPQueryBuilder<PageRank,?,?> query = builder.addQuery().setName("degree").direction(Direction.OUT);
+        if (labels!=null && labels.length>0) {
+            query.labels(labels);
         }
+        query.edges(new Gather<PageRank, Long>() {
+            @Override
+            public Long apply(PageRank state, TitanEdge edge, Direction dir) {
+                return 1l;
+            }
+        },new Combiner<Long>() {
+            @Override
+            public Long combine(Long m1, Long m2) {
+                return m1+m2;
+            }
+        });
         builder.setJob(new OLAPJob() {
             @Override
-            public void process(TitanVertex vertex) {
-                TitanVertexQuery query = vertex.query().direction(Direction.OUT);
-                if (labels!=null && labels.length>0) query.labels(labels);
-                long outDegree = query.count();
-                vertex.setProperty("pageRank",new PageRank(outDegree,1.0d/numVertices));
+            public PageRank process(TitanVertex vertex) {
+                Long degree = vertex.<Long>getProperty("degree");
+                return new PageRank(degree==null?0:degree,1.0d/numVertices);
             }
         });
         OLAPResult<PageRank> ranks;
@@ -210,21 +222,29 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             builder.setNumProcessingThreads(numThreads);
             builder.setStateKey("pageRank");
             builder.setInitialState(ranks);
-            if (labels==null || labels.length==0) {
-                builder.addQuery().direction(Direction.IN).edges();
-            } else {
-                builder.addQuery().direction(Direction.IN).labels(labels).edges();
+            query = builder.addQuery().setName("energy").direction(Direction.IN);
+            if (labels!=null && labels.length>0) {
+                query.labels(labels);
             }
+            query.edges(new Gather<PageRank, Double>() {
+                @Override
+                public Double apply(PageRank state, TitanEdge edge, Direction dir) {
+                    return state.getPrFlow();
+                }
+            },new Combiner<Double>() {
+                @Override
+                public Double combine(Double m1, Double m2) {
+                    return m1+m2;
+                }
+            });
             builder.setJob(new OLAPJob() {
                 @Override
-                public void process(TitanVertex vertex) {
-                    TitanVertexQuery query = vertex.query().direction(Direction.IN);
-                    if (labels!=null && labels.length>0) query.labels(labels);
-                    double total = 0.0;
-                    for (Vertex v : query.vertices()) {
-                        total+=v.<PageRank>getProperty("pageRank").getPrFlow();
-                    }
-                    vertex.<PageRank>getProperty("pageRank").setPr(total);
+                public PageRank process(TitanVertex vertex) {
+                    PageRank pr = vertex.<PageRank>getProperty("pageRank");
+                    Double energy = vertex.getProperty("energy");
+                    if (energy==null) energy=0.0;
+                    pr.setPr(energy, alpha, numVertices);
+                    return pr;
                 }
             });
             Stopwatch w = new Stopwatch().start();
@@ -237,24 +257,18 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             assertEquals(numVertices,ranks.size());
             totalDelta = 0.0;
             for (PageRank pr : ranks.values()) {
-                totalDelta+=pr.completeIteration(alpha,numVertices);
+                totalDelta+=pr.completeIteration();
             }
             System.out.println(String.format("Completed iteration [%s] in time %s ms with delta PR=%s",iteration,w.elapsed(TimeUnit.MILLISECONDS),totalDelta));
         } while (totalDelta>PR_TERMINATION_THRESHOLD);
         return ranks;
     }
 
-    public class PageRank implements State<PageRank> {
+    static class PageRank {
 
         private double edgeCount;
         private double oldPR;
         private double newPR;
-
-        private PageRank(double edgeCount, double oldPR, double newPR) {
-            this.edgeCount=edgeCount;
-            this.oldPR=oldPR;
-            this.newPR=newPR;
-        }
 
         public PageRank(long edgeCount, double initialPR) {
             Preconditions.checkArgument(edgeCount>=0 && initialPR>=0);
@@ -263,8 +277,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             this.newPR = -1.0;
         }
 
-        public void setPr(double pr) {
-            newPR=pr;
+        public void setPr(double energy, double alpha, long numVertices) {
+            newPR = alpha * energy + (1.0 - alpha) / numVertices;
         }
 
         public double getPrFlow() {
@@ -276,30 +290,106 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             return oldPR;
         }
 
-        public double completeIteration(double alpha, long numVertices) {
-            newPR = alpha * newPR + (1.0 - alpha) / numVertices;
+        public double completeIteration() {
             double delta = Math.abs(oldPR-newPR);
             oldPR=newPR;
             newPR=0.0;
             return delta;
         }
 
-        @Override
-        public PageRank clone() {
-            return new PageRank(edgeCount,oldPR,newPR);
-        }
-
-        @Override
-        public void merge(PageRank other) {
-            if (newPR==-1.0) { //Initial state => sum up degrees
-                assert other.newPR==-1.0 && oldPR==other.oldPR;
-                edgeCount+=other.edgeCount;
-            } else {
-                assert edgeCount==other.edgeCount && oldPR==other.oldPR;
-                newPR+=other.newPR;
-            }
-        }
-
     }
+
+    @Test
+    public void singleSourceShortestPaths() throws Exception {
+        PropertyKey distance = mgmt.makePropertyKey("distance").dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
+        mgmt.makeEdgeLabel("connect").signature(distance).multiplicity(Multiplicity.MULTI).make();
+        finishSchema();
+
+        int maxDepth = 16;
+        int maxBranch = 5;
+        TitanVertex vertex = tx.addVertex();
+        //Grow a star-shaped graph around vertex which will be the single-source for this shortest path computation
+        final int numV = growVertex(vertex,0,maxDepth, maxBranch);
+        final int numE = numV-1;
+        assertEquals(numV,Iterables.size(tx.getVertices()));
+        assertEquals(numE,Iterables.size(tx.getEdges()));
+
+        clopen();
+
+        OLAPResult<Integer> distances = null;
+        final AtomicBoolean done = new AtomicBoolean(false);
+
+        while (!done.get()) {
+            done.set(true);
+            OLAPJobBuilder<Integer> builder = getOLAPBuilder(graph,Integer.class);
+
+            if (distances==null) { //First iteration
+                builder.setInitializer(new StateInitializer<Integer>() {
+                    @Override
+                    public Integer initialState() {
+                        return Integer.MAX_VALUE;
+                    }
+                });
+                builder.setInitialState(ImmutableMap.of(vertex.getID(),0));
+            } else {
+                builder.setInitialState(distances);
+            }
+            builder.setNumProcessingThreads(2);
+            builder.setStateKey("dist");
+            builder.setJob(new OLAPJob<Integer>() {
+                @Override
+                public Integer process(TitanVertex vertex) {
+                    Integer d = vertex.getProperty("dist");
+                    assertNotNull(d);
+                    Integer c = vertex.getProperty("connect");
+                    int result = c==null?d:Math.min(c,d);
+                    if (result<d) done.set(false);
+                    return result;
+                }
+            });
+            builder.addQuery().labels("connect").direction(Direction.BOTH).edges(
+             new Gather<Integer, Integer>() {
+                 @Override
+                 public Integer apply(Integer state, TitanEdge edge, Direction dir) {
+                     assertNotNull(state);
+                     if (state.intValue() == Integer.MAX_VALUE)
+                         return state;
+                     else
+                         return state + edge.<Integer>getProperty("distance");
+                 }
+             }, new Combiner<Integer>() {
+                 @Override
+                 public Integer combine(Integer m1, Integer m2) {
+                     return Math.min(m1, m2);
+                 }
+             }
+            );
+            Stopwatch w = new Stopwatch().start();
+            distances = builder.execute().get(200, TimeUnit.SECONDS);
+            System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
+            assertEquals(numV,distances.size());
+        }
+        for (Map.Entry<Long,Integer> entry : distances.entries()) {
+            int dist = entry.getValue();
+            assertTrue("Invalid distance: " + dist,dist >= 0 && dist < Integer.MAX_VALUE);
+            Vertex v = tx.getVertex(entry.getKey().longValue());
+            assertEquals(v.<Integer>getProperty("distance").intValue(),dist);
+        }
+    }
+
+    private int growVertex(TitanVertex vertex, int depth, int maxDepth, int maxBranch) {
+        vertex.setProperty("distance",depth);
+        int total=1;
+        if (depth>=maxDepth) return total;
+
+        for (int i=0;i<random.nextInt(maxBranch)+1;i++) {
+            int dist = random.nextInt(3)+1;
+            TitanVertex n = tx.addVertex();
+            n.addEdge("connect",vertex).setProperty("distance",dist);
+            total+=growVertex(n,depth+dist,maxDepth,maxBranch);
+        }
+        return total;
+    }
+
 
 }

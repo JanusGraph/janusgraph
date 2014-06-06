@@ -51,24 +51,8 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     private static final Logger log = LoggerFactory.getLogger(CassandraEmbeddedStoreManager.class);
 
     /**
-     * When non-empty, the CassandraEmbeddedStoreManager constructor will copy
-     * the value to the "cassandra.config" system property and start a
-     * backgrounded cassandra daemon thread. cassandra's static initializers
-     * will interpret the "cassandra.config" system property as a url pointing
-     * to a cassandra.yaml file.
-     * <p/>
-     * An example value of this variable is
-     * "file:///home/dalaro/titan/target/cassandra-tmp/conf/127.0.0.1/cassandra.yaml".
-     * <p/>
-     * When empty, the constructor does none of the steps described above.
-     * <p/>
-     * The constructor logic described above is also internally synchronized in
-     * order to start Cassandra at most once in a thread-safe manner. Subsequent
-     * constructor invocations (or concurrent invocations which enter the
-     * internal synchronization block after the first) with a nonempty value for
-     * this variable will behave as though an empty value was set.
-     * <p/>
-     * Value = {@value}
+     * The default value for
+     * {@link GraphDatabaseConfiguration#STORAGE_CONF_FILE}.
      */
     public static final String CASSANDRA_YAML_DEFAULT = "./conf/cassandra.yaml";
 

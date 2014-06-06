@@ -547,6 +547,7 @@ public class ManagementSystem implements TitanManagement {
             assert base instanceof TitanSchemaVertex;
             vertex = (TitanSchemaVertex)base;
         } else throw new IllegalArgumentException("Cannot change consistency of schema element: "+element);
+
         for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.CONSISTENCY_MODIFIER,Direction.OUT)) {
             edge.remove();
             edge.getVertex(Direction.IN).remove();

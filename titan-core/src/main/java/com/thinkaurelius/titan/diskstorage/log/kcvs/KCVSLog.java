@@ -296,11 +296,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public StoreTransaction openTx() throws StorageException {
-        StandardTransactionHandleConfig config;
+        StandardBaseTransactionConfig config;
         if (keyConsistentOperations) {
-            config = StandardTransactionHandleConfig.of(times,manager.storeManager.getFeatures().getKeyConsistentTxConfig());
+            config = StandardBaseTransactionConfig.of(times,manager.storeManager.getFeatures().getKeyConsistentTxConfig());
         } else {
-            config = StandardTransactionHandleConfig.of(times);
+            config = StandardBaseTransactionConfig.of(times);
         }
         return manager.storeManager.beginTransaction(config);
     }

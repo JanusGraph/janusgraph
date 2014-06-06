@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -54,8 +54,8 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
-        return new TransactionHandle(config);
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
+        return new InMemoryTransaction(config);
     }
 
     @Override
@@ -109,9 +109,9 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
         return toString();
     }
 
-    private class TransactionHandle extends AbstractStoreTransaction {
+    private class InMemoryTransaction extends AbstractStoreTransaction {
 
-        public TransactionHandle(final TransactionHandleConfig config) {
+        public InMemoryTransaction(final BaseTransactionConfig config) {
             super(config);
         }
     }

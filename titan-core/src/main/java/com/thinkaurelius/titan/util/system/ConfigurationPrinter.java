@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigNamespace;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -34,6 +35,8 @@ public class ConfigurationPrinter {
     private final PrintStream stream;
 
     public static void main(String args[]) throws FileNotFoundException {
+
+        ReflectiveConfigOptionLoader.loadOnce();
 
         final PrintStream stream;
         if (args.length == 1) {
@@ -78,7 +81,7 @@ public class ConfigurationPrinter {
 
     private String getNamespaceSectionHeader(ConfigNamespace n) {
         String fullName = ConfigElement.getPath(n);
-        return "==== " + fullName + " ====\n" + n.getDescription() + "\n";
+        return "==== " + fullName + " ====\n[role=\"font16\"]\n" + n.getDescription() + "\n\n";
     }
 
     private List<ConfigOption<?>> getSortedChildOptions(ConfigNamespace n) {

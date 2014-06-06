@@ -4,11 +4,11 @@ import java.util.Map;
 
 /**
  * The result of an {@link OLAPJob} execution against a graph. The result contains the final vertex states for the
- * vertices in the graph which can be retrieved by vertex id.
+ * vertices in the graph which can be retrieved by vertex id for iterated over like a map.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface OLAPResult<S extends State<S>> {
+public interface OLAPResult<S> {
 
     /**
      * Returns an {@link Iterable} over all final vertex states.

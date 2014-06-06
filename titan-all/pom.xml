@@ -40,7 +40,12 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hbase-096</artifactId>
+            <artifactId>titan-hbase</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hadoop</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -53,6 +58,12 @@
             <artifactId>titan-lucene</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-rexster</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -270,6 +270,15 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return types.length>0;
     }
 
+    protected final boolean hasSingleType() {
+        return types.length==1 && tx.getRelationType(types[0])!=null;
+    }
+
+    protected final RelationType getSingleType() {
+        Preconditions.checkArgument(hasSingleType());
+        return tx.getRelationType(types[0]);
+    }
+
     private boolean hasAllSingleKeys() {
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);

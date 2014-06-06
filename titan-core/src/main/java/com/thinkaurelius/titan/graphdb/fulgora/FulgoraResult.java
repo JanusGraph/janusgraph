@@ -2,18 +2,15 @@ package com.thinkaurelius.titan.graphdb.fulgora;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.olap.OLAPResult;
-import com.thinkaurelius.titan.core.olap.State;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class FulgoraResult<S extends State<S>> implements OLAPResult<S> {
-
+public class FulgoraResult<S> implements OLAPResult<S> {
 
     private NonBlockingHashMapLong<S> vertexStates;
     private final IDManager idManager;
@@ -27,35 +24,15 @@ public class FulgoraResult<S extends State<S>> implements OLAPResult<S> {
     public FulgoraResult(Map<Long,S> initialState, final IDManager idManager) {
         this(Math.max(initialState.size(), 0),idManager);
         for (Map.Entry<Long,S> entry : initialState.entrySet()) {
-            long vertexid = entry.getKey();
-            if (idManager.isPartitionedVertex(vertexid)) {
-                S state = entry.getValue();
-                for (long repId : idManager.getPartitionedVertexRepresentatives(vertexid)) {
-                    vertexStates.put(repId,state.clone());
-                }
-            } else {
-                vertexStates.put(vertexid,entry.getValue());
-            }
+            long vertexId = entry.getKey();
+            Preconditions.checkArgument(!idManager.isPartitionedVertex(vertexId) || vertexId==idManager.getCanonicalVertexId(vertexId));
+            vertexStates.put(vertexId,entry.getValue());
         }
     }
 
     void set(long vertexId, S state) {
+        Preconditions.checkArgument(!idManager.isPartitionedVertex(vertexId) || vertexId==idManager.getCanonicalVertexId(vertexId));
         vertexStates.put(vertexId,state);
-    }
-
-    void mergePartitionedVertexStates() {
-        for (long vertexid : vertexStates.keySet()) {
-            if (idManager.isPartitionedVertex(vertexid) && vertexid==idManager.getCanonicalVertexId(vertexid)) {
-                S mergedState = null;
-                for (long pid : idManager.getPartitionedVertexRepresentatives(vertexid)) {
-                    S state = vertexStates.get(pid);
-                    assert state!=null;
-                    if (mergedState==null) mergedState = state.clone();
-                    else mergedState.merge(state);
-                    vertexStates.put(pid,mergedState);
-                }
-            }
-        }
     }
 
     @Override
@@ -74,7 +51,8 @@ public class FulgoraResult<S extends State<S>> implements OLAPResult<S> {
     }
 
     @Override
-    public S get(long vertexid) {
-        return vertexStates.get(vertexid);
+    public S get(long vertexId) {
+        if (idManager.isPartitionedVertex(vertexId)) vertexId=idManager.getCanonicalVertexId(vertexId);
+        return vertexStates.get(vertexId);
     }
 }

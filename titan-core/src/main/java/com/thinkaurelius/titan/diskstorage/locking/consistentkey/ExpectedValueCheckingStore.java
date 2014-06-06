@@ -68,20 +68,26 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
         return dataStore;
     }
 
-    static StoreTransaction getBaseTx(StoreTransaction txh) {
-        Preconditions.checkNotNull(txh);
-        Preconditions.checkArgument(txh instanceof ExpectedValueCheckingTransaction);
-        return ((ExpectedValueCheckingTransaction) txh).getBaseTransaction();
+    static StoreTransaction getDataTx(StoreTransaction t) {
+        Preconditions.checkNotNull(t);
+        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
+        return ((ExpectedValueCheckingTransaction) t).getDataTransaction();
+    }
+
+    static StoreTransaction getLockTx(StoreTransaction t) {
+        Preconditions.checkNotNull(t);
+        Preconditions.checkArgument(t instanceof ExpectedValueCheckingTransaction);
+        return ((ExpectedValueCheckingTransaction) t).getLockTransaction();
     }
 
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(query, getBaseTx(txh));
+        return dataStore.getSlice(query, getDataTx(txh));
     }
 
     @Override
     public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getSlice(keys, query, getBaseTx(txh));
+        return dataStore.getSlice(keys, query, getDataTx(txh));
     }
 
     /**
@@ -94,7 +100,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         verifyLocksOnMutations(txh);
-        dataStore.mutate(key, additions, deletions, getBaseTx(txh));
+        dataStore.mutate(key, additions, deletions, getDataTx(txh));
     }
 
     void verifyLocksOnMutations(StoreTransaction txh) throws StorageException {
@@ -102,7 +108,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
             ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (!tx.isMutationStarted()) {
                 tx.mutationStarted();
-                locker.checkLocks(tx.getConsistentTransaction());
+                locker.checkLocks(getLockTx(tx));
                 tx.checkExpectedValues();
             }
         }
@@ -130,21 +136,21 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
             KeyColumn lockID = new KeyColumn(key, column);
             log.debug("Attempting to acquireLock on {} ev={}", lockID, expectedValue);
-            locker.writeLock(lockID, tx.getConsistentTransaction());
+            locker.writeLock(lockID, tx.getLockTransaction());
             tx.storeExpectedValue(this, lockID, expectedValue);
         } else {
-            dataStore.acquireLock(key, column, expectedValue, getBaseTx(txh));
+            dataStore.acquireLock(key, column, expectedValue, getDataTx(txh));
         }
     }
 
     @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getKeys(query, getBaseTx(txh));
+        return dataStore.getKeys(query, getDataTx(txh));
     }
 
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
-        return dataStore.getKeys(query, getBaseTx(txh));
+        return dataStore.getKeys(query, getDataTx(txh));
     }
 
     @Override
@@ -155,10 +161,9 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     @Override
     public void close() throws StorageException {
         dataStore.close();
-        // TODO close locker?
     }
 
     void deleteLocks(ExpectedValueCheckingTransaction tx) throws StorageException {
-        locker.deleteLocks(tx.getConsistentTransaction());
+        locker.deleteLocks(tx.getLockTransaction());
     }
 }

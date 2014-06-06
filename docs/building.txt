@@ -40,40 +40,6 @@ When adding this dependency, be sure to add the following repository to the `pom
   </snapshots>
 </repository>
 
-Building Distributions without Gollum
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-[source,bourne]
-----
-# Build and install code artifacts
-cd titan # or whatever your clone directory is named
-mvn clean install -DskipTests=true
-
-# Build and install Cassandra's test artifact
-cd titan-cassandra
-mvn clean install -Paurelius-release -Dgpg.skip=true -DskipTests=true
-cd ..
-
-# Set the current target version to a variable (make this match pom.xml's <version> tag)
-TITAN_VERSION=0.4.2-SNAPSHOT
-# Install a fake titan-site in the local Maven repository
-touch emptyfile ; zip empty.zip emptyfile
-mvn install:install-file \
-    -DgroupId=com.thinkaurelius.titan \
-    -DartifactId=titan-site \
-    -Dversion=$TITAN_VERSION \
-    -Dclassifier=htdocs \
-    -Dpackaging=zip \
-    -Dfile=empty.zip
-rm empty.zip
-
-# Build distributions *without documentation* -- not suitable for release
-cd titan-dist
-mvn clean install -Paurelius-release -DskipTests=true -Dgpg.skip=true
-----
-
-It's preferable to install gollum-site through rubygems, if possible, before building the release distributions, but this should work if you don't want to install gollum-site.
-
 FAQs
 ~~~~
 

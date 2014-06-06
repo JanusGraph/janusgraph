@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.olap;
 
 import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
-import com.thinkaurelius.titan.core.olap.State;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.fulgora.FulgoraBuilder;
 
@@ -10,7 +9,7 @@ import com.thinkaurelius.titan.graphdb.fulgora.FulgoraBuilder;
  */
 public abstract class FulgoraOLAPTest extends OLAPTest {
 
-    protected <S extends State<S>> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz) {
+    protected <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz) {
         return new FulgoraBuilder<S>(graph);
     }
 

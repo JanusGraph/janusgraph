@@ -13,8 +13,9 @@
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
-        <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
         <top.level.basedir>${project.basedir}/..</top.level.basedir>
+
+        <!-- Variables for integration testing on release-candidate archive files -->
         <test.expect.dir>${project.build.directory}/test-classes</test.expect.dir>
         <test.zipfile.path>${project.build.directory}/titan-${project.version}.zip</test.zipfile.path>
 
@@ -26,48 +27,23 @@
         <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
         <htmlsingle.output.dir>${project.basedir}/target/docs/single</htmlsingle.output.dir>
         <htmlchunk.output.dir>${project.basedir}/target/docs/chunk</htmlchunk.output.dir>
+
+        <!-- RPM/DEB packaging -->
+        <pkg.release>1</pkg.release>
+        <pkgtools.dir>${project.basedir}/..</pkgtools.dir>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>titan-berkeleyje</artifactId>
+            <artifactId>titan-all</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-cassandra</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-es</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-hbase</artifactId>
-            <version>${project.version}</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-client</artifactId>
-            <version>0.96.1.1-hadoop2</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-lucene</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>titan-rexster</artifactId>
-            <version>${project.version}</version>
+            <version>0.98.2-hadoop2</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -192,19 +168,46 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
+                    <!-- This started out as an exec:java execution instead of exec:exec,
+                         but exec:java does something weird to the classpath that breaks
+                         reflections-based ConfigOption loading.  The classpath property
+                         in particular is just /usr/share/maven/boot/plexus-classworlds-2.x.jar
+                         on my system, and that seems to confuse reflections, at least in
+                         the way ReflectiveConfigOptionLoader uses it.
+
+                         Forking a separate JVM (which exec:exec does but exec:java cant do)
+                         makes these classpath problems go away.
+                    -->
                     <execution>
                         <id>generate-config-key-listing</id>
                         <phase>generate-resources</phase>
                         <goals>
-                            <goal>java</goal>
+                            <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <mainClass>com.thinkaurelius.titan.util.system.ConfigurationPrinter</mainClass>
+                            <executable>java</executable>
                             <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>com.thinkaurelius.titan.util.system.ConfigurationPrinter</argument>
                                 <argument>${asciidoc.output.dir}/listings/configtable.txt</argument>
                             </arguments>
                         </configuration>
                     </execution>
+                   <!-- Dump gremlin.sh's default import list to a file -->
+                   <execution>
+                       <id>generate-titan-gremlin-imports</id>
+                       <phase>prepare-package</phase>
+                       <goals>
+                           <goal>java</goal>
+                       </goals>
+                       <configuration>
+                           <mainClass>com.thinkaurelius.titan.tinkerpop.gremlin.ConsoleSetup</mainClass>
+                           <arguments>
+                               <argument>${project.build.directory}/imports.properties</argument>
+                           </arguments>
+                       </configuration>
+                   </execution>
                 </executions>
             </plugin>
 
@@ -338,6 +341,28 @@
                     </execution>
                 </executions>
             </plugin>
+
+           <!-- Load gremlin.sh's default import list from a file: we're going to 
+               write this into rexster's configuration later with a template -->
+           <plugin>
+               <groupId>org.codehaus.mojo</groupId>
+               <artifactId>properties-maven-plugin</artifactId>
+               <executions>
+                   <execution>
+                       <id>load-titan-gremlin-imports</id>
+                       <phase>prepare-package</phase>
+                       <goals>
+                           <goal>read-project-properties</goal>
+                       </goals>
+                       <configuration>
+                           <files>
+                               <file>${project.build.directory}/imports.properties</file>
+                           </files>
+                       </configuration>
+                   </execution>
+               </executions>
+           </plugin>
+
 
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -715,41 +740,6 @@
                                 </configuration>
                             </execution>
         
-                            <!-- Dump gremlin.sh's default import list to a file -->
-                            <execution>
-                                <id>generate-titan-gremlin-imports</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>java</goal>
-                                </goals>
-                                <configuration>
-                                    <mainClass>com.thinkaurelius.titan.tinkerpop.gremlin.ConsoleSetup</mainClass>
-                                    <arguments>
-                                        <argument>${project.build.directory}/imports.properties</argument>
-                                    </arguments>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- Load gremlin.sh's default import list from a file: we're going to 
-                        write this into rexster's configuration later with a template -->
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>properties-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>load-titan-gremlin-imports</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>read-project-properties</goal>
-                                </goals>
-                                <configuration>
-                                    <files>
-                                        <file>${project.build.directory}/imports.properties</file>
-                                    </files>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
 

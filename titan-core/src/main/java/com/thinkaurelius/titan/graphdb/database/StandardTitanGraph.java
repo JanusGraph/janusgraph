@@ -440,7 +440,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
-                IndexTransaction itx = mutator.getIndexTransactionHandle(update.getIndex().getBackingIndexName());
+                IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((ExternalIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
                     itx.add(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());

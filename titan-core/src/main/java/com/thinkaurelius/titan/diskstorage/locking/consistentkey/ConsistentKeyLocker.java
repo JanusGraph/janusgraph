@@ -498,7 +498,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint commitTime) throws StorageException {
-        StandardTransactionHandleConfig newCfg = new StandardTransactionHandleConfig.Builder(tx.getConfiguration())
+        StandardBaseTransactionConfig newCfg = new StandardBaseTransactionConfig.Builder(tx.getConfiguration())
                .commitTime(commitTime).build();
         return manager.beginTransaction(newCfg);
     }
