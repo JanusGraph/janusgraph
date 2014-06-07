@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;

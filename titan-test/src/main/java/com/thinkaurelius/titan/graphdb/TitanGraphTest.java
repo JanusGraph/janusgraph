@@ -29,6 +29,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
@@ -1600,6 +1601,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 u1.addEdge("spouse",u2);
             }
         });
+
+        //######### TRY INVALID CONSISTENCY
+        try {
+            //Fork does not apply to constrained types
+            mgmt.setConsistency(mgmt.getPropertyKey("name"),ConsistencyModifier.FORK);
+            fail();
+        } catch (IllegalArgumentException e) {}
     }
 
     /**
@@ -1631,9 +1639,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
     }
-
-
-
 
    /* ==================================================================================
                             VERTEX CENTRIC QUERIES
@@ -2093,7 +2098,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 PROPERTY, 2*numV/10, 1, new boolean[]{true,true},weight,Order.ASC);
         evaluateQuery(v.query().keys(name.getName()).interval(weight, 1.1, 2.2).orderBy(weight,Order.DESC).limit(numV/10),
                 PROPERTY, numV/10, 1, new boolean[]{true,false},weight,Order.DESC);
-        evaluateQuery(v.query().keys(name.getName()).interval(time,Cmp.EQUAL,5).orderBy(weight,Order.DESC),
+        evaluateQuery(v.query().keys(name.getName()).has(time,Cmp.EQUAL,5).orderBy(weight,Order.DESC),
                 PROPERTY, 1, 1, new boolean[]{false,false},weight,Order.DESC);
         evaluateQuery(v.query().keys(name.getName()),
                 PROPERTY, numV, 1, new boolean[]{true,true});
@@ -2240,6 +2245,94 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 RELATION, numV*4, 1 , new boolean[]{false,true});
 
         //--------------
+
+        //Update in transaction
+        for (TitanProperty p : v.getProperties(name)) {
+            if (p.<Long>getProperty(time)<(numV/2)) p.remove();
+        }
+        for (TitanEdge e : v.getEdges()) {
+            if (e.<Long>getProperty(time)<(numV/2)) e.remove();
+        }
+        ns = new TitanVertex[numV*3/2];
+        for (int i=numV;i<numV*3/2;i++) {
+            double w = (i*0.5)%5;
+            long t = i;
+            TitanProperty p = v.addProperty(name,"v"+i);
+            p.setProperty(weight,w);
+            p.setProperty(time,t);
+
+            ns[i]=tx.addVertex();
+            for (EdgeLabel label : new EdgeLabel[]{connect,child,link}) {
+                TitanEdge e = v.addEdge(label,ns[i]);
+                e.setProperty(weight,w);
+                e.setProperty(time,t);
+            }
+        }
+
+        //######### UPDATED QUERIES ##########
+
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.GREATER_THAN,3.6),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV/2-10,numV/2+10),
+                PROPERTY, 10, 1, new boolean[]{false,true});
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV/2-10,numV/2+10).orderBy(weight,Order.DESC),
+                PROPERTY, 10, 1, new boolean[]{false,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV,numV+10).limit(5),
+                PROPERTY, 5, 1, new boolean[]{false,true});
+
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,5),
+                EDGE, 0, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,numV+5),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,10,20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 0, 1 , new boolean[]{true,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,numV+10,numV+20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,false}, weight, Order.DESC);
+
+
+        evaluateQuery(v.query(),
+                RELATION, numV*4, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().direction(OUT),
+                RELATION, numV*4, 1 , new boolean[]{false,true});
+
+        //######### END UPDATED QUERIES ##########
+
+        newTx();
+
+        weight = tx.getPropertyKey("weight");
+        time = tx.getPropertyKey("time");
+
+        name = tx.getPropertyKey("name");
+        connect = tx.getEdgeLabel("connect");
+        child = tx.getEdgeLabel("parent");
+        link = tx.getEdgeLabel("link");
+        //######### UPDATED QUERIES (copied from above) ##########
+
+        evaluateQuery(v.query().keys(name.getName()).has(weight,Cmp.GREATER_THAN,3.6),
+                PROPERTY, 2*numV/10, 1, new boolean[]{true,true});
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV/2-10,numV/2+10),
+                PROPERTY, 10, 1, new boolean[]{false,true});
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV/2-10,numV/2+10).orderBy(weight,Order.DESC),
+                PROPERTY, 10, 1, new boolean[]{false,false},weight,Order.DESC);
+        evaluateQuery(v.query().keys(name.getName()).interval(time,numV,numV+10).limit(5),
+                PROPERTY, 5, 1, new boolean[]{false,true});
+
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,5),
+                EDGE, 0, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).has(time,Cmp.EQUAL,numV+5),
+                EDGE, 1, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,10,20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 0, 1 , new boolean[]{true,false}, weight, Order.DESC);
+        evaluateQuery(v.query().labels(child.getName()).direction(OUT).interval(time,numV+10,numV+20).orderBy(weight,Order.DESC).limit(5),
+                EDGE, 5, 1 , new boolean[]{true,false}, weight, Order.DESC);
+
+
+        evaluateQuery(v.query(),
+                RELATION, numV*4, 1 , new boolean[]{true,true});
+        evaluateQuery(v.query().direction(OUT),
+                RELATION, numV*4, 1 , new boolean[]{false,true});
+
+        //######### END UPDATED QUERIES ##########
 
     }
 
@@ -2474,8 +2567,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(edge1.isUnique());
         assertFalse(edge2.isUnique());
         assertEquals("prop1",prop1.getName());
-        assertNull(prop2.getParametersFor(weight));
-        assertNull(prop2.getParametersFor(text));
         assertTrue(Vertex.class.isAssignableFrom(vertex3.getIndexedElement()));
         assertTrue(TitanProperty.class.isAssignableFrom(prop1.getIndexedElement()));
         assertTrue(Edge.class.isAssignableFrom(edge2.getIndexedElement()));
@@ -2522,8 +2613,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(edge1.isUnique());
         assertFalse(edge2.isUnique());
         assertEquals("prop1",prop1.getName());
-        assertNull(prop2.getParametersFor(weight));
-        assertNull(prop2.getParametersFor(text));
         assertTrue(Vertex.class.isAssignableFrom(vertex3.getIndexedElement()));
         assertTrue(TitanProperty.class.isAssignableFrom(prop1.getIndexedElement()));
         assertTrue(Edge.class.isAssignableFrom(edge2.getIndexedElement()));
@@ -2700,6 +2789,104 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 ElementCategory.VERTEX,1,new boolean[]{true,sorted},vertex3.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,"v1").has("label",org.getName()),
                 ElementCategory.VERTEX,1,new boolean[]{false,sorted},vertex3.getName());
+
+        //Update in transaction
+        for (int i=0;i<numV/2;i++) {
+            TitanVertex v = tx.getVertex(ns[i].getID());
+            v.remove();
+        }
+        for (int i=numV;i<numV*3/2;i++) {
+            //Same construction code as above
+            TitanVertex v=tx.addVertex(i%2==0?person:org);
+            TitanProperty p1 = ns[i].addProperty(name,"v"+i);
+            TitanProperty p2 = ns[i].addProperty(name,"u"+(i%5));
+
+            double w = (i*0.5)%5;
+            long t = i;
+            String txt = strs[i%(strs.length)];
+
+            ns[0].setProperty(weight,w);
+            ns[0].setProperty(time,t);
+            ns[0].setProperty(text,txt);
+
+            for (TitanProperty p : new TitanProperty[]{p1,p2}) {
+                p.setProperty(weight,w);
+                p.setProperty(time,t);
+                p.setProperty(text,txt);
+            }
+
+            ns[i]=tx.addVertex();
+            TitanVertex u = ns[(i>0?i-1:i)]; //previous or self-loop
+            for (EdgeLabel label : new EdgeLabel[]{connect,related}) {
+                TitanEdge e = ns[i].addEdge(label,u);
+                e.setProperty(weight,(w++)%5);
+                e.setProperty(time,t);
+                e.setProperty(text,txt);
+            }
+        }
+
+
+        //######### UPDATED QUERIES ##########
+
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,10).has(weight,Cmp.EQUAL,0),
+                ElementCategory.EDGE,0,new boolean[]{true,sorted},edge1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+10).has(weight,Cmp.EQUAL,0),
+                ElementCategory.EDGE,1,new boolean[]{true,sorted},edge1.getName());
+        evaluateQuery(tx.query().has(text,Cmp.EQUAL,strs[0]).has("label",connect.getName()).limit(10),
+                ElementCategory.EDGE,10,new boolean[]{true,sorted},edge2.getName());
+        evaluateQuery(tx.query().has(weight,Cmp.EQUAL,1.5),
+                ElementCategory.EDGE,numV/10*2,new boolean[]{false,sorted});
+
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,20),
+                ElementCategory.PROPERTY,0,new boolean[]{true,sorted},prop1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+20),
+                ElementCategory.PROPERTY,2,new boolean[]{true,sorted},prop1.getName());
+
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,30).has("label",person.getName()),
+                ElementCategory.VERTEX,0,new boolean[]{true,sorted},vertex1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+30).has("label",person.getName()),
+                ElementCategory.VERTEX,1,new boolean[]{true,sorted},vertex1.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,"u1"),
+                ElementCategory.VERTEX,numV/5,new boolean[]{true,sorted},vertex3.getName());
+
+
+        //######### END UPDATED QUERIES ##########
+
+        newTx();
+        weight = tx.getPropertyKey("weight");
+        time = tx.getPropertyKey("time");
+        text = tx.getPropertyKey("text");
+
+        name = tx.getPropertyKey("name");
+        connect = tx.getEdgeLabel("connect");
+        related = tx.getEdgeLabel("related");
+
+        person = tx.getVertexLabel("person");
+        org = tx.getVertexLabel("organization");
+
+        //######### UPDATED QUERIES (copied from above) ##########
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,10).has(weight,Cmp.EQUAL,0),
+                ElementCategory.EDGE,0,new boolean[]{true,sorted},edge1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+10).has(weight,Cmp.EQUAL,0),
+                ElementCategory.EDGE,1,new boolean[]{true,sorted},edge1.getName());
+        evaluateQuery(tx.query().has(text,Cmp.EQUAL,strs[0]).has("label",connect.getName()).limit(10),
+                ElementCategory.EDGE,10,new boolean[]{true,sorted},edge2.getName());
+        evaluateQuery(tx.query().has(weight,Cmp.EQUAL,1.5),
+                ElementCategory.EDGE,numV/10*2,new boolean[]{false,sorted});
+
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,20),
+                ElementCategory.PROPERTY,0,new boolean[]{true,sorted},prop1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+20),
+                ElementCategory.PROPERTY,2,new boolean[]{true,sorted},prop1.getName());
+
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,30).has("label",person.getName()),
+                ElementCategory.VERTEX,0,new boolean[]{true,sorted},vertex1.getName());
+        evaluateQuery(tx.query().has(time,Cmp.EQUAL,numV+30).has("label",person.getName()),
+                ElementCategory.VERTEX,1,new boolean[]{true,sorted},vertex1.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,"u1"),
+                ElementCategory.VERTEX,numV/5,new boolean[]{true,sorted},vertex3.getName());
+
+        //*** INIVIDUAL USE CASE TESTS ******
 
         newTx();
         //Check that index enforces uniqueness on edges
@@ -3071,23 +3258,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         e = (TitanEdge)Iterables.getOnlyElement(n3.getEdges(Direction.OUT,"knows"));
         assertEquals(222,e.getProperty(id));
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

@@ -540,8 +540,11 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(consistency!=null);
         if (getConsistency(element)==consistency) return; //Already got the right consistency
         TitanSchemaVertex vertex;
-        if (element instanceof RelationType) vertex = (RelationTypeVertex)element;
-        else if (element instanceof TitanGraphIndex) {
+        if (element instanceof RelationType) {
+            vertex = (RelationTypeVertex)element;
+            Preconditions.checkArgument(consistency!=ConsistencyModifier.FORK || !((RelationTypeVertex)vertex).getMultiplicity().isConstrained(),
+                    "Cannot apply FORK consistency mode to constraint relation type: %s",vertex.getName());
+        } else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
             if (index.isExternalIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
             assert index instanceof IndexTypeWrapper;

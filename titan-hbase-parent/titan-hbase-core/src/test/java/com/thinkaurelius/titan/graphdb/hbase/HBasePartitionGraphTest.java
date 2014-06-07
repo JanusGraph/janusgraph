@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
-import org.apache.commons.configuration.Configuration;
+import com.thinkaurelius.titan.graphdb.TitanOperationCountingTest;
+import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.io.IOException;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class HBaseGraphMetricsTest extends TitanNonTransactionalGraphMetricsTest {
+public class HBasePartitionGraphTest extends TitanPartitionGraphTest {
 
     @Override
     public WriteConfiguration getBaseConfiguration() {

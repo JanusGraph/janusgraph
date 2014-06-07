@@ -3,15 +3,14 @@ package com.thinkaurelius.titan.graphdb.berkeleyje;
 import com.thinkaurelius.titan.BerkeleyStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.SpeedComparisonPerformanceTest;
+import com.thinkaurelius.titan.graphdb.SpeedComparisonBenchmark;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class BerkeleySpeedComparisonPerformanceTest extends SpeedComparisonPerformanceTest {
+public class BerkeleySpeedComparisonBenchmark extends SpeedComparisonBenchmark {
 
     @Override
     public WriteConfiguration getConfiguration() {

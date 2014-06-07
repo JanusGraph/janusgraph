@@ -71,7 +71,6 @@ public class Backend implements LockerProvider {
 
     public static final String ID_STORE_NAME = "titan_ids";
 
-    public static final String TITAN_BACKEND_VERSION = "titan-version";
     public static final String METRICS_MERGED_STORE = "stores";
     public static final String METRICS_MERGED_CACHE = "caches";
     public static final String METRICS_CACHE_SUFFIX = ".cache";

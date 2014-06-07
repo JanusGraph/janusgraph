@@ -244,7 +244,13 @@ public abstract class TitanGraphBaseTest {
     }
 
     public TitanGraphIndex getExternalIndex(Class<? extends Element> clazz, String backingIndex) {
-        String indexName = (Vertex.class.isAssignableFrom(clazz)?"v":"e")+backingIndex;
+        String prefix;
+        if (Vertex.class.isAssignableFrom(clazz)) prefix = "v";
+        else if (Edge.class.isAssignableFrom(clazz)) prefix = "e";
+        else if (TitanProperty.class.isAssignableFrom(clazz)) prefix = "p";
+        else throw new AssertionError(clazz.toString());
+
+        String indexName = prefix+backingIndex;
         TitanGraphIndex index = mgmt.getGraphIndex(indexName);
         if (index==null) {
             index = mgmt.buildIndex(indexName,clazz).buildExternalIndex(backingIndex);
@@ -305,6 +311,10 @@ public abstract class TitanGraphBaseTest {
 
     public static TitanVertex getVertex(TitanTransaction tx, PropertyKey key, Object value) {
         return Iterables.getOnlyElement(tx.getVertices(key,value),null);
+    }
+
+    public static double round(double d) {
+        return Math.round(d*1000.0)/1000.0;
     }
 
 }

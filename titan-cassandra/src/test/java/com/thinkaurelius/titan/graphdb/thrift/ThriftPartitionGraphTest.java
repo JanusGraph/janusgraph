@@ -2,11 +2,11 @@ package com.thinkaurelius.titan.graphdb.thrift;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.TitanNonTransactionalGraphMetricsTest;
+import com.thinkaurelius.titan.graphdb.TitanOperationCountingTest;
+import com.thinkaurelius.titan.graphdb.TitanPartitionGraphTest;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-public class ThriftGraphMetricsTest extends TitanNonTransactionalGraphMetricsTest {
+public class ThriftPartitionGraphTest extends TitanPartitionGraphTest {
 
     @BeforeClass
     public static void beforeClass() {

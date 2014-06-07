@@ -16,11 +16,12 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 
 /**
+ * TODO: Consolidate whatever is useful in here into other benchmark tests
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 @Category({ PerformanceTests.class })
-public abstract class SpeedComparisonPerformanceTest extends TitanGraphBaseTest {
+public abstract class SpeedComparisonBenchmark extends TitanGraphBaseTest {
 
     private static final int numVertices = 2000;
     private static final int edgesPerVertex = 400;

@@ -4,6 +4,7 @@ import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Decimal;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
@@ -17,6 +18,7 @@ import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
+import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 import org.junit.Ignore;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -41,18 +44,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanEventualGraphTest.class);
 
-//    public void clopen(Map<String, ? extends Object> settings) {
-//        super.close();
-//
-//        BaseConfiguration newConfig = new BaseConfiguration();
-//        newConfig.copy(config);
-//        for (Map.Entry<String,? extends Object> entry : settings.entrySet())
-//            newConfig.addProperty(entry.getKey(),entry.getValue());
-//
-//        graph = (StandardTitanGraph) TitanFactory.open(newConfig);
-//        tx = graph.newTransaction();
-//
-//    }
+    @Test
+    public void verifyEligibility() {
+        Preconditions.checkArgument(!graph.getConfiguration().getBackend().getStoreFeatures().hasTxIsolation(),
+                "This test suite only applies to eventually consistent data stores");
+    }
 
     @Test
     public void concurrentIndexTest() {
@@ -78,6 +74,9 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     }
 
+    /**
+     * Tests the correct interpretation of the commit time and that timestamps can be read
+     */
     @Test
     public void testTimestampSetting() {
         clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS,"edgestore"),true,
@@ -175,11 +174,17 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         assertEquals("15", afterTx5.getProperty(age));
     }
 
+    /**
+     * Tests that batch-loading will ignore locks
+     */
     @Test
     public void testBatchLoadingNoLock() {
         testBatchLoadingLocking(true);
     }
 
+    /**
+     * Tests that without batch-loading locks will be correctly applied (and therefore the tx fails)
+     */
     @Test
     public void testLockException() {
         try {
@@ -191,7 +196,6 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
             assertEquals(UnsupportedOperationException.class,cause.getClass());
         }
     }
-
 
     public void testBatchLoadingLocking(boolean batchloading) {
         PropertyKey uid = makeKey("uid",Long.class);
@@ -223,303 +227,134 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         }
     }
 
+    /**
+     * Tests that consistency modes are correctly interpreted in the absence of locks (or tx isolation)
+     */
     @Test
-    @Ignore //TODO: Fix up an include
-    public void testCacheConcurrency() throws InterruptedException {
-        metricsPrefix = "evgt1";
-        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-                option(GraphDatabaseConfiguration.DB_CACHE_TIME),0,
-                option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
-                option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
-                option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
-                option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
-        clopen(newConfig);
-        final String prop = "property";
-        graph.makePropertyKey(prop).dataType(Integer.class).make();
+    public void testConsistencyModifier() throws InterruptedException {
+        PropertyKey sig = makeKey("sig",Integer.class);
+        PropertyKey weight = makeKey("weight",Decimal.class);
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
+        PropertyKey value = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        PropertyKey valuef = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        mgmt.setConsistency(valuef,ConsistencyModifier.FORK);
 
-        final int numV = 100;
-        final long[] vids = new long[numV];
-        for (int i=0;i<numV;i++) {
-            TitanVertex v = graph.addVertex(null);
-            v.setProperty(prop,0);
-            graph.commit();
-            vids[i]=v.getID();
+        EdgeLabel em = mgmt.makeEdgeLabel("em").multiplicity(Multiplicity.MULTI).make();
+        EdgeLabel emf = mgmt.makeEdgeLabel("emf").multiplicity(Multiplicity.MULTI).make();
+        mgmt.setConsistency(emf,ConsistencyModifier.FORK);
+        EdgeLabel es = mgmt.makeEdgeLabel("es").multiplicity(Multiplicity.SIMPLE).make();
+        EdgeLabel o2o = mgmt.makeEdgeLabel("o2o").multiplicity(Multiplicity.ONE2ONE).make();
+        EdgeLabel o2m = mgmt.makeEdgeLabel("o2m").multiplicity(Multiplicity.ONE2MANY).make();
+
+        finishSchema();
+
+        TitanVertex u = tx.addVertex(), v = tx.addVertex();
+        TitanRelation[] rs = new TitanRelation[9];
+        final int txid = 1;
+        rs[0]=sign(v.addProperty("weight",5.0),txid);
+        rs[1]=sign(v.addProperty("name","John"),txid);
+        rs[2]=sign(v.addProperty("value",2),txid);
+        rs[3]=sign(v.addProperty("valuef",2),txid);
+
+        rs[6]=sign(v.addEdge("es",u),txid);
+        rs[7]=sign(v.addEdge("o2o",u),txid);
+        rs[8]=sign(v.addEdge("o2m",u),txid);
+        rs[4]=sign(v.addEdge("em",u),txid);
+        rs[5]=sign(v.addEdge("emf",u),txid);
+
+        newTx();
+        long vid = v.getID(), uid = u.getID();
+
+        TitanTransaction tx1 = graph.newTransaction();
+        TitanTransaction tx2 = graph.newTransaction();
+        final int wintx = 20;
+        processTx(tx1,wintx-10,vid,uid);
+        processTx(tx2,wintx,vid,uid);
+        tx1.commit();
+        Thread.sleep(5);
+        tx2.commit(); //tx2 should win using time-based eventual consistency
+
+        newTx();
+        v = tx.getVertex(vid);
+        assertEquals(6.0,v.getProperty("weight"));
+        TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
+        assertEquals(wintx,p.getProperty("sig"));
+        p = Iterables.getOnlyElement(v.getProperties("name"));
+        assertEquals("Bob",p.getValue());
+        assertEquals(wintx,p.getProperty("sig"));
+        p = Iterables.getOnlyElement(v.getProperties("value"));
+        assertEquals(rs[2].getID(),p.getID());
+        assertEquals(wintx,p.getProperty("sig"));
+        assertEquals(2,Iterables.size(v.getProperties("valuef")));
+        for (TitanProperty pp : v.getProperties("valuef")) {
+            assertNotEquals(rs[3].getID(),pp.getID());
+            assertEquals(2,pp.getValue());
         }
-        clopen(newConfig);
-        resetEdgeCacheCounts();
 
-        final AtomicBoolean[] precommit = new AtomicBoolean[numV];
-        final AtomicBoolean[] postcommit = new AtomicBoolean[numV];
-        for (int i=0;i<numV;i++) {
-            precommit[i]=new AtomicBoolean(false);
-            postcommit[i]=new AtomicBoolean(false);
+        TitanEdge e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"es"));
+        assertEquals(wintx,e.getProperty("sig"));
+        assertNotEquals(rs[6].getID(),e.getID());
+        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2o"));
+        assertEquals(wintx,e.getProperty("sig"));
+        assertEquals(rs[7].getID(),e.getID());
+        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2m"));
+        assertEquals(wintx,e.getProperty("sig"));
+        assertNotEquals(rs[8].getID(),e.getID());
+        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"em"));
+        assertEquals(wintx,e.getProperty("sig"));
+        assertEquals(rs[4].getID(),e.getID());
+        for (Edge ee : v.getEdges(Direction.OUT,"valuef")) {
+            assertNotEquals(rs[5].getID(),ee.getId());
+            assertEquals(uid,ee.getVertex(Direction.IN).getId());
         }
-        final AtomicInteger lookups = new AtomicInteger(0);
-        final Random random = new Random();
-        final int updateSleepTime = 40;
-        final int readSleepTime = 2;
-        final int numReads = Math.round((numV*updateSleepTime)/readSleepTime*2.0f);
-
-        Thread reader = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                int reads = 0;
-                while (reads<numReads) {
-                    final int pos = random.nextInt(vids.length);
-                    long vid = vids[pos];
-                    TitanVertex v = graph.getVertex(vid);
-                    assertNotNull(v);
-                    boolean postCommit = postcommit[pos].get();
-                    Integer value = v.getProperty(prop);
-                    lookups.incrementAndGet();
-                    assertNotNull("On pos ["+pos+"]",value);
-                    if (!precommit[pos].get()) assertEquals(0,value.intValue());
-                    else if (postCommit) assertEquals(1,value.intValue());
-                    graph.commit();
-                    try {
-                        Thread.sleep(readSleepTime);
-                    } catch (InterruptedException e) {
-                        return;
-                    }
-                    reads++;
-                }
-            }
-        });
-        reader.start();
-
-        Thread updater = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i=0;i<numV;i++) {
-                    try {
-                        TitanVertex v = graph.getVertex(vids[i]);
-                        v.setProperty(prop,1);
-                        precommit[i].set(true);
-                        graph.commit();
-                        postcommit[i].set(true);
-                        Thread.sleep(updateSleepTime);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException("Unexpected interruption",e);
-                    }
-                }
-            }
-        });
-        updater.start();
-        updater.join();
-//        reader.start();
-        reader.join();
-
-        System.out.println("Retrievals: " + getEdgeCacheRetrievals());
-        System.out.println("Hits: " + (getEdgeCacheRetrievals()-getEdgeCacheMisses()));
-        System.out.println("Misses: " + getEdgeCacheMisses());
-        assertEquals(numReads,lookups.get());
-        assertEquals(2*numReads+2*numV + 2, getEdgeCacheRetrievals());
-        int minMisses = 4*numV+2;
-        assertTrue("Min misses ["+minMisses+"] vs actual ["+getEdgeCacheMisses()+"]",minMisses<=getEdgeCacheMisses() && 4*minMisses>=getEdgeCacheMisses());
     }
 
 
-    @Test
-    public void testCachePerformance() {
-        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-                              option(GraphDatabaseConfiguration.DB_CACHE_TIME),0};
-        clopen(newConfig);
-
-        int numV = 1000;
-
-        TitanVertex previous = null;
-        for (int i=0;i<numV;i++) {
-            TitanVertex v = graph.addVertex(null);
-            v.setProperty("name", "v" + i);
-            if (previous!=null)
-                v.addEdge("knows",previous);
-            previous = v;
+    private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
+        TitanVertex v = tx.getVertex(vid);
+        TitanVertex u = tx.getVertex(uid);
+        assertEquals(5.0,v.getProperty("weight"));
+        TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
+        assertEquals(1,p.getProperty("sig"));
+        sign(v.addProperty("weight",6.0),txid);
+        p = Iterables.getOnlyElement(v.getProperties("name"));
+        assertEquals(1,p.getProperty("sig"));
+        assertEquals("John",p.getValue());
+        p.remove();
+        sign(v.addProperty("name","Bob"),txid);
+        for (String pkey : new String[]{"value","valuef"}) {
+            p = Iterables.getOnlyElement(v.getProperties(pkey));
+            assertEquals(1,p.getProperty("sig"));
+            assertEquals(2,p.getValue());
+            sign(p,txid);
         }
-        graph.commit();
-        long vertexId = previous.getID();
-        assertEquals(numV, Iterables.size(graph.getVertices()));
 
-        clopen(newConfig);
-
-        double timecoldglobal=0, timewarmglobal=0,timehotglobal=0;
-
-        int outerRepeat = 20;
-        int measurements = 10;
-        assertTrue(measurements<outerRepeat);
-        int innerRepeat = 2;
-        for (int c=0;c<outerRepeat;c++) {
-
-            double timecold = testAllVertices(vertexId,numV);
-
-            double timewarm = 0;
-            double timehot = 0;
-            for (int i = 0;i<innerRepeat;i++) {
-                graph.commit();
-                timewarm += testAllVertices(vertexId,numV);
-                for (int j=0;j<innerRepeat;j++) {
-                    timehot += testAllVertices(vertexId,numV);
-                }
-            }
-            timewarm = timewarm / innerRepeat;
-            timehot = timehot / (innerRepeat*innerRepeat);
-
-            if (c>=(outerRepeat-measurements)) {
-                timecoldglobal += timecold;
-                timewarmglobal += timewarm;
-                timehotglobal  += timehot;
-            }
-//            System.out.println(timecold + "\t" + timewarm + "\t" + timehot);
-            clopen(newConfig);
+        TitanEdge e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"es"));
+        assertEquals(1,e.getProperty("sig"));
+        e.remove();
+        sign(v.addEdge("es",u),txid);
+        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2o"));
+        assertEquals(1,e.getProperty("sig"));
+        sign(e,txid);
+        e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"o2m"));
+        assertEquals(1,e.getProperty("sig"));
+        e.remove();
+        sign(v.addEdge("o2m",u),txid);
+        for (String label : new String[]{"em","emf"}) {
+            e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,label));
+            assertEquals(1,e.getProperty("sig"));
+            sign(e,txid);
         }
-        timecoldglobal = timecoldglobal/measurements;
-        timewarmglobal = timewarmglobal/measurements;
-        timehotglobal = timehotglobal/measurements;
-
-        System.out.println(round(timecoldglobal) + "\t" + round(timewarmglobal) + "\t" + round(timehotglobal));
-        assertTrue(timecoldglobal + " vs " + timewarmglobal, timecoldglobal>timewarmglobal*2);
-        assertTrue(timewarmglobal + " vs " + timehotglobal, timewarmglobal>timehotglobal*1.2);
-    }
-
-    private double testAllVertices(long vid, int numV) {
-        long start = System.nanoTime();
-        Vertex v = graph.getVertex(vid);
-        for (int i=1; i<numV; i++) {
-            v = Iterables.getOnlyElement(v.getVertices(Direction.OUT, "knows"));
-        }
-        return ((System.nanoTime()-start)/1000000.0);
-    }
-
-    @Test
-    @Ignore //TODO: Ignore for now until everything is stable - then do the counting
-    public void testCacheExpirationTimeOut() throws InterruptedException {
-        testCacheExpiration(4000,6000);
-    }
-
-    @Test
-    @Ignore //TODO: Ignore for now until everything is stable - then do the counting
-    public void testCacheExpirationNoTimeOut() throws InterruptedException {
-        testCacheExpiration(0,5000);
     }
 
 
-    public void testCacheExpiration(final int timeOutTime, final int waitTime) throws InterruptedException {
-        Preconditions.checkArgument(timeOutTime==0 || timeOutTime<waitTime);
-        metricsPrefix="evgt2";
-        final int cleanTime = 400;
-        final int numV = 10;
-        final int edgePerV = 10;
-        Object[] newConfig = {option(GraphDatabaseConfiguration.DB_CACHE),true,
-                              option(GraphDatabaseConfiguration.DB_CACHE_TIME),timeOutTime,
-                              option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),cleanTime,
-                              option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                              option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
-                              option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
-        clopen(newConfig);
-        long[] vs = new long[numV];
-        for (int i=0;i<numV;i++) {
-            TitanVertex v = graph.addVertex(null);
-            v.setProperty("name", "v" + i);
-            for (int t=0;t<edgePerV;t++) {
-                TitanEdge e = v.addEdge("knows",v);
-                e.setProperty("time",t);
-            }
-            graph.commit();
-            vs[i]=v.getID();
-        }
-        clopen(newConfig);
-        resetEdgeCacheCounts();
-        int labelcalls = 1; //getting "knows" definition
-        int calls = numV*2; // numV * (vertex existence + loading edges)
-        for (int i=0;i<numV;i++) assertEquals(edgePerV,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls+labelcalls, calls+labelcalls);
-        graph.commit();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls * 2+labelcalls, calls+labelcalls);
-        //Nothing changes without commit => hitting transactional caches
-        for (int i=0;i<numV;i++) assertEquals(edgePerV,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls * 2+labelcalls, calls+labelcalls);
-
-        clopen(newConfig);
-        resetEdgeCacheCounts();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls+labelcalls, calls+labelcalls); //after data base re-open and reset, everything pulled from disk
-        for (int i=0;i<numV;i++) {
-            graph.getVertex(vs[i]).addEdge("knows",graph.getVertex(vs[i]));
-        }
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls+labelcalls, calls+labelcalls); //Everything served out of tx cache
-        graph.commit();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(2*calls + labelcalls, 2* calls+labelcalls); //Due to invalid cache, only edge label is served from it
-        graph.commit();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(3*calls + labelcalls, 3*calls + labelcalls); //Things are still invalid....
-        graph.commit();
-        Thread.sleep(cleanTime*2); //until we wait for the expiration threshold, now the next lookup should trigger a clean
-        verifyEdgeCache(3*calls + labelcalls, 3*calls + labelcalls);
-        resetEdgeCacheCounts();
-
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        graph.commit();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        assertTrue(getEdgeCacheRetrievals()>=calls-1); //Things are somewhat non-deterministic here due to the parallel cleanup thread
-        assertTrue(getEdgeCacheMisses()>=calls);
-        graph.commit();
-        resetEdgeCacheCounts();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls, 0);
-
-
-        //Same as above - verify reset after shutdown
-        clopen(newConfig);
-        resetEdgeCacheCounts();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls+labelcalls, calls+labelcalls);
-        graph.commit();
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls*2 + labelcalls, calls+labelcalls);
-        //Nothing changes without commit => hitting transactional caches
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        verifyEdgeCache(calls*2 + labelcalls, calls+labelcalls);
-        graph.commit();
-
-        //Time the cache out
-        Thread.sleep(waitTime);
-        for (int i=0;i<numV;i++) assertEquals(edgePerV+1,Iterables.size(graph.getVertex(vs[i]).getVertices(Direction.OUT,"knows")));
-        if (timeOutTime==0)
-            verifyEdgeCache(calls*3 + labelcalls, calls + labelcalls);
-        else
-            verifyEdgeCache(calls*3 + labelcalls, calls*2 + labelcalls);
-    }
-
-    private String metricsPrefix;
-
-    private void verifyEdgeCache(int total, int misses) {
-        assert metricsPrefix!=null;
-        assertEquals(total, getEdgeCacheRetrievals());
-        assertEquals(misses, getEdgeCacheMisses());
-    }
-
-    private long getEdgeCacheRetrievals() {
-        return MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.RETRIEVAL.getName()).getCount();
-    }
-
-    private long getEdgeCacheMisses() {
-        return MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.MISS.getName()).getCount();
-    }
-
-    private void resetEdgeCacheCounts() {
-        Counter counter = MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.RETRIEVAL.getName());
-        counter.dec(counter.getCount());
-        counter = MetricManager.INSTANCE.getCounter(metricsPrefix, "edgeStore" + Backend.METRICS_CACHE_SUFFIX, CacheMetricsAction.MISS.getName());
-        counter.dec(counter.getCount());
+    private TitanRelation sign(TitanRelation r, int id) {
+        r.setProperty("sig",id);
+        return r;
     }
 
 
-    public static double round(double d) {
-        return Math.round(d*1000.0)/1000.0;
-    }
+
 
 
 }
