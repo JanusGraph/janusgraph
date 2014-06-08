@@ -91,12 +91,17 @@ public abstract class KCVSCacheTest {
         loadStore(numKeys,numCols);
 
         //Repeatedly read from cache and clear in between
+        int calls = 0;
+        assertEquals(calls,store.getSliceCalls());
         for (int t=0;t<repeats;t++) {
-            if (t%clearEvery==0) cache.clearCache();
+            if (t%clearEvery==0) {
+                cache.clearCache();
+                calls+=numKeys*2+1;
+            }
             CacheTransaction tx = getCacheTx();
-            for (int i=1;i<numKeys;i++) {
-                assertEquals(10,cache.getSlice(getQuery(i,0,numCols+1).setLimit(10),tx));
-                assertEquals(3,cache.getSlice(getQuery(i,2,5),tx));
+            for (int i=1;i<=numKeys;i++) {
+                assertEquals(10,cache.getSlice(getQuery(i,0,numCols+1).setLimit(10),tx).size());
+                assertEquals(3,cache.getSlice(getQuery(i,2,5),tx).size());
             }
             //Multi-query
             List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
@@ -108,8 +113,8 @@ public abstract class KCVSCacheTest {
                 assertEquals(5,r.size());
             }
             tx.commit();
+            assertEquals(calls,store.getSliceCalls());
         }
-        assertEquals((repeats/clearEvery)*(100*2+1),store.getSliceCalls());
         store.resetCounter();
 
         //Check invalidation
@@ -121,7 +126,7 @@ public abstract class KCVSCacheTest {
 
         //Read
         CacheTransaction tx = getCacheTx();
-        assertEquals(numCols,cache.getSlice(new KeySliceQuery(key,getQuery(0,numCols+1)),tx));
+        assertEquals(numCols,cache.getSlice(new KeySliceQuery(key,getQuery(0,numCols+1)),tx).size());
         Map<StaticBuffer,EntryList> result = cache.getSlice(keys,getQuery(2,8),tx);
         assertEquals(keys.size(),result.size());
         assertEquals(6,result.get(key).size());
@@ -134,7 +139,7 @@ public abstract class KCVSCacheTest {
 
         //Ensure updates are correctly read
         tx = getCacheTx();
-        assertEquals(numCols/2,cache.getSlice(new KeySliceQuery(key,getQuery(0,numCols+1)),tx));
+        assertEquals(numCols/2,cache.getSlice(new KeySliceQuery(key,getQuery(0,numCols+1)),tx).size());
         result = cache.getSlice(keys,getQuery(2,8),tx);
         assertEquals(keys.size(),result.size());
         assertEquals(3,result.get(key).size());

@@ -105,7 +105,8 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
             int cmp = list.get(i).compare(o1, o2);
             if (cmp != 0) return cmp;
         }
-        return o1.compareTo(o2);
+//        return o1.compareTo(o2);
+        return 0;
     }
 
     /**

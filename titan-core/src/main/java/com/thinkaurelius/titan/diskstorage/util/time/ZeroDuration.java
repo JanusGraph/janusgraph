@@ -51,4 +51,5 @@ public class ZeroDuration implements Duration {
     public Duration multiply(double multiplier) {
         return this;
     }
+
 }

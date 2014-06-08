@@ -157,7 +157,7 @@ public class ExpirationKCVSCache extends KCVSCache {
             expiredKeys.remove(query.getKey(),until);
             return false;
         }
-        //We suffer
+        //We suffer a cache miss, hence decrease the count down
         penaltyCountdown.countDown();
         return true;
     }

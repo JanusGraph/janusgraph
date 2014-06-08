@@ -84,7 +84,8 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(numV*(numV+1),totalCount);
     }
 
-    public static OLAPResult<Degree> computeDegree(final OLAPJobBuilder<Degree> builder, final String aggregatePropKey, final String checkPropKey) throws Exception {
+    public static OLAPResult<Degree> computeDegree(final OLAPJobBuilder<Degree> builder, final String aggregatePropKey,
+                                                   final String checkPropKey) throws Exception {
         builder.setInitializer(new StateInitializer<Degree>() {
             @Override
             public Degree initialState() {
@@ -147,6 +148,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             this.in=in;
             this.out=out;
             both=in+out;
+            this.prop = prop;
         }
 
         public Degree() {

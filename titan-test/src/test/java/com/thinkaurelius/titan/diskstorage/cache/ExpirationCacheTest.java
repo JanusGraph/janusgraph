@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -43,20 +44,17 @@ public class ExpirationCacheTest extends KCVSCacheTest {
 
 
     @Test
-    public void testExpiration1() throws Exception {
-        testExpiration(new StandardDuration(2,TimeUnit.SECONDS),ZeroDuration.INSTANCE);
+    public void testExpiration() throws Exception {
+        testExpiration(new StandardDuration(200,TimeUnit.MILLISECONDS));
+        testExpiration(new StandardDuration(4,TimeUnit.SECONDS));
+        testExpiration(new StandardDuration(1,TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testExpiration2() throws Exception {
-        testExpiration(new StandardDuration(4,TimeUnit.SECONDS),new StandardDuration(200,TimeUnit.MILLISECONDS));
-    }
-
-    private void testExpiration(Duration expirationTime, Duration graceWait) throws Exception {
+    private void testExpiration(Duration expirationTime) throws Exception {
         final int numKeys = 100, numCols = 10;
         loadStore(numKeys,numCols);
         //Replace cache with proper times
-        cache = getCache(store,expirationTime,graceWait);
+        cache = getCache(store,expirationTime,ZeroDuration.INSTANCE);
 
         StaticBuffer key = BufferUtil.getIntBuffer(81);
         List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
@@ -82,29 +80,65 @@ public class ExpirationCacheTest extends KCVSCacheTest {
         verifyResults(key, keys, query, 5);
         //If we modify through cache store...
         CacheTransaction tx = getCacheTx();
-        cache.mutateEntries(key,KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(getEntry(4,4)),tx);
+        cache.mutateEntries(key, KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(getEntry(4, 4)), tx);
         tx.commit();
         store.resetCounter();
         //...invalidation should happen and the result set is updated immediately
         verifyResults(key, keys, query, 4);
-        assertEquals(1,store.getSliceCalls());
-        if (!graceWait.isZeroLength()) {
-            utime = times.getTime();
-            //with a grace wait time, an immidiate call should go through to the store again
-            verifyResults(key, keys, query, 4);
-            assertEquals(2,store.getSliceCalls());
-            times.sleepPast(utime.add(graceWait));
-            //but when we wait past that period, the cache should work again
-            verifyResults(key, keys, query, 4);
-            assertEquals(3,store.getSliceCalls());
-            verifyResults(key, keys, query, 4);
-            assertEquals(3,store.getSliceCalls());
+    }
+
+    @Test
+    public void testGracePeriod() throws Exception {
+        testGracePeriod(new StandardDuration(200,TimeUnit.MILLISECONDS));
+        testGracePeriod(ZeroDuration.INSTANCE);
+        testGracePeriod(new StandardDuration(1,TimeUnit.SECONDS));
+    }
+
+    private void testGracePeriod(Duration graceWait) throws Exception {
+        final int minCleanupTriggerCalls = 5;
+        final int numKeys = 100, numCols = 10;
+        loadStore(numKeys,numCols);
+        //Replace cache with proper times
+        cache = getCache(store,new StandardDuration(200,TimeUnit.DAYS),graceWait);
+
+        StaticBuffer key = BufferUtil.getIntBuffer(81);
+        List<StaticBuffer> keys = new ArrayList<StaticBuffer>();
+        keys.add(key);
+        keys.add(BufferUtil.getIntBuffer(37));
+        keys.add(BufferUtil.getIntBuffer(2));
+        SliceQuery query = getQuery(2,8);
+
+        verifyResults(key,keys,query,6);
+        //If we modify through cache store...
+        CacheTransaction tx = getCacheTx();
+        cache.mutateEntries(key,KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(getEntry(4,4)),tx);
+        tx.commit();
+        Timepoint utime = times.getTime();
+        store.resetCounter();
+        //...invalidation should happen and the result set is updated immediately
+        verifyResults(key, keys, query, 5);
+        assertEquals(2,store.getSliceCalls());
+        //however, the key is expired and hence repeated calls need to go through to the store
+        verifyResults(key, keys, query, 5);
+        assertEquals(4,store.getSliceCalls());
+
+        //however, when we sleep past the grace wait time and trigger a cleanup...
+        times.sleepPast(utime.add(graceWait));
+        for (int t=0; t<minCleanupTriggerCalls;t++) {
+            assertEquals(5,cache.getSlice(new KeySliceQuery(key,query),tx).size());
+            times.sleepFor(new StandardDuration(5,TimeUnit.MILLISECONDS));
         }
+        //...the cache should cache results again
+        store.resetCounter();
+        verifyResults(key, keys, query, 5);
+        assertEquals(0,store.getSliceCalls());
+        verifyResults(key, keys, query, 5);
+        assertEquals(0,store.getSliceCalls());
     }
 
     private void verifyResults(StaticBuffer key, List<StaticBuffer> keys, SliceQuery query, int expectedResults) throws Exception {
         CacheTransaction tx = getCacheTx();
-        assertEquals(expectedResults,cache.getSlice(new KeySliceQuery(key,query),tx));
+        assertEquals(expectedResults,cache.getSlice(new KeySliceQuery(key,query),tx).size());
         Map<StaticBuffer,EntryList> results = cache.getSlice(keys,query,tx);
         assertEquals(keys.size(),results.size());
         assertEquals(expectedResults, results.get(key).size());

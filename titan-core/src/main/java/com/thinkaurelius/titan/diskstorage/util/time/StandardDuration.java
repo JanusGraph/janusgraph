@@ -66,8 +66,13 @@ public class StandardDuration implements Duration {
     @Override
     public Duration multiply(double multiplier) {
         Preconditions.checkArgument(0 <= multiplier, "Time multiplier %d is negative", multiplier);
-        long newLength = Math.round(length * multiplier);
-        if (multiplier>=1.0 && newLength < length) {
+        if (isZeroLength() || multiplier==0) return ZeroDuration.INSTANCE;
+        else if (multiplier==1.0) return this;
+
+        double actualLength = length * multiplier;
+        long newLength = Math.round(actualLength);
+
+        if (multiplier>=1.0 && newLength < length) { //Detect overflow
             /*
              * Trying to be clever with unit conversions to avoid overflow is a
              * waste of effort. A duration long enough to trigger this condition
@@ -76,10 +81,21 @@ public class StandardDuration implements Duration {
              * than 292 thousand years.
              */
             log.warn("Duration overflow detected: {} * {} exceeds representable range of long; using Long.MAX_VALUE instead", length, multiplier);
-            newLength = Long.MAX_VALUE;
+            return new StandardDuration(Long.MAX_VALUE,unit);
+        } else if (Math.abs(newLength-actualLength)/actualLength>MULTIPLY_PRECISION) { //Detect loss of precision
+            /*
+            We are going directly to the most precise-unit to make things easier.
+            This could trigger a subsequent overflow, however, in practice this if conditions
+            should only be triggered for values of around 100 days or less (days being the longest TimeUnit)
+            which is less than 10^17 nano seconds (and hence fits into a long).
+             */
+            return new StandardDuration(TimeUnit.NANOSECONDS.convert(length,unit),TimeUnit.NANOSECONDS).multiply(multiplier);
+        } else {
+            return new StandardDuration(newLength, unit);
         }
-        return new StandardDuration(newLength, unit);
     }
+
+    private static final double MULTIPLY_PRECISION = 0.01;
 
     @Override
     public int hashCode() {
