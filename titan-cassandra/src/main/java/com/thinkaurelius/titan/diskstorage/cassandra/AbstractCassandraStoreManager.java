@@ -1,11 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.cassandra;
 
-import java.util.Map;
+import java.util.*;
 
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -101,6 +103,16 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
             "Leave this unset to disable sstable_compression on Titan-created CFs.",
             ConfigOption.Type.MASKABLE, "LZ4Compressor");
 
+    public static final ConfigOption<String> REPLICATION_STRATEGY = new ConfigOption<String>(STORAGE_NS, "replication-strategy-class",
+            "The replication strategy to use for Titan keyspace",
+            ConfigOption.Type.FIXED, "org.apache.cassandra.locator.SimpleStrategy");
+
+    public static final ConfigOption<List<String>> REPLICATION_OPTIONS = new ConfigOption<List<String>>(STORAGE_NS, "replication-strategy-options",
+            "Replication strategy options, e.g. factor or replicas per datacenter.  This list is interpreted as a " +
+            "map.  It must have an even number of elements in [key,val,key,val,...] form.  A replication_factor set " +
+            "here takes precedence over one set with " + ConfigElement.getPath(REPLICATION_FACTOR),
+            ConfigOption.Type.FIXED, new ArrayList<String>(0));
+
 //    public static final String COMPRESSION_KEY = "compression.sstable_compression";
 //    public static final String DEFAULT_COMPRESSION = "SnappyCompressor";
 //
@@ -124,7 +136,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
 
     protected final String keySpaceName;
-    protected final int replicationFactor;
+    protected final Map<String, String> strategyOptions;
 
     // see description for THRIFT_FRAME_SIZE and THRIFT_MAX_MESSAGE_SIZE for details
     protected final int thriftFrameSize;
@@ -140,11 +152,26 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         super(config, PORT_DEFAULT);
 
         this.keySpaceName = config.get(CASSANDRA_KEYSPACE);
-        this.replicationFactor = config.get(REPLICATION_FACTOR);
         this.thriftFrameSize = config.get(CASSANDRA_THRIFT_FRAME_SIZE) * 1024 * 1024;
         this.compressionEnabled = config.get(STORAGE_COMPRESSION);
         this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
         this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
+
+        if (config.has(REPLICATION_OPTIONS)) {
+            List<String> options = config.get(REPLICATION_OPTIONS);
+            if (options.size() % 2 != 0)
+                throw new IllegalArgumentException(REPLICATION_OPTIONS.getName() + " should have even number of elements.");
+
+            Map<String, String> converted = new HashMap<String, String>(options.size() / 2);
+
+            for (int i = 0; i < options.size(); i += 2) {
+                converted.put(options.get(i), options.get(i + 1));
+            }
+
+            this.strategyOptions = ImmutableMap.copyOf(converted);
+        } else {
+            this.strategyOptions = ImmutableMap.of("replication_factor", String.valueOf(config.get(REPLICATION_FACTOR)));
+        }
     }
 
     public final Partitioner getPartitioner() {

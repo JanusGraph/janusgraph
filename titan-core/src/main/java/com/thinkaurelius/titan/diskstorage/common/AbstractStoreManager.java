@@ -24,7 +24,7 @@ public abstract class AbstractStoreManager implements StoreManager {
     protected final boolean transactional;
     protected final boolean isReadOnly;
     protected final boolean batchLoading;
-    private final Configuration storageConfig;
+    protected final Configuration storageConfig;
 
     public AbstractStoreManager(Configuration storageConfig) {
         isReadOnly = storageConfig.get(STORAGE_READONLY);

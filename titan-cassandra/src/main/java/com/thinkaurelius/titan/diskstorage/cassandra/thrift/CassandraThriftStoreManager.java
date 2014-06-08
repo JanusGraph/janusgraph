@@ -321,10 +321,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private KsDef ensureKeyspaceExists(String keyspaceName)
-            throws NotFoundException, InvalidRequestException, TException,
-            SchemaDisagreementException, StorageException {
-
+    private KsDef ensureKeyspaceExists(String keyspaceName) throws TException, StorageException {
         CTConnection connection = null;
 
         try {
@@ -342,8 +339,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
                 KsDef ksdef = new KsDef().setName(keyspaceName)
                         .setCf_defs(new LinkedList<CfDef>()) // cannot be null but can be empty
-                        .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
-                        .setStrategy_options(ImmutableMap.of("replication_factor", String.valueOf(replicationFactor)));
+                        .setStrategy_class(storageConfig.get(REPLICATION_STRATEGY))
+                        .setStrategy_options(strategyOptions);
 
                 client.set_keyspace(SYSTEM_KS);
                 try {

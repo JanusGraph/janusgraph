@@ -28,6 +28,10 @@ Please fix this and reinstall this package." >&2
     # ensure home directory ownership
     mkdir -p /var/lib/titan
     chown titan:titan /var/lib/titan
+    mkdir -p /var/log/titan
+    chown titan:titan /var/log/titan
+    mkdir -p /var/run/titan
+    chown titan:titan /var/run/titan
 
     # nicer log directory permissions
     #mkdir -p /var/log/titan

@@ -20,7 +20,6 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -504,14 +503,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-
-            Map<String, String> stratops = ImmutableMap.of(
-                "replication_factor", String.valueOf(replicationFactor));
-
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
-                    .setStrategyClass("org.apache.cassandra.locator.SimpleStrategy")
-                    .setStrategyOptions(stratops);
+                    .setStrategyClass(storageConfig.get(REPLICATION_STRATEGY))
+                    .setStrategyOptions(strategyOptions);
             cl.addKeyspace(ksDef);
 
             log.debug("Created keyspace {}", keySpaceName);
