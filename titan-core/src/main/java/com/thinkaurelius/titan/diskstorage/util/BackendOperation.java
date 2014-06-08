@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.StandardDuration;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;

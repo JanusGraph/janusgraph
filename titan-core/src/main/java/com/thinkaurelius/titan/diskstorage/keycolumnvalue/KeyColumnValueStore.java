@@ -28,17 +28,6 @@ public interface KeyColumnValueStore {
     public static final List<StaticBuffer> NO_DELETIONS = ImmutableList.of();
 
     /**
-     * TODO:remove (make sure there is a util method for it)
-     * Returns true if the specified key exists in the store, i.e. there is at least one column-value
-     * pair for the key.
-     *
-     * @param key Key
-     * @param txh Transaction
-     * @return TRUE, if key has at least one column-value pair, else FALSE
-     */
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
-
-    /**
      * Retrieves the list of entries (i.e. column-value pairs) for a specified query.
      *
      * @param query Query to get results for
@@ -169,19 +158,6 @@ public interface KeyColumnValueStore {
      */
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException;
     // like current getKeys if column-slice is such that it queries for vertex state property
-
-
-    /**
-     * Returns {@code KeyRange}s locally hosted on this machine. The start of
-     * each {@code KeyRange} is inclusive. The end is exclusive. The start and
-     * end must each be at least 4 bytes in length.
-     *
-     * @return A list of local key ranges
-     * @throws UnsupportedOperationException
-     *             if the underlying store does not support this operation.
-     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
-     */
-    public List<KeyRange> getLocalKeyPartition() throws StorageException;
 
     /**
      * Returns the name of this store. Each store has a unique name which is used to open it.

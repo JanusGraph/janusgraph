@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -57,7 +57,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         this.mutations = new HashMap<KCVSCache, Map<StaticBuffer, KCVEntryMutation>>(expectedNumStores);
     }
 
-    public StoreTransaction getWrappedTransactionHandle() {
+    public StoreTransaction getWrappedTransaction() {
         return tx;
     }
 
@@ -108,27 +108,19 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         return size;
     }
 
-    private static final Function<Entry,StaticBuffer> ENTRY2COLUMN_FCT = new Function<Entry, StaticBuffer>() {
-        @Nullable
-        @Override
-        public StaticBuffer apply(@Nullable Entry entry) {
-            return entry.getColumn();
-        }
-    };
-
     private KCVMutation convert(KCVEntryMutation mutation) {
         assert !mutation.isEmpty();
         if (!mutation.hasDeletions())
             return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
         else
-            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), ENTRY2COLUMN_FCT)));
+            return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), KCVEntryMutation.ENTRY2COLUMN_FCT)));
     }
 
     private void flushInternal() throws StorageException {
         if (numMutations > 0) {
-            //Consolidate mutations
+            //Consolidate all mutations prior to persistence to ensure that no addition accidentally gets swallowed by a delete
             for (Map<StaticBuffer, KCVEntryMutation> store : mutations.values()) {
-                for (KCVEntryMutation mut : store.values()) mut.consolidate(ENTRY2COLUMN_FCT, ENTRY2COLUMN_FCT);
+                for (KCVEntryMutation mut : store.values()) mut.consolidate();
             }
 
             //Chunk up mutations
@@ -204,12 +196,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        tx.flush();
-    }
-
-    @Override
     public void commit() throws StorageException {
         flushInternal();
         tx.commit();
@@ -222,7 +208,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     @Override
-    public TransactionHandleConfig getConfiguration() {
+    public BaseTransactionConfig getConfiguration() {
         return tx.getConfiguration();
     }
 

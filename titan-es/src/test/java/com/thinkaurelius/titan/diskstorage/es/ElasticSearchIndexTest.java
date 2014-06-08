@@ -1,14 +1,14 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
 import com.thinkaurelius.titan.StorageSetup;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProviderTest;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import org.junit.Test;
 

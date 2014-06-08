@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.database.management;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Parameter;
-import com.thinkaurelius.titan.core.TitanGraphIndex;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -41,9 +41,9 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
     }
 
     @Override
-    public TitanKey[] getFieldKeys() {
+    public PropertyKey[] getFieldKeys() {
         IndexField[] fields = index.getFieldKeys();
-        TitanKey[] keys = new TitanKey[fields.length];
+        PropertyKey[] keys = new PropertyKey[fields.length];
         for (int i = 0; i < fields.length; i++) {
             keys[i]=fields[i].getFieldKey();
         }
@@ -51,7 +51,7 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
     }
 
     @Override
-    public Parameter[] getParametersFor(TitanKey key) {
+    public Parameter[] getParametersFor(PropertyKey key) {
         if (index.isInternalIndex()) return new Parameter[0];
         return ((ExternalIndexType)index).getField(key).getParameters();
     }

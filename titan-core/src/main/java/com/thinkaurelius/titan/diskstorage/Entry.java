@@ -10,7 +10,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationCache;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public interface Entry extends StaticBuffer {
+public interface Entry extends StaticBuffer, MetaAnnotated {
 
     public int getValuePosition();
 

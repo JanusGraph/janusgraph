@@ -2,12 +2,12 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * TitanProperty is a {@link TitanRelation} connecting a vertex to an attribute value.
- * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's attribute and key.
+ * TitanProperty is a {@link TitanRelation} connecting a vertex to a value.
+ * TitanProperty extends {@link TitanRelation}, with methods for retrieving the property's value and key.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see TitanRelation
- * @see TitanKey
+ * @see PropertyKey
  */
 public interface TitanProperty extends TitanRelation {
 
@@ -15,9 +15,9 @@ public interface TitanProperty extends TitanRelation {
      * Returns the property key of this property
      *
      * @return property key of this property
-     * @see TitanKey
+     * @see PropertyKey
      */
-    public TitanKey getPropertyKey();
+    public PropertyKey getPropertyKey();
 
 
     /**
@@ -28,19 +28,19 @@ public interface TitanProperty extends TitanRelation {
     public TitanVertex getVertex();
 
     /**
-     * Returns the attribute value of this property.
+     * Returns the value of this property.
      *
-     * @return attribute of this property
+     * @return value of this property
      */
     public Object getValue();
 
     /**
-     * Returns the attribute value of this property cast to the specified class.
+     * Returns the value of this property cast to the specified class.
      *
-     * @param <O>   Class to cast the attribute to
-     * @param clazz Class to cast the attribute to
-     * @return Attribute of this property cast to the specified class.
-     * @throws ClassCastException if the attribute cannot be cast to clazz.
+     * @param <O>   Class to cast the value to
+     * @param clazz Class to cast the value to
+     * @return Value of this property cast to the specified class.
+     * @throws ClassCastException if the value cannot be cast to clazz.
      */
     public <O> O getValue(Class<O> clazz);
 

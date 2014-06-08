@@ -3,66 +3,77 @@ package com.thinkaurelius.titan.core;
 import com.tinkerpop.blueprints.*;
 
 /**
- * TitanQuery constructs and executes a query over incident edges from the perspective of a vertex.
- * <p/>
- * A TitanQuery extends Blueprint's {@link Query} by some Titan specific convenience methods. Using TitanQuery proceeds
- * in two steps: 1) Define the query by specifying what to retrieve and 2) execute the query.
- * <br />
- * A TitanQuery is initialized by calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} on the vertex itself.
+ * A TitanVertexQuery is a VertexQuery executed for a single vertex.
+ * <p />
+ * Calling {@link com.thinkaurelius.titan.core.TitanVertex#query()} builds such a query against the vertex
+ * this method is called on. This query builder provides the methods to specify which indicent edges or
+ * properties to query for.
  *
+ *
+ * @see BaseVertexQuery
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */
-public interface TitanVertexQuery extends BaseVertexQuery, VertexQuery {
+public interface TitanVertexQuery<Q extends TitanVertexQuery<Q>> extends BaseVertexQuery<Q>, VertexQuery {
 
-    /* ---------------------------------------------------------------
-    * Query Specification
+   /* ---------------------------------------------------------------
+    * Query Specification (overwrite to merge BaseVertexQuery with Blueprint's VertexQuery)
     * ---------------------------------------------------------------
     */
 
-    /**
-     * Restricts this query to only those edges that point to the given vertex.
-     *
-     * @param vertex
-     * @return this query builder
-     */
-    public TitanVertexQuery adjacentVertex(TitanVertex vertex);
+    @Override
+    public Q adjacent(TitanVertex vertex);
 
     @Override
-    public TitanVertexQuery labels(String... labels);
+    public Q types(RelationType... type);
 
     @Override
-    public TitanVertexQuery keys(String... keys);
+    public Q labels(String... labels);
 
     @Override
-    public TitanVertexQuery types(TitanType... type);
+    public Q keys(String... keys);
 
     @Override
-    public TitanVertexQuery direction(Direction d);
+    public Q direction(Direction d);
 
     @Override
-    public TitanVertexQuery has(String key);
+    public Q has(PropertyKey key, Object value);
 
     @Override
-    public TitanVertexQuery hasNot(String key);
+    public Q has(EdgeLabel label, TitanVertex vertex);
 
     @Override
-    public TitanVertexQuery has(String type, Object value);
+    public Q has(String key);
 
     @Override
-    public TitanVertexQuery hasNot(String key, Object value);
+    public Q hasNot(String key);
 
     @Override
-    public TitanVertexQuery has(String key, Predicate predicate, Object value);
+    public Q has(String type, Object value);
 
     @Override
-    @Deprecated
-    public <T extends Comparable<T>> TitanVertexQuery has(String s, T t, Compare compare);
+    public Q hasNot(String key, Object value);
+
 
     @Override
-    public <T extends Comparable<?>> TitanVertexQuery interval(String key, T start, T end);
+    public Q has(PropertyKey key, Predicate predicate, Object value);
 
     @Override
-    public TitanVertexQuery limit(int limit);
+    public Q has(String key, Predicate predicate, Object value);
+
+    @Override
+    public <T extends Comparable<?>> Q interval(String key, T start, T end);
+
+    @Override
+    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
+
+    @Override
+    public Q limit(int limit);
+
+    @Override
+    public Q orderBy(String key, Order order);
+
+    @Override
+    public Q orderBy(PropertyKey key, Order order);
 
 
     /* ---------------------------------------------------------------
@@ -114,18 +125,15 @@ public interface TitanVertexQuery extends BaseVertexQuery, VertexQuery {
      */
     public long propertyCount();
 
-
     /**
-     * Retrieves all vertices connected to this query's central vertex by edges
+     * Retrieves all vertices connected to this query's base vertex by edges
      * matching the conditions defined in this query.
-     * <p/>
-     * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
-     * to sort by vertex idAuthorities most efficiently.
      * <p/>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *
-     * @return A list of all vertices connected to this query's central vertex by matching edges
+     * @return A list of all vertices connected to this query's base vertex by matching edges
      */
+    @Override
     public VertexList vertexIds();
 
 

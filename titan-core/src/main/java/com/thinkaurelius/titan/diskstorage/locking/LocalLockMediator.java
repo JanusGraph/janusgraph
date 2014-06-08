@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Timepoint;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 

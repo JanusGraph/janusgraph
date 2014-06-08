@@ -13,6 +13,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,10 +28,9 @@ import com.thinkaurelius.titan.testcategory.PerformanceTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Vertex;
 
 @Category({PerformanceTests.class})
-public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
+public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 
     @Rule
     public TestRule benchmark = JUnitBenchmarkProvider.get();
@@ -103,7 +103,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
             else makeKey("test"+i,String.class);
         }
         for (int i = numTypes / 2; i < numTypes; i++) {
-            LabelMaker tm = mgmt.makeLabel("test" + i);
+            EdgeLabelMaker tm = mgmt.makeEdgeLabel("test" + i);
             if (i % 4 == 1) tm.unidirected();
             tm.make();
         }
@@ -117,7 +117,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
                 public void run() {
                     TitanTransaction tx = graph.newTransaction();
                     for (int i = 0; i < numTypes; i++) {
-                        TitanType type = tx.getType("test" + i);
+                        RelationType type = tx.getRelationType("test" + i);
                         if (i < numTypes / 2) assertTrue(type.isPropertyKey());
                         else assertTrue(type.isEdgeLabel());
                     }
@@ -141,14 +141,14 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
      */
     @Test
     public void concurrentReadsOnSingleTransaction() throws Exception {
-        TitanKey id = tx.getPropertyKey("uid");
+        PropertyKey id = tx.getPropertyKey("uid");
 
         // Tail many concurrent readers on a single transaction
         CountDownLatch startLatch = new CountDownLatch(TASK_COUNT);
         CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
             int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-            TitanLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+            EdgeLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
             executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT * 2, id));
             startLatch.countDown();
         }
@@ -173,7 +173,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         makeLabel("dummyRelationship");
         finishSchema();
 
-        TitanKey id = tx.getPropertyKey("uid");
+        PropertyKey id = tx.getPropertyKey("uid");
         Runnable propMaker = new RandomPropertyMaker(tx, NODE_COUNT, id, tx.getPropertyKey("dummyProperty"));
         Runnable relMaker = new FixedRelationshipMaker(tx, id, tx.getEdgeLabel("dummyRelationship"));
 
@@ -184,7 +184,7 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
         CountDownLatch stopLatch = new CountDownLatch(TASK_COUNT);
         for (int i = 0; i < TASK_COUNT; i++) {
             int nodeid = RandomGenerator.randomInt(0, NODE_COUNT);
-            TitanLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
+            EdgeLabel rel = tx.getEdgeLabel("rel" + RandomGenerator.randomInt(0, REL_COUNT));
             executor.execute(new SimpleReader(tx, startLatch, stopLatch, nodeid, rel, EDGE_COUNT * 2, id));
             startLatch.countDown();
         }
@@ -243,11 +243,11 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     private static class RandomPropertyMaker implements Runnable {
         private final TitanTransaction tx;
         private final int nodeCount; //inclusive
-        private final TitanKey idProp;
-        private final TitanKey randomProp;
+        private final PropertyKey idProp;
+        private final PropertyKey randomProp;
 
         public RandomPropertyMaker(TitanTransaction tx, int nodeCount,
-                                   TitanKey idProp, TitanKey randomProp) {
+                                   PropertyKey idProp, PropertyKey randomProp) {
             this.tx = tx;
             this.nodeCount = nodeCount;
             this.idProp = idProp;
@@ -279,11 +279,11 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
 
         private final TitanTransaction tx;
         //		private final int nodeCount; //inclusive
-        private final TitanKey idProp;
-        private final TitanLabel relType;
+        private final PropertyKey idProp;
+        private final EdgeLabel relType;
 
         public FixedRelationshipMaker(TitanTransaction tx,
-                                      TitanKey id, TitanLabel relType) {
+                                      PropertyKey id, EdgeLabel relType) {
             this.tx = tx;
             this.idProp = id;
             this.relType = relType;
@@ -314,13 +314,13 @@ public abstract class TitanGraphConcurrentTest extends TitanGraphTestCommon {
     private static class SimpleReader extends BarrierRunnable {
 
         private final int nodeid;
-        private final TitanLabel relTypeToTraverse;
+        private final EdgeLabel relTypeToTraverse;
         private final long nodeTraversalCount = 256;
         private final int expectedEdges;
-        private final TitanKey id;
+        private final PropertyKey id;
 
         public SimpleReader(TitanTransaction tx, CountDownLatch startLatch,
-                            CountDownLatch stopLatch, int startNodeId, TitanLabel relTypeToTraverse, int expectedEdges, TitanKey id) {
+                            CountDownLatch stopLatch, int startNodeId, EdgeLabel relTypeToTraverse, int expectedEdges, PropertyKey id) {
             super(tx, startLatch, stopLatch);
             this.nodeid = startNodeId;
             this.relTypeToTraverse = relTypeToTraverse;

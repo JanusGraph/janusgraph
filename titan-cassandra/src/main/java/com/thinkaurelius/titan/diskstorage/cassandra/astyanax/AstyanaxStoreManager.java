@@ -24,7 +24,9 @@ import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
@@ -44,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 
+@PreInitializeConfigOptions
 public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(AstyanaxStoreManager.class);
@@ -219,7 +222,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     private final int retrySuspendWindow;
     private final RetryBackoffStrategy retryBackoffStrategy;
 
-    private final Map<String, AstyanaxOrderedKeyColumnValueStore> openStores;
+    private final Map<String, AstyanaxKeyColumnValueStore> openStores;
 
     public AstyanaxStoreManager(Configuration config) throws StorageException {
         super(config);
@@ -250,7 +253,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
         this.keyspaceContext = getContextBuilder(config, maxConnsPerHost, "Keyspace").buildKeyspace(ThriftFamilyFactory.getInstance());
         this.keyspaceContext.start();
 
-        openStores = new HashMap<String, AstyanaxOrderedKeyColumnValueStore>(8);
+        openStores = new HashMap<String, AstyanaxKeyColumnValueStore>(8);
     }
 
     @Override
@@ -285,11 +288,11 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public synchronized AstyanaxOrderedKeyColumnValueStore openDatabase(String name) throws StorageException {
+    public synchronized AstyanaxKeyColumnValueStore openDatabase(String name) throws StorageException {
         if (openStores.containsKey(name)) return openStores.get(name);
         else {
             ensureColumnFamilyExists(name);
-            AstyanaxOrderedKeyColumnValueStore store = new AstyanaxOrderedKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy);
+            AstyanaxKeyColumnValueStore store = new AstyanaxKeyColumnValueStore(name, keyspaceContext.getClient(), this, retryPolicy);
             openStores.put(name, store);
             return store;
         }
@@ -301,8 +304,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate());
 
-        final Timestamp timestamp = getTimestamp(txh);
-
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> batchentry : batch.entrySet()) {
             String storeName = batchentry.getKey();
@@ -320,7 +322,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasDeletions()) {
                     ColumnListMutation<ByteBuffer> dels = m.withRow(columnFamily, key);
-                    dels.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
+                    dels.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
 
                     for (StaticBuffer b : titanMutation.getDeletions())
                         dels.deleteColumn(b.as(StaticBuffer.BB_FACTORY));
@@ -328,7 +330,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
                 if (titanMutation.hasAdditions()) {
                     ColumnListMutation<ByteBuffer> upds = m.withRow(columnFamily, key);
-                    upds.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
+                    upds.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
 
                     for (Entry e : titanMutation.getAdditions()) {
                         if (null != e.getTtl() && e.getTtl() > 0) {
@@ -347,7 +349,12 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
             throw new TemporaryStorageException(e);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -501,14 +508,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-
-            Map<String, String> stratops = ImmutableMap.of(
-                    "replication_factor", String.valueOf(replicationFactor));
-
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
-                    .setStrategyClass("org.apache.cassandra.locator.SimpleStrategy")
-                    .setStrategyOptions(stratops);
+                    .setStrategyClass(storageConfig.get(REPLICATION_STRATEGY))
+                    .setStrategyOptions(strategyOptions);
             cl.addKeyspace(ksDef);
 
             log.debug("Created keyspace {}", keySpaceName);

@@ -48,7 +48,7 @@ public class HadoopGraphSONUtility {
     private static final HadoopElementFactory elementFactory = new HadoopElementFactory();
 
     private static final GraphSONUtility graphson = new GraphSONUtility(GraphSONMode.COMPACT, elementFactory,
-            ElementPropertyConfig.ExcludeProperties(VERTEX_IGNORE, EDGE_IGNORE));
+            ElementPropertyConfig.excludeProperties(VERTEX_IGNORE, EDGE_IGNORE));
 
     public static List<HadoopVertex> fromJSON(final Configuration configuration, final InputStream in) throws IOException {
         final List<HadoopVertex> vertices = new LinkedList<HadoopVertex>();

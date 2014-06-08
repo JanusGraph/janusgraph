@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.StandardTimepoint;
-import com.thinkaurelius.titan.util.time.Timepoint;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -213,16 +213,7 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
 //        return tentativeRid;
 //    }
 
-    /**
-     * Returns the {@link Timestamp} for a particular transaction
-     * @param txh
-     * @return
-     */
-    protected Timestamp getTimestamp(StoreTransaction txh) {
-        return new Timestamp(txh.getConfiguration().getCommitTime());
-    }
-
-    protected void sleepAfterWrite(StoreTransaction txh, Timestamp mustPass) throws StorageException {
+    protected void sleepAfterWrite(StoreTransaction txh, MaskedTimestamp mustPass) throws StorageException {
         assert mustPass.getDeletionTime(times.getUnit()) < mustPass.getAdditionTime(times.getUnit());
         try {
             times.sleepPast(mustPass.getAdditionTime());
@@ -236,16 +227,26 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
      * It needs to be ensured that the deletion time is prior to the addition time since
      * some storage backends use the time to resolve conflicts.
      */
-    public static class Timestamp {
+    public class MaskedTimestamp {
 
         private final Timepoint t;
 
-        private Timestamp(Timepoint t) {
-            this.t = t;
+        public MaskedTimestamp(Timepoint commitTime) {
+            Preconditions.checkNotNull(commitTime);
+            this.t=commitTime;
+        }
+
+        public MaskedTimestamp(StoreTransaction txh) {
+            this(txh.getConfiguration().getCommitTime());
         }
 
         public long getDeletionTime(TimeUnit unit) {
-            return t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+            return t.getTimestamp(unit)   & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
+        }
+
+        public long getNativeDeletionTime() {
+            assert t.getProvider().equals(times);
+            return t.getNativeTimestamp() & 0xFFFFFFFFFFFFFFFEL; // zero the LSB
         }
 
         public Timepoint getDeletionTime() {
@@ -253,7 +254,12 @@ public abstract class DistributedStoreManager extends AbstractStoreManager {
         }
 
         public long getAdditionTime(TimeUnit unit) {
-            return (t.getTimestamp(unit) & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
+            return (t.getTimestamp(unit)   & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
+        }
+
+        public long getNativeAdditionTime() {
+            assert t.getProvider().equals(times);
+            return (t.getNativeTimestamp() & 0xFFFFFFFFFFFFFFFEL) | 1L; // force the LSB to 1
         }
 
         public Timepoint getAdditionTime() {

@@ -59,18 +59,20 @@
     </scm>
     <properties>
         <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
-        <tinkerpop.version>2.4.0</tinkerpop.version>
+        <tinkerpop.version>2.5.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
-        <cassandra.version>2.0.6</cassandra.version>
+        <cassandra.version>2.0.7</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
-        <sesame.version>2.6.10</sesame.version>
+        <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.5</slf4j.version>
+        <httpcomponents.version>4.2.5</httpcomponents.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.1.2</jackson2.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
         <asm3.version>3.1</asm3.version>
         <asm4.version>4.0</asm4.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
         <jersey.version>1.17</jersey.version>
         <jna.version>3.2.7</jna.version>
         <kuali.s3.wagon.version>1.1.20</kuali.s3.wagon.version>
@@ -100,7 +102,6 @@
         <module>titan-lucene</module>
         <module>titan-rexster</module>
         <module>titan-all</module>
-        <module>titan-site</module>
         <module>titan-dist</module>
     </modules>
     <build>
@@ -190,7 +191,6 @@
                         <runOrder>alphabetical</runOrder>
                         <failIfNoTests>false</failIfNoTests>
                         <excludes>
-                            <exclude>**/External*.java</exclude>
                             <exclude>**/*PerformanceTest.java</exclude>
                             <exclude>**/*ConcurrentTest.java</exclude>
                         </excludes>
@@ -338,6 +338,11 @@
                     <version>1.7</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.asciidoctor</groupId>
+                    <artifactId>asciidoctor-maven-plugin</artifactId>
+                    <version>0.1.4</version>
+                </plugin>
+                <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>0.6.3.201306030806</version>
@@ -415,11 +420,6 @@
                 <version>2.2</version>
             </dependency>
             <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpcore</artifactId>
-                <version>4.1.4</version>
-            </dependency>
-            <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>1.12</version>
@@ -428,6 +428,11 @@
                 <groupId>org.reflections</groupId>
                 <artifactId>reflections</artifactId>
                 <version>0.9.9-RC1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.zookeeper</groupId>
+                <artifactId>zookeeper</artifactId>
+                <version>${zookeeper.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>
@@ -643,25 +648,26 @@
                 <artifactId>netty</artifactId>
                 <version>3.6.6.Final</version>
             </dependency>
+
             <!-- Package prefix is org.apache.commons.httpclient -->
             <dependency>
                 <groupId>commons-httpclient</groupId>
                 <artifactId>commons-httpclient</artifactId>
                 <version>3.1</version>
             </dependency>
+
             <!-- Package prefix is org.apache.http -->
-            <!--
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.0.1</version>
+                <version>${httpcomponents.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.0.1</version>
+                <version>${httpcomponents.version}</version>
             </dependency>
-            -->
+
             <dependency>
                 <groupId>com.sun.jersey</groupId>
                 <artifactId>jersey-json</artifactId>
@@ -877,6 +883,10 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                                <configuration>
+                                    <!-- Quiet mode still shows warnings and errors -->
+                                    <quiet>true</quiet>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>
@@ -1155,31 +1165,6 @@
         </profile>
 
         <profile>
-            <id>comprehensive-test</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <argLine>-Xms256m -Xmx1024m -ea</argLine>
-                            <includes>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <excludes>
-                                <exclude>**/Internal*.java</exclude>
-                                <exclude>**/*Suite.java</exclude>
-                            </excludes>
-                            <forkMode>always</forkMode>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        
-        <profile>
             <id>target-jre6</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -1226,5 +1211,223 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>asciidoc</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>asciidoc</name>
+                </property>
+            </activation>
+
+            <properties>
+                <asciidoc.input.dir>${project.basedir}/docs</asciidoc.input.dir>
+                <xsl.input.dir>${asciidoc.input.dir}/xsl</xsl.input.dir>
+                <xsl.output.dir>${project.basedir}/target/docs/xsl</xsl.output.dir>
+                <docbook.output.dir>${project.basedir}/target/docs/docbook</docbook.output.dir>
+                <htmlsingle.output.dir>${project.basedir}/target/docs/htmlsingle</htmlsingle.output.dir>
+                <htmlchunk.output.dir>${project.basedir}/target/docs/htmlchunk</htmlchunk.output.dir>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>asciidoc-to-docbook</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>process-asciidoc</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <sourceDirectory>${asciidoc.input.dir}</sourceDirectory>
+                                    <sourceDocumentName>index.txt</sourceDocumentName>
+                                    <outputDirectory>${docbook.output.dir}</outputDirectory>
+                                    <backend>docbook5</backend>
+                                    <doctype>book</doctype>
+                                    <attributes>
+                                        <imagesdir>images</imagesdir>
+                                        <encoding>UTF-8</encoding>
+                                        <toc>true</toc>
+                                    </attributes>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>xml-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>docbook-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <outputDir>${htmlsingle.output.dir}</outputDir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${xsl.output.dir}/titansingle.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>docbook-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>transform</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <forceCreation>true</forceCreation>
+                                    <transformationSets>
+                                        <transformationSet>
+                                            <dir>${docbook.output.dir}</dir>
+                                            <includes>
+                                                <include>index.xml</include>
+                                            </includes>
+                                            <stylesheet>${xsl.output.dir}/titanchunk.xsl</stylesheet>
+                                            <fileMappers>
+                                                <fileMapper implementation="org.codehaus.plexus.components.io.filemappers.FileExtensionMapper">
+                                                    <targetExtension>.html</targetExtension>
+                                                </fileMapper>
+                                            </fileMappers>
+                                        </transformationSet>
+                                    </transformationSets>
+                                </configuration>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>saxon</groupId>
+                                <artifactId>saxon</artifactId>
+                                <version>6.5.3</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>filter-xsl-stylesheets</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${xsl.output.dir}</outputDirectory>
+                                    <delimiters>
+                                        <delimiter>$MAVEN{*}</delimiter>
+                                    </delimiters>
+                                    <resources>
+                                        <resource>
+                                            <directory>${xsl.input.dir}</directory>
+                                            <filtering>true</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-static-assets-to-htmlsingle</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlsingle.output.dir}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/static</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-static-assets-to-htmlchunk</id>
+                                <phase>process-resources</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <inherited>false</inherited>
+                                <configuration>
+                                    <outputDirectory>${htmlchunk.output.dir}</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>${asciidoc.input.dir}/static</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+        <profile>
+            <id>docbkx</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.agilejava.docbkx</groupId>
+                        <artifactId>docbkx-maven-plugin</artifactId>
+                        <version>2.0.15</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>net.sf.xslthl</groupId>
+                                <artifactId>xslthl</artifactId>
+                                <version>2.1.0</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                            <dependency>
+                                <groupId>net.sf.offo</groupId>
+                                <artifactId>fop-hyph</artifactId>
+                                <version>1.2</version>
+                                <scope>runtime</scope>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <highlightSource>1</highlightSource>
+                            <htmlCustomization>htcust.xsl</htmlCustomization>
+                            <hyphenate>false</hyphenate>
+                            <sourceDirectory>${project.basedir}/target/generated-docs/</sourceDirectory>
+                            <includes>index.xml</includes>
+                            <hyphenateVerbatim>false</hyphenateVerbatim>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        -->
     </profiles>
 </project>

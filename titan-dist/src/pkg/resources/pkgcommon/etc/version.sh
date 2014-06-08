@@ -4,7 +4,7 @@ declare -r VER_MINOR=${parsedVersion.minorVersion}
 declare -r VER_PATCH=${parsedVersion.incrementalVersion}
 declare -r VER_QUALIFIER=${parsedVersion.qualifier}
 declare -r VER_BUILDNUMBER=${parsedVersion.buildNumber}
-declare -r VER_PKG_RELEASE=1
+declare -r VER_PKG_RELEASE=${pkg.release}
 
 # Set .rpm package version
 RPM_VERSION="$VER_MAJOR.$VER_MINOR.$VER_PATCH"

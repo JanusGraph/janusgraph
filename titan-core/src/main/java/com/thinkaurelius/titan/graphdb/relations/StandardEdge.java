@@ -2,8 +2,9 @@ package com.thinkaurelius.titan.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.core.TitanLabel;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.InvalidElementException;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
@@ -16,20 +17,20 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class StandardEdge extends AbstractEdge implements StandardRelation {
+public class StandardEdge extends AbstractEdge implements StandardRelation, ReassignableRelation {
 
-    public StandardEdge(long id, TitanLabel label, InternalVertex start, InternalVertex end, byte lifecycle) {
+    public StandardEdge(long id, EdgeLabel label, InternalVertex start, InternalVertex end, byte lifecycle) {
         super(id, label, start, end);
         this.lifecycle = lifecycle;
     }
 
     //############## SAME CODE AS StandardProperty #############################
 
-    private static final Map<TitanType, Object> EMPTY_PROPERTIES = ImmutableMap.of();
+    private static final Map<RelationType, Object> EMPTY_PROPERTIES = ImmutableMap.of();
 
     private byte lifecycle;
     private long previousID = 0;
-    private volatile Map<TitanType, Object> properties = EMPTY_PROPERTIES;
+    private volatile Map<RelationType, Object> properties = EMPTY_PROPERTIES;
 
     @Override
     public long getPreviousID() {
@@ -44,20 +45,20 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     }
 
     @Override
-    public <O> O getPropertyDirect(TitanType type) {
+    public <O> O getPropertyDirect(RelationType type) {
         return (O) properties.get(type);
     }
 
     @Override
-    public void setPropertyDirect(TitanType type, Object value) {
+    public void setPropertyDirect(RelationType type, Object value) {
         Preconditions.checkArgument(!(type instanceof ImplicitKey),"Cannot use implicit type [%s] when setting property",type.getName());
         if (properties == EMPTY_PROPERTIES) {
             if (tx().getConfiguration().isSingleThreaded()) {
-                properties = new HashMap<TitanType, Object>(5);
+                properties = new HashMap<RelationType, Object>(5);
             } else {
                 synchronized (this) {
                     if (properties == EMPTY_PROPERTIES) {
-                        properties = Collections.synchronizedMap(new HashMap<TitanType, Object>(5));
+                        properties = Collections.synchronizedMap(new HashMap<RelationType, Object>(5));
                     }
                 }
             }
@@ -66,12 +67,12 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
     }
 
     @Override
-    public Iterable<TitanType> getPropertyKeysDirect() {
+    public Iterable<RelationType> getPropertyKeysDirect() {
         return properties.keySet();
     }
 
     @Override
-    public <O> O removePropertyDirect(TitanType type) {
+    public <O> O removePropertyDirect(RelationType type) {
         if (!properties.isEmpty())
             return (O) properties.remove(type);
         else return null;
@@ -87,6 +88,6 @@ public class StandardEdge extends AbstractEdge implements StandardRelation {
         if (!ElementLifeCycle.isRemoved(lifecycle)) {
             tx().removeRelation(this);
             lifecycle = ElementLifeCycle.update(lifecycle, ElementLifeCycle.Event.REMOVED);
-        }
+        } //else throw InvalidElementException.removedException(this);
     }
 }

@@ -18,6 +18,11 @@ public class ProperInterval<T> implements Interval<T> {
 
     }
 
+    public ProperInterval(T point) {
+        this();
+        setPoint(point);
+    }
+
     public ProperInterval(T start, T end) {
         setStart(start);
         setEnd(end);

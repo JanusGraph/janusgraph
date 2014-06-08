@@ -17,10 +17,16 @@ public interface IDInspector {
 
     public boolean isSystemRelationTypeId(long id);
 
+    public boolean isVertexLabelVertexId(long id);
+
     public boolean isGenericSchemaVertexId(long id);
 
-    public boolean isVertexId(long id);
+    public boolean isUserVertexId(long id);
 
-    public long getPartitionId(long id);
+    public boolean isUnmodifiableVertex(long id);
+
+    public boolean isPartitionedVertex(long id);
+
+    public long getCanonicalVertexId(long partitionedVertexId);
 
 }

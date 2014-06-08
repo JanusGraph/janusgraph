@@ -85,17 +85,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public boolean containsKey(final StaticBuffer key, final StoreTransaction txh) throws StorageException {
-        return runWithMetrics(txh, metricsStoreName, M_CONTAINS_KEY,
-            new StorageCallable<Boolean>() {
-                public Boolean call() throws StorageException {
-                    return Boolean.valueOf(backend.containsKey(key, txh));
-                }
-            }
-        );
-    }
-
-    @Override
     public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
         return runWithMetrics(txh, metricsStoreName, M_GET_SLICE,
             new StorageCallable<EntryList>() {
@@ -116,7 +105,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
             new StorageCallable<Map<StaticBuffer,EntryList>>() {
                 public Map<StaticBuffer,EntryList> call() throws StorageException {
                     Map<StaticBuffer,EntryList> results = backend.getSlice(keys, query, txh);
-    
+
                     for (EntryList result : results.values()) {
                         recordSliceMetrics(txh, result);
                     }
@@ -186,11 +175,6 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
                 }
             }
         );
-    }
-
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return backend.getLocalKeyPartition();
     }
 
     @Override

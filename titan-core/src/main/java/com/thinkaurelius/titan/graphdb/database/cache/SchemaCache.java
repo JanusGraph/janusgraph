@@ -2,7 +2,8 @@ package com.thinkaurelius.titan.graphdb.database.cache;
 
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -13,26 +14,26 @@ import com.tinkerpop.blueprints.Direction;
  * The SchemaCache speeds up two types of lookups:
  * <ul>
  *     <li>Retrieving a type by its name (index lookup)</li>
- *     <li>Retrieving the relations of a schema vertex for predefined {@link com.thinkaurelius.titan.graphdb.types.system.SystemType}s</li>
+ *     <li>Retrieving the relations of a schema vertex for predefined {@link com.thinkaurelius.titan.graphdb.types.system.SystemRelationType}s</li>
  * </ul>
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface SchemaCache {
 
-    public Long getTypeId(String typeName, StandardTitanTx tx);
+    public Long getSchemaId(String schemaName, StandardTitanTx tx);
 
-    public EntryList getTypeRelations(long schemaId, SystemType type, final Direction dir, StandardTitanTx tx);
+    public EntryList getSchemaRelations(long schemaId, BaseRelationType type, final Direction dir, StandardTitanTx tx);
 
-    public void expireTypeName(final String name);
+    public void expireSchemaName(final String name);
 
-    public void expireTypeRelations(final long schemaId);
+    public void expireSchemaRelations(final long schemaId);
 
     public interface StoreRetrieval {
 
-        public Long retrieveTypeByName(final String typeName, final StandardTitanTx tx);
+        public Long retrieveSchemaByName(final String typeName, final StandardTitanTx tx);
 
-        public EntryList retrieveTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx);
+        public EntryList retrieveSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx);
 
     }
 

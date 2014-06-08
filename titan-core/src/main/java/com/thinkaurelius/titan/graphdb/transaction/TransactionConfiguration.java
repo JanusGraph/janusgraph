@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.transaction;
 
-import com.thinkaurelius.titan.core.DefaultTypeMaker;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 
 /**
  * Provides configuration options for {@link com.thinkaurelius.titan.core.TitanTransaction}.
@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  * @see com.thinkaurelius.titan.core.TitanTransaction
  */
-public interface TransactionConfiguration extends TransactionHandleConfig {
+public interface TransactionConfiguration extends BaseTransactionConfig {
 
     /**
      * Checks whether the graph transaction is configured as read-only.
@@ -66,7 +66,7 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
     /**
      * @return The default edge type maker used to automatically create not yet existing edge types.
      */
-    public DefaultTypeMaker getAutoEdgeTypeMaker();
+    public DefaultSchemaMaker getAutoSchemaMaker();
 
     /**
      * Whether the graph transaction is configured to verify that an added key does not yet exist in the database.
@@ -129,5 +129,19 @@ public interface TransactionConfiguration extends TransactionHandleConfig {
      * @return
      */
     public String getLogIdentifier();
+
+
+    /**
+     * Querying of partitioned vertices is restricted to the partitions returned by this
+     * method. If the return value has length 0 all partitions are queried (i.e. unrestricted).
+     *
+     * @return
+     */
+    public int[] getRestrictedPartitions();
+
+    /**
+     * Returns true of the queryied partitions should be restricted in this transaction
+     */
+    public boolean hasRestrictedPartitions();
 
 }

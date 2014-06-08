@@ -7,15 +7,22 @@ import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Geo;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Text;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
 
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -24,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public abstract class TitanIndexTest extends TitanGraphTestCommon {
+public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
     public static final String INDEX = "index";
     public static final String VINDEX = "vindex";
@@ -35,6 +42,9 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     public final boolean supportsNumeric;
     public final boolean supportsText;
 
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanIndexTest.class);
+
     protected TitanIndexTest(boolean supportsGeoPoint, boolean supportsNumeric, boolean supportsText) {
         this.supportsGeoPoint = supportsGeoPoint;
         this.supportsNumeric = supportsNumeric;
@@ -43,15 +53,18 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     public abstract boolean supportsLuceneStyleQueries();
 
+    @Rule
+    public TestName methodName = new TestName();
+
     @Test
     public void testOpenClose() {
     }
 
     @Test
     public void testSimpleUpdate() {
-        TitanKey text = makeKey("name",String.class);
-        mgmt.createInternalIndex("namev",Vertex.class,false,text);
-        mgmt.createInternalIndex("namee",Edge.class,false,text);
+        PropertyKey text = makeKey("name",String.class);
+        mgmt.buildIndex("namev",Vertex.class).indexKey(text).buildInternalIndex();
+        mgmt.buildIndex("namee",Edge.class).indexKey(text).buildInternalIndex();
         finishSchema();
 
         Vertex v = tx.addVertex();
@@ -72,28 +85,28 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     @Test
     public void testIndexing() {
 
-        TitanKey text = makeKey("text",String.class);
+        PropertyKey text = makeKey("text",String.class);
         createExternalVertexIndex(text,INDEX);
         createExternalEdgeIndex(text,INDEX);
 
-        TitanKey location = makeKey("location",Geoshape.class);
+        PropertyKey location = makeKey("location",Geoshape.class);
         createExternalVertexIndex(location,INDEX);
         createExternalEdgeIndex(location,INDEX);
 
-        TitanKey time = makeKey("time",Long.class);
+        PropertyKey time = makeKey("time",Long.class);
         createExternalVertexIndex(time,INDEX);
         createExternalEdgeIndex(time,INDEX);
 
-        TitanKey category = makeKey("category",Integer.class);
-        mgmt.createInternalIndex("vcategory",Vertex.class,category);
-        mgmt.createInternalIndex("ecategory",Edge.class,category);
+        PropertyKey category = makeKey("category",Integer.class);
+        mgmt.buildIndex("vcategory",Vertex.class).indexKey(category).buildInternalIndex();
+        mgmt.buildIndex("ecategory",Edge.class).indexKey(category).buildInternalIndex();
 
-        TitanKey group = makeKey("group",Byte.class);
+        PropertyKey group = makeKey("group",Byte.class);
         createExternalVertexIndex(group,INDEX);
         createExternalEdgeIndex(group,INDEX);
 
-        TitanKey id = makeVertexIndexedKey("uid",Integer.class);
-        TitanLabel knows = mgmt.makeLabel("knows").sortKey(time).signature(location).make();
+        PropertyKey id = makeVertexIndexedKey("uid",Integer.class);
+        EdgeLabel knows = ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("knows")).sortKey(time).signature(location).make();
         finishSchema();
 
         clopen();
@@ -113,7 +126,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
             offset = (i % 2 == 0 ? 1 : -1) * (i * 50.0 / numV);
             v.setProperty("location", Geoshape.point(0.0 + offset, 0.0 + offset));
 
-            Edge e = v.addEdge("knows", tx.getVertex("uid", Math.max(0, i - 1)));
+            Edge e = v.addEdge("knows", getVertex("uid", Math.max(0, i - 1)));
             e.setProperty("text", "Vertex " + words[i % words.length]);
             e.setProperty("time", i);
             e.setProperty("category", i % numCategories);
@@ -232,7 +245,7 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
         int numDelete = 12;
         for (int i = numV - numDelete; i < numV; i++) {
-            tx.getVertex("uid", i).remove();
+            getVertex("uid", i).remove();
         }
 
         numV = numV - numDelete;
@@ -268,13 +281,13 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
     private void setupChainGraph(int numV, String[] strs) {
         TitanGraphIndex vindex = getExternalIndex(Vertex.class,INDEX);
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
-        TitanKey name = makeKey("name",String.class);
-        mgmt.addIndexKey(vindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
-        mgmt.addIndexKey(eindex,name,ParameterType.MAPPING.getParameter(Mapping.STRING));
-        TitanKey text = makeKey("text",String.class);
-        mgmt.addIndexKey(vindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
-        mgmt.addIndexKey(eindex,text,ParameterType.MAPPING.getParameter(Mapping.TEXT));
-        mgmt.makeLabel("knows").signature(name).make();
+        PropertyKey name = makeKey("name",String.class);
+        mgmt.addIndexKey(vindex,name, Mapping.STRING.getParameter());
+        mgmt.addIndexKey(eindex,name, Mapping.STRING.getParameter());
+        PropertyKey text = makeKey("text",String.class);
+        mgmt.addIndexKey(vindex,text, Mapping.TEXT.getParameter());
+        mgmt.addIndexKey(eindex,text, Mapping.TEXT.getParameter());
+        mgmt.makeEdgeLabel("knows").signature(name).make();
         finishSchema();
         TitanVertex previous = null;
         for (int i=0;i<numV;i++) {
@@ -386,9 +399,9 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     @Test
     public void testIndexIteration() {
-        TitanKey objectType = makeKey("objectType",String.class);
+        PropertyKey objectType = makeKey("objectType",String.class);
         createExternalVertexIndex(objectType,INDEX);
-        TitanKey uid = makeKey("uid",Long.class);
+        PropertyKey uid = makeKey("uid",Long.class);
         createExternalVertexIndex(uid,INDEX);
         finishSchema();
         Vertex v = graph.addVertex(null);
@@ -407,4 +420,88 @@ public abstract class TitanIndexTest extends TitanGraphTestCommon {
 
     }
 
+    /**
+     * Create a vertex with an indexed property and commit. Open two new
+     * transactions; delete vertex in one and delete just the property in the
+     * other, then commit in the same order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenDeleteProperty() throws StorageException {
+        testNestedWrites("x", null);
+    }
+
+    /**
+     * Create a vertex and commit. Open two new transactions; delete vertex in
+     * one and add an indexed property in the other, then commit in the same
+     * order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenAddProperty() throws StorageException {
+        testNestedWrites(null, "y");
+    }
+
+    /**
+     * Create a vertex with an indexed property and commit. Open two new
+     * transactions; delete vertex in one and modify the property in the other,
+     * then commit in the same order. Neither commit throws an exception.
+     */
+    @Test
+    public void testDeleteVertexThenModifyProperty() throws StorageException {
+        testNestedWrites("x", "y");
+    }
+
+    private void testNestedWrites(String initialValue, String updatedValue) throws StorageException {
+        // This method touches a single vertex with multiple transactions,
+        // leading to deadlock under BDB and cascading test failures. Check for
+        // the hasTxIsolation() store feature, which is currently true for BDB
+        // but false for HBase/Cassadra. This is kind of a hack; a more robust
+        // approach might implement different methods/assertions depending on
+        // whether the store is capable of deadlocking or detecting conflicting
+        // writes and aborting a transaction.
+        Backend b = null;
+        try {
+            b = graph.getConfiguration().getBackend();
+            if (b.getStoreFeatures().hasTxIsolation()) {
+                log.info("Skipping "  + getClass().getSimpleName() + "." + methodName.getMethodName());
+                return;
+            }
+        } finally {
+            if (null != b)
+                b.close();
+        }
+
+        final String propName = "foo";
+
+        // Write schema and one vertex
+        PropertyKey prop = makeKey(propName, String.class);
+        createExternalVertexIndex(prop, INDEX);
+        finishSchema();
+        TitanVertex v = graph.addVertex(null);
+        if (null != initialValue)
+            ElementHelper.setProperties(v, propName, initialValue);
+        graph.commit();
+
+        Object id = v.getId();
+
+        // Open two transactions and modify the same vertex
+        TitanTransaction vertexDeleter = graph.newTransaction();
+        TitanTransaction propDeleter = graph.newTransaction();
+
+        vertexDeleter.removeVertex(vertexDeleter.getVertex(id));
+        if (null == updatedValue)
+            propDeleter.getVertex(propDeleter.getVertex(id)).removeProperty(propName);
+        else
+            propDeleter.getVertex(propDeleter.getVertex(id)).setProperty(propName, updatedValue);
+
+        vertexDeleter.commit();
+        propDeleter.commit();
+
+        // The vertex must not exist after deletion
+        graph.rollback();
+        assertEquals(null,  graph.getVertex(id));
+        assertEquals(false, graph.query().has(propName).vertices().iterator().hasNext());
+        if (null != updatedValue)
+            assertEquals(false, graph.query().has(propName, updatedValue).vertices().iterator().hasNext());
+        graph.rollback();
+    }
 }

@@ -1,5 +1,8 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.tinkerpop.blueprints.KeyIndexableGraph;
 import com.tinkerpop.blueprints.TransactionalGraph;
 
@@ -28,6 +31,12 @@ import java.util.Collection;
  */
 public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph {
 
+   /* ---------------------------------------------------------------
+    * Modifications
+    * ---------------------------------------------------------------
+    */
+
+
     /**
      * Creates a new vertex in the graph.
      *
@@ -36,18 +45,34 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanVertex addVertex();
 
     /**
-     * Creates a new vertex in the graph with the given vertex id.
+     * Creates a new vertex in the graph with the given vertex label name.
+     *
+     * @return New vertex in the graph created in the context of this transaction.
+     */
+    public TitanVertex addVertex(String vertexLabel);
+
+    /**
+     * Creates a new vertex in the graph with the given vertex label.
+     *
+     * @return New vertex in the graph created in the context of this transaction.
+     */
+    public TitanVertex addVertex(VertexLabel vertexLabel);
+
+
+    /**
+     * Creates a new vertex in the graph with the given vertex id and the given vertex label.
      * Note, that an exception is thrown if the vertex id is not a valid Titan vertex id or if a vertex with the given
      * id already exists.
      * <p/>
-     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID_KEY}.
+     * Custom id setting must be enabled via the configuration option {@link com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration#ALLOW_SETTING_VERTEX_ID}.
      * <p/>
      * Use {@link com.thinkaurelius.titan.core.util.TitanId#toVertexId(long)} to construct a valid Titan vertex id from a user id.
      *
      * @param id vertex id of the vertex to be created
+     * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
-    public TitanVertex addVertex(Long id);
+    public TitanVertex addVertex(Long id, VertexLabel vertexLabel);
 
     /**
      * Creates a new edge connecting the specified vertices.
@@ -60,7 +85,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param inVertex  incoming vertex of the edge
      * @return new edge
      */
-    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, TitanLabel label);
+    public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, EdgeLabel label);
 
     /**
      * Creates a new edge connecting the specified vertices.
@@ -79,33 +104,33 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
     public TitanEdge addEdge(TitanVertex outVertex, TitanVertex inVertex, String label);
 
     /**
-     * Creates a new property for the given vertex and key with the specified attribute.
+     * Creates a new property for the given vertex and key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
+     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
      *
      * @param key       key of the property to be created
      * @param vertex    vertex for which to create the property
-     * @param attribute attribute of the property to be created
+     * @param value value of the property to be created
      * @return new property
-     * @throws IllegalArgumentException if the attribute does not match the data type of the given property key.
+     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
      */
-    public TitanProperty addProperty(TitanVertex vertex, TitanKey key, Object attribute);
+    public TitanProperty addProperty(TitanVertex vertex, PropertyKey key, Object value);
 
     /**
-     * Creates a new property for the given vertex and key with the specified attribute.
+     * Creates a new property for the given vertex and key with the specified value.
      * <p/>
-     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the attribute.
+     * Creates and returns a new {@link TitanProperty} with specified property key and the given object being the value.
      * <br />
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
      * this method with throw an {@link IllegalArgumentException}.
      *
      * @param key       key of the property to be created
      * @param vertex    vertex for which to create the property
-     * @param attribute attribute of the property to be created
+     * @param value value of the property to be created
      * @return new property
-     * @throws IllegalArgumentException if the attribute does not match the data type of the given property key.
+     * @throws IllegalArgumentException if the value does not match the data type of the given property key.
      */
-    public TitanProperty addProperty(TitanVertex vertex, String key, Object attribute);
+    public TitanProperty addProperty(TitanVertex vertex, String key, Object value);
 
     /**
      * Retrieves the vertex for the specified id.
@@ -128,7 +153,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#query()
      */
-    public TitanGraphQuery query();
+    public TitanGraphQuery<? extends TitanGraphQuery> query();
 
     /**
      * Returns a {@link TitanIndexQuery} to query for vertices or edges against the specified indexing backend using
@@ -146,59 +171,44 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(TitanVertex...)
      */
-    public TitanMultiVertexQuery multiQuery(TitanVertex... vertices);
+    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(TitanVertex... vertices);
 
     /**
      * @return
      * @see com.thinkaurelius.titan.core.TitanGraph#multiQuery(Collection)
      */
-    public TitanMultiVertexQuery multiQuery(Collection<TitanVertex> vertices);
-
-    /**
-     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
-     * This method assumes that the provided key is unique and will throw an execption otherwise.
-     *
-     * @param key
-     * @param attribute
-     * @return The vertex which has the provided key and value or NULL if it does not exit
-     */
-    public TitanVertex getVertex(TitanKey key, Object attribute);
-
-    /**
-     * Executes a {@link TitanGraphQuery} to retrieve the vertex that has a property matching the key and attribute.
-     * This method assumes that the provided key is unique and will throw an execption otherwise.
-     *
-     * @param key
-     * @param attribute
-     * @return The vertex which has the provided key and value or NULL if it does not exit
-     */
-    public TitanVertex getVertex(String key, Object attribute);
+    public TitanMultiVertexQuery<? extends TitanMultiVertexQuery> multiQuery(Collection<TitanVertex> vertices);
 
     /**
      * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed for vertices using a <i>standard</i> index.
+     * For this operation to be efficient, please ensure that the given property key is indexed.
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
-     * @param attribute attribute value
+     * @param value value value
      * @return All vertices which have a property of the given key with the specified value.
-     * @see KeyMaker#indexed(Class)
+     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
-    public Iterable<TitanVertex> getVertices(TitanKey key, Object attribute);
+    public Iterable<TitanVertex> getVertices(PropertyKey key, Object value);
 
     /**
-     * Retrieves all edges which have a property of the given key with the specified value.
+     * Retrieves all vertices which have a property of the given key with the specified value.
      * <p/>
-     * For this operation to be efficient, please ensure that the given property key is indexed for edges using a <i>standard</i> index.
+     * For this operation to be efficient, please ensure that the given property key is indexed.
      * Some storage backends may not support this method without a pre-configured index.
      *
      * @param key       key
-     * @param attribute attribute value
+     * @param value value value
      * @return All edges which have a property of the given key with the specified value.
-     * @see KeyMaker#indexed(Class)
+     * @see com.thinkaurelius.titan.core.schema.TitanManagement#buildIndex(String, Class)
      */
-    public Iterable<TitanEdge> getEdges(TitanKey key, Object attribute);
+    public Iterable<TitanEdge> getEdges(PropertyKey key, Object value);
+
+   /* ---------------------------------------------------------------
+    * Schema
+    * ---------------------------------------------------------------
+    */
 
     /**
      * Checks whether a type with the specified name exists.
@@ -206,7 +216,7 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @param name name of the type
      * @return true, if a type with the given name exists, else false
      */
-    public boolean containsType(String name);
+    public boolean containsRelationType(String name);
 
     /**
      * Returns the type with the given name.
@@ -214,9 +224,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      *
      * @param name name of the type to return
      * @return The type with the given name, or null if such does not exist
-     * @see TitanType
+     * @see RelationType
      */
-    public TitanType getType(String name);
+    public RelationType getRelationType(String name);
 
     /**
      * Returns the property key with the given name.
@@ -225,9 +235,9 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return the property key with the given name
      * @throws IllegalArgumentException if a property key with the given name does not exist or if the
      *                                  type with the given name is not a property key
-     * @see TitanKey
+     * @see PropertyKey
      */
-    public TitanKey getPropertyKey(String name);
+    public PropertyKey getPropertyKey(String name);
 
     /**
      * Returns the edge label with the given name.
@@ -236,36 +246,68 @@ public interface TitanTransaction extends TransactionalGraph, KeyIndexableGraph 
      * @return the edge label with the given name
      * @throws IllegalArgumentException if an edge label with the given name does not exist or if the
      *                                  type with the given name is not an edge label
-     * @see TitanLabel
+     * @see EdgeLabel
      */
-    public TitanLabel getEdgeLabel(String name);
+    public EdgeLabel getEdgeLabel(String name);
 
     /**
-     * Returns a {@link KeyMaker} instance to define a new {@link TitanKey} with the given name.
+     * Returns a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} instance to define a new {@link PropertyKey} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the key and associated consistency constraints.
      * <p/>
      * The key constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link KeyMaker} linked to this transaction.
-     * @see KeyMaker
-     * @see TitanKey
+     * @return a {@link com.thinkaurelius.titan.core.schema.PropertyKeyMaker} linked to this transaction.
+     * @see com.thinkaurelius.titan.core.schema.PropertyKeyMaker
+     * @see PropertyKey
      */
-    public KeyMaker makeKey(String name);
+    public PropertyKeyMaker makePropertyKey(String name);
 
     /**
-     * Returns a {@link LabelMaker} instance to define a new {@link TitanLabel} with the given name.
+     * Returns a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} instance to define a new {@link EdgeLabel} with the given name.
      * By defining types explicitly (rather than implicitly through usage) one can control various
      * aspects of the label and associated consistency constraints.
      * <p/>
      * The label constructed with this maker will be created in the context of this transaction.
      *
-     * @return a {@link LabelMaker} linked to this transaction.
-     * @see LabelMaker
-     * @see TitanLabel
+     * @return a {@link com.thinkaurelius.titan.core.schema.EdgeLabelMaker} linked to this transaction.
+     * @see com.thinkaurelius.titan.core.schema.EdgeLabelMaker
+     * @see EdgeLabel
      */
-    public LabelMaker makeLabel(String name);
+    public EdgeLabelMaker makeEdgeLabel(String name);
 
+    /**
+     * Whether a vertex label with the given name exists in the graph.
+     *
+     * @param name
+     * @return
+     */
+    public boolean containsVertexLabel(String name);
+
+    /**
+     * Returns the vertex label with the given name. If a vertex label with this name does not exist, the label is
+     * automatically created through the registered {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker}.
+     * <p />
+     * Attempting to automatically create a vertex label might cause an exception depending on the configuration.
+     *
+     * @param name
+     * @return
+     */
+    public VertexLabel getVertexLabel(String name);
+
+    /**
+     * Returns a {@link VertexLabelMaker} to define a new vertex label with the given name. Note, that the name must
+     * be unique.
+     *
+     * @param name
+     * @return
+     */
+    public VertexLabelMaker makeVertexLabel(String name);
+
+   /* ---------------------------------------------------------------
+    * Closing and admin
+    * ---------------------------------------------------------------
+    */
 
     /**
      * Commits and closes the transaction.

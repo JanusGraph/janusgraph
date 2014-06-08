@@ -17,6 +17,9 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean distributed;
     private final boolean transactional;
     private final boolean keyConsistent;
+    private final boolean timestamps;
+    private final boolean ttl;
+    private final boolean visibility;
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
 
@@ -71,6 +74,21 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
+    public boolean hasTimestamps() {
+        return timestamps;
+    }
+
+    @Override
+    public boolean hasTTL() {
+        return ttl;
+    }
+
+    @Override
+    public boolean hasVisibility() {
+        return visibility;
+    }
+
+    @Override
     public Configuration getKeyConsistentTxConfig() {
         return keyConsistentTxConfig;
     }
@@ -100,6 +118,9 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean distributed;
         private boolean transactional;
         private boolean keyConsistent;
+        private boolean timestamps;
+        private boolean ttl;
+        private boolean visibility;
         private Configuration keyConsistentTxConfig;
         private Configuration localKeyConsistentTxConfig;
 
@@ -122,6 +143,9 @@ public class StandardStoreFeatures implements StoreFeatures {
             keyOrdered(template.isKeyOrdered());
             distributed(template.isDistributed());
             transactional(template.hasTxIsolation());
+            timestamps(template.hasTimestamps());
+            ttl(template.hasTTL());
+            visibility(template.hasVisibility());
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
             }
@@ -172,6 +196,21 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
+        public Builder timestamps(boolean b) {
+            timestamps = b;
+            return this;
+        }
+
+        public Builder ttl(boolean b) {
+            ttl = b;
+            return this;
+        }
+
+        public Builder visibility(boolean b) {
+            visibility = b;
+            return this;
+        }
+
         public Builder keyConsistent(Configuration c) {
             keyConsistent = true;
             keyConsistentTxConfig = c;
@@ -194,6 +233,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             return new StandardStoreFeatures(unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
+                    timestamps, ttl, visibility,
                     keyConsistentTxConfig, localKeyConsistentTxConfig);
         }
     }
@@ -201,7 +241,9 @@ public class StandardStoreFeatures implements StoreFeatures {
     private StandardStoreFeatures(boolean unorderedScan, boolean orderedScan,
             boolean multiQuery, boolean locking, boolean batchMutation,
             boolean localKeyPartition, boolean keyOrdered, boolean distributed,
-            boolean transactional, boolean keyConsistent, Configuration keyConsistentTxConfig,
+            boolean transactional, boolean keyConsistent,
+            boolean timestamps, boolean ttl, boolean visibility,
+            Configuration keyConsistentTxConfig,
             Configuration localKeyConsistentTxConfig) {
         this.unorderedScan = unorderedScan;
         this.orderedScan = orderedScan;
@@ -213,6 +255,9 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.distributed = distributed;
         this.transactional = transactional;
         this.keyConsistent = keyConsistent;
+        this.timestamps = timestamps;
+        this.ttl = ttl;
+        this.visibility = visibility;
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;
     }

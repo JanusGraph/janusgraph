@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.TitanElement;
 import com.thinkaurelius.titan.core.TitanIndexQuery;
 import com.thinkaurelius.titan.core.TitanProperty;
@@ -25,6 +25,19 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
+ * Implementation of {@link TitanIndexQuery} for string based queries that are issued directly against the specified
+ * indexing backend. It is assumed that the given string conforms to the query language of the indexing backend.
+ * This class does not understand or verify the provided query. However, it will introspect the query and replace
+ * any reference to `v.SOME_KEY`, `e.SOME_KEY` or `p.SOME_KEY` with the respective key reference. This replacement
+ * is 'dumb' in the sense that it relies on simple string replacements to accomplish this. If the key contains special characters
+ * (in particular space) then it must be encapsulated in quotation marks.
+ * </p>
+ * In addition to the query string, a number of parameters can be specified which will be passed verbatim to the indexing
+ * backend during query execution.
+ * </p>
+ * This class essentially just acts as a builder, uses the {@link IndexSerializer} to execute the query, and then post-processes
+ * the result set to return to the user.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
@@ -39,13 +52,32 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
     private final StandardTitanTx tx;
     private final IndexSerializer serializer;
 
+    /**
+     * The name of the indexing backend this query is directed at
+     */
     private String indexName;
+    /**
+     * Query string conforming to the query language supported by the indexing backend.
+     */
     private String query;
+    /**
+     * Parameters passed to the indexing backend during query execution to modify the execution behavior.
+     */
     private final List<Parameter> parameters;
 
+    /**
+     * Prefix to be used to identify vertex, edge or property references and trigger key parsing and conversion.
+     * In most cases this will be one of the above defined static prefixes, but in some special cases, the user may
+     * define this.
+     */
     private String prefix;
+    /**
+     * Name to use for unknown keys, i.e. key references that could not be resolved to an actual type in the database.
+     */
     private final String unkownKeyName;
-
+    /**
+     * In addition to limit, this type of query supports offsets.
+     */
     private int offset;
 
 
@@ -56,7 +88,7 @@ public class IndexQueryBuilder extends BaseQuery implements TitanIndexQuery {
         this.serializer = serializer;
 
         parameters = Lists.newArrayList();
-        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeydName();
+        unkownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
         this.offset=0;
     }
 

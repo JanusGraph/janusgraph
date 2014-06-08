@@ -35,12 +35,12 @@ public abstract class InMemoryBlueprintsTest extends TitanBlueprintsTest {
     }
 
     @Override
-    public void startUp() {
+    public void beforeSuite() {
 
     }
 
     @Override
-    public void shutDown() {
+    public void afterSuite() {
 
     }
 

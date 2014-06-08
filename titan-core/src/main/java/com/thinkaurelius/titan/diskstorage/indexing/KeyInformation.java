@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 
 /**
  * Helper class that provides information on the data type and additional parameters that
@@ -15,7 +15,7 @@ import com.thinkaurelius.titan.core.Parameter;
  * <p/>
  *
  * {@link IndexRetriever} returns {@link KeyInformation} for a given store and given key. This will be provided to an
- * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, com.thinkaurelius.titan.diskstorage.indexing.KeyInformation.IndexRetriever, com.thinkaurelius.titan.diskstorage.TransactionHandle)}
+ * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, IndexRetriever, com.thinkaurelius.titan.diskstorage.BaseTransaction)}
  *
  * <p/>
  *

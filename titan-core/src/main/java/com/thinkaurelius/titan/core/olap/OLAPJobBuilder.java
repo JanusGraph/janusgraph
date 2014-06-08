@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
 /**
- * Builder to define and configure an {@link OLAPJob} execution.
+ * Builder to define and configure an {@link OLAPJob} for execution.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -18,11 +18,11 @@ public interface OLAPJobBuilder<S> {
      * @param job
      * @return
      */
-    public OLAPJobBuilder<S> setJob(OLAPJob job);
+    public OLAPJobBuilder<S> setJob(OLAPJob<S> job);
 
     /**
      * Defines the name of the key to be used as the dedicated "state" key. Retrieving the property value for this
-     * key will return the vertex state.
+     * key on any given vertex in an {@link OLAPJob} will return the current vertex state.
      *
      * @param stateKey
      * @return
@@ -40,15 +40,23 @@ public interface OLAPJobBuilder<S> {
     /**
      * Set the initial state of the vertices where the key is the vertex id and the value is the state
      * of the vertex.
-     * </p>
-     * Note, that the OLAP executor might operate directly on the provided map to preserve memory. Providing an immutable map
-     * can therefore lead to exceptions. If you wish to preserve the map (or use it elsewhere independently) make sure
-     * to pass in a copy of the map.
      *
      * @param values
      * @return
      */
     public OLAPJobBuilder<S> setInitialState(Map<Long,S> values);
+
+    /**
+     * Sets the initial state of the vertices to the result from a previous OLAP computation.
+     * <p />
+     * Note, that the data structures underlying the {@link OLAPResult} may be removed to be memory efficient
+     * which means that the previous state can be overwritten and is therefore lost.
+     *
+     * @param values
+     * @return
+     */
+    public OLAPJobBuilder<S> setInitialState(OLAPResult<S> values);
+
 
     /**
      * If the exact number of vertices to be processed is know a priori, it can be specified
@@ -76,13 +84,13 @@ public interface OLAPJobBuilder<S> {
      *
      * @return
      */
-    public OLAPQueryBuilder<S> addQuery();
+    public OLAPQueryBuilder<S,?,?> addQuery();
 
     /**
-     * Starts the execution of this job and returns the computed vertex states as a map.
+     * Starts the execution of this job and returns the computed vertex states as a {@link OLAPResult}.
      *
      * @return
      */
-    public Future<Map<Long,S>> execute();
+    public Future<OLAPResult<S>> execute();
 
 }

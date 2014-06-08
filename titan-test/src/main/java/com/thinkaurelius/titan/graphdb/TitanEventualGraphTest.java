@@ -4,6 +4,11 @@ import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.attribute.Timestamp;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
@@ -64,8 +69,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         //Concurrent index addition
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
-        tx1.getVertex("uid", "v").setProperty("value", 11);
-        tx2.getVertex("uid", "v").setProperty("value", 11);
+        getVertex(tx1, "uid", "v").setProperty("value", 11);
+        getVertex(tx2, "uid", "v").setProperty("value", 11);
         tx1.commit();
         tx2.commit();
 
@@ -75,6 +80,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTimestampSetting() {
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TIMESTAMPS,"edgestore"),true,
+                option(GraphDatabaseConfiguration.STORE_META_TTL,"edgestore"),true);
         final TimeUnit unit = TimeUnit.SECONDS;
 
         // Transaction 1: Init graph with two vertices, having set "name" and "age" properties
@@ -83,8 +90,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         String age = "age";
         String address = "address";
 
-        Vertex v1 = tx1.addVertex();
-        Vertex v2 = tx1.addVertex();
+        TitanVertex v1 = tx1.addVertex();
+        TitanVertex v2 = tx1.addVertex();
         v1.setProperty(name, "a");
         v2.setProperty(age, "14");
         v2.setProperty(name, "b");
@@ -92,14 +99,26 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         tx1.commit();
 
         // Fetch vertex ids
-        Object id1 = v1.getId();
-        Object id2 = v2.getId();
+        long id1 = v1.getID();
+        long id2 = v2.getID();
 
         // Transaction 2: Remove "name" property from v1, set "address" property; create
         // an edge v2 -> v1
         TitanTransaction tx2 = graph.buildTransaction().setCommitTime(1000, unit).start();
         v1 = tx2.getVertex(id1);
         v2 = tx2.getVertex(id2);
+        for (TitanProperty prop : v1.getProperties(name)) {
+            if (features.hasTimestamps()) {
+                Timestamp t = prop.getProperty("_timestamp");
+                assertEquals(100,t.sinceEpoch(unit));
+                assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
+            }
+            if (features.hasTTL()) {
+                Duration d = prop.getProperty("_ttl");
+                assertEquals(0l,d.getLength(unit));
+                assertTrue(d.isZeroLength());
+            }
+        }
         v1.removeProperty(name);
         v1.setProperty(address, "xyz");
         Edge edge = tx2.addEdge(1, v2, v1, "parent");
@@ -175,11 +194,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
 
     public void testBatchLoadingLocking(boolean batchloading) {
-        TitanKey uid = makeKey("uid",Long.class);
-        TitanGraphIndex uidIndex = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
-        mgmt.setConsistency(uid,ConsistencyModifier.LOCK);
+        PropertyKey uid = makeKey("uid",Long.class);
+        TitanGraphIndex uidIndex = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.setConsistency(uidIndex,ConsistencyModifier.LOCK);
-        TitanLabel knows = mgmt.makeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
+        EdgeLabel knows = mgmt.makeEdgeLabel("knows").multiplicity(Multiplicity.ONE2ONE).make();
         mgmt.setConsistency(knows,ConsistencyModifier.LOCK);
         finishSchema();
 
@@ -199,8 +218,8 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 //        System.out.println("Time: " + (System.currentTimeMillis()-start));
 
         for (int i=0;i<Math.min(numV,300);i++) {
-            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices()));
-            assertEquals(1,Iterables.size(graph.query().has("uid",i+1).vertices().iterator().next().getEdges(Direction.OUT,"knows")));
+            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices()));
+            assertEquals(1, Iterables.size(graph.query().has("uid", i + 1).vertices().iterator().next().getEdges(Direction.OUT, "knows")));
         }
     }
 
@@ -213,11 +232,11 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),0,
                 option(GraphDatabaseConfiguration.DB_CACHE_SIZE),0.25,
                 option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                option(GraphDatabaseConfiguration.MERGE_BASIC_METRICS),false,
+                option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
                 option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         final String prop = "property";
-        graph.makeKey(prop).dataType(Integer.class).make();
+        graph.makePropertyKey(prop).dataType(Integer.class).make();
 
         final int numV = 100;
         final long[] vids = new long[numV];
@@ -394,7 +413,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                               option(GraphDatabaseConfiguration.DB_CACHE_TIME),timeOutTime,
                               option(GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT),cleanTime,
                               option(GraphDatabaseConfiguration.BASIC_METRICS),true,
-                              option(GraphDatabaseConfiguration.MERGE_BASIC_METRICS),false,
+                              option(GraphDatabaseConfiguration.METRICS_MERGE_STORES),false,
                               option(GraphDatabaseConfiguration.METRICS_PREFIX),metricsPrefix};
         clopen(newConfig);
         long[] vs = new long[numV];

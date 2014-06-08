@@ -4,6 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -68,8 +70,8 @@ public class IndexSerializer {
         return externalIndexes.containsKey(indexName);
     }
 
-    public static void register(final ExternalIndexType index, final TitanKey key, final BackendTransaction tx) throws StorageException {
-        tx.getIndexTransactionHandle(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
+    public static void register(final ExternalIndexType index, final PropertyKey key, final BackendTransaction tx) throws StorageException {
+        tx.getIndexTransaction(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
 
     }
 
@@ -89,19 +91,16 @@ public class IndexSerializer {
         return new StandardKeyInformation(field.getFieldKey().getDataType(),field.getParameters());
     }
 
-    public IndexInfoRetriever getIndexInfoRetriever() {
-        return new IndexInfoRetriever();
+    public IndexInfoRetriever getIndexInfoRetriever(StandardTitanTx tx) {
+        return new IndexInfoRetriever(tx);
     }
 
     public static class IndexInfoRetriever implements KeyInformation.Retriever {
 
-        private StandardTitanTx transaction;
+        private final StandardTitanTx transaction;
 
-        private IndexInfoRetriever() {}
-
-        public void setTransaction(StandardTitanTx tx) {
+        private IndexInfoRetriever(StandardTitanTx tx) {
             Preconditions.checkNotNull(tx);
-            Preconditions.checkArgument(transaction==null);
             transaction=tx;
         }
 
@@ -221,15 +220,21 @@ public class IndexSerializer {
         return (relation.isNew()? IndexUpdate.Type.ADD : IndexUpdate.Type.DELETE);
     }
 
+    private static boolean indexAppliesTo(IndexType index, TitanElement element) {
+        return index.getElement().isInstance(element) && (
+                        !index.hasSchemaTypeConstraint() ||
+                        index.getElement().matchesConstraint(index.getSchemaTypeConstraint(),element));
+    }
+
     public Collection<IndexUpdate> getIndexUpdates(InternalRelation relation) {
         assert relation.isNew() || relation.isRemoved();
         Set<IndexUpdate> updates = Sets.newHashSet();
         IndexUpdate.Type updateType = getUpateType(relation);
-        for (TitanType type : relation.getPropertyKeysDirect()) {
-            if (!(type instanceof TitanKey)) continue;
-            TitanKey key = (TitanKey)type;
-            for (IndexType index : ((InternalType)key).getKeyIndexes()) {
-                if (!index.getElement().isInstance(relation)) continue;
+        for (RelationType type : relation.getPropertyKeysDirect()) {
+            if (!(type instanceof PropertyKey)) continue;
+            PropertyKey key = (PropertyKey)type;
+            for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
+                if (!indexAppliesTo(index,relation)) continue;
                 if (index instanceof InternalIndexType) {
                     InternalIndexType iIndex= (InternalIndexType) index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -255,8 +260,8 @@ public class IndexSerializer {
             TitanProperty p = (TitanProperty)rel;
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             IndexUpdate.Type updateType = getUpateType(rel);
-            for (IndexType index : ((InternalType)p.getPropertyKey()).getKeyIndexes()) {
-                if (index.getElement()!=ElementCategory.VERTEX) continue;
+            for (IndexType index : ((InternalRelationType)p.getPropertyKey()).getKeyIndexes()) {
+                if (!indexAppliesTo(index,vertex)) continue;
                 if (index.isInternalIndex()) { //Gather internal indexes
                     InternalIndexType iIndex = (InternalIndexType)index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
@@ -273,7 +278,7 @@ public class IndexSerializer {
         return updates;
     }
 
-    private IndexUpdate<String,IndexEntry> getExternalIndexUpdate(TitanElement element, TitanKey key, Object value,
+    private IndexUpdate<String,IndexEntry> getExternalIndexUpdate(TitanElement element, PropertyKey key, Object value,
                                                        ExternalIndexType index, IndexUpdate.Type updateType)  {
         return new IndexUpdate<String,IndexEntry>(index,updateType,element2String(element),new IndexEntry(key2Field(index.getField(key)), value), element);
     }
@@ -328,7 +333,7 @@ public class IndexSerializer {
     }
 
     public static IndexRecords indexMatches(TitanVertex vertex, InternalIndexType index,
-                                            TitanKey replaceKey, Object replaceValue) {
+                                            PropertyKey replaceKey, Object replaceValue) {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
         indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,false,
@@ -337,7 +342,7 @@ public class IndexSerializer {
     }
 
     private static IndexRecords indexMatches(TitanVertex vertex, InternalIndexType index,
-                                              boolean onlyLoaded, TitanKey replaceKey, RecordEntry replaceValue) {
+                                              boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
         indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,onlyLoaded,replaceKey,replaceValue);
@@ -346,20 +351,20 @@ public class IndexSerializer {
 
     private static void indexMatches(TitanVertex vertex, RecordEntry[] current, IndexRecords matches,
                                      IndexField[] fields, int pos,
-                                     boolean onlyLoaded, TitanKey replaceKey, RecordEntry replaceValue) {
+                                     boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         if (pos>= fields.length) {
             matches.add(current);
             return;
         }
 
-        TitanKey key = fields[pos].getFieldKey();
+        PropertyKey key = fields[pos].getFieldKey();
 
         List<RecordEntry> values;
         if (key.equals(replaceKey)) {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<RecordEntry>();
-            VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query()).type(key);
+            VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query()).noPartitionRestriction().type(key);
             if (onlyLoaded) qb.queryOnlyLoaded();
             for (TitanProperty p : qb.properties()) {
                 assert p.isNew() || p.isLoaded(); assert !onlyLoaded || p.isLoaded();
@@ -395,7 +400,7 @@ public class IndexSerializer {
                         results.add(bytebuffer2RelationId(entryValue));
                 }
             }
-            boolean hasCardinalitySize = ((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1;
+            boolean hasCardinalitySize = ((InternalIndexType)index).getCardinality()!= Cardinality.SINGLE || results.size() <= 1;
             Preconditions.checkArgument(((InternalIndexType)index).getCardinality()!=Cardinality.SINGLE || results.size() <= 1);
             return results;
         } else {
@@ -418,7 +423,7 @@ public class IndexSerializer {
                     public Condition<TitanElement> apply(@Nullable Condition<TitanElement> condition) {
                         Preconditions.checkArgument(condition instanceof PredicateCondition);
                         PredicateCondition pc = (PredicateCondition) condition;
-                        TitanKey key = (TitanKey) pc.getKey();
+                        PropertyKey key = (PropertyKey) pc.getKey();
                         return new PredicateCondition<String, TitanElement>(key2Field(index,key), pc.getPredicate(), pc.getValue());
                     }
                 });
@@ -495,8 +500,8 @@ public class IndexSerializer {
             Preconditions.checkArgument(StringUtils.isNotBlank(keyname),
                     "Found reference to empty key at position [%s]",startPos);
             String replacement;
-            if (transaction.containsType(keyname)) {
-                TitanKey key = transaction.getPropertyKey(keyname);
+            if (transaction.containsRelationType(keyname)) {
+                PropertyKey key = transaction.getPropertyKey(keyname);
                 Preconditions.checkNotNull(key);
                 Preconditions.checkArgument(index.indexesKey(key),
                         "The used key [%s] is not indexed in the targeted index [%s]",key.getName(),query.getIndex());
@@ -553,7 +558,7 @@ public class IndexSerializer {
         else return name2LongID(str);
     }
 
-    private static final String key2Field(ExternalIndexType index, TitanKey key) {
+    private static final String key2Field(ExternalIndexType index, PropertyKey key) {
         return key2Field(index.getField(key));
     }
 
@@ -578,6 +583,7 @@ public class IndexSerializer {
 
     private final StaticBuffer getIndexKey(InternalIndexType index, Object[] values) {
         DataOutput out = serializer.getDataOutput(8*DEFAULT_OBJECT_BYTELEN + 8);
+        VariableLong.writePositive(out, index.getID());
         IndexField[] fields = index.getFieldKeys();
         Preconditions.checkArgument(fields.length>0 && fields.length==values.length);
         for (int i = 0; i < fields.length; i++) {
@@ -591,7 +597,6 @@ public class IndexSerializer {
                 out.writeObjectNotNull(value);
             }
         }
-        VariableLong.writePositiveBackward(out, index.getID());
         StaticBuffer key = out.getStaticBuffer();
         if (hashKeys) key = HashingUtil.hashPrefixKey(hashLength,key);
         return key;

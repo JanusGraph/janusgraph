@@ -2,8 +2,8 @@ package com.thinkaurelius.titan.graphdb;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanEdge;
-import com.thinkaurelius.titan.core.TitanKey;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.Backend;
@@ -13,8 +13,9 @@ import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -41,7 +42,7 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
         query.setLimit(2);
         Stopwatch watch = new Stopwatch();
         watch.start();
-        StoreTransaction txh = manager.beginTransaction(StandardTransactionHandleConfig.of(Timestamps.MILLI));
+        StoreTransaction txh = manager.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MILLI));
         KeyIterator iter = store.getKeys(query,txh);
         int numV = 0;
         while(iter.hasNext()) {
@@ -66,9 +67,9 @@ public abstract class TitanGraphIterativeTest extends TitanGraphBaseTest {
 
 
     public void loadData(final int numVertices, final int numThreads) throws Exception {
-        graph.makeKey("w").dataType(Integer.class).make();
-        TitanKey time = graph.makeKey("t").dataType(Long.class).make();
-        graph.makeLabel("l").sortKey(time).make();
+        graph.makePropertyKey("w").dataType(Integer.class).make();
+        PropertyKey time = graph.makePropertyKey("t").dataType(Long.class).make();
+        ((StandardEdgeLabelMaker)graph.makeEdgeLabel("l")).sortKey(time).make();
         graph.commit();
 
         final int maxQueue = 1000;

@@ -1,16 +1,17 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -51,18 +52,16 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
         for (String store : mutations.keySet()) {
             stores.get(store).verifyLocksOnMutations(txh);
         }
-        storeManager.mutateMany(mutations,ExpectedValueCheckingStore.getBaseTx(txh));
+        storeManager.mutateMany(mutations,ExpectedValueCheckingStore.getDataTx(txh));
     }
 
     @Override
-    public StoreTransaction beginTransaction(TransactionHandleConfig configuration) throws StorageException {
+    public StoreTransaction beginTransaction(BaseTransactionConfig configuration) throws StorageException {
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
-        TransactionHandleConfig consistentTxCfg = new StandardTransactionHandleConfig.Builder()
-                .groupName(configuration.getGroupName())
+        BaseTransactionConfig consistentTxCfg = new StandardBaseTransactionConfig.Builder(configuration)
                 .customOptions(customOptions)
-                .startTime(configuration.getStartTime())
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
         StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
@@ -77,6 +76,11 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     @Override
     public void clearStorage() throws StorageException {
         storeManager.clearStorage();
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return storeManager.getLocalKeyPartition();
     }
 
     @Override

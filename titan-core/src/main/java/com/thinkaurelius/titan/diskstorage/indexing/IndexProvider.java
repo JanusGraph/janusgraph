@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.BaseTransaction;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfigurable;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +30,7 @@ public interface IndexProvider extends IndexInformation {
      * @param tx enclosing transaction
      * @throws StorageException
      */
-    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException;
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException;
 
     /**
      * Mutates the index (adds and removes fields or entire documents)
@@ -40,7 +42,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws StorageException
      * @see IndexMutation
      */
-    public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
+    public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
 
     /**
      * Executes the given query against the index.
@@ -52,7 +54,7 @@ public interface IndexProvider extends IndexInformation {
      * @throws StorageException
      * @see IndexQuery
      */
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
 
 
     /**
@@ -65,14 +67,14 @@ public interface IndexProvider extends IndexInformation {
      * @throws StorageException
      * @see RawQuery
      */
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException;
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
 
     /**
      * Returns a transaction handle for a new index transaction.
      *
      * @return New Transaction Handle
      */
-    public TransactionHandle beginTransaction() throws StorageException;
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException;
 
     /**
      * Closes the index

@@ -1,14 +1,16 @@
 package com.thinkaurelius.titan.util.datastructures;
 
-import cern.colt.list.IntArrayList;
-import cern.colt.map.OpenIntIntHashMap;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.cursors.IntCursor;
+
+import java.util.Iterator;
 
 /**
- * Implementation of {@link IntSet} against {@link OpenIntIntHashMap}.
+ * Implementation of {@link IntSet} against {@link IntIntOpenHashMap}.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class IntHashSet extends OpenIntIntHashMap implements IntSet {
+public class IntHashSet extends IntIntOpenHashMap implements IntSet {
 
     private static final long serialVersionUID = -7297353805905443841L;
     private static final int defaultValue = 1;
@@ -22,7 +24,7 @@ public class IntHashSet extends OpenIntIntHashMap implements IntSet {
     }
 
     public boolean add(int value) {
-        return super.put(value, defaultValue);
+        return super.put(value, defaultValue)==0;
     }
 
     public boolean addAll(int[] values) {
@@ -37,16 +39,12 @@ public class IntHashSet extends OpenIntIntHashMap implements IntSet {
         return super.containsKey(value);
     }
 
-    public boolean remove(int value) {
-        return super.removeKey(value);
-    }
-
     public int[] getAll() {
-        IntArrayList keys = new IntArrayList(size());
-        keys(keys);
-        assert keys.size() == size() : keys.size() + " vs " + size();
-        int[] all = keys.elements();
-        assert all.length == size();
+        KeysContainer keys = keys();
+        int[] all = new int[keys.size()];
+        Iterator<IntCursor> iter = keys.iterator();
+        int pos=0;
+        while (iter.hasNext()) all[pos++]=iter.next().value;
         return all;
     }
 

@@ -9,7 +9,8 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.tinkerpop.blueprints.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
@@ -72,31 +73,31 @@ public class StandardSchemaCache implements SchemaCache {
 
 
     @Override
-    public Long getTypeId(final String typeName, final StandardTitanTx tx) {
+    public Long getSchemaId(final String schemaName, final StandardTitanTx tx) {
         ConcurrentMap<String,Long> types = typeNames;
         Long id;
         if (types==null) {
-            id = typeNamesBackup.getIfPresent(typeName);
+            id = typeNamesBackup.getIfPresent(schemaName);
             if (id==null) {
-                id = retriever.retrieveTypeByName(typeName, tx);
+                id = retriever.retrieveSchemaByName(schemaName, tx);
                 if (id!=null) { //only cache if type exists
-                    typeNamesBackup.put(typeName,id);
+                    typeNamesBackup.put(schemaName,id);
                 }
             }
         } else {
-            id = types.get(typeName);
+            id = types.get(schemaName);
             if (id==null) { //Retrieve it
                 if (types.size()> maxCachedTypes) {
                     /* Safe guard against the concurrent hash map growing to large - this would be a VERY rare event
                     as it only happens for graph databases with thousands of types.
                      */
                     typeNames = null;
-                    return getTypeId(typeName, tx);
+                    return getSchemaId(schemaName, tx);
                 } else {
                     //Expand map
-                    id = retriever.retrieveTypeByName(typeName, tx);
+                    id = retriever.retrieveSchemaByName(schemaName, tx);
                     if (id!=null) { //only cache if type exists
-                        types.put(typeName,id);
+                        types.put(schemaName,id);
                     }
                 }
             }
@@ -104,16 +105,16 @@ public class StandardSchemaCache implements SchemaCache {
         return id;
     }
 
-    private long getIdentifier(final long schemaId, final SystemType type, final Direction dir) {
+    private long getIdentifier(final long schemaId, final SystemRelationType type, final Direction dir) {
         int edgeDir = EdgeDirection.position(dir);
         assert edgeDir==0 || edgeDir==1;
 
         long typeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
-        if (type== BaseLabel.TypeDefinitionEdge) systemTypeId=0;
-        else if (type== BaseKey.TypeName) systemTypeId=1;
-        else if (type== BaseKey.TypeCategory) systemTypeId=2;
-        else if (type== BaseKey.TypeDefinitionProperty) systemTypeId=3;
+        if (type== BaseLabel.SchemaDefinitionEdge) systemTypeId=0;
+        else if (type== BaseKey.SchemaName) systemTypeId=1;
+        else if (type== BaseKey.SchemaCategory) systemTypeId=2;
+        else if (type== BaseKey.SchemaDefinitionProperty) systemTypeId=3;
         else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.getName());
 
         //Ensure that there is enough padding
@@ -122,7 +123,7 @@ public class StandardSchemaCache implements SchemaCache {
     }
 
     @Override
-    public EntryList getTypeRelations(final long schemaId, final SystemType type, final Direction dir, final StandardTitanTx tx) {
+    public EntryList getSchemaRelations(final long schemaId, final BaseRelationType type, final Direction dir, final StandardTitanTx tx) {
         assert IDManager.isSystemRelationTypeId(type.getID()) && type.getID()>0;
         Preconditions.checkArgument(IDManager.VertexIDType.Schema.is(schemaId));
         Preconditions.checkArgument((Long.MAX_VALUE>>>(SCHEMAID_TOTALFORW_SHIFT-SCHEMAID_BACK_SHIFT))>= schemaId);
@@ -136,7 +137,7 @@ public class StandardSchemaCache implements SchemaCache {
         if (types==null) {
             entries = schemaRelationsBackup.getIfPresent(typePlusRelation);
             if (entries==null) {
-                entries = retriever.retrieveTypeRelations(schemaId,type,dir,tx);
+                entries = retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
                 if (!entries.isEmpty()) { //only cache if type exists
                     schemaRelationsBackup.put(typePlusRelation, entries);
                 }
@@ -149,10 +150,10 @@ public class StandardSchemaCache implements SchemaCache {
                     as it only happens for graph databases with thousands of types.
                      */
                     schemaRelations = null;
-                    return getTypeRelations(schemaId, type, dir, tx);
+                    return getSchemaRelations(schemaId, type, dir, tx);
                 } else {
                     //Expand map
-                    entries = retriever.retrieveTypeRelations(schemaId, type, dir, tx);
+                    entries = retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
                     if (!entries.isEmpty()) { //only cache if type exists
                         types.put(typePlusRelation,entries);
                     }
@@ -164,14 +165,14 @@ public class StandardSchemaCache implements SchemaCache {
     }
 
     @Override
-    public void expireTypeName(final String name) {
+    public void expireSchemaName(final String name) {
         ConcurrentMap<String,Long> types = typeNames;
         if (types!=null) types.remove(name);
         typeNamesBackup.invalidate(name);
     }
 
     @Override
-    public void expireTypeRelations(final long schemaId) {
+    public void expireSchemaRelations(final long schemaId) {
         final long cuttypeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         if (types!=null) {

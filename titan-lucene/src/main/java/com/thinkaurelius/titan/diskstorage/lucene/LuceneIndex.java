@@ -7,13 +7,10 @@ import com.google.common.collect.Sets;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import com.thinkaurelius.titan.core.Cardinality;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -131,14 +128,14 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
@@ -265,7 +262,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         //Construct query
         Filter q = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
@@ -384,7 +381,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         Query q;
         try {
             q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
@@ -415,8 +412,8 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public TransactionHandle beginTransaction() throws StorageException {
-        return new Transaction();
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+        return new Transaction(config);
     }
 
     @Override
@@ -473,13 +470,15 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
-    private class Transaction implements TransactionHandle {
+    private class Transaction implements BaseTransactionConfigurable {
 
+        private final BaseTransactionConfig config;
         private final Set<String> updatedStores = Sets.newHashSet();
-
-
         private final Map<String, IndexSearcher> searchers = new HashMap<String, IndexSearcher>(4);
 
+        private Transaction(BaseTransactionConfig config) {
+            this.config = config;
+        }
 
         private synchronized IndexSearcher getSearcher(String store) throws StorageException {
             IndexSearcher searcher = searchers.get(store);
@@ -514,11 +513,6 @@ public class LuceneIndex implements IndexProvider {
             close();
         }
 
-        @Override
-        public void flush() throws StorageException {
-
-        }
-
         private void close() throws StorageException {
             try {
                 for (IndexSearcher searcher : searchers.values()) {
@@ -527,6 +521,11 @@ public class LuceneIndex implements IndexProvider {
             } catch (IOException e) {
                 throw new PermanentStorageException("Could not close searcher", e);
             }
+        }
+
+        @Override
+        public BaseTransactionConfig getConfiguration() {
+            return config;
         }
     }
 

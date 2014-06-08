@@ -89,7 +89,7 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public synchronized void remove() {
         super.remove();
-        updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        ((StandardVertex)it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
     }
 
     @Override

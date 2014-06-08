@@ -16,14 +16,31 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.util.Comparator;
 
 /**
+ * An executable {@link ElementQuery} for {@link com.thinkaurelius.titan.core.TitanGraphQuery}. This query contains
+ * the condition, and only one sub-query {@link JointIndexQuery}.
+ * It also maintains the ordering for the query result which is needed by the {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}
+ * to correctly order the result.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class GraphCentricQuery extends BaseQuery implements ElementQuery<TitanElement, JointIndexQuery> {
 
+    /**
+     * The condition of this query, the result set is the set of all elements in the graph for which this
+     * condition evaluates to true.
+     */
     private final Condition<TitanElement> condition;
+    /**
+     * The {@link JointIndexQuery} to execute against the indexing backends and index store.
+     */
     private final BackendQueryHolder<JointIndexQuery> indexQuery;
+    /**
+     * The result order of this query (if any)
+     */
     private final OrderList orders;
+    /**
+     * The type of element this query is asking for: vertex, edge, or property.
+     */
     private final ElementCategory resultType;
 
     public GraphCentricQuery(ElementCategory resultType, Condition<TitanElement> condition, OrderList orders,

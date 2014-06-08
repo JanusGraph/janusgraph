@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.AttributeHandler;
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.attribute.AttributeHandler;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 
 /**

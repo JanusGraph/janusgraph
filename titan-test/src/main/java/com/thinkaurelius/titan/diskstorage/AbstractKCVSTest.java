@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.diskstorage;
 
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
-import com.thinkaurelius.titan.util.time.Timestamps;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -12,12 +12,12 @@ public class AbstractKCVSTest {
 
     protected static final TimestampProvider times = Timestamps.MICRO;
 
-    protected StandardTransactionHandleConfig getTxConfig() {
-        return StandardTransactionHandleConfig.of(times);
+    protected StandardBaseTransactionConfig getTxConfig() {
+        return StandardBaseTransactionConfig.of(times);
     }
 
-    protected StandardTransactionHandleConfig getConsistentTxConfig(StoreManager manager) {
-        return StandardTransactionHandleConfig.of(times,manager.getFeatures().getKeyConsistentTxConfig());
+    protected StandardBaseTransactionConfig getConsistentTxConfig(StoreManager manager) {
+        return StandardBaseTransactionConfig.of(times,manager.getFeatures().getKeyConsistentTxConfig());
     }
 
 }

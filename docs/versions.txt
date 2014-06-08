@@ -1,0 +1,29 @@
+[[version-compat]]
+[appendix]
+Version Compatibility
+---------------------
+
+[.tss-floatright.tss-width-250]
+image:titan-logo.png[]
+
+The Titan project is growing along with the rest of the Aurelius Graph Cluster technology and utilized storage and indexing backends. Below are version compatibilities between the various versions of components.
+
+.Version Compabitility Matrix
+[options="header"]
+|==========================
+| Titan | Faunus | Cassandra | HBase | Elasticsearch
+| 0.1-alpha | N/A | 1.1.z | 0.92.z | N/A
+| 0.1.0| 0.1-alpha | 1.1.z | 0.94.z | N/A
+| 0.2.0 | 0.1.0 | 1.1.z | 0.94.z | N/A
+| 0.2.1 | 0.1.1 | 1.2.z | 0.94.z | N/A
+| 0.3.0 | 0.3.0 | 1.2.z | 0.94.z | 0.20.5
+| 0.3.1 | 0.3.1 | 1.2.z | 0.94.z | 0.90.0
+| 0.3.2 | 0.3.2 | 1.2.z | 0.94.z | 0.90.0
+| 0.4.0 | 0.4.0 | 1.2.z | 0.94.z | 0.90.3
+| 0.4.1 | 0.4.1 | 1.2.z | 0.94.z | 0.90.3
+| 0.4.2 | 0.4.2 | 1.2.z | 0.94.z | 0.90.3
+| 0.4.2 | 0.4.2 | 1.2.z | 0.94.z | 0.90.3
+| 0.4.3 | 0.4.3 | 1.2.z | 0.94.z | 0.90.3
+| 0.4.4 | 0.4.4 | 1.2.z | 0.94.z | 0.90.3
+| 0.5.0 | 0.5.0 | 2.0.6 | 0.94.16, 0.96.1.1 | 1.0.1 
+|==========================

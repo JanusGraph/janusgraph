@@ -1,9 +1,10 @@
 package com.thinkaurelius.titan.graphdb.query;
 
 /**
+ * Standard implementation of {@link Query}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class BaseQuery implements Query {
 
     private int limit;
@@ -17,15 +18,17 @@ public class BaseQuery implements Query {
         this.limit = limit;
     }
 
+    /**
+     * Sets the limit of the query if it wasn't specified in the constructor
+     * @param limit
+     * @return
+     */
     public BaseQuery setLimit(final int limit) {
         assert limit >= 0;
         this.limit = limit;
         return this;
     }
 
-    /**
-     * @return The maximum number of results to return
-     */
     @Override
     public int getLimit() {
         return limit;

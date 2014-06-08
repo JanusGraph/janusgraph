@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+
+import java.util.List;
 
 /**
  * Generic interface to a backend storage engine.
@@ -16,7 +18,7 @@ public interface StoreManager {
      *
      * @return New Transaction Handle
      */
-    public StoreTransaction beginTransaction(TransactionHandleConfig config) throws StorageException;
+    public StoreTransaction beginTransaction(BaseTransactionConfig config) throws StorageException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.
@@ -56,4 +58,17 @@ public interface StoreManager {
      * @return Name for this StoreManager
      */
     public String getName();
+
+    /**
+     * Returns {@code KeyRange}s locally hosted on this machine. The start of
+     * each {@code KeyRange} is inclusive. The end is exclusive. The start and
+     * end must each be at least 4 bytes in length.
+     *
+     * @return A list of local key ranges
+     * @throws UnsupportedOperationException
+     *             if the underlying store does not support this operation.
+     *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
+     */
+    public List<KeyRange> getLocalKeyPartition() throws StorageException;
+
 }

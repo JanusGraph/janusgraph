@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb.query.vertex;
 
-import cern.colt.list.AbstractLongList;
-import cern.colt.list.LongArrayList;
+import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
@@ -21,14 +20,18 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 /**
- * This is a premature optimization of QueryProcessor for a special type of VertexQuery under certain
- * restrictive conditions.
- *
- * This Iterable is not thread-safe.
+ * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but
+ * common case that the query is simple (i.e. comprised of only one sub-query and that query is fitted, i.e. does not require
+ * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link com.thinkaurelius.titan.graphdb.query.QueryProcessor}:
+ * merging of result sets, in-memory filtering and the object instantiation required for in-memory filtering.
+ * </p>
+ * With those complexities removed, the query processor can be much simpler which makes it a lot faster and less
+ * memory intense.
+ * </p>
+ * IMPORTANT: This Iterable is not thread-safe.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     private static final Logger log = LoggerFactory.getLogger(SimpleVertexQueryProcessor.class);
@@ -52,6 +55,8 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     @Override
     public Iterator<Entry> iterator() {
         Iterator<Entry> iter;
+        //If there is a limit we need to wrap the basic iterator in a LimitAdjustingIterator which ensures the right number
+        //of elements is returned. Otherwise we just return the basic iterator.
         if (sliceQuery.hasLimit() && sliceQuery.getLimit()!=query.getLimit()) {
             iter = new LimitAdjustingIterator();
         } else {
@@ -60,24 +65,43 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
         return iter;
     }
 
+    /**
+     * Converts the entries from this query result into actual {@link TitanRelation}.
+     *
+     * @return
+     */
     public Iterable<TitanRelation> relations() {
         return RelationConstructor.readRelation(vertex, this, tx);
     }
 
+    /**
+     * Returns the list of adjacent vertex ids for this query. By reading those ids
+     * from the entries directly (without creating objects) we get much better performance.
+     *
+     * @return
+     */
     public VertexList vertexIds() {
-        AbstractLongList list = new LongArrayList();
+        LongArrayList list = new LongArrayList();
+        long previousId = 0;
         for (Long id : Iterables.transform(this,new Function<Entry, Long>() {
             @Nullable
             @Override
             public Long apply(@Nullable Entry entry) {
-                return edgeSerializer.readRelation(vertex.getID(),entry,true,tx).getOtherVertexId();
+                return edgeSerializer.readRelation(entry,true,tx).getOtherVertexId();
             }
         })) {
             list.add(id);
+            if (id>=previousId && previousId>=0) previousId=id;
+            else previousId=-1;
         }
-        return new VertexLongList(tx,list);
+        return new VertexLongList(tx,list,previousId>=0);
     }
 
+    /**
+     * Executes the query by executing its on {@link SliceQuery} sub-query.
+     *
+     * @return
+     */
     private Iterator<Entry> getBasicIterator() {
         return vertex.loadRelations(sliceQuery, new Retriever<SliceQuery, EntryList>() {
             @Override

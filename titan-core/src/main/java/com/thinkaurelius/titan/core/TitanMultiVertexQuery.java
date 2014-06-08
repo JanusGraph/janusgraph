@@ -6,19 +6,21 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A MultiVertexQuery is identical to a {@link VertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link TitanMultiVertexQuery} allows identical {@link VertexQuery} executed against a non-trivial set
+ * A MultiVertexQuery is identical to a {@link TitanVertexQuery} but executed against a set of vertices simultaneously.
+ * In other words, {@link TitanMultiVertexQuery} allows identical {@link TitanVertexQuery} executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p/>
- * The query specification methods are identical to {@link VertexQuery}. The result set method return Maps from the specified
+ * The query specification methods are identical to {@link TitanVertexQuery}. The result set method return Maps from the specified
  * set of anchor vertices to their respective individual result sets.
+ * <p/>
+ * Call {@link TitanTransaction#multiQuery(java.util.Collection)} to construct a multi query in the enclosing transaction.
  * <p/>
  * Note, that the {@link #limit(int)} constraint applies to each individual result set.
  *
+ * @see TitanVertexQuery
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
-public interface TitanMultiVertexQuery extends BaseVertexQuery {
+public interface TitanMultiVertexQuery<Q extends TitanMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification
@@ -41,39 +43,61 @@ public interface TitanMultiVertexQuery extends BaseVertexQuery {
      */
     public TitanMultiVertexQuery addAllVertices(Collection<TitanVertex> vertices);
 
-    @Override
-    public TitanMultiVertexQuery labels(String... labels);
 
     @Override
-    public TitanMultiVertexQuery types(TitanType... type);
+    public Q adjacent(TitanVertex vertex);
 
     @Override
-    public TitanMultiVertexQuery keys(String... keys);
+    public Q types(RelationType... type);
 
     @Override
-    public TitanMultiVertexQuery direction(Direction d);
+    public Q labels(String... labels);
 
     @Override
-    public TitanMultiVertexQuery has(String key);
+    public Q keys(String... keys);
 
     @Override
-    public TitanMultiVertexQuery hasNot(String key);
+    public Q direction(Direction d);
 
     @Override
-    public TitanMultiVertexQuery has(String type, Object value);
+    public Q has(PropertyKey key, Object value);
 
     @Override
-    public TitanMultiVertexQuery hasNot(String key, Object value);
+    public Q has(EdgeLabel label, TitanVertex vertex);
 
     @Override
-    public TitanMultiVertexQuery has(String key, Predicate predicate, Object value);
+    public Q has(String key);
 
     @Override
-    public <T extends Comparable<?>> TitanMultiVertexQuery interval(String key, T start, T end);
+    public Q hasNot(String key);
 
     @Override
-    public TitanMultiVertexQuery limit(int limit);
+    public Q has(String type, Object value);
 
+    @Override
+    public Q hasNot(String key, Object value);
+
+
+    @Override
+    public Q has(PropertyKey key, Predicate predicate, Object value);
+
+    @Override
+    public Q has(String key, Predicate predicate, Object value);
+
+    @Override
+    public <T extends Comparable<?>> Q interval(String key, T start, T end);
+
+    @Override
+    public <T extends Comparable<?>> Q interval(PropertyKey key, T start, T end);
+
+    @Override
+    public Q limit(int limit);
+
+    @Override
+    public Q orderBy(String key, Order order);
+
+    @Override
+    public Q orderBy(PropertyKey key, Order order);
 
    /* ---------------------------------------------------------------
     * Query execution
@@ -103,10 +127,9 @@ public interface TitanMultiVertexQuery extends BaseVertexQuery {
     public Map<TitanVertex, Iterable<TitanRelation>> relations();
 
     /**
-     * Retrieves all vertices connected to each of the query's central vertices by edges
+     * Retrieves all vertices connected to each of the query's base vertices by edges
      * matching the conditions defined in this query.
      * <p/>
-     * No guarantee is made as to the order in which the vertices are returned.
      *
      * @return An iterable of all vertices connected to each of the query's central vertices by matching edges
      */
@@ -115,9 +138,6 @@ public interface TitanMultiVertexQuery extends BaseVertexQuery {
     /**
      * Retrieves all vertices connected to each of the query's central vertices by edges
      * matching the conditions defined in this query.
-     * <p/>
-     * No guarantee is made as to the order in which the vertices are listed. Use {@link com.thinkaurelius.titan.core.VertexList#sort()}
-     * to sort by vertex idAuthorities most efficiently.
      * <p/>
      * The query engine will determine the most efficient way to retrieve the vertices that match this query.
      *

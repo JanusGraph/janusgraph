@@ -4,12 +4,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.Parameter;
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
@@ -89,7 +92,8 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        tx = new IndexTransaction(index, indexRetriever, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After
@@ -328,6 +332,112 @@ public abstract class IndexProviderTest {
         assertEquals(numDoc / 1000, result.size());
         result = tx.query(new IndexQuery(store, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 0.2), PredicateCondition.of(WEIGHT, Cmp.LESS_THAN, 0.6), PredicateCondition.of(LOCATION, Geo.WITHIN, Geoshape.circle(48.5, 0.5, 1000.00))), numDoc / 1000 * 100));
         assertEquals(oldresultSize, result.size());
+    }
+
+    @Test
+    public void testDeleteDocumentThenDeleteField() throws Exception {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String textValue = "the quick brown fox jumps over the lazy dog";
+
+        initialize(store);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
+        assertEquals(1, result.size());
+        assertEquals(docid, result.get(0));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
+        assertEquals(0, result.size());
+
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
+        tx.commit();
+        t2.delete(store, docid, TEXT, textValue, false);
+        t2.commit();
+
+        clopen();
+
+        // Document must not exist
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testDeleteDocumentThenModifyField() throws Exception {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String textValue = "the quick brown fox jumps over the lazy dog";
+
+        initialize(store);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
+        assertEquals(1, result.size());
+        assertEquals(docid, result.get(0));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
+        assertEquals(0, result.size());
+
+
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
+        tx.commit();
+        t2.add(store, docid, TEXT, "the slow brown fox jumps over the lazy dog", false);
+        t2.commit();
+
+        clopen();
+
+        // Document must not exist
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown"))); // would match original or updated value
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testDeleteDocumentThenAddField() throws Exception {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String textValue = "the quick brown fox jumps over the lazy dog";
+        final String nameValue = "jm keynes";
+
+        initialize(store);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
+        assertEquals(1, result.size());
+        assertEquals(docid, result.get(0));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
+        assertEquals(0, result.size());
+
+
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
+        tx.commit();
+        t2.add(store, docid, NAME, nameValue, false);
+        t2.commit();
+
+        clopen();
+
+        // Document must not exist
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
+        assertEquals(0, result.size());
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
     }
 
     private void initialize(String store) throws StorageException {

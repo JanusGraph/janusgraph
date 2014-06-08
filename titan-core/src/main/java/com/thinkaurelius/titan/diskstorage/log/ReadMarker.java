@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Timepoint;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +44,8 @@ public class ReadMarker {
      * @return
      */
     public Timepoint getStartTime(TimestampProvider times) {
-        if (unit==null) return times.getTime();
+//        if (unit==null) return times.getTime();
+        assert null != unit;
         return times.getTime(sinceEpoch,unit);
     }
 
@@ -54,7 +55,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, 0, null);
+        return new ReadMarker(null, Timestamps.MICRO.getTime().getTimestamp(TimeUnit.MICROSECONDS), TimeUnit.MICROSECONDS);
     }
 
     /**

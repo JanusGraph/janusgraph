@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.graphdb.internal;
 
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanRelation;
-import com.thinkaurelius.titan.core.TitanType;
 
 /**
  * Internal Relation interface adding methods that should only be used by Titan
@@ -31,15 +31,15 @@ public interface InternalRelation extends TitanRelation, InternalElement {
      */
     public int getLen();
 
-    public <O> O getProperty(TitanType type);
+    public <O> O getProperty(RelationType type);
 
-    public <O> O getPropertyDirect(TitanType type);
+    public <O> O getPropertyDirect(RelationType type);
 
-    public void setPropertyDirect(TitanType type, Object value);
+    public void setPropertyDirect(RelationType type, Object value);
 
-    public Iterable<TitanType> getPropertyKeysDirect();
+    public Iterable<RelationType> getPropertyKeysDirect();
 
-    public <O> O  removePropertyDirect(TitanType type);
+    public <O> O  removePropertyDirect(RelationType type);
 
 
 }

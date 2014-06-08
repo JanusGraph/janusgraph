@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -14,6 +16,8 @@ public class RandomGenerator {
 
     private final static int standardLower = 7;
     private final static int standardUpper = 21;
+
+    private static final Random random = new Random();
 
     public static String[] randomStrings(int number) {
         return randomStrings(number, standardLower, standardUpper);

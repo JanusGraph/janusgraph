@@ -1,0 +1,81 @@
+[[bdb]]
+BerkeleyDB
+~~~~~~~~~~
+
+[.tss-center.tss-width-250]
+image:http://download.oracle.com/berkeley-db/docs/je/3.2.76/images/Oracle_BerkeleyDB_clr.bmp[link="http://www.oracle.com/technetwork/products/berkeleydb"]
+
+[quote,'http://www.oracle.com/technetwork/products/berkeleydb[BerkeleyDB Homepage]']
+Berkeley DB enables the development of custom data management
+solutions, without the overhead traditionally associated with such
+custom projects. Berkeley DB provides a collection of well-proven
+building-block technologies that can be configured to address any
+application need from the hand-held device to the datacenter, from a
+local storage solution to a world-wide distributed one, from kilobytes
+to petabytes.
+
+
+The http://www.oracle.com/technetwork/products/berkeleydb[Oracle BerkeleyDB] storage backend runs in the same JVM as Titan and provides local persistence on a single machine. Hence, the BerkeleyDB storage backend requires that all of the graph data fits on the local disk and all of the frequently accessed graph elements fit into main memory. This imposes a practical limitation of graphs with 10-100s million vertices on commodity hardware. However, for graphs of that size the BerkeleyDB storage backend exhibits high performance because all data can be accessed locally within the same JVM.
+
+BerkeleyDB Setup
+^^^^^^^^^^^^^^^^
+
+Since BerkeleyDB runs in the same JVM as Titan, connecting the two only requires a simple configuration and no additional setup:
+
+[source,java]
+Configuration conf = new BaseConfiguration();
+conf.setProperty("storage.directory", "/tmp/graph");
+conf.setProperty("storage.backend", "berkeleyje");
+TitanGraph graph = TitanFactory.open(conf);
+
+In the Gremlin shell, you can not define the type of the variables `conf` and `g`. Therefore, simply leave off the type declaration. 
+
+Currently, BerkeleyDB is the default local storage backend. So, we can use the TitanFactory helper method to open the same graph database.
+
+[source,java]
+TitanGraph graph = TitanFactory.open("/tmp/graph")
+
+This has the same effect as the configuration above, with the only difference that it will create the directory in case it does not already exist where the configuration above would raise an exception.
+
+BerkeleyDB Specific Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In addition to the general _TODO: xref to Graph-Configuration_, there are the following BerkeleyDB specific Titan configuration options:
+
+.BerkeleyDB Configuration Options
+[cols="4,7,2,2,1",options="header"]
+|==========================
+|Option |Description |Value |Default |Modifiable
+
+|storage.transactions |
+Enables transactions and detects conflicting database
+operations. *CAUTION:* While disabling transactions can lead to better
+performance it can cause to inconsistencies and even corrupt the
+database if multiple Titan instances interact with the same instance
+of BerkeleyDB.
+|true or false |true |Yes
+
+|storage.cache-percentage |
+The percentage of JVM heap space (configured via -Xmx) to be allocated
+to BerkeleyDB for its cache. Try to give BerkeleyDB as much space as
+possible without causing memory problems for Titan. For instance, if
+Titan only runs short transactions, use a value of 80 or higher.
+|1-99 |65 |Yes
+
+|==========================
+
+Ideal Use Case
+^^^^^^^^^^^^^^
+
+The BerkeleyDB storage backend is best suited for small to medium size graphs with up to 100 million vertices on commodity hardware. For graphs of that size, it will likely deliver higher performance than the distributed storage backends. Note, that BerkeleyDB is also limited in the number of concurrent requests it can handle efficiently because it runs on a single machine. Hence, it is not well suited for applications with many concurrent users mutating the graph, even if that graph is small to medium size.
+
+Since BerkeleyDB runs in the same JVM as Titan, this storage backend is ideally suited for unit testing of application code using Titan.
+
+Note, that BerkeleyDB has a more restrictive license than Titan. Please review BerkleyDB's license to determine if it can accommodate your use case.
+
+Global Graph Operations
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Titan backed by BerkeleyDB supports global graph operations such as iterating over all vertices or edges. However, note that such operations need to scan the entire database which can require a significant amount of time for larger graphs. 
+
+In order to not run out of memory, it is advised to disable transactions (`storage.transactions=false`) when iterating over large graphs. Having transactions enabled requires BerkeleyDB to acquire read locks on the data it is reading. When iterating over the entire graph, these read locks can easily require more memory than is available.

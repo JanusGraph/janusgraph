@@ -1,0 +1,48 @@
+[[building]]
+Building Titan
+--------------
+
+image:building-titan.png[]
+
+To build Titan you need http://git-scm.com/[git] and http://maven.apache.org/[Maven].
+
+. Clone the https://github.com/thinkaurelius/titan[Titan repository from GitHub] to a local directory.
+. In that directory, execute `mvn clean install`. This will build Titan and run the internal test suite. The internal test suite has no external dependencies. Note, that running all test cases requires a significant amount of time. To skip the tests when building Titan, execute `mvn clean install -DskipTests`
+. For comprehensive test coverage, execute `mvn clean test -P comprehensive`. This will run additional test covering communication to external storage backends, performance tests and concurrency tests. The comprehensive test suite uses Cassandra and HBase as external databases and requires that Cassandra and HBase are installed. Note, that running the comprehensive test suite requires a significant amount of of time (> 1 hour).
+
+Depending on Titan Snapshots
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For developing against the most current version of Titan, depend on Titan snapshot releases. Note, that these releases are development releases and therefore unstable and likely to change. Unless one is interested in the most recent development status of Titan, we recommend to use the stable Titan release instead.
+
+[source,xml]
+<dependency>
+   <groupId>com.thinkaurelius.titan</groupId>
+   <artifactId>titan-core</artifactId>
+   <version>X.Y.Z-SNAPSHOT</version>
+</dependency>
+
+Check the https://github.com/thinkaurelius/titan/tree/[master branch] for the most current release version.
+SNAPSHOTs are available through the https://oss.sonatype.org/content/repositories/snapshots/com/thinkaurelius/titan/[Sonatype repository].
+
+When adding this dependency, be sure to add the following repository to the `pom.xml`:
+
+[source,xml]
+<repository>
+  <id>sonatype-nexus-snapshots</id>
+  <name>Sonatype Nexus Snapshots</name>
+  <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+  <releases>
+    <enabled>false</enabled>
+  </releases>
+  <snapshots>
+    <enabled>true</enabled>
+  </snapshots>
+</repository>
+
+FAQs
+~~~~
+
+*Maven build causes dozens of "[WARNING] We have a duplicate..." errors*
+
+Make sure to use the maven-assembly-plugin when building or depending on Titan. Please refer to https://github.com/thinkaurelius/titan/issues/84[Issue #84] for more information.

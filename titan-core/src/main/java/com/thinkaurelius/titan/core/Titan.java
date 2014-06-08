@@ -12,6 +12,11 @@ public class Titan {
 
     public static final String TTL = "_ttl";
 
+    /**
+     * The version of this Titan graph database
+     *
+     * @return
+     */
     public static String version() {
         return TitanConstants.VERSION;
     }

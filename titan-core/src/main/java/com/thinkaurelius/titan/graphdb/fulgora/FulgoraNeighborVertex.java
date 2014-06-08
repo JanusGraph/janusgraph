@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
-import com.thinkaurelius.titan.graphdb.types.system.SystemType;
+import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.SystemTypeManager;
 import com.thinkaurelius.titan.util.datastructures.Retriever;
 import com.tinkerpop.blueprints.Direction;
@@ -44,17 +44,26 @@ public class FulgoraNeighborVertex implements InternalVertex {
         if (key.equals(executor.stateKey)) {
             return (A)executor.getVertexState(getID());
         }
-        SystemType t = SystemTypeManager.getSystemType(key);
+        SystemRelationType t = SystemTypeManager.getSystemType(key);
         if (t!=null && t instanceof ImplicitKey) return ((ImplicitKey)t).computeProperty(this);
         throw getAccessException();
     }
 
     @Override
-    public <O> O getProperty(TitanKey key) {
+    public <O> O getProperty(PropertyKey key) {
         if (key instanceof ImplicitKey) return ((ImplicitKey)key).computeProperty(this);
         throw getAccessException();
     }
 
+    @Override
+    public String getLabel() {
+        return getVertexLabel().getName();
+    }
+
+    @Override
+    public VertexLabel getVertexLabel() {
+        throw getAccessException();
+    }
 
     @Override
     public boolean isNew() {
@@ -98,7 +107,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public <O> O removeProperty(TitanType type) {
+    public <O> O removeProperty(RelationType type) {
         throw getAccessException();
     }
 
@@ -113,7 +122,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public void setProperty(TitanKey key, Object value) {
+    public void setProperty(PropertyKey key, Object value) {
         throw getAccessException();
     }
 
@@ -124,7 +133,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
 
     @Override
     public StandardTitanTx tx() {
-        throw new UnsupportedOperationException("This vertex is not associated with a transaction");
+        return executor.tx();
     }
 
     @Override
@@ -178,7 +187,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public TitanEdge addEdge(TitanLabel label, TitanVertex vertex) {
+    public TitanEdge addEdge(EdgeLabel label, TitanVertex vertex) {
         throw getAccessException();
     }
 
@@ -188,7 +197,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public TitanProperty addProperty(TitanKey key, Object attribute) {
+    public TitanProperty addProperty(PropertyKey key, Object attribute) {
         throw getAccessException();
     }
 
@@ -213,7 +222,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public Iterable<TitanProperty> getProperties(TitanKey key) {
+    public Iterable<TitanProperty> getProperties(PropertyKey key) {
         throw getAccessException();
     }
 
@@ -223,7 +232,7 @@ public class FulgoraNeighborVertex implements InternalVertex {
     }
 
     @Override
-    public Iterable<TitanEdge> getTitanEdges(Direction d, TitanLabel... labels) {
+    public Iterable<TitanEdge> getTitanEdges(Direction d, EdgeLabel... labels) {
         throw getAccessException();
     }
 

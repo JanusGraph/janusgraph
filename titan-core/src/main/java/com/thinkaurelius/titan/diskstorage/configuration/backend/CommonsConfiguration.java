@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.Durations;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.Durations;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 
@@ -15,8 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -82,20 +81,22 @@ public class CommonsConfiguration implements WriteConfiguration {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             Object o = config.getProperty(key);
             if (Duration.class.isInstance(o)) {
-                return (O)o;
+                return (O) o;
             } else {
                 String[] comps = o.toString().split("\\s");
                 TimeUnit unit = null;
-                if (comps.length==1) {
+                if (comps.length == 1) {
                     //By default, times are in milli seconds
                     unit = TimeUnit.MILLISECONDS;
-                } else if (comps.length==2) {
+                } else if (comps.length == 2) {
                     unit = Durations.parse(comps[1]);
                 } else {
                     throw new IllegalArgumentException("Cannot parse time duration from: " + o.toString());
                 }
-                return (O)new StandardDuration(Long.valueOf(comps[0]), unit);
+                return (O) new StandardDuration(Long.valueOf(comps[0]), unit);
             }
+        } else if (List.class.isAssignableFrom(datatype)) {
+            return (O) config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + datatype);
     }
 

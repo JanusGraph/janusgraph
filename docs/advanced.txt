@@ -1,0 +1,20 @@
+Advanced Topics
+===============
+
+include::bulkloading.txt[]
+
+include::multiquery.txt[]
+
+include::hadoop.txt[]
+
+include::advblueprints.txt[]
+
+include::building.txt[]
+
+include::monitoring.txt[]
+
+include::datamodel.txt[]
+
+include::generating.txt[]
+
+include::eventualconsistency.txt[]

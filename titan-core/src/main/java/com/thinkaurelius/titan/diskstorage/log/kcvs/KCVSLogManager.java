@@ -1,6 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -10,15 +12,17 @@ import com.thinkaurelius.titan.diskstorage.log.Log;
 import com.thinkaurelius.titan.diskstorage.log.LogManager;
 import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.idassigner.placement.PartitionIDRange;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.StandardSerializer;
+import com.thinkaurelius.titan.util.stats.NumberUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import javax.annotation.Nullable;
+import java.util.*;
 
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.IDS_PARTITION;
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 /**
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
@@ -28,10 +32,24 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
  */
 public class KCVSLogManager implements LogManager {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(KCVSLogManager.class);
+
     public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<Boolean>(LOG_NS,"fixed-partition",
             "Whether all log entries are written to one fixed partition even if the backend store is partitioned." +
                     "This can cause imbalanced loads and should only be used on low volume logs",
             ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS,"max-partitions",
+            "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 1" +
+                    "and a power of 2.",
+            ConfigOption.Type.FIXED, Integer.class, new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer integer) {
+            return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
+        }
+    });
+
 
     /**
      * Configuration of this log manager
@@ -96,26 +114,52 @@ public class KCVSLogManager implements LogManager {
         this.senderId=config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         Preconditions.checkNotNull(senderId);
 
-        if (config.get(IDS_PARTITION)) {
-            //TODO in Titan0.6: Use the configured system-level partitionBitWdith
-            this.partitionBitWidth=5; //32 partitions by default
+        if (config.get(CLUSTER_PARTITION)) {
+            ConfigOption<Integer> maxPartitionConfig = config.has(LOG_MAX_PARTITIONS)?
+                                                        LOG_MAX_PARTITIONS:CLUSTER_MAX_PARTITIONS;
+            int maxPartitions = config.get(maxPartitionConfig);
+            Preconditions.checkArgument(maxPartitions<=config.get(CLUSTER_MAX_PARTITIONS),
+                    "Number of log partitions cannot be larger than number of cluster partitions");
+            this.partitionBitWidth= NumberUtil.getPowerOf2(maxPartitions);
         } else {
             this.partitionBitWidth=0;
         }
         Preconditions.checkArgument(partitionBitWidth>=0 && partitionBitWidth<32);
+        final int numPartitions = (1<<partitionBitWidth);
 
         //Partitioning
-        if (config.get(IDS_PARTITION) && !config.get(LOG_FIXED_PARTITION)) {
-            //TODO in Titan0.6: Use only the local ids (if such exist upon inspecting storeManager features). Reuse between VertexIdAssigner
-            this.defaultWritePartitionIds=new int[(1<<partitionBitWidth)];
-            for (int i=0;i<(1<<partitionBitWidth);i++) defaultWritePartitionIds[i]=i;
+        if (config.get(CLUSTER_PARTITION) && !config.get(LOG_FIXED_PARTITION)) {
+            //Write partitions - default initialization: writing to all partitions
+            int[] writePartitions = new int[numPartitions];
+            for (int i=0;i<numPartitions;i++) writePartitions[i]=i;
+            if (storeManager.getFeatures().hasLocalKeyPartition()) {
+                //Write only to local partitions
+                List<Integer> localPartitions = new ArrayList<Integer>();
+                try {
+                    List<PartitionIDRange> partitionRanges = PartitionIDRange.getIDRanges(partitionBitWidth,
+                            storeManager.getLocalKeyPartition());
+                    for (PartitionIDRange idrange : partitionRanges) {
+                        for (int p : idrange.getAllContainedIDs()) localPartitions.add(p);
+                    }
+                } catch (Throwable e) {
+                    log.error("Could not process local id partitions",e);
+                }
+
+                if (!localPartitions.isEmpty()) {
+                    writePartitions = new int[localPartitions.size()];
+                    for (int i=0;i<localPartitions.size();i++) writePartitions[i]=localPartitions.get(i);
+                }
+            }
+            this.defaultWritePartitionIds = writePartitions;
+            //Read partitions
             if (readPartitionIds!=null && readPartitionIds.length>0) {
                 for (int readPartitionId : readPartitionIds) {
                     checkValidPartitionId(readPartitionId,partitionBitWidth);
                 }
                 this.readPartitionIds = Arrays.copyOf(readPartitionIds,readPartitionIds.length);
             } else {
-                this.readPartitionIds = Arrays.copyOf(defaultWritePartitionIds,defaultWritePartitionIds.length);
+                this.readPartitionIds=new int[numPartitions];
+                for (int i=0;i<numPartitions;i++) this.readPartitionIds[i]=i;
             }
         } else {
             this.defaultWritePartitionIds=new int[]{0};

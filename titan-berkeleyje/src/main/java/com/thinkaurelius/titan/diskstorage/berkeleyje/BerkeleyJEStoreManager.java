@@ -6,11 +6,12 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.LocalStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -18,16 +19,19 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 import com.thinkaurelius.titan.util.system.IOUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.thinkaurelius.titan.diskstorage.configuration.ConfigOption.disallowEmpty;
 
+@PreInitializeConfigOptions
 public class BerkeleyJEStoreManager extends LocalStoreManager implements OrderedKeyValueStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJEStoreManager.class);
@@ -107,7 +111,12 @@ public class BerkeleyJEStoreManager extends LocalStoreManager implements Ordered
     }
 
     @Override
-    public BerkeleyJETx beginTransaction(final TransactionHandleConfig txCfg) throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BerkeleyJETx beginTransaction(final BaseTransactionConfig txCfg) throws StorageException {
         try {
             Transaction tx = null;
 

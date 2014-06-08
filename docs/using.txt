@@ -1,0 +1,823 @@
+Using Titan
+===========
+
+This section describes how to read and write graph data with Titan from an application's point of view.
+
+[[tinkerpop]]
+TinkerPop
+---------
+
+Titan natively implements the http://blueprints.tinkerpop.com[Blueprints] interface.  This means that Titan supports all of the open-source technologies in the http://www.tinkerpop.com[TinkerPop] graph stack:
+
+* http://gremlin.tinkerpop.com[Gremlin] - A graph traversal language for expressing complex walks through a graph.  http://gremlindocs.com/[GremlinDocs] is a cheat-sheet for the language.
+* http://frames.tinkerpop.com[Frames] - An object-to-graph mapper for rendering Java objects from graph data.
+* http://rexster.tinkerpop.com[Rexster] - A graph server for exposing the graph via REST, a binary protocol, and HTML-based GUI tools.
+
+Being a native implementation means that Titan directly implements the Blueprints interface without an adapter. This makes Titan one of the most efficient Blueprints implementations which benefits the performance of all TinkerPop projects when running on Titan.
+
+[[blueprints]]
+Blueprints Interface
+--------------------
+
+image:https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-logo.png[link="http://blueprints.tinkerpop.com"]
+
+Titan natively implements the Blueprints API which means that Blueprints is the core interface for Titan. http://blueprints.tinkerpop.com[Blueprints] is an open source, community developed Java interface for graph databases that expose a https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[property graph] data model. By implementing Blueprints natively, Titan delivers two benefits: 
+
+. Any technology written against the Blueprints API works efficiently and seamlessly on Titan. This includes all open-source products in the <<tinkerpop,TinkerPop graph stack>>.
+. Any application written for Titan can be migrated to another Blueprints enabled graph database, so there is no vendor lock-in. 
+
+[NOTE]
+Consult the https://github.com/tinkerpop/blueprints/wiki/[Blueprints Manual] or the
+http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html[Blueprints Core API JavaDoc]
+for more information about Blueprints.
+
+Introduction to TitanGraph
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[.tss-center]
+image:juno-married.png[]
+
+[source,java]
+TitanGraph g = TitanFactory.open("/tmp/titan");
+Vertex juno = g.addVertex(null);
+juno.setProperty("name", "juno");
+Vertex jupiter = g.addVertex(null);
+jupiter.setProperty("name", "jupiter");
+Edge married = g.addEdge(null, juno, jupiter, "married");
+
+A `TitanGraph` implements Blueprints' `Graph` interface. A `TitanGraph` is created via the `TitanFactory`. The `TitanFactory.open()` method accepts either a local directory or a configuration file or an Apache configuration object containing a <<graph-config>>. In the code example above, a directory is used which opens a local Titan instance storing data at that location. Then, two vertices were created named "jupiter" and "juno." These two vertices were joined in holy matrimony via a `married` edge. 
+
+Please review the http://tinkerpop.com/docs/javadocs/blueprints/2.1.0/com/tinkerpop/blueprints/package-summary.html[Blueprints Core API] for a complete listing of all the Blueprints methods available.
+
+Vertex Queries
+~~~~~~~~~~~~~~
+
+Continuing with the example above, more vertices are created that are connected to by Juno.
+
+[.tss-center]
+image:super-node.png[]
+
+[source,java]
+----
+Vertex turnus = g.addVertex(null);
+turnus.setProperty("name", "turnus");
+Vertex hercules = g.addVertex(null);
+hercules.setProperty("name", "hercules")
+Vertex dido = g.addVertex(null);
+dido.setProperty("name", "dido");
+Vertex troy = g.addVertex(null);
+troy.setProperty("name", "troy");
+Vertex jupiter = g.addVertex(null);
+jupiter.setProperty("name", "jupiter");
+
+Edge edge = g.addEdge(null, juno, turnus, "knows");
+edge.setProperty("since",2010);
+edge.setProperty("stars",5);
+edge = g.addEdge(null, juno, hercules, "knows");
+edge.setProperty("since",2011);
+edge.setProperty("stars",1);
+edge = g.addEdge(null, juno, dido, "knows");
+edge.setProperty("since", 2011);
+edge.setProperty("stars", 5);
+g.addEdge(null, juno, troy, "likes").setProperty("stars",5);
+----
+
+Blueprints (and Titan) supports the notion of https://github.com/tinkerpop/blueprints/wiki/Vertex-Query[vertex-centric queries] which can be understood as a query of the elements directly connected to a vertex (i.e. incident edges or adjacent vertices). An example vertex query is provided below:
+
+[quote]
+Find all the people that Juno greatly admires who she has known since the year 2011.
+
+[source,java]
+Iterable<Vertex> results =
+    juno.query().labels("knows").has("since",2011).has("stars",5).vertices()
+
+The benefit of a vertex query is that it reduces the amount of data that needs to be pulled off the disk and filtered in-memory. This is important when considering extremely branchy graphs or graphs with "hot spots" called hubs or super-nodes. In these situations, it is imperative to reduce the search space to only that which is required for the particular query. Given the diagrammed graph above, if no restrictions are given to the query (e.g. `juno.query().vertices()`), then 5 vertices are returned. 
+
+[source,java]
+----
+for(Vertex vertex : juno.query().vertices()) { 
+  System.out.println(vertex.getProperty("name")) 
+}
+
+// System.out
+hercules
+turnus
+jupiter
+dido
+troy
+----
+
+However, given the query in the block of code above, only 1 vertex is returned -- the Dido vertex. In this way, intelligent filtering provides performance benefits by reducing the processing and memory footprint required of the consuming application.
+
+[source,java]
+----
+for(Vertex vertex : juno.query().labels("knows").has("since",2011).has("stars",5).vertices()) {
+  System.out.println(vertex.getProperty("name"));
+}
+
+// System.out
+dido
+----
+
+[[blueprints-vertex-index]]
+Graph Indices
+~~~~~~~~~~~~~
+
+In the section above, we demonstrated how vertices can be retrieved by following edges in the graph using vertex-centric queries. Vertices can also be retrieved via property indices. 
+
+[source,java]
+TitanGraph g = TitanFactory.open("/tmp/titan");
+g.createKeyIndex("name",Vertex.class);
+Vertex juno = g.addVertex(null);
+juno.setProperty("name", "juno");
+juno = g.getVertices("name","juno").iterator().next();
+
+In the example above, we first create a vertex index for the property key `name`. Property indices have to be explicitly created, so that Titan knows what needs to be indexed. Next, we create the vertex "juno" and set its name as before. Since we set the property `name`, the juno vertex is now indexed. We can retrieve it from the index using the `getVertices(String,Object)` method, which returns an iterable over all vertices that have a matching property.
+
+Titan can also retrieve edges using property indices. Extending on the example above:
+
+[source,java]
+g.createKeyIndex("time",Edge.class);
+Vertex jena = g.addVertex(null);
+jena.setProperty("name", "jena");
+Edge e = jena.addEdge("knows",juno);
+e.setProperty("time",99);
+g.getEdges("time",99).iterator().next();
+
+As in the previous example, we first create an edge index for the property key `time`. After adding an edge with a time property, we can retrieve that edge using the index.
+
+Read more about https://github.com/tinkerpop/blueprints/wiki/Graph-Indices[Blueprints indices] and note the following <<limitations,Titan-specific limitations>>: Key indices need to be created before the key is first used.
+
+[[gremlin]]
+Gremlin Query Language
+----------------------
+
+image:https://github.com/tinkerpop/gremlin/raw/master/doc/images/gremlin-logo.png[link="http://gremlin.tinkerpop.com"]
+
+Titan supports the standard http://gremlin.tinkerpop.com[Gremlin] graph query language for complex graph traversal and mutation operations. Gremlin is a http://en.wikipedia.org/wiki/Functional_programming[functional language] whereby traversal operators are chained together to form path-like expressions. For example, "from Hercules, traverse to his father and then his father's father and return the grandfather's name." 
+
+This section of documentation will only briefly overview Gremlin. For more complete documentation on Gremlin, please see the http://gremlin.tinkerpop.com[online documentation]. Moreover, the examples are with respects to Gremlin-Groovy and note that there are other https://github.com/tinkerpop/gremlin/wiki/JVM-Language-Implementations[JVM language implementations] of Gremlin.
+
+[NOTE]
+See the http://gremlin.tinkerpop.com[Gremlin Manual] to learn more about the language.
+
+Introductory Traversals
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When working with Gremlin, it is important to realize the query as a chain of operations/functions that are read from left to right. A simple grandfather query is provided below over the _Graph of the Gods_ dataset.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+The query above can be read:
+
+. `g`: for the current graph.
+. `V('name','hercules')`: get all vertices with name property "hercules" (there is only one).
+. `out('father')`: traverse outgoing father edge's from Hercules.
+. `out('father')`: traverse outgoing father edge's from Hercules' father's vertex (i.e. Jupiter).
+. `name`: get the name property of the "hercules" vertex's grandfather.
+
+Each step can be decomposed and its results demonstrated. This style of building up a traversal/query is useful when constructing larger, complex query chains.
+
+[source,gremlin]
+gremlin> g                                                            
+==>titangraph[cassandrathrift:127.0.0.1]
+gremlin> g.V('name','hercules')
+==>v[24]
+gremlin> g.V('name','hercules').out('father')
+==>v[16]
+gremlin> g.V('name','hercules').out('father').out('father')
+==>v[20]
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+For a sanity check, it is usually good to look at the properties of each return, not the assigned long id.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').name                            
+==>hercules
+gremlin> g.V('name','hercules').out('father').name              
+==>jupiter
+gremlin> g.V('name','hercules').out('father').out('father').name
+==>saturn
+
+Note the related traversal that shows the entire father family tree branch of Hercules. This more complicated traversal is provided in order to demonstrate the flexibility and expressivity of the language. A competent grasp of Gremlin provides the Titan user the ability to fluently navigate the underlying graph structure.
+
+[source,gremlin]
+gremlin> g.V('name','hercules').out('father').loop(1){true}{true}.name
+==>jupiter
+==>saturn
+
+Some more traversal examples are provided below.
+
+[source,gremlin]
+gremlin> hercules = g.V('name','hercules').next() 
+==>v[24]
+gremlin> hercules.out('father','mother').type
+==>god
+==>human
+gremlin> hercules.out('battled').type
+==>monster
+==>monster
+==>monster
+gremlin> hercules.out('battled').map    
+==>{name=nemean, type=monster}
+==>{name=hydra, type=monster}
+==>{name=cerberus, type=monster}
+
+Traversing with Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Each _step_ (denoted by a separating `.`) is a function that operates on the objects emitted from the previous step. There are numerous steps in the Gremlin language (see https://github.com/tinkerpop/gremlin/wiki/Gremlin-Steps[Gremlin Steps]). By simply changing a step or order of the steps, different traversal semantics are enacted. The example below returns the name of all the people that have battled the same monsters as Hercules who themselves are not Hercules (i.e. "co-battlers" or perhaps, "allies"). Given that _The Graph of the Gods_ only has one battler (Hercules), another battler (for the sake of example) is added to the graph with Gremlin.
+
+[source,gremlin]
+gremlin> theseus = g.addVertex([name:'theseus',type:'human'])
+==>v[302]
+gremlin> cerberus = g.V('name','cerberus').next()
+==>v[48]
+gremlin> g.addEdge(theseus,cerberus,'battled')
+==>e[151200009:302:36028797018964038][302-battled->48]
+
+[source,gremlin]
+gremlin> hercules.out('battled').in('battled').except([hercules]).name
+==>theseus
+
+The example above has 4 chained functions: `out`, `in`, `except`, and `property` (i.e. `name` is shorthand for `property('name')`). The function signatures of each are itemized below, where `V` is vertex and `U` is any object, where `V` is a subset of `U`.
+
+. `out: V -> V`
+. `in: V -> V`
+. `except: U -> U`
+. `property: V -> U`
+
+When chaining together functions, the incoming type must match the outgoing type, where `U` matches anything. Thus, the "co-battled/ally" traversal above is correct.
+
+Helper Configuration Files for Easy Local Connectivity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When working with Gremlin against a local instance of <<hbase,HBase>> or <<cassandra,Cassandra>>, the following behavior is constantly repeated. 
+
+[source,java]
+conf = new BaseConfiguration();
+conf.setProperty("storage.backend","cassandra");
+conf.setProperty("storage.hostname","127.0.0.1");
+
+To make this easier, there are several configuration files in the `conf/` directory.  Paths to these files can be passed to `TitanFactory.open(...)` as shown below:
+
+[source,java]
+// Connect to Cassandra on localhost using a default configuration
+graph = TitanFactory.open("conf/titan-cassandra.properties")
+// Connect to HBase on localhost using a default configuration
+graph = TitanFactory.open("conf/titan-hbase.properties")
+
+[[rexster]]
+Rexster Graph Server
+--------------------
+
+image:https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png[link="http://rexster.tinkerpop.com"]
+
+http://rexster.tinkerpop.com[Rexster] exposes any Titan graph database via a JSON-based https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST] interface and a binary protocol called https://github.com/tinkerpop/rexster/wiki/RexPro[RexPro]. Provided and custom algorithms (called https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Kibbles]) can be stored on the server, triggered via HTTP, and their results returned via JSON. Finally, Rexster provides an administration and visualization interface that can be accessed from most major web browsers.  Rexster and Titan can be separately downloaded and configured to work together, or they can be downloaded together through the `titan-server` distribution on the _TODO xref to downloads_ page.
+
+The Benefits of Rexster
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.Rexster Dog House Visualization
+image::rexster-dog-house-viz.png[]
+
+.Rexster Dog House Gremlin Shell
+image::rexster-dog-house-gremlin.png[]
+
+The following is a list of the https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster[benefits of using Rexster].
+
+* https://github.com/tinkerpop/rexster/wiki/Mapping-a-URI-to-JSON[JSON-based REST interface] ensures language agnostic connectivity to Titan.
+** See http://bulbflow.com/[Bulbs] or https://pypi.python.org/pypi/mogwai[Mogwai] for a Python connector.
+* HTML/JavaScript https://github.com/tinkerpop/rexster/wiki/The-Dog-House[graphical user interface] for graph administration and visualization.
+* Extend with more RESTful endpoints by adding https://github.com/tinkerpop/rexster/wiki/Creating-an-Extension[Kibbles] to Rexster.
+** See https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster-Kibbles] provided by TinkerPop.
+* Remote Gremlin traversals via the https://github.com/tinkerpop/rexster/wiki/Gremlin-Extension[Gremlin extensions] and the https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster console].
+* https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Security support] via user authentification.
+
+Downloading and Starting Rexster with Titan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are two ways to download and install Rexster with Titan.
+
+To get started with Rexster and Titan quickly, consider the titan-server zip distribution.  This contains Rexster, Titan, Cassandra, and Elasticsearch in a single download, preconfigured to work together.  It also contains the convenience script `bin/titan.sh` to start and stop the Cassandra and Rexster services (ES runs embedded in the Titan + Rexster VM and doesn't use a separate process).
+
+To use Titan backends besides Cassandra and ES, or to run graph engines besides Titan within a shared Rexster server, download Rexster and Titan separately and then install Titan as a Rexster extension.
+
+Each of these approaches is described below.
+
+Getting started quickly with titan-server.zip
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Download a copy of the current `titan-server-$VERSION.zip` file from the _TODO xref to downloads_ page.
+* Unzip it and enter the `titan-server-$VERSION` directory
+* Run `bin/titan.sh start` to start a Rexster server with Titan + Cassandra, or run `bin/titan.sh -c cassandra-es start` to start a Rexster server with Titan + Cassandra + Elasticsearch.
+* Connect to Rexster using `bin/rexster-console.sh`, the REST API, or an application using RexsterClient (each method is described below in the "Connecting to Rexster" section)
+* Run `bin/titan.sh status` to check on the forked processes and `bin/titan.sh stop` to kill them
+
+*NOTE* - The Rexster working directory is in `TITAN_HOME/rexhome`.  Server-side Gremlin scripts should be defined in `rexster.xml` with a path starting from there.
+
+Downloading Rexster and Titan separately
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This section describes the process of downloading a stock Rexster distribution, testing it in its default configuration, and then installing and configuring Titan as an extension.
+
+Rexster can be downloaded at https://github.com/tinkerpop/rexster/wiki/Downloads. Below is a snippet of shell commands that demonstrate the process for getting Rexster downloaded and started using a default configuration.
+
+[source,bourne]
+----
+$ curl -O -L http://tinkerpop.com/downloads/rexster/rexster-server-x.y.z.zip > rexster-server-x.y.z.zip
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current ...
+...
+$ unzip rexster-server-x.y.z.zip
+Archive:  rexster-server-x.y.z.zip
+   creating: rexster-server-x.y.z/
+...
+$ cd rexster-server-x.y.z
+$ ./bin/rexster.sh --start
+----
+
+Validate that it is working by opening a browser and navigating to `http://localhost:8182` which should present a Rexster landing page with links to the root of the REST API and to the Dog House.
+
+Use `CTRL-C` to kill the server. Now that Rexster is downloaded and verified to be working, it is necessary to configure Rexster to work with Titan.
+
+Configuring Rexster to use Titan
+++++++++++++++++++++++++++++++++
+
+This section explains how to configure Rexster to use a Titan graph database (see also Rexster's https://github.com/tinkerpop/rexster/wiki/Getting-Started[Getting Started page]).
+
+_PREREQUISITE:_ These instructions assume that a graph has been created in Titan as described in <<getting-started>>.
+
+Edit the `REXSTER_HOME/rexster.xml` and include the Titan configuration portion in the `graphs` section (see https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration[Rexster Configuration]).
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<rexster>
+  ...
+  <graphs>
+    <graph>
+      <graph-name>titanexample</graph-name>
+      <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+      <graph-location>/tmp/titan</graph-location>
+      <graph-read-only>false</graph-read-only>
+      <properties>
+            <storage.backend>local</storage.backend>
+            <storage.buffer-size>100</storage.buffer-size>
+      </properties>
+      <extensions>
+        <allows>
+          <allow>tp:gremlin</allow>
+        </allows>
+      </extensions>
+    </graph>
+  </graphs>
+</rexster>
+----
+
+// [[https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-character-2.png|align=right|float|width=100px]]
+
+Rexster's _graph-location_ option is equivalent to Titan's _storage.directory_. In the event that Titan is being configured for "local" mode, please make sure that this value is an existing directory.  All other Titan specific configurations are subsumed under _properties_. In the example above, the backend and the buffer size are configured. Any of the <<graph-config,Titan configurations>> can be used here.
+
+Rexster needs to have Titan and its related library dependencies made available to it.  Rexster has an `ext` directory where https://github.com/tinkerpop/rexster/wiki/Extensions[extensions] and other related libraries can be put on Rexster's path for https://github.com/tinkerpop/rexster/wiki/Deploying-an-Extension[deployment].  All files in the root of that directory and sub-directories will be added to Rexster's classpath.
+
+To add Titan to Rexster, first make a directory as in:
+
+[source,text]
+mkdir REXSTER_HOME/ext/titan
+
+Then, if building Titan from source:
+
+[source,text]
+cp TITAN_HOME/target/titan-x.y.z-standalone/lib/*.* REXSTER_HOME/ext/titan
+
+or, if using the Titan zipped distribution download (use the titan-server distribution -- it contains necessary classes for Titan-Rexster integration):
+
+[source,text]
+cp TITAN_HOME/lib/*.* REXSTER_HOME/ext/titan
+
+Start Rexster with:
+
+[source,text]
+rexster$ bin/rexster.sh -s -c rexster.xml
+
+Access the Titan graph at the following URI:
+
+[source,text]
+http://localhost:8182/graphs/titanexample
+
+[NOTE]
+For those using ElasticSearch, Rexster includes lucene-core-3.5.0.jar (a neo4j dependency).  Assuming Neo4j is not being utilized in the Rexster instance, simply delete that file from the rexster `lib` directory.  Removing it will eliminate a conflict with Titan and allow ElasticSearch to start.  
+
+[NOTE]
+It is important to ensure that the `titan-rexster.jar` is in the `ext` directory as it is not available in all Titan distributions.  
+
+Connecting to Rexster
+~~~~~~~~~~~~~~~~~~~~~
+
+Regardless of the download and installation method chosen above, Rexster accepts connections through either RexPro or the REST API once started.
+
+Connect via rexster-console.sh
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Start https://github.com/tinkerpop/rexster/wiki/Rexster-Console[Rexster Console] with the default settings (127.0.0.0:8184) and then call `rexster.getGraph("graph")` to retrieve a Titan graph instance reference.
+
+[source,text]
+----
+$  bin/rexster-console.sh 
+        (l_(l
+(_______( 0 0
+(        (-Y-) <woof>
+l l-----l l
+l l,,   l l,,
+opening session [127.0.0.1:8184]
+[INFO] EngineController - ScriptEngineManager has factory for: ECMAScript
+[INFO] EngineController - ScriptEngineManager has factory for: Groovy
+[INFO] EngineController - ScriptEngineManager has factory for: gremlin-groovy
+[INFO] EngineController - Registered ScriptEngine for: gremlin-groovy
+[INFO] EngineHolder - Initializing gremlin-groovy engine with additional imports.
+[INFO] RexProSessions - RexPro Session created: 06885b49-71c4-49e6-9cc5-bd42b8c59740
+?h for help
+
+rexster[groovy]> g = rexster.getGraph("graph")
+==>titangraph[cassandra:null]
+rexster[groovy]> g.getClass()
+==>class com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
+rexster[groovy]>
+----
+
+Connecting to the https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[REST API]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[source,text]
+curl http://localhost:8182/graphs
+
+[source,javascript]
+----
+{
+    "version": "x.y.z",
+    "name": "Rexster: A Graph Server",
+    "graphs": [
+        "graph"
+    ],
+    "queryTime": 0.217059,
+    "upTime": "0[d]:00[h]:00[m]:05[s]"
+}
+----
+
+Connecting using RexsterClient
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+https://github.com/tinkerpop/rexster/wiki/RexPro-Java[RexsterClient] uses RexPro to talk to the Rexster server.  Here's sample code that uses RexsterClient to issue a query over a <<getting-started,Graph of the Gods>>.
+
+[source,java]
+----
+RexsterClient client = RexsterClientFactory.open("localhost", "graph");
+List<Map<String,Object>> result;
+result = client.execute("g.V('name','saturn').in('father').map");
+// result.toString(): [{name="jupiter", type="god"}]
+
+Map<String,Object> params = new HashMap<String,Object>();
+params.put("name","saturn");
+result = client.execute("g.V('name',name).in('father').map",params);
+client.close();
+----
+
+First above, a connection to the Titan Server is established. Gremlin queries are issued as strings using the `RexsterClient.execute()` methods. Each query is executed in its own transaction. Explicit transaction handling is not necessary. The result set is a list of query answers, where each query answer is represented as a map of key-value pairs. `RexsterClient` provides additional `execute()` methods where the signature of each query answer can be specified as a template. The second query is semantically identical to the first, but in this case we are passing in the name as a variable binding for the corresponding variable used in the query. Once all queries have been issued, the connection is closed.
+
+Limitations
+~~~~~~~~~~~
+
+Rexster has a rich https://github.com/tinkerpop/rexster/wiki/Basic-REST-API[API] for working with Blueprints Graph implementations, but there are some limitations to consider when using Rexster with Titan:
+
+* Titan automatically assigns identifiers. Hence, the POST of an edge cannot be done with an identifier. In other words, POST to this: `http://localhost/graphs/titan/edges` and _not_ to this `http://localhost/graphs/titan/edges/1234`.
+* Titan uses key indices and does not support manual indices. Hence, all operations on the `indices` resource are not supported. Use key indexes instead.
+
+[[tx]]
+Transactions
+------------
+
+Almost all interaction with Titan is associated with a transaction.  Titan transactions are safe for concurrent use by multiple threads.  Methods on a TitanGraph instance like `graph.getVertex(...)` and `graph.commit()` perform a `ThreadLocal` lookup to retrieve or create a transaction associated with the calling thread.  Callers can alternatively forego `ThreadLocal` transaction management in favor of calling `graph.newTransaction()`, which returns a reference to a transaction object with methods to read/write graph data and commit or rollback.
+
+Titan transactions are not necessarily ACID.  They can be so configured on BerkleyDB, but they are not generally so on Cassandra or HBase, where the underlying storage system does not provide serializable isolation or multi-row atomic writes and the cost of simulating those properties would be substantial.
+
+This section describes Titan's transactional semantics and API.
+
+Transaction Handling
+~~~~~~~~~~~~~~~~~~~~
+
+Every graph operation in Titan occurs within the context of a transaction. According to the Blueprints' specification, each thread opens its own transaction against the graph database with the first operation (i.e. retrieval or mutation) on the graph::
+
+[source,java]
+----
+TitanGraph g = TitanFactory.open("/tmp/titan");
+Vertex juno = g.addVertex(null); //Automatically opens a new transaction
+juno.setProperty("name", "juno");
+g.commit(); //Commits transaction
+----
+
+In this example, a local Titan graph database is opened. Adding the vertex "juno" is the first operation (in this thread) which automatically opens a new transaction. All subsequent operations occur in the context of that same transaction until the transaction is explicitly stopped or the graph database `shutdown()` which commits all currently running transactions. Note, that both read and write operations occur within the context of a transaction.
+
+Transactional Scope
+~~~~~~~~~~~~~~~~~~~
+
+All graph elements (vertices, edges, and types) are associated with the transactional scope in which they were retrieved or created. Under Blueprint's default transactional semantics, transactions are automatically created with the first operation on the graph and closed explicitly using `commit()` or `rollback()`. Once the transaction is closed, all graph elements associated with that transaction become stale and unavailable. However, Titan will automatically transition vertices and types into the new transactional scope as shown in this example::
+
+[source,java]
+TitanGraph g = TitanFactory.open("/tmp/titan");
+Vertex juno = g.addVertex(null); //Automatically opens a new transaction
+g.commit(); //Ends transaction
+juno.setProperty("name", "juno"); //Vertex is automatically transitioned
+
+Edges, on the other hand, are not automatically transitioned and cannot be accessed outside their original transaction. They must be explicitly transitioned.
+
+[source,java]
+Edge e = juno.addEdge("knows",g.addVertex(null));
+g.commit(); //Ends transaction
+e = g.getEdge(e); //Need to refresh edge
+e.setProperty("time", 99);
+
+Transaction Failures
+~~~~~~~~~~~~~~~~~~~~
+
+When committing a transaction, Titan will attempt to persist all changes to the storage backend. This might not always be successful due to IO exceptions, network errors, machine crashes or resource unavailability. Hence, transactions can fail. In fact, transactions *will eventually fail* in sufficiently large systems. Therefore, we highly recommend that your code expects and accommodates such failures.
+
+[source,java]
+try {
+    if (g.getVertices("name",name).iterator().hasNext())
+        throw new IllegalArgumentException("Username already taken: " + name);
+    Vertex user = g.addVertex(null);
+    user.setProperty("name", name);
+    g.commit();
+} catch (TitanException e) {
+    //Recover, retry, 	or return error message
+}
+
+The example above demonstrates a simplified user signup implementation where `name` is the name of the user who wishes to register. First, it is checked whether a user with that name already exists. If not, a new user vertex is created and the name assigned. Finally, the transaction is committed.
+
+If the transaction fails, a `TitanException` is thrown. There are a variety of reasons why a transaction may fail. Titan differentiates between _potentially temporary_ and _permanent_ failures. 
+
+Potentially temporary failures are those related to resource unavailability and IO hickups (e.g. network timeouts). Titan automatically tries to recover from temporary failures by retrying to persist the transactional state after some delay. The number of retry attempts and the retry delay can be configured through the _TODO: xref to Graph Configuration_.
+
+Permanent failures can be caused by complete connection loss, hardware failure or lock contention. To understand the cause of lock contention, consider the signup example above and suppose a user tries to signup with username "juno". That username may still be available at the beginning of the transaction but by the time the transaction is committed, another user might have concurrently registered with "juno" as well and that transaction holds the lock on the username therefore causing the other transaction to fail. Depending on the transaction semantics one can recover from a lock contention failure by re-running the entire transaction.
+
+Permanent exceptions that can fail a transaction include:
+
+* PermanentLockingException(*Local lock contention*): Another local thread has already been granted a conflicting lock.
+* PermanentLockingException(*Expected value mismatch for X: expected=Y vs actual=Z*): The verification that the value read in this transaction is the same as the one in the datastore after applying for the lock failed. In other words, another transaction modified the value after it had been read and modified.
+
+[[multi-thread-tx]]
+Multi-Threaded Transactions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan supports multi-threaded transactions through Blueprint's https://github.com/tinkerpop/blueprints/wiki/Graph-Transactions[ThreadedTransactionalGraph] interface. Hence, to speed up transaction processing and utilize multi-core architectures multiple threads can run concurrently in a single transaction.
+
+With Blueprints' default transaction handling, each thread automatically opens its own transaction against the graph database. To open a thread-independent transaction, use the `newTransaction()` method.
+
+[source,java]
+TransactionalGraph tx = g.newTransaction();
+Thread[] threads = new Thread[10];
+for (int i=0;i<threads.length;i++) {
+    threads[i]=new Thread(new DoSomething(tx));
+    threads[i].start();
+}
+for (int i=0;i<threads.length;i++) threads[i].join();
+tx.commit();
+
+The `newTransaction()` method returns a new `TransactionalGraph` object that represents this newly opened transaction. The graph object `tx` supports all of the method that the original graph did, but does so without opening new transactions for each thread. This allows us to start multiple threads which all do-something in the same transaction and finally commit the transaction when all threads have completed their work.
+
+Titan relies on optimized concurrent data structures to support hundreds of concurrent threads running efficiently in a single transaction.
+
+Concurrent Algorithms
+~~~~~~~~~~~~~~~~~~~~~
+
+Thread independent transactions started through `newTransaction()` are particularly useful when implementing concurrent graph algorithms. Most traversal or message-passing (ego-centric) like graph algorithms are http://en.wikipedia.org/wiki/Embarrassingly_parallel[embarrassingly parallel] which means they can be parallelized and executed through multiple threads with little effort. Each of these threads can operate on a single `TransactionalGraph` object returned by `newTransaction` without blocking each other.
+
+Nested Transactions
+~~~~~~~~~~~~~~~~~~~
+
+Another use case for thread independent transactions is nested transactions that ought to be independent from the surrounding transaction.
+
+For instance, assume a long running transactional job that has to create a new vertex with a unique name. Since enforcing unique names requires the acquisition of a lock (see <<type-definition> for more detail) and since the transaction is running for a long time, lock congestion and expensive transactional failures are likely.
+
+[source,java]
+Vertex v1 = g.addVertex(null);
+//Do many other things
+Vertex v2 = g.addVertex(null);
+v2.setProperty("uniqueName","foo");
+g.addEdge(null,v1,v2,"related");
+//Do many other things
+g.commit(); // Likely to fail due to lock congestion
+
+One way around this is to create the vertex in a short, nested thread-independent transaction as demonstrated by the following pseudo code::
+
+[source,java]
+Vertex v1 = g.addVertex(null);
+//Do many other things
+TransactionalGraph tx = g.newTransaction();
+Vertex v2 = tx.addVertex(null);
+v2.setProperty("uniqueName","foo");
+tx.commit();
+g.addEdge(null,v1,g.getVertex(v2),"related"); //Need to load v2 into outer transaction
+//Do many other things
+g.commit(); // Likely to fail due to lock congestion
+
+
+Common Transaction Handling Problems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Transactions are started automatically with the first operation executed against the graph. One does NOT have to start a transaction manually. The method `newTransaction` is used to start <<multi-thread-tx,multi-threaded transactions>> only.
+
+Transactions are automatically started under the Blueprints semantics but *not* automatically terminated. Transactions have to be terminated manually with `g.commit()` if successful or `g.rollback()` if not. Manual termination of transactions is necessary because only the user knows the transactional boundary. 
+A transaction will attempt to maintain its state from the beginning of the transaction. This might lead to unexpected behavior in multi-threaded applications as illustrated in the following artificial example::
+
+[source,java]
+v = g.v(4) //Retrieve vertex, first action automatically starts transaction
+v.bothE
+>> returns nothing, v has no edges
+//thread is idle for a few seconds, another thread adds edges to v
+v.bothE
+>> still returns nothing because the transactional state from the beginning is maintained
+
+Such unexpected behavior is likely to occur in client-server applications where the server maintains multiple threads to answer client requests. It is therefore important to terminate the transaction after a unit of work (e.g. code snippet, query, etc). For instance, https://github.com/tinkerpop/rexster[Rexster] manages the transactional boundary for each gremlin query. So, the example above should be::
+
+[source,java]
+v = g.v(4) //Retrieve vertex, first action automatically starts transaction
+v.bothE
+g.commit()
+//thread is idle for a few seconds, another thread adds edges to v
+v.bothE
+>> returns the newly added edge
+g.commit()
+
+When using multi-threaded transactions via `newTransaction` all vertices and edges retrieved or created in the scope of that transaction are *not* available outside the scope of that transaction. Accessing such elements after the transaction has been closed will result in an exception. As demonstrated in the example above, such elements have to be explicitly refreshed in the new transaction using `g.getVertex(existingVertex)` or `g.getEdge(existingEdge)`.
+
+[[tx-config]]
+Transaction Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan's `TitanGraph.buildTransaction()` method gives the user the ability to configure and start a new <<multi-thread-tx,multi-threaded transaction>> against a `TitanGraph`. Hence, it is identical to `TitanGraph.newTransaction()` with additional configuration options.
+
+`buildTransaction()` returns a `TransactionBuilder` which allows the following aspects of a transaction to be configured:
+
+* `readOnly()` - makes the transaction read-only and any attempt to modify the graph will result in an exception.
+* `enableBatchLoading()` - enables batch-loading for an individual transaction. This setting results in similar efficiencies as the graph-wide setting `storage.batch-loading` due to the disabling of consistency checks and other optimizations. Unlike `storage.batch-loading` this option will not change the behavior of the storage backend.
+* `setTimestamp(long)` - Sets the timestamp for this transaction as communicated to the storage backend for persistence. Depending on the storage backend, this setting may be ignored. For eventually consistent backends, this is the timestamp used to resolve write conflicts. If this setting is not explicitly specified, Titan uses the current time.
+* `setCacheSize(long size)` - The number of vertices this transaction caches in memory. The larger this number, the more memory a transaction can potentially consume. If this number is too small, a transaction might have to re-fetch data which causes delays in particular for long running transactions.
+* `checkInternalVertexExistence()` - Whether this transaction should double-check the existence of vertices during query execution. This can be useful to avoid *phantom vertices* on eventually consistent storage backends. Disabled by default. Enabling this setting can slow down query processing.
+
+Once, the desired configuration options have been specified, the new transaction is started via `start()` which returns a `TitanTransaction`.
+
+
+[[limitations]]
+Technical Limitations
+---------------------
+
+image:titan-head.png[]
+
+There are various limitations and "gotchas" that one should be aware
+of when using Titan. Some of these limitations are necessary design
+choices and others are issues that will be rectified as Titan
+development continues. Finally, the last section provides solutions to
+common issues.
+
+Design Limitations
+~~~~~~~~~~~~~~~~~~
+
+These limitations reflect long-term tradeoffs design tradeoffs which
+are either difficult or impractical to change.  These limitations are
+unlikely to be removed in the near future.
+
+Size Limitation
+^^^^^^^^^^^^^^^
+
+Titan can store up to a quintillion edges (2^60) and half as many vertices. That limitation is imposed by Titan's id scheme.
+
+DataType Definitions
+^^^^^^^^^^^^^^^^^^^^
+
+When declaring the data type of a property key using `dataType(Class)` Titan will enforce that all properties for that key have the declared type, unless that type is `Object.class`. This is an equality type check, meaning that sub-classes will not be allowed. For instance, one cannot declare the data type to be `Number.class` and use `Integer` or `Long`. For efficiency reasons, the type needs to match exactly. Hence, use `Object.class` as the data type for type flexibility. In all other cases, declare the actual data type to benefit from increased performance and type safety.
+
+Edge Retrievals are not O(1)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Retrieving an edge by id, e.g `tx.getEdge(edge.getId())`, is not a constant time operation. Titan will retrieve an adjacent vertex of the edge to be retrieved and then execute a vertex query to identify the edge. The former is constant time but the latter is potentially linear in the number of edges incident on the vertex with the same edge label.
+
+This also applies to index retrievals for edges via a standard or external index.
+
+Temporary Limitations
+~~~~~~~~~~~~~~~~~~~~~
+
+These are limitations in Titan's current implementation.  These
+limitations could reasonably be removed in upcoming versions of Titan.
+
+Key Index Must Be Created Prior to Key Being Used
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To index vertices or edges by key, the respective key index must be created before the key is first used in a vertex or edge property. Read more about creating <<blueprints-vertex-index,creating vertex indices through Blueprints>>.
+
+Unable to Drop Key Indices
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Once an index has been created for a key, it can never be removed. 
+
+Types Can Not Be Changed Once Created
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This pitfall constrains the graph schema. While the graph schema can be extended, previous declarations cannot be changed. 
+
+Batch Loading Speed
+^^^^^^^^^^^^^^^^^^^
+
+Titan provides a batch loading mode that can be enabled through the _TODO: xref to Graph Configuration_. However, this batch mode only facilitates faster loading into the storage backend, it does not use storage backend specific batch loading techniques that prepare the data in memory for disk storage. As such, batch loading in Titan is currently slower than batch loading modes provided by single machine databases. <<bulk-loading>> contains information on speeding up batch loading in Titan.
+
+Another limitation related to batch loading is the failure to load millions of edges into a single vertex at once or in a short time of period. Such *supernode loading* can fail for some storage backends. This limitation also applies to dense index entries. For more information, please refer to https://github.com/thinkaurelius/titan/issues/11[Issue #11].
+
+
+include::typedef.txt[]
+
+include::vertexcentric.txt[]
+
+
+[[common-problems]]
+Common Problems
+---------------
+
+Multiple Titan instances on one machine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Running multiple Titan instances on one machine backed by the *same* storage backend (distributed or local) requires that each of these instances has a unique configuration for `storage.machine-id-appendix`. Otherwise, these instances might overwrite each other leading to data corruption. See _TODO: Graph Configuration xref_ for more information.
+
+Accidental type creation
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, Titan will automatically create property keys and edge labels when a new type is encountered. It is strongly encouraged that users explicitly <<type-definition,define types>> and disable automatic type creation by setting the _TODO: xref to Graph-Configuration_ option `autotype = none`.
+
+Custom Class Datatype
+~~~~~~~~~~~~~~~~~~~~~
+
+Titan supports arbitrary objects as attribute values on properties. To use a custom class as data type in Titan, either register a custom serializer or ensure that the class has a no-argument constructor and implements the `equals` method because Titan will verify that it can successfully de-/serialize objects of that class. Please see <<serializer>> more information.
+
+Transactional Scope for Edges
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Edges should not be accessed outside the scope in which they were originally created or retrieved.
+
+Locking Exceptions
+~~~~~~~~~~~~~~~~~~
+
+When defining unique <<type-definition,Titan types>> with locking enabled (i.e. requesting that Titan ensures uniqueness) it is likely to encounter locking exceptions of the type `PermanentLockingException` under concurrent modifications to the graph.
+
+Such exceptions are to be expected, since Titan cannot know how to recover from a transactional state where an earlier read value has been modified by another transaction since this may invalidate the state of the transaction. It most cases it is sufficient to simply re-run the transaction. If locking exceptions are very frequent, try to analyze and remove the source of congestion.
+
+Double and Float Data Types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan internally represents `Double` and `Float` data types as fixed decimal numbers. Doubles are stored with up to 6 decimal digits and floats with up to 3. This representation enables range retrievals in vertex centric queries. However, it significantly limits the precision and range of doubles and floats. 
+Use `FullDouble` and `FullFloat` as data type to get the full precision of floating point numbers. However, note that these data types cannot be used in range-constrained vertex centric queries.
+
+Ghost Vertices
+~~~~~~~~~~~~~~
+
+When the same vertex is concurrently removed in one transaction and modified in another, both transactions will successfully commit on eventually consistent storage backends and the vertex will still exist with only the modified properties or edges. This is referred to as a ghost vertex. It is possible to guard against ghost vertices on eventually consistent backends using key <<type-definition,out-uniqueness>>_ but this is prohibitively expensive in most cases. A more scalable approach is to allow ghost vertices temporarily and clearing them out in regular time intervals, for instance using https://github.com/StartTheShift/titan-tools[Titan tools].
+
+Another option is to detect them at read-time using the option `checkInternalVertexExistence()` documented in <<tx-config>>.
+
+Snappy 1.4 does not work with Java 1.7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cassandra 1.2.x makes use of Snappy 1.4. Titan will not be able to connect to Cassandra if the server is running Java 1.7 and Cassandra 1.2.x (with Snappy 1.4). Be sure to remove the Snappy 1.4 jar in the `cassandra/lib` directory and replace with a http://code.google.com/p/snappy-java/downloads/list[Snappy 1.5 jar version].
+
+Debug-level Logging Slows Execution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When the log level is set to `debug` Titan produces *a lot* of logging output which is useful to understand how particular queries get compiled, optimized, and executed. However, the output is so large that it will impact the query performance noticeably. Hence, you `info` or above for production systems or benchmarking.
+
+Titan OutOfMemoryException or excessive Garbage Collection
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you experience memory issues or excessive garbage collection while running Titan it is likely that the caches are configured incorrectly. If the caches are too large, the heap may fill up with cache entries. Try reducing the size of the transaction level cache before tuning the database level cache, in particular if you have many concurrent transactions. See <<caching>> for more information.
+
+JAMM Warning Messages
+~~~~~~~~~~~~~~~~~~~~~
+
+When launching Titan with embedded Cassandra, the following warnings may be displayed:
+
+`958 [MutationStage:25] WARN  org.apache.cassandra.db.Memtable  - MemoryMeter uninitialized (jamm not specified as java agent); assuming liveRatio of 10.0.  Usually this means cassandra-env.sh disabled jamm because you are using a buggy JRE; upgrade to the Sun JRE instead`
+
+Cassandra uses a Java agent called `MemoryMeter` which allows it to measure the actual memory use of an object, including JVM overhead.  To use https://github.com/jbellis/jamm[JAMM] (Java Agent for Memory Measurements), the path to the JAMM jar must be specific in the Java javaagent parameter when launching the JVM (e.g. `-javaagent:path/to/jamm.jar`). Rather than modifying `titan.sh` and adding the javaagent parameter, I prefer to set the `JAVA_OPTIONS` environment variable with the proper javaagent setting:
+
+[source,bash]
+export JAVA_OPTIONS=-javaagent:$TITAN_HOME/lib/jamm-0.2.5.jar
+
+Cassandra Connection Problem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, Titan uses the Astyanax library to connect to Cassandra clusters. On EC2 and Rackspace, it has been reported that Astyanax was unable to establish a connection to the cluster. In those cases, changing the backend to `storage.backend=cassandrathrift` solved the problem.
+
+ElasticSearch OutOfMemoryException
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When numerous clients are connecting to ElasticSearch, it is likely that an `OutOfMemoryException` occurs. This is not due to a memory issue, but to the OS not allowing more threads to be spawned by the user (the user running ElasticSearch). To circumvent this issue, increase the number of allowed processes to the user running ElasticSearch. For example, increase the `ulimit -u` from the default 1024 to 10024.

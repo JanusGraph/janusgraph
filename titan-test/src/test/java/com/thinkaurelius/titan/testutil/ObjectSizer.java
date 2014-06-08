@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.testutil;
 
-import cern.colt.map.AbstractIntIntMap;
-import cern.colt.map.OpenIntIntHashMap;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashMultimap;
@@ -73,15 +71,6 @@ public final class ObjectSizer {
         }
     };
 
-    public static Factory emptyIntIntMap = new Factory() {
-        @Override
-        public Object newInstance() {
-            AbstractIntIntMap m = new OpenIntIntHashMap(5);
-            int size = 3;
-            for (int i = 0; i < size; i++) m.put(i, i);
-            return m;
-        }
-    };
 
     public static Factory stringConcurrentSet = new Factory() {
         @Override

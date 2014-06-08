@@ -1,0 +1,43 @@
+[[hadoop]]
+Global Graph Analytics
+----------------------
+
+image:faunus-diagram.png[]
+
+Titan is designed to compute numerous, concurrent, short-lived, local graph traversals. Titan is _not_ designed for global graph analysis. In order to understand the difference, a itemization of each term above is defined below.
+
+* *Numerous concurrent interactions*: the graph is being queried, in parallel, by different users solving different problems.
+* *Short-lived transactions*: each interaction with Titan is intended to be real-time on the order of hundreds of milliseconds.
+* *Local graph traversals*: each transaction is touching a small fraction of the entire graph and as such is solving a problem within a localized region of the graph. 
+
+Faunus: Graph Analytics Engine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan is a multi-client database in the classic sense. For performing global graph analytics, Titan relies on http://thinkaurelius.github.com/faunus/[Faunus]. Faunus is a batch processing framework that is optimized for computing a small number of concurrent, long running, global graph traversals.
+
+Please review Faunus documentation for instructions on how to connect https://github.com/thinkaurelius/faunus/wiki/Titan-Format[Titan to Faunus]. However, a short example is provided below. With Faunus it is possible to use Titan as the source of a http://hadoop.apache.org[Hadoop] MapReduce job chain. Like Titan, Faunus uses Gremlin as its traversal language. However, Faunus compiles its Gremlin statements down to MapReduce jobs. Assume the Titan/Cassandra maintains _The Graph of the Gods_. The Faunus/Gremlin shell can be used to create a `FaunusGraph`. When the traversal is evaluated, Titan serves as the data source and Hadoop serves as the data processing system.
+
+[source,text]
+----
+faunus$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin> g = FaunusFactory.open('bin/titan-cassandra-input.properties')
+==>faunusgraph[titancassandrainputformat]
+gremlin> g.V.count()
+12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
+12/12/15 23:58:38 INFO mapreduce.FaunusCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Reduce]
+...
+12/12/15 23:59:16 INFO mapred.JobClient:     Total committed heap usage (bytes)=269619200
+12/12/15 23:59:16 INFO mapred.JobClient:     Combine input records=12
+12/12/15 23:59:16 INFO mapred.JobClient:     SPLIT_RAW_BYTES=120
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input records=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce input groups=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Combine output records=1
+12/12/15 23:59:16 INFO mapred.JobClient:     Reduce output records=0
+12/12/15 23:59:16 INFO mapred.JobClient:     Map output records=12
+==>12
+gremlin> 
+----

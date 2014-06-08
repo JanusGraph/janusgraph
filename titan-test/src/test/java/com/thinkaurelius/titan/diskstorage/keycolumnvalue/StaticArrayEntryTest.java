@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
@@ -26,6 +27,12 @@ import static org.junit.Assert.*;
 public class StaticArrayEntryTest {
 
     private static final RelationCache cache = new RelationCache(Direction.OUT,5,105,"Hello");
+
+    private static final EntryMetaData[] metaSchema = { EntryMetaData.TIMESTAMP, EntryMetaData.VISIBILITY};
+    private static final Map<EntryMetaData,Object> metaData = new EntryMetaData.Map() {{
+        put(EntryMetaData.TIMESTAMP,Long.valueOf(101));
+        put(EntryMetaData.VISIBILITY,"SOS/K5a-89 SOS/sdf3");
+    }};
 
     @Test
     public void testArrayBuffer() {
@@ -140,6 +147,8 @@ public class StaticArrayEntryTest {
             int num=0;
             for (Entry e : el[i]) {
                 checkEntry(e,entries);
+                assertFalse(e.hasMetaData());
+                assertTrue(e.getMetaData().isEmpty());
                 assertNull(e.getCache());
                 e.setCache(cache);
                 num++;
@@ -150,7 +159,73 @@ public class StaticArrayEntryTest {
             while (iter.hasNext()) {
                 Entry e = iter.next();
                 checkEntry(e, entries);
+                assertFalse(e.hasMetaData());
+                assertTrue(e.getMetaData().isEmpty());
                 assertEquals(cache,e.getCache());
+                num++;
+            }
+            assertEquals(entries.size(),num);
+        }
+    }
+
+    /**
+     * Copied from above - the only difference is using schema instances and checking the schema
+     */
+    @Test
+    public void testEntryListWithMetaSchema() {
+        Map<Integer,Long> entries = new HashMap<Integer,Long>();
+        for (int i=0;i<50;i++) entries.put(i*2+7,Math.round(Math.random()/2*Long.MAX_VALUE));
+
+        EntryList[] el = new EntryList[7];
+        el[0] = StaticArrayEntryList.ofBytes(entries.entrySet(), ByteEntryGetter.SCHEMA_INSTANCE);
+
+        el[1] = StaticArrayEntryList.ofByteBuffer(entries.entrySet(), BBEntryGetter.SCHEMA_INSTANCE);
+
+        el[2] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet(), StaticEntryGetter.SCHEMA_INSTANCE);
+
+        el[3] = StaticArrayEntryList.ofByteBuffer(entries.entrySet().iterator(), BBEntryGetter.SCHEMA_INSTANCE);
+
+        el[4] = StaticArrayEntryList.ofStaticBuffer(entries.entrySet().iterator(), StaticEntryGetter.SCHEMA_INSTANCE);
+
+        el[5] = StaticArrayEntryList.of(Iterables.transform(entries.entrySet(),new Function<Map.Entry<Integer, Long>, Entry>() {
+            @Nullable
+            @Override
+            public Entry apply(@Nullable Map.Entry<Integer, Long> entry) {
+                return StaticArrayEntry.ofByteBuffer(entry, BBEntryGetter.SCHEMA_INSTANCE);
+            }
+        }));
+
+        el[6] = StaticArrayEntryList.of(Iterables.transform(entries.entrySet(),new Function<Map.Entry<Integer, Long>, Entry>() {
+            @Nullable
+            @Override
+            public Entry apply(@Nullable Map.Entry<Integer, Long> entry) {
+                return StaticArrayEntry.ofBytes(entry, ByteEntryGetter.SCHEMA_INSTANCE);
+            }
+        }));
+
+        for (int i = 0; i < el.length; i++) {
+            //System.out.println("Iteration: " + i);
+            assertEquals(entries.size(),el[i].size());
+            int num=0;
+            for (Entry e : el[i]) {
+                checkEntry(e,entries);
+                assertTrue(e.hasMetaData());
+                assertFalse(e.getMetaData().isEmpty());
+                assertEquals(metaData,e.getMetaData());
+                assertNull(e.getCache());
+                e.setCache(cache);
+                num++;
+            }
+            assertEquals(entries.size(),num);
+            Iterator<Entry> iter = el[i].reuseIterator();
+            num=0;
+            while (iter.hasNext()) {
+                Entry e = iter.next();
+                assertTrue(e.hasMetaData());
+                assertFalse(e.getMetaData().isEmpty());
+                assertEquals(metaData,e.getMetaData());
+                assertEquals(cache,e.getCache());
+                checkEntry(e, entries);
                 num++;
             }
             assertEquals(entries.size(),num);
@@ -180,7 +255,7 @@ public class StaticArrayEntryTest {
 
     private static enum BBEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<Integer, Long>, ByteBuffer> {
 
-        INSTANCE;
+        INSTANCE, SCHEMA_INSTANCE;
 
         @Override
         public ByteBuffer getColumn(Map.Entry<Integer, Long> element) {
@@ -195,11 +270,23 @@ public class StaticArrayEntryTest {
             b.putLong(element.getValue()).flip();
             return b;
         }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Map.Entry<Integer, Long> element) {
+            if (this==INSTANCE) return StaticArrayEntry.EMPTY_SCHEMA;
+            else return metaSchema;
+        }
+
+        @Override
+        public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            else return metaData.get(meta);
+        }
     }
 
     private static enum ByteEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<Integer, Long>, byte[]> {
 
-        INSTANCE;
+        INSTANCE, SCHEMA_INSTANCE;
 
         @Override
         public byte[] getColumn(Map.Entry<Integer, Long> element) {
@@ -214,11 +301,23 @@ public class StaticArrayEntryTest {
             b.putLong(element.getValue());
             return b.array();
         }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Map.Entry<Integer, Long> element) {
+            if (this==INSTANCE) return StaticArrayEntry.EMPTY_SCHEMA;
+            else return metaSchema;
+        }
+
+        @Override
+        public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            else return metaData.get(meta);
+        }
     }
 
     private static enum StaticEntryGetter implements StaticArrayEntry.GetColVal<Map.Entry<Integer, Long>, StaticBuffer> {
 
-        INSTANCE;
+        INSTANCE, SCHEMA_INSTANCE;
 
         @Override
         public StaticBuffer getColumn(Map.Entry<Integer, Long> element) {
@@ -232,6 +331,18 @@ public class StaticArrayEntryTest {
             ByteBuffer b = ByteBuffer.allocate(8);
             b.putLong(element.getValue());
             return StaticArrayBuffer.of(b.array());
+        }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(Map.Entry<Integer, Long> element) {
+            if (this==INSTANCE) return StaticArrayEntry.EMPTY_SCHEMA;
+            else return metaSchema;
+        }
+
+        @Override
+        public Object getMetaData(Map.Entry<Integer, Long> element, EntryMetaData meta) {
+            if (this==INSTANCE) throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            else return metaData.get(meta);
         }
     }
 

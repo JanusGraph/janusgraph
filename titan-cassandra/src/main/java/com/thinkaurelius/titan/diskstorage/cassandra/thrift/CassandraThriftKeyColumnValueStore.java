@@ -49,6 +49,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
     private final String keyspace;
     private final String columnFamily;
     private final CTConnectionPool pool;
+    private final ThriftGetter entryGetter;
 
     public CassandraThriftKeyColumnValueStore(String keyspace, String columnFamily, CassandraThriftStoreManager storeManager,
                                               CTConnectionPool pool) {
@@ -56,6 +57,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         this.keyspace = keyspace;
         this.columnFamily = columnFamily;
         this.pool = pool;
+        this.entryGetter = new ThriftGetter(storeManager.getMetaDataSchema(columnFamily));
     }
 
     /**
@@ -138,11 +140,9 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
 			 */
             Map<StaticBuffer, EntryList> results = new HashMap<StaticBuffer, EntryList>();
 
-            ByteBuffer sliceEndBB = query.getSliceEnd().asByteBuffer();
-
             for (ByteBuffer key : rows.keySet()) {
                 results.put(StaticArrayBuffer.of(key),
-                        CassandraHelper.makeEntryList(rows.get(key), ThriftGetter.INSTANCE, query.getSliceEnd(), query.getLimit()));
+                        CassandraHelper.makeEntryList(rows.get(key), entryGetter, query.getSliceEnd(), query.getLimit()));
             }
 
             return results;
@@ -153,9 +153,13 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         }
     }
 
-    private static enum ThriftGetter implements StaticArrayEntry.GetColVal<ColumnOrSuperColumn,ByteBuffer> {
+    private static class ThriftGetter implements StaticArrayEntry.GetColVal<ColumnOrSuperColumn,ByteBuffer> {
 
-        INSTANCE;
+        private final EntryMetaData[] schema;
+
+        private ThriftGetter(EntryMetaData[] schema) {
+            this.schema = schema;
+        }
 
         @Override
         public ByteBuffer getColumn(ColumnOrSuperColumn element) {
@@ -166,37 +170,28 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         public ByteBuffer getValue(ColumnOrSuperColumn element) {
             return element.getColumn().bufferForValue();
         }
+
+        @Override
+        public EntryMetaData[] getMetaSchema(ColumnOrSuperColumn element) {
+            return schema;
+        }
+
+        @Override
+        public Object getMetaData(ColumnOrSuperColumn element, EntryMetaData meta) {
+            switch(meta) {
+                case TIMESTAMP:
+                    return element.getColumn().getTimestamp();
+                case TTL:
+                    return (long) element.getColumn().getTtl();
+                default:
+                    throw new UnsupportedOperationException("Unsupported meta data: " + meta);
+            }
+        }
     }
 
     @Override
     public void close() {
         // Do nothing
-    }
-
-    //TODO: remove
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        ColumnParent parent = new ColumnParent(columnFamily);
-        ConsistencyLevel consistency = getTx(txh).getReadConsistencyLevel().getThrift();
-        SlicePredicate predicate = new SlicePredicate();
-        SliceRange range = new SliceRange();
-        range.setCount(1);
-        byte[] empty = new byte[0];
-        range.setStart(empty);
-        range.setFinish(empty);
-        predicate.setSlice_range(range);
-
-        CTConnection conn = null;
-        try {
-            conn = pool.borrowObject(keyspace);
-            Cassandra.Client client = conn.getClient();
-            List<?> result = client.get_slice(key.asByteBuffer(), parent, predicate, consistency);
-            return 0 < result.size();
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            pool.returnObjectUnsafe(keyspace, conn);
-        }
     }
 
     @Override
@@ -235,37 +230,6 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             throw convertException(e);
         }
     }
-
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        CTConnection conn = null;
-        IPartitioner<?> partitioner = storeManager.getCassandraPartitioner();
-
-        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
-            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
-
-        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
-
-        try {
-            conn = pool.borrowObject(keyspace);
-            List<TokenRange> ranges  = conn.getClient().describe_ring(keyspace);
-            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
-
-            for (TokenRange range : ranges) {
-                if (!NetworkUtil.hasLocalAddress(range.endpoints))
-                    continue;
-
-                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
-            }
-
-            return keyRanges;
-        } catch (Exception e) {
-            throw convertException(e);
-        } finally {
-            pool.returnObjectUnsafe(keyspace, conn);
-        }
-    }
-
 
     @Override
     public String getName() {
@@ -325,13 +289,8 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
         /*
          * Background: https://issues.apache.org/jira/browse/CASSANDRA-5566
          *
-         * This hack can go away when we upgrade to or past 1.2.5. But as I
-         * write this comment, we're still stuck on 1.2.2 because Astyanax
-         * hasn't upgraded and tries to call an undefined thrift constructor
-         * when I try running against Cassandra 1.2.10. I haven't tried 1.2.5.
-         * However, I think it's not worth breaking from Astyanax's supported
-         * Cassandra version unless we can break all the way to the latest
-         * Cassandra version, and 1.2.5 is not the latest anyway.
+         * This check is useful for compatibility with Cassandra server versions
+         * 1.2.4 and earlier.
          */
         String st = tok.toString();
         if (!(tok instanceof BytesToken))
@@ -485,7 +444,7 @@ public class CassandraThriftKeyColumnValueStore implements KeyColumnValueStore {
             return new RecordIterator<Entry>() {
                 final Iterator<Entry> columns =
                         CassandraHelper.makeEntryIterator(mostRecentRow.getColumns(),
-                                ThriftGetter.INSTANCE, columnSlice.getSliceEnd(),
+                                entryGetter, columnSlice.getSliceEnd(),
                                 columnSlice.getLimit());
 
                 @Override

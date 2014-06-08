@@ -4,7 +4,8 @@ import com.google.common.base.Preconditions;
 import com.tinkerpop.blueprints.Direction;
 
 /**
- * The multiplicity of edges between vertices for a given label.
+ * The multiplicity of edges between vertices for a given label. Multiplicity here is understood in the same sense as
+ * for UML class diagrams {@url http://en.wikipedia.org/wiki/Class_diagram#Multiplicity}
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -12,7 +13,7 @@ public enum Multiplicity {
 
     /**
      * The given edge label specifies a multi-graph, meaning that the multiplicity is not constrained and that
-     * there may be multiple edges of this label between a given pair of vertices.
+     * there may be multiple edges of this label between any given pair of vertices.
      *
      * @link http://en.wikipedia.org/wiki/Multigraph
      */
@@ -39,18 +40,43 @@ public enum Multiplicity {
      */
     ONE2ONE;
 
-    public Cardinality getCardinality() {
-        switch (this) {
-            case MULTI: return Cardinality.LIST;
-            case SIMPLE: return Cardinality.SET;
-            case MANY2ONE: return Cardinality.SINGLE;
-            default: throw new AssertionError("Invalid multiplicity: " + this);
-        }
-    }
 
+    /**
+     * Whether this multiplicity imposes any constraint on the number of edges that may exist between a pair of vertices.
+     *
+     * @return
+     */
     public boolean isConstrained() {
         return this!=MULTI;
     }
+
+    public boolean isConstrained(Direction direction) {
+        if (direction==Direction.BOTH) return isConstrained();
+        if (this==MULTI) return false;
+        if (this==SIMPLE) return true;
+        return isUnique(direction);
+    }
+
+
+    /**
+     * If this multiplicity implies edge uniqueness in the given direction for any given vertex.
+     *
+     * @param direction
+     * @return
+     */
+    public boolean isUnique(Direction direction) {
+        switch (direction) {
+            case IN:
+                return this==ONE2MANY || this==ONE2ONE;
+            case OUT:
+                return this==MANY2ONE || this==ONE2ONE;
+            case BOTH:
+                return this==ONE2ONE;
+            default: throw new AssertionError("Unknown direction: " + direction);
+        }
+    }
+
+    //######### CONVERTING MULTIPLICITY <-> CARDINALITY ########
 
     public static Multiplicity convert(Cardinality cardinality) {
         Preconditions.checkNotNull(cardinality);
@@ -62,15 +88,12 @@ public enum Multiplicity {
         }
     }
 
-    public boolean isUnique(Direction direction) {
-        switch (direction) {
-            case IN:
-                return this==ONE2MANY || this==ONE2ONE;
-            case OUT:
-                return this==MANY2ONE || this==ONE2ONE;
-            case BOTH:
-                return this==ONE2ONE;
-            default: throw new AssertionError("Unknown direction: " + direction);
+    public Cardinality getCardinality() {
+        switch (this) {
+            case MULTI: return Cardinality.LIST;
+            case SIMPLE: return Cardinality.SET;
+            case MANY2ONE: return Cardinality.SINGLE;
+            default: throw new AssertionError("Invalid multiplicity: " + this);
         }
     }
 

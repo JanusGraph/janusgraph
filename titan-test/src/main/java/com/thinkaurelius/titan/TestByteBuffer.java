@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan;
 
-import cern.colt.map.AbstractLongObjectMap;
-import cern.colt.map.OpenLongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -66,7 +66,7 @@ public class TestByteBuffer {
     }
 
     private static long testByte() {
-        AbstractLongObjectMap tx = new OpenLongObjectHashMap(NUM);
+        LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx = new LongObjectOpenHashMap<ConcurrentSkipListSet<ByteEntry>>(NUM);
         for (int i = 0; i < NUM; i++) {
             tx.put(i, new ConcurrentSkipListSet<ByteEntry>());
         }
@@ -78,7 +78,7 @@ public class TestByteBuffer {
                     key.putLong(5).putLong(j).flip();
                     ByteBuffer value = ByteBuffer.allocate(4);
                     value.putInt(random.nextInt(ROUNDSIZE)).flip();
-                    ((ConcurrentSkipListSet<ByteEntry>) tx.get(i)).add(new ByteEntry(key, value));
+                    tx.get(i).add(new ByteEntry(key, value));
                 }
             }
         }
@@ -150,10 +150,10 @@ public class TestByteBuffer {
 
     static class ByteVertex extends Vertex {
 
-        private final AbstractLongObjectMap tx;
+        private final LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx;
         private final SortedSet<ByteEntry> set;
 
-        ByteVertex(long id, AbstractLongObjectMap tx) {
+        ByteVertex(long id, LongObjectMap<ConcurrentSkipListSet<ByteEntry>> tx) {
             super(id);
             this.tx = tx;
             this.set = (SortedSet<ByteEntry>) tx.get(id);

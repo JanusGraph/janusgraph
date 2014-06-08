@@ -1,0 +1,399 @@
+Introduction
+============
+
+This section gives an overview of Titan's architecture and benefits,
+followed by a quick tour of Titan features using a small example data
+set.
+
+[[benefits]]
+The Benefits of Titan
+---------------------
+
+Titan is designed to support the processing of graphs so large that they require storage and computational capacities beyond what a single machine can provide. This is Titan's foundational benefit. This section will discuss the various specific benefits of Titan and its underlying, supported persistence solutions.
+
+General Titan Benefits
+~~~~~~~~~~~~~~~~~~~~~~
+
+* Support for very large graphs. Titan graphs scale with the number of machines in the cluster.
+* Support for very many concurrent transactions. Titan's transactional capacity scale with the number of machines in the cluster. 
+* Support for geo, numeric range, and full text search for vertices and edges on very large graphs.
+* Native support for the popular property graph data model exposed by http://blueprints.tinkerpop.com[Blueprints].
+* Native support for the graph traversal language http://gremlin.tinkerpop.com[Gremlin].
+* Easy integration with the http://rexster.tinkerpop.com[Rexster] graph server for programming language agnostic connectivity.
+* Numerous graph-level configurations provide knobs for tuning performance.
+* Vertex-centric indices provide vertex-level querying to alleviate issues with the infamous http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/[super node problem].
+* Provides an optimized disk representation to allow for efficient use of storage and speed of access.
+* Open source under the liberal http://en.wikipedia.org/wiki/Apache_License[Apache 2 license].
+
+Benefits of Titan with Cassandra
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[.tss-floatright.tss-width-125]
+image:cassandra-small.svg[link="http://cassandra.apache.org/"]
+
+* http://en.wikipedia.org/wiki/Continuous_availability[Continuously available] with no single point of failure.
+* No read/write bottlenecks to the graph as there is no master/slave architecture.
+* http://en.wikipedia.org/wiki/Elastic_computing[Elastic scalability] allows for the introduction and removal of machines.
+* Caching layer ensures that continuously accessed data is available in memory.
+* Increase the size of the cache by adding more machines to the cluster.
+* Integration with http://hadoop.apache.org/[Hadoop].
+* Open source under the liberal Apache 2 license.
+
+
+Benefits of Titan with HBase
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[.tss-floatright.tss-width-125]
+image:http://hbase.apache.org/images/hbase_logo.png[link="http://hbase.apache.org/"]
+
+* Tight integration with the http://hadoop.apache.org/[Hadoop] ecosystem.
+* Native support for http://en.wikipedia.org/wiki/Strong_consistency[strong consistency].
+* Linear scalability with the addition of more machines.
+* http://en.wikipedia.org/wiki/Strict_consistency[Strictly consistent] reads and writes.
+* Convenient base classes for backing Hadoop http://en.wikipedia.org/wiki/MapReduce[MapReduce] jobs with HBase tables.
+* Support for exporting metrics via http://en.wikipedia.org/wiki/Java_Management_Extensions[JMX].
+* Open source under the liberal Apache 2 license.
+
+Titan and the CAP Theorem
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// The single quotes enable inline text substitutions (required to generate a hyperlink in the output)
+[quote, 'http://codahale.com/you-cant-sacrifice-partition-tolerance[Coda Hale]']
+_____________________
+
+Despite your best efforts, your system will experience enough faults
+that it will have to make a choice between reducing yield (i.e., stop
+answering requests) and reducing harvest (i.e., giving answers based
+on incomplete data). This decision should be based on business
+requirements.
+_____________________
+
+When using a database, the http://en.wikipedia.org/wiki/CAP_theorem[CAP theorem] should be thoroughly considered (C=Consistency, A=Availability, P=Partitionability). Titan is distributed with 3 supporting backends: http://cassandra.apache.org/[Cassandra], http://hbase.apache.org/[HBase], and http://www.oracle.com/technetwork/products/berkeleydb/[BerkeleyDB]. Their tradeoffs with respect to the CAP theorem are represented in the diagram below. Note that BerkeleyDB is a non-distributed database and as such, is typically only used with Titan for testing and exploration purposes.
+
+[role="tss-centered"]
+image:titan-captheorem.png[]
+
+HBase gives preference to consistency at the expense of yield, i.e. the probability of completing a request. Cassandra gives preference to availability at the expense of harvest, i.e. the completeness of the answer to the query (data available/complete data).
+
+[[arch-overview]]
+Architectural Overview
+----------------------
+
+Titan is a graph database engine.  Titan itself is focused on compact
+graph serialization, rich graph data modeling, and efficient query
+execution.  Titan implements robust, modular interfaces for data
+persistence, data indexing, and client access.  Titan's modular
+architecture allows it to interoperate with a wide range of storage,
+index, and client technologies; it also eases the process of extending
+Titan to support new ones.
+
+Between Titan and the disks sits one or more storage and indexing
+adapters.  Titan comes standard with the following adapters, but
+Titan's modular architecture supports third-party adapters.
+
+* Data storage:
+** <<cassandra,Cassandra>>
+** <<hbase,HBase>>
+** <<bdb,BerkeleyDB>>
+* Indices, which speed up and enable more complex queries:
+** <<elasticsearch,Elasticsearch>>
+** <<lucene,Lucene>>
+
+Broadly speaking, applications can interact with Titan in two ways:
+
+* Method calls to Titan's Java-language APIs, which include
+** Titan's native <<blueprints,Blueprints API>> implementation
+** A superset of Blueprints functionality called TitanGraph, which provides some Titan features that aren't part of the vendor-neutral Blueprints spec
+* TinkerPop stack utilities built atop Blueprints, such as
+** The <<gremlin,Gremlin query language>>
+** The <<rexster,Rexster graph server>>
+
+.High-level Titan Architecture and Context
+image::titan-architecture-layer-diagram.svg[]
+
+[[getting-started]]
+Getting Started
+---------------
+
+[quote]
+_______
+
+In the beginning, there existed two deities known as http://en.wikipedia.org/wiki/Uranus_(mythology)[Uranus] and
+http://en.wikipedia.org/wiki/Gaia_(mythology)[Gaia]. They gave birth to the http://en.wikipedia.org/wiki/Titan_(mythology)[Titans] (a race of powerful beings).
+http://en.wikipedia.org/wiki/Saturn_(mythology)[Saturn], Titan of time, set reality in motion. Ultimately, time
+yielded the existence of the sky, the sea, and the end of
+life--death. To rule these notions, Saturn had three sons: http://en.wikipedia.org/wiki/Jupiter_(mythology)[Jupiter]
+(sky), http://en.wikipedia.org/wiki/Neptune_(mythology)[Neptune] (sea), and http://en.wikipedia.org/wiki/Pluto_(mythology)[Pluto] (underworld). The son's of
+Saturn were not Titans, but a race of seemingly less powerful deities
+known the world over as the Gods. Fearful that his sons would
+overthrow him, Saturn devoured them and imprisoned them in his
+stomach. This caused a http://en.wikipedia.org/wiki/Titanomachy[great war] between the Titans and
+Gods. Ultimately, the Gods won and Jupiter took the throne as leader
+of the Gods.
+_______
+
+The examples in this section make extensive use of a toy graph distributed with Titan called _The Graph of the Gods_. This graph is diagrammed below. The abstract data model is known as a https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model] and this particular instance describes the relationships between the beings and places of the Roman pantheon. Moreover, special text and symbol modifiers in the diagram (e.g. bold, underline, etc.) denote different schematics/typings in the graph.
+
+
+.Graph of the Gods
+image::graph-of-the-gods-2.png[]
+[cols="1,4",options="header"]
+|=====
+|visual symbol      | meaning
+|bold key           |a graph indexed key
+|bold key with star |a graph indexed key that must have a unique value
+|underlined key     |a vertex-centric indexed key
+|hollow-head edge   |a functional/unique edge (no duplicates)
+|tail-crossed edge  |a unidirectional edge (can only traverse in one direction)
+|=====
+
+
+Downloading Titan and Running the Gremlin Shell
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[quote]
+_______
+Unbeknownst to the Gods, there still lived one Titan. This Titan can not be seen, has no name, and is only apparent in the fact that reality exists. Upon the shoulders of this lost Titan, all of reality hangs together in an undulating web of relations.
+_______
+
+Titan can be downloaded from the http://TODO/[Downloads] section of the project repository.  Once retrieved and unpacked, a http://gremlin.tinkerpop.com[Gremlin] terminal can be started. The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] (i.e. interactive shell) is distributed with Titan and differs slightly from the main http://www.tinkerpop.com[TinkerPop] Gremlin distribution in that is comes preloaded with Titan-specific `imports` and helper methods. In the example below, `titan.zip` is used, however, be sure to unzip the zip-file that was downloaded.
+
+
+// The default shell highlighting is so awful that I'd rather
+// have nothing unless/until it can be improved
+// [source,bourne]
+----
+$ unzip titan.zip
+Archive:  titan.zip
+  creating: titan/
+...
+$ cd titan
+$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin>
+----
+
+The Gremlin terminal is a http://groovy.codehaus.org/[Groovy] shell. Groovy is a superset of Java that has various shorthand notations that make interactive programming easier. Likewise Gremlin is a superset of Groovy with various shorthand notations that make graph traversals easy. The basic examples below demonstrate handling numbers, strings, and maps. The remainder of the tutorial will discuss graph-specific constructs.
+
+[source,gremlin]
+gremlin> 100-10
+==>90
+gremlin> "Titan:" + " The Rise of Big Graph Data"
+==>Titan: The Rise of Big Graph Data
+gremlin> [name:'aurelius',vocation:['philosopher','emperor']]
+==>name=aurelius
+==>vocation=[philosopher, emperor]
+
+[TIP]
+Refer to http://gremlindocs.com/[GremlinDocs], http://sql2gremlin.com/[SQL2Gremlin], and https://github.com/tinkerpop/gremlin/wiki[the Gremlin Wiki] for more information about using Gremlin.
+
+Loading the Graph of the Gods Into Titan
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The example below will load _The Graph of the Gods_ dataset diagrammed above into Titan. When working with a fresh graph (beyond this tutorial), `TitanFactory` provides methods to create various Titan instances (e.g. local, distributed, etc.). A local, single machine instance of Titan is created using the `TitanFactory.open(String directory)` method. Other pages in the documentation demonstrate distributing Titan across multiple machines, for instance <<cassandra,using Cassandra>> or <<hbase,using HBase>>. Refer to the <<storage-backends,storage backend overview>> on how to choose the optimal persistence mode. For the purpose of this tutorial, a pre-constructed local graph is provided that is loaded with the above *Graph of the Gods* diagram.
+
+[source,gremlin]
+gremlin> g = GraphOfTheGodsFactory.create('/tmp/titan')           
+==>titangraph[local:/tmp/titan]
+
+The `GraphOfTheGodsFactory.create()` method does the following to the newly constructed graph prior to returning it:
+
+. Creates a collection of global and vertex-centric indices on the graph.
+. Adds all the vertices to the graph along with their properties.
+. Adds all the edges to the graph along with their properties.
+
+Please see the https://github.com/thinkaurelius/titan/blob/master/titan-core/src/main/java/com/thinkaurelius/titan/example/GraphOfTheGodsFactory.java[GraphOfTheGodsFactory source code] for details.
+
+For those using Titan/Cassandra (or Titan/HBase), be sure to make use of `bin/cassandra-es.local` (or `bin/hbase-es.local`) and `GraphOfTheGodsFactory.load()`.
+
+[source,gremlin]
+gremlin> g = TitanFactory.open('bin/cassandra-es.local')
+==>titangraph[cassandrathrift:127.0.0.1]
+gremlin> GraphOfTheGodsFactory.load(g)
+==>null
+
+Global Graph Indices
+~~~~~~~~~~~~~~~~~~~~
+
+The typical pattern for accessing data in a graph database is to first locate the entry point into the graph using a graph index. That entry point is an element (or set of elements) -- i.e. a vertex or edge. From the entry elements, a Gremlin path description describes how to traverse to other elements in the graph via the explicit graph structure.
+
+Given that there is a unique index on `name` property, the Saturn vertex can be retrieved. The property map (i.e. the key/value pairs of Saturn) can then be examined. As demonstrated, the Saturn vertex has a `name` of "saturn," an `age` of 10000, and a `type` of "titan." The grandchild of Saturn can be retrieved with a traversal that expresses: "Who is Saturn's grandchild?" (the inverse of "father" is "child"). The result is Hercules.
+
+[source,gremlin]
+gremlin> saturn = g.V('name','saturn').next()
+==>v[4]
+gremlin> saturn.map()
+==>name=saturn
+==>age=10000
+==>type=titan
+gremlin> saturn.in('father').in('father').name
+==>hercules
+
+The property `place` is also in a graph index. The property `place` is an edge property. Therefore, Titan can index edges in a graph index. It is possible to query _The Graph of the Gods_ for all events that have happened within 50 kilometers of http://en.wikipedia.org/wiki/Athens[Athens] (latitude:37.97 and long:23.72). Then, given that information, which vertices were involved in those events.
+
+[source,gremlin]
+gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
+==>e[2T-o-2F0LaTPQBM][24-battled->40]
+==>e[2R-o-2F0LaTPQBM][24-battled->36]
+gremlin> g.query().has('place',WITHIN,Geoshape.circle(37.97,23.72,50)).edges().collect {
+   it.bothV.name.next(2) 
+}
+==>[hercules, hydra]
+==>[hercules, nemean]
+
+Graph indices are one type of index structure in Titan. Graph indices are accessible via the `Graph.query()` method. The second aspect of indexing in Titan is known as vertex-centric indices. Vertex-centric indices are accessible via the `Vertex.query()` method. Vertex-centric indices are described later.
+
+Graph Traversal Examples
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+[quote]
+http://en.wikipedia.org/wiki/Hercules[Hercules], son of Jupiter and http://en.wikipedia.org/wiki/Alcmene[Alcmene], bore super human strength. Hercules was a http://en.wikipedia.org/wiki/Demigod[Demigod] because his father was a god and his mother was a human. http://en.wikipedia.org/wiki/Juno_(mythology)[Juno], wife of Jupiter, was furious with Jupiter's infidelity. In revenge, she blinded Hercules with temporary insanity and caused him to kill his wife and children. To atone for the slaying, Hercules was ordered by the http://en.wikipedia.org/wiki/Oracle_at_Delphi[Oracle of Delphi] to serve http://en.wikipedia.org/wiki/Eurystheus[Eurystheus]. Eurystheus appointed Hercules to 12 labors.
+
+//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg/301px-Mosaico_Trabajos_H%C3%A9rcules_%28M.A.N._Madrid%29_01.jpg
+//..    :align: right
+//.. 
+//..    Nemean
+//.. 
+//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Hercules_slaying_the_Hydra.jpg/320px-Hercules_slaying_the_Hydra.jpg
+//..   :align: right
+//..
+//..   Hydra
+//.. 
+//.. .. figure:: http://upload.wikimedia.org/wikipedia/commons/thumb/2/25/Cerberus-Blake.jpeg/320px-Cerberus-Blake.jpeg
+//..    :align: right
+//.. 
+//..    Cerberus
+
+In the previous section, it was demonstrated that Saturn's grandchild was Hercules. This can be expressed using a `loop`. In essence, Hercules is the vertex that is 2-steps away from Saturn along the `in('father')` path.
+
+[source,gremlin]
+gremlin> hercules = saturn.as('x').in('father').loop('x'){it.loops < 3}.next()
+==>v[24]
+
+Hercules is a demigod. To prove that Hercules is half human and half god, his parent's origins must be examined. It is possible to traverse from the Hercules vertex to his mother and father. Finally, it is possible to determine the `type` of each of them -- yielding "god" and "human."
+
+[source,gremlin]
+gremlin> hercules.out('father','mother')
+==>v[16]
+==>v[28]
+gremlin> hercules.out('father','mother').name
+==>jupiter
+==>alcmene
+gremlin> hercules.out('father','mother').type
+==>god
+==>human
+gremlin> hercules.type
+==>demigod
+
+The examples thus far have been with respect to the genetic lines of the various actors in the Roman pantheon. The https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model] is expressive enough to represent multiple types of things and relationships. In this way, _The Graph of the Gods_ also identifies Hercules' various heroic exploits --- his famous 12 labors. In the previous section, it was discovered that Hercules was involved in two battles near Athens. It is possible to explore these events by traversing `battled` edges out of the Hercules vertex.
+
+[source,gremlin]
+gremlin> hercules.out('battled')
+==>v[36]
+==>v[40]
+==>v[44]
+gremlin> hercules.out('battled').map
+==>{name=nemean, type=monster}
+==>{name=hydra, type=monster}
+==>{name=cerberus, type=monster}
+gremlin> hercules.outE('battled').has('time',T.gt,1).inV.name
+==>hydra
+==>cerberus
+
+The edge property `time` on `battled` edges is indexed by the vertex-centric indices of a vertex. Retrieving `battled` edges incident to Hercules according to a constraint/filter on `time` is faster than doing a linear scan of all edges and filtering  (typically `O(log n)`, where `n` is the number incident edges). Gremlin is intelligent enough to use vertex-centric indices when available. A `toString()` of a Gremlin expression shows the underlying http://pipes.tinkerpop.com[query pipeline].
+
+[source,gremlin]
+gremlin> hercules.outE('battled').has('time',T.gt,1).inV.name.toString()
+==>[StartPipe, VertexQueryPipe(out,[battled],has,edge), IdentityPipe, InVertexPipe, PropertyPipe(name)]
+
+More Complex Graph Traversal Examples
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[quote]
+In the depths of Tartarus lives Pluto. His relationship with Hercules was strained by the fact that Hercules battled his pet, Cerberus. However, Hercules is his nephew -- how should he make Hercules pay for his insolence?
+
+The Gremlin traversals below provide more examples over _The Graph of the Gods_. The explanation of each traversal is provided in the prior line as a `//` comment. 
+
+//.. .. image:: http://upload.wikimedia.org/wikipedia/commons/9/93/Agostino_Carracci_01.jpg
+//..   :align: right
+
+Cohabiters of Tartarus
+++++++++++++++++++++++
+
+[source,gremlin]
+gremlin> pluto = g.V('name','pluto').next()
+==>v[32]
+gremlin> // who are pluto's cohabitants?
+gremlin> pluto.out('lives').in('lives').name                
+==>pluto
+==>cerberus
+gremlin> // pluto can't be his own cohabitant
+gremlin> pluto.out('lives').in('lives').except([pluto]).name
+==>cerberus
+gremlin> pluto.as('x').out('lives').in('lives').except('x').name
+==>cerberus
+
+Pluto's Brothers
+++++++++++++++++
+
+[source,gremlin]
+gremlin> // where do pluto's brothers live?
+gremlin> pluto.out('brother').out('lives').name
+==>sky
+==>sea
+gremlin> // which brother lives in which place?
+gremlin> pluto.out('brother').as('god').out('lives').as('place').select
+==>[god:v[16], place:v[8]]
+==>[god:v[20], place:v[12]]
+gremlin> // what is the name of the brother and the name of the place?
+gremlin> pluto.out('brother').as('god').out('lives').as('place').select{it.name}
+==>[god:jupiter, place:sky]
+==>[god:neptune, place:sea]
+
+Finally, Pluto lives in Tartarus because he shows no concern for death. His brothers, on the other hand, chose their locations based upon their love for certain qualities of those locations.
+
+[source,gremlin]
+gremlin> pluto.outE('lives').reason
+==>no fear of death
+gremlin> g.query().has('reason',CONTAINS,'loves').edges()
+==>e[2B-g-2F0LaTPQBU][16-lives->8]
+==>e[2H-k-2F0LaTPQBU][20-lives->12]
+gremlin> g.query().has('reason',CONTAINS,'loves').edges().collect{
+  [it.outV.name.next(),it.reason,it.inV.name.next()] 
+}
+==>[jupiter, loves fresh breezes, sky]
+==>[neptune, loves waves, sea]
+
+[[related-links]]
+Related Slides, Videos, and Articles
+------------------------------------
+
+This section collects some external media with background and
+orientation on Titan, the TinkerPop stack (including Gremlin), and the
+graph data model.
+
+Articles & Posters
+~~~~~~~~~~~~~~~~~~
+
+* http://thinkaurelius.com/2012/08/06/titan-provides-real-time-big-graph-data/[Titan Provides Real-Time Big Graph Data]: A thorough evaluation of Titan based on a social network benchmark using real Twitter network data. _(August 2012)_
+* http://thinkaurelius.com/2013/05/13/educating-the-planet-with-pearson/[Educating the Planet with Pearson Education]: Presents a large-scale benchmark of Titan with a 121 billion edge graph. _(May 2013, in collaboration with Pearson Education)_
+* http://thinkaurelius.github.com/titan/doc/titan-stress-poster.pdf[Titan: A Highly Scalable, Distributed Graph Database] (*poster*): A presentation of an initial stress test evaluation of Titan using real Twitter network data. _(July 2012, presented at http://graphlab.org/workshop2012/agenda/[GraphLab 2012 conference])_
+* http://markorodriguez.com/2011/04/30/putting-and-getting-data-from-a-database/[Brief Primer on Graph Databases]
+* https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[Property Graph Model]
+
+Slide Presentations
+~~~~~~~~~~~~~~~~~~~
+
+* http://www.slideshare.net/slidarko/titan-the-rise-of-big-graph-data[Titan: The Rise of Big Graph Data]: An Introduction to graphs, graph algorithms, and the Titan graph database. Also includes an overview of the graph database landscape. _(June 2012, hosted by http://www.jivesoftware.com/[Jive Software])_
+* http://www.slideshare.net/knowfrominfo/titan-talk-ebaymarch2013[Data - Information - Knowledge: Adding Value through Graph Analysis]: Discusses how graph analysis can add value to information and new advancements in Titan and Faunus. _(March 2013, presented at Ebay)_
+* http://www.slideshare.net/knowfrominfo/big-graph-data[Big Graph Data: Understanding a Complex World]: Solving 21st century problems with graphs and an overview of Titan and Faunus. _(November 2012, presented at http://www.meetup.com/Bay-Area-Graph-Geeks/events/85936692/[Bay Area Graph Geeks])_
+* http://www.slideshare.net/knowfrominfo/titan-big-graph-data-with-cassandra[Big Graph Data: Understanding a Complex World, Cassandra Edition]: Presentation of graph database use cases and Titan. Discusses some of Titan's unique features and how Titan uses Cassandra to scale. _(August 2012, presented at http://www.datastax.com/events/cassandrasummit2012[Cassandra 2012 Summit])_
+
+Videos
+~~~~~~
+
+* http://www.youtube.com/watch?v=ZkAYA4Kd8JE[C* Summit 2012: Titan Big Graph Data with Cassandra] 
+* http://www.youtube.com/watch?v=tYAWhBHQiXA[C* Summit 2013: Distributed Graph Computing with Titan and Faunus]

@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.graphdb.types.indextype;
 
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.Parameter;
-import com.thinkaurelius.titan.core.TitanKey;
+import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.graphdb.types.*;
 import com.tinkerpop.blueprints.Direction;
 
@@ -38,9 +38,9 @@ public class ExternalIndexTypeWrapper extends IndexTypeWrapper implements Extern
             result = new ParameterIndexField[numFields];
             int pos = 0;
             for (SchemaSource.Entry entry : entries) {
-                assert entry.getSchemaType() instanceof TitanKey;
+                assert entry.getSchemaType() instanceof PropertyKey;
                 assert entry.getModifier() instanceof Parameter[];
-                result[pos++]=ParameterIndexField.of((TitanKey)entry.getSchemaType(),(Parameter[])entry.getModifier());
+                result[pos++]=ParameterIndexField.of((PropertyKey)entry.getSchemaType(),(Parameter[])entry.getModifier());
             }
             fields = result;
         }
@@ -49,7 +49,7 @@ public class ExternalIndexTypeWrapper extends IndexTypeWrapper implements Extern
     }
 
     @Override
-    public ParameterIndexField getField(TitanKey key) {
+    public ParameterIndexField getField(PropertyKey key) {
         return (ParameterIndexField)super.getField(key);
     }
 

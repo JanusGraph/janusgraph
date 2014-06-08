@@ -10,23 +10,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.util.system.NetworkUtil;
 
+import org.apache.cassandra.dht.AbstractByteOrderedPartitioner;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.CfDef;
-import org.apache.cassandra.thrift.Column;
-import org.apache.cassandra.thrift.ColumnOrSuperColumn;
-import org.apache.cassandra.thrift.ConsistencyLevel;
-import org.apache.cassandra.thrift.Deletion;
-import org.apache.cassandra.thrift.InvalidRequestException;
-import org.apache.cassandra.thrift.KsDef;
-import org.apache.cassandra.thrift.NotFoundException;
-import org.apache.cassandra.thrift.SchemaDisagreementException;
-import org.apache.cassandra.thrift.SlicePredicate;
+import org.apache.cassandra.thrift.*;
 import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 import org.apache.thrift.TException;
@@ -134,7 +127,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         Preconditions.checkNotNull(mutations);
 
-        final Timestamp timestamp = getTimestamp(txh);
+        final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
 
         ConsistencyLevel consistency = getTx(txh).getWriteConsistencyLevel().getThrift();
 
@@ -168,7 +161,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         SlicePredicate sp = new SlicePredicate();
                         sp.addToColumn_names(buf.as(StaticBuffer.BB_FACTORY));
                         d.setPredicate(sp);
-                        d.setTimestamp(timestamp.getDeletionTime(times.getUnit()));
+                        d.setTimestamp(commitTime.getDeletionTime(times.getUnit()));
                         org.apache.cassandra.thrift.Mutation m = new org.apache.cassandra.thrift.Mutation();
                         m.setDeletion(d);
                         thriftMutation.add(m);
@@ -181,7 +174,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                         Column column = new Column(ent.getColumnAs(StaticBuffer.BB_FACTORY));
                         column.setValue(ent.getValueAs(StaticBuffer.BB_FACTORY));
 
-                        column.setTimestamp(timestamp.getAdditionTime(times.getUnit()));
+                        column.setTimestamp(commitTime.getAdditionTime(times.getUnit()));
                         if (null != ent.getTtl() && ent.getTtl() > 0) {
                             column.setTtl(ent.getTtl());
                         }
@@ -208,7 +201,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             pool.returnObjectUnsafe(keySpaceName, conn);
         }
 
-        sleepAfterWrite(txh, timestamp);
+        sleepAfterWrite(txh, commitTime);
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
@@ -223,6 +216,35 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         return store;
     }
 
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        CTConnection conn = null;
+        IPartitioner<?> partitioner = getCassandraPartitioner();
+
+        if (!(partitioner instanceof AbstractByteOrderedPartitioner))
+            throw new UnsupportedOperationException("getLocalKeyPartition() only supported by byte ordered partitioner.");
+
+        Token.TokenFactory tokenFactory = partitioner.getTokenFactory();
+
+        try {
+            conn = pool.borrowObject(keySpaceName);
+            List<TokenRange> ranges  = conn.getClient().describe_ring(keySpaceName);
+            List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
+
+            for (TokenRange range : ranges) {
+                if (!NetworkUtil.hasLocalAddress(range.endpoints))
+                    continue;
+
+                keyRanges.add(CassandraHelper.transformRange(tokenFactory.fromString(range.start_token), tokenFactory.fromString(range.end_token)));
+            }
+
+            return keyRanges;
+        } catch (Exception e) {
+            throw CassandraThriftKeyColumnValueStore.convertException(e);
+        } finally {
+            pool.returnObjectUnsafe(keySpaceName, conn);
+        }
+    }
 
     /**
      * Connect to Cassandra via Thrift on the specified host and port and attempt to truncate the named keyspace.
@@ -304,10 +326,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private KsDef ensureKeyspaceExists(String keyspaceName)
-            throws NotFoundException, InvalidRequestException, TException,
-            SchemaDisagreementException, StorageException {
-
+    private KsDef ensureKeyspaceExists(String keyspaceName) throws TException, StorageException {
         CTConnection connection = null;
 
         try {
@@ -325,8 +344,8 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
                 KsDef ksdef = new KsDef().setName(keyspaceName)
                         .setCf_defs(new LinkedList<CfDef>()) // cannot be null but can be empty
-                        .setStrategy_class("org.apache.cassandra.locator.SimpleStrategy")
-                        .setStrategy_options(ImmutableMap.of("replication_factor", String.valueOf(replicationFactor)));
+                        .setStrategy_class(storageConfig.get(REPLICATION_STRATEGY))
+                        .setStrategy_options(strategyOptions);
 
                 client.set_keyspace(SYSTEM_KS);
                 try {

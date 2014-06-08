@@ -1,10 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
+import java.util.concurrent.TimeUnit;
+
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 /**
@@ -26,6 +29,7 @@ public abstract class KCVSLogTest extends LogTest {
         storeManager = openStorageManager();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,senderId);
+        config.set(GraphDatabaseConfiguration.LOG_READ_INTERVAL, new StandardDuration(500L, TimeUnit.MILLISECONDS), LOG_NAME);
         return new KCVSLogManager(storeManager,config.restrictTo(LOG_NAME));
     }
 

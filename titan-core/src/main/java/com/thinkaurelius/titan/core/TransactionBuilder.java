@@ -36,6 +36,15 @@ public interface TransactionBuilder {
      */
     public TransactionBuilder setVertexCacheSize(int size);
 
+    /**
+     * Configures the initial size of the map of modified vertices held by this
+     * transaction. This is a performance hint, not a hard upper bound. The map
+     * will grow if the transaction ends up modifying more vertices than
+     * expected.
+     *
+     * @param size initial size of the transaction's dirty vertex collection
+     * @return
+     */
     public TransactionBuilder setDirtyVertexSize(int size);
 
     /**
@@ -52,18 +61,21 @@ public interface TransactionBuilder {
      * with this timestamp in those storage backends where the timestamp is
      * recorded.
      *
-     * @param timestamp
+     * @param timestampSinceEpoch
      *            number of units elapsed since the UNIX Epoch, that is,
      *            00:00:00 UTC, Thursday, 1 January 1970
      * @param unit
-     *            units of the {@code timestamp argument}
+     *            units of the {@code timestampSinceEpoch argument}
      * @return
      */
     public TransactionBuilder setCommitTime(long timestampSinceEpoch, TimeUnit unit);
 
 
     /**
-     * Whether to enable Metrics for this transaction, and if so, what string
+     * Sets the group name for this transaction which provides a way for gathering
+     * reporting on multiple transactions into one group.
+     *
+     * By setting a group one enables Metrics for this transaction, and defines what string
      * should start the transaction's metric names.
      * <p>
      * If null, Metrics collection is totally disabled for this transaction.
@@ -89,20 +101,36 @@ public interface TransactionBuilder {
      * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
      * this string will be prepended to all Titan metric names.
      *
-     * @param prefix
+     * @param name
      *            Metric name prefix for this transaction
      * @return
      */
-    public TransactionBuilder setGroupName(String prefix);
+    public TransactionBuilder setGroupName(String name);
 
     /**
-     * Name of the log to be used for logging the mutations in this transaction.
+     * Name of the log to be used for logging the mutations in this transaction. If no log identifier is set,
+     * then this transaction will not be logged.
      *
      * @param logName
      * @return
      */
     public TransactionBuilder setLogIdentifier(String logName);
 
+    /**
+     * Configures this transaction such that queries against partitioned vertices are
+     * restricted to the given partitions.
+     *
+     * @param partitions
+     * @return
+     */
+    public TransactionBuilder setRestrictedPartitions(int[] partitions);
+
+    /**
+     * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
+     * @param k
+     * @param v
+     * @return
+     */
     public TransactionBuilder setCustomOption(String k, Object v);
 
     /**

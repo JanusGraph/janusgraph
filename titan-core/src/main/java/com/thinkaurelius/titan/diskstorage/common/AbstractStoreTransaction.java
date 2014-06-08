@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
@@ -13,9 +13,9 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 public abstract class AbstractStoreTransaction implements StoreTransaction {
 
-    private final TransactionHandleConfig config;
+    private final BaseTransactionConfig config;
 
-    public AbstractStoreTransaction(TransactionHandleConfig config) {
+    public AbstractStoreTransaction(BaseTransactionConfig config) {
         Preconditions.checkNotNull(config);
         this.config = config;
     }
@@ -29,12 +29,7 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
     }
 
     @Override
-    public void flush() throws StorageException {
-    }
-
-
-    @Override
-    public TransactionHandleConfig getConfiguration() {
+    public BaseTransactionConfig getConfiguration() {
         return config;
     }
 

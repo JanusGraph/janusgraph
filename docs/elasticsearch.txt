@@ -1,0 +1,140 @@
+[[elasticsearch]]
+Elasticsearch
+~~~~~~~~~~~~~
+
+//[.tss-center.tss-width-250]
+//image:titan-elasticsearch.png[]
+
+[quote,'http://elasticsearch.org/[Elasticsearch Homepage]']
+Elasticsearch is a flexible and powerful open source, distributed real-time search and analytics engine for the cloud. Elasticsearch allows you to start small, but will grow with your business. It is built to scale horizontally out of the box. As you need more capacity, just add more nodes, and let the cluster reorganize itself to take advantage of the extra hardware. Elasticsearch clusters are resilient – they will detect and remove failed nodes, and reorganize themselves to ensure that your data is safe and accessible.
+
+Titan supports http://elasticsearch.org[Elasticsearch] as an embedded or remote index backend. In embedded mode, Elasticsearch runs in the same JVM as Titan and stores data on the local machine. In remote mode, Titan connects to a running Elasticsearch cluster as a client. If not in embedded mode, be sure to have the Elasticsearch running and accessible.  
+
+Please see <<version-compat>> for details on what versions of ES will work with Titan.
+
+Elasticsearch Embedded Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For single machine deployments, Elasticsearch can run embedded with Titan. In other words, Titan will start Elasticsearch internally and connect to it within the jvm. 
+
+To run Elasticsearch embedded, add the following configuration options to the graph configuration file where `/tmp/searchindex/` specifies the directory where Elasticsearch should store the index data:
+
+[source,properties]
+storage.index.search.backend=elasticsearch
+storage.index.search.directory=/tmp/searchindex
+storage.index.search.client-only=false
+storage.index.search.local-mode=true
+
+Note, that Elasticsearch will not be accessible from outside of this particular Titan instance, i.e., remote connections will not be possible. Also, it might be advisable to run Elasticsearch in a separate jvm even for single machine deployments to achieve more predictable GC behavior.
+
+In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
+
+Elasticsearch Remote Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Titan can connect to an external Elasticsearch cluster running remote on a separate cluster of machines or locally on the same machine. 
+
+To connect Titan to an external Elasticsearch cluster, add the following configuration options to the graph configuration file where `hostname` lists the IP addresses of the instances in the Elasticsearch cluster:
+
+[source,properties]
+storage.index.search.backend=elasticsearch
+storage.index.search.hostname=100.100.101.1,100.100.101.2
+storage.index.search.client-only=true
+
+Make sure that the Elasticsearch cluster is running prior to starting a Titan instance attempting to connect to it. Also ensure that the machine running Titan can connect to the Elasticsearch instances over the network if the machines are physically separated. This might require setting additional configuration options which are summarized below.
+
+In the above configuration, the index backend is named `search`. Replace `search` by a different name to change the name of the index.
+
+Feature Support
+^^^^^^^^^^^^^^^
+
+* *Full-Text*: Supports all `Text` predicates to search for text properties that matches a given word, prefix or regular expression.
+
+* *Geo*: Supports the `Geo.WITHIN` condition to search for points that fall within a given circle. Only supports points for indexing and circles for querying.
+
+* *Numeric Range*: Supports all numeric comparisons in `Compare`.
+
+Configuration Options
+^^^^^^^^^^^^^^^^^^^^^
+
+This is the full list of configuration options for Elasticsearch. Note, that each of these options needs to be prefixed with `storage.index.[INDEX-NAME].` where `[INDEX-NAME]` stands for the name of the index backend. For instance, if the index backend is named _search_ then these configuration options need to be prefixed with `storage.index.search.`
+
+.Elasticsearch Configuration Options
+[cols="4,7,2,2,1",options="header"]
+|==========================
+|Option |Description |Value |Default |Modifiable
+
+|backend |Index backend implementation name |elasticsearch |- |-
+
+|hostname |
+Comma-separated list of IP addresses or hostnames of the instances in
+the Elasticsearch cluster
+|IPs or hostnames |- |yes
+
+|index-name |Name of the index |string |titan |no
+|cluster-name |
+Name of the Elasticsearch cluster. If none is defined, the name will
+be ignored.
+|string |elasticsearch |yes
+
+|local-mode |
+Whether Titan should run Elasticsearch embedded
+|boolean |false |no
+
+|directory |
+Directory to store Elasticsearch data in. _Only applicable when
+running Elasticsearch embedded_
+|string |- |yes
+
+|config-file |
+Filename of the Elasticsearch yaml file used to configure this
+instance. _Only applicable when running Elasticsearch embedded_
+|boolean |false |no
+
+|client-only |
+Whether this node is a client node with no data
+|boolean |true |no
+
+|max-result-set-size |
+The default maximum result set size for any query if the query does
+not explicitly specify a limit
+|integer |100000 |yes
+
+|sniff |
+Whether client transport sniffing is enabled. When encountering
+connection problems, in particular on AWS, disable this option
+|boolean |true |yes
+
+|==========================
+
+Troubleshooting
+^^^^^^^^^^^^^^^
+
+Connection Issues to remote Elasticsearch cluster
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+First, make sure that you have Elasticsearch configured for remote usage: Set `client-only` to true and `local-mode` to false. Second, try if you can connect to Elasticsearch through the http interface from the given machine. Thirdly, try disabling `sniff`.
+
+Classpath or Field errors
++++++++++++++++++++++++++
+
+When you see exception referring to lucene implementation details, make sure you don't have a conflicting version of Lucene on the classpath. Exception may look like this:
+
+[source,text]
+java.lang.NoSuchFieldError: LUCENE_41
+
+Optimizing Elasticsearch
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Write Optimization
+++++++++++++++++++
+
+For <<bulk-loading,bulk loading>> or other write-intense applications, consider increasing Elasticsearch's refresh interval. Refer to "this discussion":https://groups.google.com/d/topic/elasticsearch/yp6bTiP2JYE/discussion on how to increase the refresh interval and its impact on write performance. Note, that a higher refresh interval means that it takes a longer time for graph mutations to be available in the index.
+
+For additional suggestions on how to increase write performance in Elasticsearch with detailed instructions, please read "this blog post":http://blog.bugsense.com/post/35580279634/indexing-bigdata-with-elasticsearch .
+
+Next Steps
+^^^^^^^^^^
+
+* Please refer to the "Elasticsearch homepage":http://elasticsearch.org and available documentation for more information on Elasticsearch and how to setup an Elasticsearch cluster.
+* See [[example-config]] for complete configurations including the storage backend.

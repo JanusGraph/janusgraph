@@ -12,10 +12,9 @@
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <tinkerpop.version>2.4.0</tinkerpop.version>
         <skipCassandra>true</skipCassandra>
         <skipHBase>true</skipHBase>
-        <skipPipeline>false</skipPipeline>
+        <skipPipeline>${skipTests}</skipPipeline>
     </properties>
 
     <developers>
@@ -62,12 +61,20 @@
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>1.2.1</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase</artifactId>
+            <version>0.94.16</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- TITAN -->
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
@@ -89,26 +96,6 @@
             <artifactId>titan-es</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-core</artifactId>
-            <version>0.3.3-SNAPSHOT</version>
-            <classifier>shaded03</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-cassandra</artifactId>
-            <version>0.3.3-SNAPSHOT</version>
-            <classifier>shaded03</classifier>
-        </dependency>
-        <dependency>
-            <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hbase</artifactId>
-            <version>0.3.3-SNAPSHOT</version>
-            <classifier>shaded03</classifier>
-        </dependency>
-
 
         <!-- RDF PARSING -->
         <dependency>
@@ -135,11 +122,13 @@
             <groupId>org.openrdf.sesame</groupId>
             <artifactId>sesame-rio-turtle</artifactId>
         </dependency>
+
         <!-- LOGGING -->
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
         </dependency>
+
         <!-- TESTING -->
         <dependency>
             <groupId>junit</groupId>
@@ -182,22 +171,6 @@
         </testResources>
 
         <plugins>
-            <!-- Enforcer treats multiple occurrences of the same
-                 dependency with different versions and classifiers as
-                 a violation.  In this case, it's not.  We have both
-                 titan-core at ${project.version} and
-                 titan-core-shaded at a 0.3.x version.
-            -->
-            <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <version>1.3.1</version>
-                <executions>
-                    <execution>
-                        <id>enforce-dependency-convergence</id>
-			<phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -258,7 +231,6 @@
                             <attach>false</attach>
                             <descriptors>
                                 <descriptor>src/assembly/hadoop-job.xml</descriptor>
-                                <descriptor>src/assembly/standalone.xml</descriptor>
                             </descriptors>
                             <finalName>${project.artifactId}-${project.version}</finalName>
                         </configuration>

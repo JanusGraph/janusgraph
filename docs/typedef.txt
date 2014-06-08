@@ -1,0 +1,375 @@
+[[type-definition]]
+Schema Definition
+-----------------
+
+[.tss-floatright.tss-width-125]
+image:titan-configuration.png[]
+
+In Titan, edge labels and property keys are *types* which can be individually configured to provide data verification, better storage efficiency, and higher performance. Types are uniquely identified by their name and are themselves vertices in the graph.  Property keys and edge labels are required.  Labels and keys are automatically created with a default configuration when their name is first used in the graph. Types can also be created and configured explicitly by the user. It is strongly encouraged to define types explicitly and to disable automatic type creation as described below.
+
+Type Management APIs
+~~~~~~~~~~~~~~~~~~~~
+
+Titan 0.5 introduces the `TitanManagement` interface.  The
+`TitanManagement` is the recommended way to programmatically define
+and inspect property keys, edge labels, and index definitions in
+version 0.5 and later.
+
+// TODO section on current type and index definition limitations, especially the "At least one of the indexed keys must be new (current limitation)" exception
+
+// TODO section on composite-key indices
+
+[source,java]
+// Open a graph
+TitanGraph graph = TitanFactory.open('my/config.properties');
+// Create a TitanManagement instance linked to the graph
+TitanManagement mgmt = graph.getManagementSystem();
+
+A subset of management operations, such as key creation, can
+alternatively be carried out through methods on the transaction and
+graph objects.
+
+// TODO what is createTypeIndex for?  What is TitanTypeIndex?  How does it compare with TitanGraphIndex? 
+
+Listing Defined Types
+~~~~~~~~~~~~~~~~~~~~~
+
+As mentioned in opening paragraph of <<type-definition>>, each edge label and property key has an associated vertex.  These vertices can be retrieved by name.
+
+[source,java]
+TitanType t = graph.getManagementSystem().getType("name");
+// Functionally-equivalent shortcut:
+t = graph.getType("name");
+
+`TitanType` extends `TitanVertex`, augmenting the ordinary set of vertex methods with additional these type-specific methods:
+
+* `getName()`
+* `isPropertyKey()`
+* `isEdgeLabel()`
+
+A `TitanType` is either a `TitanLabel` (for edges) or a `TitanKey` (for properties), depending on whether `TitanType.isEdgeLabel()` or `TitanType.isPropertyKey()` return true, respectively.  A type can't be both a `TitanLabel` and a `TitanKey`, nor can it be neither.  It's exactly one of the two.
+
+[source,java]
+TitanType name = graph.getType("name");
+if (name.isPropertyKey()) 
+  TitanKey namekey = (TitanKey)name;
+else 
+  TitanLabel namelabel = (TitanLabel)name;
+
+Most methods in Titan are overloaded to allow passing either the string name of the type or the type object with that name (a `TitanLabel` or `TitanKey`) to the same effect.
+
+In addition to retrieval of specific types by name, Titan can iterate over all types defined in the graph via the `getTypes` method:
+
+[source,java]
+//Returns all defined keys in the graph
+Iterable<TitanKey> keys = graph.getTypes(TitanKey.class)
+//Returns all defined labels in the graph
+Iterable<TitanLabel> labels = graph.getTypes(TitanLabel.class)
+
+Creating Property Keys (`TitanKey`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Property keys are created via the `makeKey(String name)` method on a
+graph, transaction, or management system.  returns a `KeyMaker`
+constructor to define a new property key. The method expects the name
+of the key which must be unique.
+
+[source,java]
+TitanManagement mgmt = graph.getManagementSystem();
+// Declare a property key named "uid" with values of type String and at most one value
+// associated with any given vertex (Cardinality.SINGLE)
+TitanKey key = mgmt.makeKey("uid").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+/*
+ * Declare a standard ("internal") index on the "uid" property key with
+ * name "uid_index".  The index name is freeform and need not bear
+ * relation to the name of associated property key(s).  The third
+ * argument, a boolean, tells the management system that this index will
+ * enforce a global uniqueness constraint; any given value may be
+ * associated with at most one vertex in the graph at any given time
+ */
+mgmt.createInternalIndex("uid_index", com.tinkerpop.blueprints.Vertex.class, true, key);
+// The TitanManagement must be committed for any of the above changes to take effect
+mgmt.commit();
+
+The `KeyMaker` allows the following aspects of a property key to be configured. Once all desired aspects have been configured, calling `KeyMaker.make()` creates the new property key.
+
+[NOTE]
+Calling `mgmt.makeKey(...)`, `tx.makeKey(...)`, or
+`graph.makeKey(...)` returns type
+http://en.wikipedia.org/wiki/Builder_pattern[builder object].  It does
+not actually write the type to the database until `make()` is called
+and the enclosing transaction is committed.
+
+dataType(Class)
+^^^^^^^^^^^^^^^
+
+Configures the data type of this key to be the given class. Property instances for this key will only accept attribute values that are instances of this class or can be automatically converted to instances of this class. 
+
+However, setting the data type to Object.class allows any type of attribute but comes at the expense of longer serialization because class information is stored with the attribute value. For this and reasons of data consistency and validation, it is suggested to define an explicit data type other than Object.class.
+
+There is no default setting for the data type and every property key must have its data type configured.
+
+Titan supports arbitrary classes as data types for properties. Those must be serializable. If default serialization is not applicable a custom serializer must be implemented and registered with Titan. See "Graph Configuration":Graph-Configuration for more information on how to define custom attribute data types and handlers. 
+
+Also, note some of the [[limitations and gotchas | Titan Limitations ]] when it comes to data types.
+
+The data type of an existing property can be retrieved as `TitanKey.getDataType()`.
+
+[[property-cardinality]]
+cardinality(Cardinality)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Configures whether the property key is single-valued, list-valued, or set-valued.
+
+By default, a property key maps onto a single value or none at all for any given vertex. In other words, property keys are _single-valued_ by default.  This is equivalent to calling `cardinality(Cardinality.SINGLE)`.  Single valued properties are set using `setProperty(key,value)` on a vertex or edge, which replaces any existing value for the same key, and retrieved via `getProperty(key)`. For example, "birthday" is a single-valued property key since a person has exactly one birthday.
+
+Calling `cardinality(Cardinality.LIST)`` allows a list of values on this property key for each vertex. This is useful when a property key is multi-valued, like "email" for example, since a user can have multiple email addresses. For list-valued property keys, individual values must be added via `addProperty(key,value)` instead of `setProperty(key,value)`. `getProperty(key)` returns a list of values. `getProperties(key)` returns an Iterable over `TitanProperty`. Properties are first class citizens and Titan maintains one property for each key-value pair. To delete a particular value from a vertex, one must call `delete()` on the respective `TitanProperty`.
+
+// TODO this could use a check
+Calling `cardinality(Cardinality.SET)` has an effect similar to that of `Cardinality.LIST`, except that each value on a vertex must be distinct from every other value on the same vertex.  This is not the same as a global uniqueness constraint.  In particular, two distinct vertices can have the same set of associated values, so long as the values in that set are distinct.
+
+// TODO is this still accurate?
+Declaring a property key to have a list of values can also be used to avoid locking and accidental overwriting for single-valued property keys on eventually consistent storage backends.
+
+// TODO is this still accurate?
+Note, that only single valued property keys can be used on edges. List-valued properties only apply to vertices.
+
+[[property-sortkey]]
+sortKey(TitanType...)
+^^^^^^^^^^^^^^^^^^^^^
+
+// Can the sortKey be `this`?  I see non-this examples in the tests but not `this`.
+
+Configures sort criteria for this property key.  This property key
+should be list- or set-valued for this to be useful.
+
+Specifying the sort key of a type allows a vertex's values for this
+property to be efficiently retrieved in the order of the sort key.
+See also <<property-sortorder>>.
+
+The sort key is undefined by default.
+
+If multiple types are specified as sort key, then those are considered
+as a `composite` sort key, i.e. taken jointly in the given order.  
+
+For instance, consider a list-valued property `history` that records
+URLs viewed by a user and the sort key `hist_ts` that records the time
+of the pageview.  Defining these types would look something like the
+following:
+
+[source,java]
+TitanManagement mgmt = graph.getManagementSystem();
+// Create hist_ts (our sort criterion)
+TitanKey histTS  = mgmt.makeKey("hist_ts").dataType(Integer.class)
+    .cardinality(Cardinality.SINGLE).make();
+// Create history (our list-valued property with sorted values)
+TitanKey history = mgmt.makeKey("history").dataType(String.class)
+    .cardinality(Cardinality.LIST)
+    .sortKey(histTS).sortOrder(Order.DESC).make();
+mgmt.commit();
+
+Inserting data of these types would look something like the following:
+
+[source,java]
+// Open graph as in previous snippet
+TitanVertex v = graph.addVertex(null);
+// Set pageview URL property
+TitanProperty p = v.addProperty("history", "http://titan.thinkaurelius.com");
+// Set timestamp on the pageview URL value --
+//     note _p_.setProperty below, not _v_.setProperty
+p.setProperty("hist_ts", System.currentTimeMillis());
+graph.commit();
+
+[[property-sortorder]]
+sortOrder(Order)
+^^^^^^^^^^^^^^^^
+
+The order in which values for properties with `Cardinality.LIST` or
+`Cardinality.SET` are stored.  Sequential property retrieval is most
+efficient in sorted order.
+
+A <<property-sortkey,sort key>> must be set for this method to have an
+effect.
+
+//indexed(...)
+//
+//Registers the property key with the given index for the provided element type, i.e. vertex or edge. Depending on the specified element type, all vertices or edges with a property of this key are indexed against the given index by their property value. This allows vertices and/or edges to be retrieved by property value using `GraphQuery` as described in [[Indexing Backend Overview]].
+//
+//The name of the index must match one of the registered external indexing backends. External indexing backends are registered by name in the Titan configuration as described in [[Indexing Backend Overview]].
+//If no name is provided, i.e. `indexed(Element)` is called, the standard index is used.
+//
+//Note, that a property can be indexed for both element types (vertices & edges) at the same time and can be indexed against multiple indices. 
+//For instance, one can the property key name to be indexed for both vertices and edges against the standard and registered _search_ index as follows:
+//
+//[source,java]
+//g.makeKey("name").dataType(String.class)
+// .indexed(Vertex.class).indexed(Edge.class)
+// .indexed("search",Vertex.class).indexed("search",Edge.class).make()
+//
+//To inspect all indexes for a particular key, use `TitanKey.getIndexes(Element)` or `TitanKey.hasIndex(index,Element)` to verify that a particular index is active.
+//
+//
+//Unique()
+//++++++++
+//
+//Defines a property key to be unique which means that any property value for this key must be uniquely associated with a vertex. Attempting to set the same property value on two different vertices will result in an exception.
+//
+//For example, one can define the "username" property key as unique to ensure that usernames are uniquely assigned across the entire graph.
+//
+//Declaring a property key to be unique requires that a standard vertex index is defined. In other words, `unique()` requires `indexed(Vertex.class)`.
+//
+//Note, that uniqueness only applies to vertices and not to edges.
+
+Creating Edge Labels (`TitanLabel`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The `makeLabel(String name)` method on a graph, transaction, or management system returns a `LabelMaker` constructor to define a new edge label. The method expects the name of the label which must be unique.
+
+The `LabelMaker` allows the following aspects of an edge label to be configured. Once all desired aspects have been configured, calling `LabelMaker.make()` creates the new edge label.
+
+[NOTE]
+Calling `mgmt.makeLabel(...)`, `tx.makeLabel(...)`, or
+`graph.makeLabel(...)` returns type
+http://en.wikipedia.org/wiki/Builder_pattern[builder object].  It does
+not actually write the type to the database until `make()` is called
+and the enclosing transaction is committed.
+
+multiplicity(Multiplicity)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default, a label does not impose any constraints on its edges. One can configure a multiplicity constraint to make sure that domain constraints are imposed at runtime.
+
+[options="header",cols="1,6"]
+|===========
+| `Multiplicity` | Effect
+| `ONE2MANY` | Configures the label to allow at most one incoming edge
+of this label for each vertex in the graph. For instance, the label
+"fatherOf" is biologically a oneToMany edge label
+| `MANY2ONE` | Configures the label to allow at most one outgoing edge
+of this label for each vertex in the graph. For instance, the label
+"sonOf" is biologically a manyToOne edge label
+| `ONE2ONE` | Configures the label to allow at most one outgoing and
+one incoming edge of this label for each vertex in the graph
+| `SIMPLE` | There can only be at most a single edge of this label
+between a given pair of vertices
+| `MULTI` | The given edge label specifies a
+http://en.wikipedia.org/wiki/Multigraph[multi-graph], meaning that the
+multiplicity is not constrained and that there may be multiple edges
+of this label between a given pair of vertices.
+|===========
+
+As mentioned above, the default is `MULTI`.
+
+[NOTE]
+`ONE2ONE` and `SIMPLE` are similar but not identical. `SIMPLE` allows
+a superset of the edges allowed by `ONE2ONE`. `SIMPLE` allows a vertex
+to have multiple incident edges with the constrained label, whereas
+`ONE2ONE` allows at most one incident edge per vertex.
+
+[[edgelabel-sortkey]]
+sortKey(TitanType…) and signature(TitanType…)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Specifying the sort key of a label allows edges with this label to be efficiently retrieved in the specified sort-order. Titan builds [[vertex-centric indices]] for each label according to the sort key definition which can significantly speed up queries.
+
+[source,java]
+TitanManagement mgmt = graph.getManagementSystem();
+TitanKey time = mgmt.makeKey("time").dataType(Integer.class).make();
+TitanLabel battled = g.makeLabel("battled").sortKey(time).make();
+
+In this example, the property key time is defined with data type `Integer`. This property key is then used as the sort key for the _battled_ edge label. Hence, _battled_ edges will be sorted by time in ascending order and battles that happened in a certain time range can be queried for more efficiently using an appropriate `VertexQuery`. Moreover, _battled_ edges are stored more compactly on disk.
+
+The default sort order is ascending. To specify that _battled_ should be sorted in decreasing order to be able to efficiently retrieve the most recent battles, the label definition would be extended by a `sortOrder()`:
+
+[source,java]
+TitanManagement mgmt = graph.getManagementSystem();
+TitanKey time = mgmt.makeKey("time").dataType(Integer.class).make();
+TitanLabel battled = mgmt.makeLabel("battled").sortKey(time).sortOrder(Order.DESC).make();
+mgmt.commit();
+
+Note, that `TitanTypes` used in the sort key must be single-valued property keys or many-to-one, uni-directed edge labels.
+The sort-key can be composite, that is comprised of multiple types. For composite sort keys, edges are sorted by the first type, then the second and so forth.
+
+See [[Vertex-Centric Indices]] for more information on the benefits of sort-keys.
+
+If one is not interested in configuring the sort-order of edges but only wants to benefit from the storage efficiencies introduced by sort keys, one can alternatively configure the signature of a label. Specifying the signature of a label tells the graph database to _expect_ that edges with this label always have or are likely to have an incident property or unidirected edge of the type included in the signature. This allows the graph database to store such edges more compactly and retrieve them more quickly.
+
+[source,java]
+TitanManagement mgmt = graph.getManagementSystem();
+TitanKey time = mgmt.makeKey("time").dataType(Integer.class).make();
+TitanLabel battled = mgmt.makeLabel("battled").signature(time).make();
+mgmt.commit();
+
+This example is almost identical to the sort key example above with the only difference that _time_ is configured to be part of the signature.
+
+If a type is used in the sort key, it cannot be part of the signature. As before, `TitanTypes` used in the signature must be either single-valued property keys or many-to-one, uni-directed edge labels.
+
+unidirected()
+^^^^^^^^^^^^^
+
+Configures this label to be uni-directed which means that the edge is only created in the out-going direction. One can think of uni-directed edges as links pointing to another vertex such that only the outgoing vertex but not the incoming vertex is aware of its existence.
+
+Uni-directed edges have a lower storage footprint and can be used to overcome the super node problem in cases where the super node is created due to many incoming edges that need not be traversed in the other direction.
+
+Furthermore, many-to-one uni-directed edges can also be created on edges, pointing from an edge to a vertex using `TitanEdge.setProperty(Label,Vertex)`. Such edges are retrieved via `TitanEdge.getProperty(Label)`. Hence, Titan provides limited support for hyper edges which is useful for attaching provenance or authorization information to edges.
+
+[NOTE]
+Unlike standard edges, unidirected edge won't be deleted when its target vertex gets deleted.  They must be removed manually from the source vertex.
+
+sortOrder(Order)
+^^^^^^^^^^^^^^^^
+
+The order in each vertex's edges with this label are sorted.  Edges
+with an ordered label are most efficiently retrieved in their sorted
+order.
+
+A <<edgelabel-sortkey,sort key>> must be set for this method to have an effect.
+
+// TODO update this stuff for ManagementSystem changes
+
+Uniqueness Consistency
+~~~~~~~~~~~~~~~~~~~~~~
+
+When defining edge labels or property keys that impose consistency constraints, such as `KeyMaker.unique()` or `LabelMaker.manyToOne()`, inconsistencies could arise when two `TitanGraph` instances try to update the same edge or property concurrently, since one may overwrite the change of the other. When the underlying storage backend supports transactional isolation, titan will delegate consistency checks and locks to the storage backend. To avoid such inconsistencies on eventually consistent backends, Titan can acquire locks and will do so by default. Acquiring locks, however, can be very expensive. In cases where concurrent modifications can be excluded or blind overwrites are acceptable one may alter this default behavior. This is way all consistency imposing configuration methods in `KeyMaker` and `LabelMaker` accept an additional `UniquenessConsistency` argument which allows the user to specify how consistency should be enforced:
+
+* `UniquenessConsistency.NO_LOCK`
+* `UniquenessConsistency.LOCK`
+
+This configuration option should be used with care and only if the extra performance gain is needed.
+
+Note, that single-valued property keys are non-locking by default. Explicitly configuring `single()` ensures that a lock is acquired to avoid concurrent modification.
+
+Type Definition Examples
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+// TODO integrate into property key/edge label sections above?
+
+Below are some examples of creating types in Titan.
+
+[source,java]
+----
+g.makeLabel("sonOf").manyToOne().make();
+g.makeLabel("spouse").oneToOne().make();
+
+TitanKey time = g.makeKey("time").dataType(Long.class).single().make();
+g.makeLabel("author").oneToMany(UniquenessConsistency.NO_LOCK).sortKey(time).make();
+----
+
+Default Type Creation
+~~~~~~~~~~~~~~~~~~~~~
+
+Titan will create edge labels and property keys the first time they are referenced by name using a default configuration unless they have been previously configured using `makeKey` or `makeLabel` factory methods as discussed above.
+
+By default, property keys are configured to be single-valued but non-locking with `Object.class` as the data type. Note, that it is more efficient to define an appropriate data type via `makeKey(String)`. Hence, property keys don't have an index by default. To create an indexed key with this default configuration, invoke `Graph.createKeyIndex("name",Vertex.class)` before the property key is being used.
+
+Edge labels are configured to be many-to-many by default.
+
+The default type creation behavior is configured via the `autotype` configuration option. By default, it uses the configuration value `blueprints` which creates types automatically as described above. To disable automatic type creation, set `autotype=none`. Setting the option to none requires that all types are explicitly created and will throw an `IllegalArgumentException` each time a non-existent type is referenced which is useful to avoid type name typos. 
+
+*It is strongly encouraged to disable automatic type creation and to define all types explicitly.* This eliminates the possibility of accidental type creation and ensures that all types are documented.
+
+Common Problems
+~~~~~~~~~~~~~~~
+
+* *Name Uniqueness*: Types are uniquely identified by their name. Attempting to define a new type with an existing name will result in an exception. Note, that labels and keys share the same namespace, i.e., labels and keys cannot have the same name either.
+* *Batch-Loading*: When batch-loading data or disabling locking through any other means, Titan may not be able to guarantee that type names are unique when race conditions occur which leads to data corruption. Hence, it is *very important* to define all labels and keys prior to loading and to disable automatic type creation as explained above.

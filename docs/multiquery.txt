@@ -1,0 +1,39 @@
+[[multiquery]]
+Faster Deep Traversals
+----------------------
+
+Deep traversals on a graph often require executing identical vertex queries on sets of vertices. For instance, retrieving all siblings of friends of some user vertex `v` executes an identical vertex centric query for each of `v` 's friends:
+
+[source,java]
+for (Vertex f : v.getVertices(BOTH,"friend")) {
+	for (Vertex s : f.getVertices(BOTH,"sibling")) {
+		//Do something
+	}
+}
+
+`getVertices(BOTH,"sibling")` is the same vertex query for each friend vertex `f`. The above code snippet is the default way of implementing this traversal and how the Gremlin query `v.both("friend").both("sibling")` gets executed.
+However, if `v` has many friends, this requires executing many identical queries independently.
+
+Titan provides the `multiQuery(TitanVertex... vertices)` method to construct a vertex query for multiple vertices and execute it as one. By combining multiple requests into one, this method can significantly reduce query response times and increase query throughput, depending on the storage backend and the number of vertex queries that are combined into a multi-vertex query.
+
+[source,java]
+TitanMultiVertexQuery mq = graph.multiQuery();
+mq.direction(BOTH).labels("sibling");
+for (Vertex f : v.getVertices(BOTH,"friend")) {
+	mq.addVertex((TitanVertex)f);	
+}
+Map<TitanVertex,Iterable<TitanVertex>> results = mq.vertices();
+
+A `TitanMultiVertexQuery` is identical to the standard `VertexQuery`/`TitanVertexQuery` with two differences:
+
+. The query is executed on multiple vertices at once. Those vertices are either provided to the multi-query factory method `multiQuery(TitanVertex… vertices)` or added `addVertex()` or `addAllVertices()` on the multi-query constructor
+. When the query is executed via `vertices()`, `properties()`, or `titanEdges()` the results are returned as a map which contains the individual results for query on each of the added vertices.
+
+All other query specification methods remain the same, which makes it easy to substitute `TitanMultiVertexQuery` for `TitanVertexQuery` where performance can be improved by combining multiple queries.
+
+Please note:
+
+* `TitanMultiVertexQuery` is most effective when running Titan against a distributed storage backend since it greatly improves query performance by bundling inter-cluster communication and reducing message load. On a simple deployment scenario we observed an order magnitude performance improvement when combing in 50 individual vertex queries into one multi-query.
+* `limit()` applies to each individual result set and not to the entire result set of a multi-query. In other words, the semantics of limit() are identical to `VertexQuery`.
+* `TitanMultiVertexQuery` is an experimental feature introduced with Titan 0.4.0. Please use with care and benchmark against your particular use case to determine its suitability for your application.
+* `TitanMultiVertexQuery` is an experimental feature of Titan and not (yet) part of Blueprints and therefore not supported by Gremlin. We plan to make a case for multi-query in Blueprints after demonstrating its performance gains on a range of applications.

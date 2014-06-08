@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.locking.LockStatus;
 
 import java.util.concurrent.TimeUnit;

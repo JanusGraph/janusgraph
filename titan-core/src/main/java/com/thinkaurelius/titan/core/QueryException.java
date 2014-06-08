@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.core;
 
 /**
- * Exception thrown when a user defined query is invalid or could not be processed.
+ * Exception thrown when a user defined query (e.g. a {@link TitanVertex} or {@link TitanGraphQuery})
+ * is invalid or could not be processed.
  *
  * @author Matthias Br&ouml;cheler (http://www.matthiasb.com)
  */

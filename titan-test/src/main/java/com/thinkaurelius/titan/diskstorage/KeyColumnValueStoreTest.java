@@ -220,9 +220,9 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     public void checkKeys(Set<Integer> removed) throws StorageException {
         for (int i = 0; i < numKeys; i++) {
             if (removed.contains(i)) {
-                Assert.assertFalse(store.containsKey(KeyValueStoreUtil.getBuffer(i), tx));
+                Assert.assertFalse(KCVSUtil.containsKey(store, KeyValueStoreUtil.getBuffer(i), tx));
             } else {
-                Assert.assertTrue(store.containsKey(KeyValueStoreUtil.getBuffer(i), tx));
+                Assert.assertTrue(KCVSUtil.containsKey(store, KeyValueStoreUtil.getBuffer(i), tx));
             }
         }
     }
@@ -807,18 +807,18 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Test
     public void containsKeyReturnsTrueOnExtantKey() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        Assert.assertFalse(store.containsKey(key1, tx));
+        Assert.assertFalse(KCVSUtil.containsKey(store, key1, tx));
         KeyColumnValueStoreUtil.insert(store, tx, 1, "c", "v");
         tx.commit();
 
         tx = startTx();
-        Assert.assertTrue(store.containsKey(key1, tx));
+        Assert.assertTrue(KCVSUtil.containsKey(store, key1, tx));
     }
 
     @Test
     public void containsKeyReturnsFalseOnNonexistentKey() throws Exception {
         StaticBuffer key1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
-        Assert.assertFalse(store.containsKey(key1, tx));
+        Assert.assertFalse(KCVSUtil.containsKey(store, key1, tx));
     }
 
     @Test

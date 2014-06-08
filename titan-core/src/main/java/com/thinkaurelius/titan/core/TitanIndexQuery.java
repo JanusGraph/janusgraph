@@ -1,10 +1,17 @@
 package com.thinkaurelius.titan.core;
 
+import com.thinkaurelius.titan.core.schema.Parameter;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
 /**
+ * A GraphQuery that queries for graph elements directly against a particular indexing backend and hence allows this
+ * query mechanism to exploit the full range of features and functionality of the indexing backend.
+ * However, the results returned by this query will not be adjusted to the modifications in a transaction. If there
+ * are no changes in a transaction, this won't matter. If there are, the results of this query may not be consistent
+ * with the transactional state.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public interface TitanIndexQuery {

@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
+import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
@@ -49,11 +50,14 @@ public class TitanFactory {
     /**
      * Opens a {@link TitanGraph} database.
      * <p/>
-     * If the argument points to a configuration file, the configuration file is loaded to configure the database.
-     * If the argument points to a path, a graph database is created or opened at that location.
+     * If the argument points to a configuration file, the configuration file is loaded to configure the Titan graph
+     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned Titan graph.
+     * <p />
+     * A configuration short-cut is of the form:
+     * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
      *
-     * @param shortcutOrFile Configuration file name or directory name
-     * @return Titan graph database
+     * @param shortcutOrFile Configuration file name or configuration short-cut
+     * @return Titan graph database configured according to the provided configuration
      * @see <a href="https://github.com/thinkaurelius/titan/wiki/Graph-Configuration">Graph Configuration Wiki</a>
      */
     public static TitanGraph open(String shortcutOrFile) {
@@ -71,15 +75,35 @@ public class TitanFactory {
         return open(new CommonsConfiguration(configuration));
     }
 
+    /**
+     * Opens a {@link TitanGraph} database configured according to the provided configuration.
+     *
+     * @param configuration Configuration for the graph database
+     * @return Titan graph database
+     */
     public static TitanGraph open(BasicConfiguration configuration) {
         return open(configuration.getConfiguration());
     }
 
+    /**
+     * Opens a {@link TitanGraph} database configured according to the provided configuration.
+     *
+     * @param configuration Configuration for the graph database
+     * @return Titan graph database
+     */
     public static TitanGraph open(ReadConfiguration configuration) {
-        preloadConfigOptions();
+        ReflectiveConfigOptionLoader.loadOnce();
         return new StandardTitanGraph(new GraphDatabaseConfiguration(configuration));
     }
 
+    /**
+     * Returns a {@link Builder} that allows to set the configuration options for opening a Titan graph database.
+     * <p />
+     * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
+     * the graph can be opened with {@link com.thinkaurelius.titan.core.TitanFactory.Builder#open()}.
+     *
+     * @return
+     */
     public static Builder build() {
         return new Builder();
     }
@@ -88,15 +112,27 @@ public class TitanFactory {
 
     public static class Builder extends UserModifiableConfiguration {
 
-        public Builder() {
+        private Builder() {
             super(GraphDatabaseConfiguration.buildConfiguration());
         }
 
+        /**
+         * Configures the provided configuration path to the given value.
+         *
+         * @param path
+         * @param value
+         * @return
+         */
         public Builder set(String path, Object value) {
-            super.set(path,value);
+            super.set(path, value);
             return this;
         }
 
+        /**
+         * Opens a Titan graph with the previously configured options.
+         *
+         * @return
+         */
         public TitanGraph open() {
             return TitanFactory.open(super.getConfiguration());
         }
@@ -107,51 +143,6 @@ public class TitanFactory {
     //###################################
     //          HELPER METHODS
     //###################################
-
-    private synchronized static void preloadConfigOptions() {
-
-        if (preloadedConfigOptions)
-            return;
-
-        final Stopwatch sw = new Stopwatch().start();
-
-        org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
-            .setUrls(ClasspathHelper.forJavaClassPath())
-            .setScanners(new TypeAnnotationsScanner());
-//      .setScanners(new SubTypesScanner(), new TypeAnnotationsScanner(), new FieldAnnotationsScanner());
-        Reflections reflections = new Reflections(rc);
-
-        int preloaded = 0;
-
-//        for (Class<?> c : reflections.getSubTypesOf(Object.class)) {  // Returns nothing
-        for (Class<?> c : reflections.getTypesAnnotatedWith(PreInitializeConfigOptions.class)) {
-            log.trace("Looking for ConfigOption public static fields on class {}", c);
-            for (Field f : c.getDeclaredFields()) {
-                final boolean pub = Modifier.isPublic(f.getModifiers());
-                final boolean stat = Modifier.isStatic(f.getModifiers());
-                final boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
-
-                log.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
-                if (pub && stat && typeMatch) {
-                    try {
-                        Object o = f.get(null);
-                        Preconditions.checkNotNull(o);
-                        log.debug("Initialized {}={}", f, o);
-                        preloaded++;
-                    } catch (IllegalArgumentException e) {
-                        log.warn("ConfigOption initialization error", e);
-                    } catch (IllegalAccessException e) {
-                        log.warn("ConfigOption initialization error", e);
-                    }
-                }
-            }
-        }
-
-        preloadedConfigOptions = true;
-
-        log.debug("Preloaded {} config options via reflections in {} ms",
-                preloaded, sw.stop().elapsed(TimeUnit.MILLISECONDS));
-    }
 
     private static ReadConfiguration getLocalConfiguration(String shortcutOrFile) {
         File file = new File(shortcutOrFile);

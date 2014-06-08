@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 
 /**
@@ -13,7 +13,7 @@ import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
  */
 public class HBaseTransaction extends AbstractStoreTransaction {
 
-    public HBaseTransaction(final TransactionHandleConfig config) {
+    public HBaseTransaction(final BaseTransactionConfig config) {
         super(config);
     }
 }

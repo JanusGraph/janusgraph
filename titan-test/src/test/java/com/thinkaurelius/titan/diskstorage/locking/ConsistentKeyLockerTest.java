@@ -16,13 +16,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.StandardDuration;
-import com.thinkaurelius.titan.util.time.StandardTimepoint;
-import com.thinkaurelius.titan.util.time.Timepoint;
-import com.thinkaurelius.titan.util.time.Timer;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timer;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 
@@ -73,11 +72,11 @@ public class ConsistentKeyLockerTest {
     private final StaticBuffer defaultLockVal = BufferUtil.getIntBuffer(0); // maybe refactor...
 
     private StoreTransaction defaultTx;
-    private TransactionHandleConfig defaultTxCfg;
+    private BaseTransactionConfig defaultTxCfg;
     private Configuration defaultTxCustomOpts;
 
     private StoreTransaction otherTx;
-    private TransactionHandleConfig otherTxCfg;
+    private BaseTransactionConfig otherTxCfg;
     private Configuration otherTxCustomOpts;
 
     private final long defaultWaitNS = 100 * 1000 * 1000;
@@ -109,28 +108,28 @@ public class ConsistentKeyLockerTest {
         manager = relaxedCtrl.createMock(StoreManager.class);
 
         defaultTx = relaxedCtrl.createMock(StoreTransaction.class);
-        defaultTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
+        defaultTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
         defaultTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(defaultTx.getConfiguration()).andReturn(defaultTxCfg).anyTimes();
         expect(defaultTxCfg.getGroupName()).andReturn("default").anyTimes();
         expect(defaultTxCfg.getCustomOptions()).andReturn(defaultTxCustomOpts).anyTimes();
-        Comparator<TransactionHandleConfig> defaultTxCfgChecker = new Comparator<TransactionHandleConfig>() {
+        Comparator<BaseTransactionConfig> defaultTxCfgChecker = new Comparator<BaseTransactionConfig>() {
             @Override
-            public int compare(TransactionHandleConfig actual, TransactionHandleConfig ignored) {
+            public int compare(BaseTransactionConfig actual, BaseTransactionConfig ignored) {
                 return actual.getCustomOptions() == defaultTxCustomOpts ? 0 : -1;
             }
         };
         expect(manager.beginTransaction(cmp(null, defaultTxCfgChecker, LogicalOperator.EQUAL))).andReturn(defaultTx).anyTimes();
 
         otherTx = relaxedCtrl.createMock(StoreTransaction.class);
-        otherTxCfg = relaxedCtrl.createMock(TransactionHandleConfig.class);
+        otherTxCfg = relaxedCtrl.createMock(BaseTransactionConfig.class);
         otherTxCustomOpts = relaxedCtrl.createMock(Configuration.class);
         expect(otherTx.getConfiguration()).andReturn(otherTxCfg).anyTimes();
         expect(otherTxCfg.getGroupName()).andReturn("other").anyTimes();
         expect(otherTxCfg.getCustomOptions()).andReturn(otherTxCustomOpts).anyTimes();
-        Comparator<TransactionHandleConfig> otherTxCfgChecker = new Comparator<TransactionHandleConfig>() {
+        Comparator<BaseTransactionConfig> otherTxCfgChecker = new Comparator<BaseTransactionConfig>() {
             @Override
-            public int compare(TransactionHandleConfig actual, TransactionHandleConfig ignored) {
+            public int compare(BaseTransactionConfig actual, BaseTransactionConfig ignored) {
                 return actual.getCustomOptions() == otherTxCustomOpts ? 0 : -1;
             }
         };
@@ -149,7 +148,6 @@ public class ConsistentKeyLockerTest {
         Method timeInSpecifiedUnit = FakeTimestampProvider.class.getMethod("getTime", long.class, TimeUnit.class);
         Method sleepPast = FakeTimestampProvider.class.getMethod("sleepPast", Timepoint.class);
 
-//        times = EasyMock.createMockBuilder(FakeTimestampProvider.class).addMockedMethods(timeInNativeUnit, timeInSpecifiedUnit, sleepPast).createStrictMock();
         times = ctrl.createMock(FakeTimestampProvider.class, timeInNativeUnit, timeInSpecifiedUnit, sleepPast);
         store = ctrl.createMock(KeyColumnValueStore.class);
         mediator = ctrl.createMock(LocalLockMediator.class);
@@ -159,8 +157,8 @@ public class ConsistentKeyLockerTest {
         ctrl.verify();
         ctrl.reset();
 
-        expect(defaultTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
-        expect(otherTxCfg.getStartTime()).andReturn(new StandardTimepoint(0, times)).anyTimes();
+        expect(defaultTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
+        expect(otherTxCfg.getTimestampProvider()).andReturn(times).anyTimes();
 
         relaxedCtrl.replay();
     }

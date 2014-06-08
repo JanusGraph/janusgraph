@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfigurable;
 
 /**
  * A transaction handle uniquely identifies a transaction on the storage backend.
@@ -15,15 +15,7 @@ import com.thinkaurelius.titan.diskstorage.TransactionHandleConfigurable;
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public interface StoreTransaction extends TransactionHandleConfigurable {
-
-    /**
-     * Get the configuration for this transaction
-     *
-     * @return
-     */
-    @Override
-    public TransactionHandleConfig getConfiguration();
+public interface StoreTransaction extends BaseTransactionConfigurable {
 
 
 }

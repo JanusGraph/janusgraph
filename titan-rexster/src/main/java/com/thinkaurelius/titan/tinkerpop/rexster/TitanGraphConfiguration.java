@@ -5,11 +5,13 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.tinkerpop.blueprints.Graph;
 import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.config.GraphConfiguration;
+import com.tinkerpop.rexster.config.GraphConfigurationContext;
 import com.tinkerpop.rexster.config.GraphConfigurationException;
 import org.apache.commons.configuration.*;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.Properties;
 
 /**
  * Implements a Rexster GraphConfiguration for Titan
@@ -21,11 +23,12 @@ import java.util.Iterator;
 public class TitanGraphConfiguration implements GraphConfiguration {
 
     @Override
-    public Graph configureGraphInstance(final Configuration properties) throws GraphConfigurationException {
-        return TitanFactory.open(convertConfiguration(properties));
+    public Graph configureGraphInstance(final GraphConfigurationContext context) throws GraphConfigurationException {
+        return TitanFactory.open(convertConfiguration(context));
     }
 
-    public Configuration convertConfiguration(final Configuration properties) throws GraphConfigurationException {
+    public Configuration convertConfiguration(final GraphConfigurationContext context) throws GraphConfigurationException {
+        Configuration properties = context.getProperties();
         try {
             final Configuration titanConfig = new BaseConfiguration();
             try {

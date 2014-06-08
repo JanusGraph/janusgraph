@@ -1,0 +1,215 @@
+Management
+==========
+
+This section describes installation, configuration, and administration
+of Titan.
+
+[[storage-backends]]
+Storage Backends
+----------------
+
+Titan's data storage layer is pluggable.  Implementations of the
+pluggable storage layer -- that is, the software component tells Titan
+how to talk to its data store -- are called storage backends.
+
+This section describes configuration and administration of Titan's
+standard storage backends.
+
+This section only addresses configuration of the stock storage
+backends that come with Titan.  For information about writing a new
+storage backend for Titan, see _TODO: xref to StoreManager/KCVS
+overview_.
+
+include::cassandra.txt[]
+
+include::hbase.txt[]
+
+include::bdb.txt[]
+
+
+[[index-backends]]
+Index Backends
+--------------
+
+[.tss-floatright.tss-width-250]
+image:titan-elasticsearch.png[]
+
+Titan provides two types of index systems: The _standard_ index and the _external index_ interface which supports an arbitrary number of external indexing backends to provide support for geo, numeric range, and full-text search. Indexes are needed to retrieve vertices or edges by their properties and are very often used as the starting point for a traversal.
+
+The standard index is very fast and always available without any further configuration, but only supports exact index matches. In other words, the standard index can only retrieve vertices and edges by matching one of their properties exactly. The standard index is implemented directly against the configured storage backend.
+
+The external index interface is more flexible and supports retrieving vertices and edges by bounding their geo-location, properties that fall into a numeric range or matching tokens in full text. The external index interface connects to separate systems as index backends for indexing and retrieval similarly to how storage backends are used for persistence. Index backends need to be configured in the graph configuration before they can be used.
+
+The choice of index backend determines which search features are supported, as well as the performance and scalability of the index. Titan currently supports two index backends: <<elasticsearch,Elasticsearch>> and <<lucene,Lucene>>.
+
+[[index-creation]]
+Indexing Vertices and Edges
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To retrieve vertices and edges by their property values through an index lookup, the property key must be registered with the index when it is defined, that is, _before_ its first use. The index is registered through the _TODO xref KeyMaker_ when the key is defined.
+
+For example, the following property key definitions register all four indexed properties from the <<getting-started,Graph of the Gods example>> with the respective index backends.
+
+[source,java]
+// 1) Index vertices by their unique name property
+graph.makeKey("name").dataType(String.class).indexed(Vertex.class).unique().make();
+// 2) Index vertices by their age property
+graph.makeKey("age").dataType(Integer.class).indexed("search", Vertex.class).make();
+// 3) Index edges by their geo-location 
+graph.makeKey("place").dataType(Geoshape.class).indexed("search", Edge.class).make();
+// 4) Index vertices and edges by their full-text reason property
+graph.makeKey("reason").dataType(String.class).indexed("search",Vertex.class).indexed("search", Edge.class).make();
+
+. The `name` property key is indexed for vertices using Titan's standard index. The standard index only supports exact match index retrievals but is very fast. When no index name is specified, the standard index is used.
+. The `age` property key is indexed for vertices using the configured external index backend with the name "search". Since the data type of `age` is a number, property values are indexed as numbers and can be retrieved via numeric range search.
+. The `place` property key is indexed for edges using the external index backend named "search". Since the data type of `place` is `Geoshape`, property values are indexed as geo-location and can be retrieved via geo-searches such as circular region or bounding box search (depending on what the index backed supports).
+. The `reason` property key is indexed for vertices _and_ edges using the external index backend named "search". Since the data type of `reason` is `String`, property values are indexed as text and be retrieved via full-text search such as string-containment search. When the string is indexed, it is tokenized.
+
+When using Titan's standard index, the name argument to the `indexed()` method is optional. An equivalent definition of the `name` property key, which identifies the standard index by its name, would be:
+
+[source,java]
+graph.makeKey("name").dataType(String.class).indexed("standard",Vertex.class).unique().make();
+
+The name "standard" is always reserved for Titan's standard index backend. External indexing backends may not be configured with this name.
+
+_Note, this section assumes that an index backend named `search` has been defined in the graph configuration. Read "Next Steps" to find out how to configure an index backend._
+
+[[index-blueprints-query]]
+Querying an Index
+~~~~~~~~~~~~~~~~~
+
+After the property keys have been registered with the index backends and vertices or edges have been added to the graph with corresponding property values, those elements can be queried for using index retrievals. `Graph.query()` constructs a GraphQuery through method chaining and calling `vertices()` or `edges()` retrieves the vertices or edges matching the query using index retrievals.
+Continuing with the Graph of the Gods, the following are index query examples:
+
+[source,java]
+// 1) Find vertices with the name "hercules"
+g.query().has("name",EQUAL,"hercules").vertices()
+// 2) Find all vertices with an age greater than 50
+g.query().has("age",GREATER_THAN,50).vertices()
+// or find all vertices between 1000 (inclusive) and 5000 (exclusive) years of age and order by increasing age
+g.query().has("age",GREATER_THAN_EQUAL,1000).has("age",LESS_THAN,5000).orderBy("age",Order.ASC).vertices()
+// which returns the same result set as the following query but in reverse order
+g.query().interval("age",1000,5000).orderBy("age",Order.DESC).vertices()
+// 3) Find all edges where the place is at most 50 kilometers from the given latitude-longitude pair
+g.query().has("place",WITHIN,Geoshape.circle(37.97,23.72,50)).edges()
+// 4) Find all edges where reason contains the word "loves"
+g.query().has("reason",CONTAINS,"loves").edges()
+// or all edges which contain two words (need to chunk into individual words)
+g.query().has("reason",CONTAINS,"loves").has("reason",CONTAINS,"breezes").edges()
+// or all edges which contain words that start with "lov"
+g.query().has("reason",CONTAINS_PREFIX,"lov").edges()
+// or all edges which contain words that match the regular expression "br[ez]*s" in their entirety
+g.query().has("reason",CONTAINS_REGEX,"br[ez]*s").edges()
+// 5) Find all vertices older than a thousand years and named "saturn"
+g.query().has("age",GREATER_THAN,1000).has("name",EQUAL,"saturn").vertices()
+
+. The standard index registered for `name` supports equality searches. In this case, we retrieve all vertices where the name matches "hercules" exactly (i.e. case sensitive).
+. The external index registered for `age` supports numeric range search since the data type for `age` is numeric. Hence, querying for vertices whose age falls into a given range is supported.
+. The geo-index registered for `place` supports retrieving edges by specifying a circular shape as the search region. The circular region is defined by the latitude and longitude of its center (first two arguments) and the radius of the circle in kilometers (third argument).
+. The full-text index registered for `reason` supports retrieval by string containment. A property matches if it contains the given word (case insensitive). Note, that the text is tokenized when indexed and stop words as well as punctuation are removed. Two query for properties that contain two or more words, split them up into two separate `has()` clauses.
+. Multiple has clauses can be combined into a _composite_ index retrieval potentially spread across multiple index backends. In this example, the query contains a `name` and `age` constraint. Titan will optimize the query to find the optimal index retrieval plan.
+
+
+Dual Indexing
+~~~~~~~~~~~~~
+
+For some use cases, it can be beneficial to register a property key with multiple index backends. This is supported by Titan.
+
+For instance, consider the scenario where user vertices have the property key `name` which stores the full name of the user - first, middle, and last name. We define the `name` key as follows:
+
+[source,java]
+g.makeType().name("name").dataType(String.class)
+ .indexed(Vertex.class).indexed("search",Vertex.class)
+ .unique(Direction.OUT).makePropertyKey();
+
+Registering the `name` key with the standard index _and_ an external full-text index has the following advantages:
+
+* Quick querying for users by their entire name using the standard index: `g.query().has("name",EQUAL,"John Doe").vertices()`
+* Using the full-text index to search for user's by any part of their name: `g.query().has("name",CONTAINS,"John").vertices()`
+
+Titan will automatically route the index request to the correct index backend. Likewise, Titan can also handle composite queries that cover multiple indexes. Titan will attempt to determine an optimal query execution plan.
+
+Compare Predicate
+^^^^^^^^^^^^^^^^^
+
+The `Compare` enum specifies the following self-explanatory comparison predicates used for index query construction and used in the examples above:
+
+* EQUAL
+* NOT_EQUAL
+* GREATER_THAN
+* GREATER_THAN_EQUAL
+* LESS_THAN
+* LESS_THAN_EQUAL
+
+Text Predicate
+^^^^^^^^^^^^^^
+
+The `Text` enum specifies the <<text-search,search operator>> used to query for matching text or string values.  We differentiate between two types of predicates:
+
+* Text search predicates which match against the individual words inside a text string after it has been tokenized. These predicates are not case sensitive.
+** CONTAINS: is true if (at least) one word inside the text string matches the query string
+** CONTAINS_PREFIX: is true if (at least) one word inside the text string begins with the query string
+** CONTAINS_REGEX: is true if (at least) one word inside the text string matches the given regular expression
+* String search predicates which match against the entire string value
+** PREFIX: if the string value starts with the given query string
+** REGEX: if the string value matches the given regular expression in its entirety
+
+See <<text-search>> for more information about full-text and string search.
+
+Geo Predicate
+^^^^^^^^^^^^^
+
+The `Geo` enum specifies the geo-location predicate `Geo.WITHIN` which holds true if one geometric object contains the other.
+
+Ordering
+^^^^^^^^
+
+The order in which the results are returned can be defined using the `orderBy()` method of graph query constructor returned by `Graph.query()`. This method expects to parameters:
+
+* The name of the property key by which to order the results. The results will be ordered by the value of the vertices or edges for this property key. 
+* The sort order: either increasing `Order.ASC` or decreasing `Order.DESC`
+
+For example, the query `graph.query().has("name",CONTAINS,"john").orderBy("age",Order.DESC).limit(10).vertices()` retrieves the ten oldest users who have the word "john" in their name.
+
+When using `orderBy()` it is important to note that:
+
+* Titan's standard indexes do not natively support ordering search results. All results will be retrieved and then sorted in-memory. For large result sets, this can be very expensive.
+* Most external indexing backends support ordering natively and efficiently. However, the property key used in the orderBy method must be configured to be indexed in this indexing backend for native result ordering support. This is important in cases where the orderBy key is different from the query keys. If the property key is not indexed, then sorting requires loading all results into memory.
+
+Choosing an Index
+~~~~~~~~~~~~~~~~~
+
+Here are some guidelines for choosing the best indexing strategy for a particular use case:
+
+. Use the standard index for exact match index retrievals. The standard index does not require configuring or operating an external index system and is often significantly faster than external index backends.
+.. As an exception, use an external index for exact matches when the number of distinct values for the property key is relatively small or if you expect one value to be associated with many elements in the graph (i.e. in case of low selectivity).
+. Use an external index for numeric range, full-text or geo-spatial indexing. Also, using an external index can speed up orderBy queries.
+.. Use <<elasticsearch,Elasticsearch>> when there is an expectation that Titan will be distributed across multiple machines.
+.. <<lucene,Lucene>> performs better in small scale, single machine applications. It performs better in unit tests, for instance.
+
+Result Scoring
+~~~~~~~~~~~~~~
+
+Titan's `Graph.query()` currently only supports discrete index queries, that is, an element either matches a query or it does not. In other words, this graph query mechanism does not support result scoring where a "match-goodness" score is associated with each result (so called "fuzzy search").
+
+Some indexing backends support result scoring which may be accessible through Titan's _TODO xref direct index query_ functionality.
+
+include::elasticsearch.txt[]
+
+include::lucene.txt[]
+
+include::textsearch.txt[]
+
+include::directindex.txt[]
+
+
+Configuration and Tuning
+------------------------
+
+include::graphconfig.txt[]
+
+include::serializer.txt[]
+
+include::exampleconfig.txt[]
+
+include::caching.txt[]

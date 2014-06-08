@@ -12,8 +12,8 @@ import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 public interface StoreFeatures {
 
     /**
-     * Equivalent to calling {@link#supportsUnorderedScan() {@code ||}
-     * {@link #isOrderedScannable()}.
+     * Equivalent to calling {@link #hasUnorderedScan()} {@code ||}
+     * {@link #hasOrderedScan()}.
      */
     public boolean hasScan();
 
@@ -85,6 +85,33 @@ public interface StoreFeatures {
     public boolean isKeyConsistent();
 
     /**
+     * Returns true if column-value entries in this storage backend are annotated with a timestamp,
+     * else false. It is assumed that the timestamp matches the one set during the committing transaction.
+     *
+     * @return
+     */
+    public boolean hasTimestamps();
+
+    /**
+     * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
+     * is provided as a meta-data annotation on the {@link com.thinkaurelius.titan.diskstorage.Entry}, the entry will
+     * disappear from the storage backend after the given amount of time.
+     *
+     * @return true if the storage backend supports TTL, else false
+     */
+    public boolean hasTTL();
+
+
+    /**
+     * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
+     * token to each column-value entry in the data store and limited retrievals to "visible" entries.
+     *
+     * @return
+     */
+    public boolean hasVisibility();
+
+
+    /**
      * Get a transaction configuration that enforces key consistency. This
      * method has undefined behavior when {@link #isKeyConsistent()} is
      * false.
@@ -108,4 +135,6 @@ public interface StoreFeatures {
      * @return a locally (or globally) key-consistent tx config
      */
     public Configuration getLocalKeyConsistentTxConfig();
+
+
 }

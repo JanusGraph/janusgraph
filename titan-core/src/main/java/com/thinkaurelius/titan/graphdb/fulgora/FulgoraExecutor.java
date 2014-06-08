@@ -1,12 +1,13 @@
 package com.thinkaurelius.titan.graphdb.fulgora;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
+import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
+import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanRelation;
 import com.thinkaurelius.titan.core.olap.OLAPJob;
+import com.thinkaurelius.titan.core.olap.OLAPResult;
 import com.thinkaurelius.titan.core.olap.StateInitializer;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.Entry;
@@ -18,110 +19,119 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntryList;
-import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
+import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.query.QueryExecutor;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQuery;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.VertexFactory;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
-import com.thinkaurelius.titan.util.datastructures.Retriever;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
-class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable {
+class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnable {
 
     private static final Logger log =
             LoggerFactory.getLogger(FulgoraExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
     private static final int TIMEOUT_MS = 60000; // 60 seconds
-    private static final int NUM_VERTEX_DEFAULT = 10000;
 
-    private final SliceQuery[] queries;
+    private final Map<String,FulgoraRelationQuery> queryDefinitions;
+    private final int numQueries;
     private final List<BlockingQueue<QueryResult>> dataQueues;
     private final DataPuller[] pullThreads;
-    private final ThreadPoolExecutor processor;
+    private final int numProcessors;
     private final StandardTitanTx tx;
-    private final OLAPJob job;
+    private final EdgeSerializer edgeSerializer;
+    private final IDManager idManager;
+    private final OLAPJob<S> job;
+    private final ConcurrentMap<Long,Map<String,Object>> partitionedVertexMsgs;
 
-    final ConcurrentMap<Long,S> vertexStates;
+    final FulgoraResult<S> vertexStates;
     final String stateKey;
     final StateInitializer<S> initializer;
 
     private boolean processingException = false;
 
-    FulgoraExecutor(final List<SliceQuery> sliceQueries, final StandardTitanTx tx,
-                    final int numVertices, final int numProcessors,
-                    final String stateKey, final OLAPJob job,
-                    final StateInitializer<S> initializer, final Map<Long,S> initialState) {
+    FulgoraExecutor(final Map<String,FulgoraRelationQuery> queryDefs, final StandardTitanTx tx, final IDManager idManager,
+                    final int numProcessors, final String stateKey, final OLAPJob job,
+                    final StateInitializer<S> initializer, final FulgoraResult<S> initialState) {
         this.tx=tx;
+        this.edgeSerializer = tx.getEdgeSerializer();
         this.stateKey = stateKey;
         this.job = job;
         this.initializer = initializer;
         BackendTransaction btx = tx.getTxHandle();
+        this.idManager = idManager;
+        this.queryDefinitions = queryDefs;
+        this.numProcessors = numProcessors;
 
-        //The first (0th) query is the grounding query
-        dataQueues = new ArrayList<BlockingQueue<QueryResult>>(sliceQueries.size()+1);
-        pullThreads = new DataPuller[sliceQueries.size()+1];
-        queries = new SliceQuery[sliceQueries.size()+1];
-        for (int i = 0; i <= sliceQueries.size(); i++) {
-            if (i==0) queries[i]=new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1);
-            else queries[i]=sliceQueries.get(i-1);
-            BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
-            dataQueues.add(queue);
-            pullThreads[i]=new DataPuller(queue,btx.edgeStoreKeys(queries[i]));
-            pullThreads[i].start();
-        }
-        //Prepare vertex state
-        if (initialState!=null && !initialState.isEmpty() && initialState instanceof ConcurrentMap && initialState.size()>= numVertices) {
-            vertexStates = (ConcurrentMap<Long, S>) initialState;
-        } else {
-            vertexStates = new NonBlockingHashMapLong<S>(numVertices>0?numVertices:NUM_VERTEX_DEFAULT);
-            if (initialState!=null && !initialState.isEmpty()) {
-                for (Map.Entry<Long,S> entry : initialState.entrySet())
-                    vertexStates.put(entry.getKey(),entry.getValue());
+        int count = 0;
+        for (FulgoraRelationQuery frq : queryDefs.values()) count+=frq.queries.size();
+        numQueries = count+1;
+        //Add one for grounding query, since the first (0th) query is the grounding/condition query
+        dataQueues = new ArrayList<BlockingQueue<QueryResult>>(numQueries);
+        pullThreads = new DataPuller[numQueries];
+
+        int pos = 0;
+        pullThreads[pos++]=addDataPuller(BaseKey.VertexExists.getName(),
+                new SliceQuery(BufferUtil.zeroBuffer(4),BufferUtil.oneBuffer(4)).setLimit(1),btx);
+        for (Map.Entry<String,FulgoraRelationQuery> queryDef : queryDefs.entrySet()) {
+            String queryName = queryDef.getKey();
+            List<SliceQuery> sqs = queryDef.getValue().queries;
+            for (SliceQuery sq : sqs) {
+                pullThreads[pos++]=addDataPuller(queryName,sq,btx);
             }
         }
 
-        processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
-        processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        partitionedVertexMsgs = new ConcurrentHashMap<Long, Map<String, Object>>();
+        vertexStates = initialState;
+    }
+
+    StandardTitanTx tx() {
+        return tx;
+    }
+
+    private final DataPuller addDataPuller(String queryName, SliceQuery sq, BackendTransaction btx) {
+        BlockingQueue<QueryResult> queue = new LinkedBlockingQueue<QueryResult>(QUEUE_SIZE);
+        dataQueues.add(queue);
+        DataPuller dp = new DataPuller(idManager, queryName, queue, btx.edgeStoreKeys(sq));
+        dp.start();
+        return dp;
     }
 
     S getVertexState(long vertexId) {
+        if (IDManager.VertexIDType.Hidden.is(vertexId)) return null;
+        if (idManager.isPartitionedVertex(vertexId)) vertexId=idManager.getCanonicalVertexId(vertexId);
         S state = vertexStates.get(vertexId);
         if (state==null) {
             state = initializer.initialState();
-            vertexStates.put(vertexId,state);
+//            setVertexState(vertexId, state);
         }
         return state;
     }
 
     void setVertexState(long vertexId, S state) {
-        vertexStates.put(vertexId,state);
+        vertexStates.set(vertexId, state);
     }
 
     @Override
     public void run() {
+        ThreadPoolExecutor processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
+        processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         try {
-            QueryResult[] currentResults = new QueryResult[queries.length];
+            QueryResult[] currentResults = new QueryResult[numQueries];
             while (true) {
-                for (int i = 0; i < queries.length; i++) {
+                for (int i = 0; i < numQueries; i++) {
                     if (currentResults[i]!=null) continue;
                     BlockingQueue<QueryResult> queue = dataQueues.get(i);
 
@@ -141,7 +151,7 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 //First, check if this is a valid (non-deleted) vertex
                 assert conditionQuery.entries.size()==1;
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
-                                        conditionQuery.vertexId,conditionQuery.entries.get(0),true,tx);
+                                        conditionQuery.entries.get(0),true,tx);
                 if (relCache.typeId != BaseKey.VertexExists.getID()) {
                     log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
                     for (int i=1;i<currentResults.length;i++) {
@@ -150,14 +160,16 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                         }
                     }
                 } else {
-                    FulgoraVertex vertex = new FulgoraVertex(tx,conditionQuery.vertexId,this);
+                    final long vertexid = conditionQuery.vertexId;
+                    List<QueryResult> queryResults = new ArrayList<QueryResult>(numQueries-1);
                     for (int i=1;i<currentResults.length;i++) {
-                        if (currentResults[i]!=null && currentResults[i].vertexId==vertex.getID()) {
-                            vertex.addToQueryCache(queries[i],currentResults[i].entries);
+                        if (currentResults[i]!=null && currentResults[i].vertexId==vertexid) {
+                            queryResults.add(currentResults[i]);
+//                            vertex.addToQueryCache(queries[i],currentResults[i].entries);
                             currentResults[i]=null;
                         }
                     }
-                    processor.submit(new VertexProcessor<S>(vertex));
+                    processor.submit(new VertexProcessor(vertexid, queryResults));
 
                 }
             }
@@ -168,6 +180,25 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 pullThreads[i].join(10);
                 if (pullThreads[i].isAlive()) throw new TitanException("Could not join data pulling thread");
             }
+
+            //Process partitioned vertices since we have now accumulated all their state
+            if (!partitionedVertexMsgs.isEmpty()) {
+                processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
+                processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+                for (final Map.Entry<Long,Map<String,Object>> partitionVertexMsg : partitionedVertexMsgs.entrySet()) {
+                    final FulgoraVertex vertex = new FulgoraVertex(tx,partitionVertexMsg.getKey(),FulgoraExecutor.this);
+                    processor.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            processVertex(vertex,partitionVertexMsg.getValue());
+                        }
+                    });
+                }
+                processor.shutdown();
+                processor.awaitTermination(TIMEOUT_MS,TimeUnit.MILLISECONDS);
+                if (!processor.isTerminated()) throw new TitanException("Timed out waiting for partitioned-vertex processors");
+            }
+
             tx.rollback();
             set(vertexStates);
         } catch (Throwable e) {
@@ -178,83 +209,145 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
         }
     }
 
-    final QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
-
-        @Override
-        public Iterator<TitanRelation> getNew(VertexCentricQuery query) {
-            return Iterators.emptyIterator();
-        }
-
-        @Override
-        public boolean hasDeletions(VertexCentricQuery query) {
-            return false;
-        }
-
-        @Override
-        public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
-            return false;
-        }
-
-        @Override
-        public Iterator<TitanRelation> execute(VertexCentricQuery query, SliceQuery sq, Object exeInfo) {
-            assert exeInfo==null;
-
-            final InternalVertex vertex = query.getVertex();
-
-            Iterable<Entry> iter = vertex.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
-                @Override
-                public EntryList get(SliceQuery query) {
-                    return StaticArrayEntryList.EMPTY_LIST;
-                }
-            });
-
-            return Iterables.transform(iter, new Function<Entry, TitanRelation>() {
-                @Override
-                public TitanRelation apply(@Nullable Entry data) {
-                    return RelationConstructor.readRelation(vertex,data,tx.getEdgeSerializer(),tx,neighborVertices);
-                }
-            }).iterator();
-        }
-    };
+//    final QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery> edgeProcessor = new QueryExecutor<VertexCentricQuery, TitanRelation, SliceQuery>() {
+//
+//        @Override
+//        public Iterator<TitanRelation> getNew(VertexCentricQuery query) {
+//            return Iterators.emptyIterator();
+//        }
+//
+//        @Override
+//        public boolean hasDeletions(VertexCentricQuery query) {
+//            return false;
+//        }
+//
+//        @Override
+//        public boolean isDeleted(VertexCentricQuery query, TitanRelation result) {
+//            return false;
+//        }
+//
+//        @Override
+//        public Iterator<TitanRelation> execute(VertexCentricQuery query, SliceQuery sq, Object exeInfo) {
+//            assert exeInfo==null;
+//
+//            final InternalVertex vertex = query.getVertex();
+//
+//            Iterable<Entry> iter = vertex.loadRelations(sq, new Retriever<SliceQuery, EntryList>() {
+//                @Override
+//                public EntryList get(SliceQuery query) {
+//                    return StaticArrayEntryList.EMPTY_LIST;
+//                }
+//            });
+//
+//            return Iterables.transform(iter, new Function<Entry, TitanRelation>() {
+//                @Override
+//                public TitanRelation apply(@Nullable Entry data) {
+//                    return RelationConstructor.readRelation(vertex,data,edgeSerializer,tx,neighborVertices);
+//                }
+//            }).iterator();
+//        }
+//    };
 
     private final VertexFactory neighborVertices = new VertexFactory() {
         @Override
-        public InternalVertex getExistingVertex(long id) {
+        public InternalVertex getInternalVertex(long id) {
             return new FulgoraNeighborVertex(id,FulgoraExecutor.this);
         }
     };
 
 
-    private class VertexProcessor<S> implements Runnable {
+    private class VertexProcessor implements Runnable {
 
-        final FulgoraVertex vertex;
+        final long vertexId;
+        final List<QueryResult> queryResults;
 
-        private VertexProcessor(FulgoraVertex vertex) {
-            this.vertex = vertex;
+        private VertexProcessor(long vertexId, List<QueryResult> queryResults) {
+            this.vertexId = vertexId;
+            this.queryResults = queryResults;
         }
 
         @Override
         public void run() {
             try {
-                job.process(vertex);
+                FulgoraVertex vertex = new FulgoraVertex(tx,vertexId,FulgoraExecutor.this);
+                Map<String,Object> pulledMessages = new HashMap<String,Object>(queryDefinitions.size());
+                for (QueryResult qr : queryResults) {
+                    String queryName = qr.queryName;
+                    FulgoraRelationQuery frq = queryDefinitions.get(queryName);
+                    Preconditions.checkState(frq!=null && qr.vertexId==vertexId);
+                    Object combinedMsg = pulledMessages.get(queryName);
+                    Iterator<Entry> iter = qr.entries.reuseIterator();
+                    while (iter.hasNext()) {
+                        Entry data = iter.next();
+                        TitanRelation r = RelationConstructor.readRelation(vertex,data,edgeSerializer,tx,neighborVertices);
+                        if (frq instanceof FulgoraPropertyQuery) {
+                            Preconditions.checkArgument(r instanceof TitanProperty);
+                            combinedMsg = ((FulgoraPropertyQuery)frq).process((TitanProperty)r,combinedMsg);
+                        } else {
+                            assert frq instanceof FulgoraEdgeQuery;
+                            Preconditions.checkArgument(r instanceof TitanEdge);
+                            combinedMsg = ((FulgoraEdgeQuery)frq).process((TitanEdge)r, edgeSerializer.parseDirection(data),
+                                    getVertexState(((TitanEdge) r).getOtherVertex(vertex).getID()),combinedMsg);
+                        }
+                    }
+                    if (combinedMsg!=null) pulledMessages.put(queryName,combinedMsg);
+                }
+                if (idManager.isPartitionedVertex(vertexId)) {
+                    long canonicalId = idManager.getCanonicalVertexId(vertexId);
+                    //Only accumulate messages for later processing
+                    Map<String,Object> accMsg = partitionedVertexMsgs.get(canonicalId);
+                    if (accMsg==null) {
+                        accMsg = partitionedVertexMsgs.putIfAbsent(canonicalId, new HashMap<String, Object>(queryDefinitions.size()));
+                    }
+                    synchronized (accMsg) {
+                        for (Map.Entry<String,Object> add : pulledMessages.entrySet()) {
+                            if (add.getValue()==null) continue;
+                            String key = add.getKey();
+                            Object existing = accMsg.get(key);
+                            if (existing==null) accMsg.put(key,add.getValue());
+                            else accMsg.put(key,queryDefinitions.get(key).combiner.combine(existing,add.getValue()));
+                        }
+                    }
+                } else {
+                    //Process entire vertex directly
+                    processVertex(vertex,pulledMessages);
+                }
             } catch (Throwable e) {
-                log.error("Exception processing vertex ["+vertex.getID()+"]: ",e);
+                log.error("Exception processing relations for ["+vertexId+"]: ",e);
                 processingException = true;
-                vertexStates.put(vertex.getID(),null); //Invalidate state
             }
 
         }
     }
 
+    private void processVertex(FulgoraVertex<S> vertex, Map<String,Object> pulledMessages) {
+        long vertexId = vertex.getID();
+        try {
+            vertex.setProcessedProperties(pulledMessages);
+            S newState = job.process(vertex);
+            setVertexState(vertexId,newState);
+        } catch (Throwable e) {
+            log.error("Exception processing vertex ["+vertexId+"]: ",e);
+            processingException = true;
+            setVertexState(vertexId,null); //Invalidate state
+        }
+    }
+
+
     private static class DataPuller extends Thread {
 
         private final BlockingQueue<QueryResult> queue;
+        private final String queryName;
         private final KeyIterator keyIter;
+        private final IDManager idManager;
         private volatile boolean finished;
 
-        private DataPuller(BlockingQueue<QueryResult> queue, KeyIterator keyIter) {
+        private DataPuller(IDManager idManager, String queryName,
+                           BlockingQueue<QueryResult> queue, KeyIterator keyIter) {
+            this.queryName = queryName;
             this.queue = queue;
             this.keyIter = keyIter;
+            this.idManager = idManager;
             this.finished = false;
         }
 
@@ -264,11 +357,11 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
                 while (keyIter.hasNext()) {
                     StaticBuffer key = keyIter.next();
                     RecordIterator<Entry> entries = keyIter.getEntries();
-                    long vertexId = IDHandler.getKeyID(key);
+                    long vertexId = idManager.getKeyID(key);
                     if (IDManager.VertexIDType.Hidden.is(vertexId)) continue;
                     EntryList entryList = StaticArrayEntryList.ofStaticBuffer(entries, StaticArrayEntry.ENTRY_GETTER);
                     try {
-                        queue.put(new QueryResult(vertexId,entryList));
+                        queue.put(new QueryResult(queryName,vertexId,entryList));
                     } catch (InterruptedException e) {
                         log.error("Data-pulling thread interrupted while waiting on queue",e);
                         break;
@@ -295,10 +388,12 @@ class FulgoraExecutor<S> extends AbstractFuture<Map<Long,S>> implements Runnable
 
         final EntryList entries;
         final long vertexId;
+        final String queryName;
 
-        private QueryResult(long vertexId, EntryList entries) {
+        private QueryResult(String queryName, long vertexId, EntryList entries) {
             this.entries = entries;
             this.vertexId = vertexId;
+            this.queryName = queryName;
         }
     }
 

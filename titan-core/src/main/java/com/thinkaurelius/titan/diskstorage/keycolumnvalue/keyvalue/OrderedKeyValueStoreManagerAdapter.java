@@ -5,10 +5,11 @@ import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,7 +48,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public StoreTransaction beginTransaction(final TransactionHandleConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
         return manager.beginTransaction(config);
     }
 
@@ -108,6 +109,11 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
         } else {
             return new OrderedKeyValueStoreAdapter(store);
         }
+    }
+
+    @Override
+    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+        return manager.getLocalKeyPartition();
     }
 
     @Override

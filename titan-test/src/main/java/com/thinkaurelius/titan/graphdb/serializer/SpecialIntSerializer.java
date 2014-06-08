@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.graphdb.serializer;
 
-import com.thinkaurelius.titan.core.AttributeSerializer;
+import com.thinkaurelius.titan.core.attribute.AttributeSerializer;
 import com.thinkaurelius.titan.diskstorage.ScanBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
 

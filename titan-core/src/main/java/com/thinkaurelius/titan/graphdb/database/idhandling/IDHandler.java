@@ -21,18 +21,6 @@ public class IDHandler {
     public static final StaticBuffer MIN_KEY = BufferUtil.getLongBuffer(0);
     public static final StaticBuffer MAX_KEY = BufferUtil.getLongBuffer(-1);
 
-
-    public static StaticBuffer getKey(long id) {
-        assert id >= 0;
-        return BufferUtil.getLongBuffer(id << 1);
-    }
-
-    public static long getKeyID(StaticBuffer b) {
-        long value = b.getLong(0);
-        return value >>> 1;
-    }
-
-
     public static enum DirectionID {
 
         PROPERTY_DIR(0),  //00b
@@ -78,10 +66,6 @@ public class IDHandler {
         private int getPrefix(boolean hidden, boolean systemType) {
             assert !systemType || hidden; // systemType implies hidden
             return ((systemType?0:hidden?2:1)<<1) + getRelationType();
-        }
-
-        private int getPrefix() {
-            return getPrefix(false,false);
         }
 
         private static DirectionID getDirectionID(int relationType, int direction) {
@@ -171,21 +155,20 @@ public class IDHandler {
         return new StaticArrayBuffer(arr);
     }
 
-    //Assumes not hidden!
-    public static StaticBuffer[] getBounds(RelationCategory type) {
+    public static StaticBuffer[] getBounds(RelationCategory type, boolean systemTypes) {
         int start, end;
         switch (type) {
             case PROPERTY:
-                start = DirectionID.PROPERTY_DIR.getPrefix();
+                start = DirectionID.PROPERTY_DIR.getPrefix(systemTypes,systemTypes);
                 end = start;
                 break;
             case EDGE:
-                start = DirectionID.EDGE_OUT_DIR.getPrefix();
+                start = DirectionID.EDGE_OUT_DIR.getPrefix(systemTypes,systemTypes);
                 end = start;
                 break;
             case RELATION:
-                start = DirectionID.PROPERTY_DIR.getPrefix();
-                end = DirectionID.EDGE_OUT_DIR.getPrefix();
+                start = DirectionID.PROPERTY_DIR.getPrefix(systemTypes,systemTypes);
+                end = DirectionID.EDGE_OUT_DIR.getPrefix(systemTypes,systemTypes);
                 break;
             default:
                 throw new AssertionError("Unrecognized type:" + type);

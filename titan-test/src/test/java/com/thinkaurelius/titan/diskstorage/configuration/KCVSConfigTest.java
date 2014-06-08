@@ -1,13 +1,13 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
-import com.thinkaurelius.titan.util.time.Timestamps;
+import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -21,7 +21,7 @@ public class KCVSConfigTest extends WritableConfigurationTest {
             return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws StorageException {
-                    return manager.beginTransaction(StandardTransactionHandleConfig.of(Timestamps.MICRO, manager.getFeatures().getKeyConsistentTxConfig()));
+                    return manager.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MICRO, manager.getFeatures().getKeyConsistentTxConfig()));
                 }
 
                 @Override

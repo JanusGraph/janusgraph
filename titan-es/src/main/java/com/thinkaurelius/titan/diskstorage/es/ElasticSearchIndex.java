@@ -4,17 +4,15 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.Mapping;
+import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
+import com.thinkaurelius.titan.diskstorage.util.DefaultTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
@@ -213,7 +211,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, TransactionHandle tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
         XContentBuilder mapping = null;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
@@ -319,7 +317,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         BulkRequestBuilder brb = client.prepareBulk();
         int bulkrequests = 0;
         try {
@@ -328,6 +326,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
+                    assert mutation.isConsolidated();
                     Preconditions.checkArgument(!(mutation.isNew() && mutation.isDeleted()));
                     Preconditions.checkArgument(!mutation.isNew() || !mutation.hasDeletions());
                     Preconditions.checkArgument(!mutation.isDeleted() || !mutation.hasAdditions());
@@ -338,29 +337,14 @@ public class ElasticSearchIndex implements IndexProvider {
                             brb.add(new DeleteRequest(indexName, storename, docid));
                             bulkrequests++;
                         } else {
-                            Set<String> deletions = Sets.newHashSet(Iterables.transform(mutation.getDeletions(),new Function<IndexEntry, String>() {
-                                @Nullable
-                                @Override
-                                public String apply(@Nullable IndexEntry indexEntry) {
-                                    return indexEntry.field;
-                                }
-                            }));
-                            if (mutation.hasAdditions()) {
-                                for (IndexEntry ie : mutation.getAdditions()) {
-                                    deletions.remove(ie.field);
-                                }
+                            StringBuilder script = new StringBuilder();
+                            for (String key : Iterables.transform(mutation.getDeletions(),IndexMutation.ENTRY2FIELD_FCT)) {
+                                script.append("ctx._source.remove(\"" + key + "\"); ");
+                                log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
-                            if (!deletions.isEmpty()) {
-                                StringBuilder script = new StringBuilder();
-                                for (String key : deletions) {
-                                    script.append("ctx._source.remove(\"" + key + "\"); ");
-                                }
-                                log.trace("Deleting individual fields [{}] for document {}", deletions, docid);
-                                brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
-                            }
+                            brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
                         }
                     }
-
                     if (mutation.hasAdditions()) {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
@@ -468,7 +452,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.matchAllQuery());
@@ -500,7 +484,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, TransactionHandle tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.queryString(query.getQuery()));
@@ -559,8 +543,8 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public TransactionHandle beginTransaction() throws StorageException {
-        return TransactionHandle.NO_TRANSACTION;
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+        return new DefaultTransaction(config);
     }
 
     @Override

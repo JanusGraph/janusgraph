@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.graphdb.relations;
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-import com.thinkaurelius.titan.core.ConsistencyModifier;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.InvalidElementException;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 
 public class CacheProperty extends AbstractProperty {
-    public CacheProperty(long id, TitanKey key, InternalVertex start, Object value, Entry data) {
+    public CacheProperty(long id, PropertyKey key, InternalVertex start, Object value, Entry data) {
         super(id, key, start, value);
         this.data = data;
     }
@@ -51,7 +52,7 @@ public class CacheProperty extends AbstractProperty {
 
     private void copyProperties(InternalRelation to) {
         for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            to.setPropertyDirect(tx().getExistingType(entry.key), entry.value);
+            to.setPropertyDirect(tx().getExistingRelationType(entry.key), entry.value);
         }
     }
 
@@ -76,34 +77,34 @@ public class CacheProperty extends AbstractProperty {
     private RelationCache getPropertyMap() {
         RelationCache map = data.getCache();
         if (map == null || !map.hasProperties()) {
-            map = RelationConstructor.readRelationCache(getVertex(0), data, tx());
+            map = RelationConstructor.readRelationCache(data, tx());
         }
         return map;
     }
 
     @Override
-    public <O> O getPropertyDirect(TitanType type) {
+    public <O> O getPropertyDirect(RelationType type) {
         return getPropertyMap().get(type.getID());
     }
 
     @Override
-    public Iterable<TitanType> getPropertyKeysDirect() {
+    public Iterable<RelationType> getPropertyKeysDirect() {
         RelationCache map = getPropertyMap();
-        List<TitanType> types = new ArrayList<TitanType>(map.numProperties());
+        List<RelationType> types = new ArrayList<RelationType>(map.numProperties());
 
         for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingType(entry.key));
+            types.add(tx().getExistingRelationType(entry.key));
         }
         return types;
     }
 
     @Override
-    public void setPropertyDirect(TitanType type, Object value) {
+    public void setPropertyDirect(RelationType type, Object value) {
         update().setPropertyDirect(type, value);
     }
 
     @Override
-    public <O> O removePropertyDirect(TitanType type) {
+    public <O> O removePropertyDirect(RelationType type) {
         return update().removePropertyDirect(type);
     }
 
@@ -118,7 +119,7 @@ public class CacheProperty extends AbstractProperty {
     public void remove() {
         if (!tx().isRemovedRelation(super.getID())) {
             tx().removeRelation(this);
-        }
+        }// else throw InvalidElementException.removedException(this);
     }
 
 

@@ -1,8 +1,9 @@
 package com.thinkaurelius.titan.util.datastructures;
 
-import cern.colt.Arrays;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
+
+import java.util.Arrays;
 
 /**
  * Utility class for sorting and retrieving from primitive arrays

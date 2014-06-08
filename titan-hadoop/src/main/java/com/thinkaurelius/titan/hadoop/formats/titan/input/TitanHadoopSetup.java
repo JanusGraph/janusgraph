@@ -14,7 +14,7 @@ public interface TitanHadoopSetup {
 
     public SystemTypeInspector getSystemTypeInspector();
 
-    public RelationReader getRelationReader();
+    public RelationReader getRelationReader(long vertexid);
 
     public VertexReader getVertexReader();
 

@@ -1,0 +1,181 @@
+[[upgrade]]
+[appendix]
+Upgrade Instructions
+--------------------
+
+Please follow these instructions when upgrading from an older Titan release.
+
+Version 0.4.2 (December 30, 2013), Version 0.4.3 (April 21, 2013), and Version 0.4.4 (April 22, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 0.4.1
+^^^^^^^^^^
+
+Titan 0.4.2 is compatible with 0.4.1 and no special upgrade is necessary.
+
+From 0.4.0
+^^^^^^^^^^
+
+Titan 0.4.2 can read and write databases created by 0.4.0, but 0.4.0 can't necessarily read new types created by 0.4.2.  When carrying out a rolling upgrade from 0.4.0 to 0.4.2, the 0.4.2 instances must not create new types.
+
+Version 0.4.1 (November 24, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 0.4.0
+^^^^^^^^^^
+
+Data Upgrade
+++++++++++++
+
+Titan 0.4.1 is fully backwards compatible to Titan 0.4.0 on the data layer. No need to reload or upgrade the data. However, once
+new types are added to the database through Titan 0.4.1, older versions of Titan cannot read those newly added types.
+Hence, ensure that all instances of Titan that are accessing the same storage backend are updated before adding new types. Note,
+that you can have mixed Titan 0.4.0 and 0.4.1 instances reading from the cluster as long as the latter don't add new types.
+
+API Text Search Changes
++++++++++++++++++++++++
+
+Titan 0.4.1 provides some new features that have extended the API, however, those do not break the existing API. There is one change to the API that requires updating. We changed the Text.PREFIX/REGEX to Text.CONTAINS_PREFIX/REGEX to make is obvious what the semantics of those predicates is.
+
+If you are using either of those predicate, rename:
+
+* Text.PREFIX -> Text.CONTAINS_PREFIX
+* Text.REGEX -> Text.CONTAINS_REGEX
+
+Version compatibility check
++++++++++++++++++++++++++++
+
+In Titan 0.4.1 we are storing all Titan flags in the storage backend (i.e. no more local properties file in the data directory).
+This means, that Titan 0.4.1 will rewrite this flag and ignore its current value. This disables the version compatibility check.
+Hence, make sure that you are running Titan 0.4.1 against a 0.4.0 or newer database. Running it against older versions of Titan will not cause an immediate exception but undetermined behavior down the road.
+
+Base Bugfix Version Increment
++++++++++++++++++++++++++++++
+
+Titan's tested version of HBase has been updated from 0.94.7 in Titan 0.4.0 to 0.94.12 in Titan 0.4.1.  http://hbase.apache.org/book.html#hbase.binary.compatibility[These HBase versions are binary compatible].  According to HBase's versioning policy, code and data using .7 should interoperate seamlessly with .12.  Furthermore, HBase supports rolling upgrades between these versions.  HBase's changelog lists all of the intervening releases as https://issues.apache.org/jira/browse/HBASE?report=com.atlassian.jira.plugin.system.project:changelog-panel[bugfix releases].
+
+Version 0.4.0 (October 16, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data Upgrade
+^^^^^^^^^^^^
+
+Titan 0.4.0 is incompatible with previous releases. No upgrade process available from previous versions of Titan yet.
+Please check the mailing list for updates on the upgrade process.
+
+API TypeMaker Changes
+^^^^^^^^^^^^^^^^^^^^^
+
+When upgrading code from previous versions of Titan, please note, that the TypeMaker API has changed significantly.
+Use 'makeKey' and 'makeLabel' to define keys and labels respectively instead of 'makeType'. Those methods expect the name
+of the type as the argument. Furthermore, primaryKey() has been renamed to sortKey() and uniqueness has been renamed:
+
+* For Titan keys:
+** `unique()` replaces `unique(Direction.IN)`
+** `single()` replaces `unique(Direction.OUT)`
+** use `list()` to allow multiple properties for the key
+* For Titan labels:
+** `oneToMany()` replaces `unique(Direction.IN)`
+** `manyToOne()` replaces `unique(Direction.OUT)`
+** `oneToOne()` replaces `unique(Direction.IN).unique(Direction.OUT)`
+
+Rexster Server
+^^^^^^^^^^^^^^
+
+Rexster Server configuration and dependencies have been moved into the new module titan-rexster and are no longer part of titan-core
+
+Custom Attribute Serializer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The interface has been extended by method to a) verify that the provided value is valid and b) automatically convert the value if possible.
+These methods are required which means that any implementation of AttributeSerializer must be updated.
+
+Type Groups
+^^^^^^^^^^^
+
+Type Groups have been removed. Use sortKey instead to group under one label or key.
+
+Version 0.3.2 (July 29, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 0.3.1
+^^^^^^^^^^
+
+Titan 0.3.2 is compatible with 0.3.1 and no special upgrade is necessary.
+
+From 0.3.0
+^^^^^^^^^^
+
+Titan 0.3.2 is compatible with 0.3.0 and no special upgrade is necessary unless Elasticsearch is used.  If you are using Elasticsearch, please see the notes on upgrading to 0.3.1 from 0.3.0 below.
+
+From prior versions
+^^^^^^^^^^^^^^^^^^^
+
+Titan 0.3.2 is incompatible with earlier versions of Titan.  Read below for more information.
+
+Version 0.3.1 (May 14, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From 0.3.0
+^^^^^^^^^^
+
+Titan 0.3.1 is compatible with 0.3.0 and no special upgrade is necessary unless Elasticsearch is used as a storage backend. Titan 0.3.1 uses Elasticsearch 0.90.0 whereas Titan 0.3.0 uses Elasticsearch 0.20.6. 
+
+If you are using Elasticsearch, please follow the http://www.elasticsearch.org/download/[upgrade instructions for Elasticsearch] which are summarized as follows:
+* Elasticsearch 0.90.0 is the first stable release based on Lucene 4. We recommend testing the upgrade before doing it in production.
+* Upgrading from 0.20.x requires a full cluster restart.
+* In order to be able to downgrade, stop indexing new data, issue a flush request, do the upgrade and only enable indexing of new data once you are certain that you no longer need to downgrade.  Once new data has been indexed, downgrading is no longer possible. To be extra safe, back up your data before upgrading.
+
+Note, that these instructions apply to the Elasticsearch cluster only and not the Titan cluster or the Titan storage cluster.
+
+From prior versions
+^^^^^^^^^^^^^^^^^^^
+
+Titan 0.3.1 is incompatible with earlier versions of Titan. Read below for more information.
+
+Version 0.3.0 (March 29, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan 0.3.0 is incompatible with prior versions of Titan. The upgrade process is in development and not yet available.
+
+When upgrading to Titan 0.3.0, please note the following interface changes:
+
+* In `TypeMaker`, `functional()` has been replaced by `unique(Direction.OUT)`. Likewise, `functional(boolean)` has been replaced by `unique(Direction.OUT, UniquenessConsistency)`, where the argument `true` corresponds to `UniquenessConsistency.LOCK` and `false` corresponds to `UniquenessConsistency.NO_LOCK`.
+* In `TypeMaker`, `unique()` for property keys has been replaced by `unique(Direction.IN)`.
+* In `TypeMaker`, `indexed()` takes additional arguments because Titan now supports vertex _and_ edge indexing. Use `indexed(Class<? extends Element>)` to create a standard index for the key. Use `indexed(String,Class<? extends Element>)` to create an external index for the key.
+* In `TypeMaker`, `simple()` is no longer available. Simply remove it.
+* In `TitanFactory`, `openInMemoryGraph()` is no longer available. Instead, use `open(Configuration)` where the configuration sets `storage.backend=inmemory`.
+* In `AttributeSerializer`, `writeObjectData()` now uses `DataOutput` to write elements instead of `ByteBuffer`. A simple replace in any particular implementation of `AttributeSerializer` should do the trick.
+
+Version 0.2.1 (March 22, 2013)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Version 0.2.0
+^^^^^^^^^^^^^^^^^^
+
+No special upgrade necessary. Since 0.2.1 has upgraded to Blueprints 2.3.0, there are some incompatible interface changes. In particular, `Graph.startTransaction()` has been renamed to `Graph.newTransaction()`. Please refer to the https://github.com/tinkerpop/blueprints/wiki[Blueprints documentation] for more information.
+
+From prior versions
+^^^^^^^^^^^^^^^^^^^
+
+Upgrade to 0.2.0 first as described below.
+
+Version 0.2.0 (December 27, 2012)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Version 0.1.0
+^^^^^^^^^^^^^^^^^^
+
+. Shut down all running instances of Titan. If the storage backend is Cassandra or HBase, do not shut down the respective storage backend but leave it running. So, only terminate the Titan processes.
+. Create a backup of the storage backend. For BerkeleyDB, simply archive the contents of the storage directory. For http://www.datastax.com/docs/1.0/operations/backup_restore[Cassandra] and http://hbase.apache.org/book/ops.backup.html[HBase], follow the directions for the respective backup functionalities. Store the backup in a secure place.
+. Download and unzip Titan 0.2.0 on the (or one of the) machines that has been running Titan previously.
+. Execute the upgrade010to020.sh/bat script in the bin directory of Titan 0.2.0 with the file name of the Titan configuration file (i.e. the argument passed into `TitanFactory.open()`) as the only argument. Follow the instructions. If asked to confirm the id block size, please ensure that the displayed value matches your configuration. If you did not configure this value, simply enter yes. Ensure that the script completes successfully.
+. Install Titan 0.2.0 on all machines. Start Titan 0.2.0. Only use the 0.2.0 version of Titan from this point on.
+
+Version 0.1.0 (September 7, 2012)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+From Version 0.1-SNAPSHOT
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Shut down all running instances of Titan prior to upgrading ALL instances to the current release to avoid data corruption.

@@ -1,0 +1,230 @@
+[[monitoring]]
+Monitoring Titan
+----------------
+
+Metrics in Titan
+~~~~~~~~~~~~~~~~
+
+Starting in version 0.4.0, Titan supports http://metrics.codahale.com/[Metrics].  Titan can measure the following:
+
+* The number of transactions begun, comitted, and rolled back
+* The number of attempts and failures of each storage backend operation type
+* The response time distribution of each storage backend operation type
+
+Configuring Metrics Collection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To enable Metrics collection, set the following in Titan's properties file:
+
+[source,properties]
+----
+# Required to enable Metrics in Titan
+storage.enable-basic-metrics = true
+----
+
+This setting makes Titan record measurements at runtime using Metrics classes like Timer, Counter, Histogram, etc.  To access these measurements, one or more Metrics reporters must be configured as described in the section <<metrics-reporters>>.
+
+Customizing the Default Metric Names
+++++++++++++++++++++++++++++++++++++
+
+Titan prefixes all metric names with "com.thinkaurelius.titan" by default.  This prefix can be set through the `metrics.prefix` configuration property.  For example, to shorten the default "com.thinkaurelius.titan" prefix to just "titan":
+
+[source,properties]
+----
+# Optional
+metrics.prefix = titan
+----
+
+Transaction-Specific Metrics Names
++++++++++++++++++++++++++++++++++
+
+Each Titan transaction may optionally specify its own Metrics name prefix, overridding both the default Metrics name prefix and the `metrics.prefix` configuration property.  For example, the prefix could be changed to the name of the frontend application that opened the Titan transaction.  Note that Metrics maintains a ConcurrentHashMap of metric names and their associated objects in memory, so it's probably a good idea to keep the number of distinct metric prefixes small.
+
+To do this, call `TransactionBuilder.setMetricsPrefix(String)`:
+
+[source,java]
+TitanGraph graph = ...;
+TransactionBuilder tbuilder = graph.buildTransaction();
+TitanTransaction tx = tbuilder.setMetricsPrefix("foobar").start();
+
+Separating Metrics by Backend Store
++++++++++++++++++++++++++++++++++++
+
+Titan combines the Metrics for its various internal storage backend handles by default.  All Metrics for storage backend interactions follow the pattern "<prefix>.stores.<opname>", regardless of whether they come from the ID store, edge store, etc.  When `metrics.merge-basic-metrics = false` is set in Titan's properties file, the "stores" string in metric names is replaced by "idStore", "edgeStore", "vertexIndexStore", or "edgeIndexStore".
+
+[[metrics-reporters]]
+Configuring Metrics Reporting
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Titan supports the following Metrics reporters:
+
+// TODO this bulleted list should be replaced by a TOC
+
+* <<metrics-console,Console>>
+* <<metrics-csv,CSV>>
+* <<metrics-ganglia,Ganglia>>
+* <<metrics-graphite,Graphite>>
+* <<metrics-jmx,JMX>>
+* <<metrics-slf4j,Slf4j>>
+* <<metrics-custom,User-provided/Custom>>
+
+Each reporter type is independent of and can coexist with the others.  For example, it's possible to configure Ganglia, JMX, and Slf4j Metrics reporters to operate simultaneously.  Just set all their respective configuration keys in titan.properties (and enable metrics as directed above).
+
+[[metrics-console]]
+Console Reporter Configuration
+++++++++++++++++++++++++++++++
+
+.Metrics Console Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.console.interval |yes |Milliseconds to wait between dumping metrics to the console |null
+|==========================
+
+Example titan.properties snippet that prints metrics to the console once a minute:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; specify logging interval in milliseconds
+metrics.console.interval = 60000
+
+[[metrics-csv]]
+CSV File Reporter Configuration
++++++++++++++++++++++++++++++++
+
+.Metrics CSV Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.csv.interval |yes |Milliseconds to wait between writing CSV lines |null
+|metrics.csv.dir |yes |Directory in which CSV files are written (will be created if it does not exist) |null
+|==========================
+
+Example titan.properties snippet that writes CSV files once a minute to the directory `./foo/bar/` (relative to the process's working directory):
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; specify logging interval in milliseconds
+metrics.csv.interval = 60000
+metrics.csv.dir = foo/bar
+
+[[metrics-ganglia]]
+Ganglia Reporter Configuration
+++++++++++++++++++++++++++++++
+
+.Metrics Ganglia Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.ganglia.hostname |yes |Unicast host or multicast group to which our Metrics are sent | null
+|metrics.ganglia.interval |yes |Milliseconds to wait between sending datagrams | null
+|metrics.ganglia.port |no |UDP port to which we send Metrics datagrams | 8649
+|metrics.ganglia.addressing-mode |no |Must be "unicast" or "multicast" | unicast
+|metrics.ganglia.ttl |no |Multicast datagram TTL; ignore for unicast | 1
+|metrics.ganglia.protocol-31 |no |Boolean; true to use Ganglia protocol 3.1, false to use 3.0 | true
+|metrics.ganglia.uuid |no |https://github.com/ganglia/monitor-core/wiki/UUIDSources[Host UUID to report instead of IP:hostname] | null
+|metrics.ganglia.spoof |no |http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing[Override IP:hostname reported to Ganglia] | null
+|==========================
+
+Example titan.properties snippet that sends unicast UDP datagrams to localhost on the default port once every 30 seconds:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; IP or hostname string
+metrics.ganglia.hostname = 127.0.0.1 
+# Required; specify logging interval in milliseconds
+metrics.ganglia.interval = 30000
+
+Example titan.properties snippet that sends unicast UDP datagrams to a non-default destination port and which also spoofs the IP and hostname reported to Ganglia:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; IP or hostname string
+metrics.ganglia.hostname = 1.2.3.4 
+# Required; specify logging interval in milliseconds
+metrics.ganglia.interval = 60000
+# Optional
+metrics.ganglia.port = 6789
+metrics.ganglia.spoof = 10.0.0.1:zombo.com
+
+[[metrics-graphite]]
+Graphite Reporter Configuration
++++++++++++++++++++++++++++++++
+
+.Metrics Graphite Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.graphite.hostname |yes |IP address or hostname to which https://graphite.readthedocs.org/en/latest/feeding-carbon.html#the-plaintext-protocol[Graphite plaintext protocol] data are sent |null
+|metrics.graphite.interval |yes |Milliseconds to wait between pushing data to Graphite |null
+|metrics.graphite.port |no |Port to which Graphite plaintext protocol reports are sent |2003
+|metrics.graphite.prefix |no |Arbitrary string prepended to all metric names sent to Graphite |null
+|==========================
+
+Example titan.properties snippet that sends metrics to a Graphite server on 192.168.0.1 every minute:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; IP or hostname string
+metrics.graphite.hostname = 192.168.0.1
+# Required; specify logging interval in milliseconds
+metrics.graphite.interval = 60000
+
+[[metrics-jmx]]
+JMX Reporter Configuration
+++++++++++++++++++++++++++
+
+.Metrics JMX Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.jmx.enabled |yes |Boolean |false
+|metrics.jmx.domain |no |Metrics will appear in this JMX domain |Metrics's own default
+|metrics.jmx.agentid |no |Metrics will be reported with this JMX agent ID |Metrics's own default
+|==========================
+
+Example titan.properties snippet:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required
+metrics.jmx.enabled = true
+# Optional; if omitted, then Metrics uses its default values
+metrics.jmx.domain = foo
+metrics.jmx.agentid = baz
+
+[[metrics-slf4j]]
+Slf4j Reporter Configuration
+++++++++++++++++++++++++++++
+
+.Metrics Slf4j Reporter Configuration Options
+[cols="2,1,5,1",options="header"]
+|==========================
+|Config Key |Required? |Value |Default
+|metrics.slf4j.interval |yes |Milliseconds to wait between dumping metrics to the logger |null
+|metrics.slf4j.logger |no |Slf4j logger name to use |"metrics"
+|==========================
+
+Example titan.properties snippet that logs metrics once a minute to the logger named `foo`:
+
+[source,properties]
+storage.enable-basic-metrics = true
+# Required; specify logging interval in milliseconds
+metrics.slf4j.interval = 60000
+# Optional; uses Metrics default when unset
+metrics.slf4j.logger = foo
+
+[[metrics-custom]]
+User-Provided/Custom Reporter Configuration
++++++++++++++++++++++++++++++++++++++++++++
+
+In case the Metrics reporter configuration options listed above are insufficient, Titan provides a utility method to access the single `MetricRegistry` instance which holds all of its measurements.
+
+[source,java]
+----
+com.codahale.metrics.MetricRegistry titanRegistry =
+    com.thinkaurelius.titan.util.stats.MetricManager.INSTANCE.getRegistry();
+----
+
+Code that accesses `titanRegistry` this way can then attach non-standard reporter types or standard reporter types with exotic configurations to `titanRegistry`.  This approach is also useful if the surrounding application already has a framework for Metrics reporter configuration, or if the application needs multiple differently-configured instances of one of Titan's supported reporter types.  For instance, one could use this approach to setup multiple unicast Graphite reporters whereas Titan's properties configuration is limited to just one Graphite reporter.
+

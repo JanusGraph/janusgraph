@@ -1,13 +1,9 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.Titan;
-import com.thinkaurelius.titan.core.TitanGraph;
-import com.thinkaurelius.titan.core.TitanGraphIndex;
-import com.thinkaurelius.titan.core.TitanKey;
-import com.thinkaurelius.titan.core.TitanManagement;
-import com.thinkaurelius.titan.core.TitanTransaction;
-import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -101,8 +97,9 @@ public abstract class TtlTest extends TitanGraphBaseTest {
 
     @Test
     public void testPerLabelTtl() throws Exception {
-        graph.makeLabel("likes").ttl(1).make();
-        graph.commit();
+        TitanManagement tm = graph.getManagementSystem();
+        tm.makeEdgeLabel("likes").ttl(1).make();
+        tm.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
@@ -121,8 +118,9 @@ public abstract class TtlTest extends TitanGraphBaseTest {
     @Test
     public void testPerEdgeTtlOverridesPerLabelTtl() throws Exception {
         // timeout of 1 second by label
-        graph.makeLabel("likes").ttl(1).make();
-        graph.commit();
+        TitanManagement tm = graph.getManagementSystem();
+        tm.makeEdgeLabel("likes").ttl(1).make();
+        tm.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
@@ -157,12 +155,10 @@ public abstract class TtlTest extends TitanGraphBaseTest {
     @Test
     public void testKeyindexWithTtl() throws Exception {
         TitanManagement tm = graph.getManagementSystem();
-        TitanKey key = tm.makeKey("edge-name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
-        tm.createInternalIndex("edge-name", Edge.class, true, key);
+        PropertyKey key = tm.makePropertyKey("edge-name").dataType(String.class).cardinality(Cardinality.SINGLE).make();
+        tm.createPropertyIndex(key, "edge-name", tm.getRelationTypes(PropertyKey.class).iterator().next());
+        tm.makeEdgeLabel("likes").ttl(1).make();
         tm.commit();
-
-        graph.makeLabel("likes").ttl(1).make();
-        graph.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 

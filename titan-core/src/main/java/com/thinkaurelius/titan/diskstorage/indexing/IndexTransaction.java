@@ -1,14 +1,15 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.diskstorage.LoggableTransaction;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandle;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,13 +22,13 @@ import java.util.concurrent.Callable;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexTransaction implements TransactionHandle, LoggableTransaction {
+public class IndexTransaction implements BaseTransaction, LoggableTransaction {
 
     private static final int DEFAULT_OUTER_MAP_SIZE = 3;
     private static final int DEFAULT_INNER_MAP_SIZE = 5;
 
     private final IndexProvider index;
-    private final TransactionHandle indexTx;
+    private final BaseTransaction indexTx;
     private final KeyInformation.IndexRetriever keyInformations;
 
     private final Duration maxWriteTime;
@@ -35,12 +36,13 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
     private Map<String,Map<String,IndexMutation>> mutations;
 
     public IndexTransaction(final IndexProvider index, final KeyInformation.IndexRetriever keyInformations,
+                            BaseTransactionConfig config,
                             Duration maxWriteTime) throws StorageException {
         Preconditions.checkNotNull(index);
         Preconditions.checkNotNull(keyInformations);
         this.index=index;
         this.keyInformations = keyInformations;
-        this.indexTx=index.beginTransaction();
+        this.indexTx=index.beginTransaction(config);
         Preconditions.checkNotNull(indexTx);
         this.maxWriteTime = maxWriteTime;
         this.mutations = new HashMap<String,Map<String,IndexMutation>>(DEFAULT_OUTER_MAP_SIZE);
@@ -94,14 +96,15 @@ public class IndexTransaction implements TransactionHandle, LoggableTransaction 
         indexTx.rollback();
     }
 
-    @Override
-    public void flush() throws StorageException {
-        flushInternal();
-        indexTx.flush();
-    }
+
 
     private void flushInternal() throws StorageException {
         if (mutations!=null && !mutations.isEmpty()) {
+            //Consolidate all mutations prior to persistence to ensure that no addition accidentally gets swallowed by a delete
+            for (Map<String, IndexMutation> store : mutations.values()) {
+                for (IndexMutation mut : store.values()) mut.consolidate();
+            }
+
             BackendOperation.execute(new Callable<Boolean>() {
                 @Override
                 public Boolean call() throws Exception {

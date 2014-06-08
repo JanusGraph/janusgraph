@@ -2,18 +2,19 @@ package com.thinkaurelius.titan.graphdb.internal;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.TitanElement;
-import com.thinkaurelius.titan.core.TitanKey;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class OrderList implements Comparator<TitanElement> {
+public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.OrderEntry> {
 
     public static final OrderList NO_ORDER = new OrderList() {{
         makeImmutable();
@@ -22,7 +23,7 @@ public class OrderList implements Comparator<TitanElement> {
     private List<OrderEntry> list = new ArrayList<OrderList.OrderEntry>(3);
     private boolean immutable = false;
 
-    public void add(TitanKey key, Order order) {
+    public void add(PropertyKey key, Order order) {
         Preconditions.checkArgument(!immutable, "This OrderList has been closed");
         list.add(new OrderEntry(key, order));
     }
@@ -31,7 +32,7 @@ public class OrderList implements Comparator<TitanElement> {
         return list.isEmpty();
     }
 
-    public TitanKey getKey(int position) {
+    public PropertyKey getKey(int position) {
         return list.get(position).getKey();
     }
 
@@ -54,6 +55,30 @@ public class OrderList implements Comparator<TitanElement> {
 
     public boolean isImmutable() {
         return immutable;
+    }
+
+    /**
+     * Whether all individual orders are the same
+     *
+     * @return
+     */
+    public boolean hasCommonOrder() {
+        Order lastOrder = null;
+        for (OrderEntry oe : list) {
+            if (lastOrder==null) lastOrder=oe.order;
+            else if (lastOrder!=oe.order) return false;
+        }
+        return true;
+    }
+
+    public Order getCommonOrder() {
+        Preconditions.checkArgument(hasCommonOrder(),"This OrderList does not have a common order");
+        return isEmpty()?Order.DEFAULT:getOrder(0);
+    }
+
+    @Override
+    public Iterator<OrderEntry> iterator() {
+        return list.iterator();
     }
 
     @Override
@@ -89,17 +114,17 @@ public class OrderList implements Comparator<TitanElement> {
 
     public static class OrderEntry implements Comparator<TitanElement> {
 
-        private final TitanKey key;
+        private final PropertyKey key;
         private final Order order;
 
-        public OrderEntry(TitanKey key, Order order) {
+        public OrderEntry(PropertyKey key, Order order) {
             Preconditions.checkNotNull(key);
             Preconditions.checkNotNull(order);
             this.key = key;
             this.order = order;
         }
 
-        public TitanKey getKey() {
+        public PropertyKey getKey() {
             return key;
         }
 

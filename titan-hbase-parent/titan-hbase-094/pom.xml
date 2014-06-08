@@ -31,6 +31,21 @@
             </exclusions>
         </dependency>
         <dependency>
+	    <groupId>${project.groupId}</groupId>
+	    <artifactId>titan-hbase-core</artifactId>
+	    <version>${project.version}</version>
+            <classifier>tests</classifier>
+            <scope>test</scope>
+<!--
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-net</artifactId>
+                    <groupId>commons-net</groupId>
+                </exclusion>
+            </exclusions>
+-->
+        </dependency>
+        <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
             <version>${hbase.version}</version>
@@ -50,8 +65,10 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!-- HBase 0.94 is broken (master won't start) using Guava 15.0 or newer and this won't be fixed:
-             https://issues.apache.org/jira/browse/HBASE-10174
+        <!--
+          HBase 0.94 master can't start with Guava 15.0 or newer:
+          https://issues.apache.org/jira/browse/HBASE-10174
+          This is marked "Won't Fix"
         -->
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -71,7 +88,6 @@
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>../common/test/java</testSourceDirectory>
         <testResources>
             <testResource>
                 <directory>${project.basedir}/../common/test/resources</directory>
@@ -84,6 +100,17 @@
                 <executions>
                     <execution>
                         <id>filter-hbase-conf</id>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-cached-classpath</id>
+                    </execution>
+                    <execution>
+                        <id>unpack-common-test-classes</id>
                     </execution>
                 </executions>
             </plugin>
@@ -101,6 +128,24 @@
                     <execution>
                         <id>clean-hbase-files</id>
                     </execution>
+                    <execution>
+                        <id>clean-shade-pom</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.basedir}</directory>
+                                    <includes>
+                                        <include>dependency-reduced-pom.xml</include>
+                                    </includes>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
@@ -109,24 +154,6 @@
                     <execution>
                         <id>default-deploy</id>
                         <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <excludeGroupIds>com.thinkaurelius.titan</excludeGroupIds>
-                            <outputDirectory>target/test-lib</outputDirectory>
-                            <overWriteReleases>false</overWriteReleases>
-                            <overWriteSnapshots>false</overWriteSnapshots>
-                            <overWriteIfNewer>true</overWriteIfNewer>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

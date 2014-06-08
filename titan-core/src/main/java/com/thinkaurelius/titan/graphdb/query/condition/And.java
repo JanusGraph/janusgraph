@@ -3,9 +3,10 @@ package com.thinkaurelius.titan.graphdb.query.condition;
 import com.thinkaurelius.titan.core.TitanElement;
 
 /**
+ * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class And<E extends TitanElement> extends MultiCondition<E> {
 
     public And(Condition<E>... elements) {

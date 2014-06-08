@@ -15,6 +15,7 @@
         <module>titan-hbase-core</module>
         <module>titan-hbase-094</module>
         <module>titan-hbase-096</module>
+        <module>titan-hbase-098</module>
         <module>titan-hbase</module>
     </modules>
     
@@ -103,6 +104,39 @@
                     </executions>
                 </plugin>
                 <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>generate-cached-classpath</id>
+                            <phase>generate-test-resources</phase>
+                            <goals>
+                                <goal>build-classpath</goal>
+                            </goals>
+                            <configuration>
+                                <outputFile>${project.basedir}/target/cached_classpath.txt</outputFile>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>unpack-common-test-classes</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>unpack</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>titan-hbase-core</artifactId>
+                                        <version>${project.version}</version>
+                                        <classifier>tests</classifier>
+                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <!-- Using assembly instead of resources because resources breaks filemodes and 
                          permissions: http://jira.codehaus.org/browse/MRESOURCES-132 -->
                     <artifactId>maven-assembly-plugin</artifactId>
@@ -143,6 +177,9 @@
                                     </fileset>
                                     <fileset>
                                         <directory>conf/</directory>
+                                    </fileset>
+                                    <fileset>
+                                        <directory>logs/</directory>
                                     </fileset>
                                 </filesets>
                             </configuration>

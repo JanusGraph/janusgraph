@@ -7,9 +7,10 @@ import com.thinkaurelius.titan.core.TitanElement;
 import javax.annotation.Nullable;
 
 /**
+ * Utility methods for transforming and inspecting {@link Condition}s.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public class ConditionUtil {
 
     public static final<E extends TitanElement> Condition<E> literalTransformation(Condition<E> condition, final Function<Condition<E>,Condition<E>> transformation) {

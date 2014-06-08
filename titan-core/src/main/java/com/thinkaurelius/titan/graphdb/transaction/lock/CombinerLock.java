@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.util.time.Duration;
-import com.thinkaurelius.titan.util.time.Timer;
-import com.thinkaurelius.titan.util.time.TimestampProvider;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timer;
+import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)

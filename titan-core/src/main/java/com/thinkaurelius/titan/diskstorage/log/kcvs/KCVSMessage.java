@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.log.kcvs;
 
-import com.thinkaurelius.titan.util.time.Timepoint;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.log.util.AbstractMessage;
 

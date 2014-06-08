@@ -2,7 +2,7 @@ package com.thinkaurelius.titan.hadoop.formats.titan;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.TitanType;
+import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
@@ -29,13 +29,13 @@ import org.apache.hadoop.conf.Configuration;
 
 public class TitanHadoopGraph {
 
-    private final RelationReader relationReader;
+    private final TitanHadoopSetup setup;
     private final TypeInspector typeManager;
     private final SystemTypeInspector systemTypes;
     private final VertexReader vertexReader;
 
     public TitanHadoopGraph(final TitanHadoopSetup setup) {
-        this.relationReader = setup.getRelationReader();
+        this.setup = setup;
         this.typeManager = setup.getTypeInspector();
         this.systemTypes = setup.getSystemTypeInspector();
         this.vertexReader = setup.getVertexReader();
@@ -50,7 +50,8 @@ public class TitanHadoopGraph {
         boolean foundVertexState = false;
         for (final Entry data : entries) {
             try {
-                final RelationCache relation = this.relationReader.parseRelation(vertexId, data, false, typeManager);
+                RelationReader relationReader = setup.getRelationReader(vertex.getIdAsLong());
+                final RelationCache relation = relationReader.parseRelation(data, false, typeManager);
                 if (this.systemTypes.isTypeSystemType(relation.typeId)) {
                     isSystemType = true; //TODO: We currently ignore the entire type vertex including any additional properties/edges a user might have added!
                 } else if (this.systemTypes.isVertexExistsSystemType(relation.typeId)) {
@@ -58,7 +59,7 @@ public class TitanHadoopGraph {
                 }
                 if (systemTypes.isSystemType(relation.typeId)) continue; //Ignore system types
 
-                final TitanType type = typeManager.getExistingType(relation.typeId);
+                final RelationType type = typeManager.getExistingRelationType(relation.typeId);
                 if (type.isPropertyKey()) {
                     assert !relation.hasProperties();
                     Object value = relation.getValue();
@@ -80,7 +81,7 @@ public class TitanHadoopGraph {
                         // load edge properties
                         for (final LongObjectCursor<Object> next : relation) {
                             assert next.value != null;
-                            edge.setProperty(typeManager.getExistingType(next.key).getName(), next.value);
+                            edge.setProperty(typeManager.getExistingRelationType(next.key).getName(), next.value);
                         }
                         for (final HadoopProperty p : edge.getProperties())
                             p.setState(ElementState.LOADED);

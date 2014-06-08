@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.util.time.Duration;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.indexing.RawQuery;
@@ -31,9 +31,9 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 /**
- * Bundles all transaction handles from the various backend systems and provides a proxy for some of their
- * methods for convenience.
- * Also increases robustness of read call by attempting read calls multiple times on failure.
+ * Bundles all storage/index transactions and provides a proxy for some of their
+ * methods for convenience. Also increases robustness of read call by attempting
+ * read calls multiple times on failure.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
@@ -50,7 +50,7 @@ public class BackendTransaction implements LoggableTransaction {
     public static final StaticBuffer EDGESTORE_MAX_KEY = BufferUtil.oneBuffer(8);
 
     private final CacheTransaction storeTx;
-    private final TransactionHandleConfig txConfig;
+    private final BaseTransactionConfig txConfig;
     private final StoreFeatures storeFeatures;
 
     private final KCVSCache edgeStore;
@@ -62,7 +62,7 @@ public class BackendTransaction implements LoggableTransaction {
 
     private final Map<String, IndexTransaction> indexTx;
 
-    public BackendTransaction(CacheTransaction storeTx, TransactionHandleConfig txConfig,
+    public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
                               Duration maxReadTime,
                               Map<String, IndexTransaction> indexTx, Executor threadPool) {
@@ -76,15 +76,15 @@ public class BackendTransaction implements LoggableTransaction {
         this.threadPool = threadPool;
     }
 
-    public StoreTransaction getStoreTransactionHandle() {
+    public StoreTransaction getStoreTransaction() {
         return storeTx;
     }
 
-    public TransactionHandleConfig getConfiguration() {
+    public BaseTransactionConfig getBaseTransactionConfig() {
         return txConfig;
     }
 
-    public IndexTransaction getIndexTransactionHandle(String index) {
+    public IndexTransaction getIndexTransaction(String index) {
         Preconditions.checkArgument(StringUtils.isNotBlank(index));
         IndexTransaction itx = indexTx.get(index);
         Preconditions.checkNotNull(itx, "Unknown index: " + index);
@@ -111,16 +111,6 @@ public class BackendTransaction implements LoggableTransaction {
     public void commit() throws StorageException {
         storeTx.commit();
         for (IndexTransaction itx : indexTx.values()) itx.commit();
-    }
-
-    public void flushStorage() throws StorageException {
-        storeTx.flush();
-    }
-
-    @Override
-    public void flush() throws StorageException {
-        storeTx.flush();
-        for (IndexTransaction itx : indexTx.values()) itx.flush();
     }
 
     /**
@@ -323,21 +313,6 @@ public class BackendTransaction implements LoggableTransaction {
         }
     }
 
-    //TODO: remove and also KeyColumnValueStore.containsKey
-    public boolean edgeStoreContainsKey(final StaticBuffer key) {
-        return executeRead(new Callable<Boolean>() {
-            @Override
-            public Boolean call() throws Exception {
-                return edgeStore.containsKey(key, storeTx);
-            }
-
-            @Override
-            public String toString() {
-                return "EdgeStoreContainsKey";
-            }
-        });
-    }
-
     public KeyIterator edgeStoreKeys(final SliceQuery sliceQuery) {
         if (!storeFeatures.hasScan())
             throw new UnsupportedOperationException("The configured storage backend does not support global graph operations - use Faunus instead");
@@ -390,7 +365,7 @@ public class BackendTransaction implements LoggableTransaction {
 
 
     public List<String> indexQuery(final String index, final IndexQuery query) {
-        final IndexTransaction indexTx = getIndexTransactionHandle(index);
+        final IndexTransaction indexTx = getIndexTransaction(index);
         return executeRead(new Callable<List<String>>() {
             @Override
             public List<String> call() throws Exception {
@@ -405,7 +380,7 @@ public class BackendTransaction implements LoggableTransaction {
     }
 
     public Iterable<RawQuery.Result<String>> rawQuery(final String index, final RawQuery query) {
-        final IndexTransaction indexTx = getIndexTransactionHandle(index);
+        final IndexTransaction indexTx = getIndexTransaction(index);
         return executeRead(new Callable<Iterable<RawQuery.Result<String>>>() {
             @Override
             public Iterable<RawQuery.Result<String>> call() throws Exception {

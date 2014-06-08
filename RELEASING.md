@@ -8,7 +8,6 @@ The release process has only been tested on Linux.  The following
 tools must be installed.
 
 * [expect](http://expect.sourceforge.net/)
-* [gollum-site](https://github.com/dreverri/gollum-site)
 * [gpg](http://www.gnupg.org/) with a running agent
 
 ~/.m2/settings.xml will need the following entries.
@@ -40,16 +39,15 @@ Release Steps
 
 ### Preparing Documentation
 
-Update version-sensitive wiki pages and doc/HTML files in the repo.
+Update version-sensitive files in the root and documentation sources
+in the docs/ subdirectory off the root.
 
-Wiki pages:
+Documentation pages:
 
-* Home
-* Release-Notes
-* Version-Compatibility
-* Upgrade-Instructions
-* Acknowledgements
-* Downloads
+* changelog.txt
+* versions.txt
+* upgrade.txt
+* acknowledgements.txt
 
 Files in the main repo:
 
@@ -144,23 +142,27 @@ to updating gh-pages locally.
 
 ```bash
 
-# This clones the repo to /tmp/titanpages.  It checks out the
-# gh-pages branch, then populates wikidoc/$RELEASE_VERSION/ and
-# javadoc/$RELEASE_VERSION/ with a copy of the wiki exported using
-# gollum-site and a copy of the current javadoc (respectively).  It
-# also replaces the wikidoc/current/ and javadoc/current/ directories
-# with copies of files for $RELEASE_VERSION.  Finally, it generates a
-# new index.html.  It commits these changes and pushes them to the
-# local parent repo (but not github).
-#
-# Why clone to /tmp/titanpages?  We need to modify the gh-pages branch,
-# but we don't want to risk file conflicts between the doc subfolder
-# of the gh-pages branch and the doc submodule of the titan master
-# branch.  Cloning the repo before checking out gh-pages guarantees a
-# clean working copy and thereby precludes conflicts on doc (or anything
-# else that might become conflict-prone in the future).
-titan-site/target/site-scripts/gh-pages-update.sh release.properties
+# This clones the repo to /tmp/titanpages.  It checks out the gh-pages
+# branch, then populates wikidoc/$RELEASE_VERSION/ and
+# javadoc/$RELEASE_VERSION/ with a copy of the HTML produced from
+# AsciiDoc sources and a copy of the current javadoc (respectively).
+# It also replaces the wikidoc/current/ and javadoc/current/
+# directories with copies of files for $RELEASE_VERSION.  "wikidoc" is
+# an anachronism, since the docs are now AsciiDoc based, but it's
+# retained for URL uniformity with previous releases of the docs.
+# Finally, it generates a new index.html.  It commits these changes
+# and pushes them from /tmp/titanpages to the original local repo.  It
+# does not push anything to github.
 
+# Why clone to /tmp/titanpages?  We need to modify the gh-pages
+# branch, but we don't want to mess with the repository that's
+# currently in the middle of releasing Titan, and which might have
+# uncommitted changes that cause problems if we try to checkout the
+# gh-pages branch.  Cloning the repo to /tmp and then checking out
+# gh-pages in the clone guarantees a clean working copy and thereby
+# precludes these conflicts.
+
+titan-site/target/site-scripts/gh-pages-update.sh release.properties
 # If you want to check this script's work, then consider running
 # the following:
 git diff --name-status origin/gh-pages..gh-pages

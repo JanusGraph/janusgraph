@@ -1,0 +1,78 @@
+[[eventual-consistency]]
+Eventually-Consistent Storage Backends
+--------------------------------------
+
+This page summarizes some of the aspects to consider when running Titan on top of an eventually consistent storage backend like Apache Cassandra or Apache HBase.
+
+Data Degradation
+~~~~~~~~~~~~~~~~
+
+On eventually consistent storage backends, certain failure conditions can cause the graph to become inconsistent. This is an inherent property of eventual consistency, in the sense, that accepted updates might not be persisted under certain operational circumstances or failures.
+
+From Titan's perspective, these conditions might cause the following graph inconsistencies.
+
+[horizontal]
+*Ghost Vertices*:: If a vertex gets deleted while it is concurrently
+being modified, the vertex might re-appear as a _ghost_.
+
+*Stale Index entries*:: Index entries might point to nonexistent
+vertices in case of partial mutation persistence.
+
+*Half-Edges*:: Only one direction of an edge gets persisted or deleted
+which might lead to the edge not being or incorrectly being retrieved.
+
+*Uni-directed Ghost Edges*:: A uni-directed edge points to a deleted
+vertex.
+
+While Titan attempts to combine mutations to make the occurrence of such inconsistencies less likely, they can never be completely avoided and will likely arise on sufficiently large graphs.
+
+The following strategies can be used to mitigate this issue:
+
+[horizontal]
+
+*Buffer Size*:: Configure the buffer-size in the <<graph-config,graph
+configuration>> to be large enough for all mutations in a
+transaction. This will reduce the likelihood of partial mutations
+causing inconsistencies.
+
+*Existence checks*:: Configure transactions to (double) check for the
+existence of vertices prior to returning them. Please see
+<<tx-config>> for more information and note that this can
+significantly decrease performance.  Note, that this does not fix the
+inconsistencies but hides some of them from the user.
+
+*Regular clean-ups*:: Run regular batch-jobs to repair inconsistencies
+in the graph using <<hadoop,Faunus>>.  This is the only strategy that
+can address all inconsistencies and effectively repair them. We will
+provide increasing support for such repairs in future versions of
+Faunus.
+
+Locking
+~~~~~~~
+
+On eventually consistent storage backends, Titan must obtain locks in order to ensure consistency.
+
+When updating an element that is guarded by a uniqueness constraint, Titan uses the following protocol at the end of a transaction when calling @tx.commit()@:
+
+. Acquire a lock on all elements that have a consistency constraint
+. Re-read those elements from the storage backend and verify that they match the state of the element in the current transaction prior to modification. If not, the element was concurrently modified and a PermanentLocking exception is thrown.
+. Persist the state of the transaction against the storage backend.
+. Release all locks.
+
+This is a brief description of the locking protocol which leaves out optimizations (e.g. local conflict detection) and detection of failure scenarios (e.g. expired locks).
+
+The actual lock application mechanism is abstracted such that Titan can use multiple implementations of a locking provider. Currently, two locking providers are supported in the Titan distribution:
+
+. A locking implementation based on key-consistent read and write operations that is agnostic to the underlying storage backend as long as it supports key-consistent operations (which includes Cassandra and HBase). This is the default implementation and uses timestamp based lock applications to determine which transaction holds the lock. For this implementation to work correctly, it is crucial to specify a unique machine-id in the [[graph configuration]] when running multiple Titan instance on the same machine.
+. A Cassandra specific locking implementation based on the Astyanax locking recipe.
+
+Both locking providers require that clocks are synchronized across all machines in the cluster.
+
+[WARNING]
+The locking implementation is not robust against all failure
+scenarios. For instance, when a Cassandra cluster drops below quorum,
+consistency is now longer ensured. Hence, it is suggested to use
+locking-based consistency constraints sparingly with eventually
+consistent storage backends.  For use cases that require strict and or
+frequent consistency constraint enforcement, it is suggested to use a
+storage backend that provides transactional isolation.

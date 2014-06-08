@@ -10,9 +10,12 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import java.util.ArrayList;
 
 /**
+ * Abstract condition element that combines multiple conditions (for instance, AND, OR).
+ *
+ * @see And
+ * @see Or
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-
 public abstract class MultiCondition<E extends TitanElement> extends ArrayList<Condition<E>> implements Condition<E> {
 
     MultiCondition() {
@@ -63,11 +66,6 @@ public abstract class MultiCondition<E extends TitanElement> extends ArrayList<C
     public Iterable<Condition<E>> getChildren() {
         return this;
     }
-
-//    @Override
-//    public Type getType() {
-//        return Type.AND;
-//    }
 
     @Override
     public int hashCode() {

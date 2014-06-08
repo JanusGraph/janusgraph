@@ -39,12 +39,11 @@ NAME=titan
 #fi
 
 # For SELinux we need to use 'runuser' not 'su'
-#if [ -x /sbin/runuser ]
-#then
-#    SU=runuser
-#else
-#    SU=su
-#fi
+if [ -x /sbin/runuser ]; then
+    SU=runuser
+else
+    SU=su
+fi
 
 # Set defaults for configuration variables
 #PGENGINE=/usr/bin
@@ -58,49 +57,43 @@ NAME=titan
 [ -f /etc/sysconfig/$NAME ] && . /etc/sysconfig/$NAME
 
 #lockfile="/var/lock/subsys/${NAME}"
-pidfile="/var/run/$NAME.pid"
+pidfile="/var/run/$NAME/$NAME.pid"
 
+do_status() {
+    status -p "$pidfile" $NAME
+    return $?
+}
 
-start() {
+do_start() {
     local stat
     echo -n $"Starting $NAME: "
-    /usr/sbin/titan -p $pidfile >/var/log/titan/console.log 2>&1
+    daemon $SU titan -c "/usr/sbin/titan\ -p\ $pidfile\ >/var/log/titan/console.log"
     stat=$?
-    if [ 0 -eq $stat ]; then
-	echo_success
-    else
-	stat=1 # "generic or unspecified error" in LSB
-	echo_failure
-    fi
+    echo
     return $stat
 }
 
-stop() {
+do_stop() {
     local errmsg stat
     echo -n $"Stopping $NAME: "
-    errmsg="`killproc -p $PIDFILE $PATHNAME 2>&1`"
+    killproc -p $pidfile
     stat=$?
-    if [ 0 -eq $stat ]; then
-	echo_success
-    else
-	stat=1 # "generic or unspecified error" in LSB
-	echo_failure
-    fi
+    echo
     return $stat
 }
 
-restart() {
-    stop # Try to start even if stop fails
-    start
+do_restart() {
+    do_stop # Try to start even if stop fails
+    do_start
 }
 
 case "$1" in
     status)
-        status -p "$PIDFILE" $NAME
+        do_status
         exit $?
         ;;
     start|stop|restart)
-        $1
+        do_$1
         exit $?
 	;;
     condrestart|try-restart)

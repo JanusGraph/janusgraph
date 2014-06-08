@@ -43,11 +43,6 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return store.getLocalKeyPartition();
-    }
-
-    @Override
     public String getName() {
         return store.getName();
     }
@@ -55,11 +50,6 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         throw new UnsupportedOperationException("Cannot mutate a read-only store");
-    }
-
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return store.containsKey(key, txh);
     }
 
     @Override

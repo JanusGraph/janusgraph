@@ -58,12 +58,7 @@ public abstract class KCVSCache implements KeyColumnValueStore {
 
     protected final StoreTransaction getTx(StoreTransaction txh) {
         assert txh instanceof CacheTransaction;
-        return ((CacheTransaction) txh).getWrappedTransactionHandle();
-    }
-
-    @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
-        return store.containsKey(key, getTx(txh));
+        return ((CacheTransaction) txh).getWrappedTransaction();
     }
 
     @Override
@@ -79,11 +74,6 @@ public abstract class KCVSCache implements KeyColumnValueStore {
     @Override
     public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
         return store.getKeys(columnQuery, getTx(txh));
-    }
-
-    @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
-        return store.getLocalKeyPartition();
     }
 
     @Override

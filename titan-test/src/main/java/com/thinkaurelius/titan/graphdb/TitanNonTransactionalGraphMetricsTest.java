@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -48,7 +50,7 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         WriteConfiguration config = getBaseConfiguration();
         ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
         mconf.set(GraphDatabaseConfiguration.BASIC_METRICS,true);
-        mconf.set(GraphDatabaseConfiguration.MERGE_BASIC_METRICS,false);
+        mconf.set(GraphDatabaseConfiguration.METRICS_MERGE_STORES,false);
         mconf.set(GraphDatabaseConfiguration.PROPERTY_PREFETCHING,false);
         mconf.set(GraphDatabaseConfiguration.DB_CACHE,false);
         return config;
@@ -70,10 +72,10 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
         metricsPrefix = "metrics1";
 
         TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        TitanVertex v = tx.addVertex(null);
+        TitanVertex v = tx.addVertex();
         verifyStoreMetrics(STORE_NAMES.get(3), SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 2l, M_GET_SLICE, 4l));
         ElementHelper.setProperties(v, "age", 25, "name", "john");
-        TitanVertex u = tx.addVertex(null);
+        TitanVertex u = tx.addVertex();
         ElementHelper.setProperties(u, "age", 35, "name", "mary");
         v.addEdge("knows", u);
         tx.commit();
@@ -190,18 +192,18 @@ public abstract class TitanNonTransactionalGraphMetricsTest extends TitanGraphBa
 
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
-        TitanKey uid = makeKey("uid",String.class);
-        TitanGraphIndex index = mgmt.createInternalIndex("uid",Vertex.class,true,uid);
-        mgmt.setConsistency(index,ConsistencyModifier.LOCK);
+        PropertyKey uid = makeKey("uid",String.class);
+        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        mgmt.setConsistency(index, ConsistencyModifier.LOCK);
         finishSchema();
 
         clopen(option(GraphDatabaseConfiguration.PROPERTY_PREFETCHING), fastProperty);
         metricsPrefix = "metrics3"+fastProperty;
 
         TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
-        tx.makeKey("name").dataType(String.class).make();
-        tx.makeKey("age").dataType(Integer.class).make();
-        TitanVertex v = tx.addVertex(null);
+        tx.makePropertyKey("name").dataType(String.class).make();
+        tx.makePropertyKey("age").dataType(Integer.class).make();
+        TitanVertex v = tx.addVertex();
         ElementHelper.setProperties(v, "uid", "v1", "age", 25, "name", "john");
         tx.commit();
         verifyStoreMetrics(STORE_NAMES.get(0), ImmutableMap.of(M_MUTATE, 7l));

@@ -2,11 +2,18 @@ package com.thinkaurelius.titan.graphdb.configuration;
 
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.util.time.*;
-import com.thinkaurelius.titan.util.time.StandardDuration;
+import com.thinkaurelius.titan.core.attribute.AttributeHandler;
+import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
+import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultSchemaMaker;
+import com.thinkaurelius.titan.util.stats.NumberUtil;
+import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConflictAvoidanceMode;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
@@ -42,11 +49,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultTypeMaker;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
-import com.thinkaurelius.titan.graphdb.types.typemaker.DisableDefaultTypeMaker;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -73,7 +78,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     /**
-     * Configures the {@link DefaultTypeMaker} to be used by this graph. If set to 'none', automatic creation of types
+     * Configures the {@link com.thinkaurelius.titan.core.schema.DefaultSchemaMaker} to be used by this graph. If set to 'none', automatic creation of types
      * is disabled.
      */
     public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<String>(ROOT_NS,"autotype",
@@ -87,9 +92,9 @@ public class GraphDatabaseConfiguration {
 //    public static final String AUTO_TYPE_KEY = "autotype";
 //    public static final String AUTO_TYPE_DEFAULT = "blueprints";
 
-    private static final Map<String, DefaultTypeMaker> preregisteredAutoType = new HashMap<String, DefaultTypeMaker>() {{
-        put("none", DisableDefaultTypeMaker.INSTANCE);
-        put("blueprints", BlueprintsDefaultTypeMaker.INSTANCE);
+    private static final Map<String, DefaultSchemaMaker> preregisteredAutoType = new HashMap<String, DefaultSchemaMaker>() {{
+        put("none", DisableDefaultSchemaMaker.INSTANCE);
+        put("blueprints", BlueprintsDefaultSchemaMaker.INSTANCE);
     }};
 
     /**
@@ -99,7 +104,8 @@ public class GraphDatabaseConfiguration {
      * increases latencies compared to a single property retrieval.
      */
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<Boolean>(ROOT_NS,"fast-property",
-            "Whether to pre-fetch all properties on first vertex property access",
+            "Whether to pre-fetch all properties on first vertex property access. This can eliminate backend calls on subsequent" +
+                    "property access for the same vertex at the expense of retrieving all properties at once.",
             ConfigOption.Type.MASKABLE, Boolean.class);
 //    public static final String PROPERTY_PREFETCHING_KEY = "fast-property";
 
@@ -112,7 +118,9 @@ public class GraphDatabaseConfiguration {
      * This should only ever be used when mapping external to internal ids causes performance issues at very large scale.
      */
     public static final ConfigOption<Boolean> ALLOW_SETTING_VERTEX_ID = new ConfigOption<Boolean>(ROOT_NS,"set-vertex-id",
-            "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled",
+            "Whether user provided vertex ids should be enabled and Titan's automatic id allocation be disabled. " +
+                "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
+                    "of Titan's advanced features. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
 //
 //    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
@@ -123,7 +131,7 @@ public class GraphDatabaseConfiguration {
      * When true, Titan will ignore unknown index key fields in queries.
      */
     public static final ConfigOption<Boolean> IGNORE_UNKNOWN_INDEX_FIELD = new ConfigOption<Boolean>(ROOT_NS, "ignore-unknown-index-key",
-            "Whether to ignore unknown external index fields when querying",
+            "Whether to ignore undefined types encountered in user-provided index queries",
             ConfigOption.Type.MASKABLE, false);
 //    public static final String IGNORE_UNKNOWN_INDEX_FIELD_KEY = "ignore-unknown-index-key";
 //    public static final boolean IGNORE_UNKNOWN_INDEX_FIELD_DEFAULT = false;
@@ -141,18 +149,32 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL, true);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
-            "Unique identifier for this Titan instance", ConfigOption.Type.LOCAL, String.class);
+            "Unique identifier for this Titan instance.  This must be unique among all instances " +
+            "concurrently accessing the same stores or indexes.  It's automatically generated by " +
+            "concatenating the hostname, process id, and a static (process-wide) counter. " +
+            "Leaving it unset is recommended.",
+            ConfigOption.Type.LOCAL, String.class);
+
+
+    public static final ConfigOption<Short> UNIQUE_INSTANCE_ID_SUFFIX = new ConfigOption<Short>(ROOT_NS,"unique-instance-id-suffix",
+            "When this is set and " + UNIQUE_INSTANCE_ID.getName() + " is not, this Titan " +
+            "instance's unique identifier is generated by concatenating the hostname to the " +
+            "provided number.  This is a legacy option which is currently only useful if the JVM's " +
+            "ManagementFactory.getRuntimeMXBean().getName() is not unique between processes.",
+            ConfigOption.Type.LOCAL, Short.class);
 
     public static final ConfigOption<String> INITIAL_TITAN_VERSION = new ConfigOption<String>(ROOT_NS,"titan-version",
-            "The version of Titan with which this database was created", ConfigOption.Type.FIXED, String.class);
+            "The version of Titan with which this database was created.  Don't manually set this property.",
+            ConfigOption.Type.FIXED, String.class);
 
     // ################ INSTANCE REGISTRATION #######################
     // ##############################################################
 
-    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration","This is used internally to keep track of open instances",true);
+    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS,"system-registration",
+            "This is used internally to keep track of open instances.",true);
 
     public static final ConfigOption<Timepoint> REGISTRATION_TIME = new ConfigOption<Timepoint>(REGISTRATION_NS,"startup-time",
-            "Timestamp when this instance was started", ConfigOption.Type.GLOBAL, Timepoint.class);
+            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Timepoint.class);
 
     // ################ CACHE #######################
     // ################################################
@@ -167,7 +189,10 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_KEY = "db-cache";
 //    public static final boolean DB_CACHE_DEFAULT = false;
     public static final ConfigOption<Boolean> DB_CACHE = new ConfigOption<Boolean>(CACHE_NS,"db-cache",
-            "Whether Titan should use a database level cache to speed up traversals",
+            "Whether to enable Titan's database-level cache, which is shared across all transactions. " +
+            "Enabling this option speeds up traversals by holding hot graph elements in memory, " +
+            "but also increases the likelihood of reading stale data.  Disabling it forces each " +
+            "transaction to indepedendently fetch graph elements from storage before reading/writing them.",
             ConfigOption.Type.MASKABLE, false);
 
     /**
@@ -179,7 +204,8 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_SIZE_KEY = "db-cache-size";
 //    public static final double DB_CACHE_SIZE_DEFAULT = 0.3;
     public static final ConfigOption<Double> DB_CACHE_SIZE = new ConfigOption<Double>(CACHE_NS,"db-cache-size",
-            "Size of Titan's database level cache (value in (0,1) => %, else absolute size in bytes)",
+            "Size of Titan's database level cache.  Values between 0 and 1 are interpreted as a percentage " +
+            "of VM heap, while larger values are interpreted as an absolute size in bytes.",
             ConfigOption.Type.MASKABLE, 0.3);
 
     /**
@@ -191,7 +217,9 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_CLEAN_WAIT_KEY = "db-cache-clean-wait";
 //    public static final long DB_CACHE_CLEAN_WAIT_DEFAULT = 50;
     public static final ConfigOption<Integer> DB_CACHE_CLEAN_WAIT = new ConfigOption<Integer>(CACHE_NS,"db-cache-clean-wait",
-            "How long database level cache will keep items expired while they are being persisted",
+            "How long, in milliseconds, database-level cache will keep entries after flushing them." +
+            "This option is only useful on distributed storage backends that are capable of acknowledging writes " +
+            "without necessarily making them immediately visible.",
             ConfigOption.Type.GLOBAL_OFFLINE, 50);
 
     /**
@@ -203,7 +231,9 @@ public class GraphDatabaseConfiguration {
 //    public static final String DB_CACHE_TIME_KEY = "db-cache-time";
 //    public static final long DB_CACHE_TIME_DEFAULT = 10000;
     public static final ConfigOption<Long> DB_CACHE_TIME = new ConfigOption<Long>(CACHE_NS,"db-cache-time",
-            "Default expiration time for cached elements. Set to 0 to cache until change.",
+            "Default expiration time, in milliseconds, for entries in the database-level cache. " +
+            "Entries are evicted when they reach this age even if the cache has room to spare. " +
+            "Set to 0 to disable expiration (cache entries live forever).",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000l);
 
     /**
@@ -219,7 +249,7 @@ public class GraphDatabaseConfiguration {
 //    public static final String TX_CACHE_SIZE_KEY = "tx-cache-size";
 //    public static final int TX_CACHE_SIZE_DEFAULT = 20000;
     public static final ConfigOption<Integer> TX_CACHE_SIZE = new ConfigOption<Integer>(CACHE_NS,"tx-cache-size",
-            "Maximum size of the transaction-level cache of recently-used vertices",
+            "Maximum size of the transaction-level cache of recently-used vertices.",
             ConfigOption.Type.MASKABLE, 20000);
 
     /**
@@ -231,7 +261,9 @@ public class GraphDatabaseConfiguration {
      * costs associated with growing the dirty vertex data structure by setting this option.
      */
     public static final ConfigOption<Integer> TX_DIRTY_SIZE = new ConfigOption<Integer>(CACHE_NS, "tx-dirty-size",
-          "Initial size of the transaction-level cache of uncommitted dirty vertices",
+          "Initial size of the transaction-level cache of uncommitted dirty vertices. " +
+          "This is a performance hint for write-heavy, performance-sensitive transactional workloads. " +
+          "If set, it should roughly match the median vertices modified per transaction.",
           ConfigOption.Type.MASKABLE, Integer.class);
 
     /**
@@ -253,7 +285,7 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
 //    public static final String STORAGE_NAMESPACE = "storage";
-    public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend");
+    public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
 
 
     /**
@@ -277,7 +309,8 @@ public class GraphDatabaseConfiguration {
      * Define the storage backed to use for persistence
      */
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
-            "Short-name or class-name for backed to use for persistence",
+            "Either the package and classname of a StoreManager implementation or one of " +
+            "Titan's built-in shorthand names for its standard storage backends.",
             ConfigOption.Type.LOCAL, "local");
 //    public static final String STORAGE_BACKEND_KEY = "backend";
 //    public static final String STORAGE_BACKEND_DEFAULT = "local";
@@ -347,12 +380,12 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
             "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(100000L, TimeUnit.MILLISECONDS));
 
     public static final ConfigOption<Duration> STORAGE_READ_WAITTIME = new ConfigOption<Duration>(STORAGE_NS,"read-time",
             "Maximum time (in ms) to wait for a backend read operation to complete successfully. If a backend read operation" +
                     "fails temporarily, Titan will backoff exponentially and retry the operation until the wait time has been exhausted. ",
-            ConfigOption.Type.MASKABLE, new StandardDuration(1000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, new StandardDuration(10000L, TimeUnit.MILLISECONDS));
 
 
     /**
@@ -374,167 +407,6 @@ public class GraphDatabaseConfiguration {
 //            "A unique identifier for the machine running the TitanGraph instance",
 //            ConfigOption.Type.LOCAL, String.class);
 //    public static final String INSTANCE_RID_RAW_KEY = "machine-id";
-
-
-    /**
-     * A locally unique identifier for a particular TitanGraph instance. This only needs to be configured
-     * when multiple @TitanGraph@ instances are running on the same machine. A unique machine specific appendix
-     * guarantees a globally unique identifier.
-     */
-//    public static final String INSTANCE_RID_SHORT_KEY = "machine-id-appendix";
-    public static final ConfigOption<Short> INSTANCE_RID_SHORT = new ConfigOption<Short>(STORAGE_NS,"machine-id-appendix",
-            "A locally unique identifier for a particular TitanGraph instance",
-            ConfigOption.Type.LOCAL, Short.class);
-
-    /**
-     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
-     */
-    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
-            "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 3);
-//    public static final String LOCK_RETRY_COUNT = "lock-retries";
-//    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
-    /**
-     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
-     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
-     * This value should be a small multiple of the average consistent write time.
-     */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
-//    public static final String LOCK_WAIT_MS = "lock-wait-time";
-//    public static final long LOCK_WAIT_MS_DEFAULT = 100;
-
-    /**
-     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
-     * are considered expired after this time and released.
-     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
-     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
-     */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
-//    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
-//    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
-
-    /**
-     * Whether to attempt to delete expired locks from the storage backend. True
-     * will attempt to delete expired locks in a background daemon thread. False
-     * will never attempt to delete expired locks. This option is only
-     * meaningful for the default lock backend.
-     *
-     * @see #LOCK_BACKEND
-     */
-    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
-            "Whether to delete expired locks from the storage backend",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
-     */
-    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
-            "Locker type to use",
-            ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
-//    public static final String LOCK_BACKEND = "lock-backend";
-//    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
-
-    /**
-     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
-     * Also, the time waited after the application before verifying that the application was successful.
-     */
-    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(STORAGE_NS,"idauthority-wait-time",
-            "The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
-//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
-//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
-
-    /**
-     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
-     * enabled, it picks a random unique ID marker and attempts to allocate IDs
-     * from a partition using the marker. The ID markers function as
-     * subpartitions with each ID partition. If the attempt fails because that
-     * partition + uniqueid combination is already completely allocated, then
-     * Titan will generate a new random unique ID and try again. This controls
-     * the maximum number of attempts before Titan assumes the entire partition
-     * is allocated and fails the request. It must be set to at least 1 and
-     * should generally be set to 3 or more.
-     * <p/>
-     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUE_ID}
-     * is disabled.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUEID_RETRY_COUNT = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-retries",
-            "Number of times the system attempts attempts ID block allocations with random uniqueids before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 5);
-//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
-//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
-
-    /**
-     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
-     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
-     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
-     *
-     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
-     * same value. Otherwise, data corruption will occur.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID_BITS = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid-bits",
-            "Configures the number of bits of Titan assigned ids that are reserved for a unique id marker",
-            ConfigOption.Type.FIXED, 0 , new Predicate<Integer>() {
-        @Override
-        public boolean apply(@Nullable Integer uniqueIdBitWidth) {
-            return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
-        }
-    });
-//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
-//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
-
-    /**
-     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
-     * must be non-negative and fit within the number of unique id bits configured.
-     * By assigning different unique id markers to individual Titan instances it can be assured
-     * that those instances don't conflict with one another when attempting to allocate new id blocks.
-     *
-     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
-     */
-    public static final ConfigOption<Integer> IDAUTHORITY_UNIQUE_ID = new ConfigOption<Integer>(STORAGE_NS,"idauthority-uniqueid",
-            "Unique id marker to be used by this Titan instance when allocating ids",
-            ConfigOption.Type.LOCAL, 0);
-//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
-//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
-
-    /**
-     * Configures this Titan instance to use a random unique id marker each time it attempts to allocate
-     * a new id block. This is an alternative to configuring {@link #IDAUTHORITY_UNIQUE_ID} where the
-     * actual value does not matter since one just wants to avoid id allocation conflicts among many Titan
-     * instances.
-     *
-     * IMPORTANT: The random unique id will be randomly generated to fit within the unique id bit width. Hence
-     * this option must be configured accordingly.
-     */
-    public static final ConfigOption<Boolean> IDAUTHORITY_RANDOMIZE_UNIQUE_ID = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-uniqueid-random",
-            "Configures this Titan instance to use a random unique id marker each time it attempts to allocate a new id block",
-            ConfigOption.Type.MASKABLE, false);
-//    public static final String IDAUTHORITY_RANDOMIZE_UNIQUE_ID_KEY = "idauthority-uniqueid-random";
-//    public static final boolean IDAUTHORITY_RANDOMIZE_UNIQUE_ID_DEFAULT = false;
-
-    /**
-     * Configures this Titan instance to use local consistency guarantees when allocating ids. This is useful
-     * when Titan runs on a very large cluster of machines that is broken up into multiple local sub-clusters.
-     * In this case, the consistency is only ensured within the local sub-clusters which does not require
-     * acquiring global locks that can be too expensive to acquire.
-     * Using local consistency requires that a unique id marker {@link #IDAUTHORITY_UNIQUE_ID} is configured
-     * that fits within the bit width {@link #IDAUTHORITY_UNIQUE_ID_BITS} and that each local cluster of Titan
-     * instances have a unique id. In other words, no two Titan sub-cluster should have the same unique id marker.
-     *
-     * THIS IS VERY IMPORTANT. Since only local consistency is used, identical unique id marker would result in
-     * data corruption.
-     *
-     */
-    public static final ConfigOption<Boolean> IDAUTHORITY_USE_LOCAL_CONSISTENCY = new ConfigOption<Boolean>(STORAGE_NS,"idauthority-local-consistency",
-            "Configures this Titan instance to use local consistency guarantees when allocating ids",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
-//    public static final String IDAUTHORITY_USE_LOCAL_CONSISTENCY_KEY = "idauthority-local-consistency";
-//    public static final boolean IDAUTHORITY_USE_LOCAL_CONSISTENCY_DEFAULT = false;
-
 
     public static final ConfigOption<String[]> STORAGE_HOSTS = new ConfigOption<String[]>(STORAGE_NS,"hostname",
             "Configuration key for the hostname or list of hostname of remote storage backend servers to connect to",
@@ -575,13 +447,14 @@ public class GraphDatabaseConfiguration {
      * The size of blocks that are compressed individually in kilobyte
      */
     public static final ConfigOption<Integer> STORAGE_COMPRESSION_SIZE = new ConfigOption<Integer>(STORAGE_NS,"compression-block-size",
-            "The size of the compression blocks in kilobyte",
+            "The size of the compression blocks in kilobytes",
             ConfigOption.Type.FIXED, 64);
 
 
 
     public static final ConfigOption<Integer> REPLICATION_FACTOR = new ConfigOption<Integer>(STORAGE_NS,"replication-factor",
-            "The number of data replicas (including the original copy) that should be kept",
+            "The number of data replicas (including the original copy) that should be kept. " +
+            "This is only meaningful for storage backends that natively support data replication.",
             ConfigOption.Type.GLOBAL_OFFLINE, 1);
 
     /**
@@ -639,15 +512,118 @@ public class GraphDatabaseConfiguration {
      * This is batch size of results to pull when iterating a result set.
      */
     public static final ConfigOption<Integer> PAGE_SIZE = new ConfigOption<Integer>(STORAGE_NS,"page-size",
-            "Default number of results to pull over the wire when iterating over a distributed storage backend",
+            "Titan break requests that may return many results from distributed storage backends " +
+            "into a series of requests for small chunks/pages of results, where each chunk contains " +
+            "up to this many elements.",
             ConfigOption.Type.MASKABLE, 100);
 //    public static final int PAGE_SIZE_DEFAULT = 100;
 //    public static final String PAGE_SIZE_KEY = "page-size";
 
+
+
+    /**
+     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
+     */
+    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<Integer>(STORAGE_NS,"lock-retries",
+            "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
+            ConfigOption.Type.MASKABLE, 3);
+//    public static final String LOCK_RETRY_COUNT = "lock-retries";
+//    public static final int LOCK_RETRY_COUNT_DEFAULT = 3;
+    /**
+     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
+     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
+     * This value should be a small multiple of the average consistent write time.
+     */
+    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<Duration>(STORAGE_NS,"lock-wait-time",
+            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+//    public static final String LOCK_WAIT_MS = "lock-wait-time";
+//    public static final long LOCK_WAIT_MS_DEFAULT = 100;
+
+    /**
+     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
+     * are considered expired after this time and released.
+     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
+     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
+     */
+    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<Duration>(STORAGE_NS,"lock-expiry-time",
+            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300 * 1000L, TimeUnit.MILLISECONDS));
+//    public static final String LOCK_EXPIRE_MS = "lock-expiry-time";
+//    public static final long LOCK_EXPIRE_MS_DEFAULT = 300 * 1000;
+
+    /**
+     * Whether to attempt to delete expired locks from the storage backend. True
+     * will attempt to delete expired locks in a background daemon thread. False
+     * will never attempt to delete expired locks. This option is only
+     * meaningful for the default lock backend.
+     *
+     * @see #LOCK_BACKEND
+     */
+    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<Boolean>(STORAGE_NS, "lock-clean-expired",
+            "Whether to delete expired locks from the storage backend",
+            ConfigOption.Type.MASKABLE, false);
+
+    /**
+     * Locker type to use.  The supported types are in {@link com.thinkaurelius.titan.diskstorage.Backend}.
+     */
+    public static final ConfigOption<String> LOCK_BACKEND = new ConfigOption<String>(STORAGE_NS,"lock-backend",
+            "Locker type to use",
+            ConfigOption.Type.GLOBAL_OFFLINE, "consistentkey");
+//    public static final String LOCK_BACKEND = "lock-backend";
+//    public static final String LOCK_BACKEND_DEFAULT = "consistentkey";
+
+
+    // ################ STORAGE - META #######################
+
+    public static final ConfigNamespace STORE_META_NS = new ConfigNamespace(STORAGE_NS,"meta","Meta data to include in storage backend retrievals",true);
+
+    public static final ConfigOption<Boolean> STORE_META_TIMESTAMPS = new ConfigOption<Boolean>(STORE_META_NS,"timestamps",
+            "Whether to include timestamps in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Boolean> STORE_META_TTL = new ConfigOption<Boolean>(STORE_META_NS,"ttl",
+            "Whether to include ttl in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, false);
+
+    public static final ConfigOption<Boolean> STORE_META_VISIBILITY = new ConfigOption<Boolean>(STORE_META_NS,"visibility",
+            "Whether to include visibility in retrieved entries for storage backends that automatically annotated entries with timestamps",
+            ConfigOption.Type.GLOBAL, true);
+
+    // ################ CLUSTERING ###########################
+    // ################################################
+
+    public static final ConfigNamespace CLUSTER_NS = new ConfigNamespace(ROOT_NS,"cluster","Configuration options for multi-machine deployments");
+
+    /**
+     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
+     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
+     * of de-congesting a single id pool in the database.
+     */
+    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
+            "Whether the graph's element IDs should be randomly distributed across the space of available IDs " +
+            "(true) or allocated in increasing order (false). Unless explicitly set, this defaults false for  " +
+            "stores that hash keys and defaults true for stores that preserve key order (such as HBase and Cassandra " +
+            "with ByteOrderedPartitioner).",
+            ConfigOption.Type.FIXED, false);
+//    public static final String IDS_PARTITION_KEY = "partition";
+//    public static final boolean IDS_PARTITION_DEFAULT = false;
+
+    public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<Integer>(CLUSTER_NS,"max-partitions",
+            "The maximum number of ID partitions in the graph. Must be bigger than 1 and a power of 2.",
+            ConfigOption.Type.FIXED, 64, new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer integer) {
+            return integer!=null && integer>1 && NumberUtil.isPowerOf2(integer);
+        }
+    });
+
+
+
     // ################ IDS ###########################
     // ################################################
 
-    public static final ConfigNamespace IDS_NS = new ConfigNamespace(ROOT_NS,"ids","Configuration options for id allocation");
+    public static final ConfigNamespace IDS_NS = new ConfigNamespace(ROOT_NS,"ids","General configuration options for graph element IDs");
 
 //    public static final String IDS_NAMESPACE = "ids";
 
@@ -657,28 +633,20 @@ public class GraphDatabaseConfiguration {
      * be chosen.
      */
     public static final ConfigOption<Integer> IDS_BLOCK_SIZE = new ConfigOption<Integer>(IDS_NS,"block-size",
-            "Size of the block to be acquired",
+            "Globally reserve graph element IDs in chunks of this size.  Setting this too low will make commits " +
+            "frequently block on slow reservation requests.  Setting it too high will result in IDs wasted when a " +
+            "graph instance shuts down with reserved but mostly-unused blocks.",
             ConfigOption.Type.GLOBAL_OFFLINE, 10000);
 //    public static final String IDS_BLOCK_SIZE_KEY = "block-size";
 //    public static final int IDS_BLOCK_SIZE_DEFAULT = 10000;
-
-    /**
-     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
-     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
-     * of de-congesting a single id pool in the database.
-     */
-    public static final ConfigOption<Boolean> IDS_PARTITION = new ConfigOption<Boolean>(IDS_NS,"partition",
-            "Whether the id space should be partitioned for equal distribution of keys",
-            ConfigOption.Type.FIXED, false);
-//    public static final String IDS_PARTITION_KEY = "partition";
-//    public static final boolean IDS_PARTITION_DEFAULT = false;
 
     /**
      * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */
     public static final ConfigOption<Boolean> IDS_FLUSH = new ConfigOption<Boolean>(IDS_NS,"flush",
-            "If flush ids is enabled, vertices and edges are assigned ids immediately upon creation",
+            "When true, vertices and edges are assigned IDs immediately upon creation.  When false, " +
+            "IDs are assigned only when the transaction commits.",
             ConfigOption.Type.MASKABLE, true);
 //    public static final String IDS_FLUSH_KEY = "flush";
 //    public static final boolean IDS_FLUSH_DEFAULT = true;
@@ -690,7 +658,7 @@ public class GraphDatabaseConfiguration {
      */
     public static final ConfigOption<Duration> IDS_RENEW_TIMEOUT = new ConfigOption<Duration>(IDS_NS,"renew-timeout",
             "The number of milliseconds that the Titan id pool manager will wait before giving up on allocating a new block of ids",
-            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(60000L, TimeUnit.MILLISECONDS));
+            ConfigOption.Type.MASKABLE, Duration.class, new StandardDuration(120000L, TimeUnit.MILLISECONDS));
 //    public static final String IDS_RENEW_TIMEOUT_KEY = "renew-timeout";
 //    public static final long IDS_RENEW_TIMEOUT_DEFAULT = 60 * 1000; // 1 minute
 
@@ -700,10 +668,93 @@ public class GraphDatabaseConfiguration {
      * are allocated in a short amount of time. Value must be in (0,1].
      */
     public static final ConfigOption<Double> IDS_RENEW_BUFFER_PERCENTAGE = new ConfigOption<Double>(IDS_NS,"renew-percentage",
-            "Configures when the id pool manager will attempt to allocate a new id block",
+            "When the most-recently-reserved ID block has only this percentage of its total IDs remaining " +
+            "(expressed as a value between 0 and 1), Titan asynchronously begins reserving another block. " +
+            "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
 //    public static final String IDS_RENEW_BUFFER_PERCENTAGE_KEY = "renew-percentage";
 //    public static final double IDS_RENEW_BUFFER_PERCENTAGE_DEFAULT = 0.3; // 30 %
+
+    // ################ IDAUTHORITY ###################
+    // ################################################
+
+    //    public static final String STORAGE_NAMESPACE = "storage";
+    public static final ConfigNamespace IDAUTHORITY_NS = new ConfigNamespace(IDS_NS,"authority","Configuration options for graph element ID reservation/allocation");
+
+    /**
+     * The number of milliseconds the system waits for an id block application to be acknowledged by the storage backend.
+     * Also, the time waited after the application before verifying that the application was successful.
+     */
+    public static final ConfigOption<Duration> IDAUTHORITY_WAIT = new ConfigOption<Duration>(IDAUTHORITY_NS,"wait-time",
+            "The number of milliseconds the system waits for an ID block reservation to be acknowledged by the storage backend",
+            ConfigOption.Type.GLOBAL_OFFLINE, Duration.class, new StandardDuration(300L, TimeUnit.MILLISECONDS));
+//    public static final String IDAUTHORITY_WAIT_MS_KEY = "idauthority-wait-time";
+//    public static final long IDAUTHORITY_WAIT_MS_DEFAULT = 300;
+
+    /**
+     * Sets the strategy used by {@link ConsistentKeyIDAuthority} to avoid
+     * contention in ID block alloction between Titan instances concurrently
+     * sharing a single distributed storage backend.
+     */
+    // This is set to GLOBAL_OFFLINE as opposed to MASKABLE or GLOBAL to prevent mixing both global-randomized and local-manual modes within the same cluster
+    public static final ConfigOption<ConflictAvoidanceMode> IDAUTHORITY_CONFLICT_AVOIDANCE = new ConfigOption<ConflictAvoidanceMode>(IDAUTHORITY_NS,"conflict-avoidance-mode",
+            "This setting helps separate Titan instances sharing a single graph storage backend avoid contention when reserving ID blocks, " +
+            "increasing overall throughput.",
+            ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.NONE);
+
+    /**
+     * When Titan allocates IDs with {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
+     * enabled, it picks a random unique ID marker and attempts to allocate IDs
+     * from a partition using the marker. The ID markers function as
+     * subpartitions with each ID partition. If the attempt fails because that
+     * partition + uniqueid combination is already completely allocated, then
+     * Titan will generate a new random unique ID and try again. This controls
+     * the maximum number of attempts before Titan assumes the entire partition
+     * is allocated and fails the request. It must be set to at least 1 and
+     * should generally be set to 3 or more.
+     * <p/>
+     * This setting has no effect when {@link #IDAUTHORITY_RANDOMIZE_UNIQUEID}
+     * is disabled.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<Integer>(IDAUTHORITY_NS,"randomized-conflict-avoidance-retries",
+            "Number of times the system attempts attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
+            ConfigOption.Type.MASKABLE, 5);
+//    public static final String IDAUTHORITY_RETRY_COUNT_KEY = "idauthority-retries";
+//    public static final int IDAUTHORITY_RETRY_COUNT_DEFAULT = 20;
+
+    /**
+     * Configures the number of bits of Titan assigned ids that are reserved for a unique id marker that
+     * allows the id allocation to be scaled over multiple sub-clusters and to reduce race-conditions
+     * when a lot of Titan instances attempt to allocate ids at the same time (e.g. during parallel bulk loading)
+     *
+     * IMPORTANT: This should never ever, ever be modified from its initial value and ALL Titan instances must use the
+     * same value. Otherwise, data corruption will occur.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag-bits",
+            "Configures the number of bits of Titan-assigned element IDs that are reserved for the conflict avoidance tag",
+            ConfigOption.Type.FIXED, 5 , new Predicate<Integer>() {
+        @Override
+        public boolean apply(@Nullable Integer uniqueIdBitWidth) {
+            return uniqueIdBitWidth>=0 && uniqueIdBitWidth<=16;
+        }
+    });
+//    public static final String IDAUTHORITY_UNIQUE_ID_BITS_KEY = "idauthority-uniqueid-bits";
+//    public static final int IDAUTHORITY_UNIQUE_ID_BITS_DEFAULT = 0;
+
+    /**
+     * Unique id marker to be used by this Titan instance when allocating ids. The unique id marker
+     * must be non-negative and fit within the number of unique id bits configured.
+     * By assigning different unique id markers to individual Titan instances it can be assured
+     * that those instances don't conflict with one another when attempting to allocate new id blocks.
+     *
+     * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
+     */
+    public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<Integer>(IDAUTHORITY_NS,"conflict-avoidance-tag",
+            "Conflict avoidance tag to be used by this Titan instance when allocating IDs",
+            ConfigOption.Type.LOCAL, 0);
+//    public static final String IDAUTHORITY_UNIQUE_ID_KEY = "idauthority-uniqueid";
+//    public static final int IDAUTHORITY_UNIQUE_ID_DEFAULT = 0;
+
 
     // ############## External Index ######################
     // ################################################
@@ -845,7 +896,7 @@ public class GraphDatabaseConfiguration {
      * Default = {@literal #METRICS_PREFIX_DEFAULT}
      */
     public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<String>(METRICS_NS,"prefix",
-            "The default name prefix for Metrics reported by Titan",
+            "The default name prefix for Metrics reported by Titan.",
             ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
 //    public static final String METRICS_PREFIX_KEY = "prefix";
 
@@ -865,7 +916,7 @@ public class GraphDatabaseConfiguration {
      * <p/>
      * This option has no effect when {@link #BASIC_METRICS} is false.
      */
-    public static final ConfigOption<Boolean> MERGE_BASIC_METRICS = new ConfigOption<Boolean>(METRICS_NS,"merge-basic-metrics",
+    public static final ConfigOption<Boolean> METRICS_MERGE_STORES = new ConfigOption<Boolean>(METRICS_NS,"merge-stores",
             "Whether to aggregate measurements for the edge store, vertex index, edge index, and ID store",
             ConfigOption.Type.MASKABLE, true);
 //    public static final String MERGE_BASIC_METRICS_KEY = "merge-basic-metrics";
@@ -881,7 +932,7 @@ public class GraphDatabaseConfiguration {
      * configuration key absent or null disables the console reporter.
      */
     public static final ConfigOption<Duration> METRICS_CONSOLE_INTERVAL = new ConfigOption<Duration>(METRICS_CONSOLE_NS,"interval",
-            "Metrics console reporter interval in milliseconds",
+            "Time between Metrics reports printing to the console, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_CONSOLE_INTERVAL_KEY = "console.interval";
 //    public static final Long METRICS_CONSOLE_INTERVAL_DEFAULT = null;
@@ -893,7 +944,7 @@ public class GraphDatabaseConfiguration {
      * key absent or null disables the CSV reporter.
      */
     public static final ConfigOption<Duration> METRICS_CSV_INTERVAL = new ConfigOption<Duration>(METRICS_CSV_NS,"interval",
-            "Metrics CSV reporter interval in milliseconds",
+            "Time between dumps of CSV files containing Metrics data, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_CSV_INTERVAL_KEY = "csv.interval";
 //    public static final Long METRICS_CSV_INTERVAL_DEFAULT = null;
@@ -939,7 +990,7 @@ public class GraphDatabaseConfiguration {
      * applies its default value.
      */
     public static final ConfigOption<String> METRICS_JMX_AGENTID = new ConfigOption<String>(METRICS_JMX_NS,"agentid",
-            "The JMX agentId through which to report Metrics",
+            "The JMX agentId used by Metrics",
             ConfigOption.Type.MASKABLE, String.class);
 
 //    public static final String METRICS_JMX_AGENTID_KEY = "jmx.agentid";
@@ -953,7 +1004,7 @@ public class GraphDatabaseConfiguration {
      * configuration key absent or null disables the Slf4j reporter.
      */
     public static final ConfigOption<Duration> METRICS_SLF4J_INTERVAL = new ConfigOption<Duration>(METRICS_SLF4J_NS,"interval",
-            "Metrics Slf4j reporter interval in milliseconds",
+            "Time between slf4j logging reports of Metrics data, in milliseconds",
             ConfigOption.Type.MASKABLE, Duration.class);
 //    public static final String METRICS_SLF4J_INTERVAL_KEY = "slf4j.interval";
 //    public static final Long METRICS_SLF4J_INTERVAL_DEFAULT = null;
@@ -993,7 +1044,7 @@ public class GraphDatabaseConfiguration {
      * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
      */
     public static final ConfigOption<Duration> GANGLIA_INTERVAL = new ConfigOption<Duration>(METRICS_GANGLIA_NS,"interval",
-            "The number of milliseconds to wait between sending Metrics data",
+            "The number of milliseconds to wait between sending Metrics data to Ganglia",
             ConfigOption.Type.MASKABLE, Duration.class);
 
 //    public static final String GANGLIA_INTERVAL_KEY = "interval";
@@ -1059,7 +1110,8 @@ public class GraphDatabaseConfiguration {
      * <p/>
      */
     public static final ConfigOption<String> GANGLIA_UUID = new ConfigOption<String>(METRICS_GANGLIA_NS,"uuid",
-            "The host UUID to set on outgoing Ganglia datagrams",
+            "The host UUID to set on outgoing Ganglia datagrams. " +
+            "See https://github.com/ganglia/monitor-core/wiki/UUIDSources for information about this setting.",
             ConfigOption.Type.LOCAL, String.class);
 //    public static final String GANGLIA_UUID_KEY = "uuid";
 //    public static final UUID GANGLIA_UUID_DEFAULT = null;
@@ -1073,7 +1125,8 @@ public class GraphDatabaseConfiguration {
      * <p/>
      */
     public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS,"spoof",
-            "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair",
+            "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
+            "See http://sourceforge.net/apps/trac/ganglia/wiki/gmetric_spoofing for information about this setting.",
             ConfigOption.Type.MASKABLE, String.class, new Predicate<String>() {
         @Override
         public boolean apply(@Nullable String s) {
@@ -1150,12 +1203,12 @@ public class GraphDatabaseConfiguration {
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
-    private DefaultTypeMaker defaultTypeMaker;
+    private DefaultSchemaMaker defaultSchemaMaker;
     private Boolean propertyPrefetching;
     private boolean allowVertexIdSetting;
     private boolean logTransactions;
     private String metricsPrefix;
-    private String unknownIndexKeydName;
+    private String unknownIndexKeyName;
 
     private StoreFeatures storeFeatures = null;
 
@@ -1195,13 +1248,13 @@ public class GraphDatabaseConfiguration {
                 globalWrite.set(INITIAL_TITAN_VERSION,TitanConstants.VERSION);
 
                 // If partitioning is unspecified, specify it now
-                if (!localbc.has(IDS_PARTITION)) {
+                if (!localbc.has(CLUSTER_PARTITION)) {
                     StoreFeatures f = storeManager.getFeatures();
                     boolean part = f.isDistributed() && f.isKeyOrdered();
-                    globalWrite.set(IDS_PARTITION, part);
-                    log.info("Enabled ID partitioning", part);
+                    globalWrite.set(CLUSTER_PARTITION, part);
+                    log.info("Enabled partitioning", part);
                 } else {
-                    log.info("Disabled ID partitioning");
+                    log.info("Disabled partitioning");
                 }
 
                 globalWrite.freezeConfiguration();
@@ -1250,9 +1303,9 @@ public class GraphDatabaseConfiguration {
     private static String computeUniqueInstanceId(Configuration config) {
         final String suffix;
 
-        if (config.has(GraphDatabaseConfiguration.INSTANCE_RID_SHORT)) {
+        if (config.has(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX)) {
             suffix = LongEncoding.encode(config.get(
-                    GraphDatabaseConfiguration.INSTANCE_RID_SHORT));
+                    GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_SUFFIX));
         } else {
             suffix = ManagementFactory.getRuntimeMXBean().getName() + LongEncoding.encode(INSTANCE_COUNTER.incrementAndGet());
         }
@@ -1302,9 +1355,9 @@ public class GraphDatabaseConfiguration {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         batchLoading = configuration.get(STORAGE_BATCH);
-        defaultTypeMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
+        defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultTypeMaker = DisableDefaultTypeMaker.INSTANCE;
+        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
@@ -1322,7 +1375,7 @@ public class GraphDatabaseConfiguration {
         allowVertexIdSetting = configuration.get(ALLOW_SETTING_VERTEX_ID);
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
-        unknownIndexKeydName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UKNOWN_FIELD_NAME : null;
+        unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UKNOWN_FIELD_NAME : null;
 
         configureMetrics();
     }
@@ -1440,8 +1493,8 @@ public class GraphDatabaseConfiguration {
         return metricsPrefix;
     }
 
-    public DefaultTypeMaker getDefaultTypeMaker() {
-        return defaultTypeMaker;
+    public DefaultSchemaMaker getDefaultSchemaMaker() {
+        return defaultSchemaMaker;
     }
 
     public boolean allowVertexIdSetting() {
@@ -1456,8 +1509,8 @@ public class GraphDatabaseConfiguration {
         }
     }
 
-    public String getUnknownIndexKeydName() {
-        return unknownIndexKeydName;
+    public String getUnknownIndexKeyName() {
+        return unknownIndexKeyName;
     }
 
     public boolean hasLogTransactions() {
