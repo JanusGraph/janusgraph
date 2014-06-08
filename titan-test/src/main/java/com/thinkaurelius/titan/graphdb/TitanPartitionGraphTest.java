@@ -1,27 +1,37 @@
 package com.thinkaurelius.titan.graphdb;
 
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.olap.OLAPJobBuilder;
+import com.thinkaurelius.titan.core.olap.OLAPResult;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy;
+import com.thinkaurelius.titan.graphdb.fulgora.FulgoraBuilder;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
+import com.thinkaurelius.titan.olap.OLAPTest;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Vertex;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests graph and vertex partitioning
@@ -33,6 +43,11 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
 
     public abstract WriteConfiguration getBaseConfiguration();
+
+    protected <S> OLAPJobBuilder<S> getOLAPBuilder(StandardTitanGraph graph, Class<S> clazz) {
+        return new FulgoraBuilder<S>(graph);
+    }
+
 
     @Override
     public WriteConfiguration getConfiguration() {
@@ -52,7 +67,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testVertexPartitioning() {
+    public void testVertexPartitioning() throws Exception {
         PropertyKey gid = makeVertexIndexedUniqueKey("gid",Integer.class);
         PropertyKey sig = makeKey("sig",Integer.class);
         PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
@@ -67,6 +82,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         TitanVertex g = tx.addVertex("group");
         g.setProperty("gid", 1);
+        g.setProperty("sig",0);
         for (String n : names) g.addProperty("name",n);
         newTx();
         assertTrue(g.hasId());
@@ -91,7 +107,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         final int vPerTx = 10;
         List<Integer> partitions = new ArrayList<Integer>(numTx);
 
-        for (int t=0;t<numTx;t++) {
+        for (int t=1;t<=numTx;t++) {
             g = tx.getVertex(gId);
             assertNotNull(g);
             TitanVertex[] vs = new TitanVertex[vPerTx];
@@ -137,6 +153,29 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         assertEquals(numTx*vPerTx,Iterables.size(g.getEdges(Direction.OUT, "knows")));
         assertEquals(numTx*vPerTx,Iterables.size(g.getEdges(Direction.IN, "knows")));
         assertEquals(numTx*vPerTx*2,Iterables.size(g.getEdges(Direction.BOTH,"knows")));
+        assertEquals(numTx*vPerTx+1,Iterables.size(tx.getVertices()));
+
+        clopen();
+
+        //Test OLAP works with partitioned vertices
+        final OLAPJobBuilder<OLAPTest.Degree> builder = getOLAPBuilder(graph,OLAPTest.Degree.class);
+        OLAPResult<OLAPTest.Degree> degrees = OLAPTest.computeDegree(builder,"name","sig");
+        assertNotNull(degrees);
+        assertEquals(numTx*vPerTx+1,degrees.size());
+        for (Map.Entry<Long,OLAPTest.Degree> entry : degrees.entries()) {
+            long vid = entry.getKey();
+            OLAPTest.Degree degree = entry.getValue();
+            assertEquals(degree.in+degree.out,degree.both);
+            if (idManager.isPartitionedVertex(vid)) {
+                assertEquals(numTx*vPerTx,degree.in);
+                assertEquals(numTx*vPerTx,degree.out);
+                assertEquals(names.size(),degree.prop);
+            } else {
+                assertEquals(1,degree.in);
+                assertEquals(1,degree.out);
+                assertEquals(0,degree.prop);
+            }
+        }
     }
 
 

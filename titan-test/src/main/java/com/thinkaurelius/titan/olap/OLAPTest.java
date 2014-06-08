@@ -64,58 +64,9 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(numV*(numV+1),numE*2);
         clopen();
 
-        OLAPJobBuilder<Degree> builder = getOLAPBuilder(graph,Degree.class);
-        builder.setInitializer(new StateInitializer<Degree>() {
-            @Override
-            public Degree initialState() {
-                return new Degree();
-            }
-        });
-        builder.setNumProcessingThreads(1);
-        builder.setStateKey("degree");
-        builder.setJob(new OLAPJob() {
-            @Override
-            public Degree process(TitanVertex vertex) {
-                Degree d = vertex.getProperty("all");
-                assertNotNull(d);
-                Degree p = vertex.getProperty("values");
-                assertNotNull(p);
-                assertTrue(p.prop>0);
-                int numvals = vertex.getProperty("numvals");
-                assertEquals(numvals,p.prop);
-                d.add(p);
-                return d;
-            }
-        });
-        builder.addQuery().setName("all").edges(new Gather<Degree, Degree>() {
-                                                    @Override
-                                                    public Degree apply(Degree state, TitanEdge edge, Direction dir) {
-                                                        return new Degree(dir == Direction.IN ? 1 : 0, dir == Direction.OUT ? 1 : 0, 0);
-                                                    }
-                                                }, new Combiner<Degree>() {
-                                                    @Override
-                                                    public Degree combine(Degree m1, Degree m2) {
-                                                        m1.add(m2);
-                                                        return m1;
-                                                    }
-                                                }
-        );
-        builder.addQuery().keys("values").properties(new Function<TitanProperty, Degree>() {
-            @Nullable
-            @Override
-            public Degree apply(@Nullable TitanProperty titanProperty) {
-                return new Degree(0,0,1);
-            }
-        }, new Combiner<Degree>() {
-              @Override
-              public Degree combine(Degree m1, Degree m2) {
-                  m1.add(m2);
-                  return m1;
-              }
-          });
-        builder.addQuery().keys("numvals").properties();
         Stopwatch w = new Stopwatch().start();
-        OLAPResult<Degree> degrees = builder.execute().get(200, TimeUnit.SECONDS);
+        final OLAPJobBuilder<Degree> builder = getOLAPBuilder(graph,Degree.class);
+        OLAPResult<Degree> degrees = computeDegree(builder,"values","numvals");
         System.out.println("Execution time (ms) ["+numV+"|"+numE+"]: " + w.elapsed(TimeUnit.MILLISECONDS));
         assertNotNull(degrees);
         assertEquals(numV,degrees.size());
@@ -133,7 +84,60 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         assertEquals(numV*(numV+1),totalCount);
     }
 
-    public class Degree {
+    public static OLAPResult<Degree> computeDegree(final OLAPJobBuilder<Degree> builder, final String aggregatePropKey, final String checkPropKey) throws Exception {
+        builder.setInitializer(new StateInitializer<Degree>() {
+            @Override
+            public Degree initialState() {
+                return new Degree();
+            }
+        });
+        builder.setNumProcessingThreads(1);
+        builder.setStateKey("degree");
+        builder.setJob(new OLAPJob() {
+            @Override
+            public Degree process(TitanVertex vertex) {
+                Degree d = vertex.getProperty("all");
+                assertNotNull(d);
+                Degree p = vertex.getProperty(aggregatePropKey);
+                assertNotNull(p);
+                assertTrue(p.prop>=0);
+                assertNotNull(vertex.getProperty(checkPropKey));
+                d.add(p);
+                return d;
+            }
+        });
+        builder.addQuery().setName("all").edges(new Gather<Degree, Degree>() {
+                                                    @Override
+                                                    public Degree apply(Degree state, TitanEdge edge, Direction dir) {
+                                                        return new Degree(dir == Direction.IN ? 1 : 0, dir == Direction.OUT ? 1 : 0, 0);
+                                                    }
+                                                }, new Combiner<Degree>() {
+                                                    @Override
+                                                    public Degree combine(Degree m1, Degree m2) {
+                                                        m1.add(m2);
+                                                        return m1;
+                                                    }
+                                                }
+        );
+        builder.addQuery().keys(aggregatePropKey).properties(new Function<TitanProperty, Degree>() {
+                                                         @Nullable
+                                                         @Override
+                                                         public Degree apply(@Nullable TitanProperty titanProperty) {
+                                                             return new Degree(0,0,1);
+                                                         }
+                                                     }, new Combiner<Degree>() {
+                                                         @Override
+                                                         public Degree combine(Degree m1, Degree m2) {
+                                                             m1.add(m2);
+                                                             return m1;
+                                                         }
+                                                     });
+        builder.addQuery().keys(checkPropKey).properties();
+        return builder.execute().get(200, TimeUnit.SECONDS);
+    }
+
+
+    public static class Degree {
         public int in;
         public int out;
         public int both;
@@ -300,7 +304,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
         return ranks;
     }
 
-    static class PageRank {
+    public static class PageRank {
 
         private double edgeCount;
         private double oldPR;
