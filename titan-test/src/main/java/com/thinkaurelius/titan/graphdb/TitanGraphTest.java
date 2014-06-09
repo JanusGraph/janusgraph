@@ -1688,7 +1688,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         tx1.commit(); //Should commit fine
         try {
             tx2.commit();
-            fail();
+            fail("Storage backend does not abort conflicting transactions");
         } catch (TitanException e) {
             Throwable cause = e.getCause();
             //assertTrue(cause instanceof PermanentLockingException);
