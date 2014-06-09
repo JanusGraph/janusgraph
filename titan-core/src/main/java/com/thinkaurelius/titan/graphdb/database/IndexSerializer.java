@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
@@ -336,8 +337,10 @@ public class IndexSerializer {
                                             PropertyKey replaceKey, Object replaceValue) {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
-        indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,false,
+        if (indexAppliesTo(index,vertex)) {
+            indexMatches((InternalVertex)vertex,new RecordEntry[fields.length],matches,fields,0,false,
                                             replaceKey,new RecordEntry(0,replaceValue));
+        }
         return matches;
     }
 
@@ -345,11 +348,11 @@ public class IndexSerializer {
                                               boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         IndexRecords matches = new IndexRecords();
         IndexField[] fields = index.getFieldKeys();
-        indexMatches(vertex,new RecordEntry[fields.length],matches,fields,0,onlyLoaded,replaceKey,replaceValue);
+        indexMatches((InternalVertex)vertex,new RecordEntry[fields.length],matches,fields,0,onlyLoaded,replaceKey,replaceValue);
         return matches;
     }
 
-    private static void indexMatches(TitanVertex vertex, RecordEntry[] current, IndexRecords matches,
+    private static void indexMatches(InternalVertex vertex, RecordEntry[] current, IndexRecords matches,
                                      IndexField[] fields, int pos,
                                      boolean onlyLoaded, PropertyKey replaceKey, RecordEntry replaceValue) {
         if (pos>= fields.length) {
@@ -364,10 +367,10 @@ public class IndexSerializer {
             values = ImmutableList.of(replaceValue);
         } else {
             values = new ArrayList<RecordEntry>();
-            VertexCentricQueryBuilder qb = ((VertexCentricQueryBuilder)vertex.query()).noPartitionRestriction().type(key);
+            VertexCentricQueryBuilder qb = vertex.tx().query(vertex).noPartitionRestriction().type(key);
             if (onlyLoaded) qb.queryOnlyLoaded();
             for (TitanProperty p : qb.properties()) {
-                assert p.isNew() || p.isLoaded(); assert !onlyLoaded || p.isLoaded();
+                assert !onlyLoaded || p.isLoaded() || p.isRemoved();
                 values.add(new RecordEntry(p.getID(),p.getValue()));
             }
         }
@@ -428,7 +431,7 @@ public class IndexSerializer {
                     }
                 });
         ImmutableList<IndexQuery.OrderEntry> newOrders = IndexQuery.NO_ORDER;
-        if (!orders.isEmpty()) {
+        if (!orders.isEmpty() && GraphCentricQueryBuilder.indexCoversOrder(index,orders)) {
             ImmutableList.Builder<IndexQuery.OrderEntry> lb = ImmutableList.builder();
             for (int i = 0; i < orders.size(); i++) {
                 lb.add(new IndexQuery.OrderEntry(key2Field(index,orders.getKey(i)), orders.getOrder(i), orders.getKey(i).getDataType()));

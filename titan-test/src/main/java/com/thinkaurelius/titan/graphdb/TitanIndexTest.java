@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.testutil.TestUtil;
@@ -33,10 +34,10 @@ import static org.junit.Assert.*;
  */
 public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
-    public static final String INDEX = "index";
-    public static final String VINDEX = "vindex";
-    public static final String EINDEX = "eindex";
-    public static final String PINDEX = "pindex";
+    public static final String INDEX = GraphOfTheGodsFactory.INDEX_NAME;
+    public static final String VINDEX = "v"+INDEX;
+    public static final String EINDEX = "e"+INDEX;
+    public static final String PINDEX = "p"+INDEX;
 
 
     public final boolean supportsGeoPoint;
@@ -57,8 +58,18 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     @Rule
     public TestName methodName = new TestName();
 
+    /**
+     * Tests the {@link com.thinkaurelius.titan.example.GraphOfTheGodsFactory#load(com.thinkaurelius.titan.core.TitanGraph)}
+     * method used as the standard example that ships with Titan.
+     */
     @Test
-    public void testOpenClose() {
+    public void testGraphOfTheGods() {
+        GraphOfTheGodsFactory.load(graph);
+
+        assertEquals(12,Iterables.size(graph.getVertices()));
+        Vertex h = Iterables.getOnlyElement(graph.getVertices("name","hercules"));
+        assertEquals(30,h.getProperty("age"));
+        assertEquals(5,Iterables.size(h.getEdges(Direction.BOTH)));
     }
 
     @Test
@@ -303,7 +314,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         VertexLabel org = mgmt.makeVertexLabel("org").make();
 
-        TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).indexKey(name).buildExternalIndex(INDEX);
+        TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
+                indexKey(name,Mapping.STRING.getParameter()).buildExternalIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
                 indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildExternalIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
@@ -349,6 +361,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
             fail();
         } catch (IllegalArgumentException e) {}
 
+        finishSchema();
         clopen();
 
         // ########### INSPECTION & FAILURE (copied from above) ##############
@@ -405,34 +418,35 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         for (int i=0;i<strs.length;i++) strs2[i]=strs[i]+" "+strs[i];
         final int modulo = 5;
         assert numV%(modulo*strs.length*2)==0;
-        final int divisor = modulo*strs.length*2;
 
         for (int i=0;i<numV;i++) {
             TitanVertex v = tx.addVertex(i%2==0?person:org);
-            v.addProperty(name,strs[i]);
-            v.addProperty(text,strs[i]);
+            v.addProperty(name,strs[i%strs.length]);
+            v.addProperty(text,strs[i%strs.length]);
             v.addProperty(weight,(i%modulo)+0.5);
         }
 
         //########## QUERIES ################
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index2.getName());
+                numV/strs.length,new boolean[]{true,true},index2.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.DESC,index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has("label",Cmp.EQUAL,org.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index3.getName());
+                numV/strs.length,new boolean[]{true,true},index3.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,org.getName()).orderBy(weight,Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.DESC,index3.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has(weight,Cmp.EQUAL,2.5).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},index2.getName());
+                numV/(modulo*strs.length),new boolean[]{true,true},index2.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[2]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{false,true},index1.getName());
+                numV/strs.length,new boolean[]{false,true},index1.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[3]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
+                0,new boolean[]{false,true},index1.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{true,true},index1.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[1]).has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index1.getName(),index2.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[1]).has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.ASC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[2]).has(text,Text.CONTAINS,strs[2]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
+                numV/strs.length,new boolean[]{true,true},index1.getName(),index2.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.ASC),ElementCategory.VERTEX,
+                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
 
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
@@ -443,23 +457,25 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         //########## QUERIES (copied from above) ################
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index2.getName());
+                numV/strs.length,new boolean[]{true,true},index2.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.DESC,index2.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index2.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[3]).has("label",Cmp.EQUAL,org.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index3.getName());
+                numV/strs.length,new boolean[]{true,true},index3.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,org.getName()).orderBy(weight,Order.DESC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.DESC,index3.getName());
+                numV/strs.length,new boolean[]{true,true},weight,Order.DESC,index3.getName());
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]).has(weight,Cmp.EQUAL,2.5).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/divisor,new boolean[]{true,true},index2.getName());
+                numV/(modulo*strs.length),new boolean[]{true,true},index2.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[2]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{false,true},index1.getName());
+                numV/strs.length,new boolean[]{false,true},index1.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[3]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
+                0,new boolean[]{false,true},index1.getName());
         evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{true,true},index1.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[1]).has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},index1.getName(),index2.getName());
-        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[1]).has(text,Text.CONTAINS,strs[1]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.ASC),ElementCategory.VERTEX,
-                numV/strs.length/2,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[2]).has(text,Text.CONTAINS,strs[2]).has("label",Cmp.EQUAL,person.getName()),ElementCategory.VERTEX,
+                numV/strs.length,new boolean[]{true,true},index1.getName(),index2.getName());
+        evaluateQuery(tx.query().has(name,Cmp.EQUAL,strs[0]).has(text,Text.CONTAINS,strs[0]).has("label",Cmp.EQUAL,person.getName()).orderBy(weight,Order.ASC),ElementCategory.VERTEX,
+                numV/strs.length,new boolean[]{true,true},weight,Order.ASC,index1.getName(),index2.getName());
 
         evaluateQuery(tx.query().has(text,Text.CONTAINS,strs[0]),ElementCategory.VERTEX,
                 numV/strs.length,new boolean[]{false,true});
@@ -493,8 +509,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         for (int i=0;i<numV;i++) {
             TitanVertex v = tx.addVertex();
-            v.addProperty(name,strs[i]);
-            v.addProperty(text,strs[i]);
+            v.addProperty(name,strs[i%strs.length]);
+            v.addProperty(text,strs[i%strs.length]);
             v.addProperty(weight,(i%modulo)+0.5);
             v.addProperty(flag,true);
         }
@@ -627,7 +643,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
+        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("label","uid").has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
         assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").properties()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").properties()));
@@ -682,7 +698,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(graph.query().has("text",Text.CONTAINS,"lolipop").properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Cmp.EQUAL,strs[1]).properties()));
-        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
+        assertEquals(numV/strs.length*(strs.length-1),Iterables.size(graph.query().has("label","uid").has("name",Cmp.NOT_EQUAL,strs[2]).properties()));
         assertEquals(0,Iterables.size(graph.query().has("name",Cmp.EQUAL,"farm").properties()));
         assertEquals(numV/strs.length,Iterables.size(graph.query().has("name",Text.PREFIX,"ducks").properties()));
         assertEquals(numV/strs.length*2,Iterables.size(graph.query().has("name",Text.REGEX,"(.*)ducks(.*)").properties()));
@@ -721,14 +737,14 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(0,Iterables.size(graph.indexQuery(EINDEX,"e.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
 
         //Same queries for edges
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:ducks").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry)").edges()));
-        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").edges()));
-        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").edges()));
-        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").offset(10).edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).edges()));
-        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(10).edges()));
-        assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).edges()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:ducks").properties()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry)").properties()));
+        assertEquals(numV/strs.length,Iterables.size(graph.indexQuery(PINDEX,"p.text:(farm uncle berry) AND p.name:\"Uncle Berry has a farm\"").properties()));
+        assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").properties()));
+        assertEquals(numV/strs.length*2-10,Iterables.size(graph.indexQuery(PINDEX,"p.text:(beautiful are ducks)").offset(10).properties()));
+        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).properties()));
+        assertEquals(10,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(10).properties()));
+        assertEquals(0,Iterables.size(graph.indexQuery(PINDEX,"p.\"text\":(beautiful are ducks)").limit(10).offset(numV).properties()));
 
     }
 

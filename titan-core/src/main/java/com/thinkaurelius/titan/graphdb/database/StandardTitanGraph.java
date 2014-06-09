@@ -324,8 +324,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     // ################### WRITE #########################
 
-    public void assignID(InternalElement vertex) {
+    public void assignID(InternalRelation vertex) {
         idAssigner.assignID(vertex);
+    }
+
+    public void assignID(InternalVertex vertex, VertexLabel label) {
+        idAssigner.assignID(vertex,label);
     }
 
     public static boolean acquireLock(InternalRelation relation, int pos, boolean acquireLocksConfig) {
@@ -413,7 +417,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).equals(vertex)) {
-                            Entry entry = edgeSerializer.writeRelation(edge, pos, tx);
+                            Entry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
                             } else {

@@ -244,7 +244,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (config.isReadOnly())
             throw new UnsupportedOperationException("Cannot create new entities in read-only transaction");
         for (TitanVertex v : vertices) {
-            if (v.hasId() && idInspector.isUnmodifiableVertex(v.getID()))
+            if (v.hasId() && idInspector.isUnmodifiableVertex(v.getID()) && !v.isNew())
                 throw new IllegalArgumentException("Cannot modify unmodifiable vertex: "+v);
         }
         verifyAccess(vertices);
@@ -437,7 +437,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         if (vertexId != null) {
             vertex.setID(vertexId);
         } else if (config.hasAssignIDsImmediately()) {
-            graph.assignID(vertex);
+            graph.assignID(vertex,label);
         }
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
         if (label!=BaseVertexLabel.DEFAULT_VERTEXLABEL) { //Add label
@@ -748,7 +748,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             schemaVertex = new TitanSchemaVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.GenericSchemaType,temporaryIds.nextID()), ElementLifeCycle.New);
         }
 
-        graph.assignID(schemaVertex);
+        graph.assignID(schemaVertex, BaseVertexLabel.DEFAULT_VERTEXLABEL);
         Preconditions.checkArgument(schemaVertex.getID() > 0);
         if (schemaCategory.hasName()) addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(name));
         addProperty(schemaVertex, BaseKey.VertexExists, Boolean.TRUE);
@@ -775,11 +775,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
     public boolean containsRelationType(String name) {
         verifyOpen();
         if (SystemTypeManager.isSystemType(name)) return true;
-        name = TitanSchemaCategory.getRelationTypeName(name);
-        return (newTypeCache.containsKey(name) || graph.getSchemaCache().getSchemaId(name, this)!=null);
+        return getSchemaVertex(TitanSchemaCategory.getRelationTypeName(name))!=null;
     }
 
-    private TitanSchemaVertex getSchemaVertex(String schemaName) {
+    public TitanSchemaVertex getSchemaVertex(String schemaName) {
         Long schemaId = newTypeCache.get(schemaName);
         if (schemaId==null) schemaId=graph.getSchemaCache().getSchemaId(schemaName, this);
         if (schemaId != null) {
@@ -796,8 +795,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         RelationType type = SystemTypeManager.getSystemType(name);
         if (type!=null) return type;
 
-        name = TitanSchemaCategory.getRelationTypeName(name);
-        return (RelationType)getSchemaVertex(name);
+        return (RelationType)getSchemaVertex(TitanSchemaCategory.getRelationTypeName(name));
     }
 
     // this is critical path we can't allow anything heavier then assertion in here
@@ -857,8 +855,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         verifyOpen();
         if (BaseVertexLabel.DEFAULT_VERTEXLABEL.getName().equals(name)) return true;
 
-        name = TitanSchemaCategory.VERTEXLABEL.getSchemaName(name);
-        return (newTypeCache.containsKey(name) || graph.getSchemaCache().getSchemaId(name, this)!=null);
+        return getSchemaVertex(TitanSchemaCategory.VERTEXLABEL.getSchemaName(name))!=null;
     }
 
     @Override
@@ -867,8 +864,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         if (BaseVertexLabel.DEFAULT_VERTEXLABEL.getName().equals(name)) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
 
-        name = TitanSchemaCategory.getRelationTypeName(name);
-        VertexLabel vlabel = (VertexLabel)getSchemaVertex(name);
+        VertexLabel vlabel = (VertexLabel)getSchemaVertex(TitanSchemaCategory.VERTEXLABEL.getSchemaName(name));
 
         if (vlabel==null) {
             vlabel = config.getAutoSchemaMaker().makeVertexLabel(makeVertexLabel(name));
@@ -887,7 +883,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
      */
 
     public VertexCentricQueryBuilder query(TitanVertex vertex) {
-        return new VertexCentricQueryBuilder((InternalVertex) vertex);
+        return new VertexCentricQueryBuilder(((InternalVertex) vertex).it());
     }
 
     @Override
@@ -1150,6 +1146,8 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
                 return vertexIDConversionFct;
             case EDGE:
                 return edgeIDConversionFct;
+            case PROPERTY:
+                return propertyIDConversionFct;
             default:
                 throw new IllegalArgumentException("Unexpected result type: " + elementCategory);
         }
@@ -1169,7 +1167,16 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         public TitanEdge apply(@Nullable Object id) {
             Preconditions.checkNotNull(id);
             Preconditions.checkArgument(id instanceof RelationIdentifier);
-            return getEdge(id);
+            return ((RelationIdentifier)id).findEdge(StandardTitanTx.this);
+        }
+    };
+
+    private final Function<Object, TitanProperty> propertyIDConversionFct = new Function<Object, TitanProperty>() {
+        @Override
+        public TitanProperty apply(@Nullable Object id) {
+            Preconditions.checkNotNull(id);
+            Preconditions.checkArgument(id instanceof RelationIdentifier);
+            return ((RelationIdentifier)id).findProperty(StandardTitanTx.this);
         }
     };
 

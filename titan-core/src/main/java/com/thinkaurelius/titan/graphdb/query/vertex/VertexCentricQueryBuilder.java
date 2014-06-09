@@ -48,7 +48,6 @@ public class VertexCentricQueryBuilder extends AbstractVertexCentricQueryBuilder
     public VertexCentricQueryBuilder(InternalVertex v) {
         super(v.tx());
         Preconditions.checkNotNull(v);
-        Preconditions.checkArgument(!v.isRemoved(),"Cannot access a removed vertex: %s",v);
         this.vertex = v;
     }
 

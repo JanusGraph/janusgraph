@@ -108,12 +108,12 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         v2 = tx2.getVertex(id2);
         for (TitanProperty prop : v1.getProperties(name)) {
             if (features.hasTimestamps()) {
-                Timestamp t = prop.getProperty("_timestamp");
+                Timestamp t = prop.getProperty("$timestamp");
                 assertEquals(100,t.sinceEpoch(unit));
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
             }
             if (features.hasTTL()) {
-                Duration d = prop.getProperty("_ttl");
+                Duration d = prop.getProperty("$ttl");
                 assertEquals(0l,d.getLength(unit));
                 assertTrue(d.isZeroLength());
             }
@@ -236,7 +236,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         PropertyKey weight = makeKey("weight",Decimal.class);
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).cardinality(Cardinality.SET).make();
         PropertyKey value = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
-        PropertyKey valuef = mgmt.makePropertyKey("value").dataType(Integer.class).cardinality(Cardinality.LIST).make();
+        PropertyKey valuef = mgmt.makePropertyKey("valuef").dataType(Integer.class).cardinality(Cardinality.LIST).make();
         mgmt.setConsistency(valuef,ConsistencyModifier.FORK);
 
         EdgeLabel em = mgmt.makeEdgeLabel("em").multiplicity(Multiplicity.MULTI).make();
@@ -276,7 +276,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
 
         newTx();
         v = tx.getVertex(vid);
-        assertEquals(6.0,v.getProperty("weight"));
+        assertEquals(6.0,v.<Decimal>getProperty("weight").doubleValue(),0.00001);
         TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
         assertEquals(wintx,p.getProperty("sig"));
         p = Iterables.getOnlyElement(v.getProperties("name"));
@@ -303,7 +303,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
         e = (TitanEdge)Iterables.getOnlyElement(v.getEdges(Direction.OUT,"em"));
         assertEquals(wintx,e.getProperty("sig"));
         assertEquals(rs[4].getID(),e.getID());
-        for (Edge ee : v.getEdges(Direction.OUT,"valuef")) {
+        for (Edge ee : v.getEdges(Direction.OUT,"emf")) {
             assertNotEquals(rs[5].getID(),ee.getId());
             assertEquals(uid,ee.getVertex(Direction.IN).getId());
         }
@@ -313,7 +313,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
     private void processTx(TitanTransaction tx, int txid, long vid, long uid) {
         TitanVertex v = tx.getVertex(vid);
         TitanVertex u = tx.getVertex(uid);
-        assertEquals(5.0,v.getProperty("weight"));
+        assertEquals(5.0,v.<Decimal>getProperty("weight").doubleValue(),0.00001);
         TitanProperty p = Iterables.getOnlyElement(v.getProperties("weight"));
         assertEquals(1,p.getProperty("sig"));
         sign(v.addProperty("weight",6.0),txid);

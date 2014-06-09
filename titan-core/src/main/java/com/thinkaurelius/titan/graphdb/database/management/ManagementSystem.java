@@ -269,9 +269,14 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public Iterable<RelationTypeIndex> getRelationIndexes(RelationType type) {
-        assert type instanceof InternalRelationType;
-        return Iterables.transform(((InternalRelationType) type).getRelationIndexes(),new Function<InternalRelationType, RelationTypeIndex>() {
+    public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
+        Preconditions.checkArgument(type!=null && type instanceof InternalRelationType,"Invalid relation type provided: %s",type);
+        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), new Predicate<InternalRelationType>() {
+            @Override
+            public boolean apply(@Nullable InternalRelationType internalRelationType) {
+                return !type.equals(internalRelationType);
+            }
+        }),new Function<InternalRelationType, RelationTypeIndex>() {
             @Nullable
             @Override
             public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
@@ -285,11 +290,9 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
-        //TODO: Use SchemaCache since this will be called frequently
-        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.GRAPHINDEX.getSchemaName(name)),null);
+        TitanSchemaVertex v = transaction.getSchemaVertex(TitanSchemaCategory.GRAPHINDEX.getSchemaName(name));
         if (v==null) return null;
-        assert v instanceof TitanSchemaVertex;
-        return ((TitanSchemaVertex)v).asIndexType();
+        return v.asIndexType();
     }
 
     @Override
@@ -360,6 +363,8 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(indexType instanceof ExternalIndexType,"Can only add keys to an external index, not %s",index.getName());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
+        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
+                "Can only index single-valued property keys on vertices [%s]",key);
         Preconditions.checkArgument(key.isNew(),"Can only index new keys (current limitation)");
         TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
 
@@ -397,7 +402,8 @@ public class ManagementSystem implements TitanManagement {
     private TitanGraphIndex createInternalIndex(String indexName, ElementCategory elementCategory, boolean unique, TitanSchemaType constraint, PropertyKey... keys) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
-        Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index");
+        Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index [%s]",indexName);
+        Preconditions.checkArgument(!unique || elementCategory==ElementCategory.VERTEX,"Unique indexes can only be created on vertices [%s]",indexName);
         boolean allSingleKeys = true;
         boolean oneNewKey = false;
         for (PropertyKey key : keys) {

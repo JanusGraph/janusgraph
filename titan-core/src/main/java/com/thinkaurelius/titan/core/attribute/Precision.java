@@ -19,6 +19,7 @@ public class Precision extends AbstractDecimal {
     public static final Precision MIN_VALUE = new Precision(minDoubleValue(DECIMALS));
     public static final Precision MAX_VALUE = new Precision(maxDoubleValue(DECIMALS));
 
+    private Precision() {}
 
     public Precision(double value) {
         super(value, DECIMALS);

@@ -32,6 +32,15 @@ public class InMemoryGraphTest extends TitanGraphTest {
     }
 
     @Override
+    public void testDataTypes() {}
+
+    @Override
+    public void testForceIndexUsage() {}
+
+    @Override
+    public void testAutomaticTypeCreation() {}
+
+    @Override
     public void simpleLogTest() {}
 
 }

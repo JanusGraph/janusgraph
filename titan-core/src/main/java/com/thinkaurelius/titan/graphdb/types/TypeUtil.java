@@ -31,11 +31,12 @@ public class TypeUtil {
         InternalRelationType type = (InternalRelationType)key;
         for (IndexType index : type.getKeyIndexes()) {
             if (index.getElement()== ElementCategory.VERTEX && index.isInternalIndex()) {
-                InternalIndexType iIndex = (InternalIndexType)index;
-                if (iIndex.getFieldKeys().length==1) {
-                    assert iIndex.getFieldKeys()[0].getFieldKey().equals(key);
-                    return true;
-                }
+                if (index.indexesKey(key)) return true;
+//                InternalIndexType iIndex = (InternalIndexType)index;
+//                if (iIndex.getFieldKeys().length==1) {
+//                    assert iIndex.getFieldKeys()[0].getFieldKey().equals(key);
+//                    return true;
+//                }
             }
         }
         return false;

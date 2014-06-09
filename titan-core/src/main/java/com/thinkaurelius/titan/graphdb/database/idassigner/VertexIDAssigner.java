@@ -144,13 +144,23 @@ public class VertexIDAssigner {
         idPools.clear();
     }
 
-    public void assignID(InternalElement element) {
+    public void assignID(InternalRelation relation) {
+        assignID(relation,null);
+    }
+
+    public void assignID(InternalVertex vertex, VertexLabel label) {
+        Preconditions.checkArgument(vertex!=null && label!=null);
+        assignID(vertex,getVertexIDType(label));
+    }
+
+
+    private void assignID(InternalElement element, IDManager.VertexIDType vertexIDType) {
         for (int attempt = 0; attempt < MAX_PARTITION_RENEW_ATTEMPTS; attempt++) {
             long partitionID = -1;
             if (element instanceof TitanSchemaVertex) {
                 partitionID = IDManager.SCHEMA_PARTITION;
             } else if (element instanceof TitanVertex) {
-                if (((TitanVertex)element).getVertexLabel().isPartitioned())
+                if (vertexIDType== IDManager.VertexIDType.PartitionedVertex)
                     partitionID = IDManager.PARTITIONED_VERTEX_PARTITION;
                 else
                     partitionID = placementStrategy.getPartition(element);
@@ -169,7 +179,7 @@ public class VertexIDAssigner {
                 }
             }
             try {
-                assignID(element, partitionID);
+                assignID(element, partitionID, vertexIDType);
             } catch (IDPoolExhaustedException e) {
                 continue; //try again on a different partition
             }
@@ -226,7 +236,7 @@ public class VertexIDAssigner {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        assignID(vertex);
+                        assignID(vertex, getVertexIDType(vertex));
                     }
                 }
                 assignID(relation);
@@ -240,7 +250,7 @@ public class VertexIDAssigner {
                     if (!vertex.hasId()) {
                         assert !(vertex instanceof TitanSchemaVertex); //Those are assigned ids immediately in the transaction
                         if (vertex.getVertexLabel().isPartitioned())
-                            assignID(vertex); //Assign partitioned vertex ids immediately
+                            assignID(vertex, getVertexIDType(vertex)); //Assign partitioned vertex ids immediately
                         else
                             assignments.put(vertex, PartitionAssignment.EMPTY);
                     }
@@ -254,7 +264,7 @@ public class VertexIDAssigner {
                 while (iter.hasNext()) {
                     Map.Entry<InternalVertex, PartitionAssignment> entry = iter.next();
                     try {
-                        assignID(entry.getKey(), entry.getValue().getPartitionID());
+                        assignID(entry.getKey(), entry.getValue().getPartitionID(), getVertexIDType(entry.getKey()));
                         Preconditions.checkArgument(entry.getKey().hasId());
                     } catch (IDPoolExhaustedException e) {
                         if (leftOvers == null) leftOvers = new HashMap<InternalVertex, PartitionAssignment>();
@@ -283,14 +293,14 @@ public class VertexIDAssigner {
         else return idManager.getPartitionId(vid);
     }
 
-    private void assignID(final InternalElement element, final long partitionIDl) {
+    private void assignID(final InternalElement element, final long partitionIDl, final IDManager.VertexIDType userVertexIDType) {
         Preconditions.checkNotNull(element);
         Preconditions.checkArgument(!element.hasId());
+        Preconditions.checkArgument((element instanceof TitanRelation) ^ (userVertexIDType!=null));
         Preconditions.checkArgument(partitionIDl >= 0 && partitionIDl < partitionIdBound, partitionIDl);
         final int partitionID = (int) partitionIDl;
 
         long count;
-        IDManager.VertexIDType userVertexIDType = (element instanceof TitanVertex)?getVertexIDType((TitanVertex)element):null;
         if (element instanceof TitanSchemaVertex) {
             Preconditions.checkArgument(partitionID==IDManager.SCHEMA_PARTITION);
             count = schemaIdPool.nextID();
@@ -328,27 +338,26 @@ public class VertexIDAssigner {
             }
         }
 
-        long vertexId;
+        long elementId;
         if (element instanceof InternalRelation) {
-            vertexId = idManager.getRelationID(count, partitionID);
+            elementId = idManager.getRelationID(count, partitionID);
         } else if (element instanceof PropertyKey) {
-            vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
+            elementId = idManager.getSchemaId(IDManager.VertexIDType.UserPropertyKey,count);
         } else if (element instanceof EdgeLabel) {
-            vertexId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
+            elementId = idManager.getSchemaId(IDManager.VertexIDType.UserEdgeLabel, count);
         } else if (element instanceof VertexLabel) {
-            vertexId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
+            elementId = idManager.getSchemaId(IDManager.VertexIDType.VertexLabel, count);
         } else if (element instanceof TitanSchemaVertex) {
-            vertexId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
+            elementId = idManager.getSchemaId(IDManager.VertexIDType.GenericSchemaType,count);
         } else {
-            vertexId = idManager.getVertexID(count, partitionID, userVertexIDType);
+            elementId = idManager.getVertexID(count, partitionID, userVertexIDType);
         }
 
-        Preconditions.checkArgument(vertexId >= 0);
-        element.setID(vertexId);
+        Preconditions.checkArgument(elementId >= 0);
+        element.setID(elementId);
     }
 
-    private static IDManager.VertexIDType getVertexIDType(TitanVertex v) {
-        VertexLabel vlabel = v.getVertexLabel();
+    private static IDManager.VertexIDType getVertexIDType(VertexLabel vlabel) {
         if (vlabel.isPartitioned()) {
             return IDManager.VertexIDType.PartitionedVertex;
         } else if (vlabel.isStatic()) {
@@ -356,6 +365,10 @@ public class VertexIDAssigner {
         } else {
             return IDManager.VertexIDType.NormalVertex;
         }
+    }
+
+    private static IDManager.VertexIDType getVertexIDType(TitanVertex v) {
+        return getVertexIDType(v.getVertexLabel());
     }
 
     private class SimpleVertexIDBlockSizer implements IDBlockSizer {

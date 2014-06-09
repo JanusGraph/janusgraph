@@ -96,7 +96,13 @@ public class EdgeSerializer implements RelationReader {
         if (relationType.isEdgeLabel()) {
             long otherVertexId;
             if (multiplicity.isConstrained()) {
-                otherVertexId = VariableLong.readPositive(in);
+                if (multiplicity.isUnique(dir)) {
+                    otherVertexId = VariableLong.readPositive(in);
+                } else {
+                    in.movePositionTo(data.getValuePosition());
+                    otherVertexId = VariableLong.readPositiveBackward(in);
+                    in.movePositionTo(data.getValuePosition());
+                }
                 relationId = VariableLong.readPositive(in);
             } else {
                 in.movePositionTo(data.getValuePosition());
@@ -256,7 +262,7 @@ public class EdgeSerializer implements RelationReader {
                     valuePosition = out.getPosition();
                     VariableLong.writePositive(out, otherVertexId);
                 } else {
-                    VariableLong.writePositive(out, otherVertexId);
+                    VariableLong.writePositiveBackward(out, otherVertexId);
                     valuePosition = out.getPosition();
                 }
                 VariableLong.writePositive(out, relationId);
@@ -422,9 +428,9 @@ public class EdgeSerializer implements RelationReader {
 
                 if (i>=sortKeyIDs.length) {
                     assert !type.getMultiplicity().isUnique(dir);
-                    assert (t instanceof ImplicitKey) && (t==ImplicitKey.ID || t==ImplicitKey.ADJACENT_ID);
+                    assert (t instanceof ImplicitKey) && (t==ImplicitKey.TITANID || t==ImplicitKey.ADJACENT_ID);
                     assert t!=ImplicitKey.ADJACENT_ID || (i==sortKeyIDs.length);
-                    assert t!=ImplicitKey.ID || (!type.getMultiplicity().isConstrained() &&
+                    assert t!=ImplicitKey.TITANID || (!type.getMultiplicity().isConstrained() &&
                                                   (i==sortKeyIDs.length && t.isPropertyKey() || i==sortKeyIDs.length+1 && t.isEdgeLabel() ));
                     assert colStart.getPosition()==colEnd.getPosition();
                     assert interval==null || interval.isPoint();
@@ -439,11 +445,8 @@ public class EdgeSerializer implements RelationReader {
                     break;
                 }
                 if (interval.isPoint()) {
-                    if (t==ImplicitKey.ADJACENT_ID && type.getMultiplicity().isConstrained()) {
-                        VariableLong.writePositive(colStart, (Long)interval.getStart());
-                        VariableLong.writePositive(colEnd, (Long)interval.getEnd());
-                    } else if (t==ImplicitKey.ID || t==ImplicitKey.ADJACENT_ID) {
-                        assert !type.getMultiplicity().isConstrained();
+                    if (t==ImplicitKey.TITANID || t==ImplicitKey.ADJACENT_ID) {
+                        assert !type.getMultiplicity().isUnique(dir);
                         VariableLong.writePositiveBackward(colStart, (Long)interval.getStart());
                         VariableLong.writePositiveBackward(colEnd, (Long)interval.getEnd());
                     } else {
