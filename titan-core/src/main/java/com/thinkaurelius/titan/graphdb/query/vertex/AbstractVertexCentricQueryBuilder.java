@@ -410,14 +410,14 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     protected List<InternalVertex> allRepresentatives(InternalVertex partitionedVertex) {
         if (hasAllSingleKeys()) {
-            ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
+            return ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
         }
         return Arrays.asList(tx.getAllRepresentatives(partitionedVertex,restrict2Partitions));
     }
 
 
     protected final boolean isPartitionedVertex(InternalVertex vertex) {
-        return tx.isPartitionedVertex(vertex) && !vertex.isNew();
+        return tx.isPartitionedVertex(vertex);
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {

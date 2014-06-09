@@ -40,8 +40,10 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
         switch (pos) {
             case 0:
                 start = vertex;
+                break;
             case 1:
                 end = vertex;
+                break;
             default:
                 throw new IllegalArgumentException("Invalid position: " + pos);
         }

@@ -68,6 +68,9 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testVertexPartitioning() throws Exception {
+        Object[] options = {option(GraphDatabaseConfiguration.IDS_FLUSH),false};
+        clopen(options);
+
         PropertyKey gid = makeVertexIndexedUniqueKey("gid",Integer.class);
         PropertyKey sig = makeKey("sig",Integer.class);
         PropertyKey name = mgmt.makePropertyKey("name").cardinality(Cardinality.LIST).dataType(String.class).make();
@@ -78,12 +81,21 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
 
         finishSchema();
         final IDManager idManager = graph.getIDManager();
+        Set<Long> hashs = Sets.newHashSet();
+        for (long i=1;i<idManager.getPartitionBound()*2;i++) hashs.add(idManager.getPartitionHashForId(i));
+        assertTrue(hashs.size()>idManager.getPartitionBound()/2);
+        assertNotEquals(idManager.getPartitionHashForId(101),idManager.getPartitionHashForId(102));
+
         final Set<String> names = ImmutableSet.of("Marko","Dan","Stephen","Daniel","Josh","Thad","Pavel","Matthias");
 
         TitanVertex g = tx.addVertex("group");
         g.setProperty("gid", 1);
         g.setProperty("sig",0);
-        for (String n : names) g.addProperty("name",n);
+        for (String n : names) {
+            g.addProperty("name",n);
+        }
+        assertEquals(1,g.getProperty("gid"));
+        assertEquals(names.size(),Iterables.size(g.getProperties("name")));
         newTx();
         assertTrue(g.hasId());
         long gId = g.getID();
@@ -92,17 +104,21 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         final int canonicalPartition = getPartitionID(g,idManager);
         g = tx.getVertex(gId);
         assertEquals(g,Iterables.getOnlyElement(tx.query().has("gid",1).vertices()));
+        assertEquals(1,g.getProperty("gid"));
+        assertEquals(names.size(),Iterables.size(g.getProperties("name")));
+
         //Verify that properties are distributed correctly
         TitanProperty p = Iterables.getOnlyElement(g.getProperties("gid"));
         assertEquals(canonicalPartition,getPartitionID(p,idManager));
         Set<Integer> propPartitions = Sets.newHashSet();
         for (TitanProperty n : g.getProperties("name")) {
-            propPartitions.add(getPartitionID(n,idManager));
+            propPartitions.add(getPartitionID(n.getVertex(),idManager));
         }
         //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
         assertTrue(propPartitions.size()>=3);
 
-        newTx();
+        clopen(options);
+
         final int numTx = 100;
         final int vPerTx = 10;
         List<Integer> partitions = new ArrayList<Integer>(numTx);
@@ -140,6 +156,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
                 }
                 assertEquals(3,numRels);
             }
+            partitions.add(partition);
             txx.commit();
         }
         //Verify spread across partitions; this number is a pessimistic lower bound but might fail since it is probabilistic
@@ -155,7 +172,7 @@ public abstract class TitanPartitionGraphTest extends TitanGraphBaseTest {
         assertEquals(numTx*vPerTx*2,Iterables.size(g.getEdges(Direction.BOTH,"knows")));
         assertEquals(numTx*vPerTx+1,Iterables.size(tx.getVertices()));
 
-        clopen();
+        clopen(options);
 
         //Test OLAP works with partitioned vertices
         final OLAPJobBuilder<OLAPTest.Degree> builder = getOLAPBuilder(graph,OLAPTest.Degree.class);

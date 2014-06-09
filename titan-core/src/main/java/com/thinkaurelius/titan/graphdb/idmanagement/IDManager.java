@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -506,7 +507,14 @@ public class IDManager {
 
     public long getPartitionHashForId(long id) {
         Preconditions.checkArgument(id>0);
-        return Long.valueOf(id).hashCode() & (partitionIDBound-1);
+        long result = 0;
+        int offset = 0;
+        while (offset<Long.SIZE) {
+            result = result ^ ((id>>>offset) & (partitionIDBound-1));
+            offset+=partitionBits;
+        }
+        assert result>=0 && result<partitionIDBound;
+        return result;
     }
 
     private long getCanonicalVertexIdFromCount(long count) {
@@ -518,6 +526,10 @@ public class IDManager {
         Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
         long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
         return getCanonicalVertexIdFromCount(count);
+    }
+
+    public boolean isCanonicalVertexId(long partitionVertexId) {
+        return partitionVertexId==getCanonicalVertexId(partitionVertexId);
     }
 
     public long getPartitionedVertexId(long partitionedVertexId, long otherPartition) {

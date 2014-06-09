@@ -166,10 +166,10 @@ public class VertexIDAssigner {
                     partitionID = placementStrategy.getPartition(element);
             } else if (element instanceof InternalRelation) {
                 InternalRelation relation = (InternalRelation)element;
-                if (attempt < relation.getArity()) { //On the first attempts, try to use partition of incident vertices
+                if (attempt < relation.getLen()) { //On the first attempts, try to use partition of incident vertices
                     InternalVertex incident = relation.getVertex(attempt);
                     Preconditions.checkArgument(incident.hasId());
-                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.getID())) {
+                    if (!IDManager.VertexIDType.PartitionedVertex.is(incident.getID()) || relation.isProperty()) {
                         partitionID = getPartitionID(incident);
                     } else {
                         continue;
@@ -189,7 +189,7 @@ public class VertexIDAssigner {
             if (element instanceof InternalRelation) {
                 InternalRelation relation = (InternalRelation)element;
                 long move2Partition = -1;
-                for (int pos = 0; pos < relation.getArity(); pos++) {
+                for (int pos = 0; pos < relation.getLen(); pos++) {
                     InternalVertex incident = relation.getVertex(pos);
                     if (idManager.isPartitionedVertex(incident.getID())) {
                         if (relation.isProperty()) {
@@ -204,7 +204,7 @@ public class VertexIDAssigner {
                         } else {
                             assert relation.isEdge();
                             InternalVertex other = relation.getVertex((pos+1)%2);
-                            if (idManager.isPartitionedVertex(other.getID())) {
+                            if (!idManager.isPartitionedVertex(other.getID())) {
                                 //It's an edge and one of its end points is not a partitioned vertex => make sure the partitioned
                                 //vertex representative has the same partition as the other vertex
                                 move2Partition = getPartitionID(other);
@@ -219,7 +219,7 @@ public class VertexIDAssigner {
                 if (move2Partition>=0) {
                     for (int pos = 0; pos < relation.getArity(); pos++) {
                         InternalVertex incident = relation.getVertex(pos);
-                        if (idManager.isPartitionedVertex(incident.getID())) {
+                        if (idManager.isPartitionedVertex(incident.getID()) && idManager.getPartitionId(incident.getID())!=move2Partition) {
                             ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, move2Partition));
                         }
                     }

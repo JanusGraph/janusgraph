@@ -98,12 +98,10 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
             @Override
             public Degree process(TitanVertex vertex) {
                 Degree d = vertex.getProperty("all");
-                assertNotNull(d);
+                if (d==null) d = new Degree();
                 Degree p = vertex.getProperty(aggregatePropKey);
-                assertNotNull(p);
-                assertTrue(p.prop>=0);
-                assertNotNull(vertex.getProperty(checkPropKey));
-                d.add(p);
+                if (checkPropKey!=null) assertNotNull(vertex.getProperty(checkPropKey));
+                if (p!=null) d.add(p);
                 return d;
             }
         });
@@ -133,7 +131,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                                                              return m1;
                                                          }
                                                      });
-        builder.addQuery().keys(checkPropKey).properties();
+        if (checkPropKey!=null) builder.addQuery().keys(checkPropKey).properties();
         return builder.execute().get(200, TimeUnit.SECONDS);
     }
 

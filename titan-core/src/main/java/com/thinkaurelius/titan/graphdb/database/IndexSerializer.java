@@ -252,12 +252,12 @@ public class IndexSerializer {
         return updates;
     }
 
-    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedRelations) {
-        if (updatedRelations.isEmpty()) return Collections.EMPTY_LIST;
+    public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
+        if (updatedProperties.isEmpty()) return Collections.EMPTY_LIST;
         Set<IndexUpdate> updates = Sets.newHashSet();
 
-        for (InternalRelation rel : updatedRelations) {
-            if (!rel.isProperty()) continue;
+        for (InternalRelation rel : updatedProperties) {
+            assert rel.isProperty();
             TitanProperty p = (TitanProperty)rel;
             assert rel.isNew() || rel.isRemoved(); assert rel.getVertex(0).equals(vertex);
             IndexUpdate.Type updateType = getUpateType(rel);

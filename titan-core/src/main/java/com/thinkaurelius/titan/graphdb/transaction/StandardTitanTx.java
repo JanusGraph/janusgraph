@@ -383,11 +383,14 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             Preconditions.checkArgument(idInspector.isSchemaVertexId(vertexid) || idInspector.isUserVertexId(vertexid), "Not a valid vertex id: %s", vertexid);
 
             byte lifecycle = ElementLifeCycle.Loaded;
+            long canonicalVertexId = idInspector.isPartitionedVertex(vertexid)?idManager.getCanonicalVertexId(vertexid):vertexid;
             if (verifyExistence) {
-                long queryVertexId = vertexid;
-                if (idInspector.isPartitionedVertex(vertexid)) queryVertexId = idManager.getCanonicalVertexId(vertexid);
-                if (graph.edgeQuery(queryVertexId, graph.vertexExistenceQuery, txHandle).isEmpty())
+                if (graph.edgeQuery(canonicalVertexId, graph.vertexExistenceQuery, txHandle).isEmpty())
                     lifecycle = ElementLifeCycle.Removed;
+            }
+            if (canonicalVertexId!=vertexid) {
+                //Take lifecycle from canonical representative
+                lifecycle = getExistingVertex(canonicalVertexId).getLifeCycle();
             }
 
             InternalVertex vertex = null;
@@ -411,11 +414,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
             } else if (idInspector.isGenericSchemaVertexId(vertexid)) {
                 vertex = new TitanSchemaVertex(StandardTitanTx.this,vertexid, lifecycle);
             } else if (idInspector.isUserVertexId(vertexid)) {
-                if (idInspector.isPartitionedVertex(vertexid)) {
-                    throw new UnsupportedOperationException();
-                } else {
-                    vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
-                }
+                vertex = new CacheVertex(StandardTitanTx.this, vertexid, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognized");
             return vertex;
         }
@@ -436,7 +435,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         StandardVertex vertex = new StandardVertex(this, IDManager.getTemporaryVertexID(IDManager.VertexIDType.NormalVertex, temporaryIds.nextID()), ElementLifeCycle.New);
         if (vertexId != null) {
             vertex.setID(vertexId);
-        } else if (config.hasAssignIDsImmediately()) {
+        } else if (config.hasAssignIDsImmediately() || label.isPartitioned()) {
             graph.assignID(vertex,label);
         }
         addProperty(vertex, BaseKey.VertexExists, Boolean.TRUE);
