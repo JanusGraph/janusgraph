@@ -21,7 +21,7 @@ Titan-Hadoop is designed to support global graph traversals over massive-scale g
 Introduction to Hadoop MapReduce
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-image::hadoop-logo.jpg[]
+image:hadoop-logo.jpg[]
 
 http://hadoop.apache.org[Hadoop] is a distributed storage and processing system that greatly simplifies the creation of distributed computing jobs. The default storage layer for Hadoop is http://hadoop.apache.org/docs/stable/hdfs_user_guide.html[HDFS]. HDFS is similar to any other file system in that it can be used to store arbitrarily formatted files (e.g. binary, text, etc.). However, HDFS allows for the storage of files so large that they can not be represented on a single machine. As such, HDFS is a distributed file system. Given files distributed over HDFS, it is possible to process these files using Hadoop's distributed processing framework, MapReduce. MapReduce represents a computation as a series of parallel/atomic key/value pair computations. There are two steps to MapReduce:
 
@@ -33,7 +33,8 @@ In this way, the map-step can be seen as a parallel analysis of all the `<key1,v
 Introduction to Graphs
 ~~~~~~~~~~~~~~~~~~~~~~
 
-image::graph-globe.png[float=left]
+[.tss-floatleft]
+image:graph-globe.png[]
 
 A http://en.wikipedia.org/wiki/Graph_%28mathematics%29[graph] is a data structure composed of vertices (dots,things) and edges (lines,links). A vertex has a set of incoming edges and a set of outgoing edges. There are numerous http://arxiv.org/abs/1006.2361[types of graphs] and the one used by Titan-Hadoop is the https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[property graph model] exposed by the http://blueprints.tinkerpop.com[Blueprints] API. A property graph is multi-relational in that edges are labeled to denote different types of relationships between vertices. Moreover, every vertex/edge (generally known as an element) can have an arbitrary number of key/value pairs associated with it (note that these key/value pairs should not be confused with the key/value pairs of Hadoop). Graphs are typically processed using traversals. A traversal is a algorithmic walk over the graph in order to arrive at a particular destination (e.g. search or *derivation*) or to yield some side-effect in the process (e.g. a ranking or recommendation or *statistic*).
 
@@ -42,11 +43,11 @@ How Titan-Hadoop Processes Graphs in MapReduce
 
 Titan-Hadoop leverages MapReduce for parallel processing massive numbers of atomic records with limited network communication.  In Titan-Hadoop's context, the atomic records are the vertices of a graph and the processing is global graph traversals.
 
-image::adjacency-list.png[]
+image:adjacency-list.png[]
 
 A graph can be modeled as an http://en.wikipedia.org/wiki/Adjacency_list[adjacency list]. Each "row" represents a vertex along with its incident edges. For property graphs, the vertex and edge properties are stored in the row as well. Titan-Hadoop interprets a graph using this model. Every key/value in Hadoop is a single vertex along with its properties and its incoming and outgoing edges. As such, a Titan-Hadoop MapReduce job operates on each vertex in parallel.
 
-image::faunus-graph-workflow.png[]
+image:faunus-graph-workflow.png[]
 
 There are two types of derivation operations in Titan-Hadoop:
 
@@ -64,11 +65,11 @@ The purpose of Titan-Hadoop (as with Gremlin in general) is to either yield a gr
 
 *Graph derivation*
 
-image::graph-derivation.png[]
+image:graph-derivation.png[]
 
 *Graph statistic*
 
-image::graph-statistic.png[]
+image:graph-statistic.png[]
 
 References
 ~~~~~~~~~~

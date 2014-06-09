@@ -1,0 +1,32 @@
+[[edgelist-io-format]]
+EdgeList IO Format
+------------------
+
+//[[http://www.adventurequilter.com/e-Learning/Articles/Images/Horizontal-parallel-lines.jpg|width=200px]]
+
+* *OutputFormat*:{nbsp}`com.thinkaurelius.faunus.formats.edgelist.EdgeListOutputFormat`
+
+There are two standard types of serialized graph representations: adjacency list and edge list. The adjacency list is the standard Faunus format --- a  vertex and all of its incident edges. An edge list, on the other hand, is simply a list of all the edges. The edge list format does not support element properties. The format is `outVertexId\tinVertexId\tedgeLabel\n`.
+
+The _Graph of the Gods_ data set, when represented as an edge list, looks as as follows.
+
+[source,text]
+----
+1       4       lives
+1       3       brother
+1       2       brother
+1       0       father
+2       5       lives
+2       3       brother
+2       1       brother
+3       11      pet
+3       6       lives
+3       1       brother
+3       2       brother
+7       8       mother
+7       9       battled
+7       10      battled
+7       11      battled
+7       1       father
+11      6       lives
+----

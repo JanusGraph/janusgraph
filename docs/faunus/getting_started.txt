@@ -1,16 +1,18 @@
+[[faunus-getting-started]]
 Getting Started
 ---------------
 
-image::gremlin-elephant.png[float=left]
+[.tss-floatleft]
+image:gremlin-elephant.png[]
 
-Titan-Hadoop requires http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS is required.  If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see the following _TODO xref to Running-Faunus-on-Amazon-EC2 named "tutorial"_) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
+Titan-Hadoop requires http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS is required.  If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see <<faunus-on-ec2>>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
 
 Note: this wiki assumes that you are using Hadoop 1.x.  For Hadoop 2.x support, see the experimental https://github.com/thinkaurelius/faunus/tree/hadoop2[Hadoop2 branch]..
 
 Starting Hadoop
 ~~~~~~~~~~~~~~~
 
-image::hadoop-logo.jpg[]
+image:hadoop-logo.jpg[]
 
 For using Titan-Hadoop locally on a single machine, a Hadoop pseudo-cluster can be used. Instructions to set up a http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[pseudo-cluster] are provided in the Hadoop documentation. Once the pseudo-cluster has been set up, it can be started by running the start script `$HADOOP_PREFIX/bin/start-all.sh`.
 
@@ -22,7 +24,7 @@ localhost: starting secondarynamenode, logging to /Applications/hadoop/hadoop-1.
 starting jobtracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-jobtracker-markolaptop.local.out
 localhost: starting tasktracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-tasktracker-markolaptop.local.out
 
-image::hdfs-logo.jpg[]
+image:hdfs-logo.jpg[]
 
 To ensure that the installation is running properly, do an `ls` on Hadoop's distributed file system, "HDFS":http://hadoop.apache.org/hdfs/. This should *not* return a view of the local filesystem, but instead a view of HDFS.
 
@@ -39,9 +41,10 @@ This content in this section is not distinct enough from the surrounding context
 Using Titan-Hadoop via Gremlin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-image::faunus-head.png[float=left]
+[.tss-floatleft]
+image:faunus-head.png[]
 
-Faunus can be downloaded from _TODO xref to downloads page_. Faunus provides a http://gremlin.tinkerpop.com[Gremlin] implementation that can be used for convenient interactions with HDFS, interactions with the supported graph sources (including Titan), and for constructing Faunus jobs (a chain of 1 or more MapReduce jobs). The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] is started with `bin/gremlin.sh` (or `gremlin.bat` for Windows users). Set the `TITAN_HADOOP_HOME` environmental variable to the root location of the Faunus distribution.
+Faunus can be downloaded from _TODO link to downloads page_. Faunus provides a http://gremlin.tinkerpop.com[Gremlin] implementation that can be used for convenient interactions with HDFS, interactions with the supported graph sources (including Titan), and for constructing Faunus jobs (a chain of 1 or more MapReduce jobs). The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] is started with `bin/gremlin.sh` (or `gremlin.bat` for Windows users). Set the `TITAN_HADOOP_HOME` environmental variable to the root location of the Faunus distribution.
 
 [source,gremlin]
 ----
@@ -58,7 +61,7 @@ gremlin>
 Getting Started
 ~~~~~~~~~~~~~~~
 
-image::graph-of-the-gods.png[]
+image:graph-of-the-gods.png[]
 
 These examples use the same <<getting-started,Graph of the Gods>> toy dataset described earlier in the manual.  _xref to Faunus-specific variation on the Blueprints GraphSON format_). This graph has 12 vertices/17 edges and denotes people, places, monsters and their various types of relationships to one another. A diagrammatic representation is provided above and the raw GraphJSON representation is provided below.
 
@@ -76,7 +79,7 @@ These examples use the same <<getting-started,Graph of the Gods>> toy dataset de
 {"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
 {"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
 
-To make use of this sample graph for the examples to follow, it must be first placed into http://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html[HDFS]. Note that all graph sources do not necessarily originate from HDFS (e.g. _TODO xref to Titan Format_ and _TODO xref to Rexster Format_graphs). However, file-based sources typically originate from HDFS. To store the GraphSON file in HDFS, the Gremlin REPL *or* the standard Hadoop http://en.wikipedia.org/wiki/Command-line_interface[CLI] can be used.
+To make use of this sample graph for the examples to follow, it must be first placed into http://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html[HDFS]. Note that all graph sources do not necessarily originate from HDFS (e.g. <<titan-io-format>> and <<rexster-io-format>> graphs). However, file-based sources typically originate from HDFS. To store the GraphSON file in HDFS, the Gremlin REPL *or* the standard Hadoop http://en.wikipedia.org/wiki/Command-line_interface[CLI] can be used.
 
 *Gremlin REPL*
 
@@ -117,7 +120,7 @@ The next sections present some simple examples to demonstrate how Titan, Gremlin
 Vertex Property Value Distribution (Statistic)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-image::mapreduce-logo.jpg[]
+image:mapreduce-logo.jpg[]
 
 A http://en.wikipedia.org/wiki/Frequency_distribution[frequency distribution] is simply a count of the number of times a particular item appears in a set. If the set is defined as all the _type_ property values of the vertices in _The Graph of the Gods_, then a distribution of those values is the number of times that monster, human, demigod, god, etc. appears. This can be computed with the following Gremlin traversal.
 
