@@ -468,6 +468,7 @@ public class IDManager {
         } else {
             assert isUserVertex(vertexid);
             VertexIDType type = getUserVertexIDType(vertexid);
+            assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
             long partition = getPartitionId(vertexid);
             long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
