@@ -3,8 +3,8 @@
 # Provides:          titan
 # Required-Start:    $network $named $time
 # Required-Stop:     $network $named $time
-# Should-Start:      ntp cassandra
-# Should-Stop:       ntp cassandra
+# Should-Start:      ntp cassandra elasticsearch
+# Should-Stop:       ntp cassandra elasticsearch
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
 # Short-Description: distributed graph database
@@ -19,7 +19,7 @@
 # Author: Dan LaRocque <dalaro@hopcount.org>
 
 NAME=titan
-PIDFILE=/var/run/$NAME.pid
+PIDFILE=/var/run/titan/$NAME.pid
 PATHNAME=/usr/sbin/$NAME
 
 # Read configuration variable file if it is present
@@ -44,7 +44,7 @@ start() {
     local errmsg stat
     privilegecheck
     log_daemon_msg "Starting Titan graph database" "main"
-    $PATHNAME -p "$PIDFILE" >/var/log/titan/console.log 2>&1
+    su titan -c "$PATHNAME -p $PIDFILE >/var/log/titan/console.log"
     log_end_msg $?
 }
 

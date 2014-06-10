@@ -1,0 +1,242 @@
+[[faunus-on-ec2]]
+Running Faunus on Amazon EC2
+----------------------------
+
+// !http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png!:http://aws.amazon.com/ec2/
+
+http://aws.amazon.com/ec2/[Amazon EC2] and http://whirr.apache.org/[Whirr] make it easy to set up a http://hadoop.apache.org/[Hadoop] compute cluster that can then be utilized by Faunus. This section of documentation will explain how to set up a Hadoop cluster on Amazon EC2 and execute Faunus scripts.
+
+Setting Up Whirr
+~~~~~~~~~~~~~~~~
+
+// // [[http://whirr.apache.org/images/whirr-logo.png|width=150px|align=left|float]]
+// 
+// [quote,'http://whirr.apache.org/[Apache Whirr Homepage]']
+// _____________________
+// Apache Whirr is a set of libraries for running cloud services. Whirr provides a cloud-neutral way to run services (you don't have to worry about the idiosyncrasies of each provider), a common service API (the details of provisioning are particular to the service), and smart defaults for services (you can get a properly configured system running quickly, while still being able to override settings as needed). You can also use Whirr as a command line tool for deploying clusters.
+// _____________________
+
+Faunus provides a Whirr recipe for loading up a Hadoop cluster that is properly versioned for the Hadoop currently used by Faunus. This recipe is reproduced below. Please see the http://whirr.apache.org/docs/0.8.1/quick-start-guide.html[Whirr Quick Start] for more information about the parameters and how to set up an Amazon EC2 account (e.g. `ssh-keygen -t rsa -P ''` and setting AWS keys as environmental variables).
+
+[source,properties]
+----
+whirr.cluster-name=faunuscluster
+whirr.instance-templates=1 hadoop-jobtracker+hadoop-namenode,3 hadoop-datanode+hadoop-tasktracker
+whirr.provider=aws-ec2
+whirr.identity=${env:AWS_ACCESS_KEY_ID}
+whirr.credential=${env:AWS_SECRET_ACCESS_KEY}
+whirr.private-key-file=${sys:user.home}/.ssh/id_rsa
+whirr.public-key-file=${sys:user.home}/.ssh/id_rsa.pub
+whirr.hadoop.version=1.1.1
+----
+
+Once your Amazon EC2 keys and ssh key files have been properly set up, a Hadoop cluster can be launched. The recipe above creates a 4 node cluster.
+
+[source,text]
+----
+faunus$ whirr launch-cluster --config bin/whirr.properties
+Bootstrapping cluster
+Configuring template
+Configuring template
+Starting 3 node(s) with roles [hadoop-datanode, hadoop-tasktracker]
+Starting 1 node(s) with roles [hadoop-namenode, hadoop-jobtracker]
+...
+----
+
+image:ec2-screenshot.png[]
+
+When logging into the http://console.aws.amazon.com/ec2/[Amazon EC2 Console], the cluster machines are visible. After running the Hadoop proxy shell script (in another window), the Hadoop cluster is ready for job submissions.
+
+[source,text]
+faunus$. ~/.whirr/faunuscluster/hadoop-proxy.sh
+Running proxy to Hadoop cluster at ec2-23-20-32-211.compute-1.amazonaws.com. Use Ctrl-c to quit. 
+
+A simple check to ensure that the Hadoop cluster is working is to see if HDFS is available.
+
+[source,text]
+----
+faunus$ export HADOOP_CONF_DIR=~/.whirr/faunuscluster
+faunus$ hadoop fs -ls /
+Found 3 items
+drwxr-xr-x   - hadoop supergroup          0 2012-07-20 19:13 /hadoop
+drwxrwxrwx   - hadoop supergroup          0 2012-07-20 19:13 /tmp
+drwxrwxrwx   - hadoop supergroup          0 2012-07-20 19:13 /user
+----
+
+Recommended Map/Reduce Tasks Per Node
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Below is the recommended number of tasks for each AWS EC2 machine type. These numbers are the default values used by Amazon's Elastic MapReduce service
+
+[source,text]
+----
+m1.small 
+  mapred.tasktracker.map.tasks.maximum    = "2";
+  mapred.tasktracker.reduce.tasks.maximum = "1";
+c1.medium 
+  mapred.tasktracker.map.tasks.maximum    = "4";
+  mapred.tasktracker.reduce.tasks.maximum = "2";
+m1.large 
+  mapred.tasktracker.map.tasks.maximum    = "4";
+  mapred.tasktracker.reduce.tasks.maximum = "2";
+m1.xlarge
+  mapred.tasktracker.map.tasks.maximum    = "8";
+  mapred.tasktracker.reduce.tasks.maximum = "4";
+c1.xlarge 
+  mapred.tasktracker.map.tasks.maximum    = "8";
+  mapred.tasktracker.reduce.tasks.maximum = "4";
+----
+
+This can be set in Whirr recipe using the following properties:
+
+[source,properties]
+----
+hadoop-mapreduce.mapred.tasktracker.map.tasks.maximum=8
+hadoop-mapreduce.mapred.tasktracker.reduce.tasks.maximum=4
+----
+
+Note that it is typically best to go with less than this amount as when a Hadoop cluster is under heavy load, JVMs can start to fail. Moreover, even with less mappers/reducers, performance is not greatly effected as there is less OS time spent dealing with swapping threads in and out of processing. Given that EC2 is a virtual machine environment, CPU statistics can be inaccurate. A safe configuration to use is:
+
+[source,properties]
+hadoop-mapreduce.mapred.tasktracker.jetty.cpu.check.enabled=false
+
+Finally, if Oracle's Java JVM is desired, newer version of Whirr support the following Java install function.
+
+[source,properties]
+whirr.java.install-function=install_oab_java
+
+Running a Faunus Script
+~~~~~~~~~~~~~~~~~~~~~~~
+
+// !images/faunus-elephants.png!
+
+Faunus can deploy jobs to the Amazon EC2 cluster. The first thing to do is to put a graph on HDFS. For this example, use the toy `data/graph-of-the-gods.json` file. Once the file is in HDFS, a `faunus.sh` derivation can be executed.
+
+[source,gremlin]
+----
+faunus$ bin/gremlin.sh
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
+==>null
+gremlin> g = FaunusFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> g.V.out.type
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Executing job 1 out of 2: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Map, com.thinkaurelius.faunus.mapreduce.transform.VerticesVerticesMapReduce.Reduce]
+12/09/18 00:29:34 INFO mapreduce.FaunusCompiler: Job data location: output/job-0
+...
+==>titan
+==>god
+==>god
+==>god
+==>god
+==>god
+==>god
+==>god
+==>location
+==>location
+==>location
+==>location
+==>human
+==>monster
+==>monster
+==>...
+gremlin> hdfs.ls('output/*') 
+==>rw-r--r-- ubuntu supergroup 0 _SUCCESS
+==>rwxr-xr-x ubuntu supergroup 0 (D) _logs
+==>rw-r--r-- ubuntu supergroup 0 _SUCCESS
+==>rwxr-xr-x ubuntu supergroup 0 (D) _logs
+==>rw-r--r-- ubuntu supergroup 435 graph-m-00000.bz2
+==>rw-r--r-- ubuntu supergroup 75 sideeffect-m-00000.bz2
+----
+
+// !images/dead-elephants.png!
+
+When the cluster is no longer needed, Whirr can be used to shutdown the cluster.
+
+[source,text]
+----
+faunus$ whirr destroy-cluster --config bin/whirr.properties 
+Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-16376a6e, us-east-1/i-0c376a74, us-east-1/i-0a376a72
+Running destroy phase script on: us-east-1/i-16376a6e
+Running destroy phase script on: us-east-1/i-0c376a74
+Starting to run scripts on cluster for phase destroyinstances: us-east-1/i-08376a70
+Running destroy phase script on: us-east-1/i-0a376a72
+Running destroy phase script on: us-east-1/i-08376a70
+destroy phase script run completed on: us-east-1/i-0c376a74
+destroy phase script run completed on: us-east-1/i-0a376a72
+destroy phase script run completed on: us-east-1/i-16376a6e
+Successfully executed destroy script: [output=, error=, exitCode=0]
+destroy phase script run completed on: us-east-1/i-08376a70
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Successfully executed destroy script: [output=, error=, exitCode=0]
+Finished running destroy phase scripts on all cluster instances
+Destroying faunuscluster cluster
+Cluster faunuscluster destroyed
+faunus$
+----
+
+Using S3 
+~~~~~~~~
+
+// [[http://www.ftp2cloud.com/wrdp/wp-content/themes/ftp2cloud/custom/images/logos/amazon_aws-s3.png|width=250px]]
+
+// [quote,'http://aws.amazon.com/s3/[Amazon S3 webpage]']
+// _____________________
+// Amazon S3 is storage for the Internet. It is designed to make web-scale computing easier for developers. Amazon S3 provides a simple web services interface that can be used to store and retrieve any amount of data, at any time, from anywhere on the web. It gives any developer access to the same highly scalable, reliable, secure, fast, inexpensive infrastructure that Amazon uses to run its own global network of web sites. The service aims to maximize benefits of scale and to pass those benefits on to developers.
+// _____________________
+
+
+HDFS implements the `FileSystem` API. There are other `FileSystem` implementations such as `LocalFileSystem`, `S3FileSystem` and `NativeS3FileSystem`. Faunus is able to leverage these file systems like another other file system in Hadoop.
+
+Interacting with S3 via the Gremlin REPL
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[source,gremlin]
+----
+gremlin> import org.apache.hadoop.fs.s3native.*
+...
+gremlin> id = // AWS_ACCESS_KEY_ID as a String
+==>*******
+gremlin> key = // AWS_SECRET_ACCESS_KEY as a String
+==>*******
+gremlin> s3fs = new NativeS3FileSystem()
+==>org.apache.hadoop.fs.s3native.NativeS3FileSystem@7433c78b
+gremlin> s3fs.initialize(new URI("s3n://${id}:${key}@aurelius-data"), new Configuration())
+==>null
+gremlin> s3fs.ls('/friendster')
+==>rwxrwxrwx   0 _SUCCESS
+==>rwxrwxrwx   0 (D) _logs
+==>rwxrwxrwx   71400361 part-m-00000
+==>rwxrwxrwx   70471619 part-m-00001
+==>rwxrwxrwx   69870835 part-m-00002
+==>rwxrwxrwx   69452656 part-m-00003
+...
+gremlin> s3fs.ls('/friendster')._().count()
+==>962
+----
+
+At this point, `s3fs` is like any other file system and can be used to store and retrive data. In fact, it is possible to set up S3 as the source and sink of Faunus jobs (see http://wiki.apache.org/hadoop/AmazonS3[documentation] for more information). Given that Gremlin gives full access to the Java/Groovy API, connecting to arbitrary `FileSystem` implementations is relatively simple. 
+
+Parallel Uploading and Downloading of Data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The parallel copy tool `DistCp` can be used from the command line to execute a parallel copy from any source filesystem to any destination filesystem. An example is provided below.
+
+[source,text]
+----
+$ hadoop distcp s3n://$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY@aurelius-data/friendster hdfs://ec2-204-236-188-243.us-west-1.compute.amazonaws.com:8020/user/ubuntu/
+13/04/25 14:32:38 INFO tools.DistCp: srcPaths=[s3n://*****:*****@aurelius-data/friendster]
+13/04/25 14:32:38 INFO tools.DistCp: destPath=hdfs://ec2-204-236-188-243.us-west-1.compute.amazonaws.com:8020/user/ubuntu
+13/04/25 14:32:45 INFO tools.DistCp: sourcePathsCount=966
+13/04/25 14:32:45 INFO tools.DistCp: filesToCopyCount=963
+13/04/25 14:32:45 INFO tools.DistCp: bytesToCopyCount=60.0g
+13/04/25 14:32:46 INFO mapred.JobClient: Running job: job_201304251356_0003
+13/04/25 14:32:47 INFO mapred.JobClient:  map 0% reduce 0%
+13/04/25 14:33:28 INFO mapred.JobClient:  map 1% reduce 0%
+...
+----

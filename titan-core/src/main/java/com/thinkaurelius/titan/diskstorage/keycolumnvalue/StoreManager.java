@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface StoreManager {
      *
      * @return New Transaction Handle
      */
-    public StoreTransaction beginTransaction(TransactionHandleConfig config) throws StorageException;
+    public StoreTransaction beginTransaction(BaseTransactionConfig config) throws StorageException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.

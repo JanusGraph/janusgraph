@@ -21,13 +21,13 @@ import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
-import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager.MaskedTimestamp;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
+import com.thinkaurelius.titan.graphdb.configuration.PreInitializeConfigOptions;
 
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.dht.Token;
@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 import static com.thinkaurelius.titan.diskstorage.cassandra.CassandraTransaction.getTx;
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
 
+@PreInitializeConfigOptions
 public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     private static final Logger log = LoggerFactory.getLogger(AstyanaxStoreManager.class);
@@ -507,14 +508,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         log.debug("Creating keyspace {}...", keySpaceName);
         try {
-
-            Map<String, String> stratops = ImmutableMap.of(
-                "replication_factor", String.valueOf(replicationFactor));
-
             ksDef = cl.makeKeyspaceDefinition()
                     .setName(keySpaceName)
-                    .setStrategyClass("org.apache.cassandra.locator.SimpleStrategy")
-                    .setStrategyOptions(stratops);
+                    .setStrategyClass(storageConfig.get(REPLICATION_STRATEGY))
+                    .setStrategyOptions(strategyOptions);
             cl.addKeyspace(ksDef);
 
             log.debug("Created keyspace {}", keySpaceName);

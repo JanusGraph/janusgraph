@@ -1,7 +1,8 @@
 package com.thinkaurelius.titan.core.schema;
 
 /**
- *
+ * Used to read and change the global Titan configuration.
+ * The configuration options are read from the graph and affect the entire database.
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */

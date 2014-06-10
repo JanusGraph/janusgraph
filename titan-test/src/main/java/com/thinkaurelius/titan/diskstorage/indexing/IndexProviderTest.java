@@ -8,8 +8,8 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
@@ -92,7 +92,7 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
-        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
@@ -352,7 +352,7 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
         assertEquals(0, result.size());
 
-        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
@@ -387,7 +387,7 @@ public abstract class IndexProviderTest {
         assertEquals(0, result.size());
 
 
-        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
@@ -423,7 +423,7 @@ public abstract class IndexProviderTest {
         assertEquals(0, result.size());
 
 
-        TransactionHandleConfig config = StandardTransactionHandleConfig.of(Timestamps.MILLI);
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
 
         tx.delete(store, docid, TEXT, ImmutableMap.of(), true);

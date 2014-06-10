@@ -1,0 +1,84 @@
+[[faunus-gremlin-steps]]
+Gremlin Steps
+-------------
+
+// [.tss-floatleft]
+// image:gremlin-standing-small.png[]
+// 
+// [.tss-floatright]
+// image:faunus-head.png[]
+
+http://gremlin.tinkerpop.com[Gremlin] is a graph traversal language developed by http://tinkerpop.com[TinkerPop]. Titan-Hadoop Gremlin steps are implemented in http://hadoop.apache.org/mapreduce/[MapReduce]. For sake of clarity, the Gremlin that compiles down to http://pipes.tinkerpop.com[Pipes] and is used for real-time traversals against a graph database is denoted Gremlin/Pipes. The Gremlin that is distributed with Titan-Hadoop and compiles down to MapReduce is denoted Gremlin/Faunus.
+
+There are major conceptual differences between Gremlin/Pipes and Gremlin/Faunus. These differences are itemized below.
+
+* Gremlin/Faunus is http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first]. Gremlin/Pipes is http://en.wikipedia.org/wiki/Depth-first_search[depth-first].
+* Gremlin/Faunus processes rows of an adjacency matrix (vertex-centric). Gremlin/Pipes processes elements in a linked-list (element-centric).
+* Gremlin/Faunus is inherently parallel with each vertex being operated on simultaneously. Gremlin/Pipes is inherently serial with one element at a time being pushed through the pipeline.
+
+The table below presents the steps provided with Gremlin/Faunus.
+
+[options="header",width="100%"]
+|==============================
+| Gremlin/Faunus step | Description | Reduce?
+| *transforms* | |
+| `_` | the identity step that simply updates Hadoop counters | false
+| `transform(closure)` | evaluate the closure on current elements | false
+| `V` | start a traversal at all vertices | false
+| `E` | start a traversal at all edges | false
+| `v(id..)` | start a traversal at vertices with provided id | false
+| `out(labels..)` | traverse out from vertices to label-related vertices | true
+| `in(labels..)` | traverse in from vertices to label-related vertices | true
+| `both(labels..)` | traverse both directions from vertices to label-related vertices | true
+| `outE(labels..)` | traverse from vertices to outgoing label edges | true
+| `inE(labels..)` | traverse from vertices to incoming label edges | true
+| `bothE(labels..)` | traverse from vertices to in and out label edges | true
+| `outV` | traverse from edges to outgoing vertices | false
+| `inV` | traverse from edges to incoming vertices | false
+| `bothV` | traverse from edges to both in and out vertices |  false
+| `property(key,class?)` | emit element property values (class? for optimization) | false
+| `path` | emit the path taken up to the current elements | false
+| `order(order,key)` | order the previous properties and identify element by key | true
+| *filters* | |
+| `filter(closure)` | A generic filter that takes a boolean-closure | false
+| `has(key,values..)` | filter elements that don't have key/value property (values or'd) | false
+| `has(key,compare,values..)` | filter elements that don't have compared key/value property (values or'd) | false
+| `hasNot(key,values..)` | filter elements that do have key/value property (values or'd) | false
+| `hasNot(key,compare,values..)` | filter elements that do have compared key/value property (values or'd) | false
+| `interval(key,value1,value2)` | filter elements that don't have value in range | false
+| `dedup` | remove any duplicates in current traversal step | false
+| `back(step)` | go back to elements seen at previous step | true
+| `simplePath` | filter all elements reached by a cyclic, non-simple path | false
+| *side-effects* | |
+| `sideEffect(closure)` | mutate elements according to the provided closure | false
+| `as(name)` | name the previous step for future reference | false
+| `linkOut(label,step,key?)` | create outgoing edge to previous vertices with `key?` being a weight property | true
+| `linkIn(label,step,key?)` | create incoming edge to previous vertices with `key?` being a weight property | true
+| `keep` | remove all elements not at current step (of current type) | true[v]/false[e]
+| `drop` | remove all elements at current step (of current type) | true[v]/false[e]
+| `groupCount` | count the number of previously specified properties (a distribution) | true
+| `groupCount(closure,closure)` | process current elements with closure and incr count with closure | true
+| `script(filename,args..)` | compute the script file against all vertices in the graph | false
+|==============================
+
+Note on Path-Based Traversals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a computation requires the history of a traversal, http://en.wikipedia.org/wiki/Combinatorics[combinatoric] explosions can occur which are expensive in terms of both space (the size of the output) and time (computing the output). The following steps are steps that turn *on* path computations. By default, path computations are turned *off* unless `enablePath()` is explicitly called within the expression. 
+
+* `path`
+* `simplePath`
+* `back`
+* `linkOut`
+* `linkIn`
+
+When paths are turned on, Titan-Hadoop provides a `WARN` message.
+
+[source,gremlin]
+----
+gremlin> g.V.out.path
+12/09/17 09:00:25 WARN mapreduce.HadoopCompiler: Path calculations are enabled for this Titan-Hadoop job (space and time expensive)
+...
+----
+
+In short, be wary of long (or non-filtering) traversals that make use of path information as this can greatly hinder performance and lead to memory issues (even disk memory issues!).

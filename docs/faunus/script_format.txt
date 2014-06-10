@@ -1,0 +1,156 @@
+[[script-io-format]]
+Script IO Format
+----------------
+
+// [[images/script-format-logo.png|width=350px]]
+
+* *InputFormat*:{nbsp}`com.thinkaurelius.faunus.formats.script.ScriptInputFormat`
+* *OutputFormat*:{nbsp}`com.thinkaurelius.faunus.formats.script.ScriptOutputFormat`
+
+`ScriptInputFormat` and `ScriptOutputFormat` take an arbitrary http://gremlin.tinkerpop.com[Gremlin] script and use that script to either read or write `FaunusVertex` objects, respectively. This can be considered the most general `InputFormat`/`OutputFormat` possible in that Faunus uses the user provided script for all reading/writing.
+
+Script InputFormat Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The data below represents an adjacency list representation of an untyped, directed graph. First line reads, "vertex 0 has no outgoing edges." The second line reads, "vertex 1 has an outgoing edge to vertices 4, 3, 2, and 0."
+
+[source,text]
+----
+0:
+1:4,3,2,0
+2:5,3,1
+3:11,6,1,2
+4:
+5:
+6:
+7:8,9,10,11,1
+8:
+9:
+10:
+11:6
+----
+
+There is no corresponding `InputFormat` that can parse this particular file (or some adjacency list variant of it). As such, `ScriptInputFormat` can be used. With `ScriptInputFormat` a Gremlin-Groovy script is stored in HDFS and leveraged by each mapper in the Faunus job. The Gremlin-Groovy script must have the following method defined:
+
+[source,groovy]
+def boolean read(FaunusVertex vertex, String line) { ... }
+
+An appropriate `read()` for the above adjacency list file is:
+
+[source,groovy]
+----
+def boolean read(FaunusVertex vertex, String line) {
+    parts = line.split(':');
+    vertex.reuse(Long.valueOf(parts[0]))
+    if (parts.length == 2) {
+        parts[1].split(',').each {
+            vertex.addEdge(Direction.OUT, 'linkedTo', Long.valueOf(it));
+        }
+    }
+  return true;
+}
+----
+
+Note that to avoid object creation overhead, the previous vertex is provided to the next parse. The vertex can be "reused" with the `FaunusVertex.reuse(long id)` method which wipes all previous data. The resultant `boolean` denotes whether the line parsed yielded a valid `FaunusVertex`. As such, if the line is not valid (e.g. a comment line, a skip line, etc.), then simply return `false`.
+
+The above files are provided with the Faunus distribution and can be used from the Gremlin REPL.
+
+[source,gremlin]
+----
+gremlin> hdfs.copyFromLocal('data/ScriptInput.groovy','ScriptInput.groovy')
+==>null
+gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.id','graph-of-the-gods.id')
+==>null
+gremlin> hdfs.ls()
+==>rw-r--r-- marko supergroup 868 ScriptInput.groovy
+==>rw-r--r-- marko supergroup 69 graph-of-the-gods.id
+gremlin> g = FaunusFactory.open('bin/script-input.properties')
+==>faunusgraph[scriptinputformat->graphsonoutputformat]
+gremlin> g.getConf('faunus')
+==>faunus.output.location.overwrite=true
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+==>faunus.input.location=graph-of-the-gods.id
+==>faunus.graph.input.script.file=ScriptInput.groovy
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.script.ScriptInputFormat
+==>faunus.output.location=output
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.graph.input.edge-copy.direction=OUT
+gremlin> g._
+13/04/16 12:35:06 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+13/04/16 12:35:06 INFO mapreduce.FaunusCompiler: Executing job 1 out of 2: MapSequence[com.thinkaurelius.faunus.formats.EdgeCopyMapReduce.Map, com.thinkaurelius.faunus.formats.EdgeCopyMapReduce.Reduce]
+...
+gremlin> hdfs.head('output')
+==>{"_id":0,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":1}]}
+==>{"_id":1,"_outE":[{"_label":"linkedTo","_id":-1,"_inV":4},{"_label":"linkedTo","_id":-1,"_inV":3},{"_label":"linkedTo","_id":-1,"_inV":2},{"_label":"linkedTo","_id":-1,"_inV":0}],"_inE":[{"_label":"linkedTo","_id":-1,"_outV":3},{"_label":"linkedTo","_id":-1,"_outV":7},{"_label":"linkedTo","_id":-1,"_outV":2}]}
+==>{"_id":2,"_outE":[{"_label":"linkedTo","_id":-1,"_inV":5},{"_label":"linkedTo","_id":-1,"_inV":3},{"_label":"linkedTo","_id":-1,"_inV":1}],"_inE":[{"_label":"linkedTo","_id":-1,"_outV":3},{"_label":"linkedTo","_id":-1,"_outV":1}]}
+==>{"_id":3,"_outE":[{"_label":"linkedTo","_id":-1,"_inV":11},{"_label":"linkedTo","_id":-1,"_inV":6},{"_label":"linkedTo","_id":-1,"_inV":1},{"_label":"linkedTo","_id":-1,"_inV":2}],"_inE":[{"_label":"linkedTo","_id":-1,"_outV":1},{"_label":"linkedTo","_id":-1,"_outV":2}]}
+==>{"_id":4,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":1}]}
+==>{"_id":5,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":2}]}
+==>{"_id":6,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":11},{"_label":"linkedTo","_id":-1,"_outV":3}]}
+==>{"_id":7,"_outE":[{"_label":"linkedTo","_id":-1,"_inV":8},{"_label":"linkedTo","_id":-1,"_inV":9},{"_label":"linkedTo","_id":-1,"_inV":10},{"_label":"linkedTo","_id":-1,"_inV":11},{"_label":"linkedTo","_id":-1,"_inV":1}]}
+==>{"_id":8,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":7}]}
+==>{"_id":9,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":7}]}
+==>{"_id":10,"_inE":[{"_label":"linkedTo","_id":-1,"_outV":7}]}
+==>{"_id":11,"_outE":[{"_label":"linkedTo","_id":-1,"_inV":6}],"_inE":[{"_label":"linkedTo","_id":-1,"_outV":3},{"_label":"linkedTo","_id":-1,"_outV":7}]}
+----
+
+Note that the resultant graph has both incoming and outgoing edges even though the input graph dataset was an adjacency list which only denotes outgoing edges. The `EdgeCopyMapReduce` step was activated to overlay the graph transpose appropriately (see `faunus.graph.input.edge-copy.direction` property).
+
+Script OutputFormat Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The principle above can also be used for writing a `<NullWritable,FaunusVertex>` stream back to a file in HDFS. This is the role of `ScriptOutputFormat`. `ScriptOutputFormat` requires that the provided script maintains a method with the following signature:
+
+[source,groovy]
+def void write(FaunusVertex vertex, DataOutput output) { ... }
+
+Note the following `ScriptOutput.groovy` file distributed with Faunus. 
+
+[source,groovy]
+----
+def void write(FaunusVertex vertex, DataOutput output) {
+    output.writeUTF(vertex.getId().toString() + ':');
+    Iterator<Edge> itty = vertex.getEdges(OUT).iterator()
+    while (itty.hasNext()) {
+        output.writeUTF(itty.next().getVertex(IN).getId().toString());
+        if (itty.hasNext())
+            output.writeUTF(',');
+    }
+    output.writeUTF('\n');
+}
+----
+
+[source,gremlin]
+----
+gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
+==>null
+gremlin> hdfs.copyFromLocal('data/ScriptOutput.groovy','ScriptOutput.groovy')
+==>null
+gremlin> g = FaunusFactory.open('bin/script-output.properties')
+==>faunusgraph[graphsoninputformat->scriptoutputformat]
+gremlin> g.getConf('faunus')
+==>faunus.output.location.overwrite=true
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.script.ScriptOutputFormat
+==>faunus.graph.output.script.file=ScriptOutput.groovy
+==>faunus.input.location=graph-of-the-gods.json
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.output.location=output
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+gremlin> g._
+13/04/16 14:40:06 INFO mapreduce.FaunusCompiler: Compiled to 1 MapReduce job(s)
+13/04/16 14:40:06 INFO mapreduce.FaunusCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.IdentityMap.Map]
+...
+gremlin> hdfs.head('output')
+==>0:
+==>1:4,3,2,0
+==>2:5,3,1
+==>3:11,6,1,2
+==>4:
+==>5:
+==>6:
+==>7:8,9,10,11,1
+==>8:
+==>9:
+==>10:
+==>11:6
+----

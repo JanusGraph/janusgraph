@@ -9,7 +9,7 @@ import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
-import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDManager;
+import com.thinkaurelius.titan.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import com.thinkaurelius.titan.diskstorage.indexing.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
@@ -28,7 +28,7 @@ import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.util.system.ConfigurationUtil;
@@ -213,7 +213,7 @@ public class Backend implements LockerProvider {
             }
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
-                idAuthority = new ConsistentKeyIDManager(idStore, storeManager, config);
+                idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, config);
             } else {
                 throw new IllegalStateException("Store needs to support consistent key or transactional operations for ID manager to guarantee proper id allocations");
             }
@@ -266,7 +266,7 @@ public class Backend implements LockerProvider {
             systemConfig = getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws StorageException {
-                    return storeManagerLocking.beginTransaction(StandardTransactionHandleConfig.of(
+                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(
                             configuration.get(TIMESTAMP_PROVIDER),
                             storeFeatures.getKeyConsistentTxConfig()));
                 }
@@ -321,12 +321,12 @@ public class Backend implements LockerProvider {
     }
 
     private String getMetricsStoreName(String storeName) {
-        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_STORE : storeName;
+        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_STORE : storeName;
     }
 
     private String getMetricsCacheName(String storeName, boolean reportMetrics) {
         if (!reportMetrics) return null;
-        return configuration.get(MERGE_BASIC_METRICS) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
+        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
     public static LogManager getLogManager(Configuration config, String logName, KeyColumnValueStoreManager sm) {
@@ -376,7 +376,7 @@ public class Backend implements LockerProvider {
             return getGlobalConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
                 public StoreTransaction openTx() throws StorageException {
-                    return manager.beginTransaction(StandardTransactionHandleConfig.of(config.get(TIMESTAMP_PROVIDER),features.getKeyConsistentTxConfig()));
+                    return manager.beginTransaction(StandardBaseTransactionConfig.of(config.get(TIMESTAMP_PROVIDER),features.getKeyConsistentTxConfig()));
                 }
 
                 @Override
@@ -496,11 +496,8 @@ public class Backend implements LockerProvider {
 
     private static final Map<String, String> REGISTERED_STORAGE_MANAGERS = new HashMap<String, String>() {{
         put("berkeleyje", "com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager");
-        put("hazelcast", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
-        put("hazelcastcache", "com.thinkaurelius.titan.diskstorage.hazelcast.HazelcastCacheStoreManager");
         put("infinispan", "com.thinkaurelius.titan.diskstorage.infinispan.InfinispanCacheStoreManager");
         put("cassandrathrift", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
-        put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.thrift.CassandraThriftStoreManager");
         put("cassandra", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("astyanax", "com.thinkaurelius.titan.diskstorage.cassandra.astyanax.AstyanaxStoreManager");
         put("hbase", "com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager");

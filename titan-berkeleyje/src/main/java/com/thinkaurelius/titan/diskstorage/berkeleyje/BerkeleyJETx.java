@@ -7,7 +7,7 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     private List<Cursor> openCursors = new ArrayList<Cursor>();
     private final LockMode lm;
 
-    public BerkeleyJETx(Transaction t, LockMode lockMode, TransactionHandleConfig config) {
+    public BerkeleyJETx(Transaction t, LockMode lockMode, BaseTransactionConfig config) {
         super(config);
         tx = t;
         lm = lockMode;

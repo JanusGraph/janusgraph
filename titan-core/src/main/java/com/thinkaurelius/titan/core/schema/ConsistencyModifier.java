@@ -1,6 +1,12 @@
 package com.thinkaurelius.titan.core.schema;
 
 /**
+ * Used to control Titan's consistency behavior on eventually consistent or other non-transactional backend systems.
+ * The consistency behavior can be defined for individual {@link TitanSchemaElement}s which then applies to all instances.
+ * <p/>
+ * Consistency modifiers are installed on schema elements via {@link TitanManagement#setConsistency(TitanSchemaElement, ConsistencyModifier)}
+ * and can be read using {@link TitanManagement#getConsistency(TitanSchemaElement)}.
+ *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public enum ConsistencyModifier {

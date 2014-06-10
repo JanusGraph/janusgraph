@@ -1,0 +1,252 @@
+[[faunus-getting-started]]
+Getting Started
+---------------
+
+[.tss-floatleft]
+image:gremlin-elephant.png[]
+
+Titan-Hadoop requires http://hadoop.apache.org/[Hadoop] cluster with MapReduce and HDFS is required.  If a Hadoop cluster already available, then Titan can be configured to use it. If no Hadoop cluster is at hand, then the provided http://whirr.apache.org/[Whirr] recipe can streamline deployment to http://aws.amazon.com/ec2/[Amazon EC2] (see <<faunus-on-ec2>>) or a local instance of Hadoop can be run in pseudo-cluster mode (see the following http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[tutorial]). This section will discuss the pseudo-cluster approach for those users just getting started with Hadoop. For more experienced Hadoop users, the examples below can be easily adapted to work with a non-local Hadoop cluster (e.g. simply change the Hadoop configuration to point to the accessible cluster (`$HADOOP_CONF_DIR`).
+
+Note: this wiki assumes that you are using Hadoop 1.x.  For Hadoop 2.x support, see the experimental https://github.com/thinkaurelius/faunus/tree/hadoop2[Hadoop2 branch]..
+
+Starting Hadoop
+~~~~~~~~~~~~~~~
+
+image:hadoop-logo.jpg[]
+
+For using Titan-Hadoop locally on a single machine, a Hadoop pseudo-cluster can be used. Instructions to set up a http://hadoop.apache.org/docs/r1.2.1/single_node_setup.html[pseudo-cluster] are provided in the Hadoop documentation. Once the pseudo-cluster has been set up, it can be started by running the start script `$HADOOP_PREFIX/bin/start-all.sh`.
+
+[source,bourne]
+~$ start-all.sh
+starting namenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-namenode-markolaptop.local.out
+localhost: starting datanode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-datanode-markolaptop.local.out
+localhost: starting secondarynamenode, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-secondarynamenode-markolaptop.local.out
+starting jobtracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-jobtracker-markolaptop.local.out
+localhost: starting tasktracker, logging to /Applications/hadoop/hadoop-1.0.3/libexec/../logs/hadoop-marko-tasktracker-markolaptop.local.out
+
+image:hdfs-logo.jpg[]
+
+To ensure that the installation is running properly, do an `ls` on Hadoop's distributed file system, "HDFS":http://hadoop.apache.org/hdfs/. This should *not* return a view of the local filesystem, but instead a view of HDFS.
+
+[source,bourne]
+faunus$ hadoop fs -ls /
+Found 2 items
+drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /tmp
+drwxr-xr-x   - marko supergroup          0 2012-07-26 11:55 /user
+
+//////////////////////////////////////////
+
+This content in this section is not distinct enough from the surrounding context to stand as its own section.  It should be spliced into its siblings.
+
+Using Titan-Hadoop via Gremlin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+[.tss-floatleft]
+image:faunus-head.png[]
+
+Faunus can be downloaded from _TODO link to downloads page_. Faunus provides a http://gremlin.tinkerpop.com[Gremlin] implementation that can be used for convenient interactions with HDFS, interactions with the supported graph sources (including Titan), and for constructing Faunus jobs (a chain of 1 or more MapReduce jobs). The Gremlin http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] is started with `bin/gremlin.sh` (or `gremlin.bat` for Windows users). Set the `TITAN_HADOOP_HOME` environmental variable to the root location of the Faunus distribution.
+
+[source,gremlin]
+----
+$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin>
+----
+
+//////////////////////////////////////////
+
+Getting Started
+~~~~~~~~~~~~~~~
+
+image:graph-of-the-gods.png[]
+
+These examples use the same <<getting-started,Graph of the Gods>> toy dataset described earlier in the manual.  _xref to Faunus-specific variation on the Blueprints GraphSON format_). This graph has 12 vertices/17 edges and denotes people, places, monsters and their various types of relationships to one another. A diagrammatic representation is provided above and the raw GraphJSON representation is provided below.
+
+[source,javascript]
+{"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"father","_id":12,"_outV":1}]}
+{"name":"jupiter","type":"god","_id":1,"_outE":[{"_label":"lives","_id":13,"_inV":4},{"_label":"brother","_id":16,"_inV":3},{"_label":"brother","_id":14,"_inV":2},{"_label":"father","_id":12,"_inV":0}],"_inE":[{"_label":"brother","_id":17,"_outV":3},{"_label":"brother","_id":15,"_outV":2},{"_label":"father","_id":24,"_outV":7}]}
+{"name":"neptune","type":"god","_id":2,"_outE":[{"_label":"lives","_id":20,"_inV":5},{"_label":"brother","_id":19,"_inV":3},{"_label":"brother","_id":15,"_inV":1}],"_inE":[{"_label":"brother","_id":18,"_outV":3},{"_label":"brother","_id":14,"_outV":1}]}
+{"name":"pluto","type":"god","_id":3,"_outE":[{"_label":"pet","_id":23,"_inV":11},{"_label":"lives","_id":21,"_inV":6},{"_label":"brother","_id":17,"_inV":1},{"_label":"brother","_id":18,"_inV":2}],"_inE":[{"_label":"brother","_id":19,"_outV":2},{"_label":"brother","_id":16,"_outV":1}]}
+{"name":"sky","type":"location","_id":4,"_inE":[{"_label":"lives","_id":13,"_outV":1}]}
+{"name":"sea","type":"location","_id":5,"_inE":[{"_label":"lives","_id":20,"_outV":2}]}
+{"name":"tartarus","type":"location","_id":6,"_inE":[{"_label":"lives","_id":21,"_outV":3},{"_label":"lives","_id":22,"_outV":11}]}
+{"name":"hercules","type":"demigod","_id":7,"_outE":[{"_label":"mother","_id":25,"_inV":8},{"time":1,"_label":"battled","_id":26,"_inV":9},{"time":2,"_label":"battled","_id":27,"_inV":10},{"time":12,"_label":"battled","_id":28,"_inV":11},{"_label":"father","_id":24,"_inV":1}]}
+{"name":"alcmene","type":"human","_id":8,"_inE":[{"_label":"mother","_id":25,"_outV":7}]}
+{"name":"nemean","type":"monster","_id":9,"_inE":[{"time":1,"_label":"battled","_id":26,"_outV":7}]}
+{"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
+{"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
+
+To make use of this sample graph for the examples to follow, it must be first placed into http://hadoop.apache.org/docs/r1.2.1/hdfs_user_guide.html[HDFS]. Note that all graph sources do not necessarily originate from HDFS (e.g. <<titan-io-format>> and <<rexster-io-format>> graphs). However, file-based sources typically originate from HDFS. To store the GraphSON file in HDFS, the Gremlin REPL *or* the standard Hadoop http://en.wikipedia.org/wiki/Command-line_interface[CLI] can be used.
+
+*Gremlin REPL*
+
+[source,gremlin]
+gremlin> hdfs.copyFromLocal('data/graph-of-the-gods.json','graph-of-the-gods.json')
+==>null
+gremlin> hdfs.ls()          
+==>rw-r--r-- marko supergroup 2028 graph-of-the-gods.json
+gremlin> 
+
+*Hadoop CLI*
+
+[source,bourne]
+faunus$ hadoop fs -put data/graph-of-the-gods.json graph-of-the-gods.json
+faunus$ hadoop fs -ls
+Found 1 item
+-rw-r--r--   1 marko supergroup       2028 2012-07-26 11:55 /user/marko/graph-of-the-gods.json
+
+
+A Graph Statistic and a Graph Derivation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With _The Graph of the Gods_ stored in HDFS, a reference is made to it in `bin/titan-hadoop.properties`.  Titan already has all the properties configured to point to `graph-of-the-gods.json` so it is possible to simply run desired Gremlin traversals without having to initially understand Titan'sconfiguration options.
+
+[source,gremlin]
+----
+$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin> g = HadoopFactory.open('bin/titan-hadoop.properties')
+==>titangraph[graphsoninputformat->graphsonoutputformat]
+----
+
+The next sections present some simple examples to demonstrate how Titan, Gremlin, and Hadoop all interact with one another.
+
+Vertex Property Value Distribution (Statistic)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+image:mapreduce-logo.jpg[]
+
+A http://en.wikipedia.org/wiki/Frequency_distribution[frequency distribution] is simply a count of the number of times a particular item appears in a set. If the set is defined as all the _type_ property values of the vertices in _The Graph of the Gods_, then a distribution of those values is the number of times that monster, human, demigod, god, etc. appears. This can be computed with the following Gremlin traversal.
+
+[source,gremlin]
+gremlin> g.V.type.groupCount
+12/09/16 14:04:16 INFO mapreduce.HadoopCompiler: Compiled to 1 MapReduce job(s)
+12/09/16 14:04:16 INFO mapreduce.HadoopCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.VerticesMap.Map, com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce.Map, com.thinkaurelius.faunus.mapreduce.sideeffect.ValueGroupCountMapReduce.Reduce]
+12/09/16 14:04:16 INFO mapreduce.HadoopCompiler: Job data location: output/job-0
+12/09/16 14:04:17 INFO input.FileInputFormat: Total input paths to process : 1
+12/09/16 14:04:17 INFO mapred.JobClient: Running job: job_201209160849_0033
+12/09/16 14:04:18 INFO mapred.JobClient:  map 0% reduce 0%
+...
+==>demigod	1
+==>god	3
+==>human	1
+==>location	3
+==>monster	3
+==>titan	1
+
+
+Lets examine the traversal more closely.
+
+[source,gremlin]
+g.V.type.groupCount
+
+
+* `g`: the graph pointed to by `bin/titan-hadoop.properties`
+* `V`: for all the vertices in the graph
+* `type`: get the _type_ property value of those vertices
+* `groupCount`: count the number of times each unique type is seen 
+
+When the Titan-Hadoop job completes (which could be many MapReduce jobs), the results are outputted to the terminal and are also available in the `output` directory (set in `bin/titan-hadoop.properties`).
+
+[source,gremlin]
+gremlin> hdfs.ls()
+==>rw-r--r-- marko supergroup 2028 graph-of-the-gods.json
+==>rwxr-xr-x marko supergroup 0 (D) output
+gremlin> hdfs.ls('output')
+==>rwxr-xr-x marko supergroup 0 (D) job-0
+gremlin> hdfs.ls('output/job-0')
+==>rw-r--r-- marko supergroup 0 _SUCCESS
+==>rwxr-xr-x marko supergroup 0 (D) _logs
+==>rw-r--r-- marko supergroup 435 graph-m-00000
+==>rw-r--r-- marko supergroup 80 sideeffect-m-00000
+gremlin> hdfs.head('output/job-0/sideeffect*')
+==>demigod	1
+==>god	3
+==>human	1
+==>location	3
+==>monster	3
+==>titan	1
+gremlin>
+
+
+Inference using Paths (Derivation)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A "derivation":http://en.wikipedia.org/wiki/Graph_rewriting is some mutation of the graph whether that mutation is as simple as removing vertices/edges or as complex as inferring new edges from explicit edges in the graph. With _The Graph of the Gods_, _grandfather_ edges can be derived from _father_ edges. This type of derivation is known as an "inference":http://en.wikipedia.org/wiki/Inference.
+
+From the Gremlin REPL, enter the following traversal.
+
+```text
+g.V.as('x').out('father').out('father').linkIn('grandfather','x')
+```
+
+  * `g`: the graph pointed to by `bin/titan-hadoop.properties`
+  * `V`: for all the vertices in the graph
+  * `as('x')`: name the current elements "x"
+  * `out('father')`: traverse out over _father_ edges
+  * `out('father')`: traverse out over _father_ edges
+  * `linkIn('grandfather','x')`: create incoming _grandfather_ edges from remaining vertices at step "x" 
+
+The derived graph can be pulled to local disk or analyzed in HDFS. Realize that because the same `output` directory is used, the previous `output` was deleted. Again, this can all be configured in `bin/titan-hadoop.properties`.
+
+[source,gremlin]
+gremlin> hdfs.head('output')
+==>{"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"grandfather","_id":-1,"_outV":7},{"_label":"father","_id":12,"_outV":1}]}
+==>{"name":"jupiter","type":"god","_id":1,"_outE":[{"_label":"lives","_id":13,"_inV":4},{"_label":"brother","_id":16,"_inV":3},{"_label":"brother","_id":14,"_inV":2},{"_label":"father","_id":12,"_inV":0}],"_inE":[{"_label":"brother","_id":17,"_outV":3},{"_label":"brother","_id":15,"_outV":2},{"_label":"father","_id":24,"_outV":7}]}
+==>{"name":"neptune","type":"god","_id":2,"_outE":[{"_label":"lives","_id":20,"_inV":5},{"_label":"brother","_id":19,"_inV":3},{"_label":"brother","_id":15,"_inV":1}],"_inE":[{"_label":"brother","_id":18,"_outV":3},{"_label":"brother","_id":14,"_outV":1}]}
+==>{"name":"pluto","type":"god","_id":3,"_outE":[{"_label":"pet","_id":23,"_inV":11},{"_label":"lives","_id":21,"_inV":6},{"_label":"brother","_id":17,"_inV":1},{"_label":"brother","_id":18,"_inV":2}],"_inE":[{"_label":"brother","_id":19,"_outV":2},{"_label":"brother","_id":16,"_outV":1}]}
+==>{"name":"sky","type":"location","_id":4,"_inE":[{"_label":"lives","_id":13,"_outV":1}]}
+==>{"name":"sea","type":"location","_id":5,"_inE":[{"_label":"lives","_id":20,"_outV":2}]}
+==>{"name":"tartarus","type":"location","_id":6,"_inE":[{"_label":"lives","_id":21,"_outV":3},{"_label":"lives","_id":22,"_outV":11}]}
+==>{"name":"hercules","type":"demigod","_id":7,"_outE":[{"_label":"mother","_id":25,"_inV":8},{"_label":"grandfather","_id":-1,"_inV":0},{"time":1,"_label":"battled","_id":26,"_inV":9},{"time":2,"_label":"battled","_id":27,"_inV":10},{"time":12,"_label":"battled","_id":28,"_inV":11},{"_label":"father","_id":24,"_inV":1}]}
+==>{"name":"alcmene","type":"human","_id":8,"_inE":[{"_label":"mother","_id":25,"_outV":7}]}
+==>{"name":"nemean","type":"monster","_id":9,"_inE":[{"time":1,"_label":"battled","_id":26,"_outV":7}]}
+==>{"name":"hydra","type":"monster","_id":10,"_inE":[{"time":2,"_label":"battled","_id":27,"_outV":7}]}
+==>{"name":"cerberus","type":"monster","_id":11,"_outE":[{"_label":"lives","_id":22,"_inV":6}],"_inE":[{"_label":"pet","_id":23,"_outV":3},{"time":12,"_label":"battled","_id":28,"_outV":7}]}
+
+To conclude, the _grandfather_ derived graph can be further computed on using `g.getNextGraph()`. This method returns a new graph that points to the output of the previous `g` graph (with inputs/outputs and HDFS directories handled accordingly).
+
+[source,gremlin]
+gremlin> g                                                 
+==>titangraph[graphsoninputformat->graphsonoutputformat]
+gremlin> h = g.getNextGraph()
+==>titangraph[graphsoninputformat->graphsonoutputformat]
+
+[source,gremlin]
+gremlin> h.E.has('label','grandfather').keep.count()
+12/09/16 14:24:42 INFO mapreduce.HadoopCompiler: Compiled to 1 MapReduce job(s)
+12/09/16 14:24:42 INFO mapreduce.HadoopCompiler: Executing job 1 out of 1: MapSequence[com.thinkaurelius.faunus.mapreduce.transform.EdgesMap.Map, com.thinkaurelius.faunus.mapreduce.filter.PropertyFilterMap.Map, com.thinkaurelius.faunus.mapreduce.sideeffect.CommitEdgesMap.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Map, com.thinkaurelius.faunus.mapreduce.util.CountMapReduce.Reduce]
+...
+==>1
+
+The traversal above removes all edges except _grandfather_ edges and then counts the remaining edges. As demonstrated, there is only 1 _grandfather_ edge (the grandfather of Hercules is Saturn).
+
+[source,gremlin]
+h.E.has('label','grandfather').keep.count()
+
+  * `h`: the graph pointing to the output of `g`
+  * `E`: for all the vertices in the graph
+  * `has('label','grandfather')`: traverse to _grandfather_ edges
+  * `keep`: keep the edges at the current step and delete all others
+  * `count`: count the number of elements current at the current step
+
+[source,gremlin]
+gremlin> hdfs.head('output_/*/graph*')    
+==>{"name":"saturn","type":"titan","_id":0,"_inE":[{"_label":"grandfather","_id":-1,"_outV":7}]}
+==>{"name":"jupiter","type":"god","_id":1}
+==>{"name":"neptune","type":"god","_id":2}
+==>{"name":"pluto","type":"god","_id":3}
+==>{"name":"sky","type":"location","_id":4}
+==>{"name":"sea","type":"location","_id":5}
+==>{"name":"tartarus","type":"location","_id":6}
+==>{"name":"hercules","type":"demigod","_id":7,"_outE":[{"_label":"grandfather","_id":-1,"_inV":0}]}
+==>{"name":"alcmene","type":"human","_id":8}
+==>{"name":"nemean","type":"monster","_id":9}
+==>{"name":"hydra","type":"monster","_id":10}
+==>{"name":"cerberus","type":"monster","_id":11}

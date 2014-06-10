@@ -41,26 +41,35 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      */
     private boolean isMutationStarted;
 
-    private final StoreTransaction baseTx;
-    private final StoreTransaction consistentTx;
+    /**
+     * Transaction on the store holding information. This is only used for
+     * locking-related metadata. No client data are read or written through this
+     * transaction.
+     */
+    private final StoreTransaction lockTx;
+
+    /**
+     * Transaction for reading and writing client data.
+     */
+    private final StoreTransaction dataTx;
     private final Duration maxReadTime;
 
     private final Map<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>> expectedValuesByStore =
             new HashMap<ExpectedValueCheckingStore, Map<KeyColumn, StaticBuffer>>();
 
-    public ExpectedValueCheckingTransaction(StoreTransaction baseTx, StoreTransaction consistentTx, Duration maxReadTime) {
+    public ExpectedValueCheckingTransaction(StoreTransaction dataTx, StoreTransaction lockTx, Duration maxReadTime) {
         //Preconditions.checkArgument(consistentTx.getConfiguration().getConsistency() == ConsistencyLevel.KEY_CONSISTENT);
-        this.baseTx = baseTx;
-        this.consistentTx = consistentTx;
+        this.dataTx = dataTx;
+        this.lockTx = lockTx;
         this.maxReadTime = maxReadTime;
     }
 
-    StoreTransaction getBaseTransaction() {
-        return baseTx;
+    StoreTransaction getDataTransaction() {
+        return dataTx;
     }
 
-    StoreTransaction getConsistentTransaction() {
-        return consistentTx;
+    StoreTransaction getLockTransaction() {
+        return lockTx;
     }
 
     private void lockedOn(ExpectedValueCheckingStore store) {
@@ -153,15 +162,15 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     @Override
     public void rollback() throws StorageException {
         deleteAllLocks();
-        baseTx.rollback();
-        consistentTx.rollback();
+        dataTx.rollback();
+        lockTx.rollback();
     }
 
     @Override
     public void commit() throws StorageException {
-        baseTx.commit();
+        dataTx.commit();
         deleteAllLocks();
-        consistentTx.commit();
+        lockTx.commit();
     }
 
 
@@ -197,7 +206,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     @Override
-    public TransactionHandleConfig getConfiguration() {
-        return baseTx.getConfiguration();
+    public BaseTransactionConfig getConfiguration() {
+        return dataTx.getConfiguration();
     }
 }

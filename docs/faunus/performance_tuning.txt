@@ -1,0 +1,50 @@
+[[faunus-performance-tuning]]
+Performance Tuning
+------------------
+
+.MapReduce flowchart courtesy of courtesy of Ricky Ho's http://horicky.blogspot.com/[Pragmatic Programmer] blog
+image::http://4.bp.blogspot.com/_j6mB7TMmJJY/TNBQJUikfGI/AAAAAAAAAgo/2VZCtGMBBgE/s1600/p1.png[]
+
+
+http://hadoop.apache.org/[Hadoop] is a complex piece of software with a variety of components including a distributed file system, a  distributed computing framework with job trackers, data nodes, and numerous simultaneously running JVM instances. With any complex software environment, there are tunings that can be employed to ensure both efficient use of *space* (network bandwidth, hard drive, memory, etc.) and *time* (object creation, combiners, in-memory combiners, etc.). This section presents various tricks to Hadoop/Faunus that can be used to tune Faunus job sequences and developed Faunus MapReduce extensions.
+
+Faunus Specific Tunings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+// !images/faunus-head-logo.png!
+
+* *Use SequenceFiles for repeated analyses*: The <<sequencefile-io-format,Hadoop SequenceFile format>> is the optimal file format for Faunus. If repeated analysis is going to be done on a graph, then it is beneficial to first generate a SequenceFile representation of that graph in HDFS. This file can then serve as the input for repeated analyses. Generating a SequenceFile is as simple as running the identity step `g._` with the following Faunus properties.
+
+[source,properties]
+faunus.graph.output.format=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat
+
+* *Avoid text-based representations of graphs*: The <<graphson-io-format,GraphSON Format>> representation of a graph is easy to read/write, but inefficient. DBpedia as a GraphSON file is 23gigs and 11gigs as a SequenceFile. If possible, avoid using verbose text-based formats.
+
+* *Reduce the size of the graph early in a job chain*: A Faunus graph is typically multi-relational in that there are numerous types of edges in the graph. In many situations, all that information is not necessary for the graph derivation or statistic. As such, use filtering steps early on in the expression to reduce the graph down to the requisite information needed for the computation. Below, because only _battled_ and _father_ edges are used for the traversal, all other edges are filtered out prior to doing the traversal.
+
+[source,gremlin]
+g.E.has('label','battled','father').keep.V.as('x').in('battled').in('father').linkOut('x','enemy-father')
+
+* *Make use of repeated map steps*: When a chain of map-steps are issued, Faunus will process that chain in-memory and thus, there is no I/O within the chain. As such, it is best to organize the traversal (if possible) with all the maps front-loading the traversal/query.
+
+* *A vertex must be storable in main memory*: The atomic unit of Faunus is a vertex. A `FaunusVertex` is composed of the vertex's properties, its incoming edges, its outgoing edges, the properties of those edges, and the path information of the traversal up to the elements. A vertex (and any working data structure) must be able to fit in main memory. As such, this is the limit of what can be processed by Faunus. Be sure to make use of `mapred.child.java.opts` if more memory is required for the largest vertex being processed (e.g. `-Xmx512m`).
+
+* *Avoid long, non-filtering path-enabled traversals*: When the history of a traversal is not needed, then the only information propagated between elements is the number of counter at the current element (as a long). When history is required, then an array of an array of element ids is propagated. With complex graph structures and with the breadth-first nature of Gremlin/Faunus, this can lead to a combinatorial explosion.
+
+* *If no graph output needed, use `NoOpOutputFormat`*: If a graph derivation is not required, but instead some sideeffect computation, then set the final output format of the graph to be `NoOpOutputFormat`. If no output is needed at all, used Hadoop's native `NullOutputFormat`.
+
+[source,properties]
+faunus.graph.output.format=com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
+
+Hadoop Specific Tunings
+~~~~~~~~~~~~~~~~~~~~~~~
+
+// !images/hadoop-logo.jpg!
+
+There are too many Hadoop-specific performance settings to exhaustively catalog here.  This list is just a starting point.
+
+* "http://wiki.apache.org/hadoop/HowManyMapsAndReduces":http://wiki.apache.org/hadoop/HowManyMapsAndReduces
+* "http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/":http://allthingshadoop.com/2010/04/28/map-reduce-tips-tricks-your-first-real-cluster/
+* "http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html":http://yaseminavcular.blogspot.com/2011/03/hadoop-java-heap-space-error.html
+* "http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/":http://www.cloudera.com/blog/2009/12/7-tips-for-improving-mapreduce-performance/
+* "http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of":http://blog.erdemagaoglu.com/post/4605524309/lzo-vs-snappy-vs-lzf-vs-zlib-a-comparison-of

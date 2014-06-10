@@ -10,12 +10,12 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TransactionBuilder;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.TransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration.Restriction;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
-import com.thinkaurelius.titan.diskstorage.util.StandardTransactionHandleConfig;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -323,7 +323,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final int[] restrictedPartitions;
         private final DefaultSchemaMaker defaultSchemaMaker;
 
-        private final TransactionHandleConfig handleConfig;
+        private final BaseTransactionConfig handleConfig;
 
         public ImmutableTxCfg(boolean isReadOnly,
                 boolean hasEnabledBatchLoading,
@@ -353,7 +353,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.logIdentifier = logIdentifier;
             this.restrictedPartitions=restrictedPartitions;
             this.defaultSchemaMaker = defaultSchemaMaker;
-            this.handleConfig = new StandardTransactionHandleConfig.Builder()
+            this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
                     .groupName(groupName)

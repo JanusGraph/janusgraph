@@ -1,0 +1,225 @@
+[[rexster-io-format]]
+Rexster IO Format
+-----------------
+
+// !https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png!
+
+* *InputFormat*: `com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat`
+
+http://rexster.tinkerpop.com[Rexster] is a graph server that exposes any http://blueprints.tinkerpop.com[Blueprints] graph (e.g. TinkerGraph, Neo4j, OrientDB, DEX, Titan, and Sail RDF Stores) through REST and a binary protocol called RexPro. (See the https://github.com/tinkerpop/rexster/wiki/The-Benefits-of-Rexster[Benefits of Rexster]).
+
+Rexster and Faunus
+~~~~~~~~~~~~~~~~~~
+
+Faunus can be configured to be used with Rexster (version 2.1.0+, see <<faunus-limitations-rexster>>) a Faunus https://github.com/tinkerpop/rexster/wiki/Rexster-Kibbles[Rexster Kibble] (also known as an https://github.com/tinkerpop/rexster/wiki/Extensions[Extension]).  The purpose of this extension is to allow Faunus to work with other Blueprints implementations that do not have a direct `InputSource` for Faunus.  
+
+The easiest way to get started is with one of the standard "toy" graphs that comes with Rexster: the https://github.com/tinkerpop/gremlin/wiki/Defining-a-More-Complex-Property-Graph[Grateful Dead Graph]. To deploy Faunus to Rexster, first make a directory as in:
+
+[source,bourne]
+mkdir REXSTER_HOME/ext/faunus
+
+Then, if building Faunus from source:
+
+[source,bourne]
+cp FAUNUS_HOME/target/faunus-x.y.z-standalone/lib/*.* REXSTER_HOME/ext/faunus
+
+or, if using the Faunus zipped distribution download:
+
+[source,bourne]
+cp FAUNUS_HOME/lib/*.* REXSTER_HOME/ext/faunus
+
+*NOTE*: Future releases will have a much more efficient/simple packaging model.
+
+Next, edit the following segment of the `rexster.xml` file to tell Rexster to expose the Faunus Kibble on the `gratefulgraph`:
+
+[source,xml]
+----
+<graph>
+    <graph-name>gratefulgraph</graph-name>
+    <graph-type>com.tinkerpop.rexster.config.TinkerGraphGraphConfiguration</graph-type>
+    <graph-location>data/graph-example-2</graph-location>
+    <extensions>
+        <allows>
+            <allow>tp:gremlin</allow>
+            <allow>faunus:rexsterinputformat</allow>
+        </allows>
+    </extensions>
+</graph>
+----
+
+Start Rexster (See https://github.com/tinkerpop/rexster/wiki/Getting-Started[Getting Started] with Rexster) and note the inclusion of the Faunus Kibble in the console on `gratefulgraph`:
+
+[source,text]
+----
+rexster$ bin/rexster.sh -s -c ./bin/rexster.xml
+[INFO] WebServer - .:Welcome to Rexster:.
+...
+[INFO] RexsterApplicationGraph - Graph [gratefulgraph] - configured with allowable namespace [tp:gremlin]
+[INFO] RexsterApplicationGraph - Graph [gratefulgraph] - configured with allowable namespace [faunus:rexsterinputformat]
+...
+[INFO] WebServer - Rexster Server running on: [http://localhost:8182]
+[INFO] WebServer - Rexster configured with no security.
+[INFO] WebServer - RexPro serving on port: [8184]
+[INFO] ShutdownManager$ShutdownSocketListener - Bound shutdown socket to /127.0.0.1:8183. Starting listener thread for shutdown requests.
+----
+
+Next, a `rexster-input.properties` is created with the following properties. Note that `bin/rexster-input.properties` is provided by default with Faunus.
+
+[source,properties]
+----
+faunus.graph.input.format=com.thinkaurelius.faunus.formats.rexster.RexsterInputFormat
+faunus.graph.input.rexster.hostname=127.0.0.1
+faunus.graph.input.rexster.port=8182
+faunus.graph.input.rexster.ssl=false
+faunus.graph.input.rexster.graph=gratefulgraph
+faunus.graph.input.rexster.v-estimate=800
+
+faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+faunus.output.location=output
+faunus.output.location.overwrite=true
+----
+
+From here, any Faunus job can be run where now, the source data is being pulled from Rexster.  Start a Gremlin terminal from Faunus:
+
+[source,text]
+faunus$ bin/gremlin.sh
+
+Then do a simple label distribution:
+
+[source,gremlin]
+----
+gremlin> g = FaunusFactory.open('bin/rexster-input.properties')
+==>faunusgraph[rexsterinputformat->graphsonoutputformat]
+gremlin> g.V.in('followed_by').name.groupCount()
+12/09/18 19:01:36 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+...
+==>A MIND TO GIVE UP LIVIN	1
+==>ADDAMS FAMILY	2
+==>AINT SUPERSTITIOUS	9
+==>ALABAMA GETAWAY	14
+==>ALL ALONG THE WATCHTOWER	26
+==>ALTHEA	58
+==>ARE YOU LONELY FOR ME	
+==>...
+----
+
+Configuration Cheatsheet
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+// [[images/rexster-gremlin-elephant.png]]
+
+All settings Rexster specific configuration settings in `bin/rexster-input.properties` are prefixed with `faunus.graph.input.rexster`.
+
+[options="header"]
+|=================
+| Setting | Description
+| `hostname` | The IP address or hostname of the Rexster server.
+| `port` | The port that Rexster is serving the REST API from.
+| `ssl` | Tells Faunus if it should connect to Rexster with `http` or `https`.
+| `graph` | The name of the graph as https://github.com/tinkerpop/rexster/wiki/Rexster-Configuration[configured] in Rexster.
+| `v-estimate` | The estimated number of vertices in the target graph.  Helps Faunus understand how to split the job into even bits for better efficiency in processing. Set this value to `-1` to have Faunus request the actual vertex count from Rexster.  This configuration will come at the expense of a full iteration of the vertices in the graph
+| `username` | The username to send on the authentication header, if basic https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Rexster Security] is configured.
+| `password` | The password to send on the authentication header, if basic https://github.com/tinkerpop/rexster/wiki/Rexster-Security[Rexster Security] is configured.
+|=================
+
+Blueprints Graph Implementations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rexster can expose any Blueprints graph to Faunus.  It is important to note that Faunus is only capable of working with graph vertex and edge identifiers that are of the `long` data type.  Using a Blueprints graph that does not have identifiers that resolve to `long` will produce errors.
+
+OrientDB Configuration
+^^^^^^^^^^^^^^^^^^^^^^
+
+http://www.orientdb.org[OrientDB] does not use `long` identifiers and instead has a compound identifier which consists of a `cluster id` and unique identifier for the item in the cluster.  The Faunus Kibble is capable of converting this compound identifier to something Faunus can operate with.  To tell the Faunus Kibble to convert the compound identifier to `long`, add the following configuration to `rexster.xml` for any OrientDB database:
+
+[source,xml]
+----
+<graph>
+    <graph-name>orientdbsample</graph-name>
+    <graph-type>orientgraph</graph-type>
+    <graph-location>local:/tmp/orientdb</graph-location>
+    <properties>
+        <username>admin</username>
+        <password>admin</password>
+    </properties>
+    <extensions>
+        <allows>
+            <allow>tp:gremlin</allow>
+            <allow>faunus:rexsterinputformat</allow>
+         </allows>
+         <extension>
+	     <namespace>faunus</namespace>
+             <name>rexsterinputformat</name>
+             <configuration>
+                 <id-handler>orientdb</id-handler>
+             </configuration>
+         </extension>
+    </extensions>
+</graph>
+----
+
+Titan BerkeleyDB Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Titan BerkeleyDB can be exposed to Faunus via Rexster.  It does not expose `long` identifiers for edges through its Blueprints interface.  The Faunus Kibble is capable of converting the identifier it does use to something Faunus can operate with.  To tell the Faunus Kibble to convert the identifier to `long`, add the following configuration to `rexster.xml` for any Titan BerkeleyDB database:
+
+[source,xml]
+----
+<graph>
+  <graph-name>titanexample</graph-name>
+  <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+  <graph-location>/tmp/titan</graph-location>
+  <graph-read-only>false</graph-read-only>
+  <properties>
+    <storage.backend>local</storage.backend>
+    <buffer-size>100</buffer-size>
+  </properties>
+  <extensions>
+    <allows>
+      <allow>tp:gremlin</allow>
+      <allow>faunus:rexsterinputformat</allow>
+    </allows>
+    <extension>
+      <namespace>faunus</namespace>
+      <name>rexsterinputformat</name>
+      <configuration>
+        <id-handler>titan-berkeleyje</id-handler>
+      </configuration>
+    </extension>
+  </extensions>
+</graph>
+----
+
+It is important to note that this configuration is for BerkeleyDB configuration only.  For all other modes of Titan operations (i.e. Cassandra), use the appropriate [[Titan Formats|Titan Format]].
+
+Usage in EC2
+~~~~~~~~~~~~
+
+// !http://cdn001.practicalclouds.com/user-content/1_Dave%20McCormick//logos/Amazon%20AWS%20plus%20EC2%20logo_scaled.png!:http://aws.amazon.com/ec2/
+
+It's not difficult to get Faunus running with Rexster in http://aws.amazon.com/ec2/[Amazon EC2].  There are just a few EC2 and Rexster configuration steps to consider in addition to the instructions for [[Running Faunus on Amazon EC2]].
+
+After downloading Rexster to the EC2 instance, ensure that the `base-uri` and `rexster-server-host` configuration properties of `rexster.xml` are set to the private IP address of the EC2 instance.  The configuration should look something like the following:
+
+[source,xml]
+----
+<rexster>
+  ...
+  <rexster-server-host>10.118.95.50</rexster-server-host>
+  <base-uri>http://10.118.95.50</base-uri>
+  ...
+</rexster>
+----
+
+By default, Faunus creates an EC2 security group called `jclouds#faunuscluster`, which all the Hadoop nodes are created in.  To allow the nodes in this cluster to talk to the Rexster instance, the security group that Rexster is in must allow access to that security group.
+
+To provide this access, first utilize Whirr to establish the Hadoop cluster (as described [[here|Running Faunus on Amazon EC2]]) and find the `jclouds#faunuscluster` security group in the Amazon EC2 Console:
+
+image:faunus-security-group-screenshot.png[]
+
+Take note of the security group identifier.  In the case above, it is `sg-02e38b6a`.  Edit the Inbound settings for the security group that Rexster is in.  In the following screenshot, Rexster exists in a security group that is aptly named "Rexster Group".  
+
+image:faunus-rexster-security-group-screenshot.png[]
+
+Add a rule that allows the `jclouds#faunuscluster` to access the Rexster Group over port 8182 (the default port established in `rexster.xml`).  Utilize the security group identifier as shown in the above screenshot to create this rule.  It is now possible to run a Faunus job against Rexster. 

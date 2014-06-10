@@ -1,0 +1,26 @@
+[[sequencefile-io-format]]
+SequenceFile IO Format
+----------------------
+
+// !images/hadoop-logo.jpg!
+
+* *InputFormat*: `org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat`
+* *OutputFormat*: `org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat`
+
+http://hadoop.apache.org[Hadoop's] native binary data file is the http://wiki.apache.org/hadoop/SequenceFile[SequenceFile]. Every `Writable` object implements methods that enable it to both read itself _from_ and write itself _to_ a SequenceFile. Because both `FaunusVertex` and `FaunusEdge` implement `Writable`, they can be captured by a SequenceFile. Moreover, given that a SequenceFile is a binary format, it supports a more compact representation that found with other text-based formats such as <<graphson-io-format,GraphSON Format>>.
+
+Faunus-Specific Compression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following is a list of compression techniques used by Faunus within a SequenceFile.
+
+* http://en.wikipedia.org/wiki/Variable-width_encoding[Variable-width encoding] of all ints and longs.
+* Edge's sorted by direction to reduce the number of direction encodings.
+* Edge's sorted by label to reduce the number of label encodings.
+* Only the adjacent vertex id stored as the root vertex's id can be inferred.
+* Element property type encoding represented by a single byte.
+
+Intermediate Format
+~~~~~~~~~~~~~~~~~~~
+
+Given that a SequenceFile is compact, splittable, and a native Hadoop format, Faunus makes use of the SequenceFile as the intermediate representation between consecutive Faunus jobs. In other words, when a Faunus computation requires more than one MapReduce phase, a SequenceFile representing the output of the first MapReduce job is temporarily persisted in http://en.wikipedia.org/wiki/Apache_Hadoop#Hadoop_Distributed_File_System[HDFS] and fed as the input to the second MapReduce job.

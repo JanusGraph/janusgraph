@@ -11,7 +11,7 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
             new BaseLabel("SchemaRelated", 36, Direction.BOTH);
 
     public static final BaseLabel VertexLabelEdge =
-            new BaseLabel("vertexlabel", 2, Direction.BOTH);
+            new BaseLabel("vertexlabel", 2, Direction.OUT);
 
 
     private final Direction directionality;
