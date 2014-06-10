@@ -5,7 +5,6 @@ import com.sleepycat.je.*;
 import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
@@ -76,7 +75,10 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
             DatabaseEntry dbkey = key.as(ENTRY_FACTORY);
             DatabaseEntry data = new DatabaseEntry();
 
+            log.trace("db={}, op=get, tx={}", name, txh);
+
             OperationStatus status = db.get(tx, dbkey, data, getLockMode(txh));
+
             if (status == OperationStatus.SUCCESS) {
                 return getBuffer(data);
             } else {
@@ -102,7 +104,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     @Override
     public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
                                                   KeySelector selector, StoreTransaction txh) throws StorageException {
-        log.trace("Get slice query");
+        log.trace("beginning db={}, op=getSlice, tx={}", name, txh);
         Transaction tx = getTransaction(txh);
         Cursor cursor = null;
         final List<KeyValueEntry> result = new ArrayList<KeyValueEntry>();
@@ -128,7 +130,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
                 status = cursor.getNext(foundKey, foundData, getLockMode(txh));
             }
-            log.trace("Retrieved: {}", result.size());
+            log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
 
             return new RecordIterator<KeyValueEntry>() {
                 private final Iterator<KeyValueEntry> entries = result.iterator();
@@ -165,13 +167,16 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     @Override
     public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException {
-        Transaction tx = getTransaction(txh);
-        insert(key, value, tx, true);
+        insert(key, value, txh, true);
     }
 
-    public void insert(StaticBuffer key, StaticBuffer value, Transaction tx, boolean allowOverwrite) throws StorageException {
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, boolean allowOverwrite) throws StorageException {
+        Transaction tx = getTransaction(txh);
         try {
             OperationStatus status;
+
+            log.trace("db={}, op=insert, tx={}", name, txh);
+
             if (allowOverwrite)
                 status = db.put(tx, key.as(ENTRY_FACTORY), value.as(ENTRY_FACTORY));
             else
@@ -195,6 +200,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
         log.trace("Deletion");
         Transaction tx = getTransaction(txh);
         try {
+            log.trace("db={}, op=delete, tx={}", name, txh);
             OperationStatus status = db.delete(tx, key.as(ENTRY_FACTORY));
             if (status != OperationStatus.SUCCESS) {
                 throw new PermanentStorageException("Could not remove: " + status);

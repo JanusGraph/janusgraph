@@ -56,6 +56,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     @Override
     public synchronized void rollback() throws StorageException {
+        if (log.isTraceEnabled())
+            log.trace("{} rolled back", this.toString(), new TransactionClose(this.toString()));
         super.rollback();
         if (tx == null) return;
         try {
@@ -69,6 +71,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
 
     @Override
     public synchronized void commit() throws StorageException {
+        if (log.isTraceEnabled())
+            log.trace("{} committed", this.toString(), new TransactionClose(this.toString()));
         super.commit();
         if (tx == null) return;
         try {
@@ -80,5 +84,16 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + tx.toString();
+    }
 
+    private static class TransactionClose extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private TransactionClose(String msg) {
+            super(msg);
+        }
+    }
 }
