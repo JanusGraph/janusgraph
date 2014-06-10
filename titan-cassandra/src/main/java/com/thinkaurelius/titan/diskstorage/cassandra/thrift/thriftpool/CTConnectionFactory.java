@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, CTConnection> {
-    
+
     private static final Logger log = LoggerFactory.getLogger(CTConnectionFactory.class);
     private static final long SCHEMA_WAIT_MAX = 5000L;
     private static final long SCHEMA_WAIT_INCREMENT = 25L;
@@ -115,7 +115,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     @Override
     public boolean validateObject(String key, CTConnection c) {
         Config curCfg = cfgRef.get();
-        
+
         boolean isSameConfig = c.getConfig().equals(curCfg);
         if (log.isDebugEnabled()) {
             if (isSameConfig) {
@@ -128,7 +128,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         return isSameConfig && c.isOpen();
     }
-    
+
     public Config getConfig() {
         return cfgRef.get();
     }
@@ -138,133 +138,6 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         log.debug("Updated Thrift connection factory config to {}", newCfg);
     }
 
-    /* This method was adapted from cassandra 0.7.5 cli/CliClient.java */
-    public static void validateSchemaIsSettled(Cassandra.Client thriftClient,
-                                               String currentVersionId) throws InterruptedException, StorageException {
-        log.debug("Waiting for Cassandra schema propagation...");
-        Map<String, List<String>> versions = null;
-
-        final TimeUUIDType ti = TimeUUIDType.instance;
-
-        final long start = System.currentTimeMillis();
-        long lastTry = 0;
-        final long limit = start + SCHEMA_WAIT_MAX;
-        final long minSleep = SCHEMA_WAIT_INCREMENT;
-        boolean inAgreement = false;
-        outer:
-        while (limit - System.currentTimeMillis() >= 0 && !inAgreement) {
-            // Block for a little while if we're looping too fast
-            final long now = System.currentTimeMillis();
-            long sinceLast = now - lastTry;
-            long willSleep = minSleep - sinceLast;
-            if (0 < willSleep) {
-                log.debug("Schema not yet propagated; " +
-                        "rechecking in {} ms", willSleep);
-                Thread.sleep(willSleep);
-            }
-            // Issue thrift query
-            try {
-                lastTry = System.currentTimeMillis();
-                versions = thriftClient.describe_schema_versions(); // getting schema version for nodes of the ring
-            } catch (Exception e) {
-                throw new PermanentStorageException("Failed to fetch Cassandra Thrift schema versions: " +
-                        ((e instanceof InvalidRequestException) ?
-                                ((InvalidRequestException) e).getWhy() : e.getMessage()));
-            }
-
-            int nodeCount = 0;
-            // Check schema version
-            UUID benchmark = UUID.fromString(currentVersionId);
-            ByteBuffer benchmarkBB = ti.decompose(benchmark);
-            for (String version : versions.keySet()) {
-                if (version.equals(StorageProxy.UNREACHABLE)) {
-                    nodeCount += versions.get(version).size();
-                    continue;
-                }
-
-                UUID uuid = UUID.fromString(version);
-                ByteBuffer uuidBB = ti.decompose(uuid);
-                if (-1 < ti.compare(uuidBB, benchmarkBB)) {
-                    log.debug("Version {} equals or comes after required version {}", uuid, benchmark);
-                    nodeCount += versions.get(version).size();
-                    continue;
-                }
-                continue outer;
-            }
-            
-            log.debug("Found {} unreachable or out-of-date Cassandra nodes", nodeCount);
-
-            inAgreement = true;
-        }
-
-        if (null == versions) {
-            throw new TemporaryStorageException("Couldn't contact Cassandra nodes before timeout");
-        }
-
-        if (versions.containsKey(StorageProxy.UNREACHABLE))
-            log.warn("Warning: unreachable nodes: {}",
-                    Joiner.on(", ").join(versions.get(StorageProxy.UNREACHABLE)));
-
-        if (!inAgreement) {
-            throw new TemporaryStorageException("The schema has not settled in " +
-                    SCHEMA_WAIT_MAX + " ms. Wanted version " +
-                    currentVersionId + "; Versions are " + FBUtilities.toString(versions));
-        } else {
-            log.debug("Cassandra schema version {} propagated in about {} ms; Versions are {}",
-                    new Object[]{currentVersionId, System.currentTimeMillis() - start, FBUtilities.toString(versions)});
-        }
-    }
-
-    public static void waitForClusterSize(Cassandra.Client thriftClient,
-                                          int minSize) throws InterruptedException, StorageException {
-        log.debug("Checking Cassandra cluster size" +
-                " (want at least {} nodes)...", minSize);
-        Map<String, List<String>> versions = null;
-
-        final long STARTUP_WAIT_MAX = 10000L;
-        final long STARTUP_WAIT_INCREMENT = 100L;
-
-        long start = System.currentTimeMillis();
-        long lastTry = 0;
-        long limit = start + STARTUP_WAIT_MAX;
-        long minSleep = STARTUP_WAIT_INCREMENT;
-
-        Integer curSize = null;
-
-        while (limit - System.currentTimeMillis() >= 0) {
-            // Block for a little while if we're looping too fast
-            long sinceLast = System.currentTimeMillis() - lastTry;
-            long willSleep = minSleep - sinceLast;
-            if (0 < willSleep) {
-//        		log.debug("Cassandra cluster size={} " +
-//        				"(want {}); rechecking in {} ms",
-//        				new Object[]{ curSize, minSize, willSleep });
-                Thread.sleep(willSleep);
-            }
-
-            // Issue thrift query
-            try {
-                lastTry = System.currentTimeMillis();
-                versions = thriftClient.describe_schema_versions();
-                if (1 != versions.size())
-                    continue;
-
-                String version = Iterators.getOnlyElement(versions.keySet().iterator());
-                curSize = versions.get(version).size();
-                if (curSize >= minSize) {
-                    log.debug("Cassandra cluster verified at size {} (schema version {}) in about {} ms",
-                            new Object[]{curSize, version, System.currentTimeMillis() - start});
-                    return;
-                }
-            } catch (Exception e) {
-                throw new PermanentStorageException("Failed to fetch Cassandra Thrift schema versions: " +
-                        ((e instanceof InvalidRequestException) ?
-                                ((InvalidRequestException) e).getWhy() : e.getMessage()));
-            }
-        }
-        throw new PermanentStorageException("Could not verify Cassandra cluster size");
-    }
-    
     public static class Config {
         // this is to keep backward compatibility with JDK 1.6, can be changed to ThreadLocalRandom once we fully switch
         private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<Random>() {
