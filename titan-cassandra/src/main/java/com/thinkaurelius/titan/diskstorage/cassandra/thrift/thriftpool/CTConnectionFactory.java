@@ -129,15 +129,6 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         return isSameConfig && c.isOpen();
     }
 
-    public Config getConfig() {
-        return cfgRef.get();
-    }
-
-    public void setConfig(Config newCfg) {
-        cfgRef.set(newCfg);
-        log.debug("Updated Thrift connection factory config to {}", newCfg);
-    }
-
     public static class Config {
         // this is to keep backward compatibility with JDK 1.6, can be changed to ThreadLocalRandom once we fully switch
         private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<Random>() {
