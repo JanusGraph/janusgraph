@@ -11,4 +11,8 @@ public class BerkeleyGraphTest extends TitanGraphTest {
         return BerkeleyStorageSetup.getBerkeleyJEGraphConfiguration();
     }
 
+    @Override
+    protected boolean isLockingOptimistic() {
+        return false;
+    }
 }

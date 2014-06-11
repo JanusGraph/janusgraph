@@ -43,4 +43,9 @@ public class InMemoryGraphTest extends TitanGraphTest {
     @Override
     public void simpleLogTest() {}
 
+    @Override
+    protected boolean isLockingOptimistic() {
+        return true;
+    }
+
 }

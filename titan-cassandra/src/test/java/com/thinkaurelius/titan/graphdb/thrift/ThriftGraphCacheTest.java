@@ -18,4 +18,9 @@ public class ThriftGraphCacheTest extends TitanGraphTest {
     public static void beforeClass() {
         CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
+
+    @Override
+    protected boolean isLockingOptimistic() {
+        return true;
+    }
 }

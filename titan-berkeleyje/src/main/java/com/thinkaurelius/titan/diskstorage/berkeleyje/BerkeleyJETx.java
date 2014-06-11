@@ -16,20 +16,20 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager.LOCK_MODE;
-
 public class BerkeleyJETx extends AbstractStoreTransaction {
 
     private static final Logger log = LoggerFactory.getLogger(BerkeleyJETx.class);
 
-    private Transaction tx;
-    private List<Cursor> openCursors = new ArrayList<Cursor>();
+    private volatile Transaction tx;
+    private final List<Cursor> openCursors = new ArrayList<Cursor>();
     private final LockMode lm;
 
     public BerkeleyJETx(Transaction t, LockMode lockMode, BaseTransactionConfig config) {
         super(config);
         tx = t;
         lm = lockMode;
+        Preconditions.checkNotNull(tx);
+        Preconditions.checkNotNull(lm);
     }
 
     public Transaction getTransaction() {
@@ -58,6 +58,8 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     public synchronized void rollback() throws StorageException {
         super.rollback();
         if (tx == null) return;
+        if (log.isTraceEnabled())
+            log.trace("{} rolled back", this.toString(), new TransactionClose(this.toString()));
         try {
             closeOpenIterators();
             tx.abort();
@@ -71,6 +73,9 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     public synchronized void commit() throws StorageException {
         super.commit();
         if (tx == null) return;
+        if (log.isTraceEnabled())
+            log.trace("{} committed", this.toString(), new TransactionClose(this.toString()));
+
         try {
             closeOpenIterators();
             tx.commit();
@@ -80,5 +85,16 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         }
     }
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + tx.toString();
+    }
 
+    private static class TransactionClose extends Exception {
+        private static final long serialVersionUID = 1L;
+
+        private TransactionClose(String msg) {
+            super(msg);
+        }
+    }
 }
