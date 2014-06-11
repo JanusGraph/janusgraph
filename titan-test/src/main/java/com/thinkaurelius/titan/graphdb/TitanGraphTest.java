@@ -73,6 +73,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
 
+    protected abstract boolean isLockingOptimistic();
+
   /* ==================================================================================
                             INDEXING
      ==================================================================================*/
@@ -1368,6 +1370,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      */
     @Test
     public void testTransactionIsolation() {
+        // Create edge label before attempting to write it from concurrent transactions
+        makeLabel("knows");
+        finishSchema();
+
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
 
@@ -1680,20 +1686,30 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
      * @param graph
      * @param job
      */
-    private static void executeLockConflictingTransactionJobs(TitanGraph graph, TransactionJob job) {
+    private void executeLockConflictingTransactionJobs(TitanGraph graph, TransactionJob job) {
         TitanTransaction tx1 = graph.newTransaction();
         TitanTransaction tx2 = graph.newTransaction();
         job.run(tx1);
         job.run(tx2);
-        tx1.commit(); //Should commit fine
-        try {
+        /*
+         * Under pessimistic locking, tx1 should abort and tx2 should commit.
+         * Under optimistic locking, tx1 may commit and tx2 may abort.
+         */
+        if (isLockingOptimistic()) {
+            tx1.commit();
+            try {
+                tx2.commit();
+                fail("Storage backend does not abort conflicting transactions");
+            } catch (TitanException e) {
+            }
+        } else {
+            try {
+                tx1.commit();
+                fail("Storage backend does not abort conflicting transactions");
+            } catch (TitanException e) {
+            }
             tx2.commit();
-            fail("Storage backend does not abort conflicting transactions");
-        } catch (TitanException e) {
-            Throwable cause = e.getCause();
-            //assertTrue(cause instanceof PermanentLockingException);
         }
-
     }
 
    /* ==================================================================================

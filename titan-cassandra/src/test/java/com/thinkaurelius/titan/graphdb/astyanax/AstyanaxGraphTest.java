@@ -19,4 +19,9 @@ public class AstyanaxGraphTest extends TitanGraphTest {
         return CassandraStorageSetup.getAstyanaxGraphConfiguration(getClass().getSimpleName());
     }
 
+    @Override
+    protected boolean isLockingOptimistic() {
+        return true;
+    }
+
 }

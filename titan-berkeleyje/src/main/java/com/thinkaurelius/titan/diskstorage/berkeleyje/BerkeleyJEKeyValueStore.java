@@ -131,6 +131,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 status = cursor.getNext(foundKey, foundData, getLockMode(txh));
             }
             log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size());
+//            log.trace("db={}, op=getSlice, tx={}, resultcount={}", name, txh, result.size(), new Throwable("getSlice trace"));
 
             return new RecordIterator<KeyValueEntry>() {
                 private final Iterator<KeyValueEntry> entries = result.iterator();

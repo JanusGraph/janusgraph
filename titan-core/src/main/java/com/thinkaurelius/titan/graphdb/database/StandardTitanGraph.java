@@ -500,10 +500,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         try {
             boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
                     || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
+
             if (hasSchemaElements) {
                 Preconditions.checkArgument(!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks,"Attempting to create schema elements in inconsistent state");
-                //Create separate backend transaction for schema aspects to make sure that those are persisted prior to and independently of other mutations in the tx
-                BackendTransaction schemaMutator = openBackendTransaction(tx);
+                /*
+                 * On storage without transactional isolation, create separate
+                 * backend transaction for schema aspects to make sure that
+                 * those are persisted prior to and independently of other
+                 * mutations in the tx. If the storage supports transactional
+                 * isolation, then don't create a separate tx.
+                 */
+                final BackendTransaction schemaMutator;
+                if (backend.getStoreFeatures().hasTxIsolation()) {
+                    schemaMutator = mutator;
+                } else {
+                    schemaMutator = openBackendTransaction(tx);
+                }
 
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
@@ -520,8 +532,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
 
                 LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
+
                 try {
-                    schemaMutator.commit();
+                    if (schemaMutator != mutator) { // reference inequality is sufficient in this case
+                        schemaMutator.commit();
+                    }
                 } catch (Throwable e) {
                     //[FAILURE] Primary persistence failed => abort but log failure (if possible)
                     status = LogTxStatus.FAILURE_SYSTEM;
