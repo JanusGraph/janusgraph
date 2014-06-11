@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.blueprints;
 
-import org.junit.Ignore;
-
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.tinkerpop.blueprints.TransactionalGraphTestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
