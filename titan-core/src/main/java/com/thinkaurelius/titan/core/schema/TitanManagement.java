@@ -317,6 +317,13 @@ public interface TitanManagement extends TitanConfiguration {
     public VertexLabelMaker makeVertexLabel(String name);
 
     /**
+     * Returns an {@link Iterable} over all defined {@link VertexLabel}s.
+     *
+     * @return
+     */
+    public Iterable<VertexLabel> getVertexLabels();
+
+    /**
      * Whether this management transaction is open or has been closed (i.e. committed or rolled-back)
      * @return
      */
@@ -324,7 +331,7 @@ public interface TitanManagement extends TitanConfiguration {
 
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
-     * @see com.thinkaurelius.titan.core.TitanTransaction#commit() 
+     * @see com.thinkaurelius.titan.core.TitanTransaction#commit()
      */
     public void commit();
 

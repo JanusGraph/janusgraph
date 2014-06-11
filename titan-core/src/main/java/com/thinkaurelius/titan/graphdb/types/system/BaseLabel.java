@@ -8,17 +8,19 @@ import com.tinkerpop.blueprints.Direction;
 public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
     public static final BaseLabel SchemaDefinitionEdge =
-            new BaseLabel("SchemaRelated", 36, Direction.BOTH);
+            new BaseLabel("SchemaRelated", 36, Direction.BOTH, Multiplicity.MULTI);
 
     public static final BaseLabel VertexLabelEdge =
-            new BaseLabel("vertexlabel", 2, Direction.OUT);
+            new BaseLabel("vertexlabel", 2, Direction.OUT, Multiplicity.MANY2ONE);
 
 
     private final Direction directionality;
+    private final Multiplicity multiplicity;
 
-    private BaseLabel(String name, int id, Direction directionality) {
+    private BaseLabel(String name, int id, Direction uniDirectionality, Multiplicity multiplicity) {
         super(name, id, TitanSchemaCategory.EDGELABEL);
-        this.directionality = directionality;
+        this.directionality = uniDirectionality;
+        this.multiplicity = multiplicity;
     }
 
     @Override
@@ -28,7 +30,7 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
     @Override
     public Multiplicity getMultiplicity() {
-        return Multiplicity.MULTI;
+        return multiplicity;
     }
 
     @Override

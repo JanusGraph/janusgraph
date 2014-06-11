@@ -43,18 +43,18 @@ public class ExpirationKCVSCache extends KCVSCache {
     private final ConcurrentHashMap<StaticBuffer,Long> expiredKeys;
 
     private final long cacheTimeMS;
-    private final long expirationGracePeriodMS;
+    private final long invalidationGracePeriodMS;
     private final CleanupThread cleanupThread;
 
 
-    public ExpirationKCVSCache(final KeyColumnValueStore store, String metricsName, final long cacheTimeMS, final long expirationGracePeriodMS, final long maximumByteSize) {
+    public ExpirationKCVSCache(final KeyColumnValueStore store, String metricsName, final long cacheTimeMS, final long invalidationGracePeriodMS, final long maximumByteSize) {
         super(store, metricsName);
         Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
         Preconditions.checkArgument(System.currentTimeMillis()+1000l*3600*24*365*100+cacheTimeMS>0,"Cache expiration time too large, overflow may occur: %s",cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
-        Preconditions.checkArgument(expirationGracePeriodMS>=0,"Invalid expiration grace peiod: %s",expirationGracePeriodMS);
-        this.expirationGracePeriodMS = expirationGracePeriodMS;
+        Preconditions.checkArgument(invalidationGracePeriodMS >=0,"Invalid expiration grace peiod: %s", invalidationGracePeriodMS);
+        this.invalidationGracePeriodMS = invalidationGracePeriodMS;
         CacheBuilder<KeySliceQuery,EntryList> cachebuilder = CacheBuilder.newBuilder()
                 .maximumWeight(maximumByteSize)
                 .concurrencyLevel(concurrencyLevel)
@@ -157,7 +157,7 @@ public class ExpirationKCVSCache extends KCVSCache {
             expiredKeys.remove(query.getKey(),until);
             return false;
         }
-        //We suffer
+        //We suffer a cache miss, hence decrease the count down
         penaltyCountdown.countDown();
         return true;
     }
@@ -201,7 +201,7 @@ public class ExpirationKCVSCache extends KCVSCache {
                 for (Map.Entry<StaticBuffer,Long> expKey : expiredKeys.entrySet()) {
                     if (isBeyondExpirationTime(expKey.getValue()))
                         expiredKeys.remove(expKey.getKey(), expKey.getValue());
-                    else if (getAge(expKey.getValue())>=expirationGracePeriodMS)
+                    else if (getAge(expKey.getValue())>= invalidationGracePeriodMS)
                         expiredKeysCopy.put(expKey.getKey(),expKey.getValue());
                 }
                 for (KeySliceQuery ksq : cache.asMap().keySet()) {

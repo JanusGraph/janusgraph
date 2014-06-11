@@ -42,7 +42,7 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
                 p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
             }
             Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
-            name = p.getValue(String.class);
+            name = p.getValue();
         }
         assert name != null;
         return TitanSchemaCategory.getName(name);

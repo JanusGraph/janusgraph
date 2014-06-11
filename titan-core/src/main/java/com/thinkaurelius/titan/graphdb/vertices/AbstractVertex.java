@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.graphdb.vertices;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
@@ -103,7 +104,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     protected Vertex getVertexLabelInternal() {
-        return Iterables.getOnlyElement(query().noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
     }
 
     @Override
@@ -115,7 +116,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public VertexCentricQueryBuilder query() {
-        return tx().query(it());
+        Preconditions.checkArgument(!isRemoved(), "Cannot access a removed vertex: %s", this);
+        return tx().query(this);
     }
 
     @Override

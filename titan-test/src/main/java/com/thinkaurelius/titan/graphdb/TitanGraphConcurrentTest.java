@@ -29,6 +29,9 @@ import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.RandomGenerator;
 import com.tinkerpop.blueprints.Direction;
 
+/**
+ * High concurrency test cases to spot deadlocks and other failures that can occur under high degrees of parallelism.
+ */
 @Category({PerformanceTests.class})
 public abstract class TitanGraphConcurrentTest extends TitanGraphBaseTest {
 

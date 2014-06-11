@@ -10,6 +10,8 @@ public class Token {
 
     public static final char SEPARATOR_CHAR = '%';
 
+    public static final char SPECIAL_TYPE_CHAR = '$';
+
     public static final String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);
         return StringUtils.join(components,SEPARATOR_CHAR);

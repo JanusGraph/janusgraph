@@ -122,6 +122,11 @@ public class GraphDatabaseConfiguration {
                 "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
                     "of Titan's advanced features. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
+
+    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(ROOT_NS,"force-index",
+            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
+                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided.",
+            ConfigOption.Type.MASKABLE, false);
 //
 //    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
 //    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
@@ -1202,6 +1207,7 @@ public class GraphDatabaseConfiguration {
 
     private boolean readOnly;
     private boolean flushIDs;
+    private boolean forceIndexUsage;
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
@@ -1356,6 +1362,7 @@ public class GraphDatabaseConfiguration {
     private void preLoadConfiguration() {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
+        forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
         defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -1473,6 +1480,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasFlushIDs() {
         return flushIDs;
+    }
+
+    public boolean hasForceIndexUsage() {
+        return forceIndexUsage;
     }
 
     public int getTxVertexCacheSize() {

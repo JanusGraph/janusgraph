@@ -66,4 +66,9 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
         return propertyIterator();
     }
 
+    @Override
+    public String toString() {
+         return typeId + "-" + direction + "->" + other + ":" + relationId;
+    }
+
 }

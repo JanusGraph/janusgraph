@@ -60,4 +60,17 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
         throw new AssertionError();
     }
 
+    @Override
+    public int hashCode() {
+        return type.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object oth) {
+        if (oth==null) return false;
+        else if (oth==this) return true;
+        else if (!getClass().isInstance(oth)) return false;
+        return type.equals(((RelationTypeIndexWrapper)oth).type);
+    }
+
 }

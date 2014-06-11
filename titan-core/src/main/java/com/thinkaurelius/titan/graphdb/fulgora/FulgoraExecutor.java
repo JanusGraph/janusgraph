@@ -54,7 +54,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
     private final EdgeSerializer edgeSerializer;
     private final IDManager idManager;
     private final OLAPJob<S> job;
-    private final ConcurrentMap<Long,Map<String,Object>> partitionedVertexMsgs;
+    private final ConcurrentMap<Long,MessageAccumulator> partitionedVertexMsgs;
 
     final FulgoraResult<S> vertexStates;
     final String stateKey;
@@ -93,7 +93,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
             }
         }
 
-        partitionedVertexMsgs = new ConcurrentHashMap<Long, Map<String, Object>>();
+        partitionedVertexMsgs = new ConcurrentHashMap<Long, MessageAccumulator>();
         vertexStates = initialState;
     }
 
@@ -149,18 +149,19 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                 if (conditionQuery==null) break; //Termination condition - primary query has no more data
 
                 //First, check if this is a valid (non-deleted) vertex
-                assert conditionQuery.entries.size()==1;
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
                                         conditionQuery.entries.get(0),true,tx);
-                if (relCache.typeId != BaseKey.VertexExists.getID()) {
-                    log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
+                final long vertexid = conditionQuery.vertexId;
+                if (relCache.typeId != BaseKey.VertexExists.getID() &&
+                        (!idManager.isPartitionedVertex(vertexid) || idManager.isCanonicalVertexId(vertexid)) ) {
+                    log.warn("Found deleted vertex with id: {}|{}|{}. Skipping",conditionQuery.vertexId,idManager.isPartitionedVertex(vertexid),relCache);
+                    if (idManager.isPartitionedVertex(vertexid)) getMessageAccumulator(vertexid).markDeleted();
                     for (int i=1;i<currentResults.length;i++) {
                         if (currentResults[i]!=null && currentResults[i].vertexId==conditionQuery.vertexId) {
                             currentResults[i]=null;
                         }
                     }
                 } else {
-                    final long vertexid = conditionQuery.vertexId;
                     List<QueryResult> queryResults = new ArrayList<QueryResult>(numQueries-1);
                     for (int i=1;i<currentResults.length;i++) {
                         if (currentResults[i]!=null && currentResults[i].vertexId==vertexid) {
@@ -185,12 +186,17 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
             if (!partitionedVertexMsgs.isEmpty()) {
                 processor = new ThreadPoolExecutor(numProcessors, numProcessors, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
                 processor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-                for (final Map.Entry<Long,Map<String,Object>> partitionVertexMsg : partitionedVertexMsgs.entrySet()) {
+                for (final Map.Entry<Long,MessageAccumulator> partitionVertexMsg : partitionedVertexMsgs.entrySet()) {
+                    final MessageAccumulator mergedMsg = partitionVertexMsg.getValue();
+                    if (mergedMsg.isDeleted()) {
+                        log.warn("Found deleted partitioned vertex with id: {}. Skipping",partitionVertexMsg.getKey());
+                        continue;
+                    }
                     final FulgoraVertex vertex = new FulgoraVertex(tx,partitionVertexMsg.getKey(),FulgoraExecutor.this);
                     processor.submit(new Runnable() {
                         @Override
                         public void run() {
-                            processVertex(vertex,partitionVertexMsg.getValue());
+                            processVertex(vertex,mergedMsg);
                         }
                     });
                 }
@@ -293,21 +299,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                     if (combinedMsg!=null) pulledMessages.put(queryName,combinedMsg);
                 }
                 if (idManager.isPartitionedVertex(vertexId)) {
-                    long canonicalId = idManager.getCanonicalVertexId(vertexId);
-                    //Only accumulate messages for later processing
-                    Map<String,Object> accMsg = partitionedVertexMsgs.get(canonicalId);
-                    if (accMsg==null) {
-                        accMsg = partitionedVertexMsgs.putIfAbsent(canonicalId, new HashMap<String, Object>(queryDefinitions.size()));
-                    }
-                    synchronized (accMsg) {
-                        for (Map.Entry<String,Object> add : pulledMessages.entrySet()) {
-                            if (add.getValue()==null) continue;
-                            String key = add.getKey();
-                            Object existing = accMsg.get(key);
-                            if (existing==null) accMsg.put(key,add.getValue());
-                            else accMsg.put(key,queryDefinitions.get(key).combiner.combine(existing,add.getValue()));
-                        }
-                    }
+                    getMessageAccumulator(vertexId).add(pulledMessages);
                 } else {
                     //Process entire vertex directly
                     processVertex(vertex,pulledMessages);
@@ -319,6 +311,47 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
 
         }
     }
+
+    private MessageAccumulator getMessageAccumulator(long partitionedVertexId) {
+        Preconditions.checkArgument(idManager.isPartitionedVertex(partitionedVertexId));
+        long canonicalId = idManager.getCanonicalVertexId(partitionedVertexId);
+        //Only accumulate messages for later processing
+        MessageAccumulator accMsg = partitionedVertexMsgs.get(canonicalId);
+        if (accMsg==null) {
+            partitionedVertexMsgs.putIfAbsent(canonicalId, new MessageAccumulator());
+            accMsg = partitionedVertexMsgs.get(canonicalId);
+        }
+        return accMsg;
+    }
+
+    private class MessageAccumulator extends HashMap<String,Object> {
+
+        private boolean isDeleted = false;
+
+        private MessageAccumulator() {
+            super(queryDefinitions.size());
+        }
+
+        private synchronized void add(Map<String,Object> pulledMessages) {
+            for (Map.Entry<String,Object> add : pulledMessages.entrySet()) {
+                if (add.getValue()==null) continue;
+                String key = add.getKey();
+                Object existing = super.get(key);
+                if (existing==null) super.put(key,add.getValue());
+                else super.put(key,queryDefinitions.get(key).combiner.combine(existing,add.getValue()));
+            }
+        }
+
+        private void markDeleted() {
+            this.isDeleted=true;
+        }
+
+        private boolean isDeleted() {
+            return isDeleted;
+        }
+
+    }
+
 
     private void processVertex(FulgoraVertex<S> vertex, Map<String,Object> pulledMessages) {
         long vertexId = vertex.getID();

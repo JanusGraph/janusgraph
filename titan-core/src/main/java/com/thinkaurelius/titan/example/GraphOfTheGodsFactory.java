@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -39,6 +40,7 @@ public class GraphOfTheGodsFactory {
     }
 
     public static void load(final TitanGraph graph) {
+        //Create Schema
         TitanManagement mgmt = graph.getManagementSystem();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
         mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
@@ -54,12 +56,12 @@ public class GraphOfTheGodsFactory {
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("battled")).sortKey(time).make();
+        EdgeLabel battled = mgmt.makeEdgeLabel("battled").signature(time).make();
+        mgmt.createEdgeIndex(battled,"timeindex", Direction.BOTH,Order.DESC,time);
         mgmt.makeEdgeLabel("lives").signature(reason).make();
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
-
-        graph.commit();
+        mgmt.commit();
 
         // vertices
 
