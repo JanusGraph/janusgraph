@@ -15,7 +15,10 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -39,12 +42,15 @@ import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.OrderList;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
+
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
+
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
 import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
+import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
@@ -1525,6 +1531,64 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNotNull(lastValueRemoved);
         assertTrue(values.contains(lastValueRemoved));
         assertFalse(v.getProperties(foo).iterator().hasNext());
+    }
+
+    @Test
+    public void testConfiguration() {
+        // Test persistent modification of a GLOBAL option
+        Preconditions.checkState(SYSTEM_LOG_TRANSACTIONS.getType().equals(ConfigOption.Type.GLOBAL));
+        String opt = ConfigElement.getPath(SYSTEM_LOG_TRANSACTIONS);
+        mgmt.set(opt, true);
+        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.commit();
+        clopen();
+        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.set(opt, false);
+        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.commit();
+        clopen();
+        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
+        clopen();
+
+        // Test persistent modification of a MASKABLE option
+        Preconditions.checkState(DB_CACHE.getType().equals(ConfigOption.Type.MASKABLE));
+        opt = ConfigElement.getPath(DB_CACHE);
+        mgmt.set(opt, true);
+        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.commit();
+        clopen();
+        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.set(opt, false);
+        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
+        mgmt.commit();
+        clopen();
+        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
+
+        // Superficial tests for a few transaction builder methods
+
+        // Test read-only transaction
+        TitanTransaction readOnlyTx = graph.buildTransaction().readOnly().start();
+        try {
+            readOnlyTx.addVertex();
+            readOnlyTx.commit();
+            fail("Read-only transactions should not be able to add a vertex and commit");
+        } catch (Throwable t) {
+            if (readOnlyTx.isOpen())
+                readOnlyTx.rollback();
+        }
+
+        // Test custom log identifier
+        String logID = "spam";
+        StandardTitanTx customLogIDTx = (StandardTitanTx)graph.buildTransaction().setLogIdentifier(logID).start();
+        assertEquals(logID, customLogIDTx.getConfiguration().getLogIdentifier());
+        customLogIDTx.rollback();
+
+        // Test timestamp
+        long customTimestamp = -42L;
+        StandardTitanTx customTimeTx = (StandardTitanTx)graph.buildTransaction().setCommitTime(customTimestamp, TimeUnit.MILLISECONDS).start();
+        assertTrue(customTimeTx.getConfiguration().hasCommitTime());
+        assertEquals(customTimestamp, customTimeTx.getConfiguration().getCommitTime().getTimestamp(TimeUnit.MILLISECONDS));
+        customTimeTx.rollback();
     }
 
    /* ==================================================================================
