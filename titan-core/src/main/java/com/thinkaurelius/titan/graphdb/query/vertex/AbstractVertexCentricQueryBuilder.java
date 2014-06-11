@@ -289,14 +289,11 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return tx.getRelationType(types[0]);
     }
 
-    private boolean hasAllSingleKeys() {
+    private boolean hasAllCanonicalTypes() {
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);
             if (type==null) continue;
-            if (!(type instanceof PropertyKey)) return false;
-            if (((PropertyKey) type).getCardinality()!=Cardinality.SINGLE) {
-                return false;
-            }
+            if (!type.getMultiplicity().isUnique(dir)) return false;
         }
         return true;
     }
@@ -409,7 +406,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     protected List<InternalVertex> allRepresentatives(InternalVertex partitionedVertex) {
-        if (hasAllSingleKeys()) {
+        if (hasAllCanonicalTypes()) {
             return ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
         }
         return Arrays.asList(tx.getAllRepresentatives(partitionedVertex,restrict2Partitions));
@@ -430,7 +427,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     protected Iterable<TitanRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         if (isPartitionedVertex(vertex)) {
-            if (!hasAllSingleKeys()) {
+            if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
                 Iterable<TitanRelation> merge = null;
 
@@ -456,15 +453,17 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
-            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-            Iterable<TitanVertex> merge = null;
+            if (!hasAllCanonicalTypes()) {
+                InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+                Iterable<TitanVertex> merge = null;
 
-            for (InternalVertex rep : representatives) {
-                Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
-                if (merge==null) merge = iter;
-                else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
-            }
-            return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+                for (InternalVertex rep : representatives) {
+                    Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
+                    if (merge==null) merge = iter;
+                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
+                }
+                return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+            } else vertex = tx.getCanonicalVertex(vertex);
         }
         return executeIndividualVertices(vertex,baseQuery);
     }
@@ -472,7 +471,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     private Iterable<TitanVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        else return edges2Vertices((Iterable) executeRelations(vertex,baseQuery), query.getVertex());
+        else return edges2Vertices((Iterable) executeIndividualRelations(vertex,baseQuery), query.getVertex());
     }
 
     public VertexList executeVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -480,17 +479,19 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
-            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-            VertexListInternal merge = null;
+            if (!hasAllCanonicalTypes()) {
+                InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+                VertexListInternal merge = null;
 
-            for (InternalVertex rep : representatives) {
-                if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
-                VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
-                if (merge==null) merge = (VertexListInternal)vlist;
-                else merge.addAll(vlist);
-            }
-            if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
-            return merge;
+                for (InternalVertex rep : representatives) {
+                    if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
+                    VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
+                    if (merge==null) merge = (VertexListInternal)vlist;
+                    else merge.addAll(vlist);
+                }
+                if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+                return merge;
+            } else vertex = tx.getCanonicalVertex(vertex);
         }
         return executeIndividualVertexIds(vertex,baseQuery);
     }
@@ -498,7 +499,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     private VertexList executeIndividualVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
+        return edges2VertexIds((Iterable) executeIndividualRelations(vertex,baseQuery), vertex);
     }
 
 

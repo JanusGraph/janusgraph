@@ -92,7 +92,7 @@ public abstract class OLAPTest extends TitanGraphBaseTest {
                 return new Degree();
             }
         });
-        builder.setNumProcessingThreads(1);
+        builder.setNumProcessingThreads(2);
         builder.setStateKey("degree");
         builder.setJob(new OLAPJob() {
             @Override

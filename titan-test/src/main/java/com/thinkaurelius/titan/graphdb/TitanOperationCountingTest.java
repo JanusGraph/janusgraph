@@ -19,11 +19,16 @@ import static com.thinkaurelius.titan.diskstorage.util.MetricInstrumentedStore.*
 
 
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 import static com.thinkaurelius.titan.graphdb.database.cache.MetricInstrumentedSchemaCache.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
@@ -55,10 +60,10 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
     public WriteConfiguration getConfiguration() {
         WriteConfiguration config = getBaseConfiguration();
         ModifiableConfiguration mconf = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config, BasicConfiguration.Restriction.NONE);
-        mconf.set(GraphDatabaseConfiguration.BASIC_METRICS,true);
-        mconf.set(GraphDatabaseConfiguration.METRICS_MERGE_STORES,false);
-        mconf.set(GraphDatabaseConfiguration.PROPERTY_PREFETCHING,false);
-        mconf.set(GraphDatabaseConfiguration.DB_CACHE,false);
+        mconf.set(BASIC_METRICS,true);
+        mconf.set(METRICS_MERGE_STORES,false);
+        mconf.set(PROPERTY_PREFETCHING,false);
+        mconf.set(DB_CACHE,false);
         return config;
     }
 
@@ -68,51 +73,122 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
         super.open(config);
     }
 
+    @Test
+    public void testIdCounts() {
+        makeVertexIndexedUniqueKey("uid",Integer.class);
+        mgmt.setConsistency(mgmt.getGraphIndex("uid"),ConsistencyModifier.LOCK);
+        finishSchema();
+
+        //Schema and relation id pools are tapped, Schema id pool twice because the renew is triggered. Each id acquisition requires 1 mutations and 2 reads
+        verifyStoreMetrics(ID_STORE_NAME, SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 3l, M_GET_SLICE, 6l));
+    }
+
 
     @Test
-    public void testSchemaCaching() {
-        metricsPrefix = "schema";
+    public void testReadOperations() {
+        testReadOperations(false);
+    }
+
+    @Test
+    public void testReadOperationsWithCache() {
+        testReadOperations(true);
+    }
+
+    public void testReadOperations(boolean cache) {
+        metricsPrefix = "schema"+cache;
+
+        makeVertexIndexedUniqueKey("uid",Integer.class);
+        mgmt.setConsistency(mgmt.getGraphIndex("uid"),ConsistencyModifier.LOCK);
+        finishSchema();
+
+        if (cache) clopen(option(DB_CACHE),true,option(DB_CACHE_CLEAN_WAIT),0,option(DB_CACHE_TIME),0);
+        else clopen();
 
         TitanTransaction tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
         tx.makePropertyKey("name").dataType(String.class).make();
         tx.makeEdgeLabel("knows").make();
         tx.makeVertexLabel("person").make();
         tx.commit();
-        verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_MUTATE, 3l));
-        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
-        //Schema and relation id pools are tapped, Schema id pool twice because the renew is triggered. Each id acquisition requires 1 mutations and 2 reads
-        verifyStoreMetrics(ID_STORE_NAME, SYSTEM_METRICS, ImmutableMap.of(M_MUTATE, 3l, M_GET_SLICE, 6l));
+        verifyStoreMetrics(EDGESTORE_NAME);
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 3l, M_ACQUIRE_LOCK, 3l));
 
 
+        //Test schema caching
         for (int t=0;t<10;t++) {
             tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
             //Retrieve name by index (one backend call each)
             assertTrue(tx.containsRelationType("name"));
-            assertTrue(tx.containsVertexLabel("knows"));
+            assertTrue(tx.containsRelationType("knows"));
             assertTrue(tx.containsVertexLabel("person"));
             PropertyKey name = tx.getPropertyKey("name");
             EdgeLabel knows = tx.getEdgeLabel("knows");
             VertexLabel person = tx.getVertexLabel("person");
+            PropertyKey uid = tx.getPropertyKey("uid");
             //Retrieve name as property (one backend call each)
             assertEquals("name",name.getName());
             assertEquals("knows",knows.getName());
             assertEquals("person",person.getName());
+            assertEquals("uid",uid.getName());
             //Looking up the definition (one backend call each)
             assertEquals(Cardinality.SINGLE,name.getCardinality());
             assertEquals(Multiplicity.MULTI,knows.getMultiplicity());
             assertFalse(person.isPartitioned());
+            assertEquals(Integer.class,uid.getDataType());
             //Retrieving in and out relations for the relation types
             InternalRelationType namei = (InternalRelationType)name;
             InternalRelationType knowsi = (InternalRelationType)knows;
+            InternalRelationType uidi = (InternalRelationType)uid;
             assertNull(namei.getBaseType());
             assertNull(knowsi.getBaseType());
-            assertEquals(namei,Iterables.getOnlyElement(namei.getRelationIndexes()));
-            assertEquals(knowsi,Iterables.getOnlyElement(knowsi.getRelationIndexes()));
+            IndexType index = Iterables.getOnlyElement(uidi.getKeyIndexes());
+            assertEquals(1,index.getFieldKeys().length);
+            assertEquals(ElementCategory.VERTEX,index.getElement());
+            assertEquals(ConsistencyModifier.LOCK,((InternalIndexType)index).getConsistencyModifier());
+            assertEquals(1, Iterables.size(uidi.getRelationIndexes()));
+            assertEquals(1, Iterables.size(namei.getRelationIndexes()));
+            assertEquals(namei, Iterables.getOnlyElement(namei.getRelationIndexes()));
+            assertEquals(knowsi, Iterables.getOnlyElement(knowsi.getRelationIndexes()));
+
             tx.commit();
             //Needs to read on first iteration, after that it doesn't change anymore
-            verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_MUTATE, 3l, M_GET_SLICE, 10l));
-            verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 6l, M_MUTATE, 6l, M_ACQUIRE_LOCK, 3l));
+            verifyStoreMetrics(EDGESTORE_NAME,ImmutableMap.of(M_GET_SLICE, 18l));
+            verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 7l, M_ACQUIRE_LOCK, 3l));
         }
+
+        //Create some graph data
+        metricsPrefix = "add"+cache;
+
+        tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+        TitanVertex v = tx.addVertex(), u = tx.addVertex("person");
+        v.setProperty("uid",1);
+        u.setProperty("name","juju");
+        TitanEdge e = v.addEdge("knows",u);
+        e.setProperty("name","edge");
+        tx.commit();
+        verifyStoreMetrics(EDGESTORE_NAME);
+        verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1l, M_ACQUIRE_LOCK, 1l));
+
+        for (int i = 1; i <= 10; i++) {
+            metricsPrefix = "op"+i+cache;
+            tx = graph.buildTransaction().setGroupName(metricsPrefix).start();
+            v = (TitanVertex)Iterables.getOnlyElement(tx.query().has("uid",1).vertices());
+            assertEquals(1,v.getProperty("uid"));
+            u = (TitanVertex)Iterables.getOnlyElement(v.getVertices(Direction.BOTH,"knows"));
+            e = (TitanEdge)Iterables.getOnlyElement(u.getEdges(Direction.IN,"knows"));
+            assertEquals("juju",u.getProperty("name"));
+            assertEquals("edge",e.getProperty("name"));
+            tx.commit();
+            if (!cache || i==0) {
+                verifyStoreMetrics(EDGESTORE_NAME, ImmutableMap.of(M_GET_SLICE, 4l));
+                verifyStoreMetrics(INDEXSTORE_NAME, ImmutableMap.of(M_GET_SLICE, 1l));
+            } else if (cache && i>5) { //Needs a couple of iterations for cache to be cleaned
+                verifyStoreMetrics(EDGESTORE_NAME);
+                verifyStoreMetrics(INDEXSTORE_NAME);
+            }
+
+        }
+
+
     }
 
 

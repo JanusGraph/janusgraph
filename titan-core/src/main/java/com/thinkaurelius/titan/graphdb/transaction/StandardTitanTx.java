@@ -313,10 +313,10 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         return getExistingVertex(idManager.getPartitionedVertexId(partitionedVertex.getID(), otherPartition));
     }
 
-    public InternalVertex[] getAllRepresentatives(TitanVertex partitionedVertex, boolean ignoreLocalRestriction) {
+    public InternalVertex[] getAllRepresentatives(TitanVertex partitionedVertex, boolean restrict2Partitions) {
         Preconditions.checkArgument(isPartitionedVertex(partitionedVertex));
         long[] ids;
-        if (ignoreLocalRestriction || !config.hasRestrictedPartitions()) {
+        if (!restrict2Partitions || !config.hasRestrictedPartitions()) {
             ids = idManager.getPartitionedVertexRepresentatives(partitionedVertex.getID());
         } else {
             int[] restrictedParititions = config.getRestrictedPartitions();

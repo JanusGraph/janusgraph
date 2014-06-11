@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.relations.ReassignableRelation;
 import com.thinkaurelius.titan.util.stats.NumberUtil;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -189,38 +191,34 @@ public class VertexIDAssigner {
             if (element instanceof InternalRelation) {
                 InternalRelation relation = (InternalRelation)element;
                 long move2Partition = -1;
-                for (int pos = 0; pos < relation.getLen(); pos++) {
-                    InternalVertex incident = relation.getVertex(pos);
-                    if (idManager.isPartitionedVertex(incident.getID())) {
-                        if (relation.isProperty()) {
-                            //We assign a property to the canonical representative if its cardinality=single, else to
-                            //the one that has the hash of the property id
-                            PropertyKey key = ((TitanProperty)relation).getPropertyKey();
-                            if (key.getCardinality()== Cardinality.SINGLE) {
-                                move2Partition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getID()));
-                            } else {
-                                move2Partition = idManager.getPartitionHashForId(relation.getID());
-                            }
-                        } else {
-                            assert relation.isEdge();
-                            InternalVertex other = relation.getVertex((pos+1)%2);
-                            if (!idManager.isPartitionedVertex(other.getID())) {
-                                //It's an edge and one of its end points is not a partitioned vertex => make sure the partitioned
-                                //vertex representative has the same partition as the other vertex
-                                move2Partition = getPartitionID(other);
-                            } else {
-                                //Both are partitioned vertices => use hash of edge id as partition
-                                move2Partition = idManager.getPartitionHashForId(relation.getID());
-                            }
+                if (relation.isEdge()) {
+                    //If one end vertex is partitioned and the other isn't, use the partition of the non-partitioned vertex
+                    for (int pos = 0; pos < relation.getArity(); pos++) {
+                        int otherpos = (pos+1)%2;
+                        if (idManager.isPartitionedVertex(relation.getVertex(pos).getID()) &&
+                                !idManager.isPartitionedVertex(relation.getVertex(otherpos).getID())) {
+                            move2Partition = getPartitionID(relation.getVertex(otherpos));
                         }
-                        break;
                     }
                 }
-                if (move2Partition>=0) {
-                    for (int pos = 0; pos < relation.getArity(); pos++) {
-                        InternalVertex incident = relation.getVertex(pos);
-                        if (idManager.isPartitionedVertex(incident.getID()) && idManager.getPartitionId(incident.getID())!=move2Partition) {
-                            ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, move2Partition));
+                for (int pos = 0; pos < relation.getArity(); pos++) {
+                    InternalVertex incident = relation.getVertex(pos);
+                    long newPartition;
+                    if (idManager.isPartitionedVertex(incident.getID())) {
+                        if (((InternalRelationType)relation.getType()).getMultiplicity().isUnique(EdgeDirection.fromPosition(pos))) {
+                            //If the relation is unique in the direction, we assign it to the canonical vertex...
+                            newPartition = idManager.getPartitionId(idManager.getCanonicalVertexId(incident.getID()));
+                        } else if (move2Partition>=0) {
+                            //...else, we assign it to the partition of the non-partitioned vertex...
+                            newPartition = move2Partition;
+                        } else {
+                            //...and if such does not exists (i.e. property or both end vertices are partitioned) we use the hash of the relation id
+                            assert (relation.isProperty() && ((TitanProperty)relation).getPropertyKey().getCardinality()!=Cardinality.SINGLE) ||
+                                    (relation.isEdge() && idManager.isPartitionedVertex(relation.getVertex(0).getID()) && idManager.isPartitionedVertex(relation.getVertex(1).getID()));
+                            newPartition = idManager.getPartitionHashForId(relation.getID());
+                        }
+                        if (idManager.getPartitionId(incident.getID())!=newPartition) {
+                            ((ReassignableRelation)relation).setVertexAt(pos,incident.tx().getOtherPartitionVertex(incident, newPartition));
                         }
                     }
                 }

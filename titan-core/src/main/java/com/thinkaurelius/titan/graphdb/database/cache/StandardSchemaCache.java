@@ -154,9 +154,7 @@ public class StandardSchemaCache implements SchemaCache {
                 } else {
                     //Expand map
                     entries = retriever.retrieveSchemaRelations(schemaId, type, dir, tx);
-                    if (!entries.isEmpty()) { //only cache if type exists
-                        types.put(typePlusRelation,entries);
-                    }
+                    types.put(typePlusRelation,entries);
                 }
             }
         }

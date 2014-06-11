@@ -4,9 +4,11 @@ import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.WriteBuffer;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
+import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.tinkerpop.blueprints.TransactionalGraph;
 import com.tinkerpop.blueprints.Vertex;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
@@ -46,6 +48,9 @@ public class TestBed {
      * @throws java.io.IOException
      */
     public static void main(String[] args) throws Exception {
+        IDHandler.EdgeTypeParse ep = IDHandler.readEdgeType(StaticArrayBuffer.of(new byte[]{36}).asReadBuffer());
+        System.out.println(ep.typeId + " "+ BaseLabel.VertexLabelEdge.getID());
+
         WriteBuffer out = new WriteByteBuffer(20);
         IDHandler.writeEdgeType(out, BaseKey.VertexExists.getID(),IDHandler.DirectionID.PROPERTY_DIR, BaseKey.VertexExists.isHiddenType());
         StaticBuffer b = out.getStaticBuffer();

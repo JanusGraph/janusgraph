@@ -149,13 +149,12 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                 if (conditionQuery==null) break; //Termination condition - primary query has no more data
 
                 //First, check if this is a valid (non-deleted) vertex
-                assert conditionQuery.entries.size()==1;
                 RelationCache relCache = tx.getEdgeSerializer().parseRelation(
                                         conditionQuery.entries.get(0),true,tx);
                 final long vertexid = conditionQuery.vertexId;
                 if (relCache.typeId != BaseKey.VertexExists.getID() &&
                         (!idManager.isPartitionedVertex(vertexid) || idManager.isCanonicalVertexId(vertexid)) ) {
-                    log.warn("Found deleted vertex with id: %s. Skipping",conditionQuery.vertexId);
+                    log.warn("Found deleted vertex with id: {}|{}|{}. Skipping",conditionQuery.vertexId,idManager.isPartitionedVertex(vertexid),relCache);
                     if (idManager.isPartitionedVertex(vertexid)) getMessageAccumulator(vertexid).markDeleted();
                     for (int i=1;i<currentResults.length;i++) {
                         if (currentResults[i]!=null && currentResults[i].vertexId==conditionQuery.vertexId) {
@@ -190,7 +189,7 @@ class FulgoraExecutor<S> extends AbstractFuture<OLAPResult<S>> implements Runnab
                 for (final Map.Entry<Long,MessageAccumulator> partitionVertexMsg : partitionedVertexMsgs.entrySet()) {
                     final MessageAccumulator mergedMsg = partitionVertexMsg.getValue();
                     if (mergedMsg.isDeleted()) {
-                        log.warn("Found deleted partitioned vertex with id: %s. Skipping",partitionVertexMsg.getKey());
+                        log.warn("Found deleted partitioned vertex with id: {}. Skipping",partitionVertexMsg.getKey());
                         continue;
                     }
                     final FulgoraVertex vertex = new FulgoraVertex(tx,partitionVertexMsg.getKey(),FulgoraExecutor.this);
