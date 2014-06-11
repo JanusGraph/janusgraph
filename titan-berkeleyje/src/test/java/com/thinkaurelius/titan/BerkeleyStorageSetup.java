@@ -1,24 +1,16 @@
 package com.thinkaurelius.titan;
 
-
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager;
-import com.thinkaurelius.titan.diskstorage.berkeleyje.BerkeleyJEStoreManager.IsolationLevel;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 
 public class BerkeleyStorageSetup extends StorageSetup {
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration(String dir) {
         return buildConfiguration()
                 .set(STORAGE_BACKEND,"berkeleyje")
-                .set(STORAGE_DIRECTORY, dir)
-                .set(BerkeleyJEStoreManager.ISOLATION_LEVEL, IsolationLevel.SERIALIZABLE);
+                .set(STORAGE_DIRECTORY, dir);
     }
 
     public static ModifiableConfiguration getBerkeleyJEConfiguration() {
@@ -34,6 +26,4 @@ public class BerkeleyStorageSetup extends StorageSetup {
                 .set(STORAGE_TRANSACTIONAL,false)
                 .set(TX_CACHE_SIZE,1000);
     }
-
-
 }
