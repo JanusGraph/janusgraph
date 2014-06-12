@@ -4,7 +4,7 @@
                 xmlns:xslthl="http://xslthl.sf.net"
                 exclude-result-prefixes="xslthl d" version="1.0">
 
-  <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/highlight.xsl"/>
+  <xsl:import href="../docbook/html/highlight.xsl"/>
 
   <xsl:param name="highlight.xslthl.config">file://$MAVEN{xsl.output.dir}/highlight/xslthl-config.xml</xsl:param>
 

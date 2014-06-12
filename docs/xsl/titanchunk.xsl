@@ -15,9 +15,9 @@
 
   <!-- Importing our customization of docbook.xsl in accordance with the
        comment at the top of chunk.xsl -->
-  <xsl:import href="titansingle.xsl"/>
-  <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-common.xsl"/>
-  <xsl:include href="http://docbook.sourceforge.net/release/xsl-ns/current/html/chunk-code.xsl"/>
+  <xsl:import  href="titansingle.xsl"/>
+  <xsl:import  href="docbook/html/chunk-common.xsl"/>
+  <xsl:include href="docbook/html/chunk-code.xsl"/>
   
   <xsl:param name="base.dir">$MAVEN{htmlchunk.output.dir}</xsl:param>
   

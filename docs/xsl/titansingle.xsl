@@ -13,7 +13,7 @@
     xmlns:xslthl="http://xslthl.sf.net"
     extension-element-prefixes="sbhl xslthl">
 
-  <xsl:import href="http://docbook.sourceforge.net/release/xsl-ns/current/html/docbook.xsl"/>
+  <xsl:import href="docbook/html/docbook.xsl"/>
   <xsl:import href="highlight/titanhighlight.xsl"/>
   <xsl:import href="titancommon.xsl"/>
   
