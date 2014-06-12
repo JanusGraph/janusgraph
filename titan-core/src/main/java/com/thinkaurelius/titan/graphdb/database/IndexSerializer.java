@@ -522,7 +522,7 @@ public class IndexSerializer {
         }
 
         String queryStr = qB.toString();
-        Preconditions.checkArgument(replacements>0,"Could not convert given %s index query: %s",resultType, query.getQuery());
+        if (replacements<=0) log.warn("Could not convert given {} index query: [{}]",resultType, query.getQuery());
         log.info("Converted query string with {} replacements: [{}] => [{}]",replacements,query.getQuery(),queryStr);
         RawQuery rawQuery=new RawQuery(index.getStoreName(),queryStr,query.getParameters());
         if (query.hasLimit()) rawQuery.setLimit(query.getLimit());
