@@ -744,7 +744,16 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         // Create our column family, if necessary
         if (cf == null) {
             try {
-                adm.disableTable(tableName);
+                if (!adm.isTableDisabled(tableName)) {
+                    adm.disableTable(tableName);
+                }
+            } catch (TableNotEnabledException e) {
+                logger.debug("Table {} already disabled", tableName);
+            } catch (IOException e) {
+                throw new TemporaryStorageException(e);
+            }
+
+            try {
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
                 if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
                     HBaseCompatLoader.getCompat(compatClass).setCompression(cdesc, compression);
