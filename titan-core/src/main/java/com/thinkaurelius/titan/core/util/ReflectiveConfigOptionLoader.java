@@ -34,7 +34,7 @@ public class ReflectiveConfigOptionLoader {
      */
     public static void load() {
 
-        final Stopwatch sw =  Stopwatch.createStarted();
+//        final Stopwatch sw =  Stopwatch.createStarted();
 
         Collection<URL> scanUrls = ClasspathHelper.forJavaClassPath();
         Iterator<URL> i = scanUrls.iterator();
@@ -79,8 +79,7 @@ public class ReflectiveConfigOptionLoader {
             }
         }
 
-        log.debug("Preloaded {} config options via reflections in {} ms",
-                loadCount, sw.stop().elapsed(TimeUnit.MILLISECONDS));
+        log.debug("Preloaded {} config options via reflections in {} ms", loadCount);
     }
 
     /**
