@@ -45,7 +45,7 @@
         </dependency>
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
-            <artifactId>titan-hadoop</artifactId>
+            <artifactId>titan-hadoop-2</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

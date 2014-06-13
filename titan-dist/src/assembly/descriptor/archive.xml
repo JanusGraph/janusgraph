@@ -57,6 +57,7 @@
             <excludes>
                 <exclude>*:*:*:javadoc:*</exclude>
                 <exclude>*:*:*:tests:*</exclude>
+                <exclude>*:*:pom:*</exclude>
             </excludes>
         </dependencySet>
 
