@@ -167,7 +167,7 @@
                     <autoVersionSubmodules>true</autoVersionSubmodules>
 
                     <!-- applies to both release:prepare and :perform -->
-                    <arguments>-DskipTests=true -P!release-plugin-hack</arguments>
+                    <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
 
