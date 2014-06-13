@@ -557,7 +557,7 @@
                                         ${finalName}-${<id /> from assembly descriptor}.${archive 
                                         format extension}
                                     -->
-                                    <finalName>titan-${project.version}</finalName>
+                                    <finalName>titan-${project.version}-hadoop2</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
                                     <tarLongFileMode>gnu</tarLongFileMode>
                                     <descriptors>

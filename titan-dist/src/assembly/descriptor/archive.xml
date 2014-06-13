@@ -1,8 +1,8 @@
 <assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
   
-    <id>titan-${project.version}</id>
-    <baseDirectory>titan-${project.version}</baseDirectory>
+    <id>titan-${project.version}-hadoop2</id>
+    <baseDirectory>titan-${project.version}-hadoop2</baseDirectory>
 
     <fileSets>
         <fileSet>
@@ -21,11 +21,13 @@
                 <include>rexster*xml</include>
             </includes>
         </fileSet>
+        <!-- No AsciiDoc-generated HTML for milestone release
         <fileSet>
             <directory>target/docs/chunk</directory>
             <outputDirectory>/docs</outputDirectory>
             <filtered>false</filtered>
         </fileSet>
+        -->
     </fileSets>
 
     <files>
@@ -64,7 +66,8 @@
         <!-- HTML copy of core Javadoc -->
         <dependencySet>
             <unpack>true</unpack>
-            <outputDirectory>/docs/javadocs</outputDirectory>
+            <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
+            <outputDirectory>/javadocs</outputDirectory>
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>${project.groupId}:titan-core:jar:javadoc:${project.version}</include>
