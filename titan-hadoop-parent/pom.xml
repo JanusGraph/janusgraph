@@ -18,7 +18,6 @@
     </properties>
 
     <modules>
-        <module>titan-hadoop-core</module>
         <module>titan-hadoop-1</module>
         <module>titan-hadoop-2</module>
     </modules>
@@ -64,8 +63,7 @@
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
-            <version>0.94.16</version>
-            <scope>provided</scope>
+            <version>0.94.12</version>
         </dependency>
 
         <!-- TITAN -->
@@ -136,6 +134,7 @@
         </dependency>
     </dependencies>
 
+    <!--
     <profiles>
         <profile>
             <id>hadoop1</id>
@@ -196,6 +195,7 @@
             </dependencies>
         </profile>
     </profiles>
+    -->
 
     <build>
         <directory>${basedir}/target</directory>
@@ -216,29 +216,6 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>unpack-common-test-classes</id>
-                            <phase>process-test-classes</phase>
-                            <goals>
-                                <goal>unpack</goal>
-                            </goals>
-                            <configuration>
-                                <artifactItems>
-                                    <artifactItem>
-                                        <groupId>${project.groupId}</groupId>
-                                        <artifactId>titan-hadoop-core</artifactId>
-                                        <version>${project.version}</version>
-                                        <classifier>tests</classifier>
-                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
-                                    </artifactItem>
-                                </artifactItems>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <executions>
                         <execution>
@@ -250,13 +227,14 @@
                             <configuration>
                                 <attach>false</attach>
                                 <descriptors>
-                                    <descriptor>src/assembly/hadoop-job.xml</descriptor>
+                                    <descriptor>${project.basedir}/../hadoop-job.xml</descriptor>
                                 </descriptors>
                                 <finalName>${project.artifactId}-${project.version}</finalName>
                             </configuration>
                         </execution>
                     </executions>
                 </plugin>
+
                 <plugin>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <executions>

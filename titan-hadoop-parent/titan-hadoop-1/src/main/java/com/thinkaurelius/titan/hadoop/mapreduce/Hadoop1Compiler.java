@@ -40,14 +40,13 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Hadoop1Compiler extends Configured implements Tool {
+public class Hadoop1Compiler extends Configured implements HadoopCompiler {
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
     private static final String MAPRED_JAR = "mapred.jar";
 
-    public static final String TESTING = Tokens.makeNamespace(HadoopCompiler.class) + ".testing";
-    public static final Logger logger = Logger.getLogger(HadoopCompiler.class);
+    public static final Logger logger = Logger.getLogger(Hadoop1Compiler.class);
 
     private HadoopGraph graph;
 
