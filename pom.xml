@@ -96,7 +96,7 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hadoop</module>
+        <module>titan-hadoop-parent</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
@@ -400,6 +400,11 @@
                 <version>3.2.1</version>
             </dependency>
             <dependency>
+                <groupId>commons-net</groupId>
+                <artifactId>commons-net</artifactId>
+                <version>1.4.1</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils</artifactId>
                 <version>${commons.beanutils.version}</version>
@@ -595,9 +600,19 @@
             </dependency>
             -->
             <dependency>
+                <groupId>org.objenesis</groupId>
+                <artifactId>objenesis</artifactId>
+                <version>1.2</version>
+            </dependency>
+            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.11</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>1.3</version>
             </dependency>
             <dependency>
                 <groupId>jline</groupId>
