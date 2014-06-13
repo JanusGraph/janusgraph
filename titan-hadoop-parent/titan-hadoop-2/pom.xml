@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-2</artifactId>
-    <name>Titan-Hadoop: Distributed Graph Processing</name>
+    <name>Titan-Hadoop for Hadoop 2.x</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
@@ -33,11 +33,13 @@
         <resources>
             <resource>
                 <directory>../common/main/resources</directory>
+                <filtering>true</filtering>
             </resource>
         </resources>
         <testResources>
             <testResource>
                 <directory>../common/test/resources</directory>
+                <filtering>false</filtering>
             </testResource>
         </testResources>
         <plugins>
@@ -67,13 +69,11 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <artifactId>titan-hadoop</artifactId>
-                    <classifier>hadoop2</classifier>
-                </configuration>
+                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

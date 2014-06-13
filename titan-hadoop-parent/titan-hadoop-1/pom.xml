@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-1</artifactId>
-    <name>Titan-Hadoop: Distributed Graph Processing</name>
+    <name>Titan-Hadoop for Hadoop 1.x</name>
     <url>http://thinkaurelius.github.com/titan/</url>
 
     <properties>
@@ -19,7 +19,6 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-core</artifactId>
             <version>1.2.1</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>
@@ -60,8 +59,6 @@
                         <goals>
                             <goal>generateStubs</goal>
                             <goal>compile</goal>
-                            <goal>generateTestStubs</goal>
-                            <goal>testCompile</goal>
                         </goals>
                         <configuration>
                             <providerSelection>1.8</providerSelection>
@@ -77,21 +74,28 @@
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>build-detached-assemblies</id>
+                        <id>default-test</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/*PipelineTest.java</exclude>
+                                <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
+                                <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
+                                <exclude>**/BlueprintsGraphOutputMapReduceTest.java</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <artifactId>titan-hadoop</artifactId>
-                    <classifier>hadoop1</classifier>
-                </configuration>
+                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
+
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

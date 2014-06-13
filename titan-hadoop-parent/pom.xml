@@ -7,7 +7,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <artifactId>titan-hadoop-parent</artifactId>
-    <name>Titan-Hadoop: Distributed Graph Processing</name>
+    <name>Titan-Hadoop-Parent: Distributed Graph Processing</name>
     <packaging>pom</packaging>
     <url>http://thinkaurelius.github.com/titan/</url>
     <properties>
@@ -64,6 +64,7 @@
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase</artifactId>
             <version>0.94.12</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- TITAN -->
@@ -134,98 +135,20 @@
         </dependency>
     </dependencies>
 
-    <!--
-    <profiles>
-        <profile>
-            <id>hadoop1</id>
-
-            <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>1.0</value>
-                </property>
-            </activation>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-core</artifactId>
-                    <version>1.2.1</version>
-                    <scope>provided</scope>
-                </dependency>
-                <dependency>
-                   <groupId>org.apache.mrunit</groupId>
-                   <artifactId>mrunit</artifactId>
-                   <version>1.1.0-incubating</version>
-                   <classifier>hadoop1</classifier>
-                   <scope>test</scope>
-                </dependency>
-            </dependencies>
-        </profile>
-
-        <profile>
-            <id>hadoop2</id>
-
-            <activation>
-                <activeByDefault>true</activeByDefault>
-                <property>
-                    <name>hadoop.profile</name>
-                    <value>2.0</value>
-                </property>
-            </activation>
-
-            <properties>
-                <hadoop.version>2.2.0</hadoop.version>
-            </properties>
-
-            <dependencies>
-                <dependency>
-                    <groupId>org.apache.mrunit</groupId>
-                    <artifactId>mrunit</artifactId>
-                    <version>1.1.0</version>
-                    <classifier>hadoop2</classifier>
-                    <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.apache.hadoop</groupId>
-                    <artifactId>hadoop-client</artifactId>
-                    <version>${hadoop.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-    -->
-
     <build>
-        <directory>${basedir}/target</directory>
-        <finalName>${project.artifactId}-${project.version}</finalName>
-
-        <resources>
-            <resource>
-                <directory>${basedir}/src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>${basedir}/src/test/resources</directory>
-            </testResource>
-        </testResources>
-
         <pluginManagement>
             <plugins>
                 <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <executions>
                         <execution>
-                            <id>build-detached-assemblies</id>
+                            <id>build-job-jar</id>
                             <phase>package</phase>
                             <goals>
                                 <goal>single</goal>
                             </goals>
                             <configuration>
-                                <attach>false</attach>
+                                <attach>true</attach>
                                 <descriptors>
                                     <descriptor>${project.basedir}/../hadoop-job.xml</descriptor>
                                 </descriptors>
