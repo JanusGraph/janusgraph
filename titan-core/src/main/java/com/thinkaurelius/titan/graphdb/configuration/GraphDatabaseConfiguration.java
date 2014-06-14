@@ -151,7 +151,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(ROOT_NS,"log-tx",
             "Whether transaction mutations should be logged to Titan's system log",
-            ConfigOption.Type.GLOBAL, true);
+            ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
             "Unique identifier for this Titan instance.  This must be unique among all instances " +
