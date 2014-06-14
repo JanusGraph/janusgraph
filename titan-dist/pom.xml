@@ -434,29 +434,44 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>wagon-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>deploy-docs-to-s3</id>
-                        <phase>deploy</phase>
-                        <goals>
-                            <goal>upload</goal>
-                        </goals>
-                        <configuration>
-                            <fromDir>${htmlchunk.output.dir}</fromDir>
-                            <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
-                            <url>s3://s3.thinkaurelius.com/docs/titan/${project.version}</url>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
     <profiles>
+        <profile>
+            <id>s3doc</id>
+
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>s3doc</name>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>deploy-docs-to-s3</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <configuration>
+                                    <fromDir>${htmlchunk.output.dir}</fromDir>
+                                    <serverId>aurelius.s3</serverId> <!-- your ~/.m2/settings.xml must match -->
+                                    <url>s3://s3.thinkaurelius.com/docs/titan/${project.version}</url>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <profile>
             <id>pkg-tools</id>
 
