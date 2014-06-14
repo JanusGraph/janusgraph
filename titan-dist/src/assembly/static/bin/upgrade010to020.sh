@@ -1,15 +1,27 @@
 #!/bin/bash
 
+# Returns the absolute path of this script regardless of symlinks
+abs_path() {
+    # From: http://stackoverflow.com/a/246128
+    #   - To resolve finding the directory after symlinks
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do
+        DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+}
+
 case `uname` in
   CYGWIN*)
-    CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /;/g')
-    CP=$CP:$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ';')
+    CP=$( echo `abs_path`/../lib/*.jar . | sed 's/ /;/g')
+    CP=$CP:$(find -L `abs_path`/../ext/ -name "*.jar" | tr '\n' ';')
     ;;
   *)
-    CP=$( echo `dirname $0`/../lib/*.jar . | sed 's/ /:/g')
-    CP=$CP:$(find -L `dirname $0`/../ext/ -name "*.jar" | tr '\n' ':')
+    CP=$( echo `abs_path`/../lib/*.jar . | sed 's/ /:/g')
+    CP=$CP:$(find -L `abs_path`/../ext/ -name "*.jar" | tr '\n' ':')
 esac
-#echo $CP
 
 # Find Java
 if [ "$JAVA_HOME" = "" ] ; then
