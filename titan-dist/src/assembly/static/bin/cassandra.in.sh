@@ -27,7 +27,7 @@ abs_path() {
     echo "$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 }
 
-CASSANDRA_HOME=$(cd `abs_path` && pwd)
+CASSANDRA_HOME=$(cd `abs_path`/.. && pwd)
 
 # The directory where Cassandra's configs live (required)
 CASSANDRA_CONF=$CASSANDRA_HOME/conf
