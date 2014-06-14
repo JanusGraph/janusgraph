@@ -48,7 +48,7 @@
 	  <executions>
 	    <execution>
 	      <id>build-hbase-jar</id>
-	      <phase>package</phase>
+	      <phase>prepare-package</phase>
 	      <goals>
 		<goal>single</goal>
 	      </goals>
