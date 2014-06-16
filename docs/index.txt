@@ -3,7 +3,8 @@ Titan Documentation
 
 include::intro.txt[]
 
-include::using.txt[]
+include::titanbasics.txt[]
+//include::using.txt[]
 
 include::managing.txt[]
 
