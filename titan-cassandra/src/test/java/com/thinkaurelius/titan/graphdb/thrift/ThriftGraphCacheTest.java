@@ -21,7 +21,7 @@ public class ThriftGraphCacheTest extends TitanGraphTest {
 
     // This fails an assertion on ExpectedValueCheckingTransaction.java:136
     @Override
-    public void testConfiguration() {
+    public void testGraphConfiguration() {
         // TODO fix KCVSConfiguration + dbcache
     }
 

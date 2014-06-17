@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -1534,36 +1535,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testConfiguration() {
-        // Test persistent modification of a GLOBAL option
-        Preconditions.checkState(SYSTEM_LOG_TRANSACTIONS.getType().equals(ConfigOption.Type.GLOBAL));
-        String opt = ConfigElement.getPath(SYSTEM_LOG_TRANSACTIONS);
-        mgmt.set(opt, true);
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.set(opt, false);
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        clopen();
+    public void testGraphConfiguration() {
+        setIllegalGraphOption( STORAGE_READONLY,        ConfigOption.Type.LOCAL,          true);
+        setAndCheckGraphOption(DB_CACHE,                ConfigOption.Type.MASKABLE,       true, false);
+        setAndCheckGraphOption(SYSTEM_LOG_TRANSACTIONS, ConfigOption.Type.GLOBAL,         true, false);
+        setAndCheckGraphOption(DB_CACHE_TIME,           ConfigOption.Type.GLOBAL_OFFLINE, 500L, 777L);
+        setIllegalGraphOption( INITIAL_TITAN_VERSION,   ConfigOption.Type.FIXED,          "foo");
+    }
 
-        // Test persistent modification of a MASKABLE option
-        Preconditions.checkState(DB_CACHE.getType().equals(ConfigOption.Type.MASKABLE));
-        opt = ConfigElement.getPath(DB_CACHE);
-        mgmt.set(opt, true);
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.set(opt, false);
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-
+    @Test
+    public void testTransactionConfiguration() {
         // Superficial tests for a few transaction builder methods
 
         // Test read-only transaction
@@ -1590,6 +1571,104 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(customTimestamp, customTimeTx.getConfiguration().getCommitTime().getTimestamp(TimeUnit.MILLISECONDS));
         customTimeTx.rollback();
     }
+
+    private <T> void setAndCheckGraphOption(ConfigOption<T> opt, ConfigOption.Type requiredType, T firstValue, T secondValue) {
+        // Sanity check: make sure the Type of the configoption is what we expect
+        Preconditions.checkState(opt.getType().equals(requiredType));
+        final EnumSet<ConfigOption.Type> allowedTypes =
+                EnumSet.of(ConfigOption.Type.GLOBAL,
+                           ConfigOption.Type.GLOBAL_OFFLINE,
+                           ConfigOption.Type.MASKABLE);
+        Preconditions.checkState(allowedTypes.contains(opt.getType()));
+
+        // Sanity check: it's kind of pointless for the first and second values to be identical
+        Preconditions.checkArgument(!firstValue.equals(secondValue));
+
+        // Get full string path of config option
+        final String path = ConfigElement.getPath(opt);
+
+        // Set and check initial value before and after database restart
+        mgmt.set(path, firstValue);
+        assertEquals(firstValue.toString(), mgmt.get(path));
+        mgmt.commit();
+        clopen();
+        assertEquals(firstValue.toString(), mgmt.get(path));
+
+        // Set and check updated value before and after database restart
+        mgmt.set(path, secondValue);
+        assertEquals(secondValue.toString(), mgmt.get(path));
+        mgmt.commit();
+        clopen();
+        assertEquals(secondValue.toString(), mgmt.get(path));
+
+        // Now try reverting to firstValue with a second graph open
+
+        TitanGraph g2 = TitanFactory.open(config);
+
+        // g2 should still have secondValue
+        assertEquals(secondValue.toString(), g2.getManagementSystem().get(path));
+
+        if (opt.getType().equals(ConfigOption.Type.GLOBAL_OFFLINE)) {
+            try {
+                mgmt.set(path, firstValue);
+                mgmt.commit();
+                fail("Option " + path + " with type "+ ConfigOption.Type.GLOBAL_OFFLINE + " should not be modifiable with concurrent instances");
+            } catch (RuntimeException e) {
+                log.debug("Caught expected exception", e);
+            }
+        } else {
+            mgmt.set(path, firstValue);
+            assertEquals(firstValue.toString(), mgmt.get(path));
+            mgmt.commit();
+            clopen();
+            assertEquals(firstValue.toString(), mgmt.get(path));
+        }
+
+//        assertEquals(secondValue.toString(), g2.getManagementSystem().get(path));
+
+        g2.shutdown();
+    }
+
+    private <T> void setIllegalGraphOption(ConfigOption<T> opt, ConfigOption.Type requiredType, T attemptedValue) {
+        // Sanity check: make sure the Type of the configoption is what we expect
+        final ConfigOption.Type type = opt.getType();
+        Preconditions.checkState(type.equals(requiredType));
+        Preconditions.checkArgument(requiredType.equals(ConfigOption.Type.LOCAL) ||
+                                    requiredType.equals(ConfigOption.Type.FIXED));
+
+        // Get full string path of config option
+        final String path = ConfigElement.getPath(opt);
+
+
+        // Try to read the option
+        try {
+            mgmt.get(path);
+        } catch (Throwable t) {
+            log.debug("Caught expected exception", t);
+        }
+
+//        // Record current config option state
+//        final String presentValue = mgmt.get(path);
+//        // Require that the caller attempt to overwrite the present value with something different
+//        Preconditions.checkArgument(null != attemptedValue);
+//        Preconditions.checkState(!attemptedValue.equals(presentValue));
+
+        // Try to modify the option
+        try {
+            mgmt.set(path, attemptedValue);
+            mgmt.commit();
+            fail("Option " +  path + " with type " + type + " should not be modifiable in the persistent graph config");
+        } catch (Throwable t) {
+            log.debug("Caught expected exception", t);
+        }
+
+//        // Check that our attempted write had no effect
+//        if (mgmt.isOpen())
+//            mgmt.rollback();
+//        mgmt = graph.getManagementSystem();
+//        assertEquals(presentValue, mgmt.get(path));
+    }
+
 
    /* ==================================================================================
                             CONSISTENCY
