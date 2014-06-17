@@ -13,10 +13,7 @@ import org.apache.cassandra.utils.FBUtilities;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.thrift.protocol.TBinaryProtocol;
-import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TSocket;
-import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
+import org.apache.thrift.transport.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +28,15 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Dan LaRocque <dalaro@hopcount.org>
  */
 public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, CTConnection> {
-    
+
     private static final Logger log = LoggerFactory.getLogger(CTConnectionFactory.class);
     private static final long SCHEMA_WAIT_MAX = 5000L;
     private static final long SCHEMA_WAIT_INCREMENT = 25L;
 
     private final AtomicReference<Config> cfgRef;
 
-    public CTConnectionFactory(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
-        this.cfgRef = new AtomicReference<Config>(new Config(hostnames, port, username, password, timeoutMS, frameSize));
+    private CTConnectionFactory(Config config) {
+        this.cfgRef = new AtomicReference<Config>(config);
     }
 
     @Override
@@ -79,7 +76,18 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
         if (log.isDebugEnabled())
             log.debug("Creating TSocket({}, {}, {}, {}, {})", hostname, cfg.port, cfg.username, cfg.password, cfg.timeoutMS);
 
-        TTransport transport = new TFramedTransport(new TSocket(hostname, cfg.port, cfg.timeoutMS), cfg.frameSize);
+
+        TSocket socket;
+        if (null != cfg.sslTruststoreLocation && !cfg.sslTruststoreLocation.isEmpty()) {
+            TSSLTransportFactory.TSSLTransportParameters params = new TSSLTransportFactory.TSSLTransportParameters() {{
+               setKeyStore(cfg.sslTruststoreLocation, cfg.sslTruststorePassword);
+            }};
+            socket = TSSLTransportFactory.getClientSocket(hostname, cfg.port, cfg.timeoutMS, params);
+        } else {
+            socket = new TSocket(hostname, cfg.port, cfg.timeoutMS);
+        }
+
+        TTransport transport = new TFramedTransport(socket, cfg.frameSize);
         TBinaryProtocol protocol = new TBinaryProtocol(transport);
         Cassandra.Client client = new Cassandra.Client(protocol);
         transport.open();
@@ -107,7 +115,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
     @Override
     public boolean validateObject(String key, CTConnection c) {
         Config curCfg = cfgRef.get();
-        
+
         boolean isSameConfig = c.getConfig().equals(curCfg);
         if (log.isDebugEnabled()) {
             if (isSameConfig) {
@@ -120,143 +128,7 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         return isSameConfig && c.isOpen();
     }
-    
-    public Config getConfig() {
-        return cfgRef.get();
-    }
 
-    public void setConfig(Config newCfg) {
-        cfgRef.set(newCfg);
-        log.debug("Updated Thrift connection factory config to {}", newCfg);
-    }
-
-    /* This method was adapted from cassandra 0.7.5 cli/CliClient.java */
-    public static void validateSchemaIsSettled(Cassandra.Client thriftClient,
-                                               String currentVersionId) throws InterruptedException, StorageException {
-        log.debug("Waiting for Cassandra schema propagation...");
-        Map<String, List<String>> versions = null;
-
-        final TimeUUIDType ti = TimeUUIDType.instance;
-
-        final long start = System.currentTimeMillis();
-        long lastTry = 0;
-        final long limit = start + SCHEMA_WAIT_MAX;
-        final long minSleep = SCHEMA_WAIT_INCREMENT;
-        boolean inAgreement = false;
-        outer:
-        while (limit - System.currentTimeMillis() >= 0 && !inAgreement) {
-            // Block for a little while if we're looping too fast
-            final long now = System.currentTimeMillis();
-            long sinceLast = now - lastTry;
-            long willSleep = minSleep - sinceLast;
-            if (0 < willSleep) {
-                log.debug("Schema not yet propagated; " +
-                        "rechecking in {} ms", willSleep);
-                Thread.sleep(willSleep);
-            }
-            // Issue thrift query
-            try {
-                lastTry = System.currentTimeMillis();
-                versions = thriftClient.describe_schema_versions(); // getting schema version for nodes of the ring
-            } catch (Exception e) {
-                throw new PermanentStorageException("Failed to fetch Cassandra Thrift schema versions: " +
-                        ((e instanceof InvalidRequestException) ?
-                                ((InvalidRequestException) e).getWhy() : e.getMessage()));
-            }
-
-            int nodeCount = 0;
-            // Check schema version
-            UUID benchmark = UUID.fromString(currentVersionId);
-            ByteBuffer benchmarkBB = ti.decompose(benchmark);
-            for (String version : versions.keySet()) {
-                if (version.equals(StorageProxy.UNREACHABLE)) {
-                    nodeCount += versions.get(version).size();
-                    continue;
-                }
-
-                UUID uuid = UUID.fromString(version);
-                ByteBuffer uuidBB = ti.decompose(uuid);
-                if (-1 < ti.compare(uuidBB, benchmarkBB)) {
-                    log.debug("Version {} equals or comes after required version {}", uuid, benchmark);
-                    nodeCount += versions.get(version).size();
-                    continue;
-                }
-                continue outer;
-            }
-            
-            log.debug("Found {} unreachable or out-of-date Cassandra nodes", nodeCount);
-
-            inAgreement = true;
-        }
-
-        if (null == versions) {
-            throw new TemporaryStorageException("Couldn't contact Cassandra nodes before timeout");
-        }
-
-        if (versions.containsKey(StorageProxy.UNREACHABLE))
-            log.warn("Warning: unreachable nodes: {}",
-                    Joiner.on(", ").join(versions.get(StorageProxy.UNREACHABLE)));
-
-        if (!inAgreement) {
-            throw new TemporaryStorageException("The schema has not settled in " +
-                    SCHEMA_WAIT_MAX + " ms. Wanted version " +
-                    currentVersionId + "; Versions are " + FBUtilities.toString(versions));
-        } else {
-            log.debug("Cassandra schema version {} propagated in about {} ms; Versions are {}",
-                    new Object[]{currentVersionId, System.currentTimeMillis() - start, FBUtilities.toString(versions)});
-        }
-    }
-
-    public static void waitForClusterSize(Cassandra.Client thriftClient,
-                                          int minSize) throws InterruptedException, StorageException {
-        log.debug("Checking Cassandra cluster size" +
-                " (want at least {} nodes)...", minSize);
-        Map<String, List<String>> versions = null;
-
-        final long STARTUP_WAIT_MAX = 10000L;
-        final long STARTUP_WAIT_INCREMENT = 100L;
-
-        long start = System.currentTimeMillis();
-        long lastTry = 0;
-        long limit = start + STARTUP_WAIT_MAX;
-        long minSleep = STARTUP_WAIT_INCREMENT;
-
-        Integer curSize = null;
-
-        while (limit - System.currentTimeMillis() >= 0) {
-            // Block for a little while if we're looping too fast
-            long sinceLast = System.currentTimeMillis() - lastTry;
-            long willSleep = minSleep - sinceLast;
-            if (0 < willSleep) {
-//        		log.debug("Cassandra cluster size={} " +
-//        				"(want {}); rechecking in {} ms",
-//        				new Object[]{ curSize, minSize, willSleep });
-                Thread.sleep(willSleep);
-            }
-
-            // Issue thrift query
-            try {
-                lastTry = System.currentTimeMillis();
-                versions = thriftClient.describe_schema_versions();
-                if (1 != versions.size())
-                    continue;
-
-                String version = Iterators.getOnlyElement(versions.keySet().iterator());
-                curSize = versions.get(version).size();
-                if (curSize >= minSize) {
-                    log.debug("Cassandra cluster verified at size {} (schema version {}) in about {} ms",
-                            new Object[]{curSize, version, System.currentTimeMillis() - start});
-                    return;
-                }
-            } catch (Exception e) {
-                throw new PermanentStorageException("Failed to fetch Cassandra Thrift schema versions: " +
-                        ((e instanceof InvalidRequestException) ?
-                                ((InvalidRequestException) e).getWhy() : e.getMessage()));
-            }
-        }
-        throw new PermanentStorageException("Could not verify Cassandra cluster size");
-    }
-    
     public static class Config {
         // this is to keep backward compatibility with JDK 1.6, can be changed to ThreadLocalRandom once we fully switch
         private static final ThreadLocal<Random> THREAD_LOCAL_RANDOM = new ThreadLocal<Random>() {
@@ -268,18 +140,22 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
 
         private final String[] hostnames;
         private final int port;
-        private final int timeoutMS;
-        private final int frameSize;
         private final String username;
         private final String password;
 
-        public Config(String[] hostnames, int port, String username, String password, int timeoutMS, int frameSize) {
+        private int timeoutMS;
+        private int frameSize;
+
+        private String sslTruststoreLocation;
+        private String sslTruststorePassword;
+
+        private boolean isBuilt;
+
+        public Config(String[] hostnames, int port, String username, String password) {
             this.hostnames = hostnames;
             this.port = port;
             this.username = username;
             this.password = password;
-            this.timeoutMS = timeoutMS;
-            this.frameSize = frameSize;
         }
 
         // TODO: we don't really need getters/setters here as all of the fields are final and immutable
@@ -296,6 +172,41 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
             return hostnames.length == 1 ? hostnames[0] : hostnames[THREAD_LOCAL_RANDOM.get().nextInt(hostnames.length)];
         }
 
+        public Config setTimeoutMS(int timeoutMS) {
+            checkIfAlreadyBuilt();
+            this.timeoutMS = timeoutMS;
+            return this;
+        }
+
+        public Config setFrameSize(int frameSize) {
+            checkIfAlreadyBuilt();
+            this.frameSize = frameSize;
+            return this;
+        }
+
+        public Config setSSLTruststoreLocation(String location) {
+            checkIfAlreadyBuilt();
+            this.sslTruststoreLocation = location;
+            return this;
+        }
+
+        public Config setSSLTruststorePassword(String password) {
+            checkIfAlreadyBuilt();
+            this.sslTruststorePassword = password;
+            return this;
+        }
+
+        public CTConnectionFactory build() {
+            isBuilt = true;
+            return new CTConnectionFactory(this);
+        }
+
+
+        public void checkIfAlreadyBuilt() {
+            if (isBuilt)
+                throw new IllegalStateException("Can't accept modifications when used with built factory.");
+        }
+
         @Override
         public String toString() {
             return "Config[hostnames=" + StringUtils.join(hostnames, ',') + ", port=" + port
@@ -303,5 +214,6 @@ public class CTConnectionFactory implements KeyedPoolableObjectFactory<String, C
                     + "]";
         }
     }
+
 }
 

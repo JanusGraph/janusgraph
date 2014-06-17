@@ -1,0 +1,87 @@
+// Ported from the wikipage named "Faunus and Hadoop"
+
+Concept Overview
+----------------
+
+//image::faunus-elephants.png[]
+
+Titan-Hadoop is designed to support global graph traversals over massive-scale graphs. In particular, this typically leads to two particular use cases: graph derivations and graph statistics.
+
+* *Graph derivation*: Given an input graph, derive a new graph based upon the input graph's structure and semantics. Other terms include "graph rewriting":http://en.wikipedia.org/wiki/Graph_rewriting and graph transformations.
+** deriving a _cousin_-graph from _father_ and _brother_ edges.
+** deriving a youth _friend_-graph by removing all vertices with age greater than 30 and keeping only _friend_ edges.
+** adding properties to the graph elements according to some traversal.
+* *Graph statistic*: A graph is a complex structure that can best be understood when the nature of its structure is distilled down to a manageable set of numbers. An analogous term is http://en.wikipedia.org/wiki/Network_science[graph/network analysis].
+** counting the number of vertices and edges in the graph.
+** determining the http://en.wikipedia.org/wiki/Degree_distribution[degree distribution] of the graph.
+** determining the distribution of edges labels in the graph.
+** counting the number of paths that lead to vertices.
+** emanating all paths of length 3 between two sets of vertices.
+
+Introduction to Hadoop MapReduce
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+image:hadoop-logo.jpg[]
+
+http://hadoop.apache.org[Hadoop] is a distributed storage and processing system that greatly simplifies the creation of distributed computing jobs. The default storage layer for Hadoop is http://hadoop.apache.org/docs/stable/hdfs_user_guide.html[HDFS]. HDFS is similar to any other file system in that it can be used to store arbitrarily formatted files (e.g. binary, text, etc.). However, HDFS allows for the storage of files so large that they can not be represented on a single machine. As such, HDFS is a distributed file system. Given files distributed over HDFS, it is possible to process these files using Hadoop's distributed processing framework, MapReduce. MapReduce represents a computation as a series of parallel/atomic key/value pair computations. There are two steps to MapReduce:
+
+* *Map*: For every `<key1,value1>` input, yield `<key2,value2>` outputs.
+* *Reduce*: For every `<key2,list<value2>>` input, yield `<key3, value3>` outputs.
+
+In this way, the map-step can be seen as a parallel analysis of all the `<key1,value1>` pairs represented in the source file/location. The reduce-step aggregates all the values (`value2`) emitted by the previous map-step that have the same key (`key2`). In the reduce-step, some algorithm is evaluated over those values (`list<value2>`) to ultimately write an arbitrary number of `<key3,value3>` pairs to the sink file/location.
+
+Introduction to Graphs
+~~~~~~~~~~~~~~~~~~~~~~
+
+[.tss-floatleft]
+image:graph-globe.png[]
+
+A http://en.wikipedia.org/wiki/Graph_%28mathematics%29[graph] is a data structure composed of vertices (dots,things) and edges (lines,links). A vertex has a set of incoming edges and a set of outgoing edges. There are numerous http://arxiv.org/abs/1006.2361[types of graphs] and the one used by Titan-Hadoop is the https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[property graph model] exposed by the http://blueprints.tinkerpop.com[Blueprints] API. A property graph is multi-relational in that edges are labeled to denote different types of relationships between vertices. Moreover, every vertex/edge (generally known as an element) can have an arbitrary number of key/value pairs associated with it (note that these key/value pairs should not be confused with the key/value pairs of Hadoop). Graphs are typically processed using traversals. A traversal is a algorithmic walk over the graph in order to arrive at a particular destination (e.g. search or *derivation*) or to yield some side-effect in the process (e.g. a ranking or recommendation or *statistic*).
+
+How Titan-Hadoop Processes Graphs in MapReduce
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Titan-Hadoop leverages MapReduce for parallel processing massive numbers of atomic records with limited network communication.  In Titan-Hadoop's context, the atomic records are the vertices of a graph and the processing is global graph traversals.
+
+image:adjacency-list.png[]
+
+A graph can be modeled as an http://en.wikipedia.org/wiki/Adjacency_list[adjacency list]. Each "row" represents a vertex along with its incident edges. For property graphs, the vertex and edge properties are stored in the row as well. Titan-Hadoop interprets a graph using this model. Every key/value in Hadoop is a single vertex along with its properties and its incoming and outgoing edges. As such, a Titan-Hadoop MapReduce job operates on each vertex in parallel.
+
+image:faunus-graph-workflow.png[]
+
+There are two types of derivation operations in Titan-Hadoop:
+
+* *Map-Only*: Filters, Element Mutations
+** *Map*: For every `<null,vertex>` input, yield a `<null,vertex>` output.
+* *MapReduce*: Traversals, Vertex Filters, Groupings/Aggregations
+** *Map*: For every `<null,vertex>` input, yield a `<id,tagged_element>` output.
+** *Reduce*: For every `<id,list<tagged_element>>` input, yield a `<null,vertex>` output.
+
+For every vertex in a map-only step, the vertex is either allowed or filtered from the next processing step or the vertex is mutated in some way (e.g. properties removed/added). For every vertex in a map-reduce step, the vertex's edges are analyzed and messages are sent to the adjacent vertices. These messages are then aggregated at the reduce step and the message receiving vertex is updated in some way. 
+
+Given that the input and output of both map-only and map-reduce steps is `<null,vertex>`, it is possible to chain these steps together to yield a more complex derivation. The language used to do the chaining is called http://gremlin.tinkerpop.com[Gremlin]. Titan-Hadoop implementation of Gremlin is breadth-first, cluster oriented, and massively parallel. 
+
+The purpose of Titan-Hadoop (as with Gremlin in general) is to either yield a graph derivation or a graph statistic. These two concepts are graphically represented below.
+
+*Graph derivation*
+
+image:graph-derivation.png[]
+
+*Graph statistic*
+
+image:graph-statistic.png[]
+
+References
+~~~~~~~~~~
+
+The following articles provided insight into the various theoretical and technical issues encountered during Titan-Hadoop's design and development.  Note that Titan-Hadoop was called Faunus in its earlier versions.
+
+ * Rodriguez M.A., Shinavier, J., "Exposing Multi-Relational Networks to Single-Relational Network Analysis Algorithms,":http://arxiv.org/abs/0806.2274 Journal of Informetrics, 4(1), pp. 29--41, December 2009.
+
+* Lin, J., Dyer, C., "Data-Intensive Text Processing with MapReduce,":http://lintool.github.com/MapReduceAlgorithms/index.html Morgan & Claypool Publishers, 2010.
+
+* Kepner, J., Gilbert, J., "Graph Algorithms in the Language of Linear Algebra,":http://www.amazon.com/Algorithms-Language-Algebra-Software-Environments/dp/0898719909 Society for Industrial & Applied Mathematics, 2011.
+
+* White, T., "Hadoop: The Definitive Guide,":http://www.amazon.com/Hadoop-Definitive-Guide-Tom-White/dp/1449311520/ O'Reilly Media, 2012.
+
+* Katsov, I., "MapReduce Patterns, Algorithms, and Use Cases,":http://highlyscalable.wordpress.com/2012/02/01/mapreduce-patterns/ Highly Scalable Blog, February 2012.

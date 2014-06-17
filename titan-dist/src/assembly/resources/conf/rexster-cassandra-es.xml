@@ -30,6 +30,7 @@
         <session-check-interval>3000000</session-check-interval>
         <connection-max-idle>180000</connection-max-idle>
         <connection-check-interval>3000000</connection-check-interval>
+        <read-buffer>65536</read-buffer>
         <enable-jmx>false</enable-jmx>
         <thread-pool>
             <worker>
@@ -45,10 +46,11 @@
     </rexpro>
     <shutdown-port>8183</shutdown-port>
     <shutdown-host>127.0.0.1</shutdown-host>
+    <config-check-interval>10000</config-check-interval>
     <script-engines>
         <script-engine>
             <name>gremlin-groovy</name>
-            <reset-threshold>-1</reset-threshold>
+            <reset-threshold>500</reset-threshold>
             <imports>${imports}</imports>
             <static-imports>${staticimports}</static-imports>
         </script-engine>

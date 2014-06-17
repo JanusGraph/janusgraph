@@ -64,6 +64,8 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private String groupName;
 
+    private final boolean forceIndexUsage;
+
     private final UserModifiableConfiguration storageConfiguration;
 
     private final StandardTitanGraph graph;
@@ -79,6 +81,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
@@ -168,7 +171,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public TitanTransaction start() {
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
-                assignIDsImmediately, verifyExternalVertexExistence,
+                assignIDsImmediately, forceIndexUsage, verifyExternalVertexExistence,
                 verifyInternalVertexExistence, acquireLocks, verifyUniqueness,
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
@@ -192,6 +195,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     @Override
     public final boolean hasAssignIDsImmediately() {
         return assignIDsImmediately;
+    }
+
+    @Override
+    public final boolean hasForceIndexUsage() {
+        return forceIndexUsage;
     }
 
     @Override
@@ -309,6 +317,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         private final boolean isReadOnly;
         private final boolean hasEnabledBatchLoading;
         private final boolean hasAssignIDsImmediately;
+        private final boolean hasForceIndexUsage;
         private final boolean hasVerifyExternalVertexExistence;
         private final boolean hasVerifyInternalVertexExistence;
         private final boolean hasAcquireLocks;
@@ -328,6 +337,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         public ImmutableTxCfg(boolean isReadOnly,
                 boolean hasEnabledBatchLoading,
                 boolean hasAssignIDsImmediately,
+                boolean hasForceIndexUsage,
                 boolean hasVerifyExternalVertexExistence,
                 boolean hasVerifyInternalVertexExistence,
                 boolean hasAcquireLocks, boolean hasVerifyUniqueness,
@@ -340,6 +350,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.isReadOnly = isReadOnly;
             this.hasEnabledBatchLoading = hasEnabledBatchLoading;
             this.hasAssignIDsImmediately = hasAssignIDsImmediately;
+            this.hasForceIndexUsage = hasForceIndexUsage;
             this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
             this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
             this.hasAcquireLocks = hasAcquireLocks;
@@ -373,6 +384,11 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasAssignIDsImmediately() {
             return hasAssignIDsImmediately;
+        }
+
+        @Override
+        public final boolean hasForceIndexUsage() {
+            return hasForceIndexUsage;
         }
 
         @Override

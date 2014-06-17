@@ -40,8 +40,10 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
         switch (pos) {
             case 0:
                 start = vertex;
+                break;
             case 1:
                 end = vertex;
+                break;
             default:
                 throw new IllegalArgumentException("Invalid position: " + pos);
         }
@@ -82,12 +84,10 @@ public abstract class AbstractEdge extends AbstractTypedRelation implements Tita
 
     @Override
     public TitanVertex getOtherVertex(TitanVertex vertex) {
-        long otherId = vertex.getID();
-
-        if (start.getID() == otherId)
+        if (start.equals(vertex))
             return end;
 
-        if (end.getID() == otherId)
+        if (end.equals(vertex))
             return start;
 
         throw new IllegalArgumentException("Edge is not incident on vertex");

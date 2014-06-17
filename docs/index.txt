@@ -3,11 +3,14 @@ Titan Documentation
 
 include::intro.txt[]
 
-include::using.txt[]
+include::titanbasics.txt[]
+//include::using.txt[]
 
 include::managing.txt[]
 
 include::advanced.txt[]
+
+include::faunus/index.txt[]
 
 //include::related.txt[]
 

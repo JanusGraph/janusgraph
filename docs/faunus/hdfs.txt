@@ -1,0 +1,59 @@
+HDFS Handling
+-------------
+
+image:hdfs-logo.jpg[]
+
+The Hadoop Distributed File System (HDFS) is a filesystem that is supported by the nodes in the Hadoop compute cluster. HDFS has numerous similarities to typical filesystems such as those of the http://en.wikipedia.org/wiki/Linux[*nix] variety. The `hadoop` CLI utility provides a http://hadoop.apache.org/docs/r1.0.3/file_system_shell.html[collection of commands] that can be run from the local command line.
+
+// [.tss-floatleft]
+// image:gremlin-elephant.png[]
+
+Gremlin provides methods to easily interact with both the local file system and HDFS from within the REPL. These methods are provided in the table below. Note that the global variables `local` and `hdfs` reference the local and HDFS file systems, respectively. Finally, _pattern_ refers to a regular expression pattern and _path_ refers to an explicit path to a file or directory.
+
+[options="header",width="100%"]
+|==============================
+| Method | Description
+| `ls()` | list all the contents in the home directory
+| `ls(pattern)` | list all the contents that match the pattern
+| `result(path)` | display the directory of the final result of a Faunus job
+| `exists(path)` | return true or false on whether path exists
+| `rm(pattern)` | remove all paths that match the pattern
+| `rmr(pattern)` | recursively remove all paths that match the pattern
+| `cp(from,to)` | copy the path from one location to another in the same filesystem
+| `copyToLocal(from,to)` | copy the HDFS path to the local filesystem
+| `copyFromLocal(from,to)` | copy the local path to HDFS
+| `mergeToLocal(from,to)` | merge the files at HDFS path to a single file on the local filesystem
+| `head(pattern,lines?)` | look at the top `?lines` of the files that match pattern
+| `unzip(from,to,delete)` | http://en.wikipedia.org/wiki/Bzip2[BZ2] unzip the path to another path
+|==============================
+
+Useful Tricks
+~~~~~~~~~~~~~
+
+Use Gremlin/HDFS like *nix/file system
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[source,gremlin]
+----
+gremlin> hdfs.ls('dbpedia')._().count()
+==>228
+gremlin> hdfs.head('output')._().sort{-(it.split()[1] as Integer)}
+==>wikiPageWikiLink	158373970
+==>sameAs	18707022
+==>subject	15184863
+==>wikiPageInterLanguageLink	13184401
+==>wasDerivedFrom	11547302
+...
+----
+
+Use Gremlin on a side-effect to configure another job
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+[source,gremlin]
+gremlin> g.E.label.groupCount()
+gremlin> x = hdfs.head('output')._().filter{(it.split()[1] as Integer) > 1000}.transform{it.split()[0]}.toList().asArray()
+gremlin> g.E.has('label',x).keep()
+
+. Generate an edge label distribution and store the side-effect in `output`.
+. Get the side-effect and set `x` to only those edge labels that have more than 1000 counts.
+. Trim all edges from the graph that don't have a label in `x`.

@@ -122,6 +122,11 @@ public class GraphDatabaseConfiguration {
                 "Useful when operating Titan in concert with another storage system that assigns long ids but disables some" +
                     "of Titan's advanced features. EXPERT FEATURE - USE WITH GREAT CARE.",
             ConfigOption.Type.FIXED, false);
+
+    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<Boolean>(ROOT_NS,"force-index",
+            "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
+                    "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided.",
+            ConfigOption.Type.MASKABLE, false);
 //
 //    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
 //    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
@@ -146,7 +151,7 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigOption<Boolean> SYSTEM_LOG_TRANSACTIONS = new ConfigOption<Boolean>(ROOT_NS,"log-tx",
             "Whether transaction mutations should be logged to Titan's system log",
-            ConfigOption.Type.GLOBAL, true);
+            ConfigOption.Type.GLOBAL, false);
 
     public static final ConfigOption<String> UNIQUE_INSTANCE_ID = new ConfigOption<String>(ROOT_NS,"unique-instance-id",
             "Unique identifier for this Titan instance.  This must be unique among all instances " +
@@ -286,6 +291,8 @@ public class GraphDatabaseConfiguration {
 
 //    public static final String STORAGE_NAMESPACE = "storage";
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS,"storage","Configuration options for the storage backend.  Some options are applicable only for certain backends.");
+    public static final ConfigNamespace STORAGE_SSL_NS = new ConfigNamespace(STORAGE_NS, "ssl", "Configuration options for SSL");
+    public static final ConfigNamespace STORAGE_SSL_TRUSTSTORE = new ConfigNamespace(STORAGE_SSL_NS, "truststore", "Configuration options for SSL Truststore.");
 
 
     /**
@@ -1200,6 +1207,7 @@ public class GraphDatabaseConfiguration {
 
     private boolean readOnly;
     private boolean flushIDs;
+    private boolean forceIndexUsage;
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
@@ -1354,6 +1362,7 @@ public class GraphDatabaseConfiguration {
     private void preLoadConfiguration() {
         readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
+        forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
         defaultSchemaMaker = preregisteredAutoType.get(configuration.get(AUTO_TYPE));
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -1471,6 +1480,10 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasFlushIDs() {
         return flushIDs;
+    }
+
+    public boolean hasForceIndexUsage() {
+        return forceIndexUsage;
     }
 
     public int getTxVertexCacheSize() {

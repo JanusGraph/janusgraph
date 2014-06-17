@@ -3,9 +3,11 @@ package com.thinkaurelius.titan.example;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
@@ -39,11 +41,12 @@ public class GraphOfTheGodsFactory {
     }
 
     public static void load(final TitanGraph graph) {
+        //Create Schema
         TitanManagement mgmt = graph.getManagementSystem();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
+        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
+        mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.makePropertyKey("type").dataType(String.class).make();
         mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildExternalIndex(INDEX_NAME);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
@@ -54,52 +57,60 @@ public class GraphOfTheGodsFactory {
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();
-        ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("battled")).sortKey(time).make();
+        EdgeLabel battled = mgmt.makeEdgeLabel("battled").signature(time).make();
+        mgmt.createEdgeIndex(battled,"timeindex", Direction.BOTH,Order.DESC,time);
         mgmt.makeEdgeLabel("lives").signature(reason).make();
         mgmt.makeEdgeLabel("pet").make();
         mgmt.makeEdgeLabel("brother").make();
 
-        graph.commit();
+        mgmt.makeVertexLabel("titan").make();
+        mgmt.makeVertexLabel("location").make();
+        mgmt.makeVertexLabel("god").make();
+        mgmt.makeVertexLabel("demigod").make();
+        mgmt.makeVertexLabel("human").make();
+        mgmt.makeVertexLabel("monster").make();
 
+        mgmt.commit();
+
+        TitanTransaction tx = graph.newTransaction();
         // vertices
 
-        Vertex saturn = graph.addVertex(null);
+        Vertex saturn = tx.addVertex("titan");
         saturn.setProperty("name", "saturn");
         saturn.setProperty("age", 10000);
-        saturn.setProperty("type", "titan");
 
-        Vertex sky = graph.addVertex(null);
-        ElementHelper.setProperties(sky, "name", "sky", "type", "location");
+        Vertex sky = tx.addVertex("location");
+        ElementHelper.setProperties(sky, "name", "sky");
 
-        Vertex sea = graph.addVertex(null);
-        ElementHelper.setProperties(sea, "name", "sea", "type", "location");
+        Vertex sea = tx.addVertex("location");
+        ElementHelper.setProperties(sea, "name", "sea");
 
-        Vertex jupiter = graph.addVertex(null);
-        ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000, "type", "god");
+        Vertex jupiter = tx.addVertex("god");
+        ElementHelper.setProperties(jupiter, "name", "jupiter", "age", 5000);
 
-        Vertex neptune = graph.addVertex(null);
-        ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500, "type", "god");
+        Vertex neptune = tx.addVertex("god");
+        ElementHelper.setProperties(neptune, "name", "neptune", "age", 4500);
 
-        Vertex hercules = graph.addVertex(null);
-        ElementHelper.setProperties(hercules, "name", "hercules", "age", 30, "type", "demigod");
+        Vertex hercules = tx.addVertex("demigod");
+        ElementHelper.setProperties(hercules, "name", "hercules", "age", 30);
 
-        Vertex alcmene = graph.addVertex(null);
-        ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45, "type", "human");
+        Vertex alcmene = tx.addVertex("human");
+        ElementHelper.setProperties(alcmene, "name", "alcmene", "age", 45);
 
-        Vertex pluto = graph.addVertex(null);
-        ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000, "type", "god");
+        Vertex pluto = tx.addVertex("god");
+        ElementHelper.setProperties(pluto, "name", "pluto", "age", 4000);
 
-        Vertex nemean = graph.addVertex(null);
-        ElementHelper.setProperties(nemean, "name", "nemean", "type", "monster");
+        Vertex nemean = tx.addVertex("monster");
+        ElementHelper.setProperties(nemean, "name", "nemean");
 
-        Vertex hydra = graph.addVertex(null);
-        ElementHelper.setProperties(hydra, "name", "hydra", "type", "monster");
+        Vertex hydra = tx.addVertex("monster");
+        ElementHelper.setProperties(hydra, "name", "hydra");
 
-        Vertex cerberus = graph.addVertex(null);
-        ElementHelper.setProperties(cerberus, "name", "cerberus", "type", "monster");
+        Vertex cerberus = tx.addVertex("monster");
+        ElementHelper.setProperties(cerberus, "name", "cerberus");
 
-        Vertex tartarus = graph.addVertex(null);
-        ElementHelper.setProperties(tartarus, "name", "tartarus", "type", "location");
+        Vertex tartarus = tx.addVertex("location");
+        ElementHelper.setProperties(tartarus, "name", "tartarus");
 
         // edges
 
@@ -126,6 +137,6 @@ public class GraphOfTheGodsFactory {
         cerberus.addEdge("lives", tartarus);
 
         // commit the transaction to disk
-        graph.commit();
+        tx.commit();
     }
 }

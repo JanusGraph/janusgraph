@@ -19,8 +19,10 @@ public abstract class AbstractDecimal extends Number implements Comparable<Abstr
 
     public static final int MAX_DECIMALS = 9;
 
-    private final long format;
-    private final byte decimals;
+    private long format;
+    private byte decimals;
+
+    protected AbstractDecimal() {} //For serialization
 
     public AbstractDecimal(final double value, final int decimals) {
         this(convert(value,decimals),decimals);

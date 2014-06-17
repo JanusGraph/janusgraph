@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.primitives.Longs;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -21,7 +22,7 @@ public class IDManager {
      *    000 -     * Normal vertices
      *    010 -     * Partitioned vertices
      *    100 -     * Unmodifiable (e.g. TTL'ed) vertices
-     *    110 -     Reserved for additional vertex type
+     *    110 -     + Reserved for additional vertex type
      *      1 - + Hidden
      *     11 -     * Hidden (user created/triggered) Vertex [for later]
      *     01 -     + Schema related vertices
@@ -467,6 +468,7 @@ public class IDManager {
         } else {
             assert isUserVertex(vertexid);
             VertexIDType type = getUserVertexIDType(vertexid);
+            assert type.offset()==USERVERTEX_PADDING_BITWIDTH;
             long partition = getPartitionId(vertexid);
             long count = vertexid>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
             assert count>0;
@@ -506,7 +508,14 @@ public class IDManager {
 
     public long getPartitionHashForId(long id) {
         Preconditions.checkArgument(id>0);
-        return Long.valueOf(id).hashCode() & (partitionIDBound-1);
+        long result = 0;
+        int offset = 0;
+        while (offset<Long.SIZE) {
+            result = result ^ ((id>>>offset) & (partitionIDBound-1));
+            offset+=partitionBits;
+        }
+        assert result>=0 && result<partitionIDBound;
+        return result;
     }
 
     private long getCanonicalVertexIdFromCount(long count) {
@@ -518,6 +527,10 @@ public class IDManager {
         Preconditions.checkArgument(VertexIDType.PartitionedVertex.is(partitionedVertexId));
         long count = partitionedVertexId>>>(partitionBits+USERVERTEX_PADDING_BITWIDTH);
         return getCanonicalVertexIdFromCount(count);
+    }
+
+    public boolean isCanonicalVertexId(long partitionVertexId) {
+        return partitionVertexId==getCanonicalVertexId(partitionVertexId);
     }
 
     public long getPartitionedVertexId(long partitionedVertexId, long otherPartition) {

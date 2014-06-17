@@ -44,7 +44,7 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
         return list.size();
     }
 
-    public boolean containsKey(String key) {
+    public boolean containsKey(PropertyKey key) {
         for (int i = 0; i < list.size(); i++) if (getKey(i).equals(key)) return true;
         return false;
     }
@@ -105,7 +105,8 @@ public class OrderList implements Comparator<TitanElement>, Iterable<OrderList.O
             int cmp = list.get(i).compare(o1, o2);
             if (cmp != 0) return cmp;
         }
-        return o1.compareTo(o2);
+//        return o1.compareTo(o2);
+        return 0;
     }
 
     /**

@@ -33,44 +33,114 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>titan-hbase-098</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
-      <plugins>
-	<plugin>
-	  <artifactId>maven-assembly-plugin</artifactId>
-	  <executions>
-	    <execution>
-	      <id>build-hbase-jar</id>
-	      <phase>package</phase>
-	      <goals>
-		<goal>single</goal>
-	      </goals>
-	      <configuration>
-		<appendAssemblyId>false</appendAssemblyId>
-		<finalName>titan-hbase-${project.version}</finalName>
-		<attach>true</attach>
-		<descriptors>
-		  <descriptor>${project.basedir}/hbasejar.xml</descriptor>
-		</descriptors>
-	      </configuration>
-	    </execution>
-	    <execution>
-	      <id>copy-hbase-bin</id>
-	      <phase>none</phase>
-	    </execution>
-	  </executions>
-	</plugin>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>build-hbase-jar</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <finalName>titan-hbase-${project.version}</finalName>
+                            <attach>true</attach>
+                            <descriptors>
+                                <descriptor>${project.basedir}/hbasejar.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>copy-hbase-bin</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
 
-	    <plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-combined-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/target/combined-sources</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/titan-hbase-core/src/main/java</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/titan-hbase-094/src/main/java</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/titan-hbase-096/src/main/java</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/titan-hbase-098/src/main/java</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>
+                    <execution>
+                        <id>combined-source-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <classesDirectory>${project.basedir}/target/combined-sources</classesDirectory>
+                            <classifier>sources</classifier>
+                            <includes>
+                                <include>**/*.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
                     <execution>
                         <id>default-jar</id>
                         <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
-      </plugins>
+
+            <plugin>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>combined-source-javadoc</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <sourcepath>${project.basedir}/target/combined-sources</sourcepath>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 </project>

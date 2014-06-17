@@ -7,6 +7,7 @@ import com.netflix.astyanax.*;
 import com.netflix.astyanax.connectionpool.Host;
 import com.netflix.astyanax.connectionpool.NodeDiscoveryType;
 import com.netflix.astyanax.connectionpool.RetryBackoffStrategy;
+import com.netflix.astyanax.connectionpool.SSLConnectionContext;
 import com.netflix.astyanax.connectionpool.exceptions.ConnectionException;
 import com.netflix.astyanax.connectionpool.impl.*;
 import com.netflix.astyanax.ddl.ColumnFamilyDefinition;
@@ -463,6 +464,10 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
         if (hasAuthentication()) {
             cpool.setAuthenticationCredentials(new SimpleAuthenticationCredentials(username, password));
+        }
+
+        if (config.get(SSL_ENABLED)) {
+            cpool.setSSLConnectionContext(new SSLConnectionContext(config.get(SSL_TRUSTSTORE_LOCATION), config.get(SSL_TRUSTSTORE_PASSWORD)));
         }
 
         AstyanaxContext.Builder ctxBuilder = new AstyanaxContext.Builder();

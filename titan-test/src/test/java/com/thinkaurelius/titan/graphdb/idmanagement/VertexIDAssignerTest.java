@@ -92,7 +92,7 @@ public class VertexIDAssignerTest {
                     }
                     InternalRelation property = (InternalRelation) next.addProperty("age", 25);
                     if (flush) {
-                        idAssigner.assignID((InternalVertex) next);
+                        idAssigner.assignID((InternalVertex) next,next.getVertexLabel());
                         idAssigner.assignID(property);
                         if (edge != null) idAssigner.assignID(edge);
                     } else {

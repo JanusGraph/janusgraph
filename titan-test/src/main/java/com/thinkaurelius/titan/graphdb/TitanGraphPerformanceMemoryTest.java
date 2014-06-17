@@ -25,6 +25,9 @@ import com.thinkaurelius.titan.testutil.MemoryAssess;
 import com.thinkaurelius.titan.testutil.PerformanceTest;
 import com.tinkerpop.blueprints.Vertex;
 
+/**
+ * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure
+ */
 @Category({MemoryTests.class})
 public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest {
 

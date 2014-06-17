@@ -7,11 +7,13 @@ import com.tinkerpop.rexster.Tokens;
 import com.tinkerpop.rexster.config.GraphConfiguration;
 import com.tinkerpop.rexster.config.GraphConfigurationContext;
 import com.tinkerpop.rexster.config.GraphConfigurationException;
+
 import org.apache.commons.configuration.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Iterator;
-import java.util.Properties;
 
 /**
  * Implements a Rexster GraphConfiguration for Titan
@@ -22,9 +24,15 @@ import java.util.Properties;
 
 public class TitanGraphConfiguration implements GraphConfiguration {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(TitanGraphConfiguration.class);
+
     @Override
     public Graph configureGraphInstance(final GraphConfigurationContext context) throws GraphConfigurationException {
-        return TitanFactory.open(convertConfiguration(context));
+        log.debug("Calling TitanFactory.open({})", context);
+        final Graph g = TitanFactory.open(convertConfiguration(context));
+        log.debug("Returning new graph {}", g);
+        return g;
     }
 
     public Configuration convertConfiguration(final GraphConfigurationContext context) throws GraphConfigurationException {
@@ -44,7 +52,7 @@ public class TitanGraphConfiguration implements GraphConfiguration {
 
                     // Combine multiple values into a comma-separated string
                     String listVal = Joiner.on(AbstractConfiguration.getDefaultListDelimiter()).join(titanConfigProperties.getStringArray(doubleDotKey));
-                    
+
                     titanConfig.setProperty(singleDotKey, listVal);
                 }
             } catch (IllegalArgumentException iae) {

@@ -1,0 +1,49 @@
+[[faunus-vertex-query-graph-filters]]
+Vertex Query Graph Filters
+--------------------------
+
+// [[images/vertex-query-filter.png|width=365px|align=left|float]]
+
+http://blueprints.tinkerpop.com[Blueprints] maintains the notion of a `VertexQuery` (see https://github.com/tinkerpop/blueprints/wiki/Vertex-Query[details]). In Blueprints, and the graph databases that provide a native implementation (e.g. http://titan.thinkaurelius.com[Titan]), a vertex's edges can be filtered at the database level prior to being pulled into memory. If data is organized on disk in a manner that respects edge indices/sorts, then this technique can drastically reduce traversal times by intelligently limiting the search space of a traverser (e.g. http://gremlin.tinkerpop.com[Gremlin]).
+
+// [[https://github.com/tinkerpop/blueprints/raw/master/doc/images/blueprints-character-3.png|align=right|float|width=100px]]
+
+In Faunus, the same `VertexQuery` construct exists. However, in the context of Faunus, it is used to filter the input graph to a subset of the full graph prior to pulling the data into Hadoop. For those graph sources that support _push down predicates_, this allows the graph source to only return the edges of the vertices that satisfy the contraints of the query. The <<faunus-config,configuration>> that specifies the vertex query constraint is `faunus.graph.input.vertex-query-filter`. A few examples are itemized below.
+
+* Only vertices and their properties (no edges): `v.query().limit(0)`
+* Only edges with a weight greater than 0.5: `v.query().has('weight',Compare.GREATER_THAN,0.5)`
+* Only edges with label `knows`: `v.query().labels('knows')`
+* Only outgoing edges: `v.query().direction(OUT)`
+* Combinations of the above as specified by the `VertexQuery` API.
+
+For those graph sources that do not support database level filtering, Faunus will process the vertex (dropping edges as specified by the `VertexQuery`) before inserting them into the `<NullWritable,FaunusVertex>` Faunus stream.
+
+[source,gremlin]
+----
+gremlin> g = FaunusFactory.open('bin/titan-hbase-input.properties')
+==>faunusgraph[titanhbaseinputformat->graphsonoutputformat]
+gremlin> // no edges -- only vertices (their ids and properties)
+gremlin> g.getConf().set('faunus.graph.input.vertex-query-filter','v.query().limit(0)')
+==>null
+gremlin> g._
+...
+gremlin> hdfs.head('output')
+==>{"name":"saturn","type":"titan","_id":4}
+==>{"name":"jupiter","type":"god","_id":8}
+==>{"name":"neptune","type":"god","_id":12}
+==>{"name":"pluto","type":"god","_id":16}
+==>{"name":"sky","type":"location","_id":20}
+==>{"name":"sea","type":"location","_id":24}
+==>{"name":"tartarus","type":"location","_id":28}
+==>{"name":"hercules","type":"demigod","_id":32}
+==>{"name":"alcmene","type":"human","_id":36}
+==>{"name":"nemean","type":"monster","_id":40}
+==>{"name":"hydra","type":"monster","_id":44}
+==>{"name":"cerberus","type":"monster","_id":48}
+gremlin>
+----
+
+References
+~~~~~~~~~~
+
+Bröcheler, M., Rodriguez, M.A., http://thinkaurelius.com/2012/10/25/a-solution-to-the-supernode-problem/[A Solution to the Supernode Problem], Aurelius Blog, 2012.

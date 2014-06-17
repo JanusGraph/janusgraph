@@ -118,7 +118,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         public Cardinality getCardinality() {
             switch(index) {
                 case UNIQUE: return Cardinality.SINGLE;
-                case STANDARD: return Cardinality.SET;
+                case STANDARD: return Cardinality.LIST;
                 default: throw new AssertionError();
             }
         }

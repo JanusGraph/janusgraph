@@ -32,9 +32,23 @@ public class InMemoryGraphTest extends TitanGraphTest {
     }
 
     @Override
-    public void testTypes() {}
+    public void testConfiguration() {}
+
+    @Override
+    public void testDataTypes() {}
+
+    @Override
+    public void testForceIndexUsage() {}
+
+    @Override
+    public void testAutomaticTypeCreation() {}
 
     @Override
     public void simpleLogTest() {}
+
+    @Override
+    protected boolean isLockingOptimistic() {
+        return true;
+    }
 
 }

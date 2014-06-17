@@ -28,7 +28,7 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
         //Verify name
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : StandardRelationTypeMaker.RESERVED_CHARS)
-            Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
+            Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);
         this.name=name;
         return this;
     }

@@ -19,6 +19,8 @@ public class Decimal extends AbstractDecimal {
     public static final Decimal MIN_VALUE = new Decimal(minDoubleValue(DECIMALS));
     public static final Decimal MAX_VALUE = new Decimal(maxDoubleValue(DECIMALS));
 
+    private Decimal() {}
+
     public Decimal(double value) {
         super(value, DECIMALS);
     }

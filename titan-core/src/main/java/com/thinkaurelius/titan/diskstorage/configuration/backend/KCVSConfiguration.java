@@ -130,7 +130,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         }
         final StaticBuffer expectedValueBuffer;
         if (checkExpectedValue && expectedValue!=null) {
-            expectedValueBuffer = object2StaticBuffer(value);
+            expectedValueBuffer = object2StaticBuffer(expectedValue);
         } else {
             expectedValueBuffer = null;
         }

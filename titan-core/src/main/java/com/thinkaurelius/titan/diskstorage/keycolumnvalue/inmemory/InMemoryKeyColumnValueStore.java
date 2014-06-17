@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
@@ -46,7 +47,9 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
-        throw new UnsupportedOperationException();
+        Map<StaticBuffer,EntryList> result = Maps.newHashMap();
+        for (StaticBuffer key : keys) result.put(key,getSlice(new KeySliceQuery(key,query),txh));
+        return result;
     }
 
     @Override

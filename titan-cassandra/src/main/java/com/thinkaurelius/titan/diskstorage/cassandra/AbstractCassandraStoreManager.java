@@ -135,6 +135,15 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 //    public static final int REPLICATION_FACTOR_DEFAULT = 1;
 
 
+    public static final ConfigOption<Boolean> SSL_ENABLED = new ConfigOption<Boolean>(STORAGE_SSL_NS, "enabled",
+            "Controls use of the SSL connection to Cassandra", ConfigOption.Type.LOCAL, false);
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_LOCATION = new ConfigOption<String>(STORAGE_SSL_TRUSTSTORE, "location",
+            "Marks the location of the SSL Truststore.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<String> SSL_TRUSTSTORE_PASSWORD = new ConfigOption<String>(STORAGE_SSL_TRUSTSTORE, "password",
+            "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "");
+
     protected final String keySpaceName;
     protected final Map<String, String> strategyOptions;
 
@@ -156,6 +165,10 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionEnabled = config.get(STORAGE_COMPRESSION);
         this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
         this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
+
+        // SSL truststore location sanity check
+        if (config.get(SSL_ENABLED) && config.get(SSL_TRUSTSTORE_LOCATION).isEmpty())
+            throw new IllegalArgumentException(SSL_TRUSTSTORE_LOCATION.getName() + " could not be empty when SSL is enabled.");
 
         if (config.has(REPLICATION_OPTIONS)) {
             List<String> options = config.get(REPLICATION_OPTIONS);

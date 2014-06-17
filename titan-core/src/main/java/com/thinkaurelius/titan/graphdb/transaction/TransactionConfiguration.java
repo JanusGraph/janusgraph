@@ -132,6 +132,14 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
 
 
     /**
+     * Whether this transaction should throw an exception when a graph query is issued that cannot be answered
+     * with any existing index but instead requires a full graph-scan.
+     * @return
+     */
+    public boolean hasForceIndexUsage();
+
+
+    /**
      * Querying of partitioned vertices is restricted to the partitions returned by this
      * method. If the return value has length 0 all partitions are queried (i.e. unrestricted).
      *

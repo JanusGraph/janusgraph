@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.internal.*;
 import com.thinkaurelius.titan.graphdb.query.*;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.relations.StandardProperty;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
@@ -130,13 +131,22 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     @Override
     public Q adjacent(TitanVertex vertex) {
-        Preconditions.checkNotNull(vertex);
+        Preconditions.checkArgument(vertex!=null,"Not a valid provided for adjacency constraint");
         this.adjacentVertex = vertex;
         return getThis();
     }
 
     private Q addConstraint(String type, TitanPredicate rel, Object value) {
         Preconditions.checkArgument(type!=null && StringUtils.isNotBlank(type) && rel!=null);
+        //Treat special cases
+        if (type.equals(ImplicitKey.ADJACENT_ID.getName())) {
+            Preconditions.checkArgument(rel == Cmp.EQUAL,"Only equality constraints are supported for %s",type);
+            Preconditions.checkArgument(value instanceof Number,"Expected valid vertex id: %s",value);
+            return adjacent(tx.getVertex(value));
+        } else if (type.equals(ImplicitKey.ID.getName())) {
+            Preconditions.checkArgument(value instanceof RelationIdentifier,"Expected valid relation id: %s",value);
+            return addConstraint(ImplicitKey.TITANID.getName(),rel,((RelationIdentifier)value).getRelationId());
+        }
         if (constraints==NO_CONSTRAINTS) constraints = new ArrayList<PredicateCondition<String, TitanRelation>>(5);
         constraints.add(new PredicateCondition<String, TitanRelation>(type, rel, value));
         return getThis();
@@ -254,7 +264,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
                 "Can only order on keys with comparable data type. [%s] has datatype [%s]", key.getName(), key.getDataType());
         Preconditions.checkArgument(key.getCardinality()== Cardinality.SINGLE, "Ordering is undefined on multi-valued key [%s]", key.getName());
         Preconditions.checkArgument(!(key instanceof SystemRelationType),"Cannot use system types in ordering: %s",key);
-        Preconditions.checkArgument(!orders.containsKey(key.getName()));
+        Preconditions.checkArgument(!orders.containsKey(key));
         Preconditions.checkArgument(orders.isEmpty(),"Only a single sort order is supported on vertex queries");
         orders.add(key, order);
         return getThis();
@@ -279,14 +289,11 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return tx.getRelationType(types[0]);
     }
 
-    private boolean hasAllSingleKeys() {
+    private boolean hasAllCanonicalTypes() {
         for (String typeName : types) {
             InternalRelationType type = QueryUtil.getType(tx, typeName);
             if (type==null) continue;
-            if (!(type instanceof PropertyKey)) return false;
-            if (((PropertyKey) type).getCardinality()!=Cardinality.SINGLE) {
-                return false;
-            }
+            if (!type.getMultiplicity().isUnique(dir)) return false;
         }
         return true;
     }
@@ -399,15 +406,15 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     }
 
     protected List<InternalVertex> allRepresentatives(InternalVertex partitionedVertex) {
-        if (hasAllSingleKeys()) {
-            ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
+        if (hasAllCanonicalTypes()) {
+            return ImmutableList.of(tx.getCanonicalVertex(partitionedVertex));
         }
         return Arrays.asList(tx.getAllRepresentatives(partitionedVertex,restrict2Partitions));
     }
 
 
     protected final boolean isPartitionedVertex(InternalVertex vertex) {
-        return tx.isPartitionedVertex(vertex) && !vertex.isNew();
+        return tx.isPartitionedVertex(vertex);
     }
 
     protected boolean useSimpleQueryProcessor(BaseVertexCentricQuery query, InternalVertex... vertices) {
@@ -420,7 +427,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 
     protected Iterable<TitanRelation> executeRelations(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         if (isPartitionedVertex(vertex)) {
-            if (!hasAllSingleKeys()) {
+            if (!hasAllCanonicalTypes()) {
                 InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
                 Iterable<TitanRelation> merge = null;
 
@@ -446,15 +453,17 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
-            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-            Iterable<TitanVertex> merge = null;
+            if (!hasAllCanonicalTypes()) {
+                InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+                Iterable<TitanVertex> merge = null;
 
-            for (InternalVertex rep : representatives) {
-                Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
-                if (merge==null) merge = iter;
-                else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
-            }
-            return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+                for (InternalVertex rep : representatives) {
+                    Iterable<TitanVertex> iter = executeIndividualVertices(rep,baseQuery);
+                    if (merge==null) merge = iter;
+                    else merge = ResultMergeSortIterator.mergeSort(merge,iter,VertexArrayList.VERTEX_ID_COMPARATOR,false);
+                }
+                return ResultSetIterator.wrap(merge,baseQuery.getLimit());
+            } else vertex = tx.getCanonicalVertex(vertex);
         }
         return executeIndividualVertices(vertex,baseQuery);
     }
@@ -462,7 +471,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     private Iterable<TitanVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        else return edges2Vertices((Iterable) executeRelations(vertex,baseQuery), query.getVertex());
+        else return edges2Vertices((Iterable) executeIndividualRelations(vertex,baseQuery), query.getVertex());
     }
 
     public VertexList executeVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
@@ -470,17 +479,19 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             //If there is a sort order, we need to first merge the relations (and sort) and then compute vertices
             if (!orders.isEmpty()) return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
 
-            InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
-            VertexListInternal merge = null;
+            if (!hasAllCanonicalTypes()) {
+                InternalVertex[] representatives = tx.getAllRepresentatives(vertex,restrict2Partitions);
+                VertexListInternal merge = null;
 
-            for (InternalVertex rep : representatives) {
-                if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
-                VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
-                if (merge==null) merge = (VertexListInternal)vlist;
-                else merge.addAll(vlist);
-            }
-            if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
-            return merge;
+                for (InternalVertex rep : representatives) {
+                    if (merge!=null && merge.size()>=baseQuery.getLimit()) break;
+                    VertexList vlist = executeIndividualVertexIds(rep,baseQuery);
+                    if (merge==null) merge = (VertexListInternal)vlist;
+                    else merge.addAll(vlist);
+                }
+                if (merge.size()>baseQuery.getLimit()) merge = (VertexListInternal)merge.subList(0,baseQuery.getLimit());
+                return merge;
+            } else vertex = tx.getCanonicalVertex(vertex);
         }
         return executeIndividualVertexIds(vertex,baseQuery);
     }
@@ -488,7 +499,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
     private VertexList executeIndividualVertexIds(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query,tx).vertexIds();
-        return edges2VertexIds((Iterable) executeRelations(vertex,baseQuery), vertex);
+        return edges2VertexIds((Iterable) executeIndividualRelations(vertex,baseQuery), vertex);
     }
 
 
@@ -498,6 +509,25 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
 	 */
 
     private static final int HARD_MAX_LIMIT   = 300000;
+
+
+    @Override
+    public QueryDescription describeForEdges() {
+        return describe(1, RelationCategory.EDGE);
+    }
+
+    @Override
+    public QueryDescription describeForProperties() {
+        return describe(1,RelationCategory.PROPERTY);
+    }
+
+    public QueryDescription describeForRelations() {
+        return describe(1,RelationCategory.RELATION);
+    }
+
+    protected QueryDescription describe(int numVertices, RelationCategory returnType) {
+        return new StandardQueryDescription(numVertices,constructQuery(returnType));
+    }
 
     /**
      * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
@@ -527,9 +557,6 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
         return query;
     }
 
-    protected VertexCentricQuery constructQuery(InternalVertex vertex, RelationCategory returnType) {
-        return constructQuery(vertex,constructQuery(returnType));
-    }
 
     protected BaseVertexCentricQuery constructQuery(RelationCategory returnType) {
         assert returnType != null;
@@ -588,28 +615,37 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
                 if (type instanceof ImplicitKey) throw new UnsupportedOperationException("Implicit types are not supported in complex queries: "+type);
                 ts.add(type);
 
+                Direction typeDir = dir;
                 if (type.isPropertyKey()) {
                     if (returnType == RelationCategory.EDGE)
                         throw new IllegalArgumentException("Querying for edges but including a property key: " + type.getName());
                     returnType = RelationCategory.PROPERTY;
+                    typeDir = Direction.OUT;
                 }
                 if (type.isEdgeLabel()) {
                     if (returnType == RelationCategory.PROPERTY)
                         throw new IllegalArgumentException("Querying for properties but including an edge label: " + type.getName());
                     returnType = RelationCategory.EDGE;
+                    if (!type.isUnidirected(Direction.BOTH)) {
+                        //Make sure unidirectionality lines up
+                        if (typeDir==Direction.BOTH) {
+                            if (type.isUnidirected(Direction.OUT)) typeDir=Direction.OUT;
+                            else typeDir=Direction.IN;
+                        } else if (!type.isUnidirected(typeDir)) continue; //Directions are incompatible
+                    }
                 }
 
 
-                if (type.isEdgeLabel() && dir==Direction.BOTH && intervalConstraints.isEmpty() && orders.isEmpty()) {
+                if (type.isEdgeLabel() && typeDir==Direction.BOTH && intervalConstraints.isEmpty() && orders.isEmpty()) {
                     //TODO: This if-condition is a little too restrictive - we also want to include those cases where there
                     // ARE intervalConstraints or orders but those cannot be covered by any sort-keys
-                    SliceQuery q = serializer.getQuery(type, dir, null);
+                    SliceQuery q = serializer.getQuery(type, typeDir, null);
                     q.setLimit(sliceLimit);
                     queries.add(new BackendQueryHolder<SliceQuery>(q, isIntervalFittedConditions, true, null));
                 } else {
                     //Optimize for each direction independently
-                    Direction[] dirs = {dir};
-                    if (dir == Direction.BOTH) {
+                    Direction[] dirs = {typeDir};
+                    if (typeDir == Direction.BOTH) {
                         if (type.isEdgeLabel())
                             dirs = new Direction[]{Direction.OUT, Direction.IN};
                         else
@@ -714,7 +750,7 @@ public abstract class AbstractVertexCentricQueryBuilder<Q extends BaseVertexQuer
             entireKey[i]=tx.getExistingRelationType(type.getSortKey()[i]);
         }
         if (type.isEdgeLabel() && !type.getMultiplicity().isUnique(dir)) entireKey[i++]=ImplicitKey.ADJACENT_ID;
-        if (!type.getMultiplicity().isConstrained()) entireKey[i++]=ImplicitKey.ID;
+        if (!type.getMultiplicity().isConstrained()) entireKey[i++]=ImplicitKey.TITANID;
         return entireKey;
     }
 

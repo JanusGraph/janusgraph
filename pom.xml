@@ -96,7 +96,7 @@
         <module>titan-test</module>
         <module>titan-berkeleyje</module>
         <module>titan-cassandra</module>
-        <module>titan-hadoop</module>
+        <module>titan-hadoop-parent</module>
         <module>titan-hbase-parent</module>
         <module>titan-es</module>
         <module>titan-lucene</module>
@@ -167,7 +167,7 @@
                     <autoVersionSubmodules>true</autoVersionSubmodules>
 
                     <!-- applies to both release:prepare and :perform -->
-                    <arguments>-DskipTests=true -P!release-plugin-hack</arguments>
+                    <arguments>-DskipTests=true</arguments>
                 </configuration>
             </plugin>
 
@@ -236,7 +236,14 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.4.1</version>
+                    <version>2.5</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.apache.maven.scm</groupId>
+                            <artifactId>maven-scm-provider-gitexe</artifactId>
+                            <version>1.9</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
@@ -398,6 +405,11 @@
                 <groupId>commons-collections</groupId>
                 <artifactId>commons-collections</artifactId>
                 <version>3.2.1</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-net</groupId>
+                <artifactId>commons-net</artifactId>
+                <version>1.4.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-beanutils</groupId>
@@ -595,9 +607,24 @@
             </dependency>
             -->
             <dependency>
+                <groupId>org.objenesis</groupId>
+                <artifactId>objenesis</artifactId>
+                <version>1.2</version>
+            </dependency>
+            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.11</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>1.8.5</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest-core</artifactId>
+                <version>1.3</version>
             </dependency>
             <dependency>
                 <groupId>jline</groupId>

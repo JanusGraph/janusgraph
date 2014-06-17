@@ -1,0 +1,153 @@
+[[faunus-config]]
+Configuration and Shell Usage
+-----------------------------
+
+//[.tss-floatleft]
+//image:graph-globe.png[]
+
+The source of any Faunus job is a `HadoopGraph`. `HadoopGraph` is simply a wrapper to a collection of Hadoop- and Faunus-specific configurations. Most importantly, it captures the location and type of the input graph and output graph. A `HadoopGraph` is typically created using one of the `HadoopFactory.open()` methods.
+
+HadoopGraph Construction
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+A Titan-Hadoop configuration file is used to construct a `HadoopGraph`. Assume a file named `bin/faunus.properties` as represented below.
+
+[source,properties]
+----
+# input graph parameters
+faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+faunus.input.location=graph-of-the-gods.json
+# output data parameters
+faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+faunus.output.location=output
+faunus.output.location.overwrite=true
+----
+
+With `HadoopFactory`, a configuration file is turned in a `HadoopGraph`. The `toString()` of the `HadoopGraph` denotes the input and output format of the graph. For instance, as seen below, a graph of type GraphSON is the input and a graph of type GraphSON is the output.
+
+[source,gremlin]
+gremlin> g = HadoopFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+
+Hadoop-Specific Configurations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A `HadoopGraph` is loaded with Hadoop specific configuration information that is percolated from the master cluster configuration (e.g. set up during cluster construction) to various job level configurations.
+
+[source,gremlin]
+gremlin> g.getConf()    
+==>keep.failed.task.files=false
+==>io.seqfile.compress.blocksize=1000000
+==>dfs.df.interval=60000
+==>dfs.datanode.failed.volumes.tolerated=0
+==>mapreduce.reduce.input.limit=-1
+==>mapred.task.tracker.http.address=0.0.0.0:50060
+==>mapred.userlog.retain.hours=24
+==>dfs.max.objects=0
+==>dfs.https.client.keystore.resource=ssl-client.xml
+==>mapred.local.dir.minspacestart=0
+...
+
+Note, it is possible to provide a prefix to look for in `HadoopGraph.getConf(String prefix)`.
+
+[source,gremlin]
+gremlin> g.getConf('mapred')
+==>mapred.disk.healthChecker.interval=60000
+==>mapred.task.tracker.http.address=0.0.0.0:50060
+==>mapred.userlog.retain.hours=24
+==>mapred.local.dir.minspacestart=0
+==>mapred.cluster.reduce.memory.mb=-1
+==>mapred.reduce.parallel.copies=5
+...
+
+Titan-Hadoop Properties
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Within the global configuration, there are Titan-Hadoop-specific configurations. These properties can be isolated with `HadoopGraph.getConf('faunus')`. In general, any prefix string can be provided (e.g. `mapred` or `mapred.map`).
+
+[source,gremlin]
+gremlin> g.getConf('faunus')        
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=graph-of-the-gods.json
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output
+==>faunus.output.location.overwrite=true
+
+Moreover, `HadoopGraph` provides getters/setters for mutating the most commonly used properties. 
+
+[source,gremlin]
+gremlin> g.setGraphOutputFormat(NoOpOutputFormat.class)
+==>null
+gremlin> g
+==>faunusgraph[graphsoninputformat->noopoutputformat]
+gremlin> g.getGraphOutputFormat()
+==>class com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
+gremlin> g.getProperties()       
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=graph-of-the-gods.json
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.noop.NoOpOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output
+==>faunus.output.location.overwrite=true
+
+Chaining Graphs
+^^^^^^^^^^^^^^^
+
+To conclude, a useful `HadoopGraph` method is `getNextGraph()`. This method generates a new `HadoopGraph` that is the "inverse" of the current with the input formats and output locations reconfigured to support easy graph chaining.
+
+[source,gremlin]
+gremlin> g = HadoopFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> h = g.getNextGraph()
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+gremlin> h.getConf('faunus')
+==>faunus.graph.input.format=com.thinkaurelius.faunus.formats.graphson.GraphSONInputFormat
+==>faunus.input.location=output/job-1
+==>faunus.graph.output.format=com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat
+==>faunus.sideeffect.output.format=org.apache.hadoop.mapreduce.lib.output.TextOutputFormat
+==>faunus.output.location=output_
+==>faunus.output.location.overwrite=true
+
+Configuration Key Reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// [.tss-floatleft]
+// image:faunus-seated.png[]
+
+This section describes the various configuration parameters in Faunus. Each `InputFormat`/`OutputFormat` as well as the numerous `MapReduce` steps have specific configurations that are described in their respective sections of the documentation. Note that all configurations go into the global `Configuration` that is used throughout Hadoop. Therefore, Hadoop specific configurations can be provided in the Faunus configuration files. These configurations can be retrieved via `FaunusGraph.getConf()` or `FaunusGraph.getConf(String prefix)`. Finally, they can be set via `FaunusGraph.getConf().set(...)`.
+
+Input Configuration
+^^^^^^^^^^^^^^^^^^^
+
+[options="header",width="100%"]
+|=================
+| Option | Description | Value | Default
+| `faunus.graph.input.format` | the format of the input graph data | `class` | none
+| `faunus.input.location` | the location to read the graph data if in HDFS | `string` | none
+| `faunus.graph.input.vertex-query-filter` | the vertex-query filter to use on input graph | `string` | none
+| `faunus.graph.input.edge-copy.direction` | copy direction edges to opposite direction | `direction` | none
+|=================
+
+Output Configuration
+^^^^^^^^^^^^^^^^^^^^
+
+[options="header",width="100%"]
+|=================
+| Option | Description | Value | Default
+| `faunus.graph.output.format` | the format of the output graph data | `class` | none
+| `faunus.sideeffect.output.format` | the format of the output side-effect data | `class` | none
+| `faunus.output.location` | the location to write of the graph and side-effect data  | `string` | none
+| `faunus.output.location.overwrite` | whether to override the output location data | `boolean` | false
+|=================
+
+Global Configuration
+^^^^^^^^^^^^^^^^^^^^
+
+[options="header",width="100%"]
+|=================
+| Option | Description | Value | Default
+| `faunus.pipeline.map-spill-over` | The size of in-memory mapper combiners before writing to output | `int` | 500
+| `mapred.jar` | The job Java jar -- native `faunus-x-job.jar` or developer jar w/ Faunus dependencies | `string` | `faunus-x-job.jar`
+|=================

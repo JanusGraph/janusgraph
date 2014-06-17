@@ -17,4 +17,9 @@ public class EmbeddedGraphTest extends TitanGraphTest {
     public WriteConfiguration getConfiguration() {
         return CassandraStorageSetup.getEmbeddedCassandraPartitionGraphConfiguration(getClass().getSimpleName());
     }
+
+    @Override
+    protected boolean isLockingOptimistic() {
+        return true;
+    }
 }

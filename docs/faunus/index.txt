@@ -1,0 +1,98 @@
+Hadoop
+======
+
+// [[images/faunus-logo.png|width=375px|align=left|float]]
+
+Titan-Hadoop, formerly known as Faunus, is a distributed analytics engine for processing https://github.com/tinkerpop/blueprints/wiki/Property-Graph-Model[property graph] with http://hadoop.apache.org/[Hadoop].  A http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first] version of the graph traversal language http://gremlin.tinkerpop.com[Gremlin] operates on a http://en.wikipedia.org/wiki/Adjacency_list[vertex-centric] property graph data structure. Faunus provides adaptors to the distributed graph database http://thinkaurelius.github.com/titan/[Titan], any http://rexster.tinkerpop.com[Rexster] fronted graph database, and to text and binary graphs stored in http://hadoop.apache.org/hdfs[HDFS]. The provided Gremlin operations and Hadoop graph tools can be extended using http://hadoop.apache.org/mapreduce/[MapReduce] and http://blueprints.tinkerpop.com[Blueprints].
+ 
+include::benefits.txt[]
+
+include::concepts_intro.txt[]
+
+include::getting_started.txt[]
+
+include::hadoop_graph.txt[]
+
+include::gremlin_steps.txt[]
+
+include::hdfs.txt[]
+
+include::cli.txt[]
+
+include::rexster.txt[]
+
+include::sequencefile.txt[]
+
+include::titan_format.txt[]
+
+include::graphson_format.txt[]
+
+include::rexster_format.txt[]
+
+include::edgelist_format.txt[]
+
+include::rdf_format.txt[]
+
+include::script_format.txt[]
+
+include::limitations.txt[]
+
+include::vertex_query.txt[]
+
+include::distributed_computing.txt[]
+
+include::ec2.txt[]
+
+include::performance_tuning.txt[]
+
+// The content under "Representational Limits" in the old wiki has been folded into the limitations.txt page above
+//include::representational_limits.txt[]
+
+/////////////////
+
+Intermediate Concepts
+~~~~~~~~~~~~~~~~~~~~~
+
+//  ** [[Faunus Graph]]
+
+Faunus Graph
+^^^^^^^^^^^^
+
+  *** [[Faunus Graph Configuration]] (*cheat sheet*)
+
+
+  ** Gremlin over Faunus ("FaunusPipeline":http://thinkaurelius.github.com/faunus/javadoc/current/com/thinkaurelius/faunus/FaunusPipeline.html JavaDoc)
+    *** [[Gremlin Steps]] (*cheat sheet*)
+    *** [[HDFS Handling]] (*cheat sheet*)
+    *** [[Command Line Usage]]
+    *** [[Rexster Usage]]
+  ** Integration with Data Sources/Sinks
+    *** [[SequenceFile Format]] (*source/sink*)
+    *** [[Titan Format]] (*source/sink*)
+    *** [[GraphSON Format]] (*source/sink*)
+    *** [[Rexster Format]] (*source*)
+    *** [[EdgeList Format]] (*sink*)
+      **** [[RDF Format]] (*source*)
+    *** [[Script Format]] (*source/sink*)
+  ** [[Gotchas and Limitations]]
+
+Advanced Concepts
+~~~~~~~~~~~~~~~~~
+
+  ** [[Vertex Query Graph Filters]]
+  ** [[Distributed Graph Computing with Gremlin]]
+  ** [[Running Faunus on Amazon EC2]]
+   *** [[Using Amazon S3 for Storage]]
+  ** [[Performance Tuning]]
+  ** [[Representational Limits]]
+
+
+
+  ** "Faunus JavaDoc":http://thinkaurelius.github.com/faunus/javadoc/current/
+
+
+// * [[Version Compatibilities]]
+// * [[Acknowledgements]]
+// * [[Release Notes]]
+
+/////////////////

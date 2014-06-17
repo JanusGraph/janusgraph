@@ -18,7 +18,7 @@ import static com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory.*;
 
 public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
 
-    static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
+    static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
 
     protected final StandardTitanTx tx;
     protected final IndexSerializer indexSerializer;

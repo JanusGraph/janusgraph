@@ -1,0 +1,68 @@
+Command-Line Interface
+----------------------
+
+image:gremlin-terminal.png[]
+
+There are three ways to use Gremlin/Faunus:
+
+. Gremlin REPL: the interactive Gremlin shell.
+. Gremlin script: submitting a Gremlin traversal as a file.
+. Gremlin inline: submitting a Gremlin traversal as an inline parameter.
+
+Gremlin REPL
+~~~~~~~~~~~~
+
+To start the Gremlin REPL, simply do:
+
+[source,gremlin]
+----
+faunus$ bin/gremlin.sh 
+
+         \,,,/
+         (o o)
+-----oOOo-(_)-oOOo-----
+gremlin> 
+----
+
+Gremlin Script
+~~~~~~~~~~~~~~
+
+Assume a file as follows:
+
+[source,groovy]
+g = FaunusFactory.open('bin/faunus.properties')
+g.V.out('father').name.submit()
+
+Note that `FaunusPipeline.submit()` is required to ultimately submit the job to the Hadoop cluster. In the Gremlin REPL, this is handled for the user automatically.
+
+[source,bourne]
+faunus$ bin/gremlin.sh -e test.groovy
+12/09/18 15:35:39 INFO mapreduce.FaunusCompiler: Compiled to 2 MapReduce job(s)
+...
+
+Gremlin Inline
+~~~~~~~~~~~~~~
+
+The arguments are as follows:
+
+. The location of the properties file denoting the `FaunusGraph`.
+. The Gremlin/Faunus script in quotes.
+. A set of overriding property values prefixed with `-D` (optional), e.g. `-Dfaunus.input.location=agraph mapred.map.tasks=1`
+
+[source,text]
+----
+faunus$ bin/gremlin.sh -i bin/faunus.properties "g.V.out('father').name"
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: Faunus: Graph Analytics Engine
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         ,
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     ,   |\ ,__
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     |\   \/   `\
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:     \ `-.:.     `\
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:      `-.__ `\/\/\|
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:         / `'/ () \
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:       .'   /\     )
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:    .-'  .'| \  \__
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:  .'  __(  \  '`(()
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler: /_.'`  `.  |    )(
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:          \ |
+12/09/18 15:26:32 INFO mapreduce.FaunusCompiler:           |/
+----

@@ -71,7 +71,6 @@ public class Backend implements LockerProvider {
 
     public static final String ID_STORE_NAME = "titan_ids";
 
-    public static final String TITAN_BACKEND_VERSION = "titan-version";
     public static final String METRICS_MERGED_STORE = "stores";
     public static final String METRICS_MERGED_CACHE = "caches";
     public static final String METRICS_CACHE_SUFFIX = ".cache";
@@ -209,7 +208,7 @@ public class Backend implements LockerProvider {
             //EdgeStore & VertexIndexStore
             KeyColumnValueStore idStore = storeManager.openDatabase(ID_STORE_NAME);
             if (reportMetrics) {
-                idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName("idStore"));
+                idStore = new MetricInstrumentedStore(idStore, getMetricsStoreName(ID_STORE_NAME));
             }
             idAuthority = null;
             if (storeFeatures.isKeyConsistent()) {
@@ -222,8 +221,8 @@ public class Backend implements LockerProvider {
             KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
             if (reportMetrics) {
-                edgeStoreRaw = new MetricInstrumentedStore(edgeStoreRaw, getMetricsStoreName("edgeStore"));
-                indexStoreRaw = new MetricInstrumentedStore(indexStoreRaw, getMetricsStoreName("vertexIndexStore"));
+                edgeStoreRaw = new MetricInstrumentedStore(edgeStoreRaw, getMetricsStoreName(EDGESTORE_NAME));
+                indexStoreRaw = new MetricInstrumentedStore(indexStoreRaw, getMetricsStoreName(INDEXSTORE_NAME));
             }
 
             //Configure caches

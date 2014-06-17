@@ -24,6 +24,9 @@ target/
 /titan-*/.classpath
 /titan-*/.project
 /titan-*/.settings/
+/titan-*/titan-*/.classpath
+/titan-*/titan-*/.project
+/titan-*/titan-*/.settings/
 # End of Eclipse junk
 # HBase testing stuff
 titan-hbase/logs

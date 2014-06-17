@@ -201,8 +201,10 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(sortKeys.length>0,"Need to specify sort keys");
         for (RelationType key : sortKeys) Preconditions.checkArgument(key!=null,"Keys cannot be null");
         Preconditions.checkArgument(type.isNew(),"Can only install indexes on new types (current limitation)");
+        Preconditions.checkArgument(!(type instanceof EdgeLabel) || !((EdgeLabel)type).isUnidirected() || direction==Direction.OUT,
+                "Can only index uni-directed labels in the out-direction: %s",type);
         Preconditions.checkArgument(!((InternalRelationType)type).getMultiplicity().isConstrained(direction),
-                "The relation type [%s] has a multiplicity or cardinality constrained in direction [%s] and can therefore not be indexed",type,direction);
+                "The relation type [%s] has a multiplicity or cardinality constraint in direction [%s] and can therefore not be indexed",type,direction);
 
         String composedName = composeRelationTypeIndexName(type,name);
         StandardRelationTypeMaker maker;
@@ -267,9 +269,14 @@ public class ManagementSystem implements TitanManagement {
     }
 
     @Override
-    public Iterable<RelationTypeIndex> getRelationIndexes(RelationType type) {
-        assert type instanceof InternalRelationType;
-        return Iterables.transform(((InternalRelationType) type).getRelationIndexes(),new Function<InternalRelationType, RelationTypeIndex>() {
+    public Iterable<RelationTypeIndex> getRelationIndexes(final RelationType type) {
+        Preconditions.checkArgument(type!=null && type instanceof InternalRelationType,"Invalid relation type provided: %s",type);
+        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), new Predicate<InternalRelationType>() {
+            @Override
+            public boolean apply(@Nullable InternalRelationType internalRelationType) {
+                return !type.equals(internalRelationType);
+            }
+        }),new Function<InternalRelationType, RelationTypeIndex>() {
             @Nullable
             @Override
             public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
@@ -283,11 +290,9 @@ public class ManagementSystem implements TitanManagement {
      --------------- */
 
     public static IndexType getGraphIndexDirect(String name, StandardTitanTx transaction) {
-        //TODO: Use SchemaCache since this will be called frequently
-        TitanVertex v = Iterables.getOnlyElement(transaction.getVertices(BaseKey.SchemaName,TitanSchemaCategory.GRAPHINDEX.getSchemaName(name)),null);
+        TitanSchemaVertex v = transaction.getSchemaVertex(TitanSchemaCategory.GRAPHINDEX.getSchemaName(name));
         if (v==null) return null;
-        assert v instanceof TitanSchemaVertex;
-        return ((TitanSchemaVertex)v).asIndexType();
+        return v.asIndexType();
     }
 
     @Override
@@ -358,6 +363,8 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(indexType instanceof ExternalIndexType,"Can only add keys to an external index, not %s",index.getName());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
+        Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
+                "Can only index single-valued property keys on vertices [%s]",key);
         Preconditions.checkArgument(key.isNew(),"Can only index new keys (current limitation)");
         TitanSchemaVertex indexVertex = (TitanSchemaVertex)((IndexTypeWrapper)indexType).getSchemaBase();
 
@@ -395,7 +402,8 @@ public class ManagementSystem implements TitanManagement {
     private TitanGraphIndex createInternalIndex(String indexName, ElementCategory elementCategory, boolean unique, TitanSchemaType constraint, PropertyKey... keys) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
-        Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index");
+        Preconditions.checkArgument(keys!=null && keys.length>0,"Need to provide keys to index [%s]",indexName);
+        Preconditions.checkArgument(!unique || elementCategory==ElementCategory.VERTEX,"Unique indexes can only be created on vertices [%s]",indexName);
         boolean allSingleKeys = true;
         boolean oneNewKey = false;
         for (PropertyKey key : keys) {
@@ -538,8 +546,11 @@ public class ManagementSystem implements TitanManagement {
         Preconditions.checkArgument(consistency!=null);
         if (getConsistency(element)==consistency) return; //Already got the right consistency
         TitanSchemaVertex vertex;
-        if (element instanceof RelationType) vertex = (RelationTypeVertex)element;
-        else if (element instanceof TitanGraphIndex) {
+        if (element instanceof RelationType) {
+            vertex = (RelationTypeVertex)element;
+            Preconditions.checkArgument(consistency!=ConsistencyModifier.FORK || !((RelationTypeVertex)vertex).getMultiplicity().isConstrained(),
+                    "Cannot apply FORK consistency mode to constraint relation type: %s",vertex.getName());
+        } else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
             if (index.isExternalIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
             assert index instanceof IndexTypeWrapper;
@@ -603,7 +614,13 @@ public class ManagementSystem implements TitanManagement {
         } else if (RelationType.class.equals(clazz)) {
             types = Iterables.concat(getRelationTypes(EdgeLabel.class), getRelationTypes(PropertyKey.class));
         } else throw new IllegalArgumentException("Unknown type class: " + clazz);
-        return Iterables.filter(types, clazz);
+        return Iterables.filter(Iterables.filter(types, clazz),new Predicate<T>() {
+            @Override
+            public boolean apply(@Nullable T t) {
+                //Filter out all relation type indexes
+                return ((InternalRelationType)t).getBaseType()==null;
+            }
+        });
     }
 
     @Override
@@ -619,6 +636,11 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public VertexLabelMaker makeVertexLabel(String name) {
         return transaction.makeVertexLabel(name);
+    }
+
+    @Override
+    public Iterable<VertexLabel> getVertexLabels() {
+        return Iterables.filter(transaction.getVertices(BaseKey.SchemaCategory,TitanSchemaCategory.VERTEXLABEL),VertexLabel.class);
     }
 
     // ###### USERMODIFIABLECONFIGURATION PROXY #########

@@ -1,0 +1,18 @@
+The Benefits of Titan-Hadoop
+----------------------------
+
+//image::faunus-head.png[]
+
+image:hadoop-elephant.png[]
+
+Titan-Hadoop is http://en.wikipedia.org/wiki/MapReduce[Hadoop MapReduce]-based graph analytics engine. It can compute http://en.wikipedia.org/wiki/Graph_rewriting[graph derivations], http://en.wikipedia.org/wiki/Network_theory[graph statistics], and graph data mappings (input/output mappings) on massive-scale graphs represented across a multi-machine cluster. Beyond this foundation, other benefits are itemized below.
+
+* Process "infinite sized" graphs using the functional, parallel http://hadoop.apache.org/docs/r1.2.1/mapred_tutorial.html[MapReduce] computing model.
+* Express complex global graph traversals or graph statistics as simple http://gremlin.tinkerpop.com[Gremlin queries] (via an interactive http://en.wikipedia.org/wiki/Read%E2%80%93eval%E2%80%93print_loop[REPL] or batch-friendly http://en.wikipedia.org/wiki/Command-line_interface[CLI]). No knowledge of MapReduce or Java code required as Gremlin expressions are automatically compiled to MapReduce steps.
+* Leverage <<faunus-distributed-computing,vertex-centric distributed graph computing>> against a live graph database.
+* Flexible input/output format configuration supports heterogeneous, user-customizable formats and datastores.  Several I/O formats are provided standard, including some for Titan databases hosted in HBase or Cassandra.
+* Process graphs exposed by TinkerPop's http://rexster.tinkerpop.com[Rexster] graph server. Simply pull graph data out of any http://blueprints.tinkerpop.com[Blueprints] enabled http://en.wikipedia.org/wiki/Graph_database[graph database].
+* Process graphs represented in https://github.com/tinkerpop/blueprints/wiki/GraphSON-Reader-and-Writer-Library[GraphSON]. Simply store the text-representation in http://hadoop.apache.org/hdfs/[HDFS].
+* Process graphs represented in various http://www.w3.org/RDF/[RDF] formats. Simply store the text-representation in HDFS.
+* Output graphs as an edge list to easily interoperate with other graph analysis packages (e.g. http://www.r-project.org/[R] or http://igraph.sourceforge.net/[igraph]).
+* Custom input and output format scripts can be provided for general purpose data import/export.

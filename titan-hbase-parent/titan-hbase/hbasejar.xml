@@ -16,9 +16,7 @@
 	  </includes>
 	</unpackOptions>
 	<includes>
-	  <include>com.thinkaurelius.titan:titan-hbase-core</include>
-	  <include>com.thinkaurelius.titan:titan-hbase-094</include>
-	  <include>com.thinkaurelius.titan:titan-hbase-096</include>
+	  <include>com.thinkaurelius.titan:titan-hbase-*</include>
 	</includes>
       </dependencySet>
     </dependencySets>

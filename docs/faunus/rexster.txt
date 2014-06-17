@@ -1,0 +1,172 @@
+Rexster Usage
+-------------
+
+// !https://github.com/tinkerpop/rexster/raw/master/doc/images/rexster-logo.png!:http://rexster.tinkerpop.com
+
+In addition to processing Faunus scripts on the [[command line|Command Line Usage]], it is also possible to  remotely execute and monitor scripts with http://rexster.tinkerpop.com[Rexster] via REST-based requests.  Faunus comes with a https://github.com/tinkerpop/rexster/wiki/Extensions[Rexster Extension], called the Faunus Executor Extension, which enables this capability.  
+
+Configuration
+~~~~~~~~~~~~~
+
+The following configuration instructions assume that Faunus and its related dependencies are installed and configured as described in the <<faunus-getting-started,Getting Started>> section.  For demonstration purposes, it further assumes the use of Titan Cassandra in <<cassandra-local-server-mode,Local Server Mode>> and loaded with the https://github.com/tinkerpop/gremlin/wiki/Defining-a-More-Complex-Property-Graph[Grateful Dead dataset] which comes https://github.com/tinkerpop/rexster/tree/master/rexster-server/data/graph-example-2[packaged] with Rexster.  Finally, it assumes that Rexster is https://github.com/tinkerpop/rexster/wiki/Downloads[downloaded] and unpacked to `REXSTER_HOME`.
+
+To deploy the Executor Extension (`FaunusRexsterExecutorExtension`), simply copy the following Faunus `jar` files to `REXSTER_HOME/ext` (see https://github.com/tinkerpop/rexster/wiki/Deploying-an-Extension[Deploying an Extension] in the Rexster Wiki for more information):
+
+* `faunus-x.y.z.jar`
+* `faunus-x.y.z-job.jar`
+
+With those `jar` files in place, Rexster now has the capability to find the Executor Extension.  The assumption is that the jars in the Titan `lib` directory are also exposed to Rexster in the `REXSTER_HOME/ext` directory.  If not, it may be best to copy all of the jars in the Faunus `lib` directory to Rexster.  Ensure that the `titan-rexster-x.y.z.jar` is present as well so that Rexster can configure the Titan graph instance.
+
+To tell Rexster to explicitly "allow" the extension, edit Rexster's `REXSTER_HOME/config/rexster.xml` file and include the following:
+
+[source,xml]
+----
+<graph>
+  <graph-name>titanexample</graph-name>
+  <graph-type>com.thinkaurelius.titan.tinkerpop.rexster.TitanGraphConfiguration</graph-type>
+  <graph-read-only>false</graph-read-only>
+  <properties>
+    <storage.backend>cassandrathrift</storage.backend>
+    <storage.hostname>localhost</storage.hostname>
+  </properties>
+  <extensions>
+    <allows>
+      <allow>tp:gremlin</allow>
+      <allow>faunus:executor</allow>
+    </allows>
+    <extension>
+      <namespace>faunus</namespace>
+      <name>executor</name>
+      <configuration>
+        <faunus.graph.input.format>com.thinkaurelius.faunus.formats.titan.cassandra.TitanCassandraInputFormat</faunus.graph.input.format>
+        <faunus.graph.input.titan.storage.backend>cassandrathrift</faunus.graph.input.titan.storage.backend>
+        <faunus.graph.input.titan.storage.hostname>localhost</faunus.graph.input.titan.storage.hostname>
+        <faunus.graph.input.titan.storage.port>9160</faunus.graph.input.titan.storage.port>
+        <faunus.graph.input.titan.storage.keyspace>titan</faunus.graph.input.titan.storage.keyspace>
+        <cassandra.input.partitioner.class>org.apache.cassandra.dht.RandomPartitioner</cassandra.input.partitioner.class>
+        <faunus.graph.output.format>com.thinkaurelius.faunus.formats.graphson.GraphSONOutputFormat</faunus.graph.output.format>
+        <faunus.sideeffect.output.format>org.apache.hadoop.mapreduce.lib.output.TextOutputFormat</faunus.sideeffect.output.format>
+        <faunus.output.location>output</faunus.output.location>
+        <faunus.output.location.overwrite>true</faunus.output.location.overwrite>
+        <fs.default.name>hdfs://localhost:9000/</fs.default.name>
+        <mapred.job.tracker>localhost:9001</mapred.job.tracker>
+      </configuration>
+    </extension>
+  </extensions>
+</graph>
+----
+
+The configuration above does two things.  First, it adds a graph called `titanexample` that connects to the running Cassandra instance from the assumptions given above (see https://github.com/thinkaurelius/titan/wiki/Rexster-Graph-Server#configuring-rexster[Configuring Rexster] in the Titan Wiki for more information on that aspect of the configuration).  Second, it tells Rexster to expose the Executor Extension with `<allow>faunus:executor</allow>` and then configures it in the `<extension>` section below that.
+
+The settings inside of the `<configuration>` section represents the settings that would traditionally be provided via some `faunus.properties` file. These properties are fed into Faunus in basically the same manner as provided for by:
+
+[source,gremlin]
+gremlin> g = FaunusFactory.open('bin/faunus.properties')
+==>faunusgraph[graphsoninputformat->graphsonoutputformat]
+
+Rexster needs to know where Faunus is.  Set `FAUNUS_HOME` environment variable to point to the Faunus installation directory.  Consider just editing `bin/rexster.sh` and adding this line to the start of the file:
+
+[source,bourne]
+export FAUNUS_HOME=/path/to/faunus
+
+Start Rexster with:
+
+[source,bourne]
+bin/rexster.sh -s
+
+and note the log output to the console where the following lines should be displayed:
+
+[source,text]
+----
+[INFO] RexsterApplicationGraph - Graph [titanexample] - configured with allowable namespace [tp:gremlin]
+[INFO] RexsterApplicationGraph - Graph [titanexample] - configured with allowable namespace [faunus:executor]
+[INFO] GraphConfigurationContainer - Graph titanexample - titangraph[cassandrathrift:localhost] loaded
+----
+
+REST API
+~~~~~~~~
+
+The Faunus Executor Extension provides support for submitting scripts to be executed and for monitoring those scripts for execution completion.
+
+Starting a Faunus Job with POST
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Faunus Executor Extension accepts an HTTP `POST` of a script and overriding configuration options to create a Faunus `job` instance.  The `job` is started at the time the request is received and executes asynchronously on the server.  The following example utilizes http://curl.haxx.se/[cURL] to issue a request to execute a Faunus script in Rexster:
+
+[source,text]
+curl -H "Content-Type:application/json" -X POST -d "{'config':{'faunus.output.location':'output-1'}, 'script':'g.V.out.name.groupCount'}" "http://localhost:8182/graphs/titanexample/faunus/executor"
+
+which almost immediately returns:
+
+[source,javascript]
+{"job":"80e2a556-b9d3-4306-bf7b-00dd2bfc6f19","version":"x.y.z-SNAPSHOT","queryTime":8.748225}
+
+At this point the `job` is executing on the server.  The returned `job` identifier provides a handle, by which the job can be monitored to determine when the server is done processing the `job`.  
+
+Given the above cURL example, Faunus is now processing this script:
+
+[source,text]
+g.V.out.name.groupCount
+
+
+and is placing the output in `output-1`.  It is important to note that `output-1` as set in the `config` key of the POSTed JSOn, is an _override_ of the value provided in `rexster.xml`, where the value is just `output`.  In fact, any key-value pair in the `config` key will become a property passed to Faunus.  These values will override any provided in `rexster.xml`.
+
+Monitoring the Job with GET
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To get the status of a `job`, make another request to the Faunus Executor Service providing the `job` identifier returned with the `POST` as a query string argument.  While the job is still running, a request made as follows:
+
+[source,text]
+curl "http://localhost:8182/graphs/titanexample/faunus/executor?job=80e2a556-b9d3-4306-bf7b-00dd2bfc6f19"
+
+will return:
+
+[source,javascript]
+----
+{
+    "message": "",
+    "status": "processing",
+    "job": "80e2a556-b9d3-4306-bf7b-00dd2bfc6f19",
+    "version": "x.y.z-SNAPSHOT",
+    "queryTime": 0.883452
+}
+----
+
+When the `job` completes it will return:
+
+
+[source,javascript]
+----
+{
+    "message": "",
+    "status": "complete",
+    "job": "80e2a556-b9d3-4306-bf7b-00dd2bfc6f19",
+    "version": "x.y.z-SNAPSHOT",
+    "queryTime": 0.883452
+}
+----
+
+In the event of an error processing the `job` the response will contain a `status` of `error` and the `message` field will contain some details.  In this case, it will be important to check the Rexster logs for more details on the problem.
+
+Once a `job` is complete (by way of error or success), the reference to the `job` is removed from Rexster and future requests for that `job` identifier will return a `404` status code (Not Found).
+
+When the `job` is complete, the results will be pushed into HDFS (assuming the configuration described thus far).  One way to view the side-effect generated group count would be to use the REPL:
+
+[source,gremlin]
+----
+gremlin> hdfs.ls('output-1')                    
+==>rwxr-xr-x smallette supergroup 0 (D) job-0
+==>rwxr-xr-x smallette supergroup 0 (D) job-1
+gremlin> hdfs.head('output-1/job-1/sideeffect*')
+==>A MIND TO GIVE UP LIVIN	1
+==>A.P.Carter	1
+==>ADDAMS FAMILY	2
+==>AINT SUPERSTITIOUS	3
+==>ALABAMA GETAWAY	38
+...
+==>YOU AINT WOMAN ENOUGH	13
+==>YOU WIN AGAIN	8
+==>YOU WONT FIND ME	1
+==>YOUR LOVE AT HOME	1
+==>instrumental	8
+----
