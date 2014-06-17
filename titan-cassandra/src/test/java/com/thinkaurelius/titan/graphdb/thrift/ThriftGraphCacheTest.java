@@ -19,11 +19,11 @@ public class ThriftGraphCacheTest extends TitanGraphTest {
         CassandraStorageSetup.startCleanEmbedded(CassandraStorageSetup.YAML_PATH);
     }
 
-    // This fails an assertion on ExpectedValueCheckingTransaction.java:136
-    @Override
-    public void testGraphConfiguration() {
-        // TODO fix KCVSConfiguration + dbcache
-    }
+//    // This fails an assertion on ExpectedValueCheckingTransaction.java:136
+//    @Override
+//    public void testGraphConfiguration() {
+//        // TODO fix KCVSConfiguration + dbcache
+//    }
 
     @Override
     protected boolean isLockingOptimistic() {
