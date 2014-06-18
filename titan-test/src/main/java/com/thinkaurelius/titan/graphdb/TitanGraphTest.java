@@ -14,6 +14,7 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -38,6 +39,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -58,6 +60,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestUtil;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
@@ -1535,12 +1538,28 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testGraphConfiguration() {
-        setIllegalGraphOption( STORAGE_READONLY,        ConfigOption.Type.LOCAL,          true);
-        setAndCheckGraphOption(DB_CACHE,                ConfigOption.Type.MASKABLE,       true, false);
-        setAndCheckGraphOption(SYSTEM_LOG_TRANSACTIONS, ConfigOption.Type.GLOBAL,         true, false);
-        setAndCheckGraphOption(DB_CACHE_TIME,           ConfigOption.Type.GLOBAL_OFFLINE, 500L, 777L);
-        setIllegalGraphOption( INITIAL_TITAN_VERSION,   ConfigOption.Type.FIXED,          "foo");
+    public void testLocalGraphConfiguration() {
+        setIllegalGraphOption(STORAGE_READONLY, ConfigOption.Type.LOCAL, true);
+    }
+
+    @Test
+    public void testMaskableGraphConfig() {
+        setAndCheckGraphOption(DB_CACHE, ConfigOption.Type.MASKABLE, true, false);
+    }
+
+    @Test
+    public void testGlobalGraphConfig() {
+        setAndCheckGraphOption(SYSTEM_LOG_TRANSACTIONS, ConfigOption.Type.GLOBAL, true, false);
+    }
+
+    @Test
+    public void testGlobalOfflineGraphConfig() {
+        setAndCheckGraphOption(DB_CACHE_TIME, ConfigOption.Type.GLOBAL_OFFLINE, 500L, 777L);
+    }
+
+    @Test
+    public void testFixedGraphConfig() {
+        setIllegalGraphOption(INITIAL_TITAN_VERSION, ConfigOption.Type.FIXED, "foo");
     }
 
     @Test
@@ -1590,8 +1609,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Set and check initial value before and after database restart
         mgmt.set(path, firstValue);
         assertEquals(firstValue.toString(), mgmt.get(path));
+        // Close open tx first.  This is specific to BDB + GLOBAL_OFFLINE.
+        // Basically: the BDB store manager throws a fit if shutdown is called
+        // with one or more transactions still open, and GLOBAL_OFFLINE calls
+        // shutdown on our behalf when we commit this change.
+        tx.rollback();
         mgmt.commit();
         clopen();
+        // Close tx again following clopen
+        tx.rollback();
         assertEquals(firstValue.toString(), mgmt.get(path));
 
         // Set and check updated value before and after database restart
@@ -1599,15 +1625,15 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(secondValue.toString(), mgmt.get(path));
         mgmt.commit();
         clopen();
+        tx.rollback();
         assertEquals(secondValue.toString(), mgmt.get(path));
 
-        // Now try reverting to firstValue with a second graph open
-
+        // Open a separate graph "g2"
         TitanGraph g2 = TitanFactory.open(config);
+        TitanManagement m2 = g2.getManagementSystem();
+        assertEquals(secondValue.toString(), m2.get(path));
 
-        // g2 should still have secondValue
-        assertEquals(secondValue.toString(), g2.getManagementSystem().get(path));
-
+        // GLOBAL_OFFLINE options should be unmodifiable with g2 open
         if (opt.getType().equals(ConfigOption.Type.GLOBAL_OFFLINE)) {
             try {
                 mgmt.set(path, firstValue);
@@ -1616,6 +1642,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             } catch (RuntimeException e) {
                 log.debug("Caught expected exception", e);
             }
+            assertEquals(secondValue.toString(), mgmt.get(path));
+        // GLOBAL and MASKABLE should be modifiable even with g2 open
         } else {
             mgmt.set(path, firstValue);
             assertEquals(firstValue.toString(), mgmt.get(path));
@@ -1624,8 +1652,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             assertEquals(firstValue.toString(), mgmt.get(path));
         }
 
-//        assertEquals(secondValue.toString(), g2.getManagementSystem().get(path));
-
+        m2.rollback();
         g2.shutdown();
     }
 
@@ -1647,12 +1674,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             log.debug("Caught expected exception", t);
         }
 
-//        // Record current config option state
-//        final String presentValue = mgmt.get(path);
-//        // Require that the caller attempt to overwrite the present value with something different
-//        Preconditions.checkArgument(null != attemptedValue);
-//        Preconditions.checkState(!attemptedValue.equals(presentValue));
-
         // Try to modify the option
         try {
             mgmt.set(path, attemptedValue);
@@ -1661,12 +1682,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         } catch (Throwable t) {
             log.debug("Caught expected exception", t);
         }
-
-//        // Check that our attempted write had no effect
-//        if (mgmt.isOpen())
-//            mgmt.rollback();
-//        mgmt = graph.getManagementSystem();
-//        assertEquals(presentValue, mgmt.get(path));
     }
 
 
