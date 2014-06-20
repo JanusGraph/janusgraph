@@ -86,7 +86,9 @@ public abstract class IndexProviderTest {
 
     @Before
     public void setUp() throws Exception {
-        openIndex().clearStorage();
+        index = openIndex();
+        index.clearStorage();
+        index.close();
         open();
     }
 
@@ -440,13 +442,13 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
     }
 
-    private void initialize(String store) throws StorageException {
+    protected void initialize(String store) throws StorageException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             if (index.supports(info.getValue())) index.register(store,info.getKey(),info.getValue(),tx);
         }
     }
 
-    private void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
+    protected void add(String store, String docid, Map<String, Object> doc, boolean isNew) {
         for (Map.Entry<String, Object> kv : doc.entrySet()) {
             if (index.supports(allKeys.get(kv.getKey()))) {
                 tx.add(store, docid, kv.getKey(), kv.getValue(), isNew);
