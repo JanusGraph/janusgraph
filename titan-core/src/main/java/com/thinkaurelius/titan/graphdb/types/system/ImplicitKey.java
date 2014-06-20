@@ -85,6 +85,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 } else {
                     assert this==TIMESTAMP || this==TTL;
                     Long time = r.getPropertyDirect(this);
+                    if (time==null) return null; //there is no timestamp or ttl
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
                     if (this==TIMESTAMP) return (O)new StandardTimestamp(time,unit);
                     else return (O)new StandardDuration(time,unit);
