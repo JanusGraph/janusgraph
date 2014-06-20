@@ -85,7 +85,6 @@
                                 <exclude>**/*PipelineTest.java</exclude>
                                 <exclude>**/TitanCassandraOutputFormatTest.java</exclude>
                                 <exclude>**/TitanHBaseOutputFormatTest.java</exclude>
-                                <exclude>**/BlueprintsGraphOutputMapReduceTest.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>

@@ -14,9 +14,11 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
@@ -37,6 +39,7 @@ import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -57,6 +60,7 @@ import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestUtil;
+import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
@@ -1534,36 +1538,32 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testConfiguration() {
-        // Test persistent modification of a GLOBAL option
-        Preconditions.checkState(SYSTEM_LOG_TRANSACTIONS.getType().equals(ConfigOption.Type.GLOBAL));
-        String opt = ConfigElement.getPath(SYSTEM_LOG_TRANSACTIONS);
-        mgmt.set(opt, true);
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.set(opt, false);
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        clopen();
+    public void testLocalGraphConfiguration() {
+        setIllegalGraphOption(STORAGE_READONLY, ConfigOption.Type.LOCAL, true);
+    }
 
-        // Test persistent modification of a MASKABLE option
-        Preconditions.checkState(DB_CACHE.getType().equals(ConfigOption.Type.MASKABLE));
-        opt = ConfigElement.getPath(DB_CACHE);
-        mgmt.set(opt, true);
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(true, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.set(opt, false);
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
-        mgmt.commit();
-        clopen();
-        assertEquals(false, Boolean.valueOf(mgmt.get(opt)));
+    @Test
+    public void testMaskableGraphConfig() {
+        setAndCheckGraphOption(DB_CACHE, ConfigOption.Type.MASKABLE, true, false);
+    }
 
+    @Test
+    public void testGlobalGraphConfig() {
+        setAndCheckGraphOption(SYSTEM_LOG_TRANSACTIONS, ConfigOption.Type.GLOBAL, true, false);
+    }
+
+    @Test
+    public void testGlobalOfflineGraphConfig() {
+        setAndCheckGraphOption(DB_CACHE_TIME, ConfigOption.Type.GLOBAL_OFFLINE, 500L, 777L);
+    }
+
+    @Test
+    public void testFixedGraphConfig() {
+        setIllegalGraphOption(INITIAL_TITAN_VERSION, ConfigOption.Type.FIXED, "foo");
+    }
+
+    @Test
+    public void testTransactionConfiguration() {
         // Superficial tests for a few transaction builder methods
 
         // Test read-only transaction
@@ -1590,6 +1590,100 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(customTimestamp, customTimeTx.getConfiguration().getCommitTime().getTimestamp(TimeUnit.MILLISECONDS));
         customTimeTx.rollback();
     }
+
+    private <T> void setAndCheckGraphOption(ConfigOption<T> opt, ConfigOption.Type requiredType, T firstValue, T secondValue) {
+        // Sanity check: make sure the Type of the configoption is what we expect
+        Preconditions.checkState(opt.getType().equals(requiredType));
+        final EnumSet<ConfigOption.Type> allowedTypes =
+                EnumSet.of(ConfigOption.Type.GLOBAL,
+                           ConfigOption.Type.GLOBAL_OFFLINE,
+                           ConfigOption.Type.MASKABLE);
+        Preconditions.checkState(allowedTypes.contains(opt.getType()));
+
+        // Sanity check: it's kind of pointless for the first and second values to be identical
+        Preconditions.checkArgument(!firstValue.equals(secondValue));
+
+        // Get full string path of config option
+        final String path = ConfigElement.getPath(opt);
+
+        // Set and check initial value before and after database restart
+        mgmt.set(path, firstValue);
+        assertEquals(firstValue.toString(), mgmt.get(path));
+        // Close open tx first.  This is specific to BDB + GLOBAL_OFFLINE.
+        // Basically: the BDB store manager throws a fit if shutdown is called
+        // with one or more transactions still open, and GLOBAL_OFFLINE calls
+        // shutdown on our behalf when we commit this change.
+        tx.rollback();
+        mgmt.commit();
+        clopen();
+        // Close tx again following clopen
+        tx.rollback();
+        assertEquals(firstValue.toString(), mgmt.get(path));
+
+        // Set and check updated value before and after database restart
+        mgmt.set(path, secondValue);
+        assertEquals(secondValue.toString(), mgmt.get(path));
+        mgmt.commit();
+        clopen();
+        tx.rollback();
+        assertEquals(secondValue.toString(), mgmt.get(path));
+
+        // Open a separate graph "g2"
+        TitanGraph g2 = TitanFactory.open(config);
+        TitanManagement m2 = g2.getManagementSystem();
+        assertEquals(secondValue.toString(), m2.get(path));
+
+        // GLOBAL_OFFLINE options should be unmodifiable with g2 open
+        if (opt.getType().equals(ConfigOption.Type.GLOBAL_OFFLINE)) {
+            try {
+                mgmt.set(path, firstValue);
+                mgmt.commit();
+                fail("Option " + path + " with type "+ ConfigOption.Type.GLOBAL_OFFLINE + " should not be modifiable with concurrent instances");
+            } catch (RuntimeException e) {
+                log.debug("Caught expected exception", e);
+            }
+            assertEquals(secondValue.toString(), mgmt.get(path));
+        // GLOBAL and MASKABLE should be modifiable even with g2 open
+        } else {
+            mgmt.set(path, firstValue);
+            assertEquals(firstValue.toString(), mgmt.get(path));
+            mgmt.commit();
+            clopen();
+            assertEquals(firstValue.toString(), mgmt.get(path));
+        }
+
+        m2.rollback();
+        g2.shutdown();
+    }
+
+    private <T> void setIllegalGraphOption(ConfigOption<T> opt, ConfigOption.Type requiredType, T attemptedValue) {
+        // Sanity check: make sure the Type of the configoption is what we expect
+        final ConfigOption.Type type = opt.getType();
+        Preconditions.checkState(type.equals(requiredType));
+        Preconditions.checkArgument(requiredType.equals(ConfigOption.Type.LOCAL) ||
+                                    requiredType.equals(ConfigOption.Type.FIXED));
+
+        // Get full string path of config option
+        final String path = ConfigElement.getPath(opt);
+
+
+        // Try to read the option
+        try {
+            mgmt.get(path);
+        } catch (Throwable t) {
+            log.debug("Caught expected exception", t);
+        }
+
+        // Try to modify the option
+        try {
+            mgmt.set(path, attemptedValue);
+            mgmt.commit();
+            fail("Option " +  path + " with type " + type + " should not be modifiable in the persistent graph config");
+        } catch (Throwable t) {
+            log.debug("Caught expected exception", t);
+        }
+    }
+
 
    /* ==================================================================================
                             CONSISTENCY

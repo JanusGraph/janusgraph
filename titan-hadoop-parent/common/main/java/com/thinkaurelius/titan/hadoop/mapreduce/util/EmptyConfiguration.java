@@ -15,7 +15,8 @@ public class EmptyConfiguration extends Configuration {
     };
 
     public EmptyConfiguration() {
-        super(false);
+        super(true);
+        this.clear();
     }
 
     public static Configuration immutable() {

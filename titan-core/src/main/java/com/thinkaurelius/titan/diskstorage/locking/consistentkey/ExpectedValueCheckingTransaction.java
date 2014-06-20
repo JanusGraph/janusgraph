@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.attribute.Duration;
@@ -12,6 +13,7 @@ import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,32 +126,56 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
     private void checkSingleExpectedValueUnsafe(final KeyColumn kc,
                                                 final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
-        KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), BufferUtil.nextBiggerBuffer(kc.getColumn()));
-        List<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
+        final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
+        KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
+        Iterable<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
 
         if (null == actualEntries)
             actualEntries = ImmutableList.<Entry>of();
 
-        Iterable<StaticBuffer> avList = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
+        /*
+         * Discard any columns which do not exactly match kc.getColumn().
+         *
+         * For example, it's possible that the slice returned columns which for
+         * which kc.getColumn() is a prefix.
+         */
+        actualEntries = Iterables.filter(actualEntries, new Predicate<Entry>() {
+            @Override
+            public boolean apply(Entry input) {
+                if (!input.getColumn().equals(kc.getColumn())) {
+                    log.debug("Dropping entry {} (only accepting column {})", input, kc.getColumn());
+                    return false;
+                }
+                log.debug("Accepting entry {}", input);
+                return true;
+            }
+        });
+
+        // Extract values from remaining Entry instances
+        Iterable<StaticBuffer> actualVals = Iterables.transform(actualEntries, new Function<Entry, StaticBuffer>() {
             @Override
             public StaticBuffer apply(Entry e) {
-                assert e.getColumnAs(StaticBuffer.STATIC_FACTORY).equals(kc.getColumn());
+                StaticBuffer actualCol = e.getColumnAs(StaticBuffer.STATIC_FACTORY);
+                assert null != actualCol;
+                assert null != kc.getColumn();
+                assert 0 >= kc.getColumn().compareTo(actualCol);
+                assert 0  > actualCol.compareTo(nextBuf);
                 return e.getValueAs(StaticBuffer.STATIC_FACTORY);
             }
         });
 
-        final Iterable<StaticBuffer> evList;
+        final Iterable<StaticBuffer> expectedVals;
 
         if (null == ev) {
-            evList = ImmutableList.<StaticBuffer>of();
+            expectedVals = ImmutableList.<StaticBuffer>of();
         } else {
-            evList = ImmutableList.<StaticBuffer>of(ev);
+            expectedVals = ImmutableList.<StaticBuffer>of(ev);
         }
 
-        if (!Iterables.elementsEqual(evList, avList)) {
+        if (!Iterables.elementsEqual(expectedVals, actualVals)) {
             throw new PermanentLockingException(
                     "Expected value mismatch for " + kc + ": expected="
-                            + evList + " vs actual=" + avList + " (store=" + store.getName() + ")");
+                            + expectedVals + " vs actual=" + actualVals + " (store=" + store.getName() + ")");
         }
     }
 
