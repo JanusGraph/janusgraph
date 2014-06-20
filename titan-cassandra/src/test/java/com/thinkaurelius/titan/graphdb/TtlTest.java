@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.Titan;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -104,8 +105,10 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
         // no need to explicitly set TTL
-        graph.addEdge(null, v1, v2, "likes");
+        Edge e = graph.addEdge(null, v1, v2, "likes");
         graph.commit();
+        assertEquals(42, e.getProperty(ImplicitKey.TIMESTAMP.getName()));
+        assertEquals(1, e.getProperty(ImplicitKey.TTL.getName()));
 
         assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
 

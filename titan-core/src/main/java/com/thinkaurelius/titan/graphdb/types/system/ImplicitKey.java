@@ -82,12 +82,14 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 InternalRelation r = (InternalRelation) e;
                 if (this==VISIBILITY) {
                     return r.getPropertyDirect(this);
-                } else {
-                    assert this==TIMESTAMP || this==TTL;
-                    Long time = r.getPropertyDirect(this);
+                } else if (this == TIMESTAMP) {
+                    long time = r.getPropertyDirect(this);
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
-                    if (this==TIMESTAMP) return (O)new StandardTimestamp(time,unit);
-                    else return (O)new StandardDuration(time,unit);
+                    return (O) new StandardTimestamp(time, unit);
+                } else {
+                    assert this==TTL;
+                    Integer time = r.getPropertyDirect(this);
+                    return null == time ? null : (O) new StandardDuration(time, TimeUnit.SECONDS);
                 }
             } else {
                 return null;

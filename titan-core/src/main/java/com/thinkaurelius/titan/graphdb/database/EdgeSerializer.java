@@ -5,13 +5,18 @@ import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.LongOpenHashSet;
 import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.TitanProperty;
+import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -31,14 +36,15 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.util.datastructures.Interval;
 import com.tinkerpop.blueprints.Direction;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
 
-import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.*;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.DirectionID;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.EdgeTypeParse;
+import static com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler.getBounds;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -333,7 +339,7 @@ public class EdgeSerializer implements RelationReader {
                                     out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
                                     out.getStaticBuffer(),valuePosition);
         if (null != ttl) {
-            entry.getMetaData().put(EntryMetaData.TTL, ttl);
+            entry.setMetaData(EntryMetaData.TTL, ttl);
         }
         if (hasImplicitKeys) {
             for (EntryMetaData meta : EntryMetaData.IDENTIFYING_METADATA) {
