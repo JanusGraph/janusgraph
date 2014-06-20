@@ -40,8 +40,7 @@ public class StaticArrayEntryTest {
         wb.putInt(1).putInt(2).putInt(3).putInt(4);
         int valuePos = wb.getPosition();
         wb.putInt(5).putInt(6);
-        Integer ttl = null;
-        Entry entry = new StaticArrayEntry(wb.getStaticBuffer(),valuePos,ttl);
+        Entry entry = new StaticArrayEntry(wb.getStaticBuffer(),valuePos);
         assertEquals(4*4,entry.getValuePosition());
         assertEquals(6*4,entry.length());
         assertTrue(entry.hasValue());
@@ -98,8 +97,7 @@ public class StaticArrayEntryTest {
     public void testInversion() {
         WriteBuffer wb = new WriteByteBuffer(20);
         wb.putInt(1).putInt(2).putInt(3).putInt(4);
-        Integer ttl = null;
-        Entry entry = new StaticArrayEntry(wb.getStaticBufferFlipBytes(4,2*4),3*4,ttl);
+        Entry entry = new StaticArrayEntry(wb.getStaticBufferFlipBytes(4,2*4),3*4);
         ReadBuffer rb = entry.asReadBuffer();
         assertEquals(1, rb.getInt());
         assertEquals(2,rb.subrange(4,true).getInt());

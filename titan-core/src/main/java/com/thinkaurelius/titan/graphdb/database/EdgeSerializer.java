@@ -331,8 +331,10 @@ public class EdgeSerializer implements RelationReader {
 
         StaticArrayEntry entry = new StaticArrayEntry(type.getSortOrder()==Order.DESC?
                                     out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
-
-                                    out.getStaticBuffer(),valuePosition, ttl);
+                                    out.getStaticBuffer(),valuePosition);
+        if (null != ttl) {
+            entry.getMetaData().put(EntryMetaData.TTL, ttl);
+        }
         if (hasImplicitKeys) {
             for (EntryMetaData meta : EntryMetaData.IDENTIFYING_METADATA) {
                 Object value = relation.getPropertyDirect(ImplicitKey.MetaData2ImplicitKey.get(meta));

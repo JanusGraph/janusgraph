@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.*;
+import com.thinkaurelius.titan.diskstorage.Entry;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
@@ -24,12 +26,12 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
         super(array, valuePosition);
     }
 
-    public StaticArrayEntry(StaticBuffer buffer, int valuePosition, Integer ttl) {
-        super(buffer, valuePosition, ttl);
+    public StaticArrayEntry(StaticBuffer buffer, int valuePosition) {
+        super(buffer, valuePosition);
     }
 
     StaticArrayEntry(Entry entry) {
-        super(entry,entry.getValuePosition(), 0);
+        super(entry,entry.getValuePosition());
     }
 
     //########## META DATA ############
@@ -71,7 +73,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
     //########### CONSTRUCTORS AND UTILITIES ###########
 
     public static Entry of(StaticBuffer buffer) {
-        return new StaticArrayEntry(buffer,buffer.length(),null);
+        return new StaticArrayEntry(buffer,buffer.length());
     }
 
     public static final<E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
@@ -217,14 +219,12 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
 class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
 
     private final int valuePosition;
-    private final Integer ttl;
 
     public BaseStaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array,offset,limit);
         Preconditions.checkArgument(valuePosition>0);
         Preconditions.checkArgument(valuePosition<=length());
         this.valuePosition=valuePosition;
-        ttl = null;
     }
 
     public BaseStaticArrayEntry(byte[] array, int limit, int valuePosition) {
@@ -235,17 +235,11 @@ class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
         this(array, 0, array.length, valuePosition);
     }
 
-    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition, Integer ttl) {
+    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition) {
         super(buffer);
         Preconditions.checkArgument(valuePosition>0);
         Preconditions.checkArgument(valuePosition<=length());
         this.valuePosition=valuePosition;
-        this.ttl = ttl;
-    }
-
-    @Override
-    public Integer getTtl() {
-        return ttl;
     }
 
     @Override

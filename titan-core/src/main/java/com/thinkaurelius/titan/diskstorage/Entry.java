@@ -38,9 +38,4 @@ public interface Entry extends StaticBuffer, MetaAnnotated {
      * @param cache
      */
     public void setCache(RelationCache cache);
-
-    /**
-     * @return optional time to live of this Entry
-     */
-    public Integer getTtl();
 }

@@ -626,7 +626,7 @@ public class IndexSerializer {
             Preconditions.checkArgument(longs.length == 3 || longs.length == 4);
             for (int i = 0; i < longs.length; i++) VariableLong.writePositive(out, longs[i]);
         }
-        return new StaticArrayEntry(out.getStaticBuffer(),valuePosition,null);
+        return new StaticArrayEntry(out.getStaticBuffer(),valuePosition);
     }
 
     private static final RelationIdentifier bytebuffer2RelationId(ReadBuffer b) {
