@@ -566,6 +566,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         TitanGraphIndex eindex = getExternalIndex(Edge.class,INDEX);
         TitanGraphIndex pindex = getExternalIndex(TitanProperty.class,INDEX);
         PropertyKey name = makeKey("name",String.class);
+
         mgmt.addIndexKey(vindex, name, Mapping.STRING.getParameter(), Parameter.of("mapped-name","vstr"));
         mgmt.addIndexKey(eindex,name, Mapping.STRING.getParameter(), Parameter.of("mapped-name", "estr"));
         mgmt.addIndexKey(pindex,name, Mapping.STRING.getParameter(), Parameter.of("mapped-name", "pstr"));

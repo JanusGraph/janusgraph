@@ -22,6 +22,8 @@ import com.thinkaurelius.titan.testutil.gen.GraphGenerator
 import com.tinkerpop.gremlin.groovy.Gremlin
 import com.thinkaurelius.titan.diskstorage.StorageException
 
+import com.google.common.collect.Iterables
+
 import java.util.zip.GZIPInputStream
 
 abstract class GroovyTestSupport {
@@ -126,7 +128,7 @@ abstract class GroovyTestSupport {
 
         while (uids.hasNext()) {
             long u = uids.next()
-            Vertex v = tx.getVertex(Schema.UID_PROP, u)
+            Vertex v = Iterables.getOnlyElement(tx.getVertices(Schema.UID_PROP, u))
             assertNotNull(v)
             vbuf[vloaded++] = v
             if (vloaded == chunksize) {
@@ -153,7 +155,7 @@ abstract class GroovyTestSupport {
         assertNotNull(pkey)
 
         def tx = graph.newTransaction()
-        def v = tx.getVertex(Schema.UID_PROP, uid)
+        def v = Iterables.getOnlyElement(tx.getVertices(Schema.UID_PROP, uid))
 //            def v = graph.V(Schema.UID_PROP, uid).next()
         assertNotNull(v)
         closure(v, label, pkey)

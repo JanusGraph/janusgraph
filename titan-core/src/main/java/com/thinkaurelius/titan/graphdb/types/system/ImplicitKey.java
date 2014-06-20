@@ -83,7 +83,8 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 if (this==VISIBILITY) {
                     return r.getPropertyDirect(this);
                 } else if (this == TIMESTAMP) {
-                    long time = r.getPropertyDirect(this);
+                    Long time = r.getPropertyDirect(this);
+                    if (time==null) return null; //there is no timestamp
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
                     return (O) new StandardTimestamp(time, unit);
                 } else {
