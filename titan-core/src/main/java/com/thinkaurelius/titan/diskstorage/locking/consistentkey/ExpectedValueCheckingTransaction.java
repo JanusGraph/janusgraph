@@ -9,6 +9,7 @@ import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediator;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.util.BackendOperation;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
@@ -66,21 +67,47 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         this.maxReadTime = maxReadTime;
     }
 
-    StoreTransaction getDataTransaction() {
+    @Override
+    public void rollback() throws StorageException {
+        deleteAllLocks();
+        dataTx.rollback();
+        lockTx.rollback();
+    }
+
+    @Override
+    public void commit() throws StorageException {
+        dataTx.commit();
+        deleteAllLocks();
+        lockTx.commit();
+    }
+
+    /**
+     * Tells whether this transaction has been used in a
+     * {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
+     * call. When this returns true, the transaction is no longer allowed in
+     * calls to
+     * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}.
+     *
+     * @return False until
+     *         {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
+     *         is called on this transaction instance. Returns true forever
+     *         after.
+     */
+    public boolean isMutationStarted() {
+        return isMutationStarted;
+    }
+
+    @Override
+    public BaseTransactionConfig getConfiguration() {
+        return dataTx.getConfiguration();
+    }
+
+    public StoreTransaction getDataTransaction() {
         return dataTx;
     }
 
-    StoreTransaction getLockTransaction() {
+    public StoreTransaction getLockTransaction() {
         return lockTx;
-    }
-
-    private void lockedOn(ExpectedValueCheckingStore store) {
-        Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
-
-        if (null == m) {
-            m = new HashMap<KeyColumn, StaticBuffer>();
-            expectedValuesByStore.put(store, m);
-        }
     }
 
     void storeExpectedValue(ExpectedValueCheckingStore store, KeyColumn lockID, StaticBuffer value) {
@@ -99,7 +126,48 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         }
     }
 
-    void checkExpectedValues() throws StorageException {
+    /**
+     * If {@code !}{@link #isMutationStarted()}, check all locks and expected
+     * values, then mark the transaction as started.
+     * <p>
+     * If {@link #isMutationStarted()}, this does nothing.
+     *
+     * @throws StorageException
+     */
+    void prepareForMutations() throws StorageException {
+        if (!isMutationStarted()) {
+            checkAllLocks();
+            checkAllExpectedValues();
+            mutationStarted();
+        }
+    }
+
+    /**
+     * Check all locks attempted by earlier
+     * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     * calls using this transaction.
+     *
+     * @throws StorageException
+     */
+    void checkAllLocks() throws StorageException {
+        StoreTransaction lt = getLockTransaction();
+        for (ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
+            Locker locker = store.getLocker();
+            // Ignore locks on stores without a locker
+            if (null == locker)
+                continue;
+            locker.checkLocks(lt);
+        }
+    }
+
+    /**
+     * Check that all expected values saved from earlier
+     * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     * calls using this transaction.
+     *
+     * @throws StorageException
+     */
+    void checkAllExpectedValues() throws StorageException {
         for (final ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
             for (final KeyColumn kc : m.keySet()) {
@@ -108,9 +176,32 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         }
     }
 
+    /**
+     * Signals the transaction that it has been used in a call to
+     * {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
+     * . This transaction can't be used in subsequent calls to
+     * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     * .
+     * <p/>
+     * Calling this method at the appropriate time is handled automatically by
+     * {@link ExpectedValueCheckingStore}. Titan users don't need to call this
+     * method by hand.
+     */
+    private void mutationStarted() {
+        isMutationStarted = true;
+    }
+
+    private void lockedOn(ExpectedValueCheckingStore store) {
+        Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
+
+        if (null == m) {
+            m = new HashMap<KeyColumn, StaticBuffer>();
+            expectedValuesByStore.put(store, m);
+        }
+    }
+
     private void checkSingleExpectedValue(final KeyColumn kc,
-                                          final StaticBuffer ev, final ExpectedValueCheckingStore store)
-            throws StorageException {
+                                          final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
         BackendOperation.executeDirect(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
@@ -183,56 +274,5 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         for (ExpectedValueCheckingStore s : expectedValuesByStore.keySet()) {
             s.deleteLocks(this);
         }
-    }
-
-    @Override
-    public void rollback() throws StorageException {
-        deleteAllLocks();
-        dataTx.rollback();
-        lockTx.rollback();
-    }
-
-    @Override
-    public void commit() throws StorageException {
-        dataTx.commit();
-        deleteAllLocks();
-        lockTx.commit();
-    }
-
-
-    /**
-     * Tells whether this transaction has been used in a
-     * {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
-     * call. When this returns true, the transaction is no longer allowed in
-     * calls to
-     * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}.
-     *
-     * @return False until
-     *         {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
-     *         is called on this transaction instance. Returns true forever
-     *         after.
-     */
-    public boolean isMutationStarted() {
-        return isMutationStarted;
-    }
-
-    /**
-     * Signals the transaction that it has been used in a call to
-     * {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
-     * . This transaction can't be used in subsequent calls to
-     * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
-     * .
-     * <p/>
-     * Calling this method at the appropriate time is handled automatically by
-     * {@link ExpectedValueCheckingStore}. Titan users don't need to call this
-     * method by hand.
-     */
-    public void mutationStarted() {
-        isMutationStarted = true;
-    }
-
-    @Override
-    public BaseTransactionConfig getConfiguration() {
-        return dataTx.getConfiguration();
     }
 }

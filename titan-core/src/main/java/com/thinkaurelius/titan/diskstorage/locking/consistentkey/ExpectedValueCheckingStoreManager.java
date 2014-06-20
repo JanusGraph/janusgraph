@@ -57,18 +57,12 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
-        if (!etx.isMutationStarted()) {
-            log.debug("Checking locks on stores: [{}]", Joiner.on(", ").join(mutations.keySet()));
-            for (String store : mutations.keySet()) {
-                stores.get(store).verifyLocksOnMutations(txh);
-            }
-            etx.mutationStarted();
-        }
-        storeManager.mutateMany(mutations,ExpectedValueCheckingStore.getDataTx(txh));
+        etx.prepareForMutations();
+        storeManager.mutateMany(mutations, etx.getDataTransaction());
     }
 
     @Override
-    public StoreTransaction beginTransaction(BaseTransactionConfig configuration) throws StorageException {
+    public ExpectedValueCheckingTransaction beginTransaction(BaseTransactionConfig configuration) throws StorageException {
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
@@ -76,7 +70,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
                 .customOptions(customOptions)
                 .build();
         StoreTransaction consistentTx = storeManager.beginTransaction(consistentTxCfg);
-        StoreTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
+        ExpectedValueCheckingTransaction wrappedTx = new ExpectedValueCheckingTransaction(tx, consistentTx, maxReadTime);
         return wrappedTx;
     }
 

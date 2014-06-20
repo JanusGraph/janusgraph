@@ -100,20 +100,12 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
-        if (!etx.isMutationStarted()) {
-            verifyLocksOnMutations(txh);
-            etx.mutationStarted();
-        }
+        etx.prepareForMutations();
         dataStore.mutate(key, additions, deletions, getDataTx(txh));
     }
 
-    void verifyLocksOnMutations(StoreTransaction txh) throws StorageException {
-        ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
-        Preconditions.checkState(!etx.isMutationStarted());
-        if (locker != null) {
-            locker.checkLocks(getLockTx(etx));
-            etx.checkExpectedValues();
-        }
+    Locker getLocker() {
+        return locker;
     }
 
     /**
