@@ -35,7 +35,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
-import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
@@ -43,8 +42,8 @@ import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
-import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
+import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
@@ -339,7 +338,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         || pos==0 && type.getMultiplicity()== Multiplicity.SIMPLE);
     }
 
-    public static boolean acquireLock(InternalIndexType index, boolean acquireLocksConfig) {
+    public static boolean acquireLock(CompositeIndexType index, boolean acquireLocksConfig) {
         return acquireLocksConfig && index.getConsistencyModifier()==ConsistencyModifier.LOCK
                 && index.getCardinality()!= Cardinality.LIST;
     }
@@ -395,15 +394,15 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
         //4) Acquire index locks (deletions first)
         for (IndexSerializer.IndexUpdate update : indexUpdates) {
-            if (!update.isInternalIndex() || !update.isDeletion()) continue;
-            InternalIndexType iIndex = (InternalIndexType) update.getIndex();
+            if (!update.isCompositeIndex() || !update.isDeletion()) continue;
+            CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
             if (acquireLock(iIndex,acquireLocks)) {
                 mutator.acquireIndexLock((StaticBuffer)update.getKey(), (Entry)update.getEntry());
             }
         }
         for (IndexSerializer.IndexUpdate update : indexUpdates) {
-            if (!update.isInternalIndex() || !update.isAddition()) continue;
-            InternalIndexType iIndex = (InternalIndexType) update.getIndex();
+            if (!update.isCompositeIndex() || !update.isAddition()) continue;
+            CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
             if (acquireLock(iIndex,acquireLocks)) {
                 mutator.acquireIndexLock((StaticBuffer)update.getKey(), ((Entry)update.getEntry()).getColumn());
             }
@@ -443,7 +442,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //6) Add index updates
         for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
             assert indexUpdate.isAddition() || indexUpdate.isDeletion();
-            if (indexUpdate.isInternalIndex()) {
+            if (indexUpdate.isCompositeIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
                 if (update.isAddition())
                     mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
@@ -452,7 +451,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
-                String indexStore = ((ExternalIndexType)update.getIndex()).getStoreName();
+                String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
                     itx.add(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isNew());
                 else

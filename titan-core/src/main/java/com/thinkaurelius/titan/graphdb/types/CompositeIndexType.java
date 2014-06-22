@@ -6,7 +6,7 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 /**
 * @author Matthias Broecheler (me@matthiasb.com)
 */
-public interface InternalIndexType extends IndexType {
+public interface CompositeIndexType extends IndexType {
 
     public long getID();
 

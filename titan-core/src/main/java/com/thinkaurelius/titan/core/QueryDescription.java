@@ -1,7 +1,5 @@
 package com.thinkaurelius.titan.core;
 
-import com.thinkaurelius.titan.graphdb.internal.OrderList;
-import com.thinkaurelius.titan.graphdb.query.condition.Condition;
 
 import java.util.List;
 

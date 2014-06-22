@@ -232,11 +232,11 @@ public class Schema {
         TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildInternalIndex();
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildCompositeIndex();
         }
         for (int i = 0; i < edgePropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildInternalIndex();
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildCompositeIndex();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
@@ -246,7 +246,7 @@ public class Schema {
         }
 
         PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
         mgmt.commit();
     }
 

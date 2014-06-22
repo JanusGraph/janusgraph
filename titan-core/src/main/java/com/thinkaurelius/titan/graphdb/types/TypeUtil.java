@@ -30,7 +30,7 @@ public class TypeUtil {
     public static boolean hasSimpleInternalVertexKeyIndex(PropertyKey key) {
         InternalRelationType type = (InternalRelationType)key;
         for (IndexType index : type.getKeyIndexes()) {
-            if (index.getElement()== ElementCategory.VERTEX && index.isInternalIndex()) {
+            if (index.getElement()== ElementCategory.VERTEX && index.isCompositeIndex()) {
                 if (index.indexesKey(key)) return true;
 //                InternalIndexType iIndex = (InternalIndexType)index;
 //                if (iIndex.getFieldKeys().length==1) {
@@ -56,11 +56,11 @@ public class TypeUtil {
         return s;
     }
 
-    public static List<InternalIndexType> getUniqueIndexes(PropertyKey key) {
-        List<InternalIndexType> indexes = new ArrayList<InternalIndexType>();
+    public static List<CompositeIndexType> getUniqueIndexes(PropertyKey key) {
+        List<CompositeIndexType> indexes = new ArrayList<CompositeIndexType>();
         for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
-            if (index.isInternalIndex()) {
-                InternalIndexType iIndex = (InternalIndexType)index;
+            if (index.isCompositeIndex()) {
+                CompositeIndexType iIndex = (CompositeIndexType)index;
                 assert index.indexesKey(key);
                 if (iIndex.getCardinality()== Cardinality.SINGLE) {
                     assert iIndex.getElement()==ElementCategory.VERTEX;

@@ -84,7 +84,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         return ImmutableList.of((IndexType)indexDef);
     }
 
-    private final InternalIndexType indexDef = new InternalIndexType() {
+    private final CompositeIndexType indexDef = new CompositeIndexType() {
 
         private final IndexField[] fields = {IndexField.of(BaseKey.this)};
 //        private final Set<TitanKey> fieldSet = ImmutableSet.of((TitanKey)SystemKey.this);
@@ -140,12 +140,12 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         }
 
         @Override
-        public boolean isInternalIndex() {
+        public boolean isCompositeIndex() {
             return true;
         }
 
         @Override
-        public boolean isExternalIndex() {
+        public boolean isMixedIndex() {
             return false;
         }
 

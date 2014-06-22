@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.PropertyKey;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface ExternalIndexType extends IndexType {
+public interface MixedIndexType extends IndexType {
 
     public ParameterIndexField[] getFieldKeys();
 

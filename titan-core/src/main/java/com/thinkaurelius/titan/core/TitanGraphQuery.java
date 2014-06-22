@@ -7,7 +7,7 @@ import com.tinkerpop.blueprints.Predicate;
 import com.tinkerpop.blueprints.Vertex;
 
 /**
- * Constructs a query against an external index to retrieve all elements (either vertices or edges)
+ * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)
  * that match all conditions.
  * <p/>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have

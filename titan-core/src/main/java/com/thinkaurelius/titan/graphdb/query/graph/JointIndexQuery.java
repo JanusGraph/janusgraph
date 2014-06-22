@@ -6,9 +6,9 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.graphdb.query.BackendQuery;
 import com.thinkaurelius.titan.graphdb.query.BaseQuery;
-import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
+import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.ArrayList;
@@ -39,11 +39,11 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
         this.queries = new ArrayList<Subquery>(4);
     }
 
-    public void add(ExternalIndexType index, IndexQuery query) {
+    public void add(MixedIndexType index, IndexQuery query) {
         queries.add(new Subquery(index, query));
     }
 
-    public void add(InternalIndexType index, KeySliceQuery query) {
+    public void add(CompositeIndexType index, KeySliceQuery query) {
         queries.add(new Subquery(index, query));
     }
 
@@ -100,13 +100,13 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
             return index;
         }
 
-        public IndexQuery getExternalQuery() {
-            Preconditions.checkArgument(index.isExternalIndex() && query instanceof IndexQuery);
+        public IndexQuery getMixedQuery() {
+            Preconditions.checkArgument(index.isMixedIndex() && query instanceof IndexQuery);
             return (IndexQuery)query;
         }
 
-        public KeySliceQuery getInternalQuery() {
-            Preconditions.checkArgument(index.isInternalIndex() && query instanceof KeySliceQuery);
+        public KeySliceQuery getCompositeQuery() {
+            Preconditions.checkArgument(index.isCompositeIndex() && query instanceof KeySliceQuery);
             return (KeySliceQuery)query;
         }
 

@@ -225,13 +225,13 @@ public abstract class TitanGraphBaseTest {
 
     public PropertyKey makeVertexIndexedKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).buildInternalIndex();
+        mgmt.buildIndex(name,Vertex.class).indexKey(key).buildCompositeIndex();
         return key;
     }
 
     public PropertyKey makeVertexIndexedUniqueKey(String name, Class datatype) {
         PropertyKey key = mgmt.makePropertyKey(name).dataType(datatype).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex(name,Vertex.class).indexKey(key).unique().buildInternalIndex();
+        mgmt.buildIndex(name,Vertex.class).indexKey(key).unique().buildCompositeIndex();
         return key;
     }
 
@@ -253,7 +253,7 @@ public abstract class TitanGraphBaseTest {
         String indexName = prefix+backingIndex;
         TitanGraphIndex index = mgmt.getGraphIndex(indexName);
         if (index==null) {
-            index = mgmt.buildIndex(indexName,clazz).buildExternalIndex(backingIndex);
+            index = mgmt.buildIndex(indexName,clazz).buildMixedIndex(backingIndex);
         }
         return index;
     }

@@ -1,20 +1,20 @@
 package com.thinkaurelius.titan.graphdb.transaction.lock;
 
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexLockTuple extends LockTuple {
 
-    private final InternalIndexType index;
+    private final CompositeIndexType index;
 
-    public IndexLockTuple(InternalIndexType index, Object... tuple) {
+    public IndexLockTuple(CompositeIndexType index, Object... tuple) {
         super(tuple);
         this.index=index;
     }
 
-    public InternalIndexType getIndex() {
+    public CompositeIndexType getIndex() {
         return index;
     }
 

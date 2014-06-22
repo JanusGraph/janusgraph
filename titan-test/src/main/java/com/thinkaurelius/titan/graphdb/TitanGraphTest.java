@@ -18,9 +18,6 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
-import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
-import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -33,13 +30,10 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
-import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
-import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -60,7 +54,6 @@ import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestUtil;
-import com.thinkaurelius.titan.util.system.IOUtils;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Compare;
@@ -70,7 +63,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -1292,7 +1284,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testThreadBoundTx() {
         PropertyKey t = mgmt.makePropertyKey("type").dataType(Integer.class).make();
-        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildInternalIndex();
+        mgmt.buildIndex("etype",Edge.class).indexKey(t).buildCompositeIndex();
         ((StandardEdgeLabelMaker)mgmt.makeEdgeLabel("friend")).sortKey(t).make();
         finishSchema();
 
@@ -1461,9 +1453,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // Create property with name pname and a vertex
         PropertyKey w = makeKey(weight,Integer.class);
         PropertyKey f = ((StandardPropertyKeyMaker)mgmt.makePropertyKey(foo)).dataType(String.class).cardinality(Cardinality.LIST).sortKey(w).sortOrder(Order.DESC).make();
-        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildInternalIndex();
+        mgmt.buildIndex(foo,Vertex.class).indexKey(f).buildCompositeIndex();
         PropertyKey b = mgmt.makePropertyKey(bar).dataType(String.class).cardinality(Cardinality.LIST).make();
-        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildInternalIndex();
+        mgmt.buildIndex(bar,Vertex.class).indexKey(b).buildCompositeIndex();
         finishSchema();
 
         TitanVertex v = tx.addVertex();
@@ -2787,16 +2779,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         VertexLabel person = mgmt.makeVertexLabel("person").make();
         VertexLabel org = mgmt.makeVertexLabel("organization").make();
 
-        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).indexKey(time).indexKey(weight).buildInternalIndex();
-        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).indexKey(text).buildInternalIndex();
+        TitanGraphIndex edge1 = mgmt.buildIndex("edge1",Edge.class).indexKey(time).indexKey(weight).buildCompositeIndex();
+        TitanGraphIndex edge2 = mgmt.buildIndex("edge2",Edge.class).indexOnly(connect).indexKey(text).buildCompositeIndex();
 
-        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).indexKey(time).buildInternalIndex();
-        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).indexKey(weight).indexKey(text).buildInternalIndex();
+        TitanGraphIndex prop1 = mgmt.buildIndex("prop1",TitanProperty.class).indexKey(time).buildCompositeIndex();
+        TitanGraphIndex prop2 = mgmt.buildIndex("prop2",TitanProperty.class).indexKey(weight).indexKey(text).buildCompositeIndex();
 
-        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).indexKey(time).indexOnly(person).unique().buildInternalIndex();
-        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).indexKey(text).indexOnly(person).buildInternalIndex();
-        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).indexKey(time).indexKey(name).indexOnly(org).buildInternalIndex();
-        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).indexKey(name).buildInternalIndex();
+        TitanGraphIndex vertex1 = mgmt.buildIndex("vertex1",Vertex.class).indexKey(time).indexOnly(person).unique().buildCompositeIndex();
+        TitanGraphIndex vertex12 = mgmt.buildIndex("vertex12",Vertex.class).indexKey(text).indexOnly(person).buildCompositeIndex();
+        TitanGraphIndex vertex2 = mgmt.buildIndex("vertex2",Vertex.class).indexKey(time).indexKey(name).indexOnly(org).buildCompositeIndex();
+        TitanGraphIndex vertex3 = mgmt.buildIndex("vertex3",Vertex.class).indexKey(name).buildCompositeIndex();
 
 
         // ########### INSPECTION & FAILURE ##############
@@ -2828,22 +2820,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildInternalIndex();
+            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildInternalIndex();
+            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildInternalIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildInternalIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -2880,22 +2872,22 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         try {
             //Parameters not supported
-            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildInternalIndex();
+            mgmt.buildIndex("blablub",Vertex.class).indexKey(text,Mapping.TEXT.getParameter()).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Name already in use
-            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildInternalIndex();
+            mgmt.buildIndex("edge1",Vertex.class).indexKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //ImplicitKeys not allowed
-            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildInternalIndex();
+            mgmt.buildIndex("jupdup",Vertex.class).indexKey(ImplicitKey.ID).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Unique is only allowed for vertex
-            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildInternalIndex();
+            mgmt.buildIndex("edgexyz",Edge.class).indexKey(time).unique().buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
 
@@ -3246,7 +3238,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     public void testForceIndexUsage() {
         PropertyKey age = makeKey("age",Integer.class);
         PropertyKey time = makeKey("time",Long.class);
-        mgmt.buildIndex("time",Vertex.class).indexKey(time).buildInternalIndex();
+        mgmt.buildIndex("time",Vertex.class).indexKey(time).buildCompositeIndex();
         finishSchema();
 
         for (int i=1;i<=10;i++) {
@@ -3337,12 +3329,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     @Test
     public void testIndexRetrieval() {
         PropertyKey id = mgmt.makePropertyKey("uid").dataType(Integer.class).make();
-        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildInternalIndex();
-        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildInternalIndex();
+        mgmt.buildIndex("vuid",Vertex.class).unique().indexKey(id).buildCompositeIndex();
+        mgmt.buildIndex("euid",Edge.class).indexKey(id).buildCompositeIndex();
 
         PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildInternalIndex();
-        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildInternalIndex();
+        mgmt.buildIndex("vname",Vertex.class).indexKey(name).buildCompositeIndex();
+        mgmt.buildIndex("ename",Edge.class).indexKey(name).buildCompositeIndex();
         mgmt.makeEdgeLabel("connect").signature(id, name).make();
         finishSchema();
 

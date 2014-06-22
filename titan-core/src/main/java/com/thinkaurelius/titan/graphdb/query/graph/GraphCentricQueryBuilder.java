@@ -263,12 +263,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                     if (!matchesTypeConstraint) continue;
                 }
 
-                if (index.isInternalIndex()) {
-                    subcondition = indexCover((InternalIndexType) index,conditions,subcover);
+                if (index.isCompositeIndex()) {
+                    subcondition = indexCover((CompositeIndexType) index,conditions,subcover);
                 } else {
-                    subcondition = indexCover((ExternalIndexType) index,conditions,serializer,subcover);
+                    subcondition = indexCover((MixedIndexType) index,conditions,serializer,subcover);
                     if (coveredClauses.isEmpty() && !supportsSort
-                            && indexCoversOrder((ExternalIndexType)index,orders)) supportsSort=true;
+                            && indexCoversOrder((MixedIndexType)index,orders)) supportsSort=true;
                 }
                 if (subcondition==null) continue;
                 assert !subcover.isEmpty();
@@ -280,8 +280,8 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
                     if (coveredClauses.contains(c)) s=s*ALREADY_MATCHED_ADJUSTOR;
                     else coversAdditionalClause = true;
                     score+=s;
-                    if (index.isInternalIndex())
-                        score+=((InternalIndexType)index).getCardinality()==Cardinality.SINGLE?
+                    if (index.isCompositeIndex())
+                        score+=((CompositeIndexType)index).getCardinality()==Cardinality.SINGLE?
                                 CARDINALITY_SINGE_SCORE:CARDINALITY_OTHER_SCORE;
                 }
                 if (supportsSort) score+=ORDER_MATCH;
@@ -296,12 +296,12 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
             if (bestCandidate!=null) {
                 if (coveredClauses.isEmpty()) isSorted=candidateSupportsSort;
                 coveredClauses.addAll(candidateSubcover);
-                if (bestCandidate.isInternalIndex()) {
-                    jointQuery.add((InternalIndexType)bestCandidate,
-                            serializer.getQuery((InternalIndexType)bestCandidate,(Object[])candidateSubcondition));
+                if (bestCandidate.isCompositeIndex()) {
+                    jointQuery.add((CompositeIndexType)bestCandidate,
+                            serializer.getQuery((CompositeIndexType)bestCandidate,(Object[])candidateSubcondition));
                 } else {
-                    jointQuery.add((ExternalIndexType)bestCandidate,
-                            serializer.getQuery((ExternalIndexType)bestCandidate,(Condition)candidateSubcondition,orders));
+                    jointQuery.add((MixedIndexType)bestCandidate,
+                            serializer.getQuery((MixedIndexType)bestCandidate,(Condition)candidateSubcondition,orders));
                 }
             } else {
                 break;
@@ -326,14 +326,14 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return new GraphCentricQuery(resultType, conditions, orders, query, limit);
     }
 
-    public static final boolean indexCoversOrder(ExternalIndexType index, OrderList orders) {
+    public static final boolean indexCoversOrder(MixedIndexType index, OrderList orders) {
         for (int i = 0; i < orders.size(); i++) {
             if (!index.indexesKey(orders.getKey(i))) return false;
         }
         return true;
     }
 
-    public static final Object[] indexCover(final InternalIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
+    public static final Object[] indexCover(final CompositeIndexType index, Condition<TitanElement> condition, Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
         if (index.getStatus()!= SchemaStatus.ENABLED) return null;
@@ -366,7 +366,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         });
     }
 
-    public static final Condition<TitanElement> indexCover(final ExternalIndexType index, Condition<TitanElement> condition,
+    public static final Condition<TitanElement> indexCover(final MixedIndexType index, Condition<TitanElement> condition,
                                                            final IndexSerializer indexInfo, final Set<Condition> covered) {
         assert QueryUtil.isQueryNormalForm(condition);
         assert condition instanceof And;
@@ -380,7 +380,7 @@ public class GraphCentricQueryBuilder implements TitanGraphQuery<GraphCentricQue
         return subcondition.isEmpty()?null:subcondition;
     }
 
-    private static final boolean coversAll(final ExternalIndexType index, Condition<TitanElement> condition, IndexSerializer indexInfo) {
+    private static final boolean coversAll(final MixedIndexType index, Condition<TitanElement> condition, IndexSerializer indexInfo) {
         if (condition.getType()==Condition.Type.LITERAL) {
             if (!(condition instanceof  PredicateCondition)) return false;
             PredicateCondition<RelationType, TitanElement> atom = (PredicateCondition) condition;

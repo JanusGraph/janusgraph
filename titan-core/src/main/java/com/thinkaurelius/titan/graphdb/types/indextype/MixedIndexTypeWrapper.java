@@ -9,21 +9,21 @@ import com.tinkerpop.blueprints.Direction;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class ExternalIndexTypeWrapper extends IndexTypeWrapper implements ExternalIndexType {
+public class MixedIndexTypeWrapper extends IndexTypeWrapper implements MixedIndexType {
 
     public static final String NAME_PREFIX = "extindex";
 
-    public ExternalIndexTypeWrapper(SchemaSource base) {
+    public MixedIndexTypeWrapper(SchemaSource base) {
         super(base);
     }
 
     @Override
-    public boolean isInternalIndex() {
+    public boolean isCompositeIndex() {
         return false;
     }
 
     @Override
-    public boolean isExternalIndex() {
+    public boolean isMixedIndex() {
         return true;
     }
 
