@@ -2752,7 +2752,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             }
         });
         Thread.sleep(20000);
-        assertEquals(8, txMsgCounter.get());
+        assertEquals(3*2 + (features.hasTxIsolation()?0:2), txMsgCounter.get());
         assertEquals(2,triggerMsgCounter.get());
         assertEquals(2,triggerMeta.get());
     }
