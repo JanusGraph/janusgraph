@@ -88,9 +88,9 @@ public class LuceneIndexTest extends IndexProviderTest {
         assertFalse(index.supports(of(Geoshape.class), Geo.DISJOINT));
     }
 
-    @Override
-    public void testDeleteDocumentThenModifyField() {
-        // This fails under Lucene but works in ES
-        log.info("Skipping " + getClass().getSimpleName() + "." + methodName.getMethodName());
-    }
+//    @Override
+//    public void testDeleteDocumentThenModifyField() {
+//        // This fails under Lucene but works in ES
+//        log.info("Skipping " + getClass().getSimpleName() + "." + methodName.getMethodName());
+//    }
 }

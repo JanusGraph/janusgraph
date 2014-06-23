@@ -92,8 +92,17 @@ public abstract class IndexProviderTest {
 
     public void open() throws StorageException {
         index = openIndex();
+        newTx();
+    }
+
+    public void newTx() throws StorageException {
+        if (tx != null) tx.commit();
+        tx = openTx();
+    }
+
+    public IndexTransaction openTx() throws StorageException {
         BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        return new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
 
     @After
@@ -334,111 +343,178 @@ public abstract class IndexProviderTest {
         assertEquals(oldresultSize, result.size());
     }
 
-    @Test
-    public void testDeleteDocumentThenDeleteField() throws Exception {
-        final String store = "vertex";
-        final String docid = "docid";
-        final String textValue = "the quick brown fox jumps over the lazy dog";
 
-        initialize(store);
-        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
-        add(store, docid, initialProps, true);
+   /* ==================================================================================
+                            CONCURRENT UPDATE CASES
+     ==================================================================================*/
+
+
+    private final String defStore = "store1";
+    private final String defDoc = "docx1";
+    private final String defTextValue = "the quick brown fox jumps over the lazy dog";
+
+    private interface TxJob {
+        void run(IndexTransaction tx);
+    }
+
+    private void runConflictingTx(TxJob job1, TxJob job2) throws Exception {
+        initialize(defStore);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, defTextValue);
+        add(defStore, defDoc, initialProps, true);
         clopen();
 
         // Sanity check
-        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
-        assertEquals(1, result.size());
-        assertEquals(docid, result.get(0));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
-        assertEquals(0, result.size());
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")),null);
 
-        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-
-        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
-        tx.commit();
-        t2.delete(store, docid, TEXT, textValue, false);
-        t2.commit();
+        IndexTransaction tx1 = openTx(), tx2 = openTx();
+        job1.run(tx1);
+        tx1.commit();
+        job2.run(tx2);
+        tx2.commit();
 
         clopen();
+    }
+
+    private void checkResult(IndexQuery query, String containedDoc) throws Exception {
+        List<String> result = tx.query(query);
+        if (containedDoc!=null) {
+            assertEquals(1, result.size());
+            assertEquals(containedDoc, result.get(0));
+        } else {
+            assertEquals(0, result.size());
+        }
+    }
+
+
+    @Test
+    public void testDeleteDocumentThenDeleteField() throws Exception {
+        runConflictingTx(new TxJob() {
+            @Override
+            public void run(IndexTransaction tx) {
+                tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+            }
+        }, new TxJob() {
+             @Override
+             public void run(IndexTransaction tx) {
+                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
+             }
+         });
 
         // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
-        assertEquals(0, result.size());
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
     }
 
     @Test
     public void testDeleteDocumentThenModifyField() throws Exception {
-        final String store = "vertex";
-        final String docid = "docid";
-        final String textValue = "the quick brown fox jumps over the lazy dog";
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.add(defStore, defDoc, TEXT, "the slow brown fox jumps over the lazy dog", false);
+                             }
+                         });
 
-        initialize(store);
-        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
-        add(store, docid, initialProps, true);
-        clopen();
-
-        // Sanity check
-        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
-        assertEquals(1, result.size());
-        assertEquals(docid, result.get(0));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
-        assertEquals(0, result.size());
-
-
-        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-
-        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
-        tx.commit();
-        t2.add(store, docid, TEXT, "the slow brown fox jumps over the lazy dog", false);
-        t2.commit();
-
-        clopen();
-
-        // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown"))); // would match original or updated value
-        assertEquals(0, result.size());
+        //2nd tx should put document back into existence
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
     }
 
     @Test
     public void testDeleteDocumentThenAddField() throws Exception {
-        final String store = "vertex";
-        final String docid = "docid";
-        final String textValue = "the quick brown fox jumps over the lazy dog";
         final String nameValue = "jm keynes";
 
-        initialize(store);
-        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, textValue);
-        add(store, docid, initialProps, true);
-        clopen();
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.add(defStore, defDoc, NAME, nameValue, false);
+                             }
+                         });
 
-        // Sanity check
-        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
-        assertEquals(1, result.size());
-        assertEquals(docid, result.get(0));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "periwinkle")));
-        assertEquals(0, result.size());
-
-
-        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
-        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-
-        tx.delete(store, docid, TEXT, ImmutableMap.of(), true);
-        tx.commit();
-        t2.add(store, docid, NAME, nameValue, false);
-        t2.commit();
-
-        clopen();
-
-        // Document must not exist
-        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
-        assertEquals(0, result.size());
-        result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
+        // TEXT field should have been deleted when document was
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+        // but name field should be visible
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)),defDoc);
     }
+
+    @Test
+    public void testAddFieldThenDeleteDoc() throws Exception {
+        final String nameValue = "jm keynes";
+
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.add(defStore, defDoc, NAME, nameValue, false);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), true);
+                             }
+                         });
+
+        //neither should be visible
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)),null);
+    }
+
+    @Test
+    public void testConflictingAdd() throws Exception {
+        final String doc2 = "docy2";
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, "sugar sugar");
+                                 add(defStore, doc2, initialProps, true);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 Map<String, Object> initialProps = ImmutableMap.<String, Object>of(TEXT, "honey honey");
+                                 add(defStore, doc2, initialProps, true);
+                             }
+                         });
+
+        //only last write should be visible
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),defDoc);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "sugar")),null);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "honey")),doc2);
+    }
+
+    @Test
+    public void testLastWriteWins() throws Exception {
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
+                                 tx.add(defStore, defDoc, TEXT, "sugar sugar", false);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, defTextValue, false);
+                                 tx.add(defStore, defDoc, TEXT, "honey honey", false);
+                             }
+                         });
+
+        //only last write should be visible
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "sugar")),null);
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "honey")),defDoc);
+    }
+
+
+    /* ==================================================================================
+                            HELPER METHODS
+     ==================================================================================*/
 
     private void initialize(String store) throws StorageException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
