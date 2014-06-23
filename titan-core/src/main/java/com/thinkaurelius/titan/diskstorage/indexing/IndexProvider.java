@@ -44,6 +44,21 @@ public interface IndexProvider extends IndexInformation {
      */
     public void mutate(Map<String,Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
 
+
+    /**
+     * Restores the index to the state of the primary data store as given in the {@code documents} variable. When this method returns, the index records
+     * for the given documents exactly matches the provided data. Unlike {@link #mutate(java.util.Map, KeyInformation.IndexRetriever, BaseTransaction)}
+     * this method does not do a delta-update, but entirely replaces the documents with the provided data or deletes them if the document content is empty.
+     *
+     * @param documents The outer map maps stores to documents, the inner contains the documents mapping document ids to the document content which is a
+     *                  list of {@link IndexEntry}. If that list is entry, that means this document should not exist and ought to be deleted.
+     * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
+     * @param tx Enclosing transaction
+     * @throws StorageException
+     */
+    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
+
+
     /**
      * Executes the given query against the index.
      *
