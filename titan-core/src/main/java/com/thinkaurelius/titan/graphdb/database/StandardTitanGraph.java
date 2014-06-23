@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.graphdb.database;
 import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
@@ -475,6 +476,8 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     };
 
+    private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
+
     public void commit(final Collection<InternalRelation> addedRelations,
                      final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
 
@@ -491,6 +494,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         //3. Commit
         BackendTransaction mutator = tx.getTxHandle();
         final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
+        final boolean hasTxIsolation = backend.getStoreFeatures().hasTxIsolation();
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
         final Log txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp);
@@ -499,9 +503,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         try {
             boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
                     || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
+            Preconditions.checkArgument(!hasSchemaElements || (!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks),
+                    "Attempting to create schema elements in inconsistent state");
 
-            if (hasSchemaElements) {
-                Preconditions.checkArgument(!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks,"Attempting to create schema elements in inconsistent state");
+            if (hasSchemaElements && !hasTxIsolation) {
                 /*
                  * On storage without transactional isolation, create separate
                  * backend transaction for schema aspects to make sure that
@@ -509,12 +514,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                  * mutations in the tx. If the storage supports transactional
                  * isolation, then don't create a separate tx.
                  */
-                final BackendTransaction schemaMutator;
-                if (backend.getStoreFeatures().hasTxIsolation()) {
-                    schemaMutator = mutator;
-                } else {
-                    schemaMutator = openBackendTransaction(tx);
-                }
+                final BackendTransaction schemaMutator = openBackendTransaction(tx);
 
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
@@ -533,9 +533,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
 
                 try {
-                    if (schemaMutator != mutator) { // reference inequality is sufficient in this case
-                        schemaMutator.commit();
-                    }
+                    schemaMutator.commit();
                 } catch (Throwable e) {
                     //[FAILURE] Primary persistence failed => abort but log failure (if possible)
                     status = LogTxStatus.FAILURE_SYSTEM;
@@ -553,7 +551,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             //[FAILURE] Exceptions during preparation here cause the entire transaction to fail on transactional systems
             //or just the non-system part on others. Nothing has been persisted unless batch-loading
-            boolean hasModifications = prepareCommit(addedRelations,deletedRelations, NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
+            boolean hasModifications = prepareCommit(addedRelations,deletedRelations, hasTxIsolation? NO_FILTER : NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
             if (hasModifications) {
 
                 if (logTransaction) {
