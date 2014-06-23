@@ -6,8 +6,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.thinkaurelius.titan.core.*;
-import com.tinkerpop.gremlin.java.GremlinPipeline;
 import org.apache.commons.math.stat.descriptive.SummaryStatistics;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,19 +14,17 @@ import org.junit.rules.TestRule;
 
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.PropertyKey;
-import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
-import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
-import com.thinkaurelius.titan.graphdb.relations.StandardEdge;
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanTransaction;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.testcategory.MemoryTests;
 import com.thinkaurelius.titan.testutil.JUnitBenchmarkProvider;
 import com.thinkaurelius.titan.testutil.MemoryAssess;
-import com.thinkaurelius.titan.testutil.PerformanceTest;
-import com.tinkerpop.blueprints.Vertex;
 
 /**
  * These tests focus on the in-memory data structures of individual transactions and how they hold up to high memory pressure
  */
-@Category({MemoryTests.class})
+@Category({ MemoryTests.class })
 public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest {
 
     @Rule
@@ -61,93 +57,6 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
         }
         System.out.println("Average: " + stats.getMean() + " Std. Dev: " + stats.getStandardDeviation());
         assertTrue(stats.getStandardDeviation() < stats.getMin());
-    }
-
-    private final long[] writeGraph(final int numV, final int numE, final String label) throws Exception {
-        TitanVertex[] vs = new TitanVertex[numV];
-
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < numV; i++) {
-            vs[i] = tx.addVertex();
-        }
-        final Random random = new Random();
-        for (int i = 0; i < numV; i++) {
-            for (int j = 0; j < numE; j++) {
-                vs[i].addEdge(label, vs[random.nextInt(numV)]);
-            }
-        }
-        newTx();
-        System.out.println("Write time for [" + (numE * numV) + "] edges in ms: " + (System.currentTimeMillis() - start));
-        final long[] vids = new long[numV];
-        for (int i = 0; i < numV; i++) vids[i] = vs[i].getID();
-        vs = null;
-        return vids;
-    }
-
-    @Test
-    public void testDeepTraversals() throws Exception {
-        //1) Write random graph
-        final int numV = 5000;
-        final int numE = 50;
-        final String label = "knows";
-        final Random random = new Random();
-        final long[] vids = writeGraph(numV, numE, label);
-
-        Thread[] readThreads = new Thread[4];
-        final int trials = 500;
-        final int repetitions = 2;
-        long start = System.currentTimeMillis();
-        for (int t = 0; t < readThreads.length; t++) {
-            readThreads[t] = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    for (int t = 1; t <= trials; t++) {
-                        TitanTransaction tx = graph.newTransaction();
-                        TitanVertex v = tx.getVertex(vids[random.nextInt(numV)]);
-                        for (int r = 0; r < repetitions; r++) {
-                            assertEquals((int) Math.pow(numE, 2), Iterables.size(new GremlinPipeline<Vertex, Vertex>(v)
-                                    .out(label).out(label)
-                            ));
-                        }
-                        tx.commit();
-                    }
-                }
-            });
-            readThreads[t].start();
-        }
-        for (int t = 0; t < readThreads.length; t++) {
-            readThreads[t].join();
-        }
-        System.out.println("Time in ms for [" + (readThreads.length * trials) + "] concurrent traversals with [" + repetitions + "] repetitions: " + (System.currentTimeMillis() - start));
-    }
-
-    @Test
-    public void testSingleTxDeepTraversals() throws Exception {
-        //1) Write random graph (copied from above)
-        final int numV = 5000;
-        final int numE = 50;
-        final String label = "knows";
-        final Random random = new Random();
-        final long[] vids = writeGraph(numV, numE, label);
-
-        final int repetitions = 1000;
-        long start = System.currentTimeMillis();
-
-        TitanTransaction tx = graph.buildTransaction().readOnly().start();
-        for (int r = 0; r < repetitions; r++) {
-            TitanVertex v = tx.getVertex(vids[random.nextInt(numV)]);
-            assertTrue((int) Math.pow(numE, 2) <= Iterables.size(
-                    new GremlinPipeline<Vertex, Vertex>(v)
-                            .both(label).both(label)
-            ));
-            assertEquals((int) Math.pow(numE, 2), Iterables.size(
-                    new GremlinPipeline<Vertex, Vertex>(v)
-                            .out(label).out(label)
-            ));
-        }
-        tx.commit();
-
-        System.out.println("Time in ms for [" + (repetitions) + "] traversals in single tx: " + (System.currentTimeMillis() - start));
     }
 
     @Test
@@ -228,59 +137,6 @@ public abstract class TitanGraphPerformanceMemoryTest extends TitanGraphBaseTest
         System.out.println("Read time for " + (trials * readThreads.length) + " vertex lookups: " + (System.currentTimeMillis() - start));
 
     }
-
-    @Test
-    public void elementCreationPerformance() {
-        EdgeLabel connect = tx.makeEdgeLabel("connect").make();
-        int noNodes = 20000;
-        TitanVertex[] nodes = new TitanVertex[noNodes];
-        PerformanceTest p = new PerformanceTest(true);
-        for (int i = 0; i < noNodes; i++) {
-            nodes[i] = tx.addVertex();
-        }
-        p.end();
-        System.out.println("Time per node in (ns): " + (p.getNanoTime() / noNodes));
-
-        p = new PerformanceTest(true);
-
-        for (int i = 0; i < noNodes; i++) {
-            new StandardEdge(i + 1, connect, (InternalVertex) nodes[i], (InternalVertex) nodes[(i + 1) % noNodes], ElementLifeCycle.New);
-        }
-        p.end();
-        System.out.println("Time per edge in (ns): " + (p.getNanoTime() / noNodes));
-
-        p = new PerformanceTest(true);
-        for (int i = 0; i < noNodes; i++) {
-            nodes[i].addEdge(connect, nodes[(i + 1) % noNodes]);
-        }
-        p.end();
-        System.out.println("Time per edge creation+connection in (ns): " + (p.getNanoTime() / noNodes));
-        tx.rollback();
-        tx = null;
-    }
-
-    @Test
-    public void testInTxIndex() throws Exception {
-        makeVertexIndexedKey("uid",Long.class);
-        finishSchema();
-
-        int trials = 2;
-        int numV = 2000;
-        int offset = 10000;
-
-        long start = System.currentTimeMillis();
-        for (int t = 0; t < trials; t++) {
-            for (int i = offset; i < offset + numV; i++) {
-                if (Iterables.isEmpty(tx.getVertices("uid", Long.valueOf(i)))) {
-                    Vertex v = tx.addVertex();
-                    v.setProperty("uid", Long.valueOf(i));
-                }
-            }
-        }
-        assertEquals(numV, Iterables.size(tx.getVertices()));
-        System.out.println("Total time (ms): " + (System.currentTimeMillis() - start));
-    }
-
 }
 
 
