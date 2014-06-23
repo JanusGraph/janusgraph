@@ -3,9 +3,12 @@ package com.thinkaurelius.titan.testutil.gen;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Edge;
@@ -37,6 +40,9 @@ public class Schema {
     private final String[] edgePropNames;
     private final String[] edgeLabelNames;
     private final Map<String, String> labelPkeys;
+
+    private static final Logger log =
+            LoggerFactory.getLogger(Schema.class);
 
     public static class Builder {
 
@@ -232,11 +238,13 @@ public class Schema {
         TitanManagement mgmt = g.getManagementSystem();
         for (int i = 0; i < vertexPropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getVertexPropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildCompositeIndex();
+            mgmt.setConsistency(key, ConsistencyModifier.LOCK);
+            mgmt.buildIndex("v-"+getVertexPropertyName(i),Vertex.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgePropKeys; i++) {
             PropertyKey key = mgmt.makePropertyKey(getEdgePropertyName(i)).dataType(Integer.class).cardinality(Cardinality.SINGLE).make();
-            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildCompositeIndex();
+            mgmt.setConsistency(key, ConsistencyModifier.LOCK);
+            mgmt.buildIndex("e-"+getEdgePropertyName(i),Edge.class).indexKey(key).buildInternalIndex();
         }
         for (int i = 0; i < edgeLabels; i++) {
             String labelName = getEdgeLabelName(i);
@@ -246,8 +254,10 @@ public class Schema {
         }
 
         PropertyKey uid = mgmt.makePropertyKey(UID_PROP).dataType(Long.class).cardinality(Cardinality.SINGLE).make();
-        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
+        mgmt.buildIndex("v-uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        mgmt.setConsistency(uid, ConsistencyModifier.LOCK);
         mgmt.commit();
+        log.debug("Committed types");
     }
 
     private String[] generateNames(String prefix, int count) {

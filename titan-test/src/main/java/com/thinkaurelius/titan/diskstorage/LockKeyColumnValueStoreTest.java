@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage;
 import static com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore.NO_DELETIONS;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -12,8 +13,12 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
+import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
+import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
+import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
+import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -22,13 +27,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.locking.LocalLockMediators;
+import com.thinkaurelius.titan.diskstorage.locking.Locker;
+import com.thinkaurelius.titan.diskstorage.locking.LockerProvider;
 import com.thinkaurelius.titan.diskstorage.locking.PermanentLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.TemporaryLockingException;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
+
+import static org.easymock.EasyMock.*;
 
 public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
@@ -330,6 +341,69 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             }
             Assert.assertEquals(lockOperationsPerThread, ls[i].succeeded + ls[i].temporaryFailures);
         }
+    }
+
+    @Test
+    public void testLocksOnMultipleStores() throws Exception {
+
+        final int numStores = 6;
+        Preconditions.checkState(numStores % 3 == 0);
+        final StaticBuffer key  = BufferUtil.getLongBuffer(1);
+        final StaticBuffer col  = BufferUtil.getLongBuffer(2);
+        final StaticBuffer val2 = BufferUtil.getLongBuffer(8);
+
+        // Create mocks
+        LockerProvider mockLockerProvider = createStrictMock(LockerProvider.class);
+        Locker mockLocker = createStrictMock(Locker.class);
+
+        // Create EVCSManager with mockLockerProvider
+        ExpectedValueCheckingStoreManager expManager =
+                new ExpectedValueCheckingStoreManager(manager[0], "multi_store_lock_mgr",
+                        mockLockerProvider, new StandardDuration(100L, TimeUnit.MILLISECONDS));
+
+        // Begin EVCTransaction
+        BaseTransactionConfig txCfg = StandardBaseTransactionConfig.of(times);
+        ExpectedValueCheckingTransaction tx = expManager.beginTransaction(txCfg);
+
+        // openDatabase calls getLocker, and we do it numStores times
+        expect(mockLockerProvider.getLocker(anyObject(String.class))).andReturn(mockLocker).times(numStores);
+
+        // acquireLock calls writeLock, and we do it 2/3 * numStores times
+        mockLocker.writeLock(eq(new KeyColumn(key, col)), eq(tx.getLockTransaction()));
+        expectLastCall().times(numStores / 3 * 2);
+
+        // mutateMany calls checkLocks, and we do it 2/3 * numStores times
+        mockLocker.checkLocks(tx.getLockTransaction());
+        expectLastCall().times(numStores / 3 * 2);
+
+        replay(mockLockerProvider);
+        replay(mockLocker);
+
+        /*
+         * Acquire a lock on several distinct stores (numStores total distinct
+         * stores) and build mutations.
+         */
+        ImmutableMap.Builder<String, Map<StaticBuffer, KCVMutation>> builder = ImmutableMap.builder();
+        for (int i = 0; i < numStores; i++) {
+            String storeName = "multi_store_lock_" + i;
+            KeyColumnValueStore s = expManager.openDatabase(storeName);
+
+            if (i % 3 < 2)
+                s.acquireLock(key, col, null, tx);
+
+            if (i % 3 > 0)
+                builder.put(storeName, ImmutableMap.of(key, new KCVMutation(ImmutableList.of(StaticArrayEntry.of(col, val2)), ImmutableList.<StaticBuffer>of())));
+        }
+
+        // Mutate
+        expManager.mutateMany(builder.build(), tx);
+
+        // Shutdown
+        expManager.close();
+
+        // Check the mocks
+        verify(mockLockerProvider);
+        verify(mockLocker);
     }
 
     private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
