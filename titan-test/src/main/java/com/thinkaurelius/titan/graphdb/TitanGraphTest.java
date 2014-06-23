@@ -2646,6 +2646,30 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedResults,no);
     }
 
+    @Test
+    public void testEdgesExceedCacheSize() {
+        // Add a vertex with as many edges as the tx-cache-size. (20000 by default)
+        int numEdges = graph.getConfiguration().getTxVertexCacheSize();
+        Vertex parentVertex = graph.addVertex(null);
+        for (int i = 0; i < numEdges; i++) {
+            Vertex childVertex = graph.addVertex(null);
+            parentVertex.addEdge("friend", childVertex);
+        }
+        graph.commit();
+        assertEquals(numEdges, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+
+        // Remove an edge.
+        Edge edge = parentVertex.getEdges(Direction.OUT).iterator().next();
+        edge.remove();
+
+        // Check that getEdges returns one fewer.
+        assertEquals(numEdges - 1, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+
+        // Run the same check one more time.
+        // This fails! (Expected: 19999. Actual: 20000.)
+        assertEquals(numEdges - 1, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+    }
+
 
    /* ==================================================================================
                             LOGGING
