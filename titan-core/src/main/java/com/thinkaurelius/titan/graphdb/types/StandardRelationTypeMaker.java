@@ -28,7 +28,6 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private boolean isHidden;
     private List<RelationType> sortKey;
     private Order sortOrder;
-    private int ttl;
     private List<RelationType> signature;
     private Multiplicity multiplicity;
 
@@ -46,7 +45,6 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         isHidden = false;
         sortKey = new ArrayList<RelationType>(4);
         sortOrder = Order.ASC;
-        ttl = 0;
         signature = new ArrayList<RelationType>(4);
         multiplicity = Multiplicity.MULTI;
     }
@@ -171,12 +169,6 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     public StandardRelationTypeMaker sortOrder(Order order) {
         Preconditions.checkNotNull(order);
         this.sortOrder=order;
-        return this;
-    }
-
-    protected StandardRelationTypeMaker ttl(Integer seconds) {
-        Preconditions.checkArgument(seconds >= 1, "ttl must be at least one second");
-        ttl = seconds;
         return this;
     }
 

@@ -10,8 +10,6 @@ import com.thinkaurelius.titan.graphdb.configuration.TitanConstants;
  */
 public class Titan {
 
-    public static final String TTL = "_ttl";
-
     /**
      * The version of this Titan graph database
      *

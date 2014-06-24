@@ -41,15 +41,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      */
     public EdgeLabelMaker unidirected();
 
-    /**
-     * Configures the time to live, in seconds, of edges with this label.
-     *
-     * @param seconds the number of seconds after committing the edge before which the edge will expire from the underlying database
-     * @return this EdgeLabelMaker
-     */
-    public EdgeLabelMaker ttl(int seconds);
-
-
+    
     @Override
     public EdgeLabelMaker signature(RelationType... types);
 
