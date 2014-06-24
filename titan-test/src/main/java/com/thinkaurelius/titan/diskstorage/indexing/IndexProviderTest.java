@@ -1,9 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.indexing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
@@ -23,10 +20,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -343,6 +337,108 @@ public abstract class IndexProviderTest {
         assertEquals(oldresultSize, result.size());
     }
 
+    @Test
+    public void testRestore() throws Exception {
+        final String store1 = "restorable1";
+        final String store2 = "restorable2";
+
+        initialize(store1);
+        initialize(store2);
+
+        // add couple of documents with weight > 4.0d
+        add(store1, "doc1", new HashMap<String, Object>() {{
+            put(NAME, "first");
+            put(TIME, 1L);
+            put(WEIGHT, 10.2d);
+        }}, true);
+
+        add(store1, "doc2", new HashMap<String, Object>() {{
+            put(NAME, "second");
+            put(TIME, 2L);
+            put(WEIGHT, 4.7d);
+        }}, true);
+
+        clopen();
+
+        // initial query
+        Set<String> results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(2, results.size());
+
+        // now let's try to restore (change values on the existing doc2, delete doc1, and add a new doc)
+        index.restore(new HashMap<String, Map<String, List<IndexEntry>>>() {{
+            put(store1, new HashMap<String, List<IndexEntry>>() {{
+                put("doc1", Collections.<IndexEntry>emptyList());
+                put("doc2", new ArrayList<IndexEntry>() {{
+                    add(new IndexEntry(NAME, "not-second"));
+                    add(new IndexEntry(WEIGHT, 2.1d));
+                    add(new IndexEntry(TIME, -1L));
+                }});
+                put("doc3", new ArrayList<IndexEntry>() {{
+                    add(new IndexEntry(NAME, "third"));
+                    add(new IndexEntry(WEIGHT, 11.5d));
+                    add(new IndexEntry(TIME, 3L));
+                }});
+            }});
+        }}, indexRetriever, tx);
+
+        clopen();
+
+        // this should return only doc3 (let's make results a set so it filters out duplicates but still has a size)
+        results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc3"));
+
+        // check if the name and time was set correctly for doc3
+        results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(NAME, Cmp.EQUAL, "third"), PredicateCondition.of(TIME, Cmp.EQUAL, 3L)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc3"));
+
+        // let's check if all of the new properties where set correctly from doc2
+        results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(NAME, Cmp.EQUAL, "not-second"), PredicateCondition.of(TIME, Cmp.EQUAL, -1L)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc2"));
+
+        // now let's throw one more store in the mix (resurrect doc1 in store1 and add it to the store2)
+        index.restore(new HashMap<String, Map<String, List<IndexEntry>>>() {{
+            put(store1, new HashMap<String, List<IndexEntry>>() {{
+                put("doc1", new ArrayList<IndexEntry>() {{
+                    add(new IndexEntry(NAME, "first-restored"));
+                    add(new IndexEntry(WEIGHT, 7.0d));
+                    add(new IndexEntry(TIME, 4L));
+                }});
+            }});
+            put(store2, new HashMap<String, List<IndexEntry>>() {{
+                put("doc1", new ArrayList<IndexEntry>() {{
+                    add(new IndexEntry(NAME, "first-in-second-store"));
+                    add(new IndexEntry(WEIGHT, 4.0d));
+                    add(new IndexEntry(TIME, 5L));
+                }});
+            }});
+        }}, indexRetriever, tx);
+
+        clopen();
+
+        // let's query store1 to see if we got doc1 back
+        results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(2, results.size());
+        assertTrue(results.contains("doc1"));
+        assertTrue(results.contains("doc3"));
+
+        // check if the name and time was set correctly for doc1
+        results = Sets.newHashSet(tx.query(new IndexQuery(store1, And.of(PredicateCondition.of(NAME, Cmp.EQUAL, "first-restored"), PredicateCondition.of(TIME, Cmp.EQUAL, 4L)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc1"));
+
+        // now let's check second store and see if we got doc1 added there too
+        results = Sets.newHashSet(tx.query(new IndexQuery(store2, And.of(PredicateCondition.of(WEIGHT, Cmp.GREATER_THAN_EQUAL, 4.0)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc1"));
+
+        // check if the name and time was set correctly for doc1 (in second store)
+        results = Sets.newHashSet(tx.query(new IndexQuery(store2, And.of(PredicateCondition.of(NAME, Cmp.EQUAL, "first-in-second-store"), PredicateCondition.of(TIME, Cmp.EQUAL, 5L)))));
+        assertEquals(1, results.size());
+        assertTrue(results.contains("doc1"));
+    }
 
    /* ==================================================================================
                             CONCURRENT UPDATE CASES
