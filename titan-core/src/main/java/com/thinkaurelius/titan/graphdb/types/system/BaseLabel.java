@@ -29,11 +29,6 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
     }
 
     @Override
-    public Integer getTtl() {
-        return null;
-    }
-
-    @Override
     public Multiplicity getMultiplicity() {
         return multiplicity;
     }

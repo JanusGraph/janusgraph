@@ -6,6 +6,7 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
@@ -71,11 +72,6 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
     @Override
     public boolean isUnidirected(Direction dir) {
         return dir==Direction.OUT;
-    }
-
-    @Override
-    public Integer getTtl() {
-        return null;
     }
 
     public Cardinality getCardinality() {

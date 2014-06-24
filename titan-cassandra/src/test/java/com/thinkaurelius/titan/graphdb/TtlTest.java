@@ -1,7 +1,9 @@
 package com.thinkaurelius.titan.graphdb;
 
+import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.Titan;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
@@ -18,6 +20,7 @@ import static org.junit.Assert.assertTrue;
  */
 public abstract class TtlTest extends TitanGraphBaseTest {
 
+    /*
     @Test
     public void testPerEdgeTtlTiming() throws Exception {
 
@@ -61,7 +64,9 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
         assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
     }
+    */
 
+    /*
     @Test
     public void testCommitRequiredForTtl() throws Exception {
 
@@ -92,11 +97,14 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         graph.rollback();
         assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
     }
+    */
 
     @Test
     public void testPerLabelTtl() throws Exception {
         TitanManagement tm = graph.getManagementSystem();
-        tm.makeEdgeLabel("likes").ttl(1).make();
+//        tm.makeEdgeLabel("likes").ttl(1).make();
+        EdgeLabel label = tm.makeEdgeLabel("likes").make();
+        tm.setTypeModifier(label, ModifierType.TTL, 1);
         tm.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -115,6 +123,7 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
     }
 
+    /*
     @Test
     public void testPerEdgeTtlOverridesPerLabelTtl() throws Exception {
         // timeout of 1 second by label
@@ -151,14 +160,16 @@ public abstract class TtlTest extends TitanGraphBaseTest {
         assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
         assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
     }
+    */
 
     @Test
     public void testKeyindexWithTtl() throws Exception {
         TitanManagement tm = graph.getManagementSystem();
 
         PropertyKey edgeName = tm.makePropertyKey("edge-name").dataType(String.class).make();
-        tm.buildIndex("edge-name",Edge.class).indexKey(edgeName)/*.unique()*/.buildInternalIndex();
-        tm.makeEdgeLabel("likes").ttl(1).make();
+        tm.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
+        EdgeLabel label = tm.makeEdgeLabel("likes").make();
+        tm.setTypeModifier(label, ModifierType.TTL, 1);
         tm.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);

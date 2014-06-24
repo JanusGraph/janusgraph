@@ -36,9 +36,4 @@ public class PropertyKeyVertex extends RelationTypeVertex implements PropertyKey
     public boolean isUnidirected(Direction dir) {
         return dir==Direction.OUT;
     }
-
-    @Override
-    public Integer getTtl() {
-        return null;
-    }
 }

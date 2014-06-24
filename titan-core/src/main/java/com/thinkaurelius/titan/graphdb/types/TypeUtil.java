@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.tinkerpop.blueprints.Direction;
@@ -77,5 +78,9 @@ public class TypeUtil {
         else return entry.getSchemaType().getDefinition().getValue(TypeDefinitionCategory.CONSISTENCY_LEVEL,ConsistencyModifier.class);
     }
 
-
+    public static Object getTypeModifier(final SchemaSource schema,
+                                  final ModifierType modifierType) {
+        SchemaSource.Entry entry = Iterables.getFirst(schema.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT), null);
+        return (null == entry) ? null : entry.getSchemaType().getDefinition().getValue(modifierType.getCategory());
+    }
 }

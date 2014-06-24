@@ -130,11 +130,6 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
     }
 
     @Override
-    public Integer getTtl() {
-        return 0;
-    }
-
-    @Override
     public Multiplicity getMultiplicity() {
         return Multiplicity.convert(getCardinality());
     }

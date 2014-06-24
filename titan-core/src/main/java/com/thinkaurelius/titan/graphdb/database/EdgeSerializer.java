@@ -239,7 +239,7 @@ public class EdgeSerializer implements RelationReader {
         return writeRelation(relation, (InternalRelationType) relation.getType(), position, tx);
     }
 
-    public Entry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
+    public StaticArrayEntry writeRelation(InternalRelation relation, InternalRelationType type, int position, TypeInspector tx) {
         assert type==relation.getType() || type.getBaseType().equals(relation.getType());
         Direction dir = EdgeDirection.fromPosition(position);
         Preconditions.checkArgument(type.isUnidirected(Direction.BOTH) || type.isUnidirected(dir));
@@ -259,14 +259,13 @@ public class EdgeSerializer implements RelationReader {
         }
         int keyEndPos = out.getPosition();
 
-        Integer ttl = null;
+        //Integer ttl = null;
         long relationId = relation.getID();
         //How multiplicity is handled for edges and properties is slightly different
         if (relation.isEdge()) {
-            ttl = relation.getProperty(Titan.TTL);
-            if (null == ttl) {
-                ttl = type.getTtl();
-            }
+            // possible future extension: set property-based (per-edge) TTL here
+            //ttl = relation.getProperty(Titan.TTL);
+
             long otherVertexId = relation.getVertex((position + 1) % 2).getID();
             if (multiplicity.isConstrained()) {
                 if (multiplicity.isUnique(dir)) {
@@ -338,9 +337,9 @@ public class EdgeSerializer implements RelationReader {
         StaticArrayEntry entry = new StaticArrayEntry(type.getSortOrder()==Order.DESC?
                                     out.getStaticBufferFlipBytes(keyStartPos,keyEndPos):
                                     out.getStaticBuffer(),valuePosition);
-        if (null != ttl) {
-            entry.setMetaData(EntryMetaData.TTL, ttl);
-        }
+        //if (null != ttl) {
+        //    entry.setMetaData(EntryMetaData.TTL, ttl);
+        //}
         if (hasImplicitKeys) {
             for (EntryMetaData meta : EntryMetaData.IDENTIFYING_METADATA) {
                 Object value = relation.getPropertyDirect(ImplicitKey.MetaData2ImplicitKey.get(meta));

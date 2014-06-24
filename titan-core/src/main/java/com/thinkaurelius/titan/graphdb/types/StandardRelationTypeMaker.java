@@ -113,7 +113,6 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         def.setValue(HIDDEN, isHidden);
         def.setValue(SORT_KEY, checkSortKey(sortKey));
         def.setValue(SORT_ORDER, sortOrder);
-        def.setValue(TTL, ttl);
         def.setValue(SIGNATURE, checkSignature(signature));
         def.setValue(MULTIPLICITY,multiplicity);
         return def;

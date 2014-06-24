@@ -576,21 +576,36 @@ public class ManagementSystem implements TitanManagement {
     @Override
     public Object getTypeModifier(final TitanSchemaType type,
                                   final ModifierType modifierType) {
-        Iterator<Edge> iter = ((TitanSchemaVertex) type).getEdges(Direction.OUT, modifierType.getEdgeLabel()).iterator();
-        if (iter.hasNext()) {
-            TitanSchemaVertex v = (TitanSchemaVertex) iter.next().getVertex(Direction.IN);
+        for (TitanEdge titanEdge : ((TitanSchemaVertex) type).getEdges(modifierType.getCategory(), Direction.OUT)) {
+            TitanSchemaVertex v = (TitanSchemaVertex) titanEdge.getVertex(Direction.IN);
 
-        } else {
-            return null;
+            TypeDefinitionMap def = v.getDefinition();
+            Object value = def.getValue(modifierType.getCategory());
+            if (null != value) {
+                return value;
+            }
         }
+
+        return null;
     }
 
     @Override
     public void setTypeModifier(final TitanSchemaType type,
                                 final ModifierType modifierType,
                                 final Object value) {
-        ((TitanSchemaVertex) type).
+        TypeDefinitionCategory cat = modifierType.getCategory();
+        if (cat.hasDataType()) {
+            Preconditions.checkArgument(cat.getDataType().isAssignableFrom(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
+        }
 
+        TitanSchemaVertex typeVertex = ((TitanSchemaVertex) type);
+
+        TypeDefinitionMap def = new TypeDefinitionMap();
+        def.setValue(cat, value);
+        TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);
+
+        addSchemaEdge(typeVertex, cVertex, TypeDefinitionCategory.TYPE_MODIFIER, null);
+        updatedTypes.add(typeVertex);
     }
 
     // ###### TRANSACTION PROXY #########

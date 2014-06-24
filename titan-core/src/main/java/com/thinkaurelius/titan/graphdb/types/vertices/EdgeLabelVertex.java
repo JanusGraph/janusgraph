@@ -36,9 +36,4 @@ public class EdgeLabelVertex extends RelationTypeVertex implements EdgeLabel {
     public final boolean isEdgeLabel() {
         return true;
     }
-
-    @Override
-    public Integer getTtl() {
-        return getDefinition().getValue(TypeDefinitionCategory.TTL,Integer.class);
-    }
 }

@@ -6,6 +6,8 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.schema.ModifierType;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -15,7 +17,9 @@ import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -58,6 +62,24 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
             consistency = TypeUtil.getConsistencyModifier(this);
         }
         return consistency;
+    }
+
+    private Map<ModifierType, Object> modifierTypes = null;
+
+    public Object getTypeModifier(final ModifierType modifierType) {
+        if (null == modifierTypes) {
+            modifierTypes = new HashMap<ModifierType, Object>();
+        }
+
+        Object value = modifierTypes.get(modifierType);
+        if (null == value) {
+            value = TypeUtil.getTypeModifier(this, modifierType);
+            if (null != value) {
+                modifierTypes.put(modifierType, value);
+            }
+        }
+
+        return value;
     }
 
     public InternalRelationType getBaseType() {

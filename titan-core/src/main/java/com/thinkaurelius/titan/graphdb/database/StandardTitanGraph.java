@@ -9,7 +9,9 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -424,8 +426,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).getID()==vertexid) {
-                            Entry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
-// TODO: set TTL
+                            StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
+
+                            Integer ttl = (Integer) type.getTypeModifier(ModifierType.TTL);
+                            if (null != ttl && ttl > 0) {
+                                entry.setMetaData(EntryMetaData.TTL, ttl);
+                            }
+
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
                             } else {

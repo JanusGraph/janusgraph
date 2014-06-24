@@ -11,7 +11,7 @@ import org.apache.commons.lang.StringUtils;
 
 public enum TitanSchemaCategory {
 
-    EDGELABEL, PROPERTYKEY, VERTEXLABEL, GRAPHINDEX, MODIFIER;
+    EDGELABEL, PROPERTYKEY, VERTEXLABEL, GRAPHINDEX, MODIFIER, TYPE_MODIFIER;
 
 
     public boolean isRelationType() {
@@ -26,6 +26,7 @@ public enum TitanSchemaCategory {
             case VERTEXLABEL:
                 return true;
             case MODIFIER:
+            case TYPE_MODIFIER:
                 return false;
             default: throw new AssertionError();
         }
@@ -74,6 +75,9 @@ public enum TitanSchemaCategory {
                 break;
             case MODIFIER:
                 definition.isValidDefinition(TypeDefinitionCategory.CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES);
+                break;
+            case TYPE_MODIFIER:
+                definition.isValidDefinition(TypeDefinitionCategory.TYPE_MODIFIER_DEFINITION_CATEGORIES);
                 break;
             case VERTEXLABEL:
                 definition.isValidDefinition(TypeDefinitionCategory.VERTEXLABEL_DEFINITION_CATEGORIES);
