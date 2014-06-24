@@ -1,9 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.es;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
@@ -53,13 +51,11 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -363,6 +359,40 @@ public class ElasticSearchIndex implements IndexProvider {
                 }
             }
             if (bulkrequests > 0) brb.execute().actionGet();
+        } catch (Exception e) {
+            throw convert(e);
+        }
+    }
+
+    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+        BulkRequestBuilder bulk = client.prepareBulk();
+        int requests = 0;
+        try {
+            for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
+                String store = stores.getKey();
+
+                for (Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
+                    String docID = entry.getKey();
+                    List<IndexEntry> content = entry.getValue();
+
+                    if (content == null || content.size() == 0) {
+                        // delete
+                        if (log.isTraceEnabled())
+                            log.trace("Deleting entire document {}", docID);
+
+                        bulk.add(new DeleteRequest(indexName, store, docID));
+                        requests++;
+                    } else {
+                        if (log.isTraceEnabled())
+                            log.trace("Adding entire document {}", docID);
+                        bulk.add(new IndexRequest(indexName, store, docID).source(getContent(content)));
+                        requests++;
+                    }
+                }
+            }
+
+            if (requests > 0)
+                bulk.execute().actionGet();
         } catch (Exception e) {
             throw convert(e);
         }

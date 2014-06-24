@@ -239,6 +239,11 @@ public class LuceneIndex implements IndexProvider {
         }
     }
 
+    @Override
+    public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+        throw new UnsupportedOperationException();
+    }
+
     private static final Sort getSortOrder(IndexQuery query) {
         Sort sort = new Sort();
         List<IndexQuery.OrderEntry> orders = query.getOrder();

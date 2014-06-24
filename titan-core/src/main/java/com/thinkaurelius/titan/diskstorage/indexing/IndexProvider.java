@@ -51,7 +51,7 @@ public interface IndexProvider extends IndexInformation {
      * this method does not do a delta-update, but entirely replaces the documents with the provided data or deletes them if the document content is empty.
      *
      * @param documents The outer map maps stores to documents, the inner contains the documents mapping document ids to the document content which is a
-     *                  list of {@link IndexEntry}. If that list is entry, that means this document should not exist and ought to be deleted.
+     *                  list of {@link IndexEntry}. If that list is empty, that means this document should not exist and ought to be deleted.
      * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
      * @throws StorageException
