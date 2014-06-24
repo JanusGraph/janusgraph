@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.graphdb;
 
-import com.codahale.metrics.Counter;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.*;
@@ -10,27 +9,19 @@ import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.diskstorage.util.TestLockerManager;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.testcategory.SerialTests;
-import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
-import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
@@ -112,7 +103,7 @@ public abstract class TitanEventualGraphTest extends TitanGraphBaseTest {
                 assertEquals(100,t.sinceEpoch(unit));
                 assertEquals(TimeUnit.MICROSECONDS.convert(100,TimeUnit.SECONDS)+1,t.sinceEpoch(TimeUnit.MICROSECONDS));
             }
-            if (features.hasTTL()) {
+            if (features.hasCellTTL()) {
                 Duration d = prop.getProperty("$ttl");
                 assertEquals(0l,d.getLength(unit));
                 assertTrue(d.isZeroLength());

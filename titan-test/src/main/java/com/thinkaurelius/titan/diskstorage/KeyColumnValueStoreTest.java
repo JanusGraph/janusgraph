@@ -917,7 +917,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     @Test
     public void testTtl() throws Exception {
 
-        if (!manager.getFeatures().hasTTL()) {
+        if (!manager.getFeatures().hasCellTTL()) {
             return;
         }
 

@@ -79,7 +79,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public boolean hasTTL() {
+    public boolean hasCellTTL() {
         return ttl;
     }
 
@@ -144,7 +144,7 @@ public class StandardStoreFeatures implements StoreFeatures {
             distributed(template.isDistributed());
             transactional(template.hasTxIsolation());
             timestamps(template.hasTimestamps());
-            ttl(template.hasTTL());
+            ttl(template.hasCellTTL());
             visibility(template.hasVisibility());
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());

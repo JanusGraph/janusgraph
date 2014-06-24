@@ -4,27 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
-import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.diskstorage.Entry;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
-import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreUtil;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
-import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.slf4j.Logger;
@@ -142,7 +127,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     @Test
     public void testTTLSupported() throws Exception {
         StoreFeatures features = manager.getFeatures();
-        assertTrue(features.hasTTL());
+        assertTrue(features.hasCellTTL());
     }
 
     @Override

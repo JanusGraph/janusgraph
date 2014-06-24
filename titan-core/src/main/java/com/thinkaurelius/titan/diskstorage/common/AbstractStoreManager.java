@@ -46,7 +46,7 @@ public abstract class AbstractStoreManager implements StoreManager {
         StoreFeatures features = getFeatures();
         if (features.hasTimestamps() && storageConfig.get(STORE_META_TIMESTAMPS,storeName))
             schemaBuilder.add(EntryMetaData.TIMESTAMP);
-        if (features.hasTTL() && storageConfig.get(STORE_META_TTL,storeName))
+        if (features.hasCellTTL() && storageConfig.get(STORE_META_TTL,storeName))
             schemaBuilder.add(EntryMetaData.TTL);
         if (features.hasVisibility() && storageConfig.get(STORE_META_VISIBILITY,storeName))
             schemaBuilder.add(EntryMetaData.VISIBILITY);

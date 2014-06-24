@@ -31,12 +31,14 @@ import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 import com.tinkerpop.blueprints.Direction;
+import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -569,6 +571,26 @@ public class ManagementSystem implements TitanManagement {
         TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.MODIFIER,null,def);
         addSchemaEdge(vertex,cVertex,TypeDefinitionCategory.CONSISTENCY_MODIFIER,null);
         updatedTypes.add(vertex);
+    }
+
+    @Override
+    public Object getTypeModifier(final TitanSchemaType type,
+                                  final ModifierType modifierType) {
+        Iterator<Edge> iter = ((TitanSchemaVertex) type).getEdges(Direction.OUT, modifierType.getEdgeLabel()).iterator();
+        if (iter.hasNext()) {
+            TitanSchemaVertex v = (TitanSchemaVertex) iter.next().getVertex(Direction.IN);
+
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public void setTypeModifier(final TitanSchemaType type,
+                                final ModifierType modifierType,
+                                final Object value) {
+        ((TitanSchemaVertex) type).
+
     }
 
     // ###### TRANSACTION PROXY #########

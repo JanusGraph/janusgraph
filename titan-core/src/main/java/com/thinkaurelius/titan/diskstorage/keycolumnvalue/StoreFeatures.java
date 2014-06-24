@@ -99,7 +99,7 @@ public interface StoreFeatures {
      *
      * @return true if the storage backend supports TTL, else false
      */
-    public boolean hasTTL();
+    public boolean hasCellTTL();
 
 
     /**
