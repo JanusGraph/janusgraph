@@ -34,14 +34,6 @@ public abstract class TitanBlueprintsTest extends GraphTest {
 
     private volatile String lastSeenMethodName;
 
-
-
-    /*public void testTitanBenchmarkTestSuite() throws Exception {
-        this.stopWatch();
-        doTestSuite(new TitanBenchmarkSuite(this));
-        printTestPerformance("TitanBenchmarkTestSuite", this.stopWatch());
-    }*/
-
     public void testVertexTestSuite() throws Exception {
         this.stopWatch();
         doTestSuite(new VertexTestSuite(this));

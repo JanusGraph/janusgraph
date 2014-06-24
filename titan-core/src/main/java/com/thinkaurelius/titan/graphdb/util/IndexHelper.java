@@ -5,8 +5,8 @@ import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.tinkerpop.blueprints.Element;
 
@@ -14,7 +14,7 @@ import com.tinkerpop.blueprints.Element;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public class IndexHelper {
-    public static Iterable<? extends Element> getQueryResults(InternalIndexType index, Object[] values, StandardTitanTx tx) {
+    public static Iterable<? extends Element> getQueryResults(CompositeIndexType index, Object[] values, StandardTitanTx tx) {
         GraphCentricQueryBuilder gb = getQuery(index,values,tx);
         switch(index.getElement()) {
             case VERTEX:
@@ -27,7 +27,7 @@ public class IndexHelper {
         }
     }
 
-    public static GraphCentricQueryBuilder getQuery(InternalIndexType index, Object[] values, StandardTitanTx tx) {
+    public static GraphCentricQueryBuilder getQuery(CompositeIndexType index, Object[] values, StandardTitanTx tx) {
         Preconditions.checkArgument(index != null && values != null && values.length > 0 && tx != null);
         Preconditions.checkArgument(values.length==index.getFieldKeys().length);
         GraphCentricQueryBuilder gb = tx.query();

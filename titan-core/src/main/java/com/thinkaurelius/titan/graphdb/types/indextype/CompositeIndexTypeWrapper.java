@@ -13,19 +13,19 @@ import com.tinkerpop.blueprints.Direction;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class InternalIndexTypeWrapper extends IndexTypeWrapper implements InternalIndexType {
+public class CompositeIndexTypeWrapper extends IndexTypeWrapper implements CompositeIndexType {
 
-    public InternalIndexTypeWrapper(SchemaSource base) {
+    public CompositeIndexTypeWrapper(SchemaSource base) {
         super(base);
     }
 
     @Override
-    public boolean isInternalIndex() {
+    public boolean isCompositeIndex() {
         return true;
     }
 
     @Override
-    public boolean isExternalIndex() {
+    public boolean isMixedIndex() {
         return false;
     }
 

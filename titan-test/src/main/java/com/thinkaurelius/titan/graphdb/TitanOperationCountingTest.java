@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.graphdb;
 
 import com.codahale.metrics.Counter;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -25,10 +24,9 @@ import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
-import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.thinkaurelius.titan.testcategory.SerialTests;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
@@ -143,7 +141,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
             IndexType index = Iterables.getOnlyElement(uidi.getKeyIndexes());
             assertEquals(1,index.getFieldKeys().length);
             assertEquals(ElementCategory.VERTEX,index.getElement());
-            assertEquals(ConsistencyModifier.LOCK,((InternalIndexType)index).getConsistencyModifier());
+            assertEquals(ConsistencyModifier.LOCK,((CompositeIndexType)index).getConsistencyModifier());
             assertEquals(1, Iterables.size(uidi.getRelationIndexes()));
             assertEquals(1, Iterables.size(namei.getRelationIndexes()));
             assertEquals(namei, Iterables.getOnlyElement(namei.getRelationIndexes()));
@@ -322,7 +320,7 @@ public abstract class TitanOperationCountingTest extends TitanGraphBaseTest {
 
     public void checkFastPropertyAndLocking(boolean fastProperty) {
         PropertyKey uid = makeKey("uid",String.class);
-        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildInternalIndex();
+        TitanGraphIndex index = mgmt.buildIndex("uid",Vertex.class).unique().indexKey(uid).buildCompositeIndex();
         mgmt.setConsistency(index, ConsistencyModifier.LOCK);
         finishSchema();
 

@@ -6,7 +6,6 @@ import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
@@ -44,16 +43,16 @@ public class GraphOfTheGodsFactory {
         //Create Schema
         TitanManagement mgmt = graph.getManagementSystem();
         final PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
-        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildInternalIndex();
+        TitanGraphIndex namei = mgmt.buildIndex("name",Vertex.class).indexKey(name).unique().buildCompositeIndex();
         mgmt.setConsistency(namei, ConsistencyModifier.LOCK);
         final PropertyKey age = mgmt.makePropertyKey("age").dataType(Integer.class).make();
-        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildExternalIndex(INDEX_NAME);
+        mgmt.buildIndex("vertices",Vertex.class).indexKey(age).buildMixedIndex(INDEX_NAME);
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         final PropertyKey reason = mgmt.makePropertyKey("reason").dataType(String.class).make();
         final PropertyKey place = mgmt.makePropertyKey("place").dataType(Geoshape.class).make();
         TitanGraphIndex eindex = mgmt.buildIndex("edges",Edge.class)
-                .indexKey(reason).indexKey(place).buildExternalIndex(INDEX_NAME);
+                .indexKey(reason).indexKey(place).buildMixedIndex(INDEX_NAME);
 
         mgmt.makeEdgeLabel("father").multiplicity(Multiplicity.MANY2ONE).make();
         mgmt.makeEdgeLabel("mother").multiplicity(Multiplicity.MANY2ONE).make();

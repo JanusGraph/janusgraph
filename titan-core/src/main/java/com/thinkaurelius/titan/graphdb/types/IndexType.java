@@ -17,9 +17,9 @@ public interface IndexType {
 
     public boolean indexesKey(PropertyKey key);
 
-    public boolean isInternalIndex();
+    public boolean isCompositeIndex();
 
-    public boolean isExternalIndex();
+    public boolean isMixedIndex();
 
     public boolean hasSchemaTypeConstraint();
 

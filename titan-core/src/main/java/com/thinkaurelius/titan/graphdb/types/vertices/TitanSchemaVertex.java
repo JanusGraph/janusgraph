@@ -8,12 +8,11 @@ import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexQuery;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
-import com.thinkaurelius.titan.graphdb.query.vertex.VertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
-import com.thinkaurelius.titan.graphdb.types.indextype.ExternalIndexTypeWrapper;
-import com.thinkaurelius.titan.graphdb.types.indextype.InternalIndexTypeWrapper;
+import com.thinkaurelius.titan.graphdb.types.indextype.CompositeIndexTypeWrapper;
+import com.thinkaurelius.titan.graphdb.types.indextype.MixedIndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
@@ -154,9 +153,9 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
     public IndexType asIndexType() {
         Preconditions.checkArgument(getDefinition().containsKey(TypeDefinitionCategory.INTERNAL_INDEX),"Schema vertex is not a type vertex: [%s,%s]",getID(),getName());
         if (getDefinition().getValue(TypeDefinitionCategory.INTERNAL_INDEX)) {
-            return new InternalIndexTypeWrapper(this);
+            return new CompositeIndexTypeWrapper(this);
         } else {
-            return new ExternalIndexTypeWrapper(this);
+            return new MixedIndexTypeWrapper(this);
         }
     }
 

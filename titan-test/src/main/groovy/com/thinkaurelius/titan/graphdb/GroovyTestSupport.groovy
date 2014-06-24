@@ -198,8 +198,7 @@ abstract class GroovyTestSupport {
         long before = System.currentTimeMillis()
         Schema schema = getSchema();
         GraphGenerator generator = new GraphGenerator(schema);
-        GraphDatabaseConfiguration graphconfig = new GraphDatabaseConfiguration(conf);
-        graphconfig.getBackend().clearStorage();
+        
 //        generator.generate(g);
         try {
             generator.generateTypesAndLoadData(g, new GZIPInputStream(new FileInputStream(RELATION_FILE)))

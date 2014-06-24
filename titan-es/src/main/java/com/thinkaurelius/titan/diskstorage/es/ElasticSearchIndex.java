@@ -147,6 +147,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     if (!f.exists()) f.mkdirs();
                     b.put("path." + sub, subdir);
                 }
+                b.put("script.disable_dynamic", false);
                 builder.settings(b.build());
 
                 String clustername = config.get(CLUSTER_NAME);
@@ -169,6 +170,7 @@ public class ElasticSearchIndex implements IndexProvider {
             }
             log.debug("Transport sniffing enabled: {}", config.get(CLIENT_SNIFF));
             settings.put("client.transport.sniff", config.get(CLIENT_SNIFF));
+            settings.put("script.disable_dynamic", false);
             TransportClient tc = new TransportClient(settings.build());
             int defaultPort = config.has(INDEX_PORT)?config.get(INDEX_PORT):HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {

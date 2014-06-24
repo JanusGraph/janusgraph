@@ -18,7 +18,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.blueprints.util.ElementHelper;
-import static com.thinkaurelius.titan.graphdb.TitanGraphTest.*;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,8 +77,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
     public void testSimpleUpdate() {
         PropertyKey text = makeKey("name",String.class);
         EdgeLabel knows = makeLabel("knows");
-        mgmt.buildIndex("namev",Vertex.class).indexKey(text).buildInternalIndex();
-        mgmt.buildIndex("namee",Edge.class).indexKey(text).buildInternalIndex();
+        mgmt.buildIndex("namev",Vertex.class).indexKey(text).buildCompositeIndex();
+        mgmt.buildIndex("namee",Edge.class).indexKey(text).buildCompositeIndex();
         finishSchema();
 
         Vertex v = tx.addVertex();
@@ -122,8 +121,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         createExternalEdgeIndex(time,INDEX);
 
         PropertyKey category = makeKey("category",Integer.class);
-        mgmt.buildIndex("vcategory",Vertex.class).indexKey(category).buildInternalIndex();
-        mgmt.buildIndex("ecategory",Edge.class).indexKey(category).buildInternalIndex();
+        mgmt.buildIndex("vcategory",Vertex.class).indexKey(category).buildCompositeIndex();
+        mgmt.buildIndex("ecategory",Edge.class).indexKey(category).buildCompositeIndex();
 
         PropertyKey group = makeKey("group",Byte.class);
         createExternalVertexIndex(group,INDEX);
@@ -317,11 +316,11 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         VertexLabel org = mgmt.makeVertexLabel("org").make();
 
         TitanGraphIndex index1 = mgmt.buildIndex("index1",Vertex.class).
-                indexKey(name,Mapping.STRING.getParameter()).buildExternalIndex(INDEX);
+                indexKey(name,Mapping.STRING.getParameter()).buildMixedIndex(INDEX);
         TitanGraphIndex index2 = mgmt.buildIndex("index2",Vertex.class).indexOnly(person).
-                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildExternalIndex(INDEX);
+                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildMixedIndex(INDEX);
         TitanGraphIndex index3 = mgmt.buildIndex("index3",Vertex.class).indexOnly(org).
-                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildExternalIndex(INDEX);
+                indexKey(text,Mapping.TEXT.getParameter()).indexKey(weight).buildMixedIndex(INDEX);
 
         // ########### INSPECTION & FAILURE ##############
         assertTrue(mgmt.containsGraphIndex("index1"));
@@ -349,12 +348,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildExternalIndex(INDEX);
+            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildMixedIndex(INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildInternalIndex();
+            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
@@ -392,12 +391,12 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildExternalIndex(INDEX);
+            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildMixedIndex(INDEX);
             fail();
         } catch (IllegalArgumentException e) {}
         try {
             //Already exists
-            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildInternalIndex();
+            mgmt.buildIndex("index2",Vertex.class).indexKey(weight).buildCompositeIndex();
             fail();
         } catch (IllegalArgumentException e) {}
         try {
@@ -492,8 +491,8 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         PropertyKey text = makeKey("text", String.class);
         PropertyKey flag = makeKey("flag",Boolean.class);
 
-        TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).indexKey(name).indexKey(weight).buildInternalIndex();
-        TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).indexKey(weight).indexKey(text,Mapping.TEXT.getParameter()).buildExternalIndex(INDEX);
+        TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).indexKey(name).indexKey(weight).buildCompositeIndex();
+        TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).indexKey(weight).indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
 
         finishSchema();
 

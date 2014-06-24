@@ -648,7 +648,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
 
         //Determine unique indexes
         List<IndexLockTuple> uniqueIndexTuples = new ArrayList<IndexLockTuple>();
-        for (InternalIndexType index : TypeUtil.getUniqueIndexes(key)) {
+        for (CompositeIndexType index : TypeUtil.getUniqueIndexes(key)) {
             IndexSerializer.IndexRecords matches = IndexSerializer.indexMatches(vertex, index, key, normalizedValue);
             for (Object[] match : matches.getRecordValues()) uniqueIndexTuples.add(new IndexLockTuple(index,match));
         }

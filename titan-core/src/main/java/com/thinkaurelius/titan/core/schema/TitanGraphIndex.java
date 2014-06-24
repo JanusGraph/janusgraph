@@ -6,7 +6,7 @@ import com.tinkerpop.blueprints.Element;
 /**
  * A TitanGraphIndex is an index installed on the graph in order to be able to efficiently retrieve graph elements
  * by their properties.
- * A TitanGraphIndex may either be an internal or external index and is created via {@link TitanManagement#buildIndex(String, Class)}.
+ * A TitanGraphIndex may either be a composite or mixed index and is created via {@link TitanManagement#buildIndex(String, Class)}.
  * <p/>
  * This interface allows introspecting an existing graph index. Existing graph indexes can be retrieved via
  * {@link TitanManagement#getGraphIndex(String)} or {@link TitanManagement#getGraphIndexes(Class)}.
@@ -22,8 +22,8 @@ public interface TitanGraphIndex extends TitanSchemaElement {
     public String getName();
 
     /**
-     * Returns the name of the backing index. For internal indexes this returns a default name.
-     * For external indexes, this returns the name of the configured indexing backend.
+     * Returns the name of the backing index. For composite indexes this returns a default name.
+     * For mixed indexes, this returns the name of the configured indexing backend.
      *
      * @return
      */

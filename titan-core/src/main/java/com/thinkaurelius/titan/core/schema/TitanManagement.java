@@ -190,20 +190,20 @@ public interface TitanManagement extends TitanConfiguration {
         public IndexBuilder unique();
 
         /**
-         * Builds an internal index according to the specification
+         * Builds a composite index according to the specification
          *
-         * @return the created internal {@link TitanGraphIndex}
+         * @return the created composite {@link TitanGraphIndex}
          */
-        public TitanGraphIndex buildInternalIndex();
+        public TitanGraphIndex buildCompositeIndex();
 
         /**
-         * Builds an external index according to the specification against the backend index with the given name (i.e.
+         * Builds a mixed index according to the specification against the backend index with the given name (i.e.
          * the name under which that index is configured in the graph configuration)
          *
-         * @param backingIndex the name of the external index
-         * @return the created internal {@link TitanGraphIndex}
+         * @param backingIndex the name of the mixed index
+         * @return the created mixed {@link TitanGraphIndex}
          */
-        public TitanGraphIndex buildExternalIndex(String backingIndex);
+        public TitanGraphIndex buildMixedIndex(String backingIndex);
 
     }
 
@@ -222,7 +222,7 @@ public interface TitanManagement extends TitanConfiguration {
 
     /**
      * Sets the consistency modifier for the given {@link TitanSchemaElement}. Note, that only {@link RelationType}s
-     * and internal graph indexes allow changing of the consistency level.
+     * and composite graph indexes allow changing of the consistency level.
      *
      * @param element
      * @param consistency

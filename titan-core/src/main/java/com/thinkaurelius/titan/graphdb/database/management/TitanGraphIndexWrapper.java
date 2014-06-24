@@ -4,10 +4,10 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.PropertyKey;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
-import com.thinkaurelius.titan.graphdb.types.ExternalIndexType;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
+import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
 import com.thinkaurelius.titan.graphdb.types.IndexField;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.InternalIndexType;
 import com.tinkerpop.blueprints.Element;
 
 /**
@@ -52,13 +52,13 @@ public class TitanGraphIndexWrapper implements TitanGraphIndex {
 
     @Override
     public Parameter[] getParametersFor(PropertyKey key) {
-        if (index.isInternalIndex()) return new Parameter[0];
-        return ((ExternalIndexType)index).getField(key).getParameters();
+        if (index.isCompositeIndex()) return new Parameter[0];
+        return ((MixedIndexType)index).getField(key).getParameters();
     }
 
     @Override
     public boolean isUnique() {
-        if (index.isExternalIndex()) return false;
-        return ((InternalIndexType)index).getCardinality()== Cardinality.SINGLE;
+        if (index.isMixedIndex()) return false;
+        return ((CompositeIndexType)index).getCardinality()== Cardinality.SINGLE;
     }
 }

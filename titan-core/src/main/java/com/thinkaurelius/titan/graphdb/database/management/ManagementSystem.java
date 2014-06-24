@@ -362,7 +362,7 @@ public class ManagementSystem implements TitanManagement {
                 && !(key instanceof BaseKey),"Need to provide valid index and key");
         if (parameters==null) parameters=new Parameter[0];
         IndexType indexType = ((TitanGraphIndexWrapper)index).getBaseIndex();
-        Preconditions.checkArgument(indexType instanceof ExternalIndexType,"Can only add keys to an external index, not %s",index.getName());
+        Preconditions.checkArgument(indexType instanceof MixedIndexType,"Can only add keys to an external index, not %s",index.getName());
         Preconditions.checkArgument(indexType instanceof IndexTypeWrapper && key instanceof TitanSchemaVertex
             && ((IndexTypeWrapper)indexType).getSchemaBase() instanceof TitanSchemaVertex);
         Preconditions.checkArgument(key.getCardinality()==Cardinality.SINGLE || indexType.getElement()!=ElementCategory.VERTEX,
@@ -379,7 +379,7 @@ public class ManagementSystem implements TitanManagement {
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
         indexType.resetCache();
         try {
-            IndexSerializer.register((ExternalIndexType) indexType,key,transaction.getTxHandle());
+            IndexSerializer.register((MixedIndexType) indexType,key,transaction.getTxHandle());
         } catch (StorageException e) {
             throw new TitanException("Could not register new index field with index backend",e);
         }
@@ -388,10 +388,10 @@ public class ManagementSystem implements TitanManagement {
     }
 
     private class IndexRegistration {
-        private final ExternalIndexType index;
+        private final MixedIndexType index;
         private final PropertyKey key;
 
-        private IndexRegistration(ExternalIndexType index, PropertyKey key) {
+        private IndexRegistration(MixedIndexType index, PropertyKey key) {
             this.index = index;
             this.key = key;
         }
@@ -487,7 +487,7 @@ public class ManagementSystem implements TitanManagement {
         }
 
         @Override
-        public TitanGraphIndex buildInternalIndex() {
+        public TitanGraphIndex buildCompositeIndex() {
             Preconditions.checkArgument(!keys.isEmpty(),"Need to specify at least one key for the composite index");
             PropertyKey[] keyArr = new PropertyKey[keys.size()];
             int pos = 0;
@@ -499,7 +499,7 @@ public class ManagementSystem implements TitanManagement {
         }
 
         @Override
-        public TitanGraphIndex buildExternalIndex(String backingIndex) {
+        public TitanGraphIndex buildMixedIndex(String backingIndex) {
             Preconditions.checkArgument(StringUtils.isNotBlank(backingIndex),"Need to specify backing index name");
             Preconditions.checkArgument(!unique,"An external index cannot be unique");
 
@@ -528,8 +528,8 @@ public class ManagementSystem implements TitanManagement {
         if (element instanceof RelationType) return ((InternalRelationType)element).getConsistencyModifier();
         else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
-            if (index.isExternalIndex()) return ConsistencyModifier.DEFAULT;
-            return ((InternalIndexType)index).getConsistencyModifier();
+            if (index.isMixedIndex()) return ConsistencyModifier.DEFAULT;
+            return ((CompositeIndexType)index).getConsistencyModifier();
         } else return ConsistencyModifier.DEFAULT;
     }
 
@@ -554,7 +554,7 @@ public class ManagementSystem implements TitanManagement {
                     "Cannot apply FORK consistency mode to constraint relation type: %s",vertex.getName());
         } else if (element instanceof TitanGraphIndex) {
             IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
-            if (index.isExternalIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
+            if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
             assert index instanceof IndexTypeWrapper;
             SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
             assert base instanceof TitanSchemaVertex;
