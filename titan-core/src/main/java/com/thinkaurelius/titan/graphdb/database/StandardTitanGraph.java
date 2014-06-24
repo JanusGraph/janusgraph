@@ -425,6 +425,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).getID()==vertexid) {
                             Entry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
+// TODO: set TTL
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
                             } else {

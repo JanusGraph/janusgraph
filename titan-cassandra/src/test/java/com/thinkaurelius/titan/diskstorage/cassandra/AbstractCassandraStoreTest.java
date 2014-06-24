@@ -140,49 +140,9 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    public void testTtl() throws Exception {
-
-        StaticBuffer key = KeyColumnValueStoreUtil.longToByteBuffer(0);
-
-        int ttls[] = new int[]{0, 1, 2};
-        List<Entry> additions = new LinkedList<Entry>();
-        for (int i = 0; i < ttls.length; i++) {
-            StaticBuffer col = KeyColumnValueStoreUtil.longToByteBuffer(i);
-            StaticArrayEntry entry = (StaticArrayEntry) StaticArrayEntry.of(col, col);
-            entry.setMetaData(EntryMetaData.TTL, ttls[i]);
-            additions.add(entry);
-        }
-
-        store.mutate(key, additions, KeyColumnValueStore.NO_DELETIONS, tx);
-        tx.commit();
-        // commitTime starts just after the commit, so we won't check for expiration too early
-        long commitTime = System.currentTimeMillis();
-
-        tx = startTx();
-
-        StaticBuffer columnStart = KeyColumnValueStoreUtil.longToByteBuffer(0);
-        StaticBuffer columnEnd = KeyColumnValueStoreUtil.longToByteBuffer(ttls.length);
-        List<Entry> result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
-        Assert.assertEquals(ttls.length, result.size());
-
-        Thread.sleep(commitTime + 1001 - System.currentTimeMillis());
-        tx.rollback();
-        result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
-        Assert.assertEquals(ttls.length - 1, result.size());
-
-        Thread.sleep(commitTime + 2001 - System.currentTimeMillis());
-        tx.rollback();
-        result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
-        Assert.assertEquals(ttls.length - 2, result.size());
-
-        Thread.sleep(commitTime + 4001 - System.currentTimeMillis());
-        tx.rollback();
-        result =
-                store.getSlice(new KeySliceQuery(key, columnStart, columnEnd).setLimit(ttls.length), tx);
-        Assert.assertEquals(1, result.size());
+    public void testTTLSupported() throws Exception {
+        StoreFeatures features = manager.getFeatures();
+        assertTrue(features.hasTTL());
     }
 
     @Override
