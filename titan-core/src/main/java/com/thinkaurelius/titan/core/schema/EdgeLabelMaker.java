@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.core.schema;
 
 import com.thinkaurelius.titan.core.EdgeLabel;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
 
 /**
@@ -41,7 +40,7 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      */
     public EdgeLabelMaker unidirected();
 
-    
+
     @Override
     public EdgeLabelMaker signature(RelationType... types);
 

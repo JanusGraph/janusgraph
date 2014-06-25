@@ -12,6 +12,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.schema.Mapping;
+import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
@@ -3537,5 +3538,117 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(222,e.getProperty(id));
     }
 
+    @Test
+    public void testTtlTiming() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
 
+        TitanManagement tm = graph.getManagementSystem();
+        EdgeLabel label1 = tm.makeEdgeLabel("likes").make();
+        int ttl1 = 1;
+        int ttl2 = 2;
+        tm.setTypeModifier(label1, ModifierType.TTL, ttl1);
+        EdgeLabel label2 = tm.makeEdgeLabel("dislikes").make();
+        tm.setTypeModifier(label2, ModifierType.TTL, ttl2);
+        EdgeLabel label3 = tm.makeEdgeLabel("indifferentTo").make();
+        tm.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
+
+        graph.addEdge(null, v1, v2, "likes");
+        graph.addEdge(null, v2, v1, "dislikes");
+        graph.addEdge(null, v3, v1, "indifferentTo");
+
+        // initial, pre-commit state of the edges.  They are not yet subject to TTL
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        long commitTime = System.currentTimeMillis();
+        graph.commit();
+
+        // edges are now subject to TTL, although we must commit() or rollback() to see it
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl1 * 1000L + 100) - System.currentTimeMillis());
+        graph.rollback();
+
+        // e1 has dropped out
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl2 * 1000L + 100) - System.currentTimeMillis());
+        graph.rollback();
+
+        // both e1 and e2 have dropped out.  e3 has no TTL, and so remains
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+        assertFalse(v2.getVertices(Direction.OUT).iterator().hasNext());
+        assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
+    }
+
+    @Test
+    public void testTtlWithTransactions() throws Exception {
+        TitanManagement tm = graph.getManagementSystem();
+        EdgeLabel label1 = tm.makeEdgeLabel("likes").make();
+        tm.setTypeModifier(label1, ModifierType.TTL, 1);
+        tm.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        graph.addEdge(null, v1, v2, "likes");
+
+        // pre-commit state of the edge.  It is not yet subject to TTL
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        // the edge should have expired by now, but only if it had been committed
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        graph.commit();
+
+        // still here, because we have just committed the edge.  Its countdown starts at the commit
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        // the edge has expired in Cassandra, but still appears alive in this transaction
+        assertTrue(v1.getVertices(Direction.OUT).iterator().hasNext());
+
+        // syncing with the data store, we see that the edge has expired
+        graph.rollback();
+        assertFalse(v1.getVertices(Direction.OUT).iterator().hasNext());
+    }
+
+    @Test
+    public void testTtlWithKeyIndices() throws Exception {
+        TitanManagement tm = graph.getManagementSystem();
+        PropertyKey edgeName = tm.makePropertyKey("edge-name").dataType(String.class).make();
+        tm.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
+        EdgeLabel label = tm.makeEdgeLabel("likes").make();
+        tm.setTypeModifier(label, ModifierType.TTL, 1);
+        tm.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        Edge e = graph.addEdge(null, v1, v2, "likes");
+        e.setProperty("edge-name", "v1-likes-v2");
+
+        graph.commit();
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+
+        Thread.sleep(1001);
+
+        graph.rollback();
+
+        // the edge is gone not only from its previous endpoints, but also from key indices
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+    }
 }

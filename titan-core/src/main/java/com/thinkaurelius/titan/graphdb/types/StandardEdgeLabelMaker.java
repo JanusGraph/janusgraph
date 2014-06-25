@@ -68,12 +68,6 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     @Override
-    public StandardEdgeLabelMaker ttl(int seconds) {
-        super.ttl(seconds);
-        return this;
-    }
-
-    @Override
     public StandardEdgeLabelMaker hidden() {
         super.hidden();
         return this;
