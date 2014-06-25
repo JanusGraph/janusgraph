@@ -173,6 +173,10 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return indexSerializer;
     }
 
+    public Backend getBackend() {
+        return backend;
+    }
+
     public IDInspector getIDInspector() {
         return idManager.getIdInspector();
     }

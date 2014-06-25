@@ -31,7 +31,7 @@ public class StandardVertex extends AbstractVertex {
         this.lifecycle=lifecycle;
     }
 
-    private synchronized final void updateLifeCycle(ElementLifeCycle.Event event) {
+    public synchronized final void updateLifeCycle(ElementLifeCycle.Event event) {
         this.lifecycle = ElementLifeCycle.update(lifecycle,event);
     }
 

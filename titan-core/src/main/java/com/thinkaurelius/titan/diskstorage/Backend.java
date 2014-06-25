@@ -78,7 +78,7 @@ public class Backend implements LockerProvider {
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     public static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
-    public static final String TRIGGER_LOG_PREFIX = "trigger_";
+    public static final String TRIGGER_LOG_PREFIX = "ulog_";
 
     public static final double EDGESTORE_CACHE_PERCENT = 0.8;
     public static final double INDEXSTORE_CACHE_PERCENT = 0.2;
@@ -129,9 +129,9 @@ public class Backend implements LockerProvider {
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
-        mgmtLogManager = getLogManager(configuration,MANAGEMENT_LOG,storeManager);
-        txLogManager = getLogManager(configuration,TRANSACTION_LOG,storeManager);
-        triggerLogManager = getLogManager(configuration,TRIGGER_LOG,storeManager);
+        mgmtLogManager = getLogManager(MANAGEMENT_LOG);
+        txLogManager = getLogManager(TRANSACTION_LOG);
+        triggerLogManager = getLogManager(TRIGGER_LOG);
 
 
         cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
@@ -311,8 +311,12 @@ public class Backend implements LockerProvider {
     }
 
     public Log getTriggerLog(String identifier) throws StorageException {
+        return triggerLogManager.openLog(getTriggerLogName(identifier),ReadMarker.fromNow());
+    }
+
+    public static final String getTriggerLogName(String identifier) {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
-        return triggerLogManager.openLog(TRIGGER_LOG_PREFIX +identifier,ReadMarker.fromNow());
+        return TRIGGER_LOG_PREFIX +identifier;
     }
 
     public KCVSConfiguration getGlobalSystemConfig() {
@@ -328,6 +332,10 @@ public class Backend implements LockerProvider {
         return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
+    public LogManager getLogManager(String logName) {
+        return getLogManager(configuration, logName, storeManager);
+    }
+
     public static LogManager getLogManager(Configuration config, String logName, KeyColumnValueStoreManager sm) {
         Configuration logConfig = config.restrictTo(logName);
         String backend = logConfig.get(LOG_BACKEND);
@@ -339,7 +347,7 @@ public class Backend implements LockerProvider {
 
     }
 
-    public final static LogManager getLogManager(Configuration config) {
+    private final static LogManager getLogManager(Configuration config) {
         Preconditions.checkArgument(config!=null);
         LogManager lm = getImplementationClass(config,config.get(LOG_BACKEND),REGISTERED_LOG_MANAGERS);
         Preconditions.checkNotNull(lm);
