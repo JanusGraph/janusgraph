@@ -66,7 +66,7 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
 
     private Map<ModifierType, Object> modifierTypes = null;
 
-    public Object getTypeModifier(final ModifierType modifierType) {
+    public<T> T getTypeModifier(final ModifierType modifierType) {
         if (null == modifierTypes) {
             modifierTypes = new HashMap<ModifierType, Object>();
         }
@@ -79,7 +79,7 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
             }
         }
 
-        return value;
+        return (T)value;
     }
 
     public InternalRelationType getBaseType() {

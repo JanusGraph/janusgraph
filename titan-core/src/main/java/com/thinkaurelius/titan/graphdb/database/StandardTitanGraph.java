@@ -388,7 +388,16 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry.getColumn());
                 }
             }
-            indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
+            Collection<IndexSerializer.IndexUpdate> updates = indexSerializer.getIndexUpdates(add);
+            Integer ttl = ((InternalRelationType)add.getType()).getTypeModifier(ModifierType.TTL);
+            if (null != ttl && ttl > 0) {
+                for (IndexSerializer.IndexUpdate update : updates) {
+                    if (update.isAddition() && update.isCompositeIndex()) {
+                        ((StaticArrayEntry)update.getEntry()).setMetaData(EntryMetaData.TTL,ttl);
+                    }
+                }
+            }
+            indexUpdates.addAll(updates);
         }
 
         //3) Collect all index update for vertices
