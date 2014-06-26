@@ -84,4 +84,15 @@ public class ReadMarker {
         return new ReadMarker(id, timestamp, unit);
     }
 
+    /**
+     * Like {@link #fromIdentifierOrTime(String, long, java.util.concurrent.TimeUnit)} but uses the current time point
+     * as the starting timestamp if the log has no record of the id.
+     *
+     * @param id
+     * @return
+     */
+    public static ReadMarker fromIdentifierOrNow(String id) {
+        return new ReadMarker(id, Timestamps.MICRO.getTime().getTimestamp(TimeUnit.MICROSECONDS), TimeUnit.MICROSECONDS);
+    }
+
 }
