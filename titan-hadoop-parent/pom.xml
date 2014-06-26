@@ -10,6 +10,7 @@
     <name>Titan-Hadoop-Parent: Distributed Graph Processing</name>
     <packaging>pom</packaging>
     <url>http://thinkaurelius.github.com/titan/</url>
+
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
         <skipCassandra>true</skipCassandra>
@@ -18,6 +19,7 @@
     </properties>
 
     <modules>
+        <module>titan-hadoop-core</module>
         <module>titan-hadoop-1</module>
         <module>titan-hadoop-2</module>
     </modules>
@@ -62,8 +64,17 @@
 
         <dependency>
             <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase</artifactId>
-            <version>0.94.12</version>
+            <artifactId>hbase-client</artifactId>
+            <version>0.98.3-hadoop2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Need this for compile-time imports on
+             org.apache.hadoop.hbase.mapreduce -->
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>0.98.3-hadoop2</version>
             <scope>provided</scope>
         </dependency>
 
@@ -139,6 +150,30 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>unpack-common-test-classes</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>unpack</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>titan-hadoop-core</artifactId>
+                                        <version>${project.version}</version>
+                                        <classifier>tests</classifier>
+                                        <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
                     <artifactId>maven-assembly-plugin</artifactId>
                     <executions>
                         <execution>
@@ -173,6 +208,7 @@
                         </execution>
                     </executions>
                 </plugin>
+
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-failsafe-plugin</artifactId>
