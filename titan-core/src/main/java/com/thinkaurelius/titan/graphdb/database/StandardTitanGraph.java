@@ -420,6 +420,9 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             for (InternalRelation edge : edges) {
                 InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
+
+                Integer ttl = (Integer) baseType.getTypeModifier(ModifierType.TTL);
+
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
@@ -428,7 +431,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                         if (edge.getVertex(pos).getID()==vertexid) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
 
-                            Integer ttl = (Integer) type.getTypeModifier(ModifierType.TTL);
                             if (null != ttl && ttl > 0) {
                                 entry.setMetaData(EntryMetaData.TTL, ttl);
                             }

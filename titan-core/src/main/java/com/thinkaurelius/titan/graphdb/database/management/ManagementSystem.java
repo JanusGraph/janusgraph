@@ -600,6 +600,12 @@ public class ManagementSystem implements TitanManagement {
 
         TitanSchemaVertex typeVertex = ((TitanSchemaVertex) type);
 
+        Object existingValue = getTypeModifier(type, modifierType);
+        if (null != existingValue && existingValue.equals(value)) {
+            // Type modifier is already set to the appropriate value
+            return;
+        }
+
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(cat, value);
         TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.TYPE_MODIFIER, null, def);

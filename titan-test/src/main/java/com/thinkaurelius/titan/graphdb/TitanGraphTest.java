@@ -3544,15 +3544,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             return;
         }
 
-        TitanManagement tm = graph.getManagementSystem();
-        EdgeLabel label1 = tm.makeEdgeLabel("likes").make();
+        EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
         int ttl2 = 2;
-        tm.setTypeModifier(label1, ModifierType.TTL, ttl1);
-        EdgeLabel label2 = tm.makeEdgeLabel("dislikes").make();
-        tm.setTypeModifier(label2, ModifierType.TTL, ttl2);
-        EdgeLabel label3 = tm.makeEdgeLabel("indifferentTo").make();
-        tm.commit();
+        mgmt.setTypeModifier(label1, ModifierType.TTL, ttl1);
+        EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
+        mgmt.setTypeModifier(label2, ModifierType.TTL, ttl2);
+        EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
+        mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
 
@@ -3592,10 +3591,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTtlWithTransactions() throws Exception {
-        TitanManagement tm = graph.getManagementSystem();
-        EdgeLabel label1 = tm.makeEdgeLabel("likes").make();
-        tm.setTypeModifier(label1, ModifierType.TTL, 1);
-        tm.commit();
+        EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTypeModifier(label1, ModifierType.TTL, 1);
+        mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
@@ -3625,13 +3623,42 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testTtlWithKeyIndices() throws Exception {
-        TitanManagement tm = graph.getManagementSystem();
-        PropertyKey edgeName = tm.makePropertyKey("edge-name").dataType(String.class).make();
-        tm.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
-        EdgeLabel label = tm.makeEdgeLabel("likes").make();
-        tm.setTypeModifier(label, ModifierType.TTL, 1);
-        tm.commit();
+    public void testTtlWithVertexCentricIndex() throws Exception {
+        int ttl = 1; // artificially low TTL for test
+
+        final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
+        EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
+        mgmt.createEdgeIndex(wavedAt,"timeindex", Direction.BOTH,Order.DESC,time);
+        mgmt.setTypeModifier(wavedAt, ModifierType.TTL, ttl);
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+        Edge e1 = graph.addEdge(null, v1, v2, "wavedAt");
+        e1.setProperty("time", 42);
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+
+        graph.commit();
+        long commitTime = System.currentTimeMillis();
+
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+
+        Thread.sleep(commitTime + (ttl * 1000L + 100) - System.currentTimeMillis());
+        graph.rollback();
+
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(v1.query().direction(Direction.OUT).interval("time", 0, 100).edges().iterator().hasNext());
+    }
+
+    @Test
+    public void testTtlWithCompositeIndex() throws Exception {
+        PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
+        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
+        EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTypeModifier(label, ModifierType.TTL, 1);
+        mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
 
