@@ -28,7 +28,7 @@ public interface InternalRelationType extends RelationType, InternalVertex {
 
     public ConsistencyModifier getConsistencyModifier();
 
-    public Object getTypeModifier(ModifierType modifierType);
+    public<T> T getTypeModifier(ModifierType modifierType);
 
     public boolean isUnidirected(Direction dir);
 
