@@ -406,6 +406,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         //3) Collect all index update for vertices
         for (InternalVertex v : mutatedProperties.keySet()) {
+            // TODO: check for vertex label TTL
             indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutatedProperties.get(v)));
         }
         //4) Acquire index locks (deletions first)
