@@ -54,7 +54,7 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
         return Collections.EMPTY_LIST;
     }
 
-    public<T> T getTypeModifier(ModifierType modifierType) {
-        return null;
+    public Integer getTtl() {
+        return 0;
     }
 }

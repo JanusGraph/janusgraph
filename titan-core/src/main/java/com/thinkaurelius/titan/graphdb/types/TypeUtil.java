@@ -16,6 +16,7 @@ import java.util.Set;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class TypeUtil {
 
@@ -72,15 +73,24 @@ public class TypeUtil {
         return indexes;
     }
 
-    public static ConsistencyModifier getConsistencyModifier(SchemaSource schema) {
-        SchemaSource.Entry entry = Iterables.getFirst(schema.getRelated(TypeDefinitionCategory.CONSISTENCY_MODIFIER, Direction.OUT), null);
-        if (entry==null) return ConsistencyModifier.DEFAULT;
-        else return entry.getSchemaType().getDefinition().getValue(TypeDefinitionCategory.CONSISTENCY_LEVEL,ConsistencyModifier.class);
+    private static <T> T getTypeModifier(final SchemaSource schema,
+                                         final ModifierType modifierType,
+                                         final T defaultValue) {
+        for (SchemaSource.Entry entry : schema.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT)) {
+            T value = entry.getSchemaType().getDefinition().getValue(modifierType.getCategory());
+            if (null != value) {
+                return value;
+            }
+        }
+
+        return defaultValue;
     }
 
-    public static Object getTypeModifier(final SchemaSource schema,
-                                  final ModifierType modifierType) {
-        SchemaSource.Entry entry = Iterables.getFirst(schema.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT), null);
-        return (null == entry) ? null : entry.getSchemaType().getDefinition().getValue(modifierType.getCategory());
+    public static ConsistencyModifier getConsistencyModifier(SchemaSource schema) {
+        return getTypeModifier(schema, ModifierType.CONSISTENCY, ConsistencyModifier.DEFAULT);
+    }
+
+    public static Integer getTtl(final SchemaSource schema) {
+        return getTypeModifier(schema, ModifierType.TTL, 0);
     }
 }

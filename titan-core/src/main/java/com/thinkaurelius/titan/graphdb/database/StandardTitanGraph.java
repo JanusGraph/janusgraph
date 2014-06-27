@@ -389,7 +389,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 }
             }
             Collection<IndexSerializer.IndexUpdate> updates = indexSerializer.getIndexUpdates(add);
-            Integer ttl = ((InternalRelationType)add.getType()).getTypeModifier(ModifierType.TTL);
+            Integer ttl = ((InternalRelationType)add.getType()).getTtl();
             if (null != ttl && ttl > 0) {
                 for (IndexSerializer.IndexUpdate update : updates) {
                     if (update.isAddition() && update.isCompositeIndex()) {
@@ -430,7 +430,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
 
-                Integer ttl = (Integer) baseType.getTypeModifier(ModifierType.TTL);
+                Integer ttl = baseType.getTtl();
 
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;

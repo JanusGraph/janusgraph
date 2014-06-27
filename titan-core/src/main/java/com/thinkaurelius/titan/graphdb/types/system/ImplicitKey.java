@@ -14,6 +14,8 @@ import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 import static com.thinkaurelius.titan.graphdb.internal.Token.*;
@@ -89,8 +91,11 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                     return (O) new StandardTimestamp(time, unit);
                 } else {
                     assert this==TTL;
-                    Integer time = r.getPropertyDirect(this);
-                    return null == time ? null : (O) new StandardDuration(time, TimeUnit.SECONDS);
+                    Integer ttl = TypeUtil.getTtl((TitanSchemaVertex) r.getType());
+                    if (null == ttl) {
+                        ttl = 0;
+                    }
+                    return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
                 }
             } else {
                 return null;

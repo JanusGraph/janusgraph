@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Decimal;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.attribute.Geoshape;
 import com.thinkaurelius.titan.core.attribute.Precision;
 import com.thinkaurelius.titan.core.attribute.Cmp;
@@ -31,6 +32,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
@@ -71,7 +73,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.tinkerpop.blueprints.Direction.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+/**
+ * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Joshua Shinavier (http://fortytwo.net)
+ */
 public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     private Logger log = LoggerFactory.getLogger(TitanGraphTest.class);
@@ -3547,9 +3554,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         int ttl1 = 1;
         int ttl2 = 2;
-        mgmt.setTypeModifier(label1, ModifierType.TTL, ttl1);
+        mgmt.setTtl(label1, ttl1);
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
-        mgmt.setTypeModifier(label2, ModifierType.TTL, ttl2);
+        mgmt.setTtl(label2, ttl2);
         EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
         mgmt.commit();
 
@@ -3591,8 +3598,12 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTtlWithTransactions() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTypeModifier(label1, ModifierType.TTL, 1);
+        mgmt.setTtl(label1, 1);
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3624,12 +3635,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTtlWithVertexCentricIndex() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
         int ttl = 1; // artificially low TTL for test
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.createEdgeIndex(wavedAt,"timeindex", Direction.BOTH,Order.DESC,time);
-        mgmt.setTypeModifier(wavedAt, ModifierType.TTL, ttl);
+        mgmt.setTtl(wavedAt, ttl);
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3654,10 +3669,14 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testTtlWithCompositeIndex() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
         PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
         mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
-        mgmt.setTypeModifier(label, ModifierType.TTL, 1);
+        mgmt.setTtl(label, 1);
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3677,5 +3696,34 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // the edge is gone not only from its previous endpoints, but also from key indices
         assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
         assertFalse(graph.getEdges("edge-name", "v1-likes-v2").iterator().hasNext());
+    }
+
+    @Test
+    public void testGetTtlImplicitKey() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        clopen(option(GraphDatabaseConfiguration.STORE_META_TTL, "edgestore"), true);
+
+        assertEquals("$ttl", ImplicitKey.TTL.getName());
+
+        int ttl = 24*60*60;
+        EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
+        EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
+        mgmt.setTtl(likes, ttl);
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
+
+        Edge e1 = graph.addEdge(null, v1, v2, "likes");
+        Edge e2 = graph.addEdge(null, v1, v2, "hasLiked");
+        graph.commit();
+
+        Duration d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        d = e2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
     }
 }

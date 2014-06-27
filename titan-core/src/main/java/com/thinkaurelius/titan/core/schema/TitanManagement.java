@@ -230,22 +230,11 @@ public interface TitanManagement extends TitanConfiguration {
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency);
 
     /**
-     * Sets the given {@link com.thinkaurelius.titan.core.schema.ModifierType}
-     * for the given {@link com.thinkaurelius.titan.core.schema.TitanSchemaType}.
-     * @param type
-     * @param modifierType
-     * @return
+     * Sets the time-to-live for the given {@link com.thinkaurelius.titan.core.schema.TitanSchemaType}
+     * @param type the affected type
+     * @param ttl time-to-live, in seconds
      */
-    public Object getTypeModifier(TitanSchemaType type, ModifierType modifierType);
-
-    /**
-     * Sets the value of the given {@link com.thinkaurelius.titan.core.schema.ModifierType}
-     * for the given {@link com.thinkaurelius.titan.core.schema.TitanSchemaType}.
-     * @param type
-     * @param modifierType
-     * @param value
-     */
-    public void setTypeModifier(TitanSchemaType type, ModifierType modifierType, Object value);
+    public void setTtl(TitanSchemaType type, int ttl);
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

@@ -64,22 +64,15 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
         return consistency;
     }
 
-    private Map<ModifierType, Object> modifierTypes = null;
+    private Integer ttl = null;
 
-    public<T> T getTypeModifier(final ModifierType modifierType) {
-        if (null == modifierTypes) {
-            modifierTypes = new HashMap<ModifierType, Object>();
+    @Override
+    public Integer getTtl() {
+        if (null == ttl) {
+            ttl = TypeUtil.getTtl(this);
         }
 
-        Object value = modifierTypes.get(modifierType);
-        if (null == value) {
-            value = TypeUtil.getTypeModifier(this, modifierType);
-            if (null != value) {
-                modifierTypes.put(modifierType, value);
-            }
-        }
-
-        return (T)value;
+        return ttl;
     }
 
     public InternalRelationType getBaseType() {

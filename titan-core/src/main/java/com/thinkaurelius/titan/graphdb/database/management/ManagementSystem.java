@@ -5,15 +5,36 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.Order;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanEdge;
+import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.core.TitanVertex;
+import com.thinkaurelius.titan.core.VertexLabel;
+import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
+import com.thinkaurelius.titan.core.schema.EdgeLabelMaker;
+import com.thinkaurelius.titan.core.schema.ModifierType;
+import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.schema.PropertyKeyMaker;
+import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.TitanConfiguration;
+import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
+import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.schema.TitanSchemaElement;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
+import com.thinkaurelius.titan.core.schema.VertexLabelMaker;
 import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.configuration.*;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.TransactionalConfiguration;
+import com.thinkaurelius.titan.diskstorage.configuration.UserModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-
-import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
-
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
@@ -22,29 +43,43 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.internal.Token;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.*;
+import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
+import com.thinkaurelius.titan.graphdb.types.IndexField;
+import com.thinkaurelius.titan.graphdb.types.IndexType;
+import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
+import com.thinkaurelius.titan.graphdb.types.ParameterType;
+import com.thinkaurelius.titan.graphdb.types.SchemaSource;
+import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
+import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
+import com.thinkaurelius.titan.graphdb.types.StandardRelationTypeMaker;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
+import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 import com.tinkerpop.blueprints.Direction;
-import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Element;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
+import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static com.thinkaurelius.titan.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
+
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
+ * @author Joshua Shinavier (http://fortytwo.net)
  */
 public class ManagementSystem implements TitanManagement {
 
@@ -545,65 +580,73 @@ public class ManagementSystem implements TitanManagement {
      */
     @Override
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency) {
-        Preconditions.checkArgument(consistency!=null);
-        if (getConsistency(element)==consistency) return; //Already got the right consistency
-        TitanSchemaVertex vertex;
-        if (element instanceof RelationType) {
-            vertex = (RelationTypeVertex)element;
-            Preconditions.checkArgument(consistency!=ConsistencyModifier.FORK || !((RelationTypeVertex)vertex).getMultiplicity().isConstrained(),
-                    "Cannot apply FORK consistency mode to constraint relation type: %s",vertex.getName());
-        } else if (element instanceof TitanGraphIndex) {
-            IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
-            if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
-            assert index instanceof IndexTypeWrapper;
-            SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
-            assert base instanceof TitanSchemaVertex;
-            vertex = (TitanSchemaVertex)base;
-        } else throw new IllegalArgumentException("Cannot change consistency of schema element: "+element);
-
-        for (TitanEdge edge : vertex.getEdges(TypeDefinitionCategory.CONSISTENCY_MODIFIER,Direction.OUT)) {
-            edge.remove();
-            edge.getVertex(Direction.IN).remove();
-        }
-
-        TypeDefinitionMap def = new TypeDefinitionMap();
-        def.setValue(TypeDefinitionCategory.CONSISTENCY_LEVEL,consistency);
-        TitanSchemaVertex cVertex = transaction.makeSchemaVertex(TitanSchemaCategory.MODIFIER,null,def);
-        addSchemaEdge(vertex,cVertex,TypeDefinitionCategory.CONSISTENCY_MODIFIER,null);
-        updatedTypes.add(vertex);
+        setTypeModifier(element, ModifierType.CONSISTENCY, consistency);
     }
 
+    /**
+     * Sets time-to-live for those schema types that support it
+     * @param element
+     * @param ttl time-to-live, in seconds
+     */
     @Override
-    public Object getTypeModifier(final TitanSchemaType type,
-                                  final ModifierType modifierType) {
-        for (TitanEdge titanEdge : ((TitanSchemaVertex) type).getEdges(modifierType.getCategory(), Direction.OUT)) {
-            TitanSchemaVertex v = (TitanSchemaVertex) titanEdge.getVertex(Direction.IN);
-
-            TypeDefinitionMap def = v.getDefinition();
-            Object value = def.getValue(modifierType.getCategory());
-            if (null != value) {
-                return value;
-            }
-        }
-
-        return null;
+    public void setTtl(final TitanSchemaType element,
+                       final int ttl) {
+        setTypeModifier(element, ModifierType.TTL, ttl);
     }
 
-    @Override
-    public void setTypeModifier(final TitanSchemaType type,
-                                final ModifierType modifierType,
-                                final Object value) {
+    private void setTypeModifier(final TitanSchemaElement element,
+                                 final ModifierType modifierType,
+                                 final Object value) {
+        Preconditions.checkArgument(element != null, "null schema element");
+        Preconditions.checkArgument(value != null, "null value for type modifier " + modifierType);
+
         TypeDefinitionCategory cat = modifierType.getCategory();
         if (cat.hasDataType()) {
             Preconditions.checkArgument(cat.getDataType().isAssignableFrom(value.getClass()), "modifier value is not of expected type " + cat.getDataType());
         }
 
-        TitanSchemaVertex typeVertex = ((TitanSchemaVertex) type);
+        TitanSchemaVertex typeVertex;
 
-        Object existingValue = getTypeModifier(type, modifierType);
-        if (null != existingValue && existingValue.equals(value)) {
-            // Type modifier is already set to the appropriate value
-            return;
+        switch (modifierType) {
+            case CONSISTENCY:
+                if (element instanceof RelationType) {
+                    typeVertex = (RelationTypeVertex) element;
+                    Preconditions.checkArgument(value != ConsistencyModifier.FORK || !((RelationTypeVertex) typeVertex).getMultiplicity().isConstrained(),
+                            "Cannot apply FORK consistency mode to constraint relation type: %s",typeVertex.getName());
+                } else if (element instanceof TitanGraphIndex) {
+                    IndexType index = ((TitanGraphIndexWrapper)element).getBaseIndex();
+                    if (index.isMixedIndex()) throw new IllegalArgumentException("Cannot change consistency on an external index: " + element);
+                    assert index instanceof IndexTypeWrapper;
+                    SchemaSource base = ((IndexTypeWrapper)index).getSchemaBase();
+                    assert base instanceof TitanSchemaVertex;
+                    typeVertex = (TitanSchemaVertex)base;
+                } else throw new IllegalArgumentException("Cannot change consistency of schema element: "+element);
+                break;
+            case TTL:
+                if (element instanceof TitanSchemaVertex) {
+                    typeVertex = ((TitanSchemaVertex) element);
+                } else {
+                    throw new IllegalArgumentException("can't set TTL of schema element: " + element);
+                }
+                break;
+            default:
+                throw new IllegalStateException("unexpected modifier type: " + modifierType);
+        }
+
+        // remove any pre-existing value for the modifier, or return if an identical value has already been set
+        for (TitanEdge e : typeVertex.getEdges(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT)) {
+            TitanSchemaVertex v = (TitanSchemaVertex) e.getVertex(Direction.IN);
+
+            TypeDefinitionMap def = v.getDefinition();
+            Object existingValue = def.getValue(modifierType.getCategory());
+            if (null != existingValue) {
+                if (existingValue.equals(value)) {
+                    return;
+                } else {
+                    v.remove();
+                    e.remove();
+                }
+            }
         }
 
         TypeDefinitionMap def = new TypeDefinitionMap();
