@@ -153,6 +153,24 @@
                     <artifactId>maven-dependency-plugin</artifactId>
                     <executions>
                         <execution>
+                            <id>unpack-shared-resources</id>
+                            <phase>generate-resources</phase>
+                            <goals>
+                                <goal>unpack</goal>
+                            </goals>
+                            <configuration>
+                                <artifactItems>
+                                    <artifactItem>
+                                        <groupId>${project.groupId}</groupId>
+                                        <artifactId>titan-hadoop-core</artifactId>
+                                        <version>${project.version}</version>
+                                        <classifier>shared-resources</classifier>
+                                        <outputDirectory>${project.build.directory}/shared-resources</outputDirectory>
+                                    </artifactItem>
+                                </artifactItems>
+                            </configuration>
+                        </execution>
+                        <execution>
                             <id>unpack-common-test-classes</id>
                             <phase>process-test-classes</phase>
                             <goals>
@@ -166,8 +184,31 @@
                                         <version>${project.version}</version>
                                         <classifier>tests</classifier>
                                         <outputDirectory>${project.build.directory}/test-classes</outputDirectory>
+                                        <excludes>META-INF</excludes>
                                     </artifactItem>
                                 </artifactItems>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>filter-shared-resources</id>
+                            <phase>process-resources</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                                <resources>
+                                    <resource>
+                                        <directory>${project.build.directory}/shared-resources</directory>
+                                        <filtering>true</filtering>
+                                    </resource>
+                                </resources>
                             </configuration>
                         </execution>
                     </executions>
@@ -185,7 +226,7 @@
                             <configuration>
                                 <attach>true</attach>
                                 <descriptors>
-                                    <descriptor>${project.basedir}/../hadoop-job.xml</descriptor>
+                                    <descriptor>${project.build.directory}/shared-resources/hadoop-job.xml</descriptor>
                                 </descriptors>
                                 <finalName>${project.artifactId}-${project.version}</finalName>
                             </configuration>
@@ -293,6 +334,26 @@
                         </execution>
                     </executions>
                 </plugin>
+
+                <!--
+                <plugin>
+                    <artifactId>maven-remote-resources-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>unpack-common-test-classes</id>
+                            <phase>process-test-classes</phase>
+                            <goals>
+                                <goal>process</goal>
+                            </goals>
+                            <configuration>
+                                <resourceBundles>
+                                    <resourceBundle>${project.groupId}:shared-resources:${project.version}</resourceBundle>
+                                </resourceBundles>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                -->
             </plugins>
         </pluginManagement>
     </build>

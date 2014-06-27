@@ -1,0 +1,14 @@
+<assembly>
+    <id>shared-resources</id>
+    <formats>
+        <format>jar</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <outputDirectory>/</outputDirectory>
+            <directory>${project.basedir}/src/assembly/shared-resources</directory>
+            <filtered>false</filtered>
+        </fileSet>
+    </fileSets>
+</assembly>
