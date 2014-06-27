@@ -61,12 +61,15 @@
         <titan.compatible.versions>0.5.0-SNAPSHOT</titan.compatible.versions>
         <tinkerpop.version>2.5.0</tinkerpop.version>
         <junit.version>4.11</junit.version>
-        <cassandra.version>2.0.7</cassandra.version>
+        <mrunit.version>1.1.0</mrunit.version>
+        <cassandra.version>2.0.8</cassandra.version>
         <metrics2.version>2.1.2</metrics2.version>
         <metrics3.version>3.0.1</metrics3.version>
         <sesame.version>2.7.10</sesame.version>
         <slf4j.version>1.7.5</slf4j.version>
         <httpcomponents.version>4.2.5</httpcomponents.version>
+        <hadoop1.version>1.2.1</hadoop1.version>
+        <hadoop2.version>2.2.0</hadoop2.version>
         <jackson1.version>1.9.2</jackson1.version>
         <jackson2.version>2.1.2</jackson2.version>
         <commons.beanutils.version>1.7.0</commons.beanutils.version>
@@ -434,7 +437,7 @@
             <dependency>
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
-                <version>1.12</version>
+                <version>1.11</version>
             </dependency>
             <dependency>
                 <groupId>org.reflections</groupId>

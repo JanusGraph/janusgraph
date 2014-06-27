@@ -12,10 +12,7 @@
     
     <properties>
         <hadoop.profile>2.0</hadoop.profile>
-        <hadoop.version>2.2.0</hadoop.version>
-        <hbase.version.base>0.96.1.1</hbase.version.base>
-        <hbase.version>${hbase.version.base}-hadoop2</hbase.version>
-        <!-- <hadoop.version>2.2.0</hadoop.version> -->
+        <hbase096.version.base>0.96.1.1</hbase096.version.base>
         <jruby.version>1.6.8</jruby.version>
         <top.level.basedir>${project.parent.parent.basedir}</top.level.basedir>
     </properties>
@@ -118,8 +115,8 @@
             </activation>
             
             <properties>
-                <hbase.version>${hbase.version.base}-hadoop1</hbase.version>
-                <hadoop.version>1.0.4</hadoop.version>
+                <hbase.version>${hbase096.version.base}-hadoop1</hbase.version>
+                <hadoop.version>${hadoop1.version}</hadoop.version>
             </properties>
 
             <build>
@@ -182,6 +179,11 @@
                     <value>2.0</value>
                 </property>
             </activation>
+
+            <properties>
+                <hbase.version>${hbase096.version.base}-hadoop2</hbase.version>
+                <hadoop.version>${hadoop2.version}</hadoop.version>
+            </properties>
 
             <dependencies>
                 <dependency>
