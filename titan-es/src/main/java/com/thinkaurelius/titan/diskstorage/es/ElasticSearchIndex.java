@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
@@ -53,9 +54,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -266,10 +265,19 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public XContentBuilder getContent(List<IndexEntry> additions) throws StorageException {
+    public XContentBuilder getContent(final List<IndexEntry> additions) throws StorageException {
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
-            for (IndexEntry add : additions) {
+
+            // JSON writes duplicate fields one after another, which forces us
+            // at this stage to make de-duplication on the IndexEntry list. We don't want to pay the
+            // price map storage on the Mutation level because non of other backends need that.
+            Map<String, IndexEntry> uniq = new HashMap<String, IndexEntry>(additions.size()) {{
+                for (IndexEntry e : additions)
+                    put(e.field, e);
+            }};
+
+            for (IndexEntry add : uniq.values()) {
                 if (add.value instanceof Number) {
                     if (AttributeUtil.isWholeNumber((Number) add.value)) {
                         builder.field(add.field, ((Number) add.value).longValue());
@@ -339,6 +347,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                 log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
                             brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
+                            bulkrequests++;
                         }
                     }
                     if (mutation.hasAdditions()) {
@@ -353,6 +362,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}", docid, needUpsert);
                             brb.add(update);
+                            bulkrequests++;
                         }
                     }
 
