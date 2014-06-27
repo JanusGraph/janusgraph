@@ -3772,6 +3772,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testGetTtlImplicitKey() throws Exception {
+        Duration d;
+
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3791,10 +3793,26 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         Edge e1 = graph.addEdge(null, v1, v2, "likes");
         Edge e2 = graph.addEdge(null, v1, v2, "hasLiked");
         graph.commit();
+        System.out.println("committed");
 
-        Duration d = e1.getProperty("$ttl");
+        // read from the edge created in this transaction
+// TODO: restore me
+//        d = e1.getProperty("$ttl");
+//        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        // get the edge via a vertex
+        e1 = v1.getEdges(Direction.OUT, "likes").iterator().next();
+        d = e1.getProperty("$ttl");
         assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
+        // returned value of $ttl is the total time to live since commit, not remaining time
+        Thread.sleep(1001);
+        graph.rollback();
+        e1 = v1.getEdges(Direction.OUT, "likes").iterator().next();
+        d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+
+        // no ttl on edges of this label
         d = e2.getProperty("$ttl");
         assertEquals(0, d.getLength(TimeUnit.SECONDS));
     }
