@@ -56,9 +56,11 @@ import com.thinkaurelius.titan.graphdb.types.StandardRelationTypeMaker;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionMap;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.indextype.IndexTypeWrapper;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
+import com.thinkaurelius.titan.graphdb.types.vertices.EdgeLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.PropertyKeyVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.RelationTypeVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
@@ -585,13 +587,19 @@ public class ManagementSystem implements TitanManagement {
 
     /**
      * Sets time-to-live for those schema types that support it
-     * @param element
+     * @param type
      * @param ttl time-to-live, in seconds
      */
     @Override
-    public void setTtl(final TitanSchemaType element,
+    public void setTtl(final TitanSchemaType type,
                        final int ttl) {
-        setTypeModifier(element, ModifierType.TTL, ttl);
+        if (type instanceof VertexLabelVertex) {
+            Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static before setting TTL");
+        } else {
+            Preconditions.checkArgument(type instanceof EdgeLabelVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
+        }
+        Preconditions.checkArgument(ttl > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
+        setTypeModifier(type, ModifierType.TTL, ttl);
     }
 
     private void setTypeModifier(final TitanSchemaElement element,

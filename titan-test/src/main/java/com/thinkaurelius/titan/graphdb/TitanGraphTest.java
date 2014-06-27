@@ -3618,7 +3618,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testTtlTiming() throws Exception {
+    public void testEdgeTtlTiming() throws Exception {
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3669,7 +3669,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testTtlWithTransactions() throws Exception {
+    public void testEdgeTtlWithTransactions() throws Exception {
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3706,7 +3706,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testTtlWithVertexCentricIndex() throws Exception {
+    public void testEdgeTtlWithVertexCentricIndex() throws Exception {
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3740,7 +3740,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testTtlWithCompositeIndex() throws Exception {
+    public void testEdgeTtlWithCompositeIndex() throws Exception {
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3771,6 +3771,40 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
+    public void testVertexTtl() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        VertexLabel label1 = mgmt.makeVertexLabel("event").make();
+        int ttl1 = 1;
+        mgmt.setTtl(label1, ttl1);
+        mgmt.commit();
+
+
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSettingTtlOnUnsupportedType() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey edgeName = mgmt.makePropertyKey("age").dataType(String.class).make();
+        mgmt.setTtl(edgeName, 42);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSettingTtlOnNonStaticVertexLabel() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        VertexLabel label1 = mgmt.makeVertexLabel("event").make();
+        mgmt.setTtl(label1, 42);
+    }
+
+    @Test
     public void testGetTtlImplicitKey() throws Exception {
         Duration d;
 
@@ -3796,9 +3830,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         System.out.println("committed");
 
         // read from the edge created in this transaction
-// TODO: restore me
-//        d = e1.getProperty("$ttl");
-//        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
+        d = e1.getProperty("$ttl");
+        assertEquals(86400, d.getLength(TimeUnit.SECONDS));
 
         // get the edge via a vertex
         e1 = v1.getEdges(Direction.OUT, "likes").iterator().next();
