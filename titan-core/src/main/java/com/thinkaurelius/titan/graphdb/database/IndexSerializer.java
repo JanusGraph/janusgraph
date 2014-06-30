@@ -202,6 +202,11 @@ public class IndexSerializer {
             return index.isMixedIndex();
         }
 
+        public void setTTL(int ttl) {
+            Preconditions.checkArgument(ttl>0 && mutationType==Type.ADD);
+            ((MetaAnnotatable)entry).setMetaData(EntryMetaData.TTL,ttl);
+        }
+
         @Override
         public int hashCode() {
             return new HashCodeBuilder().append(index).append(mutationType).append(key).append(entry).toHashCode();
@@ -231,25 +236,45 @@ public class IndexSerializer {
         assert relation.isNew() || relation.isRemoved();
         Set<IndexUpdate> updates = Sets.newHashSet();
         IndexUpdate.Type updateType = getUpateType(relation);
+        int ttl = updateType==IndexUpdate.Type.ADD?StandardTitanGraph.getTTL(relation):0;
         for (RelationType type : relation.getPropertyKeysDirect()) {
             if (!(type instanceof PropertyKey)) continue;
             PropertyKey key = (PropertyKey)type;
             for (IndexType index : ((InternalRelationType)key).getKeyIndexes()) {
                 if (!indexAppliesTo(index,relation)) continue;
+                IndexUpdate update;
                 if (index instanceof CompositeIndexType) {
                     CompositeIndexType iIndex= (CompositeIndexType) index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
                     RecordEntry[] record = indexMatch(relation, iIndex);
                     if (record==null) continue;
-                    updates.add(new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,relation), relation));
+                    update = new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,relation), relation);
                 } else {
                     assert relation.getProperty(key)!=null;
                     if (((MixedIndexType)index).getField(key).getStatus()== SchemaStatus.DISABLED) continue;
-                    updates.add(getMixedIndexUpdate(relation, key, relation.getProperty(key), (MixedIndexType) index, updateType));
+                    update = getMixedIndexUpdate(relation, key, relation.getProperty(key), (MixedIndexType) index, updateType);
                 }
+                if (ttl>0) update.setTTL(ttl);
+                updates.add(update);
             }
         }
         return updates;
+    }
+
+    private static PropertyKey[] getKeysOfRecords(RecordEntry[] record) {
+        PropertyKey[] keys = new PropertyKey[record.length];
+        for (int i=0;i<record.length;i++) keys[i]=record[i].key;
+        return keys;
+    }
+
+    private static int getIndexTTL(InternalVertex vertex, PropertyKey... keys) {
+        Integer ttl = ((InternalVertexLabel)vertex.getVertexLabel()).getTTL();
+        for (int i=0;i<keys.length;i++) {
+            PropertyKey key = keys[i];
+            Integer kttl = ((InternalRelationType)key).getTTL();
+            if (kttl>0 && (kttl<ttl || ttl<=0)) ttl=kttl;
+        }
+        return ttl;
     }
 
     public Collection<IndexUpdate> getIndexUpdates(InternalVertex vertex, Collection<InternalRelation> updatedProperties) {
@@ -266,13 +291,19 @@ public class IndexSerializer {
                 if (index.isCompositeIndex()) { //Gather composite indexes
                     CompositeIndexType iIndex = (CompositeIndexType)index;
                     if (iIndex.getStatus()== SchemaStatus.DISABLED) continue;
-                    IndexRecords updateRecords = indexMatches(vertex,iIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p.getID(),p.getValue()));
+                    IndexRecords updateRecords = indexMatches(vertex,iIndex,updateType==IndexUpdate.Type.DELETE,p.getPropertyKey(),new RecordEntry(p));
                     for (RecordEntry[] record : updateRecords) {
-                        updates.add(new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,vertex), vertex));
+                        IndexUpdate update = new IndexUpdate<StaticBuffer,Entry>(iIndex,updateType,getIndexKey(iIndex,record),getIndexEntry(iIndex,record,vertex), vertex);
+                        int ttl = getIndexTTL(vertex,getKeysOfRecords(record));
+                        if (ttl>0 && updateType== IndexUpdate.Type.ADD) update.setTTL(ttl);
+                        updates.add(update);
                     }
                 } else { //Update mixed indexes
                     if (((MixedIndexType)index).getField(p.getPropertyKey()).getStatus()== SchemaStatus.DISABLED) continue;
-                    updates.add(getMixedIndexUpdate(vertex, p.getPropertyKey(), p.getValue(), (MixedIndexType) index, updateType));
+                    IndexUpdate update = getMixedIndexUpdate(vertex, p.getPropertyKey(), p.getValue(), (MixedIndexType) index, updateType);
+                    int ttl = getIndexTTL(vertex,p.getPropertyKey());
+                    if (ttl>0 && updateType== IndexUpdate.Type.ADD) update.setTTL(ttl);
+                    updates.add(update);
                 }
             }
         }
@@ -291,7 +322,7 @@ public class IndexSerializer {
             IndexField f = fields[i];
             Object value = element.getProperty(f.getFieldKey());
             if (value==null) return null; //No match
-            match[i] = new RecordEntry(element.getID(),value);
+            match[i] = new RecordEntry(element.getID(),value,f.getFieldKey());
         }
         return match;
     }
@@ -326,10 +357,16 @@ public class IndexSerializer {
 
         final long relationId;
         final Object value;
+        final PropertyKey key;
 
-        private RecordEntry(long relationId, Object value) {
+        private RecordEntry(long relationId, Object value, PropertyKey key) {
             this.relationId = relationId;
             this.value = value;
+            this.key = key;
+        }
+
+        private RecordEntry(TitanProperty property) {
+            this(property.getID(),property.getValue(),property.getPropertyKey());
         }
     }
 
@@ -339,7 +376,7 @@ public class IndexSerializer {
         IndexField[] fields = index.getFieldKeys();
         if (indexAppliesTo(index,vertex)) {
             indexMatches((InternalVertex)vertex,new RecordEntry[fields.length],matches,fields,0,false,
-                                            replaceKey,new RecordEntry(0,replaceValue));
+                                            replaceKey,new RecordEntry(0,replaceValue,replaceKey));
         }
         return matches;
     }
@@ -371,7 +408,7 @@ public class IndexSerializer {
             if (onlyLoaded) qb.queryOnlyLoaded();
             for (TitanProperty p : qb.properties()) {
                 assert !onlyLoaded || p.isLoaded() || p.isRemoved();
-                values.add(new RecordEntry(p.getID(),p.getValue()));
+                values.add(new RecordEntry(p));
             }
         }
         for (RecordEntry value : values) {

@@ -82,7 +82,6 @@ public class TypeUtil {
                 return value;
             }
         }
-
         return defaultValue;
     }
 
@@ -90,7 +89,7 @@ public class TypeUtil {
         return getTypeModifier(schema, ModifierType.CONSISTENCY, ConsistencyModifier.DEFAULT);
     }
 
-    public static Integer getTtl(final SchemaSource schema) {
+    public static Integer getTTL(final SchemaSource schema) {
         return getTypeModifier(schema, ModifierType.TTL, 0);
     }
 }

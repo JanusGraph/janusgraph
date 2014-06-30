@@ -17,9 +17,7 @@ import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
-import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
-import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 import static com.thinkaurelius.titan.graphdb.internal.Token.*;
@@ -113,7 +111,7 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
                 return null;
             }
 
-            int ttl = TypeUtil.getTtl((TitanSchemaVertex) type);
+            int ttl = TypeUtil.getTTL((TitanSchemaVertex) type);
             return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
         } else throw new AssertionError("Implicit key property is undefined: " + this.getName());
     }

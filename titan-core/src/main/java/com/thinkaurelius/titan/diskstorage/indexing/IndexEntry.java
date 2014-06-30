@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import com.thinkaurelius.titan.diskstorage.MetaAnnotatable;
 import com.thinkaurelius.titan.diskstorage.MetaAnnotated;
 import org.apache.commons.lang.StringUtils;
 
@@ -13,7 +14,7 @@ import java.util.Map;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class IndexEntry implements MetaAnnotated {
+public class IndexEntry implements MetaAnnotated, MetaAnnotatable {
 
     public final String field;
     public final Object value;
@@ -31,6 +32,7 @@ public class IndexEntry implements MetaAnnotated {
 
     private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
 
+    @Override
     public synchronized Object setMetaData(EntryMetaData key, Object value) {
         if (metadata==EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
         return metadata.put(key,value);

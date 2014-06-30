@@ -3,6 +3,7 @@ package com.thinkaurelius.titan.diskstorage.util;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
+import com.thinkaurelius.titan.diskstorage.MetaAnnotatable;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
 import com.thinkaurelius.titan.graphdb.relations.RelationCache;
 
@@ -12,7 +13,7 @@ import java.util.Map;
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
+public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, MetaAnnotatable {
 
     public StaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array, offset, limit, valuePosition);
@@ -38,6 +39,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry {
 
     private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
 
+    @Override
     public synchronized Object setMetaData(EntryMetaData key, Object value) {
         if (metadata==EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
         return metadata.put(key,value);

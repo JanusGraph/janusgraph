@@ -54,7 +54,7 @@ public abstract class EmptyRelationType extends EmptyVertex implements InternalR
         return Collections.EMPTY_LIST;
     }
 
-    public Integer getTtl() {
+    public Integer getTTL() {
         return 0;
     }
 }

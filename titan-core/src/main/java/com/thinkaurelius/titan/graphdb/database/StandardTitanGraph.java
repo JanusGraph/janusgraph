@@ -9,7 +9,6 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
-import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
@@ -41,6 +40,7 @@ import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertexLabel;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
@@ -350,6 +350,28 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 && index.getCardinality()!= Cardinality.LIST;
     }
 
+    /**
+     * The TTL of a relation (edge or property) is the minimum of:
+     * 1) The TTL configured of the relation type (if exists)
+     * 2) The TTL configured for the label any of the relation end point vertices (if exists)
+     *
+     * @param rel relation to determine the TTL for
+     * @return
+     */
+    public static int getTTL(InternalRelation rel) {
+        InternalRelationType baseType = (InternalRelationType) rel.getType();
+        assert baseType.getBaseType()==null;
+        int ttl = 0;
+        Integer ettl = baseType.getTTL();
+        if (ettl>0) ttl = ettl;
+        for (int i=0;i<rel.getArity();i++) {
+            InternalVertex v = rel.getVertex(i);
+            Integer vttl = ((InternalVertexLabel)v.getVertexLabel()).getTTL();
+            if (vttl>0 && (vttl<ttl || ttl<=0)) ttl = vttl;
+        }
+        return ttl;
+    }
+
     public boolean prepareCommit(final Collection<InternalRelation> addedRelations,
                                      final Collection<InternalRelation> deletedRelations,
                                      final Predicate<InternalRelation> filter,
@@ -392,21 +414,11 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.acquireEdgeLock(idManager.getKey(vertex.getID()), entry.getColumn());
                 }
             }
-            Collection<IndexSerializer.IndexUpdate> updates = indexSerializer.getIndexUpdates(add);
-            Integer ttl = ((InternalRelationType)add.getType()).getTtl();
-            if (null != ttl && ttl > 0) {
-                for (IndexSerializer.IndexUpdate update : updates) {
-                    if (update.isAddition() && update.isCompositeIndex()) {
-                        ((StaticArrayEntry)update.getEntry()).setMetaData(EntryMetaData.TTL,ttl);
-                    }
-                }
-            }
-            indexUpdates.addAll(updates);
+            indexUpdates.addAll(indexSerializer.getIndexUpdates(add));
         }
 
         //3) Collect all index update for vertices
         for (InternalVertex v : mutatedProperties.keySet()) {
-            // TODO: check for vertex label TTL
             indexUpdates.addAll(indexSerializer.getIndexUpdates(v,mutatedProperties.get(v)));
         }
         //4) Acquire index locks (deletions first)
@@ -435,7 +447,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                 InternalRelationType baseType = (InternalRelationType) edge.getType();
                 assert baseType.getBaseType()==null;
 
-                Integer ttl = baseType.getTtl();
+                int ttl = getTTL(edge);
 
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus()== SchemaStatus.DISABLED) continue;
@@ -444,15 +456,13 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                             continue; //Directionality is not covered
                         if (edge.getVertex(pos).getID()==vertexid) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
-
-                            if (null != ttl && ttl > 0) {
-                                entry.setMetaData(EntryMetaData.TTL, ttl);
-                            }
-
                             if (edge.isRemoved()) {
                                 deletions.add(entry);
                             } else {
                                 Preconditions.checkArgument(edge.isNew());
+                                if (ttl > 0) {
+                                    entry.setMetaData(EntryMetaData.TTL, ttl);
+                                }
                                 additions.add(entry);
                             }
                         }

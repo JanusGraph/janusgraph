@@ -6,8 +6,6 @@ import com.google.common.collect.Iterables;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.Order;
-import com.thinkaurelius.titan.core.schema.ModifierType;
-import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
@@ -17,9 +15,7 @@ import com.thinkaurelius.titan.graphdb.types.TypeUtil;
 import com.tinkerpop.blueprints.Direction;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -67,11 +63,10 @@ public abstract class RelationTypeVertex extends TitanSchemaVertex implements In
     private Integer ttl = null;
 
     @Override
-    public Integer getTtl() {
+    public Integer getTTL() {
         if (null == ttl) {
-            ttl = TypeUtil.getTtl(this);
+            ttl = TypeUtil.getTTL(this);
         }
-
         return ttl;
     }
 
