@@ -39,6 +39,4 @@ public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel 
     public String toString() {
         return getName();
     }
-
-
 }

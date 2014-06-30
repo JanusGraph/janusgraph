@@ -3772,16 +3772,42 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
     @Test
     public void testVertexTtl() throws Exception {
+        Duration d;
+
         if (!features.hasCellTTL()) {
             return;
         }
 
-        VertexLabel label1 = mgmt.makeVertexLabel("event").make();
         int ttl1 = 1;
+        VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTtl(label1, ttl1);
         mgmt.commit();
 
+        Vertex v1 = tx.addVertex("event");
+        Vertex v2 = tx.addVertex();
+        tx.commit();
 
+        /* TODO: this fails
+        d = v1.getProperty("$ttl");
+        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        d = v2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+        */
+
+        Object v1id = v1.getId();
+        Object v2id = v2.getId();
+        v1 = graph.getVertex(v1id);
+        v2 = graph.getVertex(v2id);
+
+        d = v1.getProperty("$ttl");
+        assertEquals(1, d.getLength(TimeUnit.SECONDS));
+        d = v2.getProperty("$ttl");
+        assertEquals(0, d.getLength(TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testEdgeTtlMayNotExceedVertexTtl() throws Exception {
+        // TODO
     }
 
     @Test(expected = IllegalArgumentException.class)

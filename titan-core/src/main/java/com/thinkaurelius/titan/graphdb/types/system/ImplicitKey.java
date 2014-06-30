@@ -8,14 +8,18 @@ import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.internal.InternalElement;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
+import com.thinkaurelius.titan.graphdb.internal.InternalVertex;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeUtil;
+import com.thinkaurelius.titan.graphdb.types.VertexLabelVertex;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.graphdb.vertices.CacheVertex;
 import com.tinkerpop.blueprints.Direction;
 import org.apache.commons.lang.StringUtils;
 import static com.thinkaurelius.titan.graphdb.internal.Token.*;
@@ -79,30 +83,40 @@ public class ImplicitKey extends EmptyRelationType implements SystemRelationType
             } else {
                 return null;
             }
-        } else if (this==TIMESTAMP || this==VISIBILITY || this==TTL) {
+        } else if (this==TIMESTAMP || this==VISIBILITY) {
             if (e instanceof InternalRelation) {
                 InternalRelation r = (InternalRelation) e;
                 if (this==VISIBILITY) {
                     return r.getPropertyDirect(this);
-                } else if (this == TIMESTAMP) {
+                } else {
+                    assert this == TIMESTAMP;
                     Long time = r.getPropertyDirect(this);
                     if (time==null) return null; //there is no timestamp
                     TimeUnit unit = r.tx().getConfiguration().getTimestampProvider().getUnit();
                     return (O) new StandardTimestamp(time, unit);
-                } else {
-                    assert this==TTL;
-                    Integer ttl = TypeUtil.getTtl((TitanSchemaVertex) r.getType());
-                    if (null == ttl) {
-                        ttl = 0;
-                    }
-                    return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
                 }
+            } else {
+                System.out.println("not an InternalRelation: " + e + " (" + e.getClass() + ")");
+                return null;
+            }
+        } else if (this == TTL) {
+            TitanSchemaType type;
+            if (e instanceof InternalRelation) {
+                type = ((InternalRelation) e).getType();
+            } else if (e instanceof InternalVertex) {
+                VertexLabel label = ((InternalVertex) e).getVertexLabel();
+                if (label == BaseVertexLabel.DEFAULT_VERTEXLABEL) {
+                    return (O) new StandardDuration(0, TimeUnit.SECONDS);
+                }
+                type = label;
             } else {
                 return null;
             }
+
+            int ttl = TypeUtil.getTtl((TitanSchemaVertex) type);
+            return (O) new StandardDuration(ttl, TimeUnit.SECONDS);
         } else throw new AssertionError("Implicit key property is undefined: " + this.getName());
     }
-
 
     @Override
     public Class<?> getDataType() {
