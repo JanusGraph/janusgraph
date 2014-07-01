@@ -1,5 +1,6 @@
 package com.thinkaurelius.titan.hadoop;
 
+import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
 import com.thinkaurelius.titan.hadoop.formats.EdgeCopyMapReduce;
@@ -38,6 +39,7 @@ import com.tinkerpop.blueprints.Vertex;
 import com.tinkerpop.pipes.transform.TransformPipe;
 import com.tinkerpop.pipes.util.structures.Pair;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.FloatWritable;
@@ -48,6 +50,8 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.util.ToolRunner;
 import org.codehaus.groovy.jsr223.GroovyScriptEngineImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
@@ -68,6 +72,9 @@ import static com.tinkerpop.blueprints.Direction.*;
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
 public class HadoopPipeline {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(HadoopPipeline.class);
 
     // used to validate closure parse tree
     protected static final ScriptEngine engine = new GroovyScriptEngineImpl();
@@ -875,6 +882,8 @@ public class HadoopPipeline {
         this.state.assertNotLocked();
         this.state.assertNoProperty();
 
+        Preconditions.checkNotNull(direction);
+
         this.compiler.addMapReduce(LinkMapReduce.Map.class,
                 LinkMapReduce.Combiner.class,
                 LinkMapReduce.Reduce.class,
@@ -884,6 +893,8 @@ public class HadoopPipeline {
                 NullWritable.class,
                 HadoopVertex.class,
                 LinkMapReduce.createConfiguration(direction, label, this.state.getStep(step), mergeWeightKey));
+
+        log.debug("Added {} job with direction {}, label {}, step {}, merge weight key {}", LinkMapReduce.class.getSimpleName(), direction, label, step, mergeWeightKey);
 
         if (null != mergeWeightKey)
             makeMapReduceString(LinkMapReduce.class, direction.name(), label, step, mergeWeightKey);

@@ -15,9 +15,13 @@ import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import static com.tinkerpop.blueprints.Direction.IN;
 import static com.tinkerpop.blueprints.Direction.OUT;
@@ -139,9 +143,24 @@ public class LinkMapReduce {
 
         private Direction direction;
 
+        private static final Logger log =
+                LoggerFactory.getLogger(Combiner.class);
+
         @Override
         public void setup(final Reducer.Context context) throws IOException, InterruptedException {
-            this.direction = Direction.valueOf(context.getConfiguration().get(LinkMapReduce.DIRECTION));
+            String raw = context.getConfiguration().get(DIRECTION);
+            if (null == raw) {
+                Iterator<Entry<String, String>> it = context.getConfiguration().iterator();
+                log.error("Broken configuration missing {}", DIRECTION);
+                log.error("---- Start config dump ----");
+                while (it.hasNext()) {
+                    Entry<String,String> ent = it.next();
+                    log.error("k:{} -> v:{}", ent.getKey(), ent.getValue());
+                }
+                log.error("---- End config dump   ----");
+                throw new NullPointerException();
+            }
+            this.direction = Direction.valueOf(raw);
             this.direction = this.direction.opposite();
         }
 
