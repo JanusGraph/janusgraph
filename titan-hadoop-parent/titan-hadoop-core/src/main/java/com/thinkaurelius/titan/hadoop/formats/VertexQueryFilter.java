@@ -25,7 +25,7 @@ import java.util.Set;
 
 public class VertexQueryFilter extends DefaultVertexQuery {
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER = "titan.hadoop.graph.input.vertex-query-filter";
+    public static final String TITAN_HADOOP_GRAPH_INPUT_VERTEX_QUERY_FILTER = "titan.hadoop.input.vertex-query-filter";
 
     private static final GremlinGroovyScriptEngine engine = new GremlinGroovyScriptEngine();
     private static final String V = "v";
