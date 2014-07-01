@@ -345,6 +345,7 @@ public class ElasticSearchIndex implements IndexProvider {
                                 log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
                             brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
+                            bulkrequests++;
                         }
                     }
                     if (mutation.hasAdditions()) {
@@ -359,6 +360,7 @@ public class ElasticSearchIndex implements IndexProvider {
                             if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}", docid, needUpsert);
                             brb.add(update);
+                            bulkrequests++;
                         }
                     }
 
