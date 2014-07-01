@@ -66,10 +66,13 @@
                 <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
             <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
+                <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
