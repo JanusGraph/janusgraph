@@ -337,7 +337,6 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}", docid);
                             brb.add(new DeleteRequest(indexName, storename, docid));
-                            bulkrequests++;
                         } else {
                             StringBuilder script = new StringBuilder();
                             for (String key : Iterables.transform(mutation.getDeletions(),IndexMutation.ENTRY2FIELD_FCT)) {
@@ -345,14 +344,14 @@ public class ElasticSearchIndex implements IndexProvider {
                                 log.trace("Deleting individual field [{}] for document {}", key, docid);
                             }
                             brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
-                            bulkrequests++;
                         }
+
+                        bulkrequests++;
                     }
                     if (mutation.hasAdditions()) {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions())));
-                            bulkrequests++;
                         } else {
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
@@ -360,8 +359,9 @@ public class ElasticSearchIndex implements IndexProvider {
                             if (needUpsert) update.setUpsert(builder);
                             log.trace("Updating document {} with upsert {}", docid, needUpsert);
                             brb.add(update);
-                            bulkrequests++;
                         }
+
+                        bulkrequests++;
                     }
 
                 }
