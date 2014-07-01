@@ -6,6 +6,8 @@ import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.WritableComparable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +17,9 @@ import java.util.List;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 public abstract class HadoopPathElement extends HadoopElement implements WritableComparable<HadoopElement>, Configurable {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(HadoopPathElement.class);
 
     protected List<List<MicroElement>> paths = null;
     protected MicroElement microVersion = null;
@@ -37,6 +42,7 @@ public abstract class HadoopPathElement extends HadoopElement implements Writabl
     public void setConf(Configuration configuration) {
         this.configuration = configuration;
         this.trackPaths(configuration.getBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, false));
+        log.debug("Set trackPaths=" + this.trackPaths + " from config option " + Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS);
     }
 
     public Configuration getConf() {
