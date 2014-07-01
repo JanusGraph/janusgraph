@@ -318,7 +318,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
             "Either the package and classname of a StoreManager implementation or one of " +
             "Titan's built-in shorthand names for its standard storage backends.",
-            ConfigOption.Type.LOCAL, "local");
+            ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_BACKEND_KEY = "backend";
 //    public static final String STORAGE_BACKEND_DEFAULT = "local";
 
