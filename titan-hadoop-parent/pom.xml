@@ -13,7 +13,7 @@
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <skipCassandra>true</skipCassandra>
+        <skipCassandra>false</skipCassandra>
         <skipHBase>true</skipHBase>
         <skipPipeline>${skipTests}</skipPipeline>
     </properties>
