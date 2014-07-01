@@ -796,7 +796,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         // This method touches a single vertex with multiple transactions,
         // leading to deadlock under BDB and cascading test failures. Check for
         // the hasTxIsolation() store feature, which is currently true for BDB
-        // but false for HBase/Cassadra. This is kind of a hack; a more robust
+        // but false for HBase/Cassandra. This is kind of a hack; a more robust
         // approach might implement different methods/assertions depending on
         // whether the store is capable of deadlocking or detecting conflicting
         // writes and aborting a transaction.
