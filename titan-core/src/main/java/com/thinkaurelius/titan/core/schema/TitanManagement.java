@@ -234,7 +234,7 @@ public interface TitanManagement extends TitanConfiguration {
      * @param type the affected type
      * @param ttl time-to-live, in seconds
      */
-    public void setTtl(TitanSchemaType type, int ttl);
+    public void setTTL(TitanSchemaType type, int ttl);
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

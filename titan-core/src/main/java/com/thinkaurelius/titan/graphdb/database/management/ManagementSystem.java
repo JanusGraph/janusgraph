@@ -591,12 +591,12 @@ public class ManagementSystem implements TitanManagement {
      * @param ttl time-to-live, in seconds
      */
     @Override
-    public void setTtl(final TitanSchemaType type,
+    public void setTTL(final TitanSchemaType type,
                        final int ttl) {
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static before setting TTL");
         } else {
-            Preconditions.checkArgument(type instanceof EdgeLabelVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
+            Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
         Preconditions.checkArgument(ttl > 0, "ttl must be greater than 0 (default = 0 = unlimited)");
         setTypeModifier(type, ModifierType.TTL, ttl);
