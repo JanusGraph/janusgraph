@@ -58,6 +58,10 @@ public class TitanCassandraInputFormat extends TitanInputFormat {
         ConfigHelper.setInputInitialAddress(config, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
         if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
             ConfigHelper.setInputRpcPort(config, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
+        if (titanConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
+            ConfigHelper.setInputKeyspaceUserName(config, titanConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
+        if (titanConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
+            ConfigHelper.setInputKeyspacePassword(config, titanConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
         // TODO config.set("storage.read-only", "true");
         config.set("autotype", "none");
 
