@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.hadoop.HadoopProperty;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Holder;
 import com.thinkaurelius.titan.hadoop.Tokens;
+import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.titan.cassandra.TitanCassandraOutputFormat;
 import com.thinkaurelius.titan.hadoop.formats.titan.util.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
@@ -131,7 +132,8 @@ public class TitanGraphOutputMapReduce {
             } catch (final Exception e) {
                 if (this.graph instanceof TransactionalGraph) {
                     ((TransactionalGraph) this.graph).rollback();
-                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
                 throw new IOException(e.getMessage(), e);
             }
@@ -143,11 +145,13 @@ public class TitanGraphOutputMapReduce {
             if (this.graph instanceof TransactionalGraph) {
                 try {
                     ((TransactionalGraph) this.graph).commit();
-                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 } catch (Exception e) {
                     LOGGER.error("Could not commit transaction during Map.cleanup(): ", e);
                     ((TransactionalGraph) this.graph).rollback();
-                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                     throw new IOException(e.getMessage(), e);
                 }
             }
@@ -158,26 +162,31 @@ public class TitanGraphOutputMapReduce {
             if (this.trackState && hadoopVertex.isDeleted()) {
                 final Vertex titanVertex = this.graph.getVertex(hadoopVertex.getId());
                 if (null == titanVertex)
-                    context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
+                    //context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
                 else {
                     titanVertex.remove();
-                    context.getCounter(Counters.VERTICES_REMOVED).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_REMOVED, 1L);
+                    //context.getCounter(Counters.VERTICES_REMOVED).increment(1l);
                 }
                 return null;
             } else if (this.trackState && hadoopVertex.isLoaded()) {
                 final TitanVertex titanVertex = (TitanVertex) this.graph.getVertex(hadoopVertex.getId());
-                if (null == titanVertex)
-                    context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
-                else {
+                if (null == titanVertex) {
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
+                    //context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
+                } else {
                     for (final HadoopProperty hadoopProperty : hadoopVertex.getPropertiesWithState()) {
                         if (hadoopProperty.isNew()) {
                             titanVertex.addProperty(hadoopProperty.getName(), hadoopProperty.getValue());
-                            context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
+                            HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTIES_ADDED, 1L);
+                            //context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
                         } else if (hadoopProperty.isDeleted()) {
                             for (final TitanProperty titanProperty : titanVertex.getProperties(hadoopProperty.getName())) {
                                 if (titanProperty.getID() == hadoopProperty.getIdAsLong()) {
                                     titanProperty.remove();
-                                    context.getCounter(Counters.VERTEX_PROPERTIES_REMOVED).increment(1l);
+                                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTIES_REMOVED, 1L);
+                                    //context.getCounter(Counters.VERTEX_PROPERTIES_REMOVED).increment(1l);
                                 }
                             }
                         }
@@ -186,10 +195,12 @@ public class TitanGraphOutputMapReduce {
                 return titanVertex;
             } else {   // state == new || !trackState
                 final TitanVertex titanVertex = (TitanVertex) this.graph.addVertex(hadoopVertex.getId());
-                context.getCounter(Counters.VERTICES_ADDED).increment(1l);
+                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTICES_ADDED, 1L);
+                //context.getCounter(Counters.VERTICES_ADDED).increment(1l);
                 for (final HadoopProperty property : hadoopVertex.getProperties()) {
                     titanVertex.addProperty(property.getName(), property.getValue());
-                    context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.VERTEX_PROPERTIES_ADDED, 1L);
+                    //context.getCounter(Counters.VERTEX_PROPERTIES_ADDED).increment(1l);
                 }
                 return titanVertex;
             }
@@ -215,7 +226,8 @@ public class TitanGraphOutputMapReduce {
                 context.write(NullWritable.get(), hadoopVertex);
             } else {
                 LOGGER.warn("No source vertex: hadoopVertex[" + key.get() + "]");
-                context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
+                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.NULL_VERTICES_IGNORED, 1L);
+                //context.getCounter(Counters.NULL_VERTICES_IGNORED).increment(1l);
             }
         }
     }
@@ -242,7 +254,8 @@ public class TitanGraphOutputMapReduce {
             } catch (final Exception e) {
                 if (this.graph instanceof TransactionalGraph) {
                     ((TransactionalGraph) this.graph).rollback();
-                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                 }
                 throw new IOException(e.getMessage(), e);
             }
@@ -253,11 +266,13 @@ public class TitanGraphOutputMapReduce {
             if (this.graph instanceof TransactionalGraph) {
                 try {
                     ((TransactionalGraph) this.graph).commit();
-                    context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.SUCCESSFUL_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.SUCCESSFUL_TRANSACTIONS).increment(1l);
                 } catch (Exception e) {
                     LOGGER.error("Could not commit transaction during Reduce.cleanup(): ", e);
                     ((TransactionalGraph) this.graph).rollback();
-                    context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.FAILED_TRANSACTIONS, 1L);
+                    //context.getCounter(Counters.FAILED_TRANSACTIONS).increment(1l);
                     throw new IOException(e.getMessage(), e);
                 }
             }
@@ -270,19 +285,23 @@ public class TitanGraphOutputMapReduce {
             final boolean isModified = hadoopEdge.isModified();
             if (this.trackState && (isModified || hadoopEdge.isDeleted())) {
                 final TitanEdge titanEdge = this.getIncident(titanVertex, hadoopEdge, idMap.get(hadoopEdge.getVertexId(OUT)));
-                if (null == titanEdge)
-                    context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
-                else {
+                if (null == titanEdge) {
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.NULL_EDGES_IGNORED, 1L);
+                    //context.getCounter(Counters.NULL_EDGES_IGNORED).increment(1l);
+                } else {
                     titanEdge.remove();
-                    context.getCounter(Counters.EDGES_REMOVED).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_REMOVED, 1L);
+                    //context.getCounter(Counters.EDGES_REMOVED).increment(1l);
                 }
             }
             if (isModified || hadoopEdge.isNew()) {
                 final TitanEdge titanEdge = (TitanEdge) this.graph.getVertex(idMap.get(hadoopEdge.getVertexId(OUT))).addEdge(hadoopEdge.getLabel(), titanVertex);
-                context.getCounter(Counters.EDGES_ADDED).increment(1l);
+                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGES_ADDED, 1L);
+                //context.getCounter(Counters.EDGES_ADDED).increment(1l);
                 for (final HadoopProperty hadoopProperty : hadoopEdge.getProperties()) {
                     titanEdge.setProperty(hadoopProperty.getName(), hadoopProperty.getValue());
-                    context.getCounter(Counters.EDGE_PROPERTIES_ADDED).increment(1l);
+                    HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGE_PROPERTIES_ADDED, 1L);
+                    //context.getCounter(Counters.EDGE_PROPERTIES_ADDED).increment(1l);
                 }
                 return titanEdge;
             } else {

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.formats.graphson;
 
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 
 import org.apache.hadoop.conf.Configurable;
@@ -31,7 +32,7 @@ public class GraphSONInputFormat extends FileInputFormat<NullWritable, HadoopVer
 
     @Override
     protected boolean isSplitable(final JobContext context, final Path file) {
-        return null == new CompressionCodecFactory(context.getConfiguration()).getCodec(file);
+        return null == new CompressionCodecFactory(HadoopCompatLoader.getDefaultCompat().getJobContextConfiguration(context)).getCodec(file);
     }
 
     @Override

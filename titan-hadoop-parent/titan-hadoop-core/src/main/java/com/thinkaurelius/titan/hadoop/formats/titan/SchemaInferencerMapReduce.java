@@ -4,6 +4,7 @@ import com.thinkaurelius.titan.core.schema.DefaultSchemaMaker;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.BlueprintsDefaultSchemaMaker;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
+import com.thinkaurelius.titan.hadoop.compat.HadoopCompatLoader;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanGraphOutputMapReduce;
 import com.thinkaurelius.titan.hadoop.mapreduce.util.EmptyConfiguration;
 import com.tinkerpop.blueprints.Direction;
@@ -95,13 +96,15 @@ public class SchemaInferencerMapReduce {
                                 // TODO: Automated type inference
                                 // typeMaker.makeKey(property2, graph.makeType().dataType(Class.forName(vertex.getProperty(property).toString())));
                                 typeMaker.makePropertyKey(graph.makePropertyKey(property2));
-                                context.getCounter(Counters.PROPERTY_KEYS_CREATED).increment(1l);
+                                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.PROPERTY_KEYS_CREATED, 1L);
+//                                context.getCounter(Counters.PROPERTY_KEYS_CREATED).increment(1l);
                             }
                         } else {
                             if (null == graph.getRelationType(property2)) {
                                 //typeMaker.makeLabel(property2, graph.makeType());
                                 typeMaker.makeEdgeLabel(graph.makeEdgeLabel(property2));
-                                context.getCounter(Counters.EDGE_LABELS_CREATED).increment(1l);
+                                HadoopCompatLoader.getDefaultCompat().incrementContextCounter(context, Counters.EDGE_LABELS_CREATED, 1L);
+//                                context.getCounter(Counters.EDGE_LABELS_CREATED).increment(1l);
                             }
                         }
                     }
