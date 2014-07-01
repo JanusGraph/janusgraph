@@ -46,6 +46,13 @@
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>titan-hadoop-core</artifactId>
+            <version>${project.version}</version>
+            <classifier>example-data</classifier>
+            <type>zip</type>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>titan-hadoop-2</artifactId>
             <version>${project.version}</version>
             <classifier>job</classifier>

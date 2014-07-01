@@ -2817,8 +2817,13 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
                 assertEquals(instanceid,txId.getInstanceId());
                 assertTrue(txId.getTransactionId()>0 && txId.getTransactionId()<100); //Just some reasonable upper bound
-                assertTrue(Math.abs(txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS)
-                        -middleTime.getTimestamp(TimeUnit.SECONDS))<=1); //Times should be within a second
+                final long timeDifferenceSeconds = Math.abs(txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS)
+                        -middleTime.getTimestamp(TimeUnit.SECONDS));
+                assertTrue(String.format("tx timestamp %s differs from middle timestamp %s by absolute value %d s > maximum %d s",
+                        txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS),
+                        middleTime.getTimestamp(TimeUnit.SECONDS),
+                        timeDifferenceSeconds, 1),
+                        timeDifferenceSeconds<=1); //Times should be within a second
 
                 assertTrue(tx.containsRelationType("knows"));
                 assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
@@ -2852,7 +2857,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 triggerCount.incrementAndGet();
             }
         }).build();
-        Thread.sleep(2000);
+        Thread.sleep(22000L);
 
 
         triggers.removeLogProcessor(triggerName);

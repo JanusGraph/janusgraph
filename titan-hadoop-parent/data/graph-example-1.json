@@ -1,6 +1,0 @@
-{"name":"marko","age":29,"_id":1,"_outE":[{"weight":0.5,"_label":"knows","_id":7,"_inV":2},{"weight":1,"_label":"knows","_id":8,"_inV":4},{"weight":0.4,"_label":"created","_id":9,"_inV":3}]}
-{"name":"vadas","age":27,"_id":2,"_inE":[{"weight":0.5,"_label":"knows","_id":7,"_outV":1}]}
-{"name":"lop","lang":"java","_id":3,"_inE":[{"weight":0.4,"_label":"created","_id":9,"_outV":1},{"weight":0.4,"_label":"created","_id":11,"_outV":4},{"weight":0.2,"_label":"created","_id":12,"_outV":6}]}
-{"name":"josh","age":32,"_id":4,"_outE":[{"weight":1,"_label":"created","_id":10,"_inV":5},{"weight":0.4,"_label":"created","_id":11,"_inV":3}],"_inE":[{"weight":1,"_label":"knows","_id":8,"_outV":1}]}
-{"name":"ripple","lang":"java","_id":5,"_inE":[{"weight":1,"_label":"created","_id":10,"_outV":4}]}
-{"name":"peter","age":35,"_id":6,"_outE":[{"weight":0.2,"_label":"created","_id":12,"_inV":3}]}
