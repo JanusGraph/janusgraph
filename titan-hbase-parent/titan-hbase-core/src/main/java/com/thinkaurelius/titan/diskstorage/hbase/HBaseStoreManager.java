@@ -199,6 +199,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
     private final boolean shortCfNames;
     private final boolean skipSchemaCheck;
     private final String compatClass;
+    private final HBaseCompat compat;
 
     // Mutable instance state
     private final ConcurrentMap<String, HBaseKeyColumnValueStore> openStores;
@@ -214,6 +215,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         this.regionsPerServer = config.has(REGIONS_PER_SERVER) ? config.get(REGIONS_PER_SERVER) : -1;
         this.skipSchemaCheck = config.get(SKIP_SCHEMA_CHECK);
         this.compatClass = config.has(HBASE_COMPAT_CLASS) ? config.get(HBASE_COMPAT_CLASS) : null;
+        this.compat = HBaseCompatLoader.getCompat(compatClass);
 
         /*
          * Specifying both region count options is permitted but may be
@@ -469,7 +471,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
         HTable table = null;
         try {
-            ensureTableExists(tableName);
+            ensureTableExists(tableName, getCfNameForStoreName(GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME));
 
             table = new HTable(hconf, tableName);
 
@@ -661,16 +663,21 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return s;
     }
 
-    private HTableDescriptor ensureTableExists(String tableName) throws StorageException {
+    private HTableDescriptor ensureTableExists(String tableName, String initialCFName) throws StorageException {
         HBaseAdmin adm = getAdminInterface();
 
         HTableDescriptor desc;
 
         try { // Create our table, if necessary
+            /*
+             * Some HBase versions/impls respond badly to attempts to create a
+             * table without at least one CF. See #661. Creating a CF along with
+             * the table avoids HBase carping.
+             */
             if (adm.tableExists(tableName)) {
                 desc = adm.getTableDescriptor(tableName.getBytes());
             } else {
-                desc = createTable(tableName, adm);
+                desc = createTable(tableName, initialCFName, adm);
             }
         } catch (IOException e) {
             throw new TemporaryStorageException(e);
@@ -679,8 +686,12 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         return desc;
     }
 
-    private HTableDescriptor createTable(String name, HBaseAdmin adm) throws IOException {
-        HTableDescriptor desc = new HTableDescriptor(tableName);
+    private HTableDescriptor createTable(String tableName, String cfName, HBaseAdmin adm) throws IOException {
+        HTableDescriptor desc = compat.newTableDescriptor(tableName);
+
+        HColumnDescriptor cdesc = new HColumnDescriptor(cfName);
+        setCFOptions(cdesc);
+        desc.addFamily(cdesc);
 
         int count; // total regions to create
         String src;
@@ -735,7 +746,7 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
     private void ensureColumnFamilyExists(String tableName, String columnFamily) throws StorageException {
         HBaseAdmin adm = getAdminInterface();
-        HTableDescriptor desc = ensureTableExists(tableName);
+        HTableDescriptor desc = ensureTableExists(tableName, columnFamily);
 
         Preconditions.checkNotNull(desc);
 
@@ -755,8 +766,9 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
 
             try {
                 HColumnDescriptor cdesc = new HColumnDescriptor(columnFamily);
-                if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
-                    HBaseCompatLoader.getCompat(compatClass).setCompression(cdesc, compression);
+
+                setCFOptions(cdesc);
+
                 adm.addColumn(tableName, cdesc);
 
                 try {
@@ -813,6 +825,11 @@ public class HBaseStoreManager extends DistributedStoreManager implements KeyCol
         logger.debug("Guessed timestamp provider " + prov);
 
         return prov.getTime().getNativeTimestamp();
+    }
+
+    private void setCFOptions(HColumnDescriptor cdesc) {
+        if (null != compression && !compression.equals(COMPRESSION_DEFAULT))
+            compat.setCompression(cdesc, compression);
     }
 
     private HBaseAdmin getAdminInterface() {
