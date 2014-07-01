@@ -44,9 +44,9 @@ public class ConfigurationUtil {
             T instance = (T) constructor.newInstance(constructorArgs);
             return instance;
         } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException("Could not find implementation class: " + clazzname);
+            throw new IllegalArgumentException("Could not find implementation class: " + clazzname, e);
         } catch (NoSuchMethodException e) {
-            throw new IllegalArgumentException("Implementation class does not have required constructor: " + clazzname);
+            throw new IllegalArgumentException("Implementation class does not have required constructor: " + clazzname, e);
         } catch (InstantiationException e) {
             throw new IllegalArgumentException("Could not instantiate implementation: " + clazzname, e);
         } catch (IllegalAccessException e) {
