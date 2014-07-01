@@ -261,6 +261,7 @@
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
+                                <reuseForks>false</reuseForks>
                                 <summaryFile>target/failsafe-reports/failsafe-titan-cassandra.xml</summaryFile>
                             </configuration>
                         </execution>
