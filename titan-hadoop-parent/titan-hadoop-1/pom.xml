@@ -33,6 +33,25 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase</artifactId>
+            <version>0.94.12</version>
+            <optional>true</optional>
+            <scope>test</scope>
+            <exclusions>
+                <!-- This includes an unshaded copy of Snakeyaml
+                     that's binary-incompatible with Cassandra 2.0.
+                     If allowed into the classpath before Cassandra's
+                     current Snakeyaml jar, this will lead to
+                     NoSuchMethodError when attempting to start an
+                     embedded Cassandra instance. -->
+                <exclusion>
+                    <groupId>org.jruby</groupId>
+                    <artifactId>jruby-complete</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>org.apache.mrunit</groupId>
             <artifactId>mrunit</artifactId>
             <version>${mrunit.version}</version>

@@ -62,22 +62,6 @@
             <version>${tinkerpop.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
-            <version>0.98.3-hadoop2</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Need this for compile-time imports on
-             org.apache.hadoop.hbase.mapreduce -->
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
-            <version>0.98.3-hadoop2</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- TITAN -->
         <dependency>
             <groupId>com.thinkaurelius.titan</groupId>

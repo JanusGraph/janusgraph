@@ -19,6 +19,7 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop2.version}</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.mrunit</groupId>
@@ -27,6 +28,23 @@
             <classifier>hadoop2</classifier>
             <optional>true</optional>
             <!-- <scope>test</scope> -->
+        </dependency>
+
+        <!-- Need this for compile-time imports on
+             org.apache.hadoop.hbase.mapreduce -->
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>0.98.3-hadoop2</version>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>0.98.3-hadoop2</version>
+            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
