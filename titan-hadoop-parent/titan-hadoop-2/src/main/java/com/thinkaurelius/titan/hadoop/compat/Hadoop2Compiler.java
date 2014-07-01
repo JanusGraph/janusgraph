@@ -105,8 +105,26 @@ public class Hadoop2Compiler extends HybridConfigured implements HadoopCompiler 
                              final Configuration configuration) {
        try {
             final Job job;
+
+            // Combine this.getConf() with the configuration argument (latter takes precedence)
+            final Configuration mergedConf = new Configuration(this.getConf());
+            final Iterator<Entry<String,String>> it = configuration.iterator();
+            while (it.hasNext()) {
+                Entry<String,String> ent = it.next();
+                mergedConf.set(ent.getKey(), ent.getValue());
+            }
+
             if (State.NONE == this.state || State.REDUCER == this.state) {
-                job = Job.getInstance(this.getConf());
+                // Set merged configuration for the new job
+                //
+                // This really does matter; just setting the config in
+                // ChainMapper.addMapper and ChainReducer.setReducer invocations
+                // below is not sufficient for some jobs that use a combiner.
+                // For example, LinkMapReduce.Combiner expects to use custom
+                // config keys like DIRECTION. Leaving out this step effectively
+                // drops that combiner's custom keys and makes tests using
+                // linkIn pipeline steps fail.
+                job = Job.getInstance(mergedConf);
                 job.setJobName(makeClassName(mapper) + ARROW + makeClassName(reducer));
                 this.jobs.add(job);
             } else {
