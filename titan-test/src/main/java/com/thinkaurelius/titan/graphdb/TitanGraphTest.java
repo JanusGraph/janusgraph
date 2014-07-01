@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.log.*;
+import com.thinkaurelius.titan.core.schema.TitanSchemaType;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
@@ -58,6 +59,7 @@ import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
+import com.thinkaurelius.titan.graphdb.types.system.EmptyRelationType;
 import com.thinkaurelius.titan.graphdb.types.system.ImplicitKey;
 import com.thinkaurelius.titan.testutil.TestUtil;
 import com.tinkerpop.blueprints.Direction;
@@ -3716,7 +3718,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
-        mgmt.createEdgeIndex(wavedAt,"timeindex", Direction.BOTH,Order.DESC,time);
+        mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
         mgmt.setTTL(wavedAt, ttl);
         mgmt.commit();
 
@@ -3819,7 +3821,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testVertexTTLWithCompoundIndex() throws Exception {
+    public void testVertexTTLWithCompositeIndex() throws Exception {
         if (!features.hasCellTTL()) {
             return;
         }
@@ -3851,7 +3853,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test
-    public void testEdgeTTLimitedByVertexTtl() throws Exception {
+    public void testEdgeTTLLimitedByVertexTTL() throws Exception {
 
         if (!features.hasCellTTL()) {
             return;
@@ -3939,8 +3941,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
             return;
         }
 
-        PropertyKey edgeName = mgmt.makePropertyKey("age").dataType(String.class).make();
-        mgmt.setTTL(edgeName, 42);
+        TitanSchemaType type = ImplicitKey.ID;
+        mgmt.setTTL(type, 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
