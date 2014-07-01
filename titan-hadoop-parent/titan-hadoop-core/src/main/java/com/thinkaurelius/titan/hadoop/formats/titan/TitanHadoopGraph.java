@@ -97,7 +97,7 @@ public class TitanHadoopGraph {
     }
 
     public void close() {
-
+        setup.close();
     }
 
 }
