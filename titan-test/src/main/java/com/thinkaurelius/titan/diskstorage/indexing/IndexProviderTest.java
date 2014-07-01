@@ -438,6 +438,76 @@ public abstract class IndexProviderTest {
         result = tx.query(new IndexQuery(store, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")));
         assertEquals(0, result.size());
         result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
+        //assertEquals(1, result.size());
+    }
+
+    /**
+     * Test overwriting a single existing field on an existing document
+     * (isNew=false).
+     *
+     * @throws StorageException
+     */
+    @Test
+    public void testUpdateAddition() throws StorageException {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String nameValue = "jm keynes";
+        final String revisedNameValue = "robert shiller";
+
+        initialize(store);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(NAME, nameValue);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue))).size());
+
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+        IndexTransaction t2 = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+
+        t2.add(store, docid, NAME, revisedNameValue, false);
+        t2.commit();
+
+        clopen();
+
+        // Name change must be visible
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, revisedNameValue)));
+        assertEquals(1, result.size());
+        result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
+        assertEquals(0, result.size());
+    }
+
+    /**
+     * Test deleting a single field from a single document (deleteAll=false).
+     *
+     * @throws StorageException
+     */
+    @Test
+    public void testUpdateDeletion() throws StorageException {
+        final String store = "vertex";
+        final String docid = "docid";
+        final String nameValue = "jm keynes";
+
+        initialize(store);
+        Map<String, Object> initialProps = ImmutableMap.<String, Object>of(NAME, nameValue);
+        add(store, docid, initialProps, true);
+        clopen();
+
+        // Sanity check
+        assertEquals(1, tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue))).size());
+
+        BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
+
+        tx.delete(store, docid, NAME, ImmutableMap.of(), false);
+        tx.commit();
+
+        clopen();
+
+        // Name change must be visible
+        tx = new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
+        List<String> result = tx.query(new IndexQuery(store, PredicateCondition.of(NAME, Cmp.EQUAL, nameValue)));
+        assertEquals(0, result.size());
     }
 
     private void initialize(String store) throws StorageException {
