@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.userlog;
+package com.thinkaurelius.titan.graphdb.log;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Function;

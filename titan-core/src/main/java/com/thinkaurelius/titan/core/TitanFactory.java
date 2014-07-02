@@ -14,7 +14,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
-import com.thinkaurelius.titan.graphdb.userlog.StandardLogProcessorFramework;
+import com.thinkaurelius.titan.graphdb.log.StandardLogProcessorFramework;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.userlog;
+package com.thinkaurelius.titan.graphdb.log;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;

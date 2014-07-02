@@ -493,7 +493,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).indexKey(name).indexKey(weight).buildCompositeIndex();
         TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).indexKey(weight).indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
-
+        external.getName(); internal.getName();
         finishSchema();
 
         name = tx.getPropertyKey("name");

@@ -102,6 +102,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         n1.addProperty(uid.getName(), "abcd");
         clopen();
         long nid = n1.getID();
+        uid = tx.getPropertyKey("name");
         assertTrue(tx.containsVertex(nid));
         assertTrue(tx.containsVertex(uid.getID()));
         assertFalse(tx.containsVertex(nid + 64));
@@ -2940,6 +2941,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // ########### END INSPECTION & FAILURE ##############
         finishSchema();
         clopen();
+
+        text = mgmt.getPropertyKey("text");
+        time = mgmt.getPropertyKey("time");
+        weight = mgmt.getPropertyKey("weight");
 
         // ########### INSPECTION & FAILURE (copied from above) ##############
         assertTrue(mgmt.containsRelationType("name"));

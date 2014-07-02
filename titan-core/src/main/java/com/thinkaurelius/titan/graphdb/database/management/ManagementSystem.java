@@ -692,6 +692,7 @@ public class ManagementSystem implements TitanManagement {
         }
 
         transaction.addProperty(schemaVertex, BaseKey.SchemaName, schemaCategory.getSchemaName(newName));
+        schemaVertex.resetCache();
         updatedTypes.add(schemaVertex);
     }
 

@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.userlog;
+package com.thinkaurelius.titan.graphdb.log;
 
 import com.thinkaurelius.titan.core.attribute.Timestamp;
 import com.thinkaurelius.titan.core.log.TransactionId;
