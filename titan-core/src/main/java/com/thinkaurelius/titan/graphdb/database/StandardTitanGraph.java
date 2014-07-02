@@ -45,7 +45,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;

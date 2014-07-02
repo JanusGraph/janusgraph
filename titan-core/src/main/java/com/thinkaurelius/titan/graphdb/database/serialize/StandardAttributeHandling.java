@@ -11,7 +11,7 @@ import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionDescription;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;

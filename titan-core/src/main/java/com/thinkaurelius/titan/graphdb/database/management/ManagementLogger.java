@@ -69,7 +69,7 @@ public class ManagementLogger implements MessageReader {
                 long numEvictions = VariableLong.readPositive(in);
                 for (int i = 0; i < numEvictions; i++) {
                     long typeId = VariableLong.readPositive(in);
-                    schemaCache.expireSchemaRelations(typeId);
+                    schemaCache.expireSchemaElement(typeId);
                 }
                 Thread ack = new Thread(new SendAckOnTxClose(evictionId,senderId,graph.getOpenTransactions()));
                 ack.setDaemon(true);
@@ -82,7 +82,7 @@ public class ManagementLogger implements MessageReader {
                     EvictionTrigger evictTrigger = evictionTriggerMap.get(evictionId);
                     if (evictTrigger!=null) {
                         evictTrigger.receivedAcknowledgement(senderId);
-                    } else log.info("Could not find eviction trigger for {} from {}",evictionId,senderId);
+                    } else log.error("Could not find eviction trigger for {} from {}",evictionId,senderId);
                 }
 
         } else assert logType == MgmtLogType.CONFIG_MUTATION;

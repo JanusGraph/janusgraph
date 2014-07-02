@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;

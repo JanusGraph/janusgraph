@@ -4,8 +4,10 @@ import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
+import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
 import com.tinkerpop.blueprints.Direction;
 
 /**
@@ -25,6 +27,10 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
     @Override
     public RelationType getType() {
         return type.getBaseType();
+    }
+
+    public InternalRelationType getWrappedType() {
+        return type;
     }
 
     @Override
@@ -73,4 +79,8 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
         return type.equals(((RelationTypeIndexWrapper)oth).type);
     }
 
+    @Override
+    public SchemaStatus getIndexStatus() {
+        return type.getStatus();
+    }
 }

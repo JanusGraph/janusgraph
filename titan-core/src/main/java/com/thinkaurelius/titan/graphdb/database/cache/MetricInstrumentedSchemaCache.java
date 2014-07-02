@@ -4,7 +4,6 @@ import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.util.CacheMetricsAction;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
-import com.thinkaurelius.titan.graphdb.types.system.SystemRelationType;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 import com.tinkerpop.blueprints.Direction;
 
@@ -55,13 +54,8 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     }
 
     @Override
-    public void expireSchemaName(String name) {
-        cache.expireSchemaName(name);
-    }
-
-    @Override
-    public void expireSchemaRelations(long schemaId) {
-        cache.expireSchemaRelations(schemaId);
+    public void expireSchemaElement(long schemaId) {
+        cache.expireSchemaElement(schemaId);
     }
 
 }

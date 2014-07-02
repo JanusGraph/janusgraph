@@ -17,7 +17,7 @@ import com.tinkerpop.blueprints.Direction;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface RelationTypeIndex extends TitanSchemaElement {
+public interface RelationTypeIndex extends TitanIndex {
 
     /**
      * Returns the {@link RelationType} on which this index is installed.
@@ -45,6 +45,12 @@ public interface RelationTypeIndex extends TitanSchemaElement {
      * @return
      */
     public Direction getDirection();
+
+    /**
+     * Returns the status of this index
+     * @return
+     */
+    public SchemaStatus getIndexStatus();
 
 
 }

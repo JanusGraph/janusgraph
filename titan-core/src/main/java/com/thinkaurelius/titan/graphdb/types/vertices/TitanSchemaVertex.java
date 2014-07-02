@@ -7,7 +7,7 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanProperty;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.core.TitanVertexQuery;
-import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.transaction.RelationConstructor;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
 import com.thinkaurelius.titan.graphdb.types.*;
@@ -26,25 +26,19 @@ public class TitanSchemaVertex extends CacheVertex implements SchemaSource {
         super(tx, id, lifecycle);
     }
 
-    private String name = null;
-
     @Override
     public String getName() {
-        if (name == null) {
-            TitanProperty p;
-            if (isLoaded()) {
-                StandardTitanTx tx = tx();
-                p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
-                                            tx.getGraph().getSchemaCache().getSchemaRelations(getID(), BaseKey.SchemaName, Direction.OUT, tx()),
-                                            tx), null);
-            } else {
-                p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
-            }
-            Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
-            name = p.getValue();
+        TitanProperty p;
+        if (isLoaded()) {
+            StandardTitanTx tx = tx();
+            p = (TitanProperty) Iterables.getOnlyElement(RelationConstructor.readRelation(this,
+                                        tx.getGraph().getSchemaCache().getSchemaRelations(getID(), BaseKey.SchemaName, Direction.OUT, tx()),
+                                        tx), null);
+        } else {
+            p = Iterables.getOnlyElement(query().type(BaseKey.SchemaName).properties(), null);
         }
-        assert name != null;
-        return TitanSchemaCategory.getName(name);
+        Preconditions.checkState(p!=null,"Could not find type for id: %s",getID());
+        return p.getValue();
     }
 
     private TypeDefinitionMap definition = null;

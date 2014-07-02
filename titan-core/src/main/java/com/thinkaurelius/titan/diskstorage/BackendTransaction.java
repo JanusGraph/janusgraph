@@ -62,6 +62,8 @@ public class BackendTransaction implements LoggableTransaction {
 
     private final Map<String, IndexTransaction> indexTx;
 
+    private boolean acquiredLock = false;
+
     public BackendTransaction(CacheTransaction storeTx, BaseTransactionConfig txConfig,
                               StoreFeatures features, KCVSCache edgeStore, KCVSCache indexStore,
                               Duration maxReadTime,
@@ -74,6 +76,10 @@ public class BackendTransaction implements LoggableTransaction {
         this.maxReadTime = maxReadTime;
         this.indexTx = indexTx;
         this.threadPool = threadPool;
+    }
+
+    public boolean hasAcquiredLock() {
+        return acquiredLock;
     }
 
     public StoreTransaction getStoreTransaction() {
@@ -189,10 +195,12 @@ public class BackendTransaction implements LoggableTransaction {
      * @param column        Column the column on which to lock
      */
     public void acquireEdgeLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+        acquiredLock = true;
         edgeStore.acquireLock(key, column, null, storeTx);
     }
 
     public void acquireEdgeLock(StaticBuffer key, Entry entry) throws StorageException {
+        acquiredLock = true;
         edgeStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }
 
@@ -212,10 +220,12 @@ public class BackendTransaction implements LoggableTransaction {
      * @param expectedValue The expected value for the specified key-column pair on which to lock. Null if it is expected that the pair does not exist
      */
     public void acquireIndexLock(StaticBuffer key, StaticBuffer column) throws StorageException {
+        acquiredLock = true;
         indexStore.acquireLock(key, column, null, storeTx);
     }
 
     public void acquireIndexLock(StaticBuffer key, Entry entry) throws StorageException {
+        acquiredLock = true;
         indexStore.acquireLock(key, entry.getColumnAs(StaticBuffer.STATIC_FACTORY), entry.getValueAs(StaticBuffer.STATIC_FACTORY), storeTx);
     }
 

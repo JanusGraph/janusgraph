@@ -49,7 +49,7 @@ import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
