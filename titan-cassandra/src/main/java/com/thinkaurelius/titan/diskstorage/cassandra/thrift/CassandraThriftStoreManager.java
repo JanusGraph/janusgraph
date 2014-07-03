@@ -197,7 +197,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         try {
             conn = pool.borrowObject(keySpaceName);
             Cassandra.Client client = conn.getClient();
-            client.batch_mutate(batch, consistency);
+            client.atomic_batch_mutate(batch, consistency);
         } catch (Exception ex) {
             throw CassandraThriftKeyColumnValueStore.convertException(ex);
         } finally {

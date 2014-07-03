@@ -201,7 +201,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
-                StorageProxy.mutate(cmds, clvl);
+                StorageProxy.mutateAtomically(cmds, clvl);
             } catch (RequestExecutionException e) {
                 throw new TemporaryStorageException(e);
             } finally {
