@@ -230,7 +230,16 @@ public interface TitanManagement extends TitanConfiguration {
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency);
 
     /**
-     * Sets the time-to-live for the given {@link com.thinkaurelius.titan.core.schema.TitanSchemaType}
+     * Retrieves the time-to-live for the given {@link TitanSchemaType}.
+     * If none has been explicitly defined, 0 (unlimited TTL) is returned.
+     *
+     * @param type
+     * @return
+     */
+    public int getTTL(TitanSchemaType type);
+
+    /**
+     * Sets the time-to-live for the given {@link TitanSchemaType}
      * @param type the affected type
      * @param ttl time-to-live, in seconds
      */

@@ -3638,6 +3638,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel label2 = mgmt.makeEdgeLabel("dislikes").make();
         mgmt.setTTL(label2, ttl2);
         EdgeLabel label3 = mgmt.makeEdgeLabel("indifferentTo").make();
+        assertEquals(ttl1, mgmt.getTTL(label1));
+        assertEquals(ttl2, mgmt.getTTL(label2));
+        assertEquals(0, mgmt.getTTL(label3));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
@@ -3684,6 +3687,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
 
         EdgeLabel label1 = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label1, 1);
+        assertEquals(1, mgmt.getTTL(label1));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3725,6 +3729,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
         mgmt.setTTL(wavedAt, ttl);
+        assertEquals(0, mgmt.getTTL(time));
+        assertEquals(ttl, mgmt.getTTL(wavedAt));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3757,6 +3763,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label, 1);
+        assertEquals(0, mgmt.getTTL(edgeName));
+        assertEquals(1, mgmt.getTTL(label));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -3792,6 +3800,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(place).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 2);
+        assertEquals(42, mgmt.getTTL(name));
+        assertEquals(1, mgmt.getTTL(place));
+        assertEquals(2, mgmt.getTTL(label1));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");
@@ -3837,6 +3848,9 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         TitanGraphIndex index2 = mgmt.buildIndex("index2", Vertex.class).indexKey(name).indexKey(time).buildCompositeIndex();
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, 1);
+        assertEquals(0, mgmt.getTTL(name));
+        assertEquals(0, mgmt.getTTL(time));
+        assertEquals(1, mgmt.getTTL(label1));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");
@@ -3871,6 +3885,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel indifferentTo = mgmt.makeEdgeLabel("indifferentTo").make();
         VertexLabel label1 = mgmt.makeVertexLabel("person").setStatic().make();
         mgmt.setTTL(label1, 2);
+        assertEquals(42, mgmt.getTTL(likes));
+        assertEquals(1, mgmt.getTTL(dislikes));
+        assertEquals(0, mgmt.getTTL(indifferentTo));
+        assertEquals(2, mgmt.getTTL(label1));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("person");
@@ -3951,6 +3969,16 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void testGetTTLFromUnsupportedType() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        TitanSchemaType type = ImplicitKey.ID;
+        mgmt.getTTL(type);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void testSettingTTLOnNonStaticVertexLabel() throws Exception {
         if (!features.hasCellTTL()) {
             return;
@@ -3976,6 +4004,8 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         EdgeLabel likes = mgmt.makeEdgeLabel("likes").make();
         EdgeLabel hasLiked = mgmt.makeEdgeLabel("hasLiked").make();
         mgmt.setTTL(likes, ttl);
+        assertEquals(ttl, mgmt.getTTL(likes));
+        assertEquals(0, mgmt.getTTL(hasLiked));
         mgmt.commit();
 
         Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null);
@@ -4019,6 +4049,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         int ttl1 = 1;
         VertexLabel label1 = mgmt.makeVertexLabel("event").setStatic().make();
         mgmt.setTTL(label1, ttl1);
+        assertEquals(ttl1, mgmt.getTTL(label1));
         mgmt.commit();
 
         Vertex v1 = tx.addVertex("event");

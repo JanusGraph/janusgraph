@@ -585,6 +585,18 @@ public class ManagementSystem implements TitanManagement {
         setTypeModifier(element, ModifierType.CONSISTENCY, consistency);
     }
 
+    @Override
+    public int getTTL(final TitanSchemaType type) {
+        Preconditions.checkArgument(type != null);
+        if (type instanceof VertexLabelVertex) {
+            return ((VertexLabelVertex) type).getTTL();
+        } else if (type instanceof RelationTypeVertex) {
+            return ((RelationTypeVertex) type).getTTL();
+        } else {
+            throw new IllegalArgumentException("given type does not support TTL: " + type.getClass());
+        }
+    }
+
     /**
      * Sets time-to-live for those schema types that support it
      * @param type
