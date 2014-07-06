@@ -57,9 +57,9 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         close();
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         manager = openStorageManager();
         tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
         store1 = new NoKCVSCache(manager.openDatabase(storeName1));
@@ -67,25 +67,25 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
 
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         if (tx != null) tx.commit();
         if (null != store1) store1.close();
         if (null != store2) store2.close();
         if (null != manager) manager.close();
     }
 
-    public void clopen() throws StorageException {
+    public void clopen() throws BackendException {
         close();
         open();
     }
 
-    public void newTx() throws StorageException {
+    public void newTx() throws BackendException {
         if (tx!=null) tx.commit();
         tx = new CacheTransaction(manager.beginTransaction(getTxConfig()), manager, bufferSize, new StandardDuration(100, TimeUnit.MILLISECONDS), true);
     }
 
     @Test
-    public void deletionsAppliedBeforeAdditions() throws StorageException {
+    public void deletionsAppliedBeforeAdditions() throws BackendException {
 
         StaticBuffer b1 = KeyColumnValueStoreUtil.longToByteBuffer(1);
 
@@ -140,7 +140,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     }
 
     @Test
-    public void mutateManyWritesSameKeyOnMultipleCFs() throws StorageException {
+    public void mutateManyWritesSameKeyOnMultipleCFs() throws BackendException {
 
         final long arbitraryLong = 42;
         assert 0 < arbitraryLong;
@@ -177,7 +177,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
     }
 
     @Test
-    public void mutateManyStressTest() throws StorageException {
+    public void mutateManyStressTest() throws BackendException {
 
         Map<StaticBuffer, Map<StaticBuffer, StaticBuffer>> state =
                 new HashMap<StaticBuffer, Map<StaticBuffer, StaticBuffer>>();
@@ -204,13 +204,13 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         }
     }
 
-    public void applyChanges(Map<StaticBuffer, KCVEntryMutation> changes, KCVSCache store, StoreTransaction tx) throws StorageException {
+    public void applyChanges(Map<StaticBuffer, KCVEntryMutation> changes, KCVSCache store, StoreTransaction tx) throws BackendException {
         for (Map.Entry<StaticBuffer, KCVEntryMutation> change : changes.entrySet()) {
             store.mutateEntries(change.getKey(), change.getValue().getAdditions(), change.getValue().getDeletions(), tx);
         }
     }
 
-    public int checkThatStateExistsInStore(Map<StaticBuffer, Map<StaticBuffer, StaticBuffer>> state, KeyColumnValueStore store, int round) throws StorageException {
+    public int checkThatStateExistsInStore(Map<StaticBuffer, Map<StaticBuffer, StaticBuffer>> state, KeyColumnValueStore store, int round) throws BackendException {
         int checked = 0;
 
         for (StaticBuffer key : state.keySet()) {
@@ -228,7 +228,7 @@ public abstract class MultiWriteKeyColumnValueStoreTest extends AbstractKCVSTest
         return checked;
     }
 
-    public int checkThatDeletionsApplied(Map<StaticBuffer, KCVEntryMutation> changes, KeyColumnValueStore store, int round) throws StorageException {
+    public int checkThatDeletionsApplied(Map<StaticBuffer, KCVEntryMutation> changes, KeyColumnValueStore store, int round) throws BackendException {
         int checked = 0;
         int skipped = 0;
 

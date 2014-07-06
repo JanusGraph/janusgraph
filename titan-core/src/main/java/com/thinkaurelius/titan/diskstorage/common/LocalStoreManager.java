@@ -1,7 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
-import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.util.DirectoryUtil;
 
@@ -20,7 +19,7 @@ public abstract class LocalStoreManager extends AbstractStoreManager {
 
     protected final File directory;
 
-    public LocalStoreManager(Configuration storageConfig) throws StorageException {
+    public LocalStoreManager(Configuration storageConfig) throws BackendException {
         super(storageConfig);
         String storageDir = storageConfig.get(STORAGE_DIRECTORY);
         if (null == storageDir) {

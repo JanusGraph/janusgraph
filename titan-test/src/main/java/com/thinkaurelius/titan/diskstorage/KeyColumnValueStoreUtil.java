@@ -12,13 +12,13 @@ import com.thinkaurelius.titan.diskstorage.util.WriteByteBuffer;
 
 public class KeyColumnValueStoreUtil {
 
-    public static void delete(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
+    public static void delete(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws BackendException {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
         store.mutate(k, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(c), txn);
     }
 
-    public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws StorageException {
+    public static String get(KeyColumnValueStore store, StoreTransaction txn, long key, String col) throws BackendException {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
         StaticBuffer valBytes = KCVSUtil.get(store, k, c, txn);
@@ -27,7 +27,7 @@ public class KeyColumnValueStoreUtil {
         return byteBufferToString(valBytes);
     }
 
-    public static void insert(KeyColumnValueStore store, StoreTransaction txn, long key, String col, String val) throws StorageException {
+    public static void insert(KeyColumnValueStore store, StoreTransaction txn, long key, String col, String val) throws BackendException {
         StaticBuffer k = longToByteBuffer(key);
         StaticBuffer c = stringToByteBuffer(col);
         StaticBuffer v = stringToByteBuffer(val);

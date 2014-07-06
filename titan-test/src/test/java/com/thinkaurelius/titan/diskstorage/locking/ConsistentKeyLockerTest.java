@@ -96,7 +96,7 @@ public class ConsistentKeyLockerTest {
 
     @SuppressWarnings("unchecked")
     @Before
-    public void setupMocks() throws StorageException, NoSuchMethodException, SecurityException {
+    public void setupMocks() throws BackendException, NoSuchMethodException, SecurityException {
         currentTimeNS = 0;
 
         /*
@@ -173,10 +173,10 @@ public class ConsistentKeyLockerTest {
      * Test a single lock using stub objects. Doesn't test unlock ("leaks" the
      * lock, but since it's backed by stubs, it doesn't matter).
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockInSimplestCase() throws StorageException {
+    public void testWriteLockInSimplestCase() throws BackendException {
 
         // Check to see whether the lock was already written before anything else
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
@@ -200,10 +200,10 @@ public class ConsistentKeyLockerTest {
      * column with a new timestamp and deleting the column with the old
      * (too-slow-to-write) timestamp.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockRetriesAfterOneStoreTimeout() throws StorageException {
+    public void testWriteLockRetriesAfterOneStoreTimeout() throws BackendException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
         StaticBuffer firstCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null).col; // too slow
@@ -221,10 +221,10 @@ public class ConsistentKeyLockerTest {
      * columns that it wrote and locally unlock the KeyColumn, then emit an
      * exception.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockThrowsExceptionAfterMaxStoreTimeouts() throws StorageException {
+    public void testWriteLockThrowsExceptionAfterMaxStoreTimeouts() throws BackendException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
         StaticBuffer firstCol = recordSuccessfulLockWrite(5, TimeUnit.SECONDS, null).col;
@@ -234,25 +234,25 @@ public class ConsistentKeyLockerTest {
         recordSuccessfulLocalUnlock();
         ctrl.replay();
 
-        StorageException expected = null;
+        BackendException expected = null;
         try {
             locker.writeLock(defaultLockID, defaultTx); // SUT
-        } catch (TemporaryStorageException e) {
+        } catch (TemporaryBackendException e) {
             expected = e;
         }
         assertNotNull(expected);
     }
 
     /**
-     * Test that the first {@link PermanentStorageException} thrown by the
+     * Test that the first {@link com.thinkaurelius.titan.diskstorage.PermanentBackendException} thrown by the
      * locker's store causes it to attempt to delete outstanding lock writes and
      * then emit the exception without retrying.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockDiesOnPermanentStorageException() throws StorageException {
-        PermanentStorageException errOnFire = new PermanentStorageException("Storage cluster is on fire");
+    public void testWriteLockDiesOnPermanentStorageException() throws BackendException {
+        PermanentBackendException errOnFire = new PermanentBackendException("Storage cluster is on fire");
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
@@ -261,7 +261,7 @@ public class ConsistentKeyLockerTest {
         recordSuccessfulLocalUnlock();
         ctrl.replay();
 
-        StorageException expected = null;
+        BackendException expected = null;
         try {
             locker.writeLock(defaultLockID, defaultTx); // SUT
         } catch (PermanentLockingException e) {
@@ -273,14 +273,14 @@ public class ConsistentKeyLockerTest {
 
     /**
      * Test the locker retries a lock write after the initial store mutation
-     * fails with a {@link TemporaryStorageException}. The retry should both
+     * fails with a {@link com.thinkaurelius.titan.diskstorage.TemporaryBackendException}. The retry should both
      * attempt to write the and delete the failed mutation column.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockRetriesOnTemporaryStorageException() throws StorageException {
-        TemporaryStorageException tse = new TemporaryStorageException("Storage cluster is waking up");
+    public void testWriteLockRetriesOnTemporaryStorageException() throws BackendException {
+        TemporaryBackendException tse = new TemporaryBackendException("Storage cluster is waking up");
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
@@ -296,10 +296,10 @@ public class ConsistentKeyLockerTest {
     /**
      * Test that a failure to lock locally results in a {@link TemporaryLockingException}
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockFailsOnLocalContention() throws StorageException {
+    public void testWriteLockFailsOnLocalContention() throws BackendException {
 
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordFailedLocalLock();
@@ -319,10 +319,10 @@ public class ConsistentKeyLockerTest {
      * {@code otherTx} can't claim it, instead throwing a
      * TemporaryLockingException
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockDetectsMultiTxContention() throws StorageException {
+    public void testWriteLockDetectsMultiTxContention() throws BackendException {
         // defaultTx
 
         // Check to see whether the lock was already written before anything else
@@ -360,10 +360,10 @@ public class ConsistentKeyLockerTest {
      * the same arguments have no effect after the first call (until
      * {@link ConsistentKeyLocker#deleteLocks(StoreTransaction)} is called).
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testWriteLockIdempotence() throws StorageException {
+    public void testWriteLockIdempotence() throws BackendException {
         expect(lockState.has(defaultTx, defaultLockID)).andReturn(false);
         recordSuccessfulLocalLock();
         LockInfo li = recordSuccessfulLockWrite(1, TimeUnit.NANOSECONDS, null);
@@ -385,11 +385,11 @@ public class ConsistentKeyLockerTest {
      * Test a single checking a single lock under optimal conditions (no
      * timeouts, no errors)
      *
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException shouldn't happen
      */
     @Test
-    public void testCheckLocksInSimplestCase() throws StorageException, InterruptedException {
+    public void testCheckLocksInSimplestCase() throws BackendException, InterruptedException {
         // Fake a pre-existing lock
         final ConsistentKeyLockStatus ls = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
@@ -415,11 +415,11 @@ public class ConsistentKeyLockerTest {
      * expiration period as though they were never read from the store (aside
      * from logging them). This tests the checker with a single expired column.
      *
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException
      */
     @Test
-    public void testCheckLocksIgnoresSingleExpiredLock() throws StorageException, InterruptedException {
+    public void testCheckLocksIgnoresSingleExpiredLock() throws BackendException, InterruptedException {
         // Fake a pre-existing lock that's long since expired
         final ConsistentKeyLockStatus expired = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, expired));
@@ -450,10 +450,10 @@ public class ConsistentKeyLockerTest {
      * checkLocks() twice. The second call should have no effect.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      */
     @Test
-    public void testCheckLocksIdempotence() throws InterruptedException, StorageException {
+    public void testCheckLocksIdempotence() throws InterruptedException, BackendException {
         // Fake a pre-existing valid lock
         final ConsistentKeyLockStatus ls = makeStatusNow();
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.of(defaultLockID, ls));
@@ -484,11 +484,11 @@ public class ConsistentKeyLockerTest {
      * are unexpired, then the checker must throw a TemporaryLockingException.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen (we expect a TemporaryLockingException but
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen (we expect a TemporaryLockingException but
      *                              we catch and swallow it)
      */
     @Test
-    public void testCheckLocksFailsWithSeniorClaimsByOthers() throws InterruptedException, StorageException {
+    public void testCheckLocksFailsWithSeniorClaimsByOthers() throws InterruptedException, BackendException {
         // Make a pre-existing valid lock by some other tx (written by another process)
         StaticBuffer otherSeniorLockCol = codec.toLockCol(currentTimeNS, otherLockRid);
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -525,10 +525,10 @@ public class ConsistentKeyLockerTest {
      * consider the lock successfully checked.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      */
     @Test
-    public void testCheckLocksSucceedsWithJuniorClaimsByOthers() throws InterruptedException, StorageException {
+    public void testCheckLocksSucceedsWithJuniorClaimsByOthers() throws InterruptedException, BackendException {
         // Expect checker to fetch locks for defaultTx; return just our own lock (not the other guy's)
         StaticBuffer ownSeniorLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
         ConsistentKeyLockStatus ownSeniorLS = makeStatusNow();
@@ -564,10 +564,10 @@ public class ConsistentKeyLockerTest {
      * which actually succeeded (e.g. hinted handoff or timeout)
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      */
     @Test
-    public void testCheckLocksSucceedsWithSeniorAndJuniorClaimsBySelf() throws InterruptedException, StorageException {
+    public void testCheckLocksSucceedsWithSeniorAndJuniorClaimsBySelf() throws InterruptedException, BackendException {
         // Setup three lock columns differing only in timestamp
         StaticBuffer myFirstLockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -601,11 +601,11 @@ public class ConsistentKeyLockerTest {
      * getSlice()s is fewer than the lock retry count. The retry count applies
      * on a per-lock basis.
      *
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      * @throws InterruptedException shouldn't happen
      */
     @Test
-    public void testCheckLocksRetriesAfterSingleTemporaryStorageException() throws StorageException, InterruptedException {
+    public void testCheckLocksRetriesAfterSingleTemporaryStorageException() throws BackendException, InterruptedException {
         // Setup one lock column
         StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
         ConsistentKeyLockStatus lockStatus = makeStatusNow();
@@ -616,7 +616,7 @@ public class ConsistentKeyLockerTest {
         expectSleepAfterWritingLock(lockStatus);
 
         // First getSlice will fail
-        TemporaryStorageException tse = new TemporaryStorageException("Storage cluster will be right back");
+        TemporaryBackendException tse = new TemporaryBackendException("Storage cluster will be right back");
         recordExceptionalLockGetSlice(tse);
 
         // Second getSlice will succeed
@@ -635,10 +635,10 @@ public class ConsistentKeyLockerTest {
      * configured lock retries.
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      */
     @Test
-    public void testCheckLocksThrowsExceptionAfterMaxTemporaryStorageExceptions() throws InterruptedException, StorageException {
+    public void testCheckLocksThrowsExceptionAfterMaxTemporaryStorageExceptions() throws InterruptedException, BackendException {
         // Setup a LockStatus for defaultLockID
         ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -648,16 +648,16 @@ public class ConsistentKeyLockerTest {
         expectSleepAfterWritingLock(lockStatus);
 
         // Three successive getSlice calls, each throwing a distinct TSE
-        recordExceptionalLockGetSlice(new TemporaryStorageException("Storage cluster is having me-time"));
-        recordExceptionalLockGetSlice(new TemporaryStorageException("Storage cluster is in a dissociative fugue state"));
-        recordExceptionalLockGetSlice(new TemporaryStorageException("Storage cluster has gone to Prague to find itself"));
+        recordExceptionalLockGetSlice(new TemporaryBackendException("Storage cluster is having me-time"));
+        recordExceptionalLockGetSlice(new TemporaryBackendException("Storage cluster is in a dissociative fugue state"));
+        recordExceptionalLockGetSlice(new TemporaryBackendException("Storage cluster has gone to Prague to find itself"));
 
         ctrl.replay();
 
-        TemporaryStorageException tse = null;
+        TemporaryBackendException tse = null;
         try {
             locker.checkLocks(defaultTx);
-        } catch (TemporaryStorageException e) {
+        } catch (TemporaryBackendException e) {
             tse = e;
         }
         assertNotNull(tse);
@@ -669,10 +669,10 @@ public class ConsistentKeyLockerTest {
      * other locks are waiting to be checked).
      *
      * @throws InterruptedException shouldn't happen
-     * @throws StorageException     shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException     shouldn't happen
      */
     @Test
-    public void testCheckLocksDiesOnPermanentStorageException() throws InterruptedException, StorageException {
+    public void testCheckLocksDiesOnPermanentStorageException() throws InterruptedException, BackendException {
         // Setup a LockStatus for defaultLockID
         ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -682,14 +682,14 @@ public class ConsistentKeyLockerTest {
         expectSleepAfterWritingLock(lockStatus);
 
         // First and only getSlice call throws a PSE
-        recordExceptionalLockGetSlice(new PermanentStorageException("Connection to storage cluster failed: peer is an IPv6 toaster"));
+        recordExceptionalLockGetSlice(new PermanentBackendException("Connection to storage cluster failed: peer is an IPv6 toaster"));
 
         ctrl.replay();
 
-        PermanentStorageException pse = null;
+        PermanentBackendException pse = null;
         try {
             locker.checkLocks(defaultTx);
-        } catch (PermanentStorageException e) {
+        } catch (PermanentBackendException e) {
             pse = e;
         }
         assertNotNull(pse);
@@ -699,10 +699,10 @@ public class ConsistentKeyLockerTest {
      * The lock checker should do nothing when passed a transaction for which it
      * holds no locks.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testCheckLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
+    public void testCheckLocksDoesNothingForUnrecognizedTransaction() throws BackendException {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
         ctrl.replay();
         locker.checkLocks(defaultTx);
@@ -711,10 +711,10 @@ public class ConsistentKeyLockerTest {
     /**
      * Delete a single lock without any timeouts, errors, etc.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksInSimplestCase() throws StorageException {
+    public void testDeleteLocksInSimplestCase() throws BackendException {
         // Setup a LockStatus for defaultLockID
         final ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -738,10 +738,10 @@ public class ConsistentKeyLockerTest {
     /**
      * Delete two locks without any timeouts, errors, etc.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksOnTwoLocks() throws StorageException {
+    public void testDeleteLocksOnTwoLocks() throws BackendException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         ConsistentKeyLockStatus otherLS = makeStatusNow();
@@ -762,18 +762,18 @@ public class ConsistentKeyLockerTest {
         locker.deleteLocks(defaultTx);
     }
 
-    private void expectLockDeleteSuccessfully(KeyColumn lockID, StaticBuffer lockKey, ConsistentKeyLockStatus lockStatus) throws StorageException {
+    private void expectLockDeleteSuccessfully(KeyColumn lockID, StaticBuffer lockKey, ConsistentKeyLockStatus lockStatus) throws BackendException {
         expectDeleteLock(lockID, lockKey, lockStatus);
     }
 
-    private void expectDeleteLock(KeyColumn lockID, StaticBuffer lockKey, ConsistentKeyLockStatus lockStatus, StorageException... backendFailures) throws StorageException {
+    private void expectDeleteLock(KeyColumn lockID, StaticBuffer lockKey, ConsistentKeyLockStatus lockStatus, BackendException... backendFailures) throws BackendException {
         List<StaticBuffer> dels = ImmutableList.of(codec.toLockCol(lockStatus.getWriteTimestamp(TimeUnit.NANOSECONDS), defaultLockRid));
         expect(times.getTime()).andReturn(new StandardTimepoint(currentTimeNS, times));
         store.mutate(eq(lockKey), eq(ImmutableList.<Entry>of()), eq(dels), eq(defaultTx));
         int backendExceptionsThrown = 0;
-        for (StorageException e : backendFailures) {
+        for (BackendException e : backendFailures) {
             expectLastCall().andThrow(e);
-            if (e instanceof PermanentStorageException) {
+            if (e instanceof PermanentBackendException) {
                 break;
             }
             backendExceptionsThrown++;
@@ -789,14 +789,14 @@ public class ConsistentKeyLockerTest {
      * Lock deletion should retry if the first store mutation throws a temporary
      * exception.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksRetriesOnTemporaryStorageException() throws StorageException {
+    public void testDeleteLocksRetriesOnTemporaryStorageException() throws BackendException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
-        expectDeleteLock(defaultLockID, defaultLockKey, defaultLS, new TemporaryStorageException("Storage cluster is backlogged"));
+        expectDeleteLock(defaultLockID, defaultLockKey, defaultLS, new TemporaryBackendException("Storage cluster is backlogged"));
         ctrl.replay();
 
         locker.deleteLocks(defaultTx);
@@ -807,18 +807,18 @@ public class ConsistentKeyLockerTest {
      * to delete a lock, it should move onto the next lock rather than returning
      * and potentially leaving the remaining locks undeleted.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions() throws StorageException {
+    public void testDeleteLocksSkipsToNextLockAfterMaxTemporaryStorageExceptions() throws BackendException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
 
         expectDeleteLock(defaultLockID, defaultLockKey, defaultLS,
-                new TemporaryStorageException("Storage cluster is busy"),
-                new TemporaryStorageException("Storage cluster is busier"),
-                new TemporaryStorageException("Storage cluster has reached peak business"));
+                new TemporaryBackendException("Storage cluster is busy"),
+                new TemporaryBackendException("Storage cluster is busier"),
+                new TemporaryBackendException("Storage cluster has reached peak business"));
 
         ctrl.replay();
 
@@ -831,15 +831,15 @@ public class ConsistentKeyLockerTest {
      * , except instead of exceeding the temporary exception retry count on a
      * lock, that lock throws a single permanent exception.
      *
-     * @throws StorageException shoudn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shoudn't happen
      */
     @Test
-    public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws StorageException {
+    public void testDeleteLocksSkipsToNextLockOnPermanentStorageException() throws BackendException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
         currentTimeNS++;
         expect(lockState.getLocksForTx(defaultTx)).andReturn(Maps.newLinkedHashMap(ImmutableMap.of(defaultLockID, defaultLS)));
 
-        expectDeleteLock(defaultLockID, defaultLockKey, defaultLS, new PermanentStorageException("Storage cluster has been destroyed by a tornado"));
+        expectDeleteLock(defaultLockID, defaultLockKey, defaultLS, new PermanentBackendException("Storage cluster has been destroyed by a tornado"));
 
         ctrl.replay();
 
@@ -851,10 +851,10 @@ public class ConsistentKeyLockerTest {
      * they were ever checked; this method fakes and verifies deletion on a
      * single unchecked lock
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksDeletesUncheckedLocks() throws StorageException {
+    public void testDeleteLocksDeletesUncheckedLocks() throws BackendException {
         ConsistentKeyLockStatus defaultLS = makeStatusNow();
         assertFalse(defaultLS.isChecked());
         currentTimeNS++;
@@ -873,10 +873,10 @@ public class ConsistentKeyLockerTest {
      * When delete is called multiple times with no intervening write or check
      * calls, all calls after the first should have no effect.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksIdempotence() throws StorageException {
+    public void testDeleteLocksIdempotence() throws BackendException {
         // Setup a LockStatus for defaultLockID
         ConsistentKeyLockStatus lockStatus = makeStatusNow();
         currentTimeNS += TimeUnit.NANOSECONDS.convert(1, TimeUnit.NANOSECONDS);
@@ -900,10 +900,10 @@ public class ConsistentKeyLockerTest {
      * Delete should do nothing when passed a transaction for which it holds no
      * locks.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testDeleteLocksDoesNothingForUnrecognizedTransaction() throws StorageException {
+    public void testDeleteLocksDoesNothingForUnrecognizedTransaction() throws BackendException {
         expect(lockState.getLocksForTx(defaultTx)).andReturn(ImmutableMap.<KeyColumn, ConsistentKeyLockStatus>of());
         ctrl.replay();
         locker.deleteLocks(defaultTx);
@@ -913,10 +913,10 @@ public class ConsistentKeyLockerTest {
      * Checking locks when the expired lock cleaner is enabled should trigger
      * one call to the LockCleanerService.
      *
-     * @throws StorageException shouldn't happen
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException shouldn't happen
      */
     @Test
-    public void testCleanExpiredLock() throws StorageException, InterruptedException {
+    public void testCleanExpiredLock() throws BackendException, InterruptedException {
         LockCleanerService mockCleaner = ctrl.createMock(LockCleanerService.class);
         ctrl.replay();
         Locker altLocker = getDefaultBuilder().customCleaner(mockCleaner).build();
@@ -978,11 +978,11 @@ public class ConsistentKeyLockerTest {
         return makeStatus(currentTimeNS);
     }
 
-    private LockInfo recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+    private LockInfo recordSuccessfulLockWrite(long duration, TimeUnit tu, StaticBuffer del) throws BackendException {
         return recordSuccessfulLockWrite(defaultTx, duration, tu, del);
     }
 
-    private LockInfo recordSuccessfulLockWrite(StoreTransaction tx, long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+    private LockInfo recordSuccessfulLockWrite(StoreTransaction tx, long duration, TimeUnit tu, StaticBuffer del) throws BackendException {
         expect(times.getTime()).andReturn(new StandardTimepoint(++currentTimeNS, times));
 
         final long lockNS = currentTimeNS;
@@ -1013,7 +1013,7 @@ public class ConsistentKeyLockerTest {
         return new LockInfo(lockNS, status, lockCol);
     }
 
-    private StaticBuffer recordExceptionLockWrite(long duration, TimeUnit tu, StaticBuffer del, Throwable t) throws StorageException {
+    private StaticBuffer recordExceptionLockWrite(long duration, TimeUnit tu, StaticBuffer del, Throwable t) throws BackendException {
         expect(times.getTime()).andReturn(new StandardTimepoint(++currentTimeNS, times));
 
         StaticBuffer lockCol = codec.toLockCol(currentTimeNS, defaultLockRid);
@@ -1036,7 +1036,7 @@ public class ConsistentKeyLockerTest {
         return lockCol;
     }
 
-    private void recordSuccessfulLockDelete(long duration, TimeUnit tu, StaticBuffer del) throws StorageException {
+    private void recordSuccessfulLockDelete(long duration, TimeUnit tu, StaticBuffer del) throws BackendException {
         expect(times.getTime()).andReturn(new StandardTimepoint(++currentTimeNS, times));
         store.mutate(eq(defaultLockKey), eq(ImmutableList.<Entry>of()), eq(Arrays.asList(del)), eq(defaultTx));
 
@@ -1074,17 +1074,17 @@ public class ConsistentKeyLockerTest {
         expect(mediator.unlock(defaultLockID, defaultTx)).andReturn(true);
     }
 
-    private void recordLockGetSlice(EntryList returnedEntries) throws StorageException {
+    private void recordLockGetSlice(EntryList returnedEntries) throws BackendException {
         final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, LOCK_COL_START, LOCK_COL_END);
         expect(store.getSlice(eq(ksq), eq(defaultTx))).andReturn(returnedEntries);
     }
 
-    private void recordExceptionalLockGetSlice(Throwable t) throws StorageException {
+    private void recordExceptionalLockGetSlice(Throwable t) throws BackendException {
         final KeySliceQuery ksq = new KeySliceQuery(defaultLockKey, LOCK_COL_START, LOCK_COL_END);
         expect(store.getSlice(eq(ksq), eq(defaultTx))).andThrow(t);
     }
 
-    private void recordLockGetSliceAndReturnSingleEntry(Entry returnSingleEntry) throws StorageException {
+    private void recordLockGetSliceAndReturnSingleEntry(Entry returnSingleEntry) throws BackendException {
         recordLockGetSlice(StaticArrayEntryList.of(returnSingleEntry));
     }
 

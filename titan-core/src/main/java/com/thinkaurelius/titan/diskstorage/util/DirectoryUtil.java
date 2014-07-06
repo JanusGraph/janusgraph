@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.util;
 
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 
 import java.io.File;
 
@@ -14,14 +14,14 @@ import java.io.File;
 public class DirectoryUtil {
 
 
-    public static File getOrCreateDataDirectory(String location) throws StorageException {
+    public static File getOrCreateDataDirectory(String location) throws BackendException {
         File storageDir = new File(location);
 
         if (storageDir.exists() && storageDir.isFile())
-            throw new PermanentStorageException(String.format("%s exists but is a file.", location));
+            throw new PermanentBackendException(String.format("%s exists but is a file.", location));
 
         if (!storageDir.exists() && !storageDir.mkdirs())
-            throw new PermanentStorageException(String.format("Failed to create directory %s for local storage.", location));
+            throw new PermanentBackendException(String.format("Failed to create directory %s for local storage.", location));
 
         return storageDir;
     }

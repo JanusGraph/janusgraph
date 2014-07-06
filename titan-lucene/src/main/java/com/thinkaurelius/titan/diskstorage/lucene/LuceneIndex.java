@@ -17,6 +17,7 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeUtil;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
+import com.tinkerpop.pipes.util.structures.Pair;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
@@ -35,6 +36,7 @@ import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 
 public class LuceneIndex implements IndexProvider {
-
-    private Logger log = LoggerFactory.getLogger(LuceneIndex.class);
+    private static final Logger log = LoggerFactory.getLogger(LuceneIndex.class);
 
 
     private static final String DOCID = "_____elementid";
@@ -81,22 +82,22 @@ public class LuceneIndex implements IndexProvider {
         log.debug("Configured Lucene to use base directory [{}]", basePath);
     }
 
-    private Directory getStoreDirectory(String store) throws StorageException {
+    private Directory getStoreDirectory(String store) throws BackendException {
         Preconditions.checkArgument(StringUtils.isAlphanumeric(store), "Invalid store name: %s", store);
         String dir = basePath + File.separator + store;
         try {
             File path = new File(dir);
             if (!path.exists()) path.mkdirs();
             if (!path.exists() || !path.isDirectory() || !path.canWrite())
-                throw new PermanentStorageException("Cannot access or write to directory: " + dir);
+                throw new PermanentBackendException("Cannot access or write to directory: " + dir);
             log.debug("Opening store directory [{}]", path);
             return FSDirectory.open(path);
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not open directory: " + dir, e);
+            throw new PermanentBackendException("Could not open directory: " + dir, e);
         }
     }
 
-    private IndexWriter getWriter(String store) throws StorageException {
+    private IndexWriter getWriter(String store) throws BackendException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
         if (writer == null) {
@@ -106,7 +107,7 @@ public class LuceneIndex implements IndexProvider {
                 writer = new IndexWriter(getStoreDirectory(store), iwc);
                 writers.put(store, writer);
             } catch (IOException e) {
-                throw new PermanentStorageException("Could not create writer", e);
+                throw new PermanentBackendException("Could not create writer", e);
             }
         }
         return writer;
@@ -128,14 +129,14 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
@@ -147,84 +148,32 @@ public class LuceneIndex implements IndexProvider {
                 for (Map.Entry<String, IndexMutation> entry : stores.getValue().entrySet()) {
                     String docid = entry.getKey();
                     IndexMutation mutation = entry.getValue();
-                    Term docTerm = new Term(DOCID, docid);
 
                     if (mutation.isDeleted()) {
-                        log.trace("Deleted entire document [{}]", docid);
-                        writer.deleteDocuments(docTerm);
+                        if (log.isTraceEnabled())
+                            log.trace("Deleted entire document [{}]", docid);
+
+                        writer.deleteDocuments(new Term(DOCID, docid));
                         continue;
                     }
 
-                    Document doc = null;
-                    TopDocs hits = searcher.search(new TermQuery(docTerm), 10);
-                    Map<String, Shape> geofields = Maps.newHashMap();
+                    Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docid, searcher);
+                    Document doc = docAndGeo.getA();
+                    Map<String, Shape> geofields = docAndGeo.getB();
 
-                    if (hits.scoreDocs.length == 0) {
-                        log.trace("Creating new document for [{}]", docid);
-                        doc = new Document();
-                        Field docidField = new StringField(DOCID, docid, Field.Store.YES);
-                        doc.add(docidField);
-                    } else if (hits.scoreDocs.length > 1) {
-                        throw new IllegalArgumentException("More than one document found for document id: " + docid);
-                    } else {
-                        log.trace("Updating existing document for [{}]", docid);
-                        int docId = hits.scoreDocs[0].doc;
-                        //retrieve the old document
-                        doc = searcher.doc(docId);
-                        for (IndexableField field : doc.getFields()) {
-                            if (field.stringValue().startsWith(GEOID)) {
-                                geofields.put(field.name(), ctx.readShape(field.stringValue().substring(GEOID.length())));
-                            }
-                        }
-                    }
                     Preconditions.checkNotNull(doc);
                     for (IndexEntry del : mutation.getDeletions()) {
                         String key = del.field;
                         if (doc.getField(key) != null) {
-                            log.trace("Removing field [{}] on document [{}]", key, docid);
+                            if (log.isTraceEnabled())
+                                log.trace("Removing field [{}] on document [{}]", key, docid);
+
                             doc.removeFields(key);
                             geofields.remove(key);
                         }
                     }
-                    for (IndexEntry add : mutation.getAdditions()) {
-                        log.trace("Adding field [{}] on document [{}]", add.field, docid);
-                        if (doc.getField(add.field) != null) doc.removeFields(add.field);
-                        if (add.value instanceof Number) {
-                            Field field = null;
-                            if (AttributeUtil.isWholeNumber((Number) add.value)) {
-                                field = new LongField(add.field, ((Number) add.value).longValue(), Field.Store.YES);
-                            } else { //double or float
-                                field = new DoubleField(add.field, ((Number) add.value).doubleValue(), Field.Store.YES);
-                            }
-                            doc.add(field);
-                        } else if (AttributeUtil.isString(add.value)) {
-                            String str = (String) add.value;
-                            Mapping mapping = Mapping.getMapping(storename,add.field,informations);
-                            Field field;
-                            switch(mapping) {
-                                case DEFAULT:
-                                case TEXT:
-                                    field = new TextField(add.field, str, Field.Store.YES);
-                                    break;
-                                case STRING:
-                                    field = new StringField(add.field, str, Field.Store.YES);
-                                    break;
-                                default: throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
-                            }
-                            doc.add(field);
-                        } else if (add.value instanceof Geoshape) {
-                            Shape shape = ((Geoshape) add.value).convert2Spatial4j();
-                            geofields.put(add.field, shape);
-                            doc.add(new StoredField(add.field, GEOID + ctx.toString(shape)));
 
-                        } else throw new IllegalArgumentException("Unsupported type: " + add.value);
-                    }
-                    for (Map.Entry<String, Shape> geo : geofields.entrySet()) {
-                        log.trace("Updating geo-indexes for key {}", geo.getKey());
-                        for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue())) {
-                            doc.add(f);
-                        }
-                    }
+                    addToDocument(storename, docid, doc, mutation.getAdditions(), geofields, informations);
 
                     //write the old document to the index with the modifications
                     writer.updateDocument(new Term(DOCID, docid), doc);
@@ -233,13 +182,138 @@ public class LuceneIndex implements IndexProvider {
             }
             ltx.postCommit();
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not update Lucene index", e);
+            throw new TemporaryBackendException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
         }
     }
 
-    private static final Sort getSortOrder(IndexQuery query) {
+    @Override
+    public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
+        writerLock.lock();
+        try {
+            for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
+                String store = stores.getKey();
+                IndexWriter writer = getWriter(store);
+                IndexReader reader = DirectoryReader.open(writer, true);
+                IndexSearcher searcher = new IndexSearcher(reader);
+
+                for (Map.Entry<String, List<IndexEntry>> entry : stores.getValue().entrySet()) {
+                    String docID = entry.getKey();
+                    List<IndexEntry> content = entry.getValue();
+
+                    if (content == null || content.isEmpty()) {
+                        if (log.isTraceEnabled())
+                            log.trace("Deleting document [{}]", docID);
+
+                        writer.deleteDocuments(new Term(DOCID, docID));
+                        continue;
+                    }
+
+                    Pair<Document, Map<String, Shape>> docAndGeo = retrieveOrCreate(docID, searcher);
+                    addToDocument(store, docID, docAndGeo.getA(), content, docAndGeo.getB(), informations);
+
+                    //write the old document to the index with the modifications
+                    writer.updateDocument(new Term(DOCID, docID), docAndGeo.getA());
+                }
+                writer.commit();
+            }
+            tx.commit();
+        } catch (IOException e) {
+            throw new TemporaryBackendException("Could not update Lucene index", e);
+        } finally {
+            writerLock.unlock();
+        }
+    }
+
+    private Pair<Document, Map<String, Shape>> retrieveOrCreate(String docID, IndexSearcher searcher) throws IOException {
+        Document doc;
+        TopDocs hits = searcher.search(new TermQuery(new Term(DOCID, docID)), 10);
+        Map<String, Shape> geofields = Maps.newHashMap();
+
+        if (hits.scoreDocs.length > 1)
+            throw new IllegalArgumentException("More than one document found for document id: " + docID);
+
+        if (hits.scoreDocs.length == 0) {
+            if (log.isTraceEnabled())
+                log.trace("Creating new document for [{}]", docID);
+
+            doc = new Document();
+            doc.add(new StringField(DOCID, docID, Field.Store.YES));
+        } else {
+            if (log.isTraceEnabled())
+                log.trace("Updating existing document for [{}]", docID);
+
+            int docId = hits.scoreDocs[0].doc;
+            //retrieve the old document
+            doc = searcher.doc(docId);
+            for (IndexableField field : doc.getFields()) {
+                if (field.stringValue().startsWith(GEOID)) {
+                    geofields.put(field.name(), ctx.readShape(field.stringValue().substring(GEOID.length())));
+                }
+            }
+        }
+
+        return new Pair<Document, Map<String, Shape>>(doc, geofields);
+    }
+
+    private void addToDocument(String store,
+                               String docID,
+                               Document doc,
+                               List<IndexEntry> content,
+                               Map<String, Shape> geofields,
+                               KeyInformation.IndexRetriever informations) {
+        Preconditions.checkNotNull(doc);
+        for (IndexEntry e : content) {
+            if (log.isTraceEnabled())
+                log.trace("Adding field [{}] on document [{}]", e.field, docID);
+
+            if (doc.getField(e.field) != null)
+                doc.removeFields(e.field);
+
+            if (e.value instanceof Number) {
+                Field field;
+                if (AttributeUtil.isWholeNumber((Number) e.value)) {
+                    field = new LongField(e.field, ((Number) e.value).longValue(), Field.Store.YES);
+                } else { //double or float
+                    field = new DoubleField(e.field, ((Number) e.value).doubleValue(), Field.Store.YES);
+                }
+                doc.add(field);
+            } else if (AttributeUtil.isString(e.value)) {
+                String str = (String) e.value;
+                Mapping mapping = Mapping.getMapping(store, e.field, informations);
+                Field field;
+                switch(mapping) {
+                    case DEFAULT:
+                    case TEXT:
+                        field = new TextField(e.field, str, Field.Store.YES);
+                        break;
+                    case STRING:
+                        field = new StringField(e.field, str, Field.Store.YES);
+                        break;
+                    default: throw new IllegalArgumentException("Illegal mapping specified: " + mapping);
+                }
+                doc.add(field);
+            } else if (e.value instanceof Geoshape) {
+                Shape shape = ((Geoshape) e.value).convert2Spatial4j();
+                geofields.put(e.field, shape);
+                doc.add(new StoredField(e.field, GEOID + ctx.toString(shape)));
+
+            } else {
+                throw new IllegalArgumentException("Unsupported type: " + e.value);
+            }
+        }
+
+        for (Map.Entry<String, Shape> geo : geofields.entrySet()) {
+            if (log.isTraceEnabled())
+                log.trace("Updating geo-indexes for key {}", geo.getKey());
+
+            for (IndexableField f : getSpatialStrategy(geo.getKey()).createIndexableFields(geo.getValue()))
+                doc.add(f);
+        }
+    }
+
+    private static Sort getSortOrder(IndexQuery query) {
         Sort sort = new Sort();
         List<IndexQuery.OrderEntry> orders = query.getOrder();
         if (!orders.isEmpty()) {
@@ -262,7 +336,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         //Construct query
         Filter q = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
@@ -278,7 +352,7 @@ public class LuceneIndex implements IndexProvider {
             }
             return result;
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not execute Lucene query", e);
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
     }
 
@@ -381,12 +455,12 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Query q;
         try {
             q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
         } catch (ParseException e) {
-            throw new PermanentStorageException("Could not parse raw query: "+query.getQuery(),e);
+            throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
         }
 
         try {
@@ -407,12 +481,12 @@ public class LuceneIndex implements IndexProvider {
             }
             return result;
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not execute Lucene query", e);
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
     }
 
     @Override
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new Transaction(config);
     }
 
@@ -453,20 +527,20 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         try {
             for (IndexWriter w : writers.values()) w.close();
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not close writers", e);
+            throw new PermanentBackendException("Could not close writers", e);
         }
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         try {
             FileUtils.deleteDirectory(new File(basePath));
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not delete lucene directory: " + basePath, e);
+            throw new PermanentBackendException("Could not delete lucene directory: " + basePath, e);
         }
     }
 
@@ -480,7 +554,7 @@ public class LuceneIndex implements IndexProvider {
             this.config = config;
         }
 
-        private synchronized IndexSearcher getSearcher(String store) throws StorageException {
+        private synchronized IndexSearcher getSearcher(String store) throws BackendException {
             IndexSearcher searcher = searchers.get(store);
             if (searcher == null) {
                 IndexReader reader = null;
@@ -490,36 +564,36 @@ public class LuceneIndex implements IndexProvider {
                 } catch (IndexNotFoundException e) {
                     searcher = null;
                 } catch (IOException e) {
-                    throw new PermanentStorageException("Could not open index reader on store: " + store, e);
+                    throw new PermanentBackendException("Could not open index reader on store: " + store, e);
                 }
                 searchers.put(store, searcher);
             }
             return searcher;
         }
 
-        public void postCommit() throws StorageException {
+        public void postCommit() throws BackendException {
             close();
             searchers.clear();
         }
 
 
         @Override
-        public void commit() throws StorageException {
+        public void commit() throws BackendException {
             close();
         }
 
         @Override
-        public void rollback() throws StorageException {
+        public void rollback() throws BackendException {
             close();
         }
 
-        private void close() throws StorageException {
+        private void close() throws BackendException {
             try {
                 for (IndexSearcher searcher : searchers.values()) {
                     if (searcher != null) searcher.getIndexReader().close();
                 }
             } catch (IOException e) {
-                throw new PermanentStorageException("Could not close searcher", e);
+                throw new PermanentBackendException("Could not close searcher", e);
             }
         }
 

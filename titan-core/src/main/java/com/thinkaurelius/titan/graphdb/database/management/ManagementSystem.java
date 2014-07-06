@@ -3,13 +3,12 @@ package com.thinkaurelius.titan.graphdb.database.management;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.*;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.log.Log;
@@ -382,7 +381,7 @@ public class ManagementSystem implements TitanManagement {
         indexType.resetCache();
         try {
             IndexSerializer.register((MixedIndexType) indexType,key,transaction.getTxHandle());
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException("Could not register new index field with index backend",e);
         }
         if (!indexVertex.isNew()) updatedTypes.add(indexVertex);

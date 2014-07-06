@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
@@ -21,11 +21,11 @@ public abstract class AbstractStoreTransaction implements StoreTransaction {
     }
 
     @Override
-    public void commit() throws StorageException {
+    public void commit() throws BackendException {
     }
 
     @Override
-    public void rollback() throws StorageException {
+    public void rollback() throws BackendException {
     }
 
     @Override

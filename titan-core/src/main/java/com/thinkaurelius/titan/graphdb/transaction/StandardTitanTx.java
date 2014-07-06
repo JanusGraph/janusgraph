@@ -12,11 +12,11 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.attribute.Cmp;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.*;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.BackendTransaction;
 import com.thinkaurelius.titan.diskstorage.EntryList;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsTransaction;
@@ -1224,7 +1224,7 @@ public class StandardTitanTx extends TitanBlueprintsTransaction implements TypeI
         } catch (Exception e) {
             try {
                 txHandle.rollback();
-            } catch (StorageException e1) {
+            } catch (BackendException e1) {
                 throw new TitanException("Could not rollback after a failed commit", e);
             }
             throw new TitanException("Could not commit transaction due to exception during persistence", e);

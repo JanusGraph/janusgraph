@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.locking.Locker;
@@ -81,12 +81,12 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         return dataStore.getSlice(query, getDataTx(txh));
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return dataStore.getSlice(keys, query, getDataTx(txh));
     }
 
@@ -98,7 +98,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
      * This implementation supports locking when {@code lockStore} is non-null.
      */
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
         etx.prepareForMutations();
         dataStore.mutate(key, additions, deletions, getDataTx(txh));
@@ -123,7 +123,7 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
      * only the initial expectedValue argument should be considered.
      */
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         if (locker != null) {
             ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
             if (tx.isMutationStarted())
@@ -138,12 +138,12 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         return dataStore.getKeys(query, getDataTx(txh));
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
         return dataStore.getKeys(query, getDataTx(txh));
     }
 
@@ -153,11 +153,11 @@ public class ExpectedValueCheckingStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         dataStore.close();
     }
 
-    void deleteLocks(ExpectedValueCheckingTransaction tx) throws StorageException {
+    void deleteLocks(ExpectedValueCheckingTransaction tx) throws BackendException {
         locker.deleteLocks(tx.getLockTransaction());
     }
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -15,7 +16,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.util.stats.MetricManager;
 
 /**
@@ -85,10 +85,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_SLICE,
             new StorageCallable<EntryList>() {
-                public EntryList call() throws StorageException {
+                public EntryList call() throws BackendException {
                     EntryList result = backend.getSlice(query, txh);
                     recordSliceMetrics(txh, result);
                     return result;
@@ -100,10 +100,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     @Override
     public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys,
                                       final SliceQuery query,
-                                      final StoreTransaction txh) throws StorageException {
+                                      final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_SLICE,
             new StorageCallable<Map<StaticBuffer,EntryList>>() {
-                public Map<StaticBuffer,EntryList> call() throws StorageException {
+                public Map<StaticBuffer,EntryList> call() throws BackendException {
                     Map<StaticBuffer,EntryList> results = backend.getSlice(keys, query, txh);
 
                     for (EntryList result : results.values()) {
@@ -119,10 +119,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     public void mutate(final StaticBuffer key,
                        final List<Entry> additions,
                        final List<StaticBuffer> deletions,
-                       final StoreTransaction txh) throws StorageException {
+                       final StoreTransaction txh) throws BackendException {
         runWithMetrics(txh, metricsStoreName, M_MUTATE,
                 new StorageCallable<Void>() {
-                    public Void call() throws StorageException {
+                    public Void call() throws BackendException {
                         backend.mutate(key, additions, deletions, txh);
                         return null;
                     }
@@ -134,10 +134,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     public void acquireLock(final StaticBuffer key,
                             final StaticBuffer column,
                             final StaticBuffer expectedValue,
-                            final StoreTransaction txh) throws StorageException {
+                            final StoreTransaction txh) throws BackendException {
         runWithMetrics(txh, metricsStoreName, M_ACQUIRE_LOCK,
             new StorageCallable<Void>() {
-                public Void call() throws StorageException {
+                public Void call() throws BackendException {
                     backend.acquireLock(key, column, expectedValue, txh);
                     return null;
                 }
@@ -146,10 +146,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS,
             new StorageCallable<KeyIterator>() {
-                public KeyIterator call() throws StorageException {
+                public KeyIterator call() throws BackendException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (txh.getConfiguration().hasGroupName()) {
                         return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
@@ -162,10 +162,10 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(final SliceQuery query, final StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS,
             new StorageCallable<KeyIterator>() {
-                public KeyIterator call() throws StorageException {
+                public KeyIterator call() throws BackendException {
                     KeyIterator ki = backend.getKeys(query, txh);
                     if (txh.getConfiguration().hasGroupName()) {
                         return MetricInstrumentedIterator.of(ki,txh.getConfiguration().getGroupName(),metricsStoreName,M_GET_KEYS,M_ITERATOR);
@@ -183,7 +183,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         backend.close();
     }
 
@@ -197,7 +197,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
     }
 
-    static <T> T runWithMetrics(StoreTransaction txh, String storeName, String name, StorageCallable<T> impl) throws StorageException {
+    static <T> T runWithMetrics(StoreTransaction txh, String storeName, String name, StorageCallable<T> impl) throws BackendException {
 
         if (!txh.getConfiguration().hasGroupName()) {
             return impl.call();
@@ -212,7 +212,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
         try {
             return impl.call();
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             mgr.getCounter(prefix, storeName, name, M_EXCEPTIONS).inc();
             throw e;
         } catch (RuntimeException e) {

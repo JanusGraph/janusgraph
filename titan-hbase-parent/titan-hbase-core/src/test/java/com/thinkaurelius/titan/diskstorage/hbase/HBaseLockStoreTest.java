@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.LockKeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import org.junit.BeforeClass;
 
@@ -15,7 +15,7 @@ public class HBaseLockStoreTest extends LockKeyColumnValueStoreTest {
         HBaseStorageSetup.startHBase();
     }
 
-    public KeyColumnValueStoreManager openStorageManager(int idx) throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager(int idx) throws BackendException {
         return new HBaseStoreManager(HBaseStorageSetup.getHBaseConfiguration());
     }
 }

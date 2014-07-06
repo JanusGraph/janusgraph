@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.TemporaryBackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +14,6 @@ import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 import com.thinkaurelius.titan.diskstorage.locking.consistentkey.ConsistentKeyLocker;
@@ -301,7 +301,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                 lockLocally(lockID, stat.getExpirationTimestamp(), tx); // update local lock expiration time
                 lockState.take(tx, lockID, stat);
                 ok = true;
-            } catch (TemporaryStorageException tse) {
+            } catch (TemporaryBackendException tse) {
                 throw new TemporaryLockingException(tse);
             } catch (AssertionError ae) {
                 // Concession to ease testing with mocks & behavior verification
@@ -349,7 +349,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             ok = true;
         } catch (InterruptedException e) {
             throw new TemporaryLockingException(e);
-        } catch (TemporaryStorageException tse) {
+        } catch (TemporaryBackendException tse) {
             throw new TemporaryLockingException(tse);
         } catch (AssertionError ae) {
             throw ae; // Concession to ease testing with mocks & behavior verification

@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.core.schema.TitanConfiguration;
 
 import java.lang.reflect.Array;
@@ -131,6 +132,9 @@ public class UserModifiableConfiguration implements TitanConfiguration {
             return value;
         } else if (datatype==String.class) {
             Preconditions.checkArgument(value instanceof String,"Expected string value: %s",value);
+            return value;
+        } else if (Duration.class.isAssignableFrom(datatype)) {
+            Preconditions.checkArgument(value instanceof Duration,"Expected duration value: %s",value);
             return value;
         } else if (datatype.isEnum()) {
             // Check if value is an enum instance

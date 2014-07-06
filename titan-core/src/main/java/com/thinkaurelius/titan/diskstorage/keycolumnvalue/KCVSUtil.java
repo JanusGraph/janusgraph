@@ -1,11 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ public class KCVSUtil {
      * @param txh    Transaction
      * @return Value for key and column or NULL if such does not exist
      */
-    public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
+    public static StaticBuffer get(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws BackendException {
         KeySliceQuery query = new KeySliceQuery(key, column, BufferUtil.nextBiggerBuffer(column)).setLimit(2);
         List<Entry> result = store.getSlice(query, txh);
         if (result.size() > 1)
@@ -62,9 +61,9 @@ public class KCVSUtil {
      * @param sliceLength length of the zero/one buffers that form the col limits
      * @param txh transaction to use with getKeys
      * @return keys returned by the store.getKeys call
-     * @throws StorageException unexpected failure
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException unexpected failure
      */
-    public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws StorageException {
+    public static KeyIterator getKeys(KeyColumnValueStore store, StoreFeatures features, int keyLength, int sliceLength, StoreTransaction txh) throws BackendException {
         SliceQuery slice = new SliceQuery(BufferUtil.zeroBuffer(sliceLength), BufferUtil.oneBuffer(sliceLength)).setLimit(1);
         if (features.hasUnorderedScan()) {
             return store.getKeys(slice, txh);
@@ -84,17 +83,17 @@ public class KCVSUtil {
      * @param txh    Transaction
      * @return TRUE, if key has at least one column-value pair, else FALSE
      */
-    public static boolean containsKeyColumn(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws StorageException {
+    public static boolean containsKeyColumn(KeyColumnValueStore store, StaticBuffer key, StaticBuffer column, StoreTransaction txh) throws BackendException {
         return get(store, key, column, txh) != null;
     }
 
     private static final StaticBuffer START = BufferUtil.zeroBuffer(8), END = BufferUtil.oneBuffer(32);
 
-    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, StoreTransaction txh) throws StorageException {
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, StoreTransaction txh) throws BackendException {
         return containsKey(store,key,32,txh);
     }
 
-    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws StorageException {
+    public static boolean containsKey(KeyColumnValueStore store, StaticBuffer key, int maxColumnLength, StoreTransaction txh) throws BackendException {
         StaticBuffer start = START, end = END;
         if (maxColumnLength>32) {
             end = BufferUtil.oneBuffer(maxColumnLength);

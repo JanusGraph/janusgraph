@@ -7,12 +7,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.util.time.ZeroDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConcurrentWriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.ReadConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
@@ -51,7 +51,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
 
     public KCVSConfiguration(BackendOperation.TransactionalProvider txProvider, TimestampProvider times,
-                             KeyColumnValueStore store, String identifier) throws StorageException {
+                             KeyColumnValueStore store, String identifier) throws BackendException {
         Preconditions.checkArgument(txProvider!=null && store!=null && times!=null);
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier));
         this.txProvider = txProvider;
@@ -76,7 +76,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key Key identifying the configuration property
      * @return Value stored for the key or null if the configuration property has not (yet) been defined.
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Override
     public <O> O get(final String key, final Class<O> datatype) {
@@ -84,7 +84,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         final KeySliceQuery query = new KeySliceQuery(rowKey,column, BufferUtil.nextBiggerBuffer(column));
         StaticBuffer result = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
             @Override
-            public StaticBuffer call(StoreTransaction txh) throws StorageException {
+            public StaticBuffer call(StoreTransaction txh) throws BackendException {
                 List<Entry> entries = store.getSlice(query,txh);
                 if (entries.isEmpty()) return null;
                 return entries.get(0).getValueAs(StaticBuffer.STATIC_FACTORY);
@@ -108,7 +108,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      *
      * @param key   Key identifying the configuration property
      * @param value Value to be stored for the key
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Override
     public <O> void set(String key, O value) {
@@ -137,7 +137,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
 
         BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
-            public Boolean call(StoreTransaction txh) throws StorageException {
+            public Boolean call(StoreTransaction txh) throws BackendException {
                 if (checkExpectedValue)
                     store.acquireLock(rowKey,column,expectedValueBuffer,txh);
                 store.mutate(rowKey, additions, deletions, txh);
@@ -165,7 +165,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         Map<String,Object> entries = Maps.newHashMap();
         List<Entry> result = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
-            public List<Entry> call(StoreTransaction txh) throws StorageException {
+            public List<Entry> call(StoreTransaction txh) throws BackendException {
                 return store.getSlice(new KeySliceQuery(rowKey, BufferUtil.zeroBuffer(128), BufferUtil.oneBuffer(128)),txh);
             }
 
@@ -220,7 +220,7 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         try {
             store.close();
             txProvider.close();
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException("Could not close configuration store",e);
         }
     }

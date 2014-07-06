@@ -1,8 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 
@@ -19,9 +18,9 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param key
      * @param value
      * @param txh
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException;
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a list of all Key-value pairs ({@link KeyValueEntry} where the key lies between keyStart (inclusive) and keyEnd (exclusive)
@@ -35,8 +34,8 @@ public interface OrderedKeyValueStore extends KeyValueStore {
      * @param selector
      * @param txh
      * @return
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws StorageException;
+    public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd, KeySelector selector, StoreTransaction txh) throws BackendException;
 
 }

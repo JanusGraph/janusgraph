@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
@@ -30,12 +30,12 @@ public class NoKCVSCache extends KCVSCache {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         return store.getSlice(query,getTx(txh));
     }
 
     @Override
-    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return store.getSlice(keys,query,getTx(txh));
     }
 }

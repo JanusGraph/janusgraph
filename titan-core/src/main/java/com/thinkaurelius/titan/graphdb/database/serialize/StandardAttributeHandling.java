@@ -10,6 +10,7 @@ import com.thinkaurelius.titan.graphdb.database.management.MgmtLogType;
 import com.thinkaurelius.titan.graphdb.database.serialize.attribute.*;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.TitanSchemaCategory;
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.TypeDefinitionCategory;
@@ -35,7 +36,7 @@ public class StandardAttributeHandling implements AttributeHandling {
                     Parameter.class, Parameter[].class, ParameterType.class,
                     Order.class, Multiplicity.class, Cardinality.class, Direction.class, ElementCategory.class,
                     ConsistencyModifier.class, SchemaStatus.class, LogTxStatus.class, MgmtLogType.class,
-                    StandardDuration.class, StandardTimepoint.class
+                    StandardDuration.class, StandardTimepoint.class, StandardTransactionId.class
             );
 
     private final Map<Class,AttributeHandler> handlers;
