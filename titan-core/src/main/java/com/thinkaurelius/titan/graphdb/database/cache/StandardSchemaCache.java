@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.thinkaurelius.titan.diskstorage.EntryList;
+import com.thinkaurelius.titan.diskstorage.EntryMetaData;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
 import com.thinkaurelius.titan.graphdb.relations.EdgeDirection;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
@@ -15,6 +16,7 @@ import com.tinkerpop.blueprints.Direction;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -162,15 +164,16 @@ public class StandardSchemaCache implements SchemaCache {
         return entries;
     }
 
-    @Override
-    public void expireSchemaName(final String name) {
-        ConcurrentMap<String,Long> types = typeNames;
-        if (types!=null) types.remove(name);
-        typeNamesBackup.invalidate(name);
-    }
+//    @Override
+//    public void expireSchemaName(final String name) {
+//        ConcurrentMap<String,Long> types = typeNames;
+//        if (types!=null) types.remove(name);
+//        typeNamesBackup.invalidate(name);
+//    }
 
     @Override
-    public void expireSchemaRelations(final long schemaId) {
+    public void expireSchemaElement(final long schemaId) {
+        //1) expire relations
         final long cuttypeid = (schemaId >>> SCHEMAID_BACK_SHIFT);
         ConcurrentMap<Long,EntryList> types = schemaRelations;
         if (types!=null) {
@@ -184,6 +187,17 @@ public class StandardSchemaCache implements SchemaCache {
         while (keys.hasNext()) {
             long key = keys.next();
             if ((key>>>SCHEMAID_TOTALFORW_SHIFT)==cuttypeid) schemaRelationsBackup.invalidate(key);
+        }
+        //2) expire names
+        ConcurrentMap<String,Long> names = typeNames;
+        if (names!=null) {
+            for (Iterator<Map.Entry<String, Long>> iter = names.entrySet().iterator(); iter.hasNext(); ) {
+                Map.Entry<String, Long> next = iter.next();
+                if (next.getValue().equals(schemaId)) iter.remove();
+            }
+        }
+        for (Map.Entry<String,Long> entry : typeNamesBackup.asMap().entrySet()) {
+            if (entry.getValue().equals(schemaId)) typeNamesBackup.invalidate(entry.getKey());
         }
     }
 

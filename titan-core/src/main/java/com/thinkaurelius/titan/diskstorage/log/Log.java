@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.util.concurrent.Future;
 
@@ -39,18 +39,24 @@ public interface Log {
 
     /**
      *
-     * @param reader
-     * @see #registerReaders(Iterable)
+     * @param readMarker Indicates where to start reading from the log once message readers are registered
+     * @param reader The readers to register (all at once)
+     * @see #registerReaders(ReadMarker, Iterable)
      */
-    public void registerReader(MessageReader... reader);
+    public void registerReader(ReadMarker readMarker, MessageReader... reader);
 
     /**
-     * Registers the given readers with this log. These readers will be invoked for each newly read message from the log.
+     * Registers the given readers with this log. These readers will be invoked for each newly read message from the log
+     * starting at the point identified by the provided {@link ReadMarker}.
+     * <p/>
      * If no previous readers were registered, invoking this method triggers reader threads to be instantiated.
+     * If readers have been previously registered, then the provided {@link ReadMarker} must be compatible with the
+     * previous {@link ReadMarker} or an exception will be thrown.
      *
-     * @param readers
+     * @param readMarker Indicates where to start reading from the log once message readers are registered
+     * @param readers The readers to register (all at once)
      */
-    public void registerReaders(Iterable<MessageReader> readers);
+    public void registerReaders(ReadMarker readMarker, Iterable<MessageReader> readers);
 
     /**
      * Removes the given reader from the list of registered readers and returns whether this reader was registered in the
@@ -71,8 +77,8 @@ public interface Log {
     /**
      * Closes this log and stops the reading process.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void close() throws StorageException;
+    public void close() throws BackendException;
 
 }

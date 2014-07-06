@@ -1,4 +1,4 @@
-package com.thinkaurelius.titan.graphdb.userlog;
+package com.thinkaurelius.titan.graphdb.log;
 
 import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Function;
@@ -15,12 +15,12 @@ import com.thinkaurelius.titan.core.log.Change;
 import com.thinkaurelius.titan.core.log.ChangeProcessor;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.log.*;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
+import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
+import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementLifeCycle;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelation;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
@@ -50,8 +50,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             LoggerFactory.getLogger(StandardLogProcessorFramework.class);
 
     private final StandardTitanGraph graph;
+    private final Serializer serializer;
     private final TimestampProvider times;
-    private final LogManager triggerManager;
     private final Map<String,Log> processorLogs;
 
     private boolean isOpen = true;
@@ -59,8 +59,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
     public StandardLogProcessorFramework(StandardTitanGraph graph) {
         Preconditions.checkArgument(graph!=null && graph.isOpen());
         this.graph = graph;
+        this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        this.triggerManager = graph.getBackend().getLogManager(GraphDatabaseConfiguration.TRIGGER_LOG);
         this.processorLogs = new HashMap<String, Log>();
     }
 
@@ -74,7 +74,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         if (processorLogs.containsKey(logIdentifier)) {
             try {
                 processorLogs.get(logIdentifier).close();
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 throw new TitanException("Could not close trigger log: "+ logIdentifier,e);
             }
             processorLogs.remove(logIdentifier);
@@ -84,6 +84,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
 
     @Override
     public synchronized void shutdown() throws TitanException {
+        if (!isOpen) return;
         isOpen = false;
         try {
             try {
@@ -92,9 +93,8 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 }
                 processorLogs.clear();
             } finally {
-                triggerManager.close();
             }
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException(e);
         }
         graph.shutdown();
@@ -108,7 +108,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
 
     private class Builder implements LogProcessorBuilder {
 
-        private final String triggerName;
+        private final String userLogName;
         private final List<ChangeProcessor> processors;
 
         private String readMarkerName = null;
@@ -116,15 +116,15 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         private int retryAttempts = 1;
 
 
-        private Builder(String triggerName) {
-            Preconditions.checkArgument(StringUtils.isNotBlank(triggerName));
-            this.triggerName = triggerName;
+        private Builder(String userLogName) {
+            Preconditions.checkArgument(StringUtils.isNotBlank(userLogName));
+            this.userLogName = userLogName;
             this.processors = new ArrayList<ChangeProcessor>();
         }
 
         @Override
         public String getLogIdentifier() {
-            return triggerName;
+            return userLogName;
         }
 
         @Override
@@ -174,20 +174,19 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 readMarker = ReadMarker.fromIdentifierOrTime(readMarkerName, startTime.sinceEpoch(startTime.getNativeUnit()), startTime.getNativeUnit());
             }
             synchronized (StandardLogProcessorFramework.this) {
-                Preconditions.checkArgument(!processorLogs.containsKey(triggerName),
-                        "Processors have already been registered for trigger: %s",triggerManager);
-                String logName = Backend.getTriggerLogName(triggerName);
+                Preconditions.checkArgument(!processorLogs.containsKey(userLogName),
+                        "Processors have already been registered for user log: %s",userLogName);
                 try {
-                    Log log = triggerManager.openLog(logName,readMarker);
-                    log.registerReaders(Iterables.transform(processors, new Function<ChangeProcessor, MessageReader>() {
+                    Log log = graph.getBackend().getTriggerLog(userLogName);
+                    log.registerReaders(readMarker,Iterables.transform(processors, new Function<ChangeProcessor, MessageReader>() {
                         @Nullable
                         @Override
                         public MessageReader apply(@Nullable ChangeProcessor changeProcessor) {
-                            return new MsgReaderConverter(triggerName, changeProcessor, retryAttempts);
+                            return new MsgReaderConverter(userLogName, changeProcessor, retryAttempts);
                         }
                     }));
-                } catch (StorageException e) {
-                    throw new TitanException("Could not open log for trigger: "+triggerName,e);
+                } catch (BackendException e) {
+                    throw new TitanException("Could not open log for trigger: "+ userLogName,e);
                 }
             }
         }
@@ -205,14 +204,13 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             this.retryAttempts = retryAttempts;
         }
 
-        private void readRelations(ReadBuffer content, Change state,
+        private void readRelations(TransactionLogHeader.Entry txentry,
                                    StandardTitanTx tx, StandardChangeState changes) {
-            assert state.isProper();
-            long numRels = VariableLong.readPositive(content);
-            Preconditions.checkArgument(numRels>=0 && numRels<=Integer.MAX_VALUE);
-            for (int i=0;i<numRels;i++) {
-                long outVertexId = VariableLong.readPositive(content);
-                Entry relEntry = BufferUtil.readEntry(content,graph.getDataSerializer());
+            for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
+                Change state = modification.state;
+                assert state.isProper();
+                long outVertexId = modification.outVertexId;
+                Entry relEntry = modification.relationEntry;
                 InternalVertex outVertex = tx.getInternalVertex(outVertexId);
                 //Special relation parsing, compare to {@link RelationConstructor}
                 RelationCache relCache = tx.getEdgeSerializer().readRelation(relEntry, false, tx);
@@ -262,16 +260,18 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                 try {
                     ReadBuffer content = message.getContent().asReadBuffer();
                     String senderId =  message.getSenderId();
-                    long txtime = content.getLong();
-                    long txid = content.getLong();
-                    transactionId = new StandardTransactionId(senderId,txid,
-                            new StandardTimestamp(txtime,times.getUnit()));
-                    readRelations(content,Change.ADDED,tx,changes);
-                    readRelations(content,Change.REMOVED,tx,changes);
+                    TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
+                    if (txentry.getMetadata().containsKey(LogTxMeta.SOURCE_TRANSACTION)) {
+                        transactionId = (StandardTransactionId)txentry.getMetadata().get(LogTxMeta.SOURCE_TRANSACTION);
+                    } else {
+                        transactionId = new StandardTransactionId(senderId,txentry.getHeader().getId(),
+                                new StandardTimestamp(txentry.getHeader().getTimestamp(times.getUnit()),times.getUnit()));
+                    }
+                    readRelations(txentry,tx,changes);
                 } catch (Throwable e) {
                     tx.rollback();
                     logger.error("Encountered exception [{}] when preparing processor [{}] for trigger [{}] on attempt {} of {}",
-                            e.getMessage(),processor,triggerManager,i,retryAttempts);
+                            e.getMessage(),processor,triggerName,i,retryAttempts);
                     logger.error("Full exception: ",e);
                     continue;
                 }
@@ -283,7 +283,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
                     tx.rollback();
                     tx = null;
                     logger.error("Encountered exception [{}] when running processor [{}] for trigger [{}] on attempt {} of {}",
-                            e.getMessage(),processor,triggerManager,i,retryAttempts);
+                            e.getMessage(),processor,triggerName,i,retryAttempts);
                     logger.error("Full exception: ",e);
                 } finally {
                     if (tx!=null) tx.commit();

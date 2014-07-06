@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.RelationTypeMaker;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.database.IndexSerializer;
 import com.thinkaurelius.titan.graphdb.database.serialize.AttributeHandling;
 import com.thinkaurelius.titan.graphdb.internal.Token;
@@ -30,6 +31,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     private Order sortOrder;
     private List<RelationType> signature;
     private Multiplicity multiplicity;
+    private SchemaStatus status = SchemaStatus.ENABLED;
 
     public StandardRelationTypeMaker(final StandardTitanTx tx, final IndexSerializer indexSerializer,
                                      final AttributeHandling attributeHandler) {
@@ -62,8 +64,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         return multiplicity;
     }
 
-    private void checkGeneralArguments() {
-        //Verify name
+    public static void checkName(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
@@ -71,7 +72,11 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
                 "Name starts with a reserved keyword: " + SystemTypeManager.systemETprefix);
         Preconditions.checkArgument(!SystemTypeManager.isSystemType(name.toLowerCase()),
                 "Name is reserved by system and cannot be used: %s",name);
+    }
 
+    private void checkGeneralArguments() {
+        //Verify name
+        checkName(name);
         checkSortKey(sortKey);
         Preconditions.checkArgument(sortOrder==Order.ASC || hasSortKey(),"Must define a sort key to use ordering");
         checkSignature(signature);
@@ -113,6 +118,7 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
         def.setValue(SORT_ORDER, sortOrder);
         def.setValue(SIGNATURE, checkSignature(signature));
         def.setValue(MULTIPLICITY,multiplicity);
+        def.setValue(STATUS,status);
         return def;
     }
 
@@ -126,6 +132,12 @@ public abstract class StandardRelationTypeMaker implements RelationTypeMaker {
     public StandardRelationTypeMaker signature(RelationType... types) {
         Preconditions.checkArgument(types!=null && types.length>0);
         signature.addAll(Arrays.asList(types));
+        return this;
+    }
+
+    public StandardRelationTypeMaker status(SchemaStatus status) {
+        Preconditions.checkArgument(status!=null);
+        this.status=status;
         return this;
     }
 

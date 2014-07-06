@@ -48,14 +48,14 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         return convert(store.getSlice(concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),
                 new KeyColumnSliceSelector(query.getKey(), query.getLimit()), txh));
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         if (!deletions.isEmpty()) {
             for (StaticBuffer deletion : deletions) {
                 StaticBuffer del = concatenate(key, deletion.as(StaticBuffer.STATIC_FACTORY));
@@ -73,7 +73,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
 
     @Override
-    public KeyIterator getKeys(final KeyRangeQuery keyQuery, final StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(final KeyRangeQuery keyQuery, final StoreTransaction txh) throws BackendException {
         return new KeyIteratorImpl(keyQuery, store.getSlice(concatenatePrefix(keyQuery.getKeyStart(), keyQuery.getSliceStart()),
                 concatenatePrefix(keyQuery.getKeyEnd(), keyQuery.getSliceEnd()),
                 new KeyRangeSliceSelector(keyQuery),
@@ -82,17 +82,17 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
 
     @Override
-    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException("This store has ordered keys, use getKeys(KeyRangeQuery, StoreTransaction) instead");
     }
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
+                            StoreTransaction txh) throws BackendException {
         store.acquireLock(concatenate(key, column), expectedValue, txh);
     }
 
-    private EntryList convert(RecordIterator<KeyValueEntry> entries) throws StorageException {
+    private EntryList convert(RecordIterator<KeyValueEntry> entries) throws BackendException {
         try {
             return StaticArrayEntryList.ofStaticBuffer(entries,kvEntryGetter);
         } finally {
@@ -104,7 +104,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
              * allows useful retries of transient failures but also allows
              * futile retries of permanent failures.
              */
-                throw new TemporaryStorageException(e);
+                throw new TemporaryBackendException(e);
             }
         }
     }
@@ -307,7 +307,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             this.iter = iter;
         }
 
-        private StaticBuffer nextKey() throws StorageException {
+        private StaticBuffer nextKey() throws BackendException {
             while (iter.hasNext()) {
                 current = iter.next();
                 StaticBuffer key = getKey(current.getKey());
@@ -329,7 +329,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             if (currentKeyReturned) {
                 try {
                     currentKey = nextKey();
-                } catch (StorageException e) {
+                } catch (BackendException e) {
                     throw new RuntimeException(e);
                 }
                 currentKeyReturned = false;

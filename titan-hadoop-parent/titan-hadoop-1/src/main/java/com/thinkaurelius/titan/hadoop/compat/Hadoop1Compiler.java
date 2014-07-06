@@ -1,9 +1,13 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.hadoop.HadoopGraph;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.Tokens;
 import com.thinkaurelius.titan.hadoop.compat.HadoopCompiler;
+import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
+import com.thinkaurelius.titan.hadoop.config.HybridConfigured;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
 import com.thinkaurelius.titan.hadoop.formats.FormatTools;
 import com.thinkaurelius.titan.hadoop.formats.JobConfigurationFormat;
 import com.thinkaurelius.titan.hadoop.hdfs.NoSideEffectFilter;
@@ -40,7 +44,7 @@ import java.util.Map;
 /**
  * @author Marko A. Rodriguez (http://markorodriguez.com)
  */
-public class Hadoop1Compiler extends Configured implements HadoopCompiler {
+public class Hadoop1Compiler extends HybridConfigured implements HadoopCompiler {
 
     private static final String MAPRED_COMPRESS_MAP_OUTPUT = "mapred.compress.map.output";
     private static final String MAPRED_MAP_OUTPUT_COMPRESSION_CODEC = "mapred.map.output.compression.codec";
@@ -64,9 +68,6 @@ public class Hadoop1Compiler extends Configured implements HadoopCompiler {
 
     private static final Class<? extends InputFormat> INTERMEDIATE_INPUT_FORMAT = SequenceFileInputFormat.class;
     private static final Class<? extends OutputFormat> INTERMEDIATE_OUTPUT_FORMAT = SequenceFileOutputFormat.class;
-
-    private boolean trackPaths = false;
-    private boolean trackState = false;
 
     public Hadoop1Compiler(final HadoopGraph graph) {
         this.graph = graph;
@@ -95,13 +96,7 @@ public class Hadoop1Compiler extends Configured implements HadoopCompiler {
 
     private void addConfiguration(final Configuration configuration) {
         for (final Map.Entry<String, String> entry : configuration) {
-            if (entry.getKey().equals(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS) & Boolean.valueOf(entry.getValue())) {
-                this.graph.setTrackPaths(this.trackPaths = true);
-            }
-            if (entry.getKey().equals(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE) & Boolean.valueOf(entry.getValue())) {
-                this.graph.setTrackState(this.trackState = true);
-            }
-            this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue());
+            this.getConf().set(entry.getKey() + "-" + this.mapSequenceClasses.size(), entry.getValue()); // TODO why does this line exist?
             this.getConf().set(entry.getKey(), entry.getValue());
         }
     }
@@ -242,9 +237,9 @@ public class Hadoop1Compiler extends Configured implements HadoopCompiler {
         if (null == hadoopFileJar)
             throw new IllegalStateException("The Titan/Hadoop job jar could not be found: " + Tokens.TITAN_HADOOP_JOB_JAR);
 
-        if (this.trackPaths)
+        if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS))
             logger.warn("Path tracking is enabled for this Titan/Hadoop job (space and time expensive)");
-        if (this.trackState)
+        if (getTitanConf().get(TitanHadoopConfiguration.PIPELINE_TRACK_STATE))
             logger.warn("State tracking is enabled for this Titan/Hadoop job (full deletes not possible)");
 
         final FileSystem hdfs = FileSystem.get(this.graph.getConf());
@@ -255,8 +250,8 @@ public class Hadoop1Compiler extends Configured implements HadoopCompiler {
 
         for (int i = 0; i < this.jobs.size(); i++) {
             final Job job = this.jobs.get(i);
-            job.getConfiguration().setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_PATHS, this.trackPaths);
-            job.getConfiguration().setBoolean(Tokens.TITAN_HADOOP_PIPELINE_TRACK_STATE, this.trackState);
+            ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
+            ConfigurationUtil.copyValue(job.getConfiguration(), getTitanConf(), TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
             job.getConfiguration().set(MAPRED_JAR, hadoopFileJar);
             FileOutputFormat.setOutputPath(job, new Path(outputJobPrefix + "-" + i));
 

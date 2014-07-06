@@ -3,18 +3,18 @@ package com.thinkaurelius.titan.diskstorage;
 /**
  * Exception thrown in the storage layer of the graph database.
  * <p/>
- * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link StorageException}.
+ * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link BackendException}.
  *
  * @author Matthias Br&ouml;cheler (me@matthiasb.com);
  */
-public abstract class StorageException extends Exception {
+public abstract class BackendException extends Exception {
 
     private static final long serialVersionUID = 4056436257763972423L;
 
     /**
      * @param msg Exception message
      */
-    public StorageException(String msg) {
+    public BackendException(String msg) {
         super(msg);
     }
 
@@ -22,7 +22,7 @@ public abstract class StorageException extends Exception {
      * @param msg   Exception message
      * @param cause Cause of the exception
      */
-    public StorageException(String msg, Throwable cause) {
+    public BackendException(String msg, Throwable cause) {
         super(msg, cause);
     }
 
@@ -31,7 +31,7 @@ public abstract class StorageException extends Exception {
      *
      * @param cause Cause of the exception
      */
-    public StorageException(Throwable cause) {
+    public BackendException(Throwable cause) {
         this("Exception in storage backend.", cause);
     }
 

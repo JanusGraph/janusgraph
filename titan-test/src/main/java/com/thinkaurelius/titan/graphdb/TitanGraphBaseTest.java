@@ -7,9 +7,9 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
@@ -171,7 +171,7 @@ public abstract class TitanGraphBaseTest {
                 logStoreManager.close();
                 logStoreManager=null;
             }
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException(e);
         }
     }
@@ -180,21 +180,21 @@ public abstract class TitanGraphBaseTest {
         if (logManagers.containsKey(logManagerName)) {
             try {
                 logManagers.remove(logManagerName).close();
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 throw new TitanException("Could not close log manager " + logManagerName,e);
             }
         }
     }
 
-    public Log openTriggerLog(String identifier, ReadMarker readMarker) {
-        return openLog(TRIGGER_LOG, Backend.TRIGGER_LOG_PREFIX +identifier, readMarker);
+    public Log openTriggerLog(String identifier) {
+        return openLog(TRIGGER_LOG, Backend.TRIGGER_LOG_PREFIX +identifier);
     }
 
-    public Log openTxLog(ReadMarker readMarker) {
-        return openLog(TRANSACTION_LOG, Backend.SYSTEM_TX_LOG_NAME, readMarker);
+    public Log openTxLog() {
+        return openLog(TRANSACTION_LOG, Backend.SYSTEM_TX_LOG_NAME);
     }
 
-    private Log openLog(String logManagerName, String logName, ReadMarker readMarker) {
+    private Log openLog(String logManagerName, String logName) {
         try {
             ModifiableConfiguration configuration = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,config.copy(), BasicConfiguration.Restriction.NONE);
             configuration.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID, "reader");
@@ -213,8 +213,8 @@ public abstract class TitanGraphBaseTest {
                 logManagers.put(logManagerName,new KCVSLogManager(logStoreManager,logConfig));
             }
             assert logManagers.containsKey(logManagerName);
-            return logManagers.get(logManagerName).openLog(logName, readMarker);
-        } catch (StorageException e) {
+            return logManagers.get(logManagerName).openLog(logName);
+        } catch (BackendException e) {
             throw new TitanException("Could not open log: "+ logName,e);
         }
     }

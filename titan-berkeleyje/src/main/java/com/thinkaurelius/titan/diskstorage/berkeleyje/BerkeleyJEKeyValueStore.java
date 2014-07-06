@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.berkeleyje;
 
 import com.google.common.base.Preconditions;
 import com.sleepycat.je.*;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeySelector;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
@@ -33,18 +33,20 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     private final Database db;
     private final String name;
     private final BerkeleyJEStoreManager manager;
+    private boolean isOpen;
 
     public BerkeleyJEKeyValueStore(String n, Database data, BerkeleyJEStoreManager m) {
         db = data;
         name = n;
         manager = m;
+        isOpen = true;
     }
 
-    public DatabaseConfig getConfiguration() throws StorageException {
+    public DatabaseConfig getConfiguration() throws BackendException {
         try {
             return db.getConfig();
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
@@ -59,17 +61,18 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public synchronized void close() throws BackendException {
         try {
-            db.close();
+            if(isOpen) db.close();
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
-        manager.removeDatabase(this);
+        if (isOpen) manager.removeDatabase(this);
+        isOpen = false;
     }
 
     @Override
-    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException {
+    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException {
         Transaction tx = getTransaction(txh);
         try {
             DatabaseEntry dbkey = key.as(ENTRY_FACTORY);
@@ -85,17 +88,17 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 return null;
             }
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
     @Override
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException {
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException {
         return get(key,txh)!=null;
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         if (getTransaction(txh) == null) {
             log.warn("Attempt to acquire lock with transactions disabled");
         } //else we need no locking
@@ -103,7 +106,7 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
     @Override
     public RecordIterator<KeyValueEntry> getSlice(StaticBuffer keyStart, StaticBuffer keyEnd,
-                                                  KeySelector selector, StoreTransaction txh) throws StorageException {
+                                                  KeySelector selector, StoreTransaction txh) throws BackendException {
         log.trace("beginning db={}, op=getSlice, tx={}", name, txh);
         Transaction tx = getTransaction(txh);
         Cursor cursor = null;
@@ -156,22 +159,22 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
                 }
             };
         } catch (Exception e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } finally {
             try {
                 if (cursor != null) cursor.close();
             } catch (Exception e) {
-                throw new PermanentStorageException(e);
+                throw new PermanentBackendException(e);
             }
         }
     }
 
     @Override
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws StorageException {
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh) throws BackendException {
         insert(key, value, txh, true);
     }
 
-    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, boolean allowOverwrite) throws StorageException {
+    public void insert(StaticBuffer key, StaticBuffer value, StoreTransaction txh, boolean allowOverwrite) throws BackendException {
         Transaction tx = getTransaction(txh);
         try {
             OperationStatus status;
@@ -185,29 +188,29 @@ public class BerkeleyJEKeyValueStore implements OrderedKeyValueStore {
 
             if (status != OperationStatus.SUCCESS) {
                 if (status == OperationStatus.KEYEXIST) {
-                    throw new PermanentStorageException("Key already exists on no-overwrite.");
+                    throw new PermanentBackendException("Key already exists on no-overwrite.");
                 } else {
-                    throw new PermanentStorageException("Could not write entity, return status: " + status);
+                    throw new PermanentBackendException("Could not write entity, return status: " + status);
                 }
             }
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
 
     @Override
-    public void delete(StaticBuffer key, StoreTransaction txh) throws StorageException {
+    public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException {
         log.trace("Deletion");
         Transaction tx = getTransaction(txh);
         try {
             log.trace("db={}, op=delete, tx={}", name, txh);
             OperationStatus status = db.delete(tx, key.as(ENTRY_FACTORY));
             if (status != OperationStatus.SUCCESS) {
-                throw new PermanentStorageException("Could not remove: " + status);
+                throw new PermanentBackendException("Could not remove: " + status);
             }
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 

@@ -3,6 +3,9 @@ package com.thinkaurelius.titan.hadoop;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
+import com.thinkaurelius.titan.hadoop.config.TitanHadoopConfiguration;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -21,6 +24,10 @@ public class Tokens {
 
     public static final String VERSION;
     public static final String TITAN_HADOOP_JOB_JAR;
+
+    public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_MAP_SPILL_OVER);
+    public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_PATHS);
+    public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = ConfigElement.getPath(TitanHadoopConfiguration.PIPELINE_TRACK_STATE);
 
     public enum Action {DROP, KEEP}
 
@@ -82,8 +89,9 @@ public class Tokens {
     public static final String BZ2 = "bz2";
 
     public static int DEFAULT_MAP_SPILL_OVER = 500;
-    public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = "titan.hadoop.pipeline.map-spill-over";
-    public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = "titan.hadoop.pipeline.track-paths";
-    public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = "titan.hadoop.pipeline.track-state";
+
+//    public static final String TITAN_HADOOP_PIPELINE_MAP_SPILL_OVER = "titan.hadoop.pipeline.map-spill-over";
+//    public static final String TITAN_HADOOP_PIPELINE_TRACK_PATHS = "titan.hadoop.pipeline.track-paths";
+//    public static final String TITAN_HADOOP_PIPELINE_TRACK_STATE = "titan.hadoop.pipeline.track-state";
 
 }

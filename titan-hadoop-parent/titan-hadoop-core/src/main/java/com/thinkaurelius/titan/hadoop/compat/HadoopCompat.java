@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
@@ -40,6 +41,8 @@ public interface HadoopCompat {
     public void incrementContextCounter(TaskInputOutputContext context, Enum<?> counter, long incr);
 
     public Configuration getContextConfiguration(TaskAttemptContext context);
+
+    public Configuration getJobContextConfiguration(JobContext context);
 
     public long getCounter(MapReduceDriver counters, Enum<?> e);
 }

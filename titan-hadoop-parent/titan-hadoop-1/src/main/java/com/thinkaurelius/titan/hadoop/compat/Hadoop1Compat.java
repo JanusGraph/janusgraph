@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.hadoop.compat;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.TaskInputOutputContext;
@@ -48,5 +49,10 @@ public class Hadoop1Compat implements HadoopCompat {
     @Override
     public long getCounter(MapReduceDriver counters, Enum<?> e) {
         return counters.getCounters().findCounter(e).getValue();
+    }
+
+    @Override
+    public Configuration getJobContextConfiguration(JobContext context) {
+        return context.getConfiguration();
     }
 }

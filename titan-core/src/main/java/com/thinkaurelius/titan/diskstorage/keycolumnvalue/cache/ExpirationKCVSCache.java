@@ -76,7 +76,7 @@ public class ExpirationKCVSCache extends KCVSCache {
     }
 
     @Override
-    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(final KeySliceQuery query, final StoreTransaction txh) throws BackendException {
         incActionBy(1, CacheMetricsAction.RETRIEVAL,txh);
         if (isExpired(query)) {
             incActionBy(1, CacheMetricsAction.MISS,txh);
@@ -99,7 +99,7 @@ public class ExpirationKCVSCache extends KCVSCache {
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(final List<StaticBuffer> keys, final SliceQuery query, final StoreTransaction txh) throws BackendException {
         Map<StaticBuffer,EntryList> results = new HashMap<StaticBuffer, EntryList>(keys.size());
         List<StaticBuffer> remainingKeys = new ArrayList<StaticBuffer>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
@@ -145,7 +145,7 @@ public class ExpirationKCVSCache extends KCVSCache {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         cleanupThread.stopThread();
         super.close();
     }

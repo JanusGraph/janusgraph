@@ -1,9 +1,14 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.input.current;
 
+import org.apache.hadoop.conf.Configuration;
+
 import com.google.common.base.Preconditions;
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
+import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.SliceQuery;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.RelationReader;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
@@ -17,16 +22,12 @@ import com.thinkaurelius.titan.graphdb.types.TypeInspector;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseLabel;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
+import com.thinkaurelius.titan.hadoop.config.ConfigurationUtil;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
-import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.SystemTypeInspector;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.TitanHadoopSetupCommon;
 import com.thinkaurelius.titan.hadoop.formats.titan.input.VertexReader;
-import com.thinkaurelius.titan.hadoop.formats.titan.util.ConfigurationUtil;
 import com.tinkerpop.blueprints.Direction;
-
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.hadoop.conf.Configuration;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -37,8 +38,9 @@ public class TitanHadoopSetupImpl extends TitanHadoopSetupCommon {
     private final StandardTitanTx tx;
 
     public TitanHadoopSetupImpl(final Configuration config) {
-        BaseConfiguration titan = ConfigurationUtil.extractConfiguration(config, TitanInputFormat.TITAN_HADOOP_GRAPH_INPUT_TITAN);
-        graph = (StandardTitanGraph)TitanFactory.open(titan);
+        BasicConfiguration bc = ConfigurationUtil.extractInputConfiguration(config);
+        graph = (StandardTitanGraph)TitanFactory.open(bc);
+
         tx = (StandardTitanTx)graph.buildTransaction().readOnly().setVertexCacheSize(200).start();
    }
 

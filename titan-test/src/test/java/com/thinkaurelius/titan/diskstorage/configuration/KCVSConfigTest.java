@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.configuration;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.KCVSConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -20,16 +20,16 @@ public class KCVSConfigTest extends WritableConfigurationTest {
         try {
             return new KCVSConfiguration(new BackendOperation.TransactionalProvider() {
                 @Override
-                public StoreTransaction openTx() throws StorageException {
+                public StoreTransaction openTx() throws BackendException {
                     return manager.beginTransaction(StandardBaseTransactionConfig.of(Timestamps.MICRO, manager.getFeatures().getKeyConsistentTxConfig()));
                 }
 
                 @Override
-                public void close() throws StorageException {
+                public void close() throws BackendException {
                     manager.close();
                 }
             }, Timestamps.MICRO,manager.openDatabase("titan"),"general");
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new RuntimeException(e);
         }
     }

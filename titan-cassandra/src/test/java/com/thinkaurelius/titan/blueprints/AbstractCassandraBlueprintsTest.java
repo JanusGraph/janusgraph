@@ -1,11 +1,8 @@
 package com.thinkaurelius.titan.blueprints;
 
-import com.thinkaurelius.titan.CassandraStorageSetup;
 import com.thinkaurelius.titan.core.TitanFactory;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.cassandra.embedded.CassandraEmbeddedStoreManager;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 import com.tinkerpop.blueprints.Graph;
 
@@ -31,7 +28,7 @@ public abstract class AbstractCassandraBlueprintsTest extends TitanBlueprintsTes
     }
 
     @Override
-    public void cleanUp() throws StorageException {
+    public void cleanUp() throws BackendException {
         StandardTitanGraph graph = (StandardTitanGraph)generateGraph();
         graph.getConfiguration().getBackend().clearStorage();
         graph.shutdown();

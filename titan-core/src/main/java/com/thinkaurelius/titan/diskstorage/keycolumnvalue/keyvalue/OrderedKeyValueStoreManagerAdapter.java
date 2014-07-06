@@ -2,9 +2,9 @@ package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 
@@ -48,23 +48,23 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws BackendException {
         return manager.beginTransaction(config);
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         manager.close();
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         manager.clearStorage();
     }
 
     @Override
     public synchronized OrderedKeyValueStoreAdapter openDatabase(String name)
-            throws StorageException {
+            throws BackendException {
         if (!stores.containsKey(name) || stores.get(name).isClosed()) {
             OrderedKeyValueStoreAdapter store = wrapKeyValueStore(manager.openDatabase(name), keyLengths);
             stores.put(name, store);
@@ -73,7 +73,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         Map<String, KVMutation> converted = new HashMap<String, KVMutation>(mutations.size());
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeEntry : mutations.entrySet()) {
             OrderedKeyValueStoreAdapter store = openDatabase(storeEntry.getKey());
@@ -112,7 +112,7 @@ public class OrderedKeyValueStoreManagerAdapter implements KeyColumnValueStoreMa
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         return manager.getLocalKeyPartition();
     }
 

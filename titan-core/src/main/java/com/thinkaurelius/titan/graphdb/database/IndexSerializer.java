@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.Cardinality;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.query.graph.GraphCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.types.ParameterType;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -71,7 +72,7 @@ public class IndexSerializer {
         return mixedIndexes.containsKey(indexName);
     }
 
-    public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws StorageException {
+    public static void register(final MixedIndexType index, final PropertyKey key, final BackendTransaction tx) throws BackendException {
         tx.getIndexTransaction(index.getBackingIndexName()).register(index.getStoreName(), key2Field(index,key), getKeyInformation(index.getField(key)));
 
     }

@@ -12,10 +12,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.thinkaurelius.titan.core.TitanException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.IDBlock;
 import com.thinkaurelius.titan.core.attribute.Duration;
 import com.thinkaurelius.titan.diskstorage.IDAuthority;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,7 +173,7 @@ public class StandardIDPool implements IDPool {
             log.debug("Retrieved ID block from authority on partition({})-namespace({}) in {}", partition, idNamespace, sw.stop());
             Preconditions.checkArgument(idBlock!=null && idBlock.numIds()>0);
             nextBlock = idBlock;
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException("Could not acquire new ID block from storage", e);
         } catch (IDPoolExhaustedException e) {
             nextBlock = ID_POOL_EXHAUSTION;

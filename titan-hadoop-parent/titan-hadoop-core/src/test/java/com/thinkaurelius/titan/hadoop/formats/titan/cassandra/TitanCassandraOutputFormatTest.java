@@ -23,7 +23,7 @@ public class TitanCassandraOutputFormatTest extends TitanOutputFormatTest {
 
     private static TitanGraph startUpCassandra() throws Exception {
         ModifiableConfiguration configuration = GraphDatabaseConfiguration.buildConfiguration();
-        configuration.set(STORAGE_BACKEND,"embededcassandra");
+        configuration.set(STORAGE_BACKEND,"embeddedcassandra");
         configuration.set(STORAGE_HOSTS,new String[]{"localhost"});
         configuration.set(STORAGE_CONF_FILE, TitanCassandraOutputFormat.class.getResource("cassandra.yaml").toString());
         configuration.set(DB_CACHE, false);

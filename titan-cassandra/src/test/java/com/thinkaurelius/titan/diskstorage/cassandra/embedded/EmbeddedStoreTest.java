@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import static org.junit.Assert.assertTrue;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import org.junit.BeforeClass;
@@ -9,7 +10,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreTest;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
@@ -28,7 +28,7 @@ public class EmbeddedStoreTest extends AbstractCassandraStoreTest {
     }
 
     @Override
-    public AbstractCassandraStoreManager openStorageManager(Configuration c) throws StorageException {
+    public AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException {
         return new CassandraEmbeddedStoreManager(c);
     }
 

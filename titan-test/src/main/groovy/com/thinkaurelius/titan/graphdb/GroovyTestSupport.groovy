@@ -15,12 +15,11 @@ import com.google.common.base.Preconditions
 import com.tinkerpop.blueprints.Vertex
 import com.thinkaurelius.titan.core.TitanVertex
 import com.thinkaurelius.titan.core.TitanGraph
-import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph
 import com.thinkaurelius.titan.testutil.gen.Schema
 import com.thinkaurelius.titan.testutil.gen.GraphGenerator
 import com.tinkerpop.gremlin.groovy.Gremlin
-import com.thinkaurelius.titan.diskstorage.StorageException
+import com.thinkaurelius.titan.diskstorage.BackendException
 
 import com.google.common.collect.Iterables
 
@@ -61,7 +60,7 @@ abstract class GroovyTestSupport {
         Gremlin.load()
     }
 
-    GroovyTestSupport(WriteConfiguration conf) throws StorageException {
+    GroovyTestSupport(WriteConfiguration conf) throws BackendException {
         this.conf = conf
     }
 
@@ -72,7 +71,7 @@ abstract class GroovyTestSupport {
         if (null == graph) {
             try {
                 graph = getGraph()
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 throw new RuntimeException(e)
             }
         }
@@ -92,7 +91,7 @@ abstract class GroovyTestSupport {
             graph.shutdown()
     }
 
-    protected abstract StandardTitanGraph getGraph() throws StorageException;
+    protected abstract StandardTitanGraph getGraph() throws BackendException;
 
     protected abstract Schema getSchema();
 
@@ -193,7 +192,7 @@ abstract class GroovyTestSupport {
         tx.commit()
     }
 
-    protected void initializeGraph(TitanGraph g) throws StorageException {
+    protected void initializeGraph(TitanGraph g) throws BackendException {
         log.info("Initializing graph...");
         long before = System.currentTimeMillis()
         Schema schema = getSchema();

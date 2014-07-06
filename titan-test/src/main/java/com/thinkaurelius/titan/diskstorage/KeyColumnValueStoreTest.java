@@ -46,15 +46,15 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         open();
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         manager = openStorageManager();
         store = manager.openDatabase(storeName);
         tx = startTx();
     }
 
-    public StoreTransaction startTx() throws StorageException {
+    public StoreTransaction startTx() throws BackendException {
         return manager.beginTransaction(getTxConfig());
     }
 
@@ -62,7 +62,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         return manager.getFeatures();
     }
 
-    public void clopen() throws StorageException {
+    public void clopen() throws BackendException {
         close();
         open();
     }
@@ -72,13 +72,13 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         close();
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         if (tx != null) tx.commit();
         store.close();
         manager.close();
     }
 
-    public void newTx() throws StorageException {
+    public void newTx() throws BackendException {
         if (tx!=null) tx.commit();
         tx = startTx();
     }
@@ -92,21 +92,21 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         return KeyValueStoreUtil.generateData(numKeys, numColumns);
     }
 
-    public void loadValues(String[][] values) throws StorageException {
+    public void loadValues(String[][] values) throws BackendException {
         loadValues(store,values);
     }
 
-    public void loadValues(KeyColumnValueStore store, String[][] values) throws StorageException {
+    public void loadValues(KeyColumnValueStore store, String[][] values) throws BackendException {
         loadValues(store, values, -1, -1);
     }
 
     public void loadValues(String[][] values, int shiftEveryNthRow,
-                           int shiftSliceLength) throws StorageException {
+                           int shiftSliceLength) throws BackendException {
         loadValues(store, values, shiftEveryNthRow, shiftSliceLength);
     }
 
     public void loadValues(KeyColumnValueStore store, String[][] values, int shiftEveryNthRow,
-                           int shiftSliceLength) throws StorageException {
+                           int shiftSliceLength) throws BackendException {
         for (int i = 0; i < values.length; i++) {
 
             List<Entry> entries = new ArrayList<Entry>();
@@ -153,7 +153,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * @param offset    offset (must be positive)
      * @throws StorageException unexpected failure
      */
-    public void loadLowerTriangularValues(int dimension, int offset) throws StorageException {
+    public void loadLowerTriangularValues(int dimension, int offset) throws BackendException {
 
         Preconditions.checkArgument(0 < dimension);
         ByteBuffer val = ByteBuffer.allocate(1);
@@ -184,7 +184,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-    public Set<KeyColumn> deleteValues(int every) throws StorageException {
+    public Set<KeyColumn> deleteValues(int every) throws BackendException {
         Set<KeyColumn> removed = new HashSet<KeyColumn>();
         int counter = 0;
         for (int i = 0; i < numKeys; i++) {
@@ -202,7 +202,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         return removed;
     }
 
-    public Set<Integer> deleteKeys(int every) throws StorageException {
+    public Set<Integer> deleteKeys(int every) throws BackendException {
         Set<Integer> removed = new HashSet<Integer>();
         for (int i = 0; i < numKeys; i++) {
             if (i % every == 0) {
@@ -217,7 +217,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         return removed;
     }
 
-    public void checkKeys(Set<Integer> removed) throws StorageException {
+    public void checkKeys(Set<Integer> removed) throws BackendException {
         for (int i = 0; i < numKeys; i++) {
             if (removed.contains(i)) {
                 Assert.assertFalse(KCVSUtil.containsKey(store, KeyValueStoreUtil.getBuffer(i), tx));
@@ -227,11 +227,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-    public void checkValueExistence(String[][] values) throws StorageException {
+    public void checkValueExistence(String[][] values) throws BackendException {
         checkValueExistence(values, new HashSet<KeyColumn>());
     }
 
-    public void checkValueExistence(String[][] values, Set<KeyColumn> removed) throws StorageException {
+    public void checkValueExistence(String[][] values, Set<KeyColumn> removed) throws BackendException {
         for (int i = 0; i < numKeys; i++) {
             for (int j = 0; j < numColumns; j++) {
                 boolean result = KCVSUtil.containsKeyColumn(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
@@ -244,11 +244,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-    public void checkValues(String[][] values) throws StorageException {
+    public void checkValues(String[][] values) throws BackendException {
         checkValues(values, new HashSet<KeyColumn>());
     }
 
-    public void checkValues(String[][] values, Set<KeyColumn> removed) throws StorageException {
+    public void checkValues(String[][] values, Set<KeyColumn> removed) throws BackendException {
         for (int i = 0; i < numKeys; i++) {
             for (int j = 0; j < numColumns; j++) {
                 StaticBuffer result = KCVSUtil.get(store, KeyValueStoreUtil.getBuffer(i), KeyValueStoreUtil.getBuffer(j), tx);
@@ -263,7 +263,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void storeAndRetrieve() throws StorageException {
+    public void storeAndRetrieve() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -274,7 +274,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     //@Test
-    public void compareStores() throws StorageException {
+    public void compareStores() throws BackendException {
         int keys = 1000, columns = 2000; boolean normalMode=true;
         String[][] values = new String[keys*2][];
         for (int i = 0; i < keys*2; i++) {
@@ -319,7 +319,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
 
     @Test
-    public void storeAndRetrievePerformance() throws StorageException {
+    public void storeAndRetrievePerformance() throws BackendException {
         int multiplier = 4;
         int keys = 50 * multiplier, columns = 200;
         String[][] values = KeyValueStoreUtil.generateData(keys, columns);
@@ -350,7 +350,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void storeAndRetrieveWithClosing() throws StorageException {
+    public void storeAndRetrieveWithClosing() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -361,7 +361,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void deleteColumnsTest1() throws StorageException {
+    public void deleteColumnsTest1() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -373,7 +373,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void deleteColumnsTest2() throws StorageException {
+    public void deleteColumnsTest2() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -386,7 +386,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void deleteKeys() throws StorageException {
+    public void deleteKeys() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -413,7 +413,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * scans.
      */
     @Test
-    public void scanTest() throws StorageException {
+    public void scanTest() throws BackendException {
         if (manager.getFeatures().hasScan()) {
             String[][] values = generateValues();
             loadValues(values);
@@ -457,11 +457,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * exclusive. Verify that keys less than the start and greater than or equal
      * to the end containing matching columns are not returned.
      *
-     * @throws StorageException
+     * @throws BackendException
      */
     @Test
     @Category({OrderedKeyStoreTests.class})
-    public void testOrderedGetKeysRespectsKeyLimit() throws StorageException {
+    public void testOrderedGetKeysRespectsKeyLimit() throws BackendException {
         if (!manager.getFeatures().hasOrderedScan()) {
             log.warn("Can't test key-ordered features on incompatible store.  "
                     + "This warning could indicate reduced test coverage and "
@@ -503,11 +503,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * described as a "coarse-grained" or "simple" test of {@code getKeys}'s
      * column bounds checking.
      *
-     * @throws StorageException
+     * @throws BackendException
      */
     @Test
     public void testGetKeysColumnSlicesSimple()
-            throws StorageException {
+            throws BackendException {
         if (manager.getFeatures().hasScan()) {
 
             final int shiftEveryNthRows = 10;
@@ -542,11 +542,11 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
      * the same way as the keys. This results in a sort of "lower triangular"
      * data space, with no values above the diagonal.
      *
-     * @throws StorageException shouldn't happen
+     * @throws BackendException shouldn't happen
      * @throws IOException      shouldn't happen
      */
     @Test
-    public void testGetKeysColumnSlicesOnLowerTriangular() throws StorageException, IOException {
+    public void testGetKeysColumnSlicesOnLowerTriangular() throws BackendException, IOException {
         if (manager.getFeatures().hasScan()) {
             final int offset = 10;
             final int size = 10;
@@ -640,7 +640,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     public void checkSlice(String[][] values, Set<KeyColumn> removed, int key,
-                           int start, int end, int limit) throws StorageException {
+                           int start, int end, int limit) throws BackendException {
         List<Entry> entries;
         if (limit <= 0)
             entries = store.getSlice(new KeySliceQuery(KeyValueStoreUtil.getBuffer(key), KeyValueStoreUtil.getBuffer(start), KeyValueStoreUtil.getBuffer(end)), tx);
@@ -666,7 +666,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void intervalTest1() throws StorageException {
+    public void intervalTest1() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -684,7 +684,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void intervalTest2() throws StorageException {
+    public void intervalTest2() throws BackendException {
         String[][] values = generateValues();
         log.debug("Loading values...");
         loadValues(values);
@@ -987,7 +987,7 @@ public abstract class KeyColumnValueStoreTest extends AbstractKCVSTest {
 
     protected void examineGetKeysResults(KeyIterator keyIterator,
                                          long startKey, long endKey, int expectedColumns)
-            throws StorageException {
+            throws BackendException {
         Assert.assertNotNull(keyIterator);
 
         int count = 0;

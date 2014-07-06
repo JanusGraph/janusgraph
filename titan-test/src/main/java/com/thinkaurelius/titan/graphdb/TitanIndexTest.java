@@ -8,7 +8,7 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
@@ -92,7 +92,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "marko").vertices()));
         assertEquals(1, Iterables.size(tx.query().has("name", Text.CONTAINS, "Hulu").edges()));
         for (Vertex u : tx.getVertices()) assertEquals("Marko Rodriguez",u.getProperty("name"));
-        v = Iterables.getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
+        v = (Vertex) Iterables.getOnlyElement(tx.query().has("name", Text.CONTAINS, "marko").vertices());
         v.setProperty("name", "Marko");
         e = Iterables.getOnlyElement(v.getEdges(Direction.OUT));
         e.setProperty("name","Tubu Rubu");
@@ -493,7 +493,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
 
         TitanGraphIndex internal = mgmt.buildIndex("internal",Vertex.class).indexKey(name).indexKey(weight).buildCompositeIndex();
         TitanGraphIndex external = mgmt.buildIndex("external",Vertex.class).indexKey(weight).indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(INDEX);
-
+        external.getName(); internal.getName();
         finishSchema();
 
         name = tx.getPropertyKey("name");
@@ -910,7 +910,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * other, then commit in the same order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenDeleteProperty() throws StorageException {
+    public void testDeleteVertexThenDeleteProperty() throws BackendException {
         testNestedWrites("x", null);
     }
 
@@ -920,7 +920,7 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenAddProperty() throws StorageException {
+    public void testDeleteVertexThenAddProperty() throws BackendException {
         testNestedWrites(null, "y");
     }
 
@@ -930,15 +930,15 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
      * then commit in the same order. Neither commit throws an exception.
      */
     @Test
-    public void testDeleteVertexThenModifyProperty() throws StorageException {
+    public void testDeleteVertexThenModifyProperty() throws BackendException {
         testNestedWrites("x", "y");
     }
 
-    private void testNestedWrites(String initialValue, String updatedValue) throws StorageException {
+    private void testNestedWrites(String initialValue, String updatedValue) throws BackendException {
         // This method touches a single vertex with multiple transactions,
         // leading to deadlock under BDB and cascading test failures. Check for
         // the hasTxIsolation() store feature, which is currently true for BDB
-        // but false for HBase/Cassadra. This is kind of a hack; a more robust
+        // but false for HBase/Cassandra. This is kind of a hack; a more robust
         // approach might implement different methods/assertions depending on
         // whether the store is capable of deadlocking or detecting conflicting
         // writes and aborting a transaction.

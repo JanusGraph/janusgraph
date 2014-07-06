@@ -60,7 +60,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
 
     private final IRequestScheduler requestScheduler;
 
-    public CassandraEmbeddedStoreManager(Configuration config) throws StorageException {
+    public CassandraEmbeddedStoreManager(Configuration config) throws BackendException {
         super(config);
 
         // Check if we have non-default thrift frame size or max message size set and warn users
@@ -97,12 +97,12 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     @Override
     @SuppressWarnings("unchecked")
     public IPartitioner<? extends Token<?>> getCassandraPartitioner()
-            throws StorageException {
+            throws BackendException {
         try {
             return StorageService.getPartitioner();
         } catch (Exception e) {
             log.warn("Could not read local token range: {}", e);
-            throw new PermanentStorageException("Could not read partitioner information on cluster", e);
+            throw new PermanentBackendException("Could not read partitioner information on cluster", e);
         }
     }
 
@@ -118,7 +118,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name) throws StorageException {
+    public synchronized KeyColumnValueStore openDatabase(String name) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
@@ -136,7 +136,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
      * {@link StorageService#getLocalPrimaryRanges(String)} returns a raw
      * (unparameterized) type.
      */
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         @SuppressWarnings("rawtypes")
         Collection<Range<Token>> ranges = StorageService.instance.getLocalPrimaryRanges(keySpaceName);
         List<KeyRange> keyRanges = new ArrayList<KeyRange>(ranges.size());
@@ -155,7 +155,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
       * provided most of the following method after transaction handling.
       */
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         Preconditions.checkNotNull(mutations);
 
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
@@ -202,19 +202,19 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         sleepAfterWrite(txh, commitTime);
     }
 
-    private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
+    private void mutate(List<RowMutation> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
         try {
             schedule(DatabaseDescriptor.getRpcTimeout());
             try {
                 StorageProxy.mutate(cmds, clvl);
             } catch (RequestExecutionException e) {
-                throw new TemporaryStorageException(e);
+                throw new TemporaryBackendException(e);
             } finally {
                 release();
             }
         } catch (TimeoutException ex) {
             log.debug("Cassandra TimeoutException", ex);
-            throw new TemporaryStorageException(ex);
+            throw new TemporaryBackendException(ex);
         }
     }
 
@@ -230,7 +230,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         openStores.clear();
         try {
             KSMetaData ksMetaData = Schema.instance.getKSMetaData(keySpaceName);
@@ -244,11 +244,11 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             for (String cfName : ksMetaData.cfMetaData().keySet())
                 StorageService.instance.truncate(keySpaceName, cfName);
         } catch (Exception e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
-    private void ensureKeyspaceExists(String keyspaceName) throws StorageException {
+    private void ensureKeyspaceExists(String keyspaceName) throws BackendException {
 
         if (null != Schema.instance.getKeyspaceInstance(keyspaceName))
             return;
@@ -260,21 +260,21 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             ksm = KSMetaData.newKeyspace(keyspaceName, strategyName, strategyOptions, true);
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to instantiate keyspace metadata for " + keyspaceName, e);
+            throw new PermanentBackendException("Failed to instantiate keyspace metadata for " + keyspaceName, e);
         }
         try {
             MigrationManager.announceNewKeyspace(ksm);
             log.info("Created keyspace {}", keyspaceName);
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to create keyspace " + keyspaceName, e);
+            throw new PermanentBackendException("Failed to create keyspace " + keyspaceName, e);
         }
     }
 
-    private void ensureColumnFamilyExists(String ksName, String cfName) throws StorageException {
+    private void ensureColumnFamilyExists(String ksName, String cfName) throws BackendException {
         ensureColumnFamilyExists(ksName, cfName, BytesType.instance);
     }
 
-    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType<?> comparator) throws StorageException {
+    private void ensureColumnFamilyExists(String keyspaceName, String columnfamilyName, AbstractType<?> comparator) throws BackendException {
         if (null != Schema.instance.getCFMetaData(keyspaceName, columnfamilyName))
             return;
 
@@ -303,7 +303,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
                                 CompressionParameters.CHUNK_LENGTH_KB, compressionChunkSizeKB,
                                 cp});
             } catch (ConfigurationException ce) {
-                throw new PermanentStorageException(ce);
+                throw new PermanentBackendException(ce);
             }
         } else {
             cp = new CompressionParameters(null);
@@ -315,13 +315,13 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         try {
             cfm.addDefaultIndexNames();
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to create column family metadata for " + keyspaceName + ":" + columnfamilyName, e);
+            throw new PermanentBackendException("Failed to create column family metadata for " + keyspaceName + ":" + columnfamilyName, e);
         }
         try {
             MigrationManager.announceNewColumnFamily(cfm);
             log.info("Created CF {} in KS {}", columnfamilyName, keyspaceName);
         } catch (ConfigurationException e) {
-            throw new PermanentStorageException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
+            throw new PermanentBackendException("Failed to create column family " + keyspaceName + ":" + columnfamilyName, e);
         }
 
         /*
@@ -347,7 +347,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
     }
 
     @Override
-    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+    public Map<String, String> getCompressionOptions(String cf) throws BackendException {
 
         CFMetaData cfm = Schema.instance.getCFMetaData(keySpaceName, cf);
 
@@ -357,7 +357,7 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
         return ImmutableMap.copyOf(cfm.compressionParameters().asThriftOptions());
     }
 
-    private void retryDummyRead(String ks, String cf) throws PermanentStorageException {
+    private void retryDummyRead(String ks, String cf) throws PermanentBackendException {
 
         final long limit = System.currentTimeMillis() + (60L * 1000L);
 
@@ -377,10 +377,10 @@ public class CassandraEmbeddedStoreManager extends AbstractCassandraStoreManager
             try {
                 Thread.sleep(1000L);
             } catch (InterruptedException e) {
-                throw new PermanentStorageException(e);
+                throw new PermanentBackendException(e);
             }
         }
 
-        throw new PermanentStorageException("Timed out while attempting to read CF " + cf + " in KS " + ks + " following creation");
+        throw new PermanentBackendException("Timed out while attempting to read CF " + cf + " in KS " + ks + " following creation");
     }
 }

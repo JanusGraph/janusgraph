@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.util.Map;
 
@@ -22,10 +22,10 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      *
      */
-    public KeyColumnValueStore openDatabase(String name) throws StorageException;
+    public KeyColumnValueStore openDatabase(String name) throws BackendException;
 
 
     /**
@@ -36,9 +36,9 @@ public interface KeyColumnValueStoreManager extends StoreManager {
      *
      * @param mutations
      * @param txh
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException;
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException;
 
 
 

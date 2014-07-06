@@ -1,9 +1,11 @@
 package com.thinkaurelius.titan.hadoop.formats.titan.hbase;
 
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.hadoop.HadoopVertex;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import com.thinkaurelius.titan.hadoop.formats.titan.TitanInputFormat;
+import com.thinkaurelius.titan.diskstorage.hbase.HBaseStoreManager;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
@@ -28,7 +30,7 @@ import java.util.List;
  */
 public class TitanHBaseInputFormat extends TitanInputFormat {
 
-    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "titan.hadoop.input.storage.tablename";
+//    public static final String TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME = "titan.hadoop.input.storage.tablename";
     static final byte[] EDGE_STORE_FAMILY = Bytes.toBytes(Backend.EDGESTORE_NAME);
 
     private final TableInputFormat tableInputFormat = new TableInputFormat();
@@ -50,12 +52,13 @@ public class TitanHBaseInputFormat extends TitanInputFormat {
         super.setConf(config);
         this.graph = new TitanHBaseHadoopGraph(titanSetup);
 
-
         //config.set(TableInputFormat.SCAN_COLUMN_FAMILY, Backend.EDGESTORE_NAME);
-        config.set(TableInputFormat.INPUT_TABLE, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_TABLENAME));
-        config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
-        if (config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
-            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT));
+        config.set(TableInputFormat.INPUT_TABLE, titanConf.get(HBaseStoreManager.HBASE_TABLE));
+        //config.set(HConstants.ZOOKEEPER_QUORUM, config.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_HOSTNAME));
+        config.set(HConstants.ZOOKEEPER_QUORUM, titanConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
+//        if (basicConf.get(TITAN_HADOOP_GRAPH_INPUT_TITAN_STORAGE_PORT, null) != null)
+        if (titanConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+            config.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(titanConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         // TODO: config.set("storage.read-only", "true");
         config.set("autotype", "none");
         Scan scanner = new Scan();

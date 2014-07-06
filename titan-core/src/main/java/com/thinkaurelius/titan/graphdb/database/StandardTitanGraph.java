@@ -11,6 +11,9 @@ import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
+import com.thinkaurelius.titan.diskstorage.log.Message;
+import com.thinkaurelius.titan.diskstorage.log.ReadMarker;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
 import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.*;
@@ -20,7 +23,6 @@ import com.thinkaurelius.titan.diskstorage.indexing.IndexTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
 import com.thinkaurelius.titan.diskstorage.log.Log;
-import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanBlueprintsGraph;
 import com.thinkaurelius.titan.graphdb.blueprints.TitanFeatures;
@@ -28,12 +30,10 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.cache.SchemaCache;
 import com.thinkaurelius.titan.graphdb.database.idassigner.VertexIDAssigner;
 import com.thinkaurelius.titan.graphdb.database.idhandling.IDHandler;
-import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementLogger;
 import com.thinkaurelius.titan.graphdb.database.management.ManagementSystem;
-import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDInspector;
 import com.thinkaurelius.titan.graphdb.idmanagement.IDManager;
@@ -47,7 +47,7 @@ import com.thinkaurelius.titan.graphdb.transaction.StandardTransactionBuilder;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 import com.thinkaurelius.titan.graphdb.types.CompositeIndexType;
 import com.thinkaurelius.titan.graphdb.types.MixedIndexType;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.system.BaseKey;
 import com.thinkaurelius.titan.graphdb.types.system.BaseRelationType;
 import com.thinkaurelius.titan.graphdb.types.vertices.TitanSchemaVertex;
@@ -55,7 +55,6 @@ import com.thinkaurelius.titan.graphdb.util.ExceptionFactory;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Features;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +63,8 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
@@ -131,7 +132,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
         Log mgmtLog = backend.getSystemMgmtLog();
         mgmtLogger = new ManagementLogger(this,mgmtLog,schemaCache,this.times);
-        mgmtLog.registerReader(mgmtLogger);
+        mgmtLog.registerReader(ReadMarker.fromNow(),mgmtLogger);
 
         shutdownHook = new ShutdownThread(this);
         Runtime.getRuntime().addShutdownHook(shutdownHook);
@@ -157,7 +158,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
             // Remove shutdown hook to avoid reference retention
             Runtime.getRuntime().removeShutdownHook(shutdownHook);
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException("Could not close storage backend", e);
         } finally {
             isOpen = false;
@@ -241,12 +242,12 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
             tx.setBackendTransaction(openBackendTransaction(tx));
             openTransactions.add(tx);
             return tx;
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new TitanException("Could not start new transaction", e);
         }
     }
 
-    private BackendTransaction openBackendTransaction(StandardTitanTx tx) throws StorageException {
+    private BackendTransaction openBackendTransaction(StandardTitanTx tx) throws BackendException {
         IndexSerializer.IndexInfoRetriever retriever = indexSerializer.getIndexInfoRetriever(tx);
         return backend.beginTransaction(tx.getConfiguration(),retriever);
     }
@@ -372,11 +373,22 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         return ttl;
     }
 
-    public boolean prepareCommit(final Collection<InternalRelation> addedRelations,
+    private static class ModificationSummary {
+
+        final boolean hasModifications;
+        final boolean has2iModifications;
+
+        private ModificationSummary(boolean hasModifications, boolean has2iModifications) {
+            this.hasModifications = hasModifications;
+            this.has2iModifications = has2iModifications;
+        }
+    }
+
+    public ModificationSummary prepareCommit(final Collection<InternalRelation> addedRelations,
                                      final Collection<InternalRelation> deletedRelations,
                                      final Predicate<InternalRelation> filter,
                                      final BackendTransaction mutator, final StandardTitanTx tx,
-                                     final boolean acquireLocks) throws StorageException {
+                                     final boolean acquireLocks) throws BackendException {
 
 
         ListMultimap<Long, InternalRelation> mutations = ArrayListMultimap.create();
@@ -475,6 +487,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
 
         //6) Add index updates
+        boolean has2iMods = false;
         for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
             assert indexUpdate.isAddition() || indexUpdate.isDeletion();
             if (indexUpdate.isCompositeIndex()) {
@@ -485,6 +498,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
             } else {
                 IndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
+                has2iMods = true;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
                 if (update.isAddition())
@@ -493,7 +507,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
                     itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
             }
         }
-        return !mutations.isEmpty();
+        return new ModificationSummary(!mutations.isEmpty(),has2iMods);
     }
 
     private static final Predicate<InternalRelation> SCHEMA_FILTER = new Predicate<InternalRelation>() {
@@ -514,7 +528,7 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
     public void commit(final Collection<InternalRelation> addedRelations,
                      final Collection<InternalRelation> deletedRelations, final StandardTitanTx tx) {
-
+        if (addedRelations.isEmpty() && deletedRelations.isEmpty()) return;
         //1. Finalize transaction
         log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
         if (!tx.getConfiguration().hasCommitTime()) tx.getConfiguration().setCommitTime(times.getTime());
@@ -530,11 +544,20 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
         final boolean hasTxIsolation = backend.getStoreFeatures().hasTxIsolation();
         final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
-        final Log txLog = logTransaction?backend.getSystemTxLog():null;
+        final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
         final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp);
+        ModificationSummary commitSummary;
 
-        //3.1 Commit schema elements and their associated relations
         try {
+            //3.1 Log transaction (write-ahead log) if enabled
+            if (logTransaction) {
+                //[FAILURE] Inability to log transaction fails the transaction by escalation since it's likely due to unavailability of primary
+                //storage backend.
+                txLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.PRECOMMIT, tx, addedRelations, deletedRelations),txLogHeader.getLogKey());
+            }
+
+            //3.2 Commit schema elements and their associated relations in a separate transaction if backend does not support
+            //    transactional isolation
             boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
                     || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
             Preconditions.checkArgument(!hasSchemaElements || (!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks),
@@ -552,102 +575,94 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
 
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
-                    prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, schemaMutator, tx, acquireLocks);
-
-                    if (logTransaction) {
-                        //[FAILURE] If transaction logging fails immediately, abort - nothing persisted yet
-                        logTransaction(txLog,schemaMutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PREFLUSH_SYSTEM);
-                    }
+                    commitSummary = prepareCommit(addedRelations,deletedRelations, SCHEMA_FILTER, schemaMutator, tx, acquireLocks);
+                    assert commitSummary.hasModifications && !commitSummary.has2iModifications;
                 } catch (Throwable e) {
                     //Roll back schema tx and escalate exception
                     schemaMutator.rollback();
                     throw e;
                 }
 
-                LogTxStatus status = LogTxStatus.SUCCESS_SYSTEM;
-
                 try {
                     schemaMutator.commit();
                 } catch (Throwable e) {
-                    //[FAILURE] Primary persistence failed => abort but log failure (if possible)
-                    status = LogTxStatus.FAILURE_SYSTEM;
+                    //[FAILURE] Primary persistence failed => abort and escalate exception, nothing should have been persisted
                     log.error("Could not commit transaction ["+transactionId+"] due to storage exception in system-commit",e);
                     throw e;
-                } finally {
-                    if (logTransaction) {
-                        DataOutput out = txLogHeader.serializeHeader(serializer,20,status);
-                        //[FAILURE] An exception here will swallow any (very likely) previous exception in schemaMutator.commit()
-                        //which then has to be looked up from the error log
-                        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
-                    }
                 }
             }
 
             //[FAILURE] Exceptions during preparation here cause the entire transaction to fail on transactional systems
             //or just the non-system part on others. Nothing has been persisted unless batch-loading
-            boolean hasModifications = prepareCommit(addedRelations,deletedRelations, hasTxIsolation? NO_FILTER : NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
-            if (hasModifications) {
+            commitSummary = prepareCommit(addedRelations,deletedRelations, hasTxIsolation? NO_FILTER : NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
+            if (commitSummary.hasModifications) {
+                String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
+                boolean hasSecondaryPersistence = logTxIdentifier!=null || commitSummary.has2iModifications;
 
+                //1. Commit storage - failures lead to immediate abort
+
+                //1a. Add success message to tx log which will be committed atomically with all transactional changes so that we can recover secondary failures
+                //    This should not throw an exception since the mutations are just cached. If it does, it will be escalated since its critical
                 if (logTransaction) {
-                    //[FAILURE] If transaction logging fails, abort the non-system part - nothing persisted unless batch loading
-                    logTransaction(txLog,mutator,tx.getConfiguration(),txLogHeader,LogTxStatus.PRECOMMIT);
+                    txLog.add(txLogHeader.serializePrimary(serializer,
+                                        hasSecondaryPersistence?LogTxStatus.PRIMARY_SUCCESS:LogTxStatus.COMPLETE_SUCCESS),
+                            txLogHeader.getLogKey(),mutator.getTxLogPersistor());
                 }
 
-                LogTxStatus status = LogTxStatus.SUCCESS;
-                boolean storageSuccess = false;
-                Map<String,Throwable> indexFailures = ImmutableMap.of();
-                boolean triggerSuccess = false;
                 try {
-                    //1. Commit storage - failures lead to immediate abort
+                    mutator.commitStorage();
+                } catch (Throwable e) {
+                    //[FAILURE] If primary storage persistence fails abort directly (only schema could have been persisted)
+                    log.error("Could not commit transaction ["+transactionId+"] due to storage exception in commit",e);
+                    throw e;
+                }
+
+                if (hasSecondaryPersistence) {
+                    LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
+                    Map<String,Throwable> indexFailures = ImmutableMap.of();
+                    boolean triggerSuccess = false;
+
                     try {
-                        mutator.commitStorage();
-                        storageSuccess = true;
-                    } catch (Throwable e) {
-                        //[FAILURE] If primary storage persistence fails abort directly (partial persistence possible)
-                        status = LogTxStatus.FAILURE;
-                        log.error("Could not commit transaction ["+transactionId+"] due to storage exception in commit",e);
-                        throw e;
-                    }
-                    //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
-                    indexFailures = mutator.commitIndexes();
-                    if (!indexFailures.isEmpty()) {
-                        status = LogTxStatus.FAILURE;
-                        for (Map.Entry<String,Throwable> entry : indexFailures.entrySet()) {
-                            log.error("Error while commiting index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
-                        }
-                    }
-                    //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
-                    String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
-                    if (logTxIdentifier!=null) {
-                        try {
-                            final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
-                            DataOutput out = serializer.getDataOutput(20 + (addedRelations.size()+deletedRelations.size())*40);
-                            out.putLong(txLogHeader.getTimestamp(times.getUnit()));
-                            out.putLong(txLogHeader.getId());
-                            logRelations(out, addedRelations, tx);
-                            logRelations(out, deletedRelations,tx);
-                            triggerLog.add(out.getStaticBuffer());
-                            triggerSuccess=true;
-                        } catch (Throwable e) {
-                            log.error("Could not trigger-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
-                        }
-                    }
-                } finally {
-                    if (logTransaction) {
-                        DataOutput out = txLogHeader.serializeHeader(serializer,20,status);
-                        if (status==LogTxStatus.FAILURE) {
-                            out.putBoolean(storageSuccess);
-                            out.putBoolean(triggerSuccess);
-                            out.putInt(indexFailures.size());
-                            for (String index : indexFailures.keySet()) {
-                                assert StringUtils.isNotBlank(index);
-                                out.writeObjectNotNull(index);
+                        //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
+                        indexFailures = mutator.commitIndexes();
+                        if (!indexFailures.isEmpty()) {
+                            status = LogTxStatus.SECONDARY_FAILURE;
+                            for (Map.Entry<String,Throwable> entry : indexFailures.entrySet()) {
+                                log.error("Error while commiting index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
                             }
                         }
-                        //[FAILURE] An exception here will swallow any (very likely) previous exception in mutator.flushStorage()
-                        //which then has to be looked up from the error log
-                        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
+                        //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
+                        if (logTxIdentifier!=null) {
+                            try {
+                                final Log triggerLog = backend.getTriggerLog(logTxIdentifier);
+                                Future<Message> env = triggerLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
+                                if (env.isDone()) {
+                                    try {
+                                        env.get();
+                                    } catch (ExecutionException ex) {
+                                        throw ex.getCause();
+                                    }
+                                }
+                                triggerSuccess=true;
+                            } catch (Throwable e) {
+                                status = LogTxStatus.SECONDARY_FAILURE;
+                                log.error("Could not user-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
+                            }
+                        }
+                    } finally {
+                        if (logTransaction) {
+                            //[FAILURE] An exception here will be logged and not escalated; tx considered success and
+                            // needs to be cleaned up later
+                            try {
+                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,triggerSuccess),txLogHeader.getLogKey());
+                            } catch (Throwable e) {
+                                log.error("Could not tx-log secondary persistence status on transaction ["+transactionId+"]",e);
+                            }
+                        }
                     }
+                } else {
+                    //This just closes the transaction since there are no modifications
+                    mutator.commitIndexes();
                 }
             } else { //Just commit everything at once
                 //[FAILURE] This case only happens when there are no non-system mutations in which case all changes
@@ -667,21 +682,6 @@ public class StandardTitanGraph extends TitanBlueprintsGraph {
         }
     }
 
-    private void logTransaction(Log txLog, BackendTransaction mutator, TransactionConfiguration txConfig,
-                                TransactionLogHeader txLogHeader, LogTxStatus status) {
-        DataOutput out = txLogHeader.serializeHeader(serializer,256, status,txConfig);
-        mutator.logMutations(out);
-        txLog.add(out.getStaticBuffer(),txLogHeader.getLogKey());
-    }
-
-    private void logRelations(DataOutput out, final Collection<InternalRelation> relations, StandardTitanTx tx) {
-        VariableLong.writePositive(out,relations.size());
-        for (InternalRelation rel : relations) {
-            VariableLong.writePositive(out,rel.getVertex(0).getID());
-            Entry entry = edgeSerializer.writeRelation(rel, 0, tx);
-            BufferUtil.writeEntry(out,entry);
-        }
-    }
 
     private static class ShutdownThread extends Thread {
         private final StandardTitanGraph graph;

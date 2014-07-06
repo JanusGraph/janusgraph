@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.*;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
@@ -22,7 +23,6 @@ import com.google.common.collect.Lists;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -64,7 +64,7 @@ public class LockCleanerRunnableTest {
      * Simplest case test of the lock cleaner.
      */
     @Test
-    public void testDeleteSingleLock() throws StorageException {
+    public void testDeleteSingleLock() throws BackendException {
         long now = 1L;
 
         Entry expiredLockCol = StaticArrayEntry.of(codec.toLockCol(now,
@@ -93,7 +93,7 @@ public class LockCleanerRunnableTest {
      * has a timestamp equal to the cutoff.
      */
     @Test
-    public void testDeletionWithExpiredAndValidLocks() throws StorageException {
+    public void testDeletionWithExpiredAndValidLocks() throws BackendException {
 
         final int lockCount = 10;
         final int expiredCount = 3;
@@ -142,7 +142,7 @@ public class LockCleanerRunnableTest {
      * slicing the store and then does <b>not</b> attempt to write.
      */
     @Test
-    public void testPreservesLocksAtOrAfterCutoff() throws StorageException {
+    public void testPreservesLocksAtOrAfterCutoff() throws BackendException {
         final long cutoff = 10L;
 
         Entry currentLock = StaticArrayEntry.of(codec.toLockCol(cutoff,

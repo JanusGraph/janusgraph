@@ -1,10 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreManager;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-
-import java.util.Map;
 
 /**
  * {@link StoreManager} for {@link KeyValueStore}.
@@ -20,10 +17,10 @@ public interface KeyValueStoreManager extends StoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      *
      */
-    public KeyValueStore openDatabase(String name) throws StorageException;
+    public KeyValueStore openDatabase(String name) throws BackendException;
 
 
 

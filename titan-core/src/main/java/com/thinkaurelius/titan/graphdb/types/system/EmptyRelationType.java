@@ -5,7 +5,7 @@ import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.ModifierType;
 import com.thinkaurelius.titan.graphdb.internal.InternalRelationType;
 import com.thinkaurelius.titan.graphdb.types.IndexType;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 
 import java.util.Collections;
 

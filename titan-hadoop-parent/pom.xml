@@ -13,7 +13,7 @@
 
     <properties>
         <top.level.basedir>${basedir}/..</top.level.basedir>
-        <skipCassandra>true</skipCassandra>
+        <skipCassandra>${skipTests}</skipCassandra>
         <skipHBase>true</skipHBase>
         <skipPipeline>${skipTests}</skipPipeline>
     </properties>
@@ -60,22 +60,6 @@
             <groupId>com.tinkerpop.gremlin</groupId>
             <artifactId>gremlin-groovy</artifactId>
             <version>${tinkerpop.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
-            <version>0.98.3-hadoop2</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Need this for compile-time imports on
-             org.apache.hadoop.hbase.mapreduce -->
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
-            <version>0.98.3-hadoop2</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- TITAN -->
@@ -277,6 +261,7 @@
                                     <include>**/TitanCassandraOutputFormatTest.java</include>
                                 </includes>
                                 <skipTests>${skipCassandra}</skipTests>
+                                <reuseForks>false</reuseForks>
                                 <summaryFile>target/failsafe-reports/failsafe-titan-cassandra.xml</summaryFile>
                             </configuration>
                         </execution>
