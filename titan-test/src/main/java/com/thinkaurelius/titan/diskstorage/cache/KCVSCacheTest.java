@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.cache;
 
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache.KCVSCache;
@@ -53,7 +53,7 @@ public abstract class KCVSCacheTest {
     public StoreTransaction getStoreTx() {
         try {
         return storeManager.beginTransaction(StandardBaseTransactionConfig.of(times));
-        } catch (StorageException se) {
+        } catch (BackendException se) {
             throw new RuntimeException(se);
         }
     }
@@ -78,7 +78,7 @@ public abstract class KCVSCacheTest {
                 store.mutate(BufferUtil.getIntBuffer(i),adds,KeyColumnValueStore.NO_DELETIONS,tx);
             }
             tx.commit();
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             throw new RuntimeException(e);
         }
     }
@@ -180,34 +180,34 @@ public abstract class KCVSCacheTest {
         }
 
         @Override
-        public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+        public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
             getSliceCounter.incrementAndGet();
             return store.getSlice(query,txh);
         }
 
         @Override
-        public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+        public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
             getSliceCounter.incrementAndGet();
             return store.getSlice(keys,query,txh);
         }
 
         @Override
-        public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+        public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
             store.mutate(key,additions,deletions,txh);
         }
 
         @Override
-        public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+        public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
             store.acquireLock(key,column,expectedValue,txh);
         }
 
         @Override
-        public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+        public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
             return store.getKeys(query,txh);
         }
 
         @Override
-        public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+        public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
             return store.getKeys(query,txh);
         }
 
@@ -217,7 +217,7 @@ public abstract class KCVSCacheTest {
         }
 
         @Override
-        public void close() throws StorageException {
+        public void close() throws BackendException {
             store.close();
         }
     }

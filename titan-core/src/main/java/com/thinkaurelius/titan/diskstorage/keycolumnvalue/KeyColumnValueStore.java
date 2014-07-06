@@ -1,10 +1,10 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
 import com.google.common.collect.ImmutableList;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.util.List;
 import java.util.Map;
@@ -33,10 +33,10 @@ public interface KeyColumnValueStore {
      * @param query Query to get results for
      * @param txh   Transaction
      * @return List of entries up to a maximum of "limit" entries
-     * @throws StorageException when columnEnd < columnStart
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException when columnEnd < columnStart
      * @see KeySliceQuery
      */
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException;
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Retrieves the list of entries (i.e. column-value pairs) as specified by the given {@link SliceQuery} for all
@@ -46,9 +46,9 @@ public interface KeyColumnValueStore {
      * @param query Slicequery specifying matching entries
      * @param txh   Transaction
      * @return The result of the query for each of the given keys as a map from the key to the list of result entries.
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException;
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Verifies acquisition of locks {@code txh} from previous calls to
@@ -76,7 +76,7 @@ public interface KeyColumnValueStore {
      *                          {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      *                          has failed
      */
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException;
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
 
     /**
      * Attempts to claim a lock on the value at the specified {@code key} and
@@ -130,7 +130,7 @@ public interface KeyColumnValueStore {
      *             the lock could not be acquired due to contention with other
      *             transactions or a locking-specific storage problem
      */
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.
@@ -141,9 +141,9 @@ public interface KeyColumnValueStore {
      * @param query
      * @param txh
      * @return
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException;
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a {@link KeyIterator} over all keys in the store that have one or more columns matching the column-range. Calling {@link KeyIterator#getEntries()}
@@ -154,9 +154,9 @@ public interface KeyColumnValueStore {
      * @param query
      * @param txh
      * @return
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException;
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException;
     // like current getKeys if column-slice is such that it queries for vertex state property
 
     /**
@@ -170,9 +170,9 @@ public interface KeyColumnValueStore {
     /**
      * Closes this store
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void close() throws StorageException;
+    public void close() throws BackendException;
 
 
 }

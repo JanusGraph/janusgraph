@@ -67,22 +67,22 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, EntryList> result = getHelper(Arrays.asList(query.getKey()), getFilter(query));
         return Iterables.getOnlyElement(result.values(), EntryList.EMPTY_LIST);
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return getHelper(keys, getFilter(query));
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new KCVMutation(additions, deletions));
         mutateMany(mutations, txh);
     }
@@ -91,12 +91,12 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     public void acquireLock(StaticBuffer key,
                             StaticBuffer column,
                             StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
+                            StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         return executeKeySliceQuery(query.getKeyStart().as(StaticBuffer.ARRAY_FACTORY),
                 query.getKeyEnd().as(StaticBuffer.ARRAY_FACTORY),
                 new FilterList(FilterList.Operator.MUST_PASS_ALL),
@@ -109,7 +109,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
         return executeKeySliceQuery(new FilterList(FilterList.Operator.MUST_PASS_ALL), query);
     }
 
@@ -130,7 +130,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
         return filter;
     }
 
-    private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws StorageException {
+    private Map<StaticBuffer,EntryList> getHelper(List<StaticBuffer> keys, Filter getFilter) throws BackendException {
         List<Get> requests = new ArrayList<Get>(keys.size());
         {
             for (StaticBuffer key : keys) {
@@ -138,7 +138,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
                 try {
                     g.setTimeRange(0, Long.MAX_VALUE);
                 } catch (IOException e) {
-                    throw new PermanentStorageException(e);
+                    throw new PermanentBackendException(e);
                 }
                 requests.add(g);
             }
@@ -180,28 +180,28 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
 
             return resultMap;
         } catch (IOException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
     }
 
-    private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
+    private void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws BackendException {
         storeManager.mutateMany(ImmutableMap.of(storeName, mutations), txh);
     }
 
-    private KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws StorageException {
+    private KeyIterator executeKeySliceQuery(FilterList filters, @Nullable SliceQuery columnSlice) throws BackendException {
         return executeKeySliceQuery(null, null, filters, columnSlice);
     }
 
     private KeyIterator executeKeySliceQuery(@Nullable byte[] startKey,
                                             @Nullable byte[] endKey,
                                             FilterList filters,
-                                            @Nullable SliceQuery columnSlice) throws StorageException {
+                                            @Nullable SliceQuery columnSlice) throws BackendException {
         Scan scan = new Scan().addFamily(columnFamilyBytes);
 
         try {
             scan.setTimeRange(0, Long.MAX_VALUE);
         } catch (IOException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         if (startKey != null)
@@ -221,7 +221,7 @@ public class HBaseKeyColumnValueStore implements KeyColumnValueStore {
             return new RowIterator(table, table.getScanner(scan.setFilter(filters)));
         } catch (IOException e) {
             IOUtils.closeQuietly(table);
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 

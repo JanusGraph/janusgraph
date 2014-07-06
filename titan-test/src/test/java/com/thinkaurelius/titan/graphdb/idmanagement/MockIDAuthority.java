@@ -49,13 +49,13 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
+    public IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws BackendException {
         //Delay artificially
         if (delayAcquisitionMS>0) {
             try {
                 Thread.sleep(delayAcquisitionMS);
             } catch (InterruptedException e) {
-                throw new TemporaryStorageException(e);
+                throw new TemporaryBackendException(e);
             }
         }
         Preconditions.checkArgument(partition>=0 && partition<=Integer.MAX_VALUE);
@@ -102,7 +102,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public List<KeyRange> getLocalIDPartition() throws StorageException {
+    public List<KeyRange> getLocalIDPartition() throws BackendException {
         StaticBuffer lower = new WriteByteBuffer(4).putInt(localPartition[0]).getStaticBuffer();
         StaticBuffer upper = new WriteByteBuffer(4).putInt(localPartition[1]).getStaticBuffer();
         Preconditions.checkArgument(lower.compareTo(upper)<0, Arrays.toString(localPartition));
@@ -115,7 +115,7 @@ public class MockIDAuthority implements IDAuthority {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
 
     }
 

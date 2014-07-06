@@ -4,7 +4,7 @@ import java.util.*;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.core.TitanException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.DistributedStoreManager;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
@@ -191,7 +191,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         if (partitioner == null) {
             try {
                 partitioner = Partitioner.getPartitioner(getCassandraPartitioner());
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 throw new TitanException("Could not connect to Cassandra to read partitioner information. Please check the connection", e);
             }
         }
@@ -199,7 +199,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         return partitioner;
     }
 
-    public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException;
+    public abstract IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException;
 
     @Override
     public StoreTransaction beginTransaction(final BaseTransactionConfig config) {
@@ -282,9 +282,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
      * @param cf the name of the column family for which to return compression
      *           options
      * @return map of compression option names to compression option values
-     * @throws StorageException if reading from Cassandra fails
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException if reading from Cassandra fails
      */
-    public abstract Map<String, String> getCompressionOptions(String cf) throws StorageException;
+    public abstract Map<String, String> getCompressionOptions(String cf) throws BackendException;
 
     public String getName() {
         return getClass().getSimpleName() + keySpaceName;

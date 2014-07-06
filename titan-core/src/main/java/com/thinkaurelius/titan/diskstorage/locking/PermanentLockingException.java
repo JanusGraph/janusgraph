@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.locking;
 
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 
 /**
  * This exception signifies a failure to lock based on durable state. For
@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class PermanentLockingException extends PermanentStorageException {
+public class PermanentLockingException extends PermanentBackendException {
 
     private static final long serialVersionUID = 482890657293484420L;
 

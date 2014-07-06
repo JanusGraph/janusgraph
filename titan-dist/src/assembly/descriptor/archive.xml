@@ -57,6 +57,8 @@
             <scope>runtime</scope>
             <useProjectArtifact>false</useProjectArtifact>
             <excludes>
+                <exclude>*:*:*:shared-resources:*</exclude>
+                <exclude>*:*:*:example-data:*</exclude>
                 <exclude>*:*:*:javadoc:*</exclude>
                 <exclude>*:*:*:tests:*</exclude>
                 <exclude>*:*:pom:*</exclude>
@@ -71,6 +73,17 @@
             <useProjectArtifact>false</useProjectArtifact>
             <includes>
                 <include>${project.groupId}:titan-core:jar:javadoc:${project.version}</include>
+            </includes>
+        </dependencySet>
+
+        <!-- Example data (from titan-hadoop/faunus) -->
+        <dependencySet>
+            <unpack>true</unpack>
+            <!-- Dump into /javadocs instead of /docs/javadocs for milestone release -->
+            <outputDirectory>/example-data</outputDirectory>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>${project.groupId}:titan-hadoop-core:zip:example-data:${project.version}</include>
             </includes>
         </dependencySet>
     </dependencySets>

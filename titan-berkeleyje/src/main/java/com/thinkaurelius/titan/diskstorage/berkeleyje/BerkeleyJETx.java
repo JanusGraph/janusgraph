@@ -5,8 +5,8 @@ import com.sleepycat.je.Cursor;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.Transaction;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
+import com.thinkaurelius.titan.diskstorage.PermanentBackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 
@@ -44,7 +44,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
         }
     }
 
-    private void closeOpenIterators() throws StorageException {
+    private void closeOpenIterators() throws BackendException {
         for (Cursor cursor : openCursors) {
             cursor.close();
         }
@@ -55,7 +55,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
     }
 
     @Override
-    public synchronized void rollback() throws StorageException {
+    public synchronized void rollback() throws BackendException {
         super.rollback();
         if (tx == null) return;
         if (log.isTraceEnabled())
@@ -65,12 +65,12 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             tx.abort();
             tx = null;
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
     @Override
-    public synchronized void commit() throws StorageException {
+    public synchronized void commit() throws BackendException {
         super.commit();
         if (tx == null) return;
         if (log.isTraceEnabled())
@@ -81,7 +81,7 @@ public class BerkeleyJETx extends AbstractStoreTransaction {
             tx.commit();
             tx = null;
         } catch (DatabaseException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 

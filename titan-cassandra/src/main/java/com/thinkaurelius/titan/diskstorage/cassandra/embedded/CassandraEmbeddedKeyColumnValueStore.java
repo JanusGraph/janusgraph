@@ -62,28 +62,28 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
     }
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column,
-                            StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+                            StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery keyRangeQuery, StoreTransaction txh) throws BackendException {
         IPartitioner partitioner = StorageService.getPartitioner();
 
         // see rant about this in Astyanax implementation
         if (partitioner instanceof RandomPartitioner || partitioner instanceof Murmur3Partitioner)
-            throw new PermanentStorageException("This operation is only supported when byte-ordered partitioner is used.");
+            throw new PermanentBackendException("This operation is only supported when byte-ordered partitioner is used.");
 
         return new RowIterator(keyRangeQuery, storeManager.getPageSize(), txh);
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
         return new RowIterator(getMinimumToken(), getMaximumToken(), query, storeManager.getPageSize(), txh);
     }
 
@@ -103,7 +103,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                                   Token end,
                                   @Nullable SliceQuery sliceQuery,
                                   int pageSize,
-                                  long nowMillis) throws StorageException {
+                                  long nowMillis) throws BackendException {
         IPartitioner<?> partitioner = StorageService.getPartitioner();
 
         SliceRange columnSlice = new SliceRange();
@@ -132,7 +132,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
             rows = StorageProxy.getRangeSlice(cmd, ConsistencyLevel.QUORUM);
         } catch (Exception e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         return rows;
@@ -144,7 +144,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
 
         /**
          * This timestamp mimics the timestamp used by
@@ -165,7 +165,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         int sliceSize = slice.size();
         if (1 < sliceSize)
-            throw new PermanentStorageException("Received " + sliceSize + " rows for single key");
+            throw new PermanentBackendException("Received " + sliceSize + " rows for single key");
 
         Row r = slice.get(0);
 
@@ -207,13 +207,13 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions,
-                       List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+                       List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, KCVMutation> mutations = ImmutableMap.of(key, new
                 KCVMutation(additions, deletions));
         mutateMany(mutations, txh);
@@ -221,27 +221,27 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
 
     public void mutateMany(Map<StaticBuffer, KCVMutation> mutations,
-                           StoreTransaction txh) throws StorageException {
+                           StoreTransaction txh) throws BackendException {
         storeManager.mutateMany(ImmutableMap.of(columnFamily, mutations), txh);
     }
 
-    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
+    private static List<Row> read(ReadCommand cmd, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
         ArrayList<ReadCommand> cmdHolder = new ArrayList<ReadCommand>(1);
         cmdHolder.add(cmd);
         return read(cmdHolder, clvl);
     }
 
-    private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws StorageException {
+    private static List<Row> read(List<ReadCommand> cmds, org.apache.cassandra.db.ConsistencyLevel clvl) throws BackendException {
         try {
             return StorageProxy.read(cmds, clvl);
         } catch (UnavailableException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } catch (RequestTimeoutException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } catch (IsBootstrappingException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } catch (InvalidRequestException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
@@ -327,7 +327,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         private boolean isClosed;
 
-        public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize, StoreTransaction txh) throws StorageException {
+        public RowIterator(KeyRangeQuery keyRangeQuery, int pageSize, StoreTransaction txh) throws BackendException {
             this(StorageService.getPartitioner().getToken(keyRangeQuery.getKeyStart().asByteBuffer()),
                     StorageService.getPartitioner().getToken(keyRangeQuery.getKeyEnd().asByteBuffer()),
                     keyRangeQuery,
@@ -335,7 +335,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
                     txh);
         }
 
-        public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize, StoreTransaction txh) throws StorageException {
+        public RowIterator(Token minimum, Token maximum, SliceQuery sliceQuery, int pageSize, StoreTransaction txh) throws BackendException {
             this.pageSize = pageSize;
             this.sliceQuery = sliceQuery;
             this.maximumToken = maximum;
@@ -348,7 +348,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         public boolean hasNext() {
             try {
                 return hasNextInternal();
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -421,7 +421,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
 
         }
 
-        private final boolean hasNextInternal() throws StorageException {
+        private final boolean hasNextInternal() throws BackendException {
             ensureOpen();
 
             if (keys == null)
@@ -479,7 +479,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
         }
     }
 
-    private static Token getMinimumToken() throws PermanentStorageException {
+    private static Token getMinimumToken() throws PermanentBackendException {
         IPartitioner partitioner = StorageService.getPartitioner();
 
         if (partitioner instanceof RandomPartitioner) {
@@ -490,11 +490,11 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
             return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.zeroByteBuffer(8));
         } else {
-            throw new PermanentStorageException("Unsupported partitioner: " + partitioner);
+            throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }
     }
 
-    private static Token getMaximumToken() throws PermanentStorageException {
+    private static Token getMaximumToken() throws PermanentBackendException {
         IPartitioner partitioner = StorageService.getPartitioner();
 
         if (partitioner instanceof RandomPartitioner) {
@@ -505,7 +505,7 @@ public class CassandraEmbeddedKeyColumnValueStore implements KeyColumnValueStore
             //TODO: This makes the assumption that its an EdgeStore (i.e. 8 byte keys)
             return new BytesToken(com.thinkaurelius.titan.diskstorage.util.ByteBufferUtil.oneByteBuffer(8));
         } else {
-            throw new PermanentStorageException("Unsupported partitioner: " + partitioner);
+            throw new PermanentBackendException("Unsupported partitioner: " + partitioner);
         }
     }
 }

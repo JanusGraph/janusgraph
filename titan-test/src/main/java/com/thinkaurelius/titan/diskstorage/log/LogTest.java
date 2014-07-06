@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.log;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 
@@ -34,7 +34,7 @@ public abstract class LogTest {
 
     private static final long TIMEOUT_MS = 30000;
 
-    public abstract LogManager openLogManager(String senderId) throws StorageException;
+    public abstract LogManager openLogManager(String senderId) throws BackendException;
 
     private LogManager manager;
 
@@ -76,12 +76,12 @@ public abstract class LogTest {
 
     @Test
     public void testReadMarkerResumesInMiddleOfLog() throws Exception {
-        Log log1 = manager.openLog("test1", ReadMarker.fromNow());
+        Log log1 = manager.openLog("test1");
         log1.add(BufferUtil.getLongBuffer(1L));
         log1.close();
-        log1 = manager.openLog("test1", ReadMarker.fromNow());
+        log1 = manager.openLog("test1");
         CountingReader count = new CountingReader(1, true);
-        log1.registerReader(count);
+        log1.registerReader(ReadMarker.fromNow(),count);
         log1.add(BufferUtil.getLongBuffer(2L));
         count.await(TIMEOUT_MS);
         assertEquals(1, count.totalMsg.get());
@@ -91,19 +91,18 @@ public abstract class LogTest {
     @Test
     public void testLogIsDurableAcrossReopen() throws Exception {
         final long past = System.currentTimeMillis() - 10L;
-        final long future = past + 1000000L;
         Log l;
-        l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
+        l = manager.openLog("durable");
         l.add(BufferUtil.getLongBuffer(1L));
         manager.close();
 
-        l = manager.openLog("durable", ReadMarker.fromTime(future, TimeUnit.MILLISECONDS));
+        l = manager.openLog("durable");
         l.add(BufferUtil.getLongBuffer(2L));
         l.close();
 
-        l = manager.openLog("durable", ReadMarker.fromTime(past, TimeUnit.MILLISECONDS));
+        l = manager.openLog("durable");
         CountingReader count = new CountingReader(2, true);
-        l.registerReader(count);
+        l.registerReader(ReadMarker.fromTime(past, TimeUnit.MILLISECONDS),count);
         count.await(TIMEOUT_MS);
         assertEquals(2, count.totalMsg.get());
         assertEquals(3L, count.totalValue.get());
@@ -118,11 +117,11 @@ public abstract class LogTest {
         // Open all logs up front. This gets any ColumnFamily creation overhead
         // out of the way. This is particularly useful on HBase.
         for (int i = 0; i < nl; i++) {
-            logs[i] = manager.openLog("ml" + i, ReadMarker.fromNow());
+            logs[i] = manager.openLog("ml" + i);
         }
         // Register readers
         for (int i = 0; i < nl; i++) {
-            logs[i].registerReader(count);
+            logs[i].registerReader(ReadMarker.fromNow(),count);
         }
         // Send messages
         long value = 1L;
@@ -143,10 +142,10 @@ public abstract class LogTest {
         CountingReader counts[] = new CountingReader[n];
         for (int i = 0; i < n; i++) {
             counts[i] = new CountingReader(1, true);
-            logs[i] = manager.openLog("loner" + i, ReadMarker.fromNow());
+            logs[i] = manager.openLog("loner" + i);
         }
         for (int i = 0; i < n; i++) {
-            logs[i].registerReader(counts[i]);
+            logs[i].registerReader(ReadMarker.fromNow(),counts[i]);
             logs[i].add(BufferUtil.getLongBuffer(1L << (i + 1)));
         }
         // Check message receipt.
@@ -166,8 +165,8 @@ public abstract class LogTest {
         StoringReader reader = new StoringReader(rounds);
         List<StaticBuffer> expected = new ArrayList<StaticBuffer>(rounds);
 
-        Log l = manager.openLog("fuzz", ReadMarker.fromNow());
-        l.registerReader(reader);
+        Log l = manager.openLog("fuzz");
+        l.registerReader(ReadMarker.fromNow(),reader);
         Random rand = new Random();
         for (int i = 0; i < rounds; i++) {
             //int len = rand.nextInt(maxLen + 1);
@@ -187,13 +186,29 @@ public abstract class LogTest {
     }
 
     @Test
+    public void testReadMarkerCompatibility() throws Exception {
+        Log l1 = manager.openLog("testx");
+        l1.registerReader(ReadMarker.fromIdentifierOrNow("mark"),new StoringReader(0));
+        l1.registerReader(ReadMarker.fromIdentifierOrTime("mark", System.currentTimeMillis() - 100, TimeUnit.MILLISECONDS),new StoringReader(1));
+        try {
+            l1.registerReader(ReadMarker.fromIdentifierOrNow("other"));
+            fail();
+        } catch (IllegalArgumentException e) {}
+        try {
+            l1.registerReader(ReadMarker.fromTime(System.currentTimeMillis()-100,TimeUnit.MILLISECONDS));
+            fail();
+        } catch (IllegalArgumentException e) {}
+        l1.registerReader(ReadMarker.fromNow(), new StoringReader(2));
+    }
+
+    @Test
     public void testUnregisterReader() throws Exception {
-        Log log = manager.openLog("test1", ReadMarker.fromNow());
+        Log log = manager.openLog("test1");
 
         // Register two readers and verify they receive messages.
         CountingReader reader1 = new CountingReader(1, true);
         CountingReader reader2 = new CountingReader(2, true);
-        log.registerReader(reader1, reader2);
+        log.registerReader(ReadMarker.fromNow(),reader1, reader2);
         log.add(BufferUtil.getLongBuffer(1L));
         reader1.await(TIMEOUT_MS);
 
@@ -214,12 +229,12 @@ public abstract class LogTest {
 
     public void sendReceive(int readers, int numMessages, int delayMS) throws Exception {
         Preconditions.checkState(0 < readers);
-        Log log1 = manager.openLog("test1", ReadMarker.fromNow());
+        Log log1 = manager.openLog("test1");
         assertEquals("test1",log1.getName());
         CountingReader counts[] = new CountingReader[readers];
         for (int i = 0; i < counts.length; i++) {
             counts[i] = new CountingReader(numMessages, true);
-            log1.registerReader(counts[i]);
+            log1.registerReader(ReadMarker.fromNow(),counts[i]);
         }
         for (long i=1;i<=numMessages;i++) {
             log1.add(BufferUtil.getLongBuffer(i));

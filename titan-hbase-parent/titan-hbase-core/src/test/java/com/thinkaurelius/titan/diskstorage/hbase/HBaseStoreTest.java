@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.hbase;
 
 import com.thinkaurelius.titan.HBaseStorageSetup;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.BasicConfiguration;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -18,7 +18,7 @@ public class HBaseStoreTest extends KeyColumnValueStoreTest {
         HBaseStorageSetup.startHBase();
     }
 
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
         WriteConfiguration config = HBaseStorageSetup.getHBaseGraphConfiguration();
         config.set(GraphDatabaseConfiguration.STORAGE_NS.getName()+"."+HBaseStoreManager.HBASE_CONFIGURATION_NAMESPACE+
                     ".hbase.zookeeper.quorum","localhost");

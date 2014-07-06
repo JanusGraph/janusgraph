@@ -4,10 +4,7 @@ package com.thinkaurelius.titan.graphdb;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.*;
-import com.thinkaurelius.titan.core.attribute.Decimal;
-import com.thinkaurelius.titan.core.attribute.Geoshape;
-import com.thinkaurelius.titan.core.attribute.Precision;
-import com.thinkaurelius.titan.core.attribute.Cmp;
+import com.thinkaurelius.titan.core.attribute.*;
 import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
@@ -15,9 +12,13 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.RelationTypeIndex;
 import com.thinkaurelius.titan.core.schema.TitanGraphIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import com.thinkaurelius.titan.core.log.*;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigElement;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
+import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLog;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
+import com.thinkaurelius.titan.diskstorage.util.time.Timepoint;
 import com.thinkaurelius.titan.diskstorage.util.time.TimestampProvider;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
@@ -33,6 +34,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
 import com.thinkaurelius.titan.graphdb.database.log.LogTxMeta;
+import com.thinkaurelius.titan.graphdb.database.log.LogTxStatus;
 import com.thinkaurelius.titan.graphdb.database.log.TransactionLogHeader;
 import com.thinkaurelius.titan.graphdb.database.serialize.Serializer;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
@@ -42,13 +44,14 @@ import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 
 import static com.thinkaurelius.titan.graphdb.internal.RelationCategory.*;
 
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import com.thinkaurelius.titan.graphdb.query.StandardQueryDescription;
 import com.thinkaurelius.titan.graphdb.query.vertex.AbstractVertexCentricQueryBuilder;
 import com.thinkaurelius.titan.graphdb.relations.RelationIdentifier;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialInt;
 import com.thinkaurelius.titan.graphdb.serializer.SpecialIntSerializer;
 import com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx;
-import com.thinkaurelius.titan.graphdb.types.SchemaStatus;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.types.StandardEdgeLabelMaker;
 import com.thinkaurelius.titan.graphdb.types.StandardPropertyKeyMaker;
 import com.thinkaurelius.titan.graphdb.types.system.BaseVertexLabel;
@@ -101,6 +104,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         n1.addProperty(uid.getName(), "abcd");
         clopen();
         long nid = n1.getID();
+        uid = tx.getPropertyKey("name");
         assertTrue(tx.containsVertex(nid));
         assertTrue(tx.containsVertex(uid.getID()));
         assertFalse(tx.containsVertex(nid + 64));
@@ -2646,6 +2650,30 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertEquals(expectedResults,no);
     }
 
+    @Test
+    public void testEdgesExceedCacheSize() {
+        // Add a vertex with as many edges as the tx-cache-size. (20000 by default)
+        int numEdges = graph.getConfiguration().getTxVertexCacheSize();
+        Vertex parentVertex = graph.addVertex(null);
+        for (int i = 0; i < numEdges; i++) {
+            Vertex childVertex = graph.addVertex(null);
+            parentVertex.addEdge("friend", childVertex);
+        }
+        graph.commit();
+        assertEquals(numEdges, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+
+        // Remove an edge.
+        Edge edge = parentVertex.getEdges(Direction.OUT).iterator().next();
+        edge.remove();
+
+        // Check that getEdges returns one fewer.
+        assertEquals(numEdges - 1, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+
+        // Run the same check one more time.
+        // This fails! (Expected: 19999. Actual: 20000.)
+        assertEquals(numEdges - 1, Iterables.size(parentVertex.getEdges(Direction.OUT)));
+    }
+
 
    /* ==================================================================================
                             LOGGING
@@ -2660,10 +2688,18 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         final TimestampProvider times = graph.getConfiguration().getTimestampProvider();
         final TimeUnit unit = times.getUnit();
         final long startTime = times.getTime().getTimestamp(TimeUnit.MILLISECONDS);
-//        System.out.println(startTime);
-        clopen(option(SYSTEM_LOG_TRANSACTIONS), true);
+        clopen( option(SYSTEM_LOG_TRANSACTIONS), true,
+                option(KCVSLog.LOG_READ_LAG_TIME,TRIGGER_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,TRIGGER_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
+                option(LOG_SEND_DELAY,TRIGGER_LOG),new StandardDuration(100,TimeUnit.MILLISECONDS),
+                option(KCVSLog.LOG_READ_LAG_TIME,TRANSACTION_LOG),new StandardDuration(50,TimeUnit.MILLISECONDS),
+                option(LOG_READ_INTERVAL,TRANSACTION_LOG),new StandardDuration(250,TimeUnit.MILLISECONDS),
+                option(MAX_COMMIT_TIME),new StandardDuration(1,TimeUnit.SECONDS)
+        );
+        final String instanceid = graph.getConfiguration().getUniqueGraphId();
 
         PropertyKey weight = tx.makePropertyKey("weight").dataType(Decimal.class).cardinality(Cardinality.SINGLE).make();
+        EdgeLabel knows = tx.makeEdgeLabel("knows").make();
         TitanVertex n1 = tx.addVertex();
         n1.addProperty(weight, 10.5);
         newTx();
@@ -2671,25 +2707,33 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         //Transaction with custom triggerName
         TitanTransaction tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
         TitanVertex v1 = tx2.addVertex();
-        v1.setProperty("weight",111.1);
+        v1.setProperty("weight", 111.1);
+        v1.addEdge("knows", v1);
         tx2.commit();
+        final Timepoint middleTime = times.getTime();
+        final long v1id = v1.getID();
         tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
         TitanVertex v2 = tx2.addVertex();
         v2.setProperty("weight",222.2);
+        v2.addEdge("knows",tx2.getVertex(v1id));
         tx2.commit();
+        final long v2id = v2.getID();
         //Only read tx
         tx2 = graph.buildTransaction().setLogIdentifier(triggerName).start();
-        v1 = tx2.getVertex(v1.getID());
+        v1 = tx2.getVertex(v1id);
         assertEquals(111.1,v1.<Decimal>getProperty("weight").doubleValue(),0.0);
         assertEquals(222.2,tx2.getVertex(v2).<Decimal>getProperty("weight").doubleValue(),0.0);
         tx2.commit();
         close();
 
-        Log txlog = openTxLog(ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        Log triggerLog = openTriggerLog(triggerName, ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS));
-        final AtomicInteger txMsgCounter = new AtomicInteger(0);
+        final ReadMarker startMarker = ReadMarker.fromTime(startTime, TimeUnit.MILLISECONDS);
+
+        Log txlog = openTxLog();
+        Log triggerLog = openTriggerLog(triggerName);
+        final EnumMap<LogTxStatus,AtomicInteger> txMsgCounter = new EnumMap<LogTxStatus,AtomicInteger>(LogTxStatus.class);
+        for (LogTxStatus status : LogTxStatus.values()) txMsgCounter.put(status,new AtomicInteger(0));
         final AtomicInteger triggerMeta = new AtomicInteger(0);
-        txlog.registerReader(new MessageReader() {
+        txlog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
@@ -2705,20 +2749,19 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 if (!txEntry.hasContent()) {
                     assertTrue(txEntry.getStatus().isSuccess());
                 } else {
-                    assertTrue(txEntry.getStatus().isPreCommit());
+                    assertTrue(txEntry.getStatus()==LogTxStatus.PRECOMMIT);
                     Object logid = txEntry.getMetadata().get(LogTxMeta.LOG_ID);
                     if (logid!=null) {
                         assertTrue(logid instanceof String);
                         assertEquals(triggerName,logid);
                         triggerMeta.incrementAndGet();
                     }
-                    //TODO: Verify content parses correctly
                 }
-                txMsgCounter.incrementAndGet();
+                txMsgCounter.get(txEntry.getStatus()).incrementAndGet();
             }
         });
         final AtomicInteger triggerMsgCounter = new AtomicInteger(0);
-        triggerLog.registerReader(new MessageReader() {
+        triggerLog.registerReader(startMarker,new MessageReader() {
             @Override
             public void read(Message message) {
                 long msgTime = message.getTimestamp(TimeUnit.MILLISECONDS);
@@ -2726,35 +2769,100 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
                 assertNotNull(message.getSenderId());
                 StaticBuffer content = message.getContent();
                 assertTrue(content!=null && content.length()>0);
-                ReadBuffer read = content.asReadBuffer();
-                long txTime = TimeUnit.MILLISECONDS.convert(read.getLong(),unit);
+                TransactionLogHeader.Entry txentry = TransactionLogHeader.parse(content, serializer, times);
+
+                long txTime = txentry.getHeader().getTimestamp(TimeUnit.MILLISECONDS);
                 assertTrue(txTime<=msgTime);
                 assertTrue(txTime>=startTime);
-                long txid = read.getLong();
+                long txid = txentry.getHeader().getId();
                 assertTrue(txid>0);
-                for (String type : new String[]{"add","del"}) {
-                    long num = VariableLong.readPositive(read);
-                    assertTrue(num>=0 && num<Integer.MAX_VALUE);
-                    if (type.equals("add")) {
-                        assertEquals(2,num);
-                    } else {
-                        assertEquals(0,num);
-                    }
-                    for (int i=0; i<num;i++) {
-                        Long vertexid = VariableLong.readPositive(read);
-                        assertTrue(vertexid>0);
-                        Entry entry = BufferUtil.readEntry(read,serializer);
-                        assertNotNull(entry);
-                        assertEquals(Direction.OUT,edgeSerializer.parseDirection(entry));
-                    }
+                int count=0;
+                for (TransactionLogHeader.Modification modification : txentry.getContentAsModifications(serializer)) {
+                    count++;
+                    assertEquals(Change.ADDED,modification.state);
                 }
+                assertEquals(3,count);
                 triggerMsgCounter.incrementAndGet();
             }
         });
-        Thread.sleep(20000);
-        assertEquals(3*2 + (features.hasTxIsolation()?0:2), txMsgCounter.get());
+        Thread.sleep(4000);
+        assertEquals(3,txMsgCounter.get(LogTxStatus.PRECOMMIT).get());
+        assertEquals(2,txMsgCounter.get(LogTxStatus.PRIMARY_SUCCESS).get());
+        assertEquals(1,txMsgCounter.get(LogTxStatus.COMPLETE_SUCCESS).get());
+        assertEquals(2,txMsgCounter.get(LogTxStatus.SECONDARY_SUCCESS).get());
         assertEquals(2,triggerMsgCounter.get());
         assertEquals(2,triggerMeta.get());
+
+        clopen();
+        /*
+        Use trigger framework
+         */
+        final AtomicInteger triggerCount = new AtomicInteger(0);
+        LogProcessorFramework triggers = TitanFactory.openTriggers(TitanFactory.open(config));
+        triggers.addLogProcessor(triggerName).setStartTime(startTime, TimeUnit.MILLISECONDS).setRetryAttempts(1)
+        .addProcessor(new ChangeProcessor() {
+            @Override
+            public void process(TitanTransaction tx, TransactionId txId, ChangeState changes) {
+                assertEquals(instanceid,txId.getInstanceId());
+                assertTrue(txId.getTransactionId()>0 && txId.getTransactionId()<100); //Just some reasonable upper bound
+                final long timeDifferenceSeconds = Math.abs(txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS)
+                        -middleTime.getTimestamp(TimeUnit.SECONDS));
+                assertTrue(String.format("tx timestamp %s differs from middle timestamp %s by absolute value %d s > maximum %d s",
+                        txId.getTransactionTime().sinceEpoch(TimeUnit.SECONDS),
+                        middleTime.getTimestamp(TimeUnit.SECONDS),
+                        timeDifferenceSeconds, 1),
+                        timeDifferenceSeconds<=1); //Times should be within a second
+
+                assertTrue(tx.containsRelationType("knows"));
+                assertEquals(1, Iterables.size(changes.getVertices(Change.ADDED)));
+                assertEquals(0, Iterables.size(changes.getVertices(Change.REMOVED)));
+                assertEquals(2,Iterables.size(changes.getRelations(Change.ADDED)));
+                assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED, tx.getEdgeLabel("knows"))));
+                assertEquals(1,Iterables.size(changes.getRelations(Change.ADDED,tx.getEdgeLabel("knows"))));
+                assertEquals(2,Iterables.size(changes.getRelations(Change.ANY)));
+                assertEquals(0,Iterables.size(changes.getRelations(Change.REMOVED)));
+
+                long vid; double weight;
+                if (txId.getTransactionTime().sinceEpoch(TimeUnit.MICROSECONDS)<middleTime.getTimestamp(TimeUnit.MICROSECONDS)) {
+                    //1st transaction
+                    vid=v1id;
+                    weight=111.1;
+                    assertEquals(1,Iterables.size(changes.getVertices(Change.ANY)));
+                } else {
+                    //2nd transaction
+                    vid=v2id;
+                    weight=222.2;
+                    assertEquals(2,Iterables.size(changes.getVertices(Change.ANY)));
+                }
+                assertEquals(vid,Iterables.getOnlyElement(changes.getVertices(Change.ADDED)).getID());
+                TitanVertex v = tx.getVertex(vid);
+                assertTrue(v.isLoaded());
+                TitanProperty p = Iterables.getOnlyElement(changes.getProperties(v,Change.ADDED,"weight"));
+                assertEquals(weight,p.<Decimal>getValue().doubleValue(),0.0001);
+                assertEquals(1,Iterables.size(changes.getEdges(v, Change.ADDED, OUT)));
+                assertEquals(1,Iterables.size(changes.getEdges(v,Change.ADDED,BOTH)));
+
+                triggerCount.incrementAndGet();
+            }
+        }).build();
+
+        /*
+        Transaction Recovery
+         */
+        TransactionRecovery recovery = TitanFactory.startTransactionRecovery(TitanFactory.open(config),startTime,TimeUnit.MILLISECONDS);
+
+        //wait
+        Thread.sleep(22000L);
+
+
+        triggers.removeLogProcessor(triggerName);
+        triggers.shutdown();
+        recovery.shutdown();
+        assertEquals(2, triggerCount.get());
+        long[] recoveryStats = ((StandardTransactionLogProcessor)recovery).getStatistics();
+        System.out.println(Arrays.toString(recoveryStats));
+        assertEquals(3,recoveryStats[0]);
+        assertEquals(0,recoveryStats[1]);
     }
 
 
@@ -2842,6 +2950,10 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         // ########### END INSPECTION & FAILURE ##############
         finishSchema();
         clopen();
+
+        text = mgmt.getPropertyKey("text");
+        time = mgmt.getPropertyKey("time");
+        weight = mgmt.getPropertyKey("weight");
 
         // ########### INSPECTION & FAILURE (copied from above) ##############
         assertTrue(mgmt.containsRelationType("name"));

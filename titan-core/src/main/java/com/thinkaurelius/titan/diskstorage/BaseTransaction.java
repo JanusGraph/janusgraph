@@ -13,17 +13,17 @@ public interface BaseTransaction {
      * 
      * Call either this method or {@link #rollback()} at most once per instance.
      *
-     * @throws StorageException
+     * @throws BackendException
      */
-    public void commit() throws StorageException;
+    public void commit() throws BackendException;
 
     /**
      * Aborts (or rolls back) the transaction.
      * 
      * Call either this method or {@link #commit()} at most once per instance.
      *
-     * @throws StorageException
+     * @throws BackendException
      */
-    public void rollback() throws StorageException;
+    public void rollback() throws BackendException;
 
 }

@@ -4,12 +4,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.*;
 import com.thinkaurelius.titan.core.TitanException;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.util.time.*;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.ReadBuffer;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.ConfigOption;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
@@ -159,7 +159,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * The read marker which indicates where to start reading from the log
      */
-    private final ReadMarker readMarker;
+    private ReadMarker readMarker;
 
     /**
      * The number of buckets into which each time slice is subdivided. Increasing the number of buckets load balances
@@ -218,12 +218,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
     private final TimestampProvider times;
 
-    public KCVSLog(String name, KCVSLogManager manager, KeyColumnValueStore store, ReadMarker readMarker, Configuration config) {
-        Preconditions.checkArgument(manager != null && name != null && readMarker != null && store != null && config!=null);
+    public KCVSLog(String name, KCVSLogManager manager, KeyColumnValueStore store, Configuration config) {
+        Preconditions.checkArgument(manager != null && name != null && store != null && config!=null);
         this.name=name;
         this.manager=manager;
         this.store=store;
-        this.readMarker=readMarker;
 
         this.times = config.get(TIMESTAMP_PROVIDER);
         this.keyConsistentOperations = config.get(LOG_KEY_CONSISTENT);
@@ -267,10 +266,11 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     /**
      * Closes the log by terminating all threads and waiting for their termination.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
     @Override
-    public synchronized void close() throws StorageException {
+    public synchronized void close() throws BackendException {
+        if (!isOpen) return;
         this.isOpen = false;
         if (readExecutor!=null) readExecutor.shutdown();
         if (sendThread!=null) sendThread.close(CLOSE_DOWN_WAIT.getLength(TimeUnit.MICROSECONDS),TimeUnit.MICROSECONDS);
@@ -295,7 +295,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
     }
 
     @Override
-    public StoreTransaction openTx() throws StorageException {
+    public StoreTransaction openTx() throws BackendException {
         StandardBaseTransactionConfig config;
         if (keyConsistentOperations) {
             config = StandardBaseTransactionConfig.of(times,manager.storeManager.getFeatures().getKeyConsistentTxConfig());
@@ -360,6 +360,10 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     @Override
     public Future<Message> add(StaticBuffer content, StaticBuffer key) {
+        return add(content,key,null);
+    }
+
+    public Future<Message> add(StaticBuffer content, StaticBuffer key, ExternalPersistor persistor) {
         Preconditions.checkArgument(key!=null && key.length()>0,"Invalid key provided: %s",key);
         int partitionId = 0;
         //Get first 4 byte if exist in key...
@@ -373,17 +377,23 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         //and then extract the number of partitions bits
         if (manager.partitionBitWidth==0) partitionId=0;
         else partitionId = partitionId>>>(32-manager.partitionBitWidth);
-        return add(content, partitionId);
+        return add(content, partitionId, persistor);
+    }
+
+    private Future<Message> add(StaticBuffer content, int partitionId) {
+        return add(content,partitionId,null);
     }
 
     /**
      * Adds the given message (content) to the timeslice for the partition identified by the provided partitionId.
+     * If a persistor is specified, this persistor is used to add the message otherwise the internal delivery systems are used.
      *
      * @param content
      * @param partitionId
+     * @param persistor
      * @return
      */
-    private Future<Message> add(StaticBuffer content, int partitionId) {
+    private Future<Message> add(StaticBuffer content, int partitionId, ExternalPersistor persistor) {
         Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
         Preconditions.checkArgument(content!=null && content.length()>0,"Content is empty");
         Preconditions.checkArgument(partitionId>=0 && partitionId<(1<<manager.partitionBitWidth),"Invalid partition id: %s",partitionId);
@@ -394,7 +404,15 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         StaticBuffer key=getLogKey(partitionId,(int)(numBucketCounter.incrementAndGet()%numBuckets),getTimeSlice(timestamp));
         MessageEnvelope envelope = new MessageEnvelope(fmsg,key,writeMessage(msg));
 
-        if (outgoingMsg==null) {
+        if (persistor!=null) {
+            try {
+                persistor.add(envelope.key,envelope.entry);
+                envelope.message.delivered();
+            } catch (TitanException e) {
+                envelope.message.failed(e);
+                throw e;
+            }
+        } else if (outgoingMsg==null) {
             sendMessages(ImmutableList.of(envelope));
         } else {
             try {
@@ -438,7 +456,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         try {
             boolean success=BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                 @Override
-                public Boolean call(StoreTransaction txh) throws StorageException {
+                public Boolean call(StoreTransaction txh) throws BackendException {
                     ListMultimap<StaticBuffer,Entry> mutations = ArrayListMultimap.create();
                     for (MessageEnvelope env : msgEnvelopes) {
                         mutations.put(env.key,env.entry);
@@ -565,16 +583,19 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
      */
 
     @Override
-    public synchronized void registerReader(MessageReader... reader) {
-        Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
+    public synchronized void registerReader(ReadMarker readMarker, MessageReader... reader) {
         Preconditions.checkArgument(reader!=null && reader.length>0,"Must specify at least one reader");
-        registerReaders(Arrays.asList(reader));
+        registerReaders(readMarker,Arrays.asList(reader));
     }
 
     @Override
-    public synchronized void registerReaders(Iterable<MessageReader> readers) {
+    public synchronized void registerReaders(ReadMarker readMarker, Iterable<MessageReader> readers) {
         Preconditions.checkArgument(isOpen,"Log {} has been closed",name);
         Preconditions.checkArgument(!Iterables.isEmpty(readers),"Must specify at least one reader");
+        Preconditions.checkArgument(readMarker!=null,"Read marker cannot be null");
+        Preconditions.checkArgument(this.readMarker==null || this.readMarker.isCompatible(readMarker),
+                "Provided read marker is not compatible with existing read marker for previously registered readers");
+        if (this.readMarker==null) this.readMarker=readMarker;
         boolean firstRegistration = this.readers.isEmpty();
         for (MessageReader reader : readers) {
             Preconditions.checkNotNull(reader);
@@ -628,13 +649,12 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private MessagePuller(final int partitionId, final int bucketId) {
             this.bucketId = bucketId;
             this.partitionId = partitionId;
+            initializeTimepoint();
         }
 
         @Override
         public void run() {
             try {
-                if (null == messageTimeStart) initializeTimepoint();
-
                 if (allowReadMarkerRecovery) setReadMarker();
 
                 final int timeslice = getTimeSlice(messageTimeStart);
@@ -749,7 +769,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         private BackendOperation.Transactional<List<Entry>> getOperation(final KeySliceQuery query) {
             return new BackendOperation.Transactional<List<Entry>>() {
                 @Override
-                public List<Entry> call(StoreTransaction txh) throws StorageException {
+                public List<Entry> call(StoreTransaction txh) throws BackendException {
                     return store.getSlice(query,txh);
                 }
                 @Override
@@ -787,7 +807,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         final StaticBuffer key = getSettingKey(identifier);
         StaticBuffer value = BackendOperation.execute(new BackendOperation.Transactional<StaticBuffer>() {
             @Override
-            public StaticBuffer call(StoreTransaction txh) throws StorageException {
+            public StaticBuffer call(StoreTransaction txh) throws BackendException {
                 return KCVSUtil.get(store,key,column,txh);
             }
             @Override
@@ -807,7 +827,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         final Entry add = StaticArrayEntry.of(column, BufferUtil.getLongBuffer(value));
         Boolean status = BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
-            public Boolean call(StoreTransaction txh) throws StorageException {
+            public Boolean call(StoreTransaction txh) throws BackendException {
                 store.mutate(key,ImmutableList.of(add),KeyColumnValueStore.NO_DELETIONS,txh);
                 return Boolean.TRUE;
             }

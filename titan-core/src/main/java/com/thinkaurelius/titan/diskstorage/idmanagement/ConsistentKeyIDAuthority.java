@@ -77,7 +77,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
     private final Random random = new Random();
 
-    public ConsistentKeyIDAuthority(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws StorageException {
+    public ConsistentKeyIDAuthority(KeyColumnValueStore idStore, StoreManager manager, Configuration config) throws BackendException {
         super(config);
         Preconditions.checkArgument(manager.getFeatures().isKeyConsistent());
         this.manager = manager;
@@ -123,29 +123,29 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     @Override
-    public List<KeyRange> getLocalIDPartition() throws StorageException {
+    public List<KeyRange> getLocalIDPartition() throws BackendException {
         return manager.getLocalKeyPartition();
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         idStore.close();
     }
 
     @Override
-    public StoreTransaction openTx() throws StorageException {
+    public StoreTransaction openTx() throws BackendException {
         return manager.beginTransaction(storeTxConfigBuilder.build());
     }
 
-    private long getCurrentID(final StaticBuffer partitionKey) throws StorageException {
+    private long getCurrentID(final StaticBuffer partitionKey) throws BackendException {
         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
             @Override
-            public List<Entry> call(StoreTransaction txh) throws StorageException {
+            public List<Entry> call(StoreTransaction txh) throws BackendException {
                 return idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh);
             }
         },this,times);
 
-        if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
+        if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
         long latest = BASE_ID;
 
         for (Entry e : blocks) {
@@ -178,7 +178,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
     }
 
     @Override
-    public synchronized IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws StorageException {
+    public synchronized IDBlock getIDBlock(final int partition, final int idNamespace, Duration timeout) throws BackendException {
         Preconditions.checkArgument(partition>=0 && partition<(1<<partitionBitWdith),"Invalid partition id [%s] for bit width [%s]",partition, partitionBitWdith);
         Preconditions.checkArgument(idNamespace>=0); //can be any non-negative value
 
@@ -233,7 +233,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                     final StaticBuffer finalTarget = target; // copy for the inner class
                     BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                         @Override
-                        public Boolean call(StoreTransaction txh) throws StorageException {
+                        public Boolean call(StoreTransaction txh) throws BackendException {
                             idStore.mutate(partitionKey, Arrays.asList(StaticArrayEntry.of(finalTarget)), KeyColumnValueStore.NO_DELETIONS, txh);
                             return true;
                         }
@@ -242,7 +242,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
 
                     Duration writeElapsed = writeTimer.elapsed();
                     if (idApplicationWaitMS.compareTo(writeElapsed) < 0) {
-                        throw new TemporaryStorageException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
+                        throw new TemporaryBackendException("Wrote claim for id block [" + nextStart + ", " + nextEnd + ") in " + (writeElapsed) + " => too slow, threshold is: " + idApplicationWaitMS);
                     } else {
 
                         assert 0 != target.length();
@@ -258,13 +258,13 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(new BackendOperation.Transactional<List<Entry>>() {
                             @Override
-                            public List<Entry> call(StoreTransaction txh) throws StorageException {
+                            public List<Entry> call(StoreTransaction txh) throws BackendException {
                                 return idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh);
                             }
                         },this,times);
-                        if (blocks == null) throw new TemporaryStorageException("Could not read from storage");
+                        if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
                         if (blocks.isEmpty())
-                            throw new PermanentStorageException("It seems there is a race-condition in the block application. " +
+                            throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
                                     "If you have multiple Titan instances running on one physical machine, ensure that they have unique machine idAuthorities");
 
                         /* If our claim is the lexicographically first one, then our claim
@@ -294,13 +294,13 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                                 final StaticBuffer finalTarget = target; // copy for the inner class
                                 BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
                                     @Override
-                                    public Boolean call(StoreTransaction txh) throws StorageException {
+                                    public Boolean call(StoreTransaction txh) throws BackendException {
                                         idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Arrays.asList(finalTarget), txh);
                                         return true;
                                     }
                                 }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
                                     @Override
-                                    public StoreTransaction openTx() throws StorageException {
+                                    public StoreTransaction openTx() throws BackendException {
                                         return manager.beginTransaction(storeTxConfigBuilder.build());
                                     }
                                     @Override
@@ -308,7 +308,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
                                 },times);
 
                                 break;
-                            } catch (StorageException e) {
+                            } catch (BackendException e) {
                                 log.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
                                 if (!rollbackWaitTime.isZeroLength())
                                     sleepAndConvertInterrupts(rollbackWaitTime);
@@ -319,7 +319,7 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
             } catch (UniqueIDExhaustedException e) {
                 // No need to increment the backoff wait time or to sleep
                 log.warn(e.getMessage());
-            } catch (TemporaryStorageException e) {
+            } catch (TemporaryBackendException e) {
                 backoffMS = Durations.min(backoffMS.multiply(2), idApplicationWaitMS.multiply(32));
                 log.warn("Temporary storage exception while acquiring id block - retrying in {}: {}", backoffMS, e);
                 sleepAndConvertInterrupts(backoffMS);
@@ -353,15 +353,15 @@ public class ConsistentKeyIDAuthority extends AbstractIDAuthority implements Bac
         return -column.getLong(0);
     }
 
-    private void sleepAndConvertInterrupts(Duration d) throws StorageException {
+    private void sleepAndConvertInterrupts(Duration d) throws BackendException {
         try {
             times.sleepPast(times.getTime().add(d));
         } catch (InterruptedException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
     }
 
-    private static class UniqueIDExhaustedException extends StorageException {
+    private static class UniqueIDExhaustedException extends Exception {
 
         private static final long serialVersionUID = 1L;
 

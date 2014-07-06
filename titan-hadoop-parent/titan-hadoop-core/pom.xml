@@ -1,0 +1,135 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.thinkaurelius.titan</groupId>
+        <artifactId>titan-hadoop-parent</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>titan-hadoop-core</artifactId>
+    <name>Titan-Hadoop-Core</name>
+    <url>http://thinkaurelius.github.com/titan/</url>
+
+    <properties>
+        <top.level.basedir>${basedir}/../..</top.level.basedir>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop2.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.mrunit</groupId>
+            <artifactId>mrunit</artifactId>
+            <version>${mrunit.version}</version>
+            <classifier>hadoop2</classifier>
+            <optional>true</optional>
+            <!-- <scope>test</scope> -->
+        </dependency>
+
+        <!-- Need this for compile-time imports on
+             org.apache.hadoop.hbase.mapreduce -->
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>0.98.3-hadoop2</version>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>0.98.3-hadoop2</version>
+            <optional>true</optional>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.gmaven</groupId>
+                <artifactId>gmaven-plugin</artifactId>
+                <version>1.5</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generateStubs</goal>
+                            <goal>compile</goal>
+                            <!-- Writing Groovy tests?  Uncomment these.
+                            <goal>generateTestStubs</goal>
+                            <goal>testCompile</goal>
+                            -->
+                        </goals>
+                        <configuration>
+                            <providerSelection>1.8</providerSelection>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>assemble-shared-resources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>true</attach>
+                            <descriptors>
+                                <descriptor>src/assembly/shared-resources.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>assemble-example-data</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <attach>true</attach>
+                            <descriptors>
+                                <descriptor>src/assembly/example-data.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                    <!-- Inherited the Hadoop job jar assembly from the parent, but this is
+                         only useful in the titan-hadoop-1 and -2 modules.  Disable it. -->
+                    <execution>
+                        <id>build-job-jar</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <!-- Tests are executed in the titan-hadoop-1 and -2 modules -->
+                    <execution>
+                        <id>default-test</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <!-- The titan-hadoop-1 and -2 modules use our test classes -->
+                    <execution>
+                        <id>pack-test-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

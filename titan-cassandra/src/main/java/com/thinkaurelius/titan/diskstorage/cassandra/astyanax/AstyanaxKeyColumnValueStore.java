@@ -14,7 +14,6 @@ import com.netflix.astyanax.serializers.ByteBufferSerializer;
 import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayBuffer;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
@@ -59,29 +58,29 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         //Do nothing
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, EntryList> result = getNamesSlice(query.getKey(), query, txh);
         return Iterables.getOnlyElement(result.values(),EntryList.EMPTY_LIST);
     }
 
     @Override
-    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return getNamesSlice(keys, query, txh);
     }
 
     public Map<StaticBuffer, EntryList> getNamesSlice(StaticBuffer key,
-                                                    SliceQuery query, StoreTransaction txh) throws StorageException {
+                                                    SliceQuery query, StoreTransaction txh) throws BackendException {
         return getNamesSlice(ImmutableList.of(key),query,txh);
     }
 
 
     public Map<StaticBuffer, EntryList> getNamesSlice(List<StaticBuffer> keys,
-                                                      SliceQuery query, StoreTransaction txh) throws StorageException {
+                                                      SliceQuery query, StoreTransaction txh) throws BackendException {
         /*
          * RowQuery<K,C> should be parameterized as
          * RowQuery<ByteBuffer,ByteBuffer>. However, this causes the following
@@ -112,7 +111,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         try {
             r = (OperationResult<Rows<ByteBuffer, ByteBuffer>>) rq.execute();
         } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
 
         Rows<ByteBuffer,ByteBuffer> rows = r.getResult();
@@ -165,23 +164,23 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         mutateMany(ImmutableMap.of(key, new KCVMutation(additions, deletions)), txh);
     }
 
-    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<StaticBuffer, KCVMutation> mutations, StoreTransaction txh) throws BackendException {
         storeManager.mutateMany(ImmutableMap.of(columnFamilyName, mutations), txh);
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(@Nullable SliceQuery sliceQuery, StoreTransaction txh) throws BackendException {
         if (storeManager.getPartitioner() != Partitioner.RANDOM)
-            throw new PermanentStorageException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
+            throw new PermanentBackendException("This operation is only allowed when random partitioner (md5 or murmur3) is used.");
 
         AllRowsQuery allRowsQuery = keyspace.prepareQuery(columnFamily).getAllRows();
 
@@ -212,21 +211,21 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
 
             result = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) op).getResult();
         } catch (ConnectionException e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         return new RowIterator(result.iterator(), sliceQuery);
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         // this query could only be done when byte-ordering partitioner is used
         // because Cassandra operates on tokens internally which means that even contiguous
         // range of keys (e.g. time slice) with random partitioner could produce disjoint set of tokens
         // returning ambiguous results to the user.
         Partitioner partitioner = storeManager.getPartitioner();
         if (partitioner != Partitioner.BYTEORDER)
-            throw new PermanentStorageException("getKeys(KeyRangeQuery could only be used with byte-ordering partitioner.");
+            throw new PermanentBackendException("getKeys(KeyRangeQuery could only be used with byte-ordering partitioner.");
 
         ByteBuffer start = query.getKeyStart().asByteBuffer(), end = query.getKeyEnd().asByteBuffer();
 
@@ -246,7 +245,7 @@ public class AstyanaxKeyColumnValueStore implements KeyColumnValueStore {
         try {
             r = ((OperationResult<Rows<ByteBuffer, ByteBuffer>>) rowSlice.execute()).getResult();
         } catch (ConnectionException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         }
         Iterator<Row<ByteBuffer, ByteBuffer>> i =
                 Iterators.filter(r.iterator(), new KeySkipPredicate(query.getKeyEnd().asByteBuffer()));

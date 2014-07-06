@@ -5,10 +5,10 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.time.StandardDuration;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.util.time.Timestamps;
 import com.thinkaurelius.titan.graphdb.query.TitanPredicate;
 import com.thinkaurelius.titan.graphdb.query.condition.*;
@@ -74,7 +74,7 @@ public abstract class IndexProviderTest {
         return new StandardKeyInformation(clazz,paras);
     }
 
-    public abstract IndexProvider openIndex() throws StorageException;
+    public abstract IndexProvider openIndex() throws BackendException;
 
     public abstract boolean supportsLuceneStyleQueries();
 
@@ -84,17 +84,17 @@ public abstract class IndexProviderTest {
         open();
     }
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         index = openIndex();
         newTx();
     }
 
-    public void newTx() throws StorageException {
+    public void newTx() throws BackendException {
         if (tx != null) tx.commit();
         tx = openTx();
     }
 
-    public IndexTransaction openTx() throws StorageException {
+    public IndexTransaction openTx() throws BackendException {
         BaseTransactionConfig config = StandardBaseTransactionConfig.of(Timestamps.MILLI);
         return new IndexTransaction(index, indexRetriever, config, new StandardDuration(2000L, TimeUnit.MILLISECONDS));
     }
@@ -104,12 +104,12 @@ public abstract class IndexProviderTest {
         close();
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         if (tx != null) tx.commit();
         index.close();
     }
 
-    public void clopen() throws StorageException {
+    public void clopen() throws BackendException {
         close();
         open();
     }
@@ -607,12 +607,61 @@ public abstract class IndexProviderTest {
         checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "honey")),defDoc);
     }
 
+    /**
+     * Test overwriting a single existing field on an existing document
+     * (isNew=false). Non-contentious test.
+     *
+     */
+    @Test
+    public void testUpdateAddition() throws Exception {
+        final String revisedText = "its a sunny day";
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.add(defStore, defDoc, TEXT, revisedText, false);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 //do nothing
+                             }
+                         });
+
+        // Should no longer return old text
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+        // but new one
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "sunny")),null);
+    }
+
+    /**
+     * Test deleting a single field from a single document (deleteAll=false).
+     * Non-contentious test.
+     *
+     */
+    @Test
+    public void testUpdateDeletion() throws Exception {
+        runConflictingTx(new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 tx.delete(defStore, defDoc, TEXT, ImmutableMap.of(), false);
+                             }
+                         }, new TxJob() {
+                             @Override
+                             public void run(IndexTransaction tx) {
+                                 //do nothing
+                             }
+                         });
+
+        // Should no longer return deleted text
+        checkResult(new IndexQuery(defStore, PredicateCondition.of(TEXT, Text.CONTAINS, "brown")),null);
+    }
 
     /* ==================================================================================
                             HELPER METHODS
      ==================================================================================*/
 
-    private void initialize(String store) throws StorageException {
+
+    private void initialize(String store) throws BackendException {
         for (Map.Entry<String,KeyInformation> info : allKeys.entrySet()) {
             if (index.supports(info.getValue())) index.register(store,info.getKey(),info.getValue(),tx);
         }

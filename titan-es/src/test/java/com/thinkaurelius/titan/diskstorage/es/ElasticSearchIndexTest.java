@@ -3,7 +3,7 @@ package com.thinkaurelius.titan.diskstorage.es;
 import com.thinkaurelius.titan.StorageSetup;
 import com.thinkaurelius.titan.core.schema.Parameter;
 import com.thinkaurelius.titan.core.attribute.*;
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.indexing.IndexProvider;
@@ -25,7 +25,7 @@ import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfigu
 public class ElasticSearchIndexTest extends IndexProviderTest {
 
     @Override
-    public IndexProvider openIndex() throws StorageException {
+    public IndexProvider openIndex() throws BackendException {
         return new ElasticSearchIndex(getLocalESTestConfig());
     }
 
@@ -86,7 +86,7 @@ public class ElasticSearchIndexTest extends IndexProviderTest {
     }
 
     @Test
-    public void testConfiguration() throws StorageException {
+    public void testConfiguration() throws BackendException {
         // Test that local-mode has precedence over hostname
         final String index = "es";
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();

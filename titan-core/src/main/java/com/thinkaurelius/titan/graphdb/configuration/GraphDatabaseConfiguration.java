@@ -127,6 +127,12 @@ public class GraphDatabaseConfiguration {
             "Whether Titan should throw an exception if a graph query cannot be answered using an index. Doing so" +
                     "limits the functionality of Titan's graph queries but ensures that slow graph queries are avoided.",
             ConfigOption.Type.MASKABLE, false);
+
+    public static final ConfigOption<Duration> MAX_COMMIT_TIME = new ConfigOption<Duration>(ROOT_NS,"max-commit-time",
+            "Maximum time (in ms) that a transaction might take to commit against all backends. This is used by the distributed " +
+                    "write-ahead log processing to determine when a transaction can be considered failed (i.e. after this time has elapsed)." +
+                    "Must be longer than the maximum allowed write time.",
+            ConfigOption.Type.GLOBAL, new StandardDuration(10, TimeUnit.SECONDS));
 //
 //    public static final String ALLOW_SETTING_VERTEX_ID_KEY = "set-vertex-id";
 //    public static final boolean ALLOW_SETTING_VERTEX_ID_DEFAULT = false;
@@ -318,7 +324,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<String>(STORAGE_NS,"backend",
             "Either the package and classname of a StoreManager implementation or one of " +
             "Titan's built-in shorthand names for its standard storage backends.",
-            ConfigOption.Type.LOCAL, "local");
+            ConfigOption.Type.LOCAL, String.class);
 //    public static final String STORAGE_BACKEND_KEY = "backend";
 //    public static final String STORAGE_BACKEND_DEFAULT = "local";
 
@@ -1285,7 +1291,9 @@ public class GraphDatabaseConfiguration {
         overwrite.set(UNIQUE_INSTANCE_ID, this.uniqueGraphId);
 
         //Default log configuration for system and tx log
-        //TRANSACTION LOG: send_delay=0 for tx log
+        //TRANSACTION LOG: send_delay=0 for tx log and backend=default
+        Preconditions.checkArgument(combinedConfig.get(LOG_BACKEND,TRANSACTION_LOG).equals(LOG_BACKEND.getDefaultValue()),
+                "Must use default log backend for transaction log");
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY,TRANSACTION_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, TRANSACTION_LOG).isZeroLength(),"Send delay must be 0 for transaction log.");
         overwrite.set(LOG_SEND_DELAY, ZeroDuration.INSTANCE,TRANSACTION_LOG);
@@ -1512,6 +1520,14 @@ public class GraphDatabaseConfiguration {
 
     public boolean allowVertexIdSetting() {
         return allowVertexIdSetting;
+    }
+
+    public Duration getMaxCommitTime() {
+        return configuration.get(MAX_COMMIT_TIME);
+    }
+
+    public Duration getMaxWriteTime() {
+        return configuration.get(STORAGE_WRITE_WAITTIME);
     }
 
     public boolean hasPropertyPrefetching() {

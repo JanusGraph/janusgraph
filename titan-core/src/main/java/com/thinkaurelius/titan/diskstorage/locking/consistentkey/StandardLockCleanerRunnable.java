@@ -2,13 +2,13 @@ package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
 import java.util.List;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeySliceQuery;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
@@ -47,12 +47,12 @@ public class StandardLockCleanerRunnable implements Runnable {
     public void run() {
         try {
             runWithExceptions();
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             log.warn("Expired lock cleaner failed", e);
         }
     }
 
-    private void runWithExceptions() throws StorageException {
+    private void runWithExceptions() throws BackendException {
         StaticBuffer lockKey = serializer.toLockKey(target.getKey(), target.getColumn());
         List<Entry> locks = store.getSlice(new KeySliceQuery(lockKey, LOCK_COL_START, LOCK_COL_END), tx); // TODO reduce LOCK_COL_END based on cutoff
 

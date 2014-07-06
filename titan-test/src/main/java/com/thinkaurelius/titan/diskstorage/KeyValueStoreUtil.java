@@ -71,7 +71,7 @@ public class KeyValueStoreUtil {
         return serial.readObjectNotNull(b.asReadBuffer(), String.class);
     }
 
-    public static int count(RecordIterator<?> iterator) throws StorageException {
+    public static int count(RecordIterator<?> iterator) throws BackendException {
         int count = 0;
         while (iterator.hasNext()) {
             iterator.next();

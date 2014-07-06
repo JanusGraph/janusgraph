@@ -18,7 +18,6 @@ import com.thinkaurelius.titan.diskstorage.util.KeyColumn;
 import com.thinkaurelius.titan.diskstorage.util.StandardBaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.util.StaticArrayEntry;
 
-import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -88,9 +87,9 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         v2 = KeyValueStoreUtil.getBuffer("val2");
     }
 
-    public abstract KeyColumnValueStoreManager openStorageManager(int id) throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager(int id) throws BackendException;
 
-    public void open() throws StorageException {
+    public void open() throws BackendException {
         manager = new KeyColumnValueStoreManager[CONCURRENCY];
         tx = new StoreTransaction[CONCURRENCY][NUM_TX];
         store = new KeyColumnValueStore[CONCURRENCY];
@@ -121,7 +120,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         }
     }
 
-    public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws StorageException {
+    public StoreTransaction newTransaction(KeyColumnValueStoreManager manager) throws BackendException {
         StoreTransaction transaction = manager.beginTransaction(getTxConfig());
         if (!manager.getFeatures().hasLocking() && manager.getFeatures().isKeyConsistent()) {
             transaction = new ExpectedValueCheckingTransaction(transaction, manager.beginTransaction(getConsistentTxConfig(manager)), GraphDatabaseConfiguration.STORAGE_READ_WAITTIME.getDefaultValue());
@@ -134,7 +133,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         close();
     }
 
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         for (int i = 0; i < CONCURRENCY; i++) {
             store[i].close();
 
@@ -149,7 +148,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void singleLockAndUnlock() throws StorageException {
+    public void singleLockAndUnlock() throws BackendException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
         tx[0][0].commit();
@@ -159,7 +158,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void transactionMayReenterLock() throws StorageException {
+    public void transactionMayReenterLock() throws BackendException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
         store[0].acquireLock(k, c1, null, tx[0][0]);
@@ -171,32 +170,32 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test(expected = PermanentLockingException.class)
-    public void expectedValueMismatchCausesMutateFailure() throws StorageException {
+    public void expectedValueMismatchCausesMutateFailure() throws BackendException {
         store[0].acquireLock(k, c1, v1, tx[0][0]);
         store[0].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v1)), NO_DELETIONS, tx[0][0]);
     }
 
     @Test
-    public void testLocalLockContention() throws StorageException {
+    public void testLocalLockContention() throws BackendException {
         store[0].acquireLock(k, c1, null, tx[0][0]);
 
         try {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown");
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
         try {
             store[0].acquireLock(k, c1, null, tx[0][1]);
             Assert.fail("Lock contention exception not thrown (2nd try)");
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
     }
 
     @Test
-    public void testRemoteLockContention() throws InterruptedException, StorageException {
+    public void testRemoteLockContention() throws InterruptedException, BackendException {
         // acquire lock on "host1"
         store[0].acquireLock(k, c1, null, tx[0][0]);
 
@@ -205,7 +204,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
         try {
             // acquire same lock on "host2"
             store[1].acquireLock(k, c1, null, tx[1][0]);
-        } catch (StorageException e) {            /* Lock attempts between hosts with different LocalLockMediators,
+        } catch (BackendException e) {            /* Lock attempts between hosts with different LocalLockMediators,
              * such as tx[0][0] and tx[1][0] in this example, should
 			 * not generate locking failures until one of them tries
 			 * to issue a mutate or mutateMany call.  An exception
@@ -223,7 +222,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             // This must fail since "host1" took the lock first
             store[1].mutate(k, Arrays.<Entry>asList(StaticArrayEntry.of(c1, v2)), NO_DELETIONS, tx[1][0]);
             Assert.fail("Expected lock contention between remote transactions did not occur");
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
         }
 
@@ -236,7 +235,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void singleTransactionWithMultipleLocks() throws StorageException {
+    public void singleTransactionWithMultipleLocks() throws BackendException {
         tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][0]);
         /*
          * tryWrites commits transactions. set committed tx references to null
@@ -246,7 +245,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void twoLocalTransactionsWithIndependentLocks() throws StorageException {
+    public void twoLocalTransactionsWithIndependentLocks() throws BackendException {
         tryWrites(store[0], manager[0], tx[0][0], store[0], tx[0][1]);
         /*
          * tryWrites commits transactions. set committed tx references to null
@@ -257,7 +256,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void twoTransactionsWithIndependentLocks() throws StorageException {
+    public void twoTransactionsWithIndependentLocks() throws BackendException {
         tryWrites(store[0], manager[0], tx[0][0], store[1], tx[1][0]);
         /*
          * tryWrites commits transactions. set committed tx references to null
@@ -268,17 +267,17 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
     }
 
     @Test
-    public void expiredLocalLockIsIgnored() throws StorageException, InterruptedException {
+    public void expiredLocalLockIsIgnored() throws BackendException, InterruptedException {
         tryLocks(store[0], tx[0][0], store[0], tx[0][1], true);
     }
 
     @Test
-    public void expiredRemoteLockIsIgnored() throws StorageException, InterruptedException {
+    public void expiredRemoteLockIsIgnored() throws BackendException, InterruptedException {
         tryLocks(store[0], tx[0][0], store[1], tx[1][0], false);
     }
 
     @Test
-    public void repeatLockingDoesNotExtendExpiration() throws StorageException, InterruptedException {        /*
+    public void repeatLockingDoesNotExtendExpiration() throws BackendException, InterruptedException {        /*
 		 * This test is intrinsically racy and unreliable. There's no guarantee
 		 * that the thread scheduler will put our test thread back on a core in
 		 * a timely fashion after our Thread.sleep() argument elapses.
@@ -311,14 +310,14 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             // Lock (k,k) with tx[0][1] now that tx[0][0]'s lock has expired
             store[0].acquireLock(k, k, null, tx[0][1]);
             // If acquireLock returns without throwing an Exception, we're OK
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             log.debug("Relocking exception follows", e);
             Assert.fail("Relocking following expiration failed");
         }
     }
 
     @Test
-    public void parallelNoncontendedLockStressTest() throws StorageException, InterruptedException {
+    public void parallelNoncontendedLockStressTest() throws BackendException, InterruptedException {
         final Executor stressPool = Executors.newFixedThreadPool(CONCURRENCY);
         final CountDownLatch stressComplete = new CountDownLatch(CONCURRENCY);
         final long maxWalltimeAllowedMS = 90 * 1000L;
@@ -408,7 +407,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private void tryWrites(KeyColumnValueStore store1, KeyColumnValueStoreManager checkmgr,
                            StoreTransaction tx1, KeyColumnValueStore store2,
-                           StoreTransaction tx2) throws StorageException {
+                           StoreTransaction tx2) throws BackendException {
         Assert.assertNull(KCVSUtil.get(store1, k, c1, tx1));
         Assert.assertNull(KCVSUtil.get(store2, k, c2, tx2));
 
@@ -430,7 +429,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
 
     private void tryLocks(KeyColumnValueStore s1,
                           StoreTransaction tx1, KeyColumnValueStore s2,
-                          StoreTransaction tx2, boolean detectLocally) throws StorageException, InterruptedException {
+                          StoreTransaction tx2, boolean detectLocally) throws BackendException, InterruptedException {
 
         s1.acquireLock(k, k, null, tx1);
 
@@ -440,7 +439,7 @@ public abstract class LockKeyColumnValueStoreTest extends AbstractKCVSTest {
             try {
                 s2.acquireLock(k, k, null, tx2);
                 Assert.fail("Expected lock contention between transactions did not occur");
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 Assert.assertTrue(e instanceof PermanentLockingException || e instanceof TemporaryLockingException);
             }
         }

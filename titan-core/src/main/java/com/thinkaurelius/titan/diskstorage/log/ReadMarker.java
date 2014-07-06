@@ -16,6 +16,8 @@ public class ReadMarker {
     private final long sinceEpoch;
     private final TimeUnit unit;
 
+    private Timepoint startTime;
+
     private ReadMarker(String identifier, long sinceEpoch, TimeUnit unit) {
         this.identifier = identifier;
         this.sinceEpoch = sinceEpoch;
@@ -39,14 +41,33 @@ public class ReadMarker {
         return identifier;
     }
 
+    public boolean hasStartTime() {
+        return unit!=null;
+    }
+
     /**
-     * Returns the start time of this marker in microseconds
+     * Returns the start time of this marker if such has been defined or the current time if not
      * @return
      */
-    public Timepoint getStartTime(TimestampProvider times) {
-//        if (unit==null) return times.getTime();
-        assert null != unit;
-        return times.getTime(sinceEpoch,unit);
+    public synchronized Timepoint getStartTime(TimestampProvider times) {
+        if (startTime==null) {
+            if (unit==null) startTime = times.getTime();
+            else startTime = times.getTime(sinceEpoch,unit);
+        }
+        return startTime;
+    }
+
+    /**
+     *
+     * @param newMarker
+     * @return
+     */
+    public boolean isCompatible(ReadMarker newMarker) {
+        if (newMarker.hasIdentifier()) {
+            return hasIdentifier() && identifier.equals(newMarker.identifier);
+        }
+        if (newMarker.hasStartTime()) return false;
+        return true;
     }
 
     /**
@@ -55,7 +76,7 @@ public class ReadMarker {
      * @return
      */
     public static ReadMarker fromNow() {
-        return new ReadMarker(null, Timestamps.MICRO.getTime().getTimestamp(TimeUnit.MICROSECONDS), TimeUnit.MICROSECONDS);
+        return new ReadMarker(null, 0, null);
     }
 
     /**
@@ -82,6 +103,17 @@ public class ReadMarker {
      */
     public static ReadMarker fromIdentifierOrTime(String id, long timestamp, TimeUnit unit) {
         return new ReadMarker(id, timestamp, unit);
+    }
+
+    /**
+     * Like {@link #fromIdentifierOrTime(String, long, java.util.concurrent.TimeUnit)} but uses the current time point
+     * as the starting timestamp if the log has no record of the id.
+     *
+     * @param id
+     * @return
+     */
+    public static ReadMarker fromIdentifierOrNow(String id) {
+        return new ReadMarker(id, 0, null);
     }
 
 }

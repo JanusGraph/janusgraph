@@ -13,7 +13,7 @@ import com.tinkerpop.blueprints.Element;
  *
  * @author Matthias Broecheler (me@matthiasb.com)
  */
-public interface TitanGraphIndex extends TitanSchemaElement {
+public interface TitanGraphIndex extends TitanIndex {
 
     /**
      * Returns the name of the index
@@ -60,5 +60,14 @@ public interface TitanGraphIndex extends TitanSchemaElement {
      * @return
      */
     public boolean isUnique();
+
+    /**
+     * Returns the status of this index with respect to the provided {@link PropertyKey}.
+     * For composite indexes, the key is ignored and the status of the index as a whole is returned.
+     * For mixed indexes, the status of that particular key within the index is returned.
+     *
+     * @return
+     */
+    public SchemaStatus getIndexStatus(PropertyKey key);
 
 }

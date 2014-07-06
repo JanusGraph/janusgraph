@@ -82,22 +82,22 @@ public class LuceneIndex implements IndexProvider {
         log.debug("Configured Lucene to use base directory [{}]", basePath);
     }
 
-    private Directory getStoreDirectory(String store) throws StorageException {
+    private Directory getStoreDirectory(String store) throws BackendException {
         Preconditions.checkArgument(StringUtils.isAlphanumeric(store), "Invalid store name: %s", store);
         String dir = basePath + File.separator + store;
         try {
             File path = new File(dir);
             if (!path.exists()) path.mkdirs();
             if (!path.exists() || !path.isDirectory() || !path.canWrite())
-                throw new PermanentStorageException("Cannot access or write to directory: " + dir);
+                throw new PermanentBackendException("Cannot access or write to directory: " + dir);
             log.debug("Opening store directory [{}]", path);
             return FSDirectory.open(path);
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not open directory: " + dir, e);
+            throw new PermanentBackendException("Could not open directory: " + dir, e);
         }
     }
 
-    private IndexWriter getWriter(String store) throws StorageException {
+    private IndexWriter getWriter(String store) throws BackendException {
         Preconditions.checkArgument(writerLock.isHeldByCurrentThread());
         IndexWriter writer = writers.get(store);
         if (writer == null) {
@@ -107,7 +107,7 @@ public class LuceneIndex implements IndexProvider {
                 writer = new IndexWriter(getStoreDirectory(store), iwc);
                 writers.put(store, writer);
             } catch (IOException e) {
-                throw new PermanentStorageException("Could not create writer", e);
+                throw new PermanentBackendException("Could not create writer", e);
             }
         }
         return writer;
@@ -129,14 +129,14 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
         Preconditions.checkArgument(map==Mapping.DEFAULT || AttributeUtil.isString(dataType),
                 "Specified illegal mapping [%s] for data type [%s]",map,dataType);    }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Transaction ltx = (Transaction) tx;
         writerLock.lock();
         try {
@@ -182,7 +182,7 @@ public class LuceneIndex implements IndexProvider {
             }
             ltx.postCommit();
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not update Lucene index", e);
+            throw new TemporaryBackendException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
         }
@@ -336,7 +336,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         //Construct query
         Filter q = convertQuery(query.getCondition(),informations.get(query.getStore()));
 
@@ -352,7 +352,7 @@ public class LuceneIndex implements IndexProvider {
             }
             return result;
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not execute Lucene query", e);
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
     }
 
@@ -455,12 +455,12 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         Query q;
         try {
             q = new QueryParser(LUCENE_VERSION,"_all",analyzer).parse(query.getQuery());
         } catch (ParseException e) {
-            throw new PermanentStorageException("Could not parse raw query: "+query.getQuery(),e);
+            throw new PermanentBackendException("Could not parse raw query: "+query.getQuery(),e);
         }
 
         try {
@@ -481,12 +481,12 @@ public class LuceneIndex implements IndexProvider {
             }
             return result;
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not execute Lucene query", e);
+            throw new TemporaryBackendException("Could not execute Lucene query", e);
         }
     }
 
     @Override
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new Transaction(config);
     }
 
@@ -527,20 +527,20 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         try {
             for (IndexWriter w : writers.values()) w.close();
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not close writers", e);
+            throw new PermanentBackendException("Could not close writers", e);
         }
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         try {
             FileUtils.deleteDirectory(new File(basePath));
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not delete lucene directory: " + basePath, e);
+            throw new PermanentBackendException("Could not delete lucene directory: " + basePath, e);
         }
     }
 
@@ -554,7 +554,7 @@ public class LuceneIndex implements IndexProvider {
             this.config = config;
         }
 
-        private synchronized IndexSearcher getSearcher(String store) throws StorageException {
+        private synchronized IndexSearcher getSearcher(String store) throws BackendException {
             IndexSearcher searcher = searchers.get(store);
             if (searcher == null) {
                 IndexReader reader = null;
@@ -564,36 +564,36 @@ public class LuceneIndex implements IndexProvider {
                 } catch (IndexNotFoundException e) {
                     searcher = null;
                 } catch (IOException e) {
-                    throw new PermanentStorageException("Could not open index reader on store: " + store, e);
+                    throw new PermanentBackendException("Could not open index reader on store: " + store, e);
                 }
                 searchers.put(store, searcher);
             }
             return searcher;
         }
 
-        public void postCommit() throws StorageException {
+        public void postCommit() throws BackendException {
             close();
             searchers.clear();
         }
 
 
         @Override
-        public void commit() throws StorageException {
+        public void commit() throws BackendException {
             close();
         }
 
         @Override
-        public void rollback() throws StorageException {
+        public void rollback() throws BackendException {
             close();
         }
 
-        private void close() throws StorageException {
+        private void close() throws BackendException {
             try {
                 for (IndexSearcher searcher : searchers.values()) {
                     if (searcher != null) searcher.getIndexReader().close();
                 }
             } catch (IOException e) {
-                throw new PermanentStorageException("Could not close searcher", e);
+                throw new PermanentBackendException("Could not close searcher", e);
             }
         }
 

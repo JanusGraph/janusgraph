@@ -1,9 +1,9 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 
 import java.util.List;
 import java.util.Map;
@@ -22,23 +22,23 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         store.close();
     }
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
-                            StoreTransaction txh) throws StorageException {
+                            StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException("Cannot lock on a read-only store");
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws BackendException {
         return store.getKeys(keyQuery, txh);
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery columnQuery, StoreTransaction txh) throws BackendException {
         return store.getKeys(columnQuery, txh);
     }
 
@@ -48,17 +48,17 @@ public class ReadOnlyKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException("Cannot mutate a read-only store");
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         return store.getSlice(query, txh);
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return store.getSlice(keys, query, txh);
     }
 }

@@ -264,7 +264,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * new column with an updated timestamp and to delete the column that tried
      * to write when the store threw an exception. We continue like that up to
      * the retry limit. If the store throws anything else, such as an unchecked
-     * exception or a {@link PermanentStorageException}, then we'll try to
+     * exception or a {@link com.thinkaurelius.titan.diskstorage.PermanentBackendException}, then we'll try to
      * delete whatever we added and return without further retries.
      *
      * @param lockID lock to acquire
@@ -293,7 +293,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         }
         tryDeleteLockOnce(lockKey, oldLockCol, txh);
         // TODO log exception or successful too-slow write here
-        throw new TemporaryStorageException("Lock write retry count exceeded");
+        throw new TemporaryBackendException("Lock write retry count exceeded");
     }
 
     /**
@@ -309,12 +309,12 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * @param wr      result of the mutation
      * @param txh     transaction attempting the lock
      * @throws Throwable if {@link WriteResult#getThrowable()} is not an instance of
-     *                   {@link TemporaryStorageException}
+     *                   {@link com.thinkaurelius.titan.diskstorage.TemporaryBackendException}
      */
     private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr, StoreTransaction txh) throws Throwable {
         Throwable error = wr.getThrowable();
         if (null != error) {
-            if (error instanceof TemporaryStorageException) {
+            if (error instanceof TemporaryBackendException) {
                 // Log error and continue the loop
                 log.warn("Temporary exception during lock write", error);
             } else {
@@ -343,7 +343,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         try {
             StoreTransaction newTx = overrideTimestamp(txh, writeTimer.getStartTime());
             store.mutate(key, Arrays.asList(newLockEntry), null == del ? KeyColumnValueStore.NO_DELETIONS : Arrays.asList(del), newTx);
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             log.debug("Lock write attempt failed with exception", e);
             t = e;
         }
@@ -358,7 +358,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         try {
             StoreTransaction newTx = overrideTimestamp(txh, delTimer.getStartTime());
             store.mutate(key, ImmutableList.<Entry>of(), Arrays.asList(col), newTx);
-        } catch (StorageException e) {
+        } catch (BackendException e) {
             t = e;
         }
         delTimer.stop();
@@ -367,7 +367,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     @Override
-    protected void checkSingleLock(final KeyColumn kc, final ConsistentKeyLockStatus ls, final StoreTransaction tx) throws StorageException, InterruptedException {
+    protected void checkSingleLock(final KeyColumn kc, final ConsistentKeyLockStatus ls, final StoreTransaction tx) throws BackendException, InterruptedException {
 
         if (ls.isChecked())
             return;
@@ -406,24 +406,24 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         ls.setChecked();
     }
 
-    private List<Entry> getSliceWithRetries(KeySliceQuery ksq, StoreTransaction tx) throws StorageException {
+    private List<Entry> getSliceWithRetries(KeySliceQuery ksq, StoreTransaction tx) throws BackendException {
 
         for (int i = 0; i < lockRetryCount; i++) {
             // TODO either make this like writeLock so that it handles all Throwable types (and pull that logic out into a shared method) or make writeLock like this in that it only handles Temporary/PermanentSE
             try {
                 return store.getSlice(ksq, tx);
-            } catch (PermanentStorageException e) {
+            } catch (PermanentBackendException e) {
                 log.error("Failed to check locks", e);
                 throw new PermanentLockingException(e);
-            } catch (TemporaryStorageException e) {
+            } catch (TemporaryBackendException e) {
                 log.warn("Temporary storage failure while checking locks", e);
             }
         }
 
-        throw new TemporaryStorageException("Maximum retries (" + lockRetryCount + ") exceeded while checking locks");
+        throw new TemporaryBackendException("Maximum retries (" + lockRetryCount + ") exceeded while checking locks");
     }
 
-    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls, Iterable<TimestampRid> claimTRs) throws StorageException {
+    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls, Iterable<TimestampRid> claimTRs) throws BackendException {
 
         int trCount = 0;
 
@@ -475,7 +475,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                     + rid
                     + " but mismatched timestamps; no lock column contained our timestamp ("
                     + ls.getWriteTimestamp(timeUnit) + ")";
-            throw new PermanentStorageException(msg);
+            throw new PermanentBackendException(msg);
         }
     }
 
@@ -487,17 +487,17 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 StoreTransaction newTx = overrideTimestamp(tx, times.getTime());
                 store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.<Entry>of(), dels, newTx);
                 return;
-            } catch (TemporaryStorageException e) {
+            } catch (TemporaryBackendException e) {
                 log.warn("Temporary storage exception while deleting lock", e);
                 // don't return -- iterate and retry
-            } catch (StorageException e) {
+            } catch (BackendException e) {
                 log.error("Storage exception while deleting lock", e);
                 return; // give up on this lock
             }
         }
     }
 
-    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint commitTime) throws StorageException {
+    private StoreTransaction overrideTimestamp(final StoreTransaction tx, final Timepoint commitTime) throws BackendException {
         StandardBaseTransactionConfig newCfg = new StandardBaseTransactionConfig.Builder(tx.getConfiguration())
                .commitTime(commitTime).build();
         return manager.beginTransaction(newCfg);

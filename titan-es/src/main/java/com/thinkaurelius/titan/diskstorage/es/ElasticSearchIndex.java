@@ -2,7 +2,6 @@ package com.thinkaurelius.titan.diskstorage.es;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.Order;
 import com.thinkaurelius.titan.core.TitanException;
@@ -55,6 +54,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Matthias Broecheler (me@matthiasb.com)
@@ -142,6 +144,7 @@ public class ElasticSearchIndex implements IndexProvider {
                     if (!f.exists()) f.mkdirs();
                     b.put("path." + sub, subdir);
                 }
+                b.put("script.disable_dynamic", false);
                 builder.settings(b.build());
 
                 String clustername = config.get(CLUSTER_NAME);
@@ -164,6 +167,7 @@ public class ElasticSearchIndex implements IndexProvider {
             }
             log.debug("Transport sniffing enabled: {}", config.get(CLIENT_SNIFF));
             settings.put("client.transport.sniff", config.get(CLIENT_SNIFF));
+            settings.put("script.disable_dynamic", false);
             TransportClient tc = new TransportClient(settings.build());
             int defaultPort = config.has(INDEX_PORT)?config.get(INDEX_PORT):HOST_PORT_DEFAULT;
             for (String host : config.get(INDEX_HOSTS)) {
@@ -197,16 +201,16 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    private StorageException convert(Exception esException) {
+    private BackendException convert(Exception esException) {
         if (esException instanceof InterruptedException) {
-            return new TemporaryStorageException("Interrupted while waiting for response", esException);
+            return new TemporaryBackendException("Interrupted while waiting for response", esException);
         } else {
-            return new PermanentStorageException("Unknown exception while executing index operation", esException);
+            return new PermanentBackendException("Unknown exception while executing index operation", esException);
         }
     }
 
     @Override
-    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws StorageException {
+    public void register(String store, String key, KeyInformation information, BaseTransaction tx) throws BackendException {
         XContentBuilder mapping = null;
         Class<?> dataType = information.getDataType();
         Mapping map = Mapping.getMapping(information);
@@ -254,7 +258,7 @@ public class ElasticSearchIndex implements IndexProvider {
             mapping.endObject().endObject().endObject().endObject();
 
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not render json for put mapping request", e);
+            throw new PermanentBackendException("Could not render json for put mapping request", e);
         }
 
         try {
@@ -265,7 +269,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public XContentBuilder getContent(final List<IndexEntry> additions) throws StorageException {
+    public XContentBuilder getContent(final List<IndexEntry> additions) throws BackendException {
         try {
             XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
 
@@ -316,12 +320,12 @@ public class ElasticSearchIndex implements IndexProvider {
             builder.endObject();
             return builder;
         } catch (IOException e) {
-            throw new PermanentStorageException("Could not write json");
+            throw new PermanentBackendException("Could not write json");
         }
     }
 
     @Override
-    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void mutate(Map<String, Map<String, IndexMutation>> mutations, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         BulkRequestBuilder brb = client.prepareBulk();
         int bulkrequests = 0;
         try {
@@ -339,7 +343,6 @@ public class ElasticSearchIndex implements IndexProvider {
                         if (mutation.isDeleted()) {
                             log.trace("Deleting entire document {}", docid);
                             brb.add(new DeleteRequest(indexName, storename, docid));
-                            bulkrequests++;
                         } else {
                             StringBuilder script = new StringBuilder();
                             for (String key : Iterables.transform(mutation.getDeletions(),IndexMutation.ENTRY2FIELD_FCT)) {
@@ -349,12 +352,13 @@ public class ElasticSearchIndex implements IndexProvider {
                             brb.add(client.prepareUpdate(indexName, storename, docid).setScript(script.toString()));
                             bulkrequests++;
                         }
+
+                        bulkrequests++;
                     }
                     if (mutation.hasAdditions()) {
                         if (mutation.isNew()) { //Index
                             log.trace("Adding entire document {}", docid);
                             brb.add(new IndexRequest(indexName, storename, docid).source(getContent(mutation.getAdditions())));
-                            bulkrequests++;
                         } else {
                             boolean needUpsert = !mutation.hasDeletions();
                             XContentBuilder builder = getContent(mutation.getAdditions());
@@ -364,6 +368,8 @@ public class ElasticSearchIndex implements IndexProvider {
                             brb.add(update);
                             bulkrequests++;
                         }
+
+                        bulkrequests++;
                     }
 
                 }
@@ -374,7 +380,7 @@ public class ElasticSearchIndex implements IndexProvider {
         }
     }
 
-    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         BulkRequestBuilder bulk = client.prepareBulk();
         int requests = 0;
         try {
@@ -492,7 +498,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public List<String> query(IndexQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.matchAllQuery());
@@ -524,7 +530,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public Iterable<RawQuery.Result<String>> query(RawQuery query, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         SearchRequestBuilder srb = client.prepareSearch(indexName);
         srb.setTypes(query.getStore());
         srb.setQuery(QueryBuilders.queryString(query.getQuery()));
@@ -583,12 +589,12 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws StorageException {
+    public BaseTransactionConfigurable beginTransaction(BaseTransactionConfig config) throws BackendException {
         return new DefaultTransaction(config);
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         client.close();
         if (node != null && !node.isClosed()) {
             node.close();
@@ -596,7 +602,7 @@ public class ElasticSearchIndex implements IndexProvider {
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         try {
             try {
                 client.admin().indices()
@@ -607,7 +613,7 @@ public class ElasticSearchIndex implements IndexProvider {
                 // Index does not exist... Fine
             }
         } catch (Exception e) {
-            throw new PermanentStorageException("Could not delete index " + indexName, e);
+            throw new PermanentBackendException("Could not delete index " + indexName, e);
         } finally {
             close();
         }

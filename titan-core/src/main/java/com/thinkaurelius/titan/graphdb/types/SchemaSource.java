@@ -1,6 +1,7 @@
 package com.thinkaurelius.titan.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.tinkerpop.blueprints.Direction;
 
 /**

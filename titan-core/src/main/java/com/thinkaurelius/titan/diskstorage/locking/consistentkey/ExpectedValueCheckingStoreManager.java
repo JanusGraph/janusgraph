@@ -1,9 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.locking.consistentkey;
 
-import com.google.common.base.Joiner;
 import com.thinkaurelius.titan.core.attribute.Duration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.MergedConfiguration;
@@ -45,7 +44,7 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     }
 
     @Override
-    public synchronized KeyColumnValueStore openDatabase(String name) throws StorageException {
+    public synchronized KeyColumnValueStore openDatabase(String name) throws BackendException {
         if (stores.containsKey(name)) return stores.get(name);
         KeyColumnValueStore store = storeManager.openDatabase(name);
         final String lockerName = store.getName() + lockStoreSuffix;
@@ -55,14 +54,14 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         ExpectedValueCheckingTransaction etx = (ExpectedValueCheckingTransaction)txh;
         etx.prepareForMutations();
         storeManager.mutateMany(mutations, etx.getDataTransaction());
     }
 
     @Override
-    public ExpectedValueCheckingTransaction beginTransaction(BaseTransactionConfig configuration) throws StorageException {
+    public ExpectedValueCheckingTransaction beginTransaction(BaseTransactionConfig configuration) throws BackendException {
         StoreTransaction tx = storeManager.beginTransaction(configuration);
 
         Configuration customOptions = new MergedConfiguration(storeFeatures.getKeyConsistentTxConfig(), configuration.getCustomOptions());
@@ -75,17 +74,17 @@ public class ExpectedValueCheckingStoreManager implements KeyColumnValueStoreMan
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         storeManager.close();
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         storeManager.clearStorage();
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         return storeManager.getLocalKeyPartition();
     }
 
