@@ -54,9 +54,9 @@ public interface IndexProvider extends IndexInformation {
      *                  list of {@link IndexEntry}. If that list is empty, that means this document should not exist and ought to be deleted.
      * @param informations Information on the keys used in the mutation accessible through {@link KeyInformation.IndexRetriever}.
      * @param tx Enclosing transaction
-     * @throws StorageException
+     * @throws BackendException
      */
-    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException;
+    public void restore(Map<String,Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException;
 
 
     /**

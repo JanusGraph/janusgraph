@@ -189,7 +189,7 @@ public class LuceneIndex implements IndexProvider {
     }
 
     @Override
-    public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws StorageException {
+    public void restore(Map<String, Map<String, List<IndexEntry>>> documents, KeyInformation.IndexRetriever informations, BaseTransaction tx) throws BackendException {
         writerLock.lock();
         try {
             for (Map.Entry<String, Map<String, List<IndexEntry>>> stores : documents.entrySet()) {
@@ -220,7 +220,7 @@ public class LuceneIndex implements IndexProvider {
             }
             tx.commit();
         } catch (IOException e) {
-            throw new TemporaryStorageException("Could not update Lucene index", e);
+            throw new TemporaryBackendException("Could not update Lucene index", e);
         } finally {
             writerLock.unlock();
         }
