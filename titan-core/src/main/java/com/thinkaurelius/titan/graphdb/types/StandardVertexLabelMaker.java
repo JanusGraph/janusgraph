@@ -24,11 +24,15 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
         this.tx = tx;
     }
 
-    public StandardVertexLabelMaker name(String name) {
-        //Verify name
+    public static void checkName(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
         for (char c : StandardRelationTypeMaker.RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);
+    }
+
+    public StandardVertexLabelMaker name(String name) {
+        //Verify name
+        checkName(name);
         this.name=name;
         return this;
     }

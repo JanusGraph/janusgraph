@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.Map;
@@ -19,11 +19,11 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws com.thinkaurelius.titan.diskstorage.StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      *
      */
     @Override
-    public OrderedKeyValueStore openDatabase(String name) throws StorageException;
+    public OrderedKeyValueStore openDatabase(String name) throws BackendException;
 
 
     /**
@@ -34,8 +34,8 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
      *
      * @param mutations
      * @param txh
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws StorageException;
+    public void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException;
 
 }

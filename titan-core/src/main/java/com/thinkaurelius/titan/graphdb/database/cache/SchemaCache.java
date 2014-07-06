@@ -25,9 +25,7 @@ public interface SchemaCache {
 
     public EntryList getSchemaRelations(long schemaId, BaseRelationType type, final Direction dir, StandardTitanTx tx);
 
-    public void expireSchemaName(final String name);
-
-    public void expireSchemaRelations(final long schemaId);
+    public void expireSchemaElement(final long schemaId);
 
     public interface StoreRetrieval {
 

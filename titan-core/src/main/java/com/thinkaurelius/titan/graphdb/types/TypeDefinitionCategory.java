@@ -7,6 +7,7 @@ import com.thinkaurelius.titan.core.Cardinality;
 import com.thinkaurelius.titan.core.schema.ConsistencyModifier;
 import com.thinkaurelius.titan.core.Multiplicity;
 import com.thinkaurelius.titan.core.schema.Parameter;
+import com.thinkaurelius.titan.core.schema.SchemaStatus;
 import com.thinkaurelius.titan.graphdb.internal.ElementCategory;
 import com.thinkaurelius.titan.graphdb.internal.RelationCategory;
 import com.tinkerpop.blueprints.Direction;
@@ -51,8 +52,8 @@ public enum TypeDefinitionCategory {
     INDEX_FIELD(RelationCategory.EDGE,Parameter[].class),
     INDEX_SCHEMA_CONSTRAINT();
 
-    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
+    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
+    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, HIDDEN, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
     public static final Set<TypeDefinitionCategory> CONSISTENCY_MODIFIER_DEFINITION_CATEGORIES = ImmutableSet.of(CONSISTENCY_LEVEL);
     public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
     public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED,STATIC);

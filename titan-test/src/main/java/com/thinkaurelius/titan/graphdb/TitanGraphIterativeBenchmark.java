@@ -7,9 +7,9 @@ import com.thinkaurelius.titan.core.TitanEdge;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.TitanVertex;
 import com.thinkaurelius.titan.diskstorage.Backend;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
@@ -38,7 +38,7 @@ public abstract class TitanGraphIterativeBenchmark extends TitanGraphBaseTest {
     private static final Random random = new Random();
 
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
     //@Test
     public void testDataSequential() throws Exception {

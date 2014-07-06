@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreFeatures;
 import com.thinkaurelius.titan.testcategory.OrderedKeyStoreTests;
 import com.thinkaurelius.titan.testcategory.UnorderedKeyStoreTests;
@@ -32,7 +31,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
 
     public abstract ModifiableConfiguration getBaseStorageConfiguration();
 
-    public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws StorageException;
+    public abstract AbstractCassandraStoreManager openStorageManager(Configuration c) throws BackendException;
 
     @Test
     @Category({ UnorderedKeyStoreTests.class })
@@ -68,7 +67,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    public void testDefaultCFCompressor() throws StorageException {
+    public void testDefaultCFCompressor() throws BackendException {
 
         final String cf = TEST_CF_NAME + "_snappy";
 
@@ -86,7 +85,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    public void testCustomCFCompressor() throws StorageException {
+    public void testCustomCFCompressor() throws BackendException {
 
         final String cname = "DeflateCompressor";
         final int ckb = 128;
@@ -111,7 +110,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Test
-    public void testDisableCFCompressor() throws StorageException {
+    public void testDisableCFCompressor() throws BackendException {
 
         final String cf = TEST_CF_NAME + "_nocompress";
 
@@ -126,7 +125,7 @@ public abstract class AbstractCassandraStoreTest extends KeyColumnValueStoreTest
     }
 
     @Override
-    public AbstractCassandraStoreManager openStorageManager() throws StorageException {
+    public AbstractCassandraStoreManager openStorageManager() throws BackendException {
         return openStorageManager(getBaseStorageConfiguration());
     }
 }

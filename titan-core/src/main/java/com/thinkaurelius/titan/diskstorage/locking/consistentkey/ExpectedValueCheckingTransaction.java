@@ -68,14 +68,14 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     @Override
-    public void rollback() throws StorageException {
+    public void rollback() throws BackendException {
         deleteAllLocks();
         dataTx.rollback();
         lockTx.rollback();
     }
 
     @Override
-    public void commit() throws StorageException {
+    public void commit() throws BackendException {
         dataTx.commit();
         deleteAllLocks();
         lockTx.commit();
@@ -132,9 +132,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * <p>
      * If {@link #isMutationStarted()}, this does nothing.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    void prepareForMutations() throws StorageException {
+    void prepareForMutations() throws BackendException {
         if (!isMutationStarted()) {
             checkAllLocks();
             checkAllExpectedValues();
@@ -147,9 +147,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    void checkAllLocks() throws StorageException {
+    void checkAllLocks() throws BackendException {
         StoreTransaction lt = getLockTransaction();
         for (ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             Locker locker = store.getLocker();
@@ -165,9 +165,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    void checkAllExpectedValues() throws StorageException {
+    void checkAllExpectedValues() throws BackendException {
         for (final ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             final Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
             for (final KeyColumn kc : m.keySet()) {
@@ -201,7 +201,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void checkSingleExpectedValue(final KeyColumn kc,
-                                          final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
+                                          final StaticBuffer ev, final ExpectedValueCheckingStore store) throws BackendException {
         BackendOperation.executeDirect(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
@@ -216,7 +216,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
     }
 
     private void checkSingleExpectedValueUnsafe(final KeyColumn kc,
-                                                final StaticBuffer ev, final ExpectedValueCheckingStore store) throws StorageException {
+                                                final StaticBuffer ev, final ExpectedValueCheckingStore store) throws BackendException {
         final StaticBuffer nextBuf = BufferUtil.nextBiggerBuffer(kc.getColumn());
         KeySliceQuery ksq = new KeySliceQuery(kc.getKey(), kc.getColumn(), nextBuf);
         Iterable<Entry> actualEntries = store.getSlice(ksq, this); // TODO make this consistent/QUORUM?
@@ -270,7 +270,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         }
     }
 
-    private void deleteAllLocks() throws StorageException {
+    private void deleteAllLocks() throws BackendException {
         for (ExpectedValueCheckingStore s : expectedValuesByStore.keySet()) {
             s.deleteLocks(this);
         }

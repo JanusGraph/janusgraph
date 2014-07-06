@@ -2,6 +2,7 @@ package com.thinkaurelius.titan.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
 import com.thinkaurelius.titan.core.TransactionBuilder;
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionId;
 import com.thinkaurelius.titan.graphdb.transaction.TransactionConfiguration;
 
 /**
@@ -44,7 +45,27 @@ public enum LogTxMeta {
         public Class dataType() {
             return String.class;
         }
-    };
+    },
+
+    SOURCE_TRANSACTION {
+        @Override
+        public Object getValue(TransactionConfiguration txConfig) {
+            return null;
+        }
+
+        @Override
+        public void setValue(TransactionBuilder builder, Object value) {
+            //Do nothing
+        }
+
+        @Override
+        public Class dataType() {
+            return StandardTransactionId.class;
+        }
+    }
+
+
+    ;
 
     public abstract Object getValue(TransactionConfiguration txConfig);
 

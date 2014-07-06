@@ -1,14 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.keyvalue;
 
-import java.util.List;
-
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
-import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
-
-import java.util.List;
 
 /**
  * Interface for a data store that represents data in the simple key->value data model where each key is uniquely
@@ -23,9 +17,9 @@ public interface KeyValueStore {
      *
      * @param key
      * @param txh
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void delete(StaticBuffer key, StoreTransaction txh) throws StorageException;
+    public void delete(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns the value associated with the given key.
@@ -33,9 +27,9 @@ public interface KeyValueStore {
      * @param key
      * @param txh
      * @return
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws StorageException;
+    public StaticBuffer get(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns true iff the store contains the given key, else false
@@ -43,9 +37,9 @@ public interface KeyValueStore {
      * @param key
      * @param txh
      * @return
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws StorageException;
+    public boolean containsKey(StaticBuffer key, StoreTransaction txh) throws BackendException;
 
 
     /**
@@ -54,9 +48,9 @@ public interface KeyValueStore {
      * @param key
      * @param expectedValue
      * @param txh
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException;
+    public void acquireLock(StaticBuffer key, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns the name of this store
@@ -68,8 +62,8 @@ public interface KeyValueStore {
     /**
      * Closes this store and releases its resources.
      *
-     * @throws StorageException
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException
      */
-    public void close() throws StorageException;
+    public void close() throws BackendException;
 
 }

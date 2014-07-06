@@ -229,6 +229,27 @@ public interface TitanManagement extends TitanConfiguration {
      */
     public void setConsistency(TitanSchemaElement element, ConsistencyModifier consistency);
 
+    /*
+    ##################### SCHEMA UPDATE ##########################
+     */
+
+    /**
+     * Changes the name of a {@link TitanSchemaElement} to the provided new name.
+     * The new name must be valid and not already in use, otherwise an {@link IllegalArgumentException} is thrown.
+     *
+     * @param element
+     * @param newName
+     */
+    public void changeName(TitanSchemaElement element, String newName);
+
+    /**
+     * Updates the provided index according to the given {@link SchemaAction}
+     *
+     * @param index
+     * @param updateAction
+     */
+    public void updateIndex(TitanIndex index, SchemaAction updateAction);
+
 
     /*
     ##################### PROXY FOR TITANTRANSACTION ##########################

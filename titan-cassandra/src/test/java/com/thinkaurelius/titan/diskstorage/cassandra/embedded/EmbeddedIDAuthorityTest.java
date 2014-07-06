@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.cassandra.embedded;
 
 import com.thinkaurelius.titan.CassandraStorageSetup;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.IDAuthorityTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.configuration.WriteConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 
@@ -13,7 +13,7 @@ public class EmbeddedIDAuthorityTest extends IDAuthorityTest {
     }
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
         return new CassandraEmbeddedStoreManager(CassandraStorageSetup.getEmbeddedConfiguration(getClass().getSimpleName()));
     }
 }

@@ -40,15 +40,15 @@ public interface IDAuthority {
      * @return a range of ids for the {@code partition} parameter
      */
     public IDBlock getIDBlock(int partition, int idNamespace, Duration timeout)
-            throws StorageException;
+            throws BackendException;
 
     /**
      * Returns the lower and upper limits of the key range assigned to this local machine as an array with two entries.
      *
      * @return
-     * @throws StorageException
+     * @throws BackendException
      */
-    public List<KeyRange> getLocalIDPartition() throws StorageException;
+    public List<KeyRange> getLocalIDPartition() throws BackendException;
 
     /**
      * Sets the {@link IDBlockSizer} to be used by this IDAuthority. The IDBlockSizer specifies the block size for
@@ -63,9 +63,9 @@ public interface IDAuthority {
     /**
      * Closes the IDAuthority and any underlying storage backend.
      *
-     * @throws StorageException
+     * @throws BackendException
      */
-    public void close() throws StorageException;
+    public void close() throws BackendException;
 
     /**
      * Return the globally unique string used by this {@code IDAuthority}

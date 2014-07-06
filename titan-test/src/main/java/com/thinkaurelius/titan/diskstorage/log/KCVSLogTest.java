@@ -2,8 +2,7 @@ package com.thinkaurelius.titan.diskstorage.log;
 
 import java.util.concurrent.TimeUnit;
 
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.configuration.ModifiableConfiguration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.log.kcvs.KCVSLogManager;
@@ -18,14 +17,14 @@ import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
  */
 public abstract class KCVSLogTest extends LogTest {
 
-    public abstract KeyColumnValueStoreManager openStorageManager() throws StorageException;
+    public abstract KeyColumnValueStoreManager openStorageManager() throws BackendException;
 
     public static final String LOG_NAME = "testlog";
 
     private KeyColumnValueStoreManager storeManager;
 
     @Override
-    public LogManager openLogManager(String senderId) throws StorageException {
+    public LogManager openLogManager(String senderId) throws BackendException {
         storeManager = openStorageManager();
         ModifiableConfiguration config = GraphDatabaseConfiguration.buildConfiguration();
         config.set(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID,senderId);

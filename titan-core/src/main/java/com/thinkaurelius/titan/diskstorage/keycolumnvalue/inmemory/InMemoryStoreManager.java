@@ -1,8 +1,8 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 import com.thinkaurelius.titan.diskstorage.common.AbstractStoreTransaction;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
@@ -54,12 +54,12 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws StorageException {
+    public StoreTransaction beginTransaction(final BaseTransactionConfig config) throws BackendException {
         return new InMemoryTransaction(config);
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         for (InMemoryKeyColumnValueStore store : stores.values()) {
             store.close();
         }
@@ -67,7 +67,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         for (InMemoryKeyColumnValueStore store : stores.values()) {
             store.clear();
         }
@@ -79,7 +79,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public KeyColumnValueStore openDatabase(final String name) throws StorageException {
+    public KeyColumnValueStore openDatabase(final String name) throws BackendException {
         if (!stores.containsKey(name)) {
             stores.putIfAbsent(name, new InMemoryKeyColumnValueStore(name));
         }
@@ -89,7 +89,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         for (Map.Entry<String, Map<StaticBuffer, KCVMutation>> storeMut : mutations.entrySet()) {
             KeyColumnValueStore store = stores.get(storeMut.getKey());
             Preconditions.checkNotNull(store);
@@ -100,7 +100,7 @@ public class InMemoryStoreManager implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         throw new UnsupportedOperationException();
     }
 

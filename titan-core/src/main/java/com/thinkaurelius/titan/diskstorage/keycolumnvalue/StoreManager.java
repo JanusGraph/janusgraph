@@ -1,6 +1,6 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue;
 
-import com.thinkaurelius.titan.diskstorage.StorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.BaseTransactionConfig;
 
 import java.util.List;
@@ -18,12 +18,12 @@ public interface StoreManager {
      *
      * @return New Transaction Handle
      */
-    public StoreTransaction beginTransaction(BaseTransactionConfig config) throws StorageException;
+    public StoreTransaction beginTransaction(BaseTransactionConfig config) throws BackendException;
 
     /**
      * Closes the Storage Manager and all databases that have been opened.
      */
-    public void close() throws StorageException;
+    public void close() throws BackendException;
 
 
     /**
@@ -31,7 +31,7 @@ public interface StoreManager {
      * <p/>
      * ATTENTION: Invoking this method will delete ALL your data!!
      */
-    public void clearStorage() throws StorageException;
+    public void clearStorage() throws BackendException;
 
 
     /**
@@ -69,6 +69,6 @@ public interface StoreManager {
      *             if the underlying store does not support this operation.
      *             Check {@link StoreFeatures#hasLocalKeyPartition()} first.
      */
-    public List<KeyRange> getLocalKeyPartition() throws StorageException;
+    public List<KeyRange> getLocalKeyPartition() throws BackendException;
 
 }

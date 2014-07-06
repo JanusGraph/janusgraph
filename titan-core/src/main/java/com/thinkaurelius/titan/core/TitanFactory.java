@@ -4,17 +4,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.thinkaurelius.titan.core.log.LogProcessorFramework;
+import com.thinkaurelius.titan.core.log.TransactionRecovery;
 import com.thinkaurelius.titan.core.util.ReflectiveConfigOptionLoader;
 import com.thinkaurelius.titan.diskstorage.Backend;
 import com.thinkaurelius.titan.diskstorage.configuration.*;
 import com.thinkaurelius.titan.diskstorage.configuration.backend.CommonsConfiguration;
+import com.thinkaurelius.titan.diskstorage.util.time.StandardTimestamp;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
 import com.thinkaurelius.titan.graphdb.database.StandardTitanGraph;
 
-import com.thinkaurelius.titan.graphdb.userlog.StandardLogProcessorFramework;
+import com.thinkaurelius.titan.graphdb.log.StandardLogProcessorFramework;
+import com.thinkaurelius.titan.graphdb.log.StandardTransactionLogProcessor;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -25,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -142,6 +146,19 @@ public class TitanFactory {
      */
     public static LogProcessorFramework openTriggers(TitanGraph graph) {
         return new StandardLogProcessorFramework((StandardTitanGraph)graph);
+    }
+
+    /**
+     * Returns a {@link TransactionRecovery} process for recovering partially failed transactions. The recovery process
+     * will start processing the write-ahead transaction log at the specified transaction time.
+     *
+     * @param graph
+     * @param sinceEpoch
+     * @param unit
+     * @return
+     */
+    public static TransactionRecovery startTransactionRecovery(TitanGraph graph, long sinceEpoch, TimeUnit unit) {
+        return new StandardTransactionLogProcessor((StandardTitanGraph)graph, new StandardTimestamp(sinceEpoch,unit));
     }
 
     //###################################

@@ -4,10 +4,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.EntryList;
 import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.*;
 import com.thinkaurelius.titan.diskstorage.util.RecordIterator;
 import org.apache.commons.lang.StringUtils;
@@ -39,21 +39,21 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws StorageException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
         ColumnValueStore cvs = kcv.get(query.getKey());
         if (cvs == null) return EntryList.EMPTY_LIST;
         else return cvs.getSlice(query, txh);
     }
 
     @Override
-    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws StorageException {
+    public Map<StaticBuffer,EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer,EntryList> result = Maps.newHashMap();
         for (StaticBuffer key : keys) result.put(key,getSlice(new KeySliceQuery(key,query),txh));
         return result;
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws StorageException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         ColumnValueStore cvs = kcv.get(key);
         if (cvs == null) {
             kcv.putIfAbsent(key, new ColumnValueStore());
@@ -63,17 +63,17 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws StorageException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(final KeyRangeQuery query, final StoreTransaction txh) throws BackendException {
         return new RowIterator(kcv.subMap(query.getKeyStart(), query.getKeyEnd()).entrySet().iterator(), query, txh);
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws StorageException {
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
         return new RowIterator(kcv.entrySet().iterator(), query, txh);
     }
 
@@ -87,7 +87,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         kcv.clear();
     }
 

@@ -1,6 +1,5 @@
 package com.thinkaurelius.titan.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -17,8 +16,6 @@ import com.thinkaurelius.titan.graphdb.database.serialize.DataOutput;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -61,7 +58,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
         return tx;
     }
 
-    void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws StorageException {
+    void mutate(KCVSCache store, StaticBuffer key, List<Entry> additions, List<Entry> deletions) throws BackendException {
         Preconditions.checkNotNull(store);
         if (additions.isEmpty() && deletions.isEmpty()) return;
 
@@ -116,7 +113,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
             return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), KCVEntryMutation.ENTRY2COLUMN_FCT)));
     }
 
-    private void flushInternal() throws StorageException {
+    private void flushInternal() throws BackendException {
         if (numMutations > 0) {
             //Consolidate all mutations prior to persistence to ensure that no addition accidentally gets swallowed by a delete
             for (Map<StaticBuffer, KCVEntryMutation> store : mutations.values()) {
@@ -196,13 +193,13 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     @Override
-    public void commit() throws StorageException {
+    public void commit() throws BackendException {
         flushInternal();
         tx.commit();
     }
 
     @Override
-    public void rollback() throws StorageException {
+    public void rollback() throws BackendException {
         clear();
         tx.rollback();
     }

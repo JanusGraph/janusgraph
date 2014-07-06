@@ -1,7 +1,7 @@
 package com.thinkaurelius.titan.diskstorage.inmemory;
 
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.KeyColumnValueStoreTest;
-import com.thinkaurelius.titan.diskstorage.StorageException;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager;
 
@@ -12,7 +12,7 @@ import com.thinkaurelius.titan.diskstorage.keycolumnvalue.inmemory.InMemoryStore
 public class InMemoryKeyColumnValueStoreTest extends KeyColumnValueStoreTest {
 
     @Override
-    public KeyColumnValueStoreManager openStorageManager() throws StorageException {
+    public KeyColumnValueStoreManager openStorageManager() throws BackendException {
         return new InMemoryStoreManager();
     }
 

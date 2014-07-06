@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.thinkaurelius.titan.diskstorage.*;
 import com.thinkaurelius.titan.diskstorage.cassandra.utils.CassandraHelper;
 import com.thinkaurelius.titan.diskstorage.configuration.Configuration;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KeyRange;
@@ -28,16 +29,11 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.thinkaurelius.titan.diskstorage.Backend;
-import com.thinkaurelius.titan.diskstorage.PermanentStorageException;
-import com.thinkaurelius.titan.diskstorage.StaticBuffer;
-import com.thinkaurelius.titan.diskstorage.StorageException;
-import com.thinkaurelius.titan.diskstorage.TemporaryStorageException;
+import com.thinkaurelius.titan.diskstorage.BackendException;
 import com.thinkaurelius.titan.diskstorage.cassandra.AbstractCassandraStoreManager;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnection;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionFactory;
 import com.thinkaurelius.titan.diskstorage.cassandra.thrift.thriftpool.CTConnectionPool;
-import com.thinkaurelius.titan.diskstorage.Entry;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.KCVMutation;
 import com.thinkaurelius.titan.diskstorage.keycolumnvalue.StoreTransaction;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
@@ -56,7 +52,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private final CTConnectionPool pool;
     private final Deployment deployment;
 
-    public CassandraThriftStoreManager(Configuration config) throws StorageException {
+    public CassandraThriftStoreManager(Configuration config) throws BackendException {
         super(config);
 
         /*
@@ -108,13 +104,13 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     @SuppressWarnings("unchecked")
-    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws StorageException {
+    public IPartitioner<? extends Token<?>> getCassandraPartitioner() throws BackendException {
         CTConnection conn = null;
         try {
             conn = pool.borrowObject(SYSTEM_KS);
             return FBUtilities.newPartitioner(conn.getClient().describe_partitioner());
         } catch (Exception e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } finally {
             pool.returnObjectUnsafe(SYSTEM_KS, conn);
         }
@@ -126,13 +122,13 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public void close() throws StorageException {
+    public void close() throws BackendException {
         openStores.clear();
         closePool();
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws StorageException {
+    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         Preconditions.checkNotNull(mutations);
 
         final MaskedTimestamp commitTime = new MaskedTimestamp(txh);
@@ -208,7 +204,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override // TODO: *BIG FAT WARNING* 'synchronized is always *bad*, change openStores to use ConcurrentLinkedHashMap
-    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws StorageException {
+    public synchronized CassandraThriftKeyColumnValueStore openDatabase(final String name) throws BackendException {
         if (openStores.containsKey(name))
             return openStores.get(name);
 
@@ -220,7 +216,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     }
 
     @Override
-    public List<KeyRange> getLocalKeyPartition() throws StorageException {
+    public List<KeyRange> getLocalKeyPartition() throws BackendException {
         CTConnection conn = null;
         IPartitioner<?> partitioner = getCassandraPartitioner();
 
@@ -261,9 +257,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
      * leaves nodes in the inconsistent state and could result in read/write failures.
      * Any schema modifications are discouraged until there is no traffic to Keyspace or ColumnFamilies.
      *
-     * @throws StorageException if any checked Thrift or UnknownHostException is thrown in the body of this method
+     * @throws com.thinkaurelius.titan.diskstorage.BackendException if any checked Thrift or UnknownHostException is thrown in the body of this method
      */
-    public void clearStorage() throws StorageException {
+    public void clearStorage() throws BackendException {
         openStores.clear();
         final String lp = "ClearStorage: "; // "log prefix"
         /*
@@ -314,7 +310,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
              * remain valid.
              */
         } catch (Exception e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } finally {
             if (conn != null && conn.getClient() != null) {
                 try {
@@ -329,7 +325,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         }
     }
 
-    private KsDef ensureKeyspaceExists(String keyspaceName) throws TException, StorageException {
+    private KsDef ensureKeyspaceExists(String keyspaceName) throws TException, BackendException {
         CTConnection connection = null;
 
         try {
@@ -364,13 +360,13 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
 
             return client.describe_keyspace(keyspaceName);
         } catch (Exception e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } finally {
             pool.returnObjectUnsafe(SYSTEM_KS, connection);
         }
     }
 
-    private void retrySetKeyspace(String ksName, Cassandra.Client client) throws StorageException {
+    private void retrySetKeyspace(String ksName, Cassandra.Client client) throws BackendException {
         final long end = System.currentTimeMillis() + (60L * 1000L);
 
         while (System.currentTimeMillis() <= end) {
@@ -382,19 +378,19 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 try {
                     Thread.sleep(1000L);
                 } catch (InterruptedException ie) {
-                    throw new PermanentStorageException("Unexpected interrupt (shutting down?)", ie);
+                    throw new PermanentBackendException("Unexpected interrupt (shutting down?)", ie);
                 }
             }
         }
 
-        throw new PermanentStorageException("Could change to keyspace " + ksName + " after creating it");
+        throw new PermanentBackendException("Could change to keyspace " + ksName + " after creating it");
     }
 
-    private void ensureColumnFamilyExists(String ksName, String cfName) throws StorageException {
+    private void ensureColumnFamilyExists(String ksName, String cfName) throws BackendException {
         ensureColumnFamilyExists(ksName, cfName, "org.apache.cassandra.db.marshal.BytesType");
     }
 
-    private void ensureColumnFamilyExists(String ksName, String cfName, String comparator) throws StorageException {
+    private void ensureColumnFamilyExists(String ksName, String cfName, String comparator) throws BackendException {
         CTConnection conn = null;
         try {
             KsDef keyspaceDef = ensureKeyspaceExists(ksName);
@@ -417,9 +413,9 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
                 log.debug("Keyspace {} and ColumnFamily {} were found.", ksName, cfName);
             }
         } catch (SchemaDisagreementException e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } catch (Exception e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         } finally {
             pool.returnObjectUnsafe(ksName, conn);
         }
@@ -428,7 +424,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
     private void createColumnFamily(Cassandra.Client client,
                                     String ksName,
                                     String cfName,
-                                    String comparator) throws StorageException {
+                                    String comparator) throws BackendException {
 
         CfDef createColumnFamily = new CfDef();
         createColumnFamily.setName(cfName);
@@ -455,16 +451,16 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
         try {
             client.system_add_column_family(createColumnFamily);
         } catch (SchemaDisagreementException e) {
-            throw new TemporaryStorageException("Error in setting up column family", e);
+            throw new TemporaryBackendException("Error in setting up column family", e);
         } catch (Exception e) {
-            throw new PermanentStorageException(e);
+            throw new PermanentBackendException(e);
         }
 
         log.debug("Added column family {} to keyspace {}.", cfName, ksName);
     }
 
     @Override
-    public Map<String, String> getCompressionOptions(String cf) throws StorageException {
+    public Map<String, String> getCompressionOptions(String cf) throws BackendException {
         CTConnection conn = null;
         Map<String, String> result = null;
 
@@ -486,7 +482,7 @@ public class CassandraThriftStoreManager extends AbstractCassandraStoreManager {
             log.debug("Keyspace {} does not exist", keySpaceName);
             return null;
         } catch (Exception e) {
-            throw new TemporaryStorageException(e);
+            throw new TemporaryBackendException(e);
         } finally {
             pool.returnObjectUnsafe(keySpaceName, conn);
         }

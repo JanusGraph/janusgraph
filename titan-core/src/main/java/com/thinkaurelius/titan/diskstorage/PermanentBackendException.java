@@ -8,14 +8,14 @@ package com.thinkaurelius.titan.diskstorage;
  * @author Matthias Broecheler (me@matthiasb.com)
  */
 
-public class PermanentStorageException extends StorageException {
+public class PermanentBackendException extends BackendException {
 
     private static final long serialVersionUID = 203482308203400L;
 
     /**
      * @param msg Exception message
      */
-    public PermanentStorageException(String msg) {
+    public PermanentBackendException(String msg) {
         super(msg);
     }
 
@@ -23,7 +23,7 @@ public class PermanentStorageException extends StorageException {
      * @param msg   Exception message
      * @param cause Cause of the exception
      */
-    public PermanentStorageException(String msg, Throwable cause) {
+    public PermanentBackendException(String msg, Throwable cause) {
         super(msg, cause);
     }
 
@@ -32,7 +32,7 @@ public class PermanentStorageException extends StorageException {
      *
      * @param cause Cause of the exception
      */
-    public PermanentStorageException(Throwable cause) {
+    public PermanentBackendException(Throwable cause) {
         this("Permanent failure in storage backend", cause);
     }
 
