@@ -134,7 +134,6 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 //    public static final String REPLICATION_FACTOR_KEY = "replication-factor";
 //    public static final int REPLICATION_FACTOR_DEFAULT = 1;
 
-
     public static final ConfigOption<Boolean> SSL_ENABLED = new ConfigOption<Boolean>(STORAGE_SSL_NS, "enabled",
             "Controls use of the SSL connection to Cassandra", ConfigOption.Type.LOCAL, false);
 
@@ -143,6 +142,9 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
 
     public static final ConfigOption<String> SSL_TRUSTSTORE_PASSWORD = new ConfigOption<String>(STORAGE_SSL_TRUSTSTORE, "password",
             "The password to access SSL Truststore.", ConfigOption.Type.LOCAL, "");
+
+    public static final ConfigOption<Boolean> ATOMIC_BATCH_MUTATE = new ConfigOption<Boolean>(STORAGE_NS, "atomic-batch-mutate",
+            "True to use Cassandra atomic batch mutation, false to use non-atomic batches", ConfigOption.Type.MASKABLE, true);
 
     protected final String keySpaceName;
     protected final Map<String, String> strategyOptions;
@@ -157,6 +159,8 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
     protected final int compressionChunkSizeKB;
     protected final String compressionClass;
 
+    protected final boolean atomicBatch;
+
     public AbstractCassandraStoreManager(Configuration config) {
         super(config, PORT_DEFAULT);
 
@@ -165,6 +169,7 @@ public abstract class AbstractCassandraStoreManager extends DistributedStoreMana
         this.compressionEnabled = config.get(STORAGE_COMPRESSION);
         this.compressionChunkSizeKB = config.get(STORAGE_COMPRESSION_SIZE);
         this.compressionClass = config.get(CASSANDRA_COMPRESSION_TYPE);
+        this.atomicBatch = config.get(ATOMIC_BATCH_MUTATE);
 
         // SSL truststore location sanity check
         if (config.get(SSL_ENABLED) && config.get(SSL_TRUSTSTORE_LOCATION).isEmpty())

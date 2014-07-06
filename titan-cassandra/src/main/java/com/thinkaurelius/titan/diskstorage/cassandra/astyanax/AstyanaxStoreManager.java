@@ -298,7 +298,7 @@ public class AstyanaxStoreManager extends AbstractCassandraStoreManager {
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> batch, StoreTransaction txh) throws BackendException {
-        MutationBatch m = keyspaceContext.getClient().prepareMutationBatch().withAtomicBatch(true)
+        MutationBatch m = keyspaceContext.getClient().prepareMutationBatch().withAtomicBatch(atomicBatch)
                 .setConsistencyLevel(getTx(txh).getWriteConsistencyLevel().getAstyanax())
                 .withRetryPolicy(retryPolicy.duplicate());
 
