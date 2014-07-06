@@ -36,6 +36,7 @@ import com.thinkaurelius.titan.diskstorage.util.BufferUtil;
 
 import static com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration.*;
 
+import com.thinkaurelius.titan.example.GraphOfTheGodsFactory;
 import com.thinkaurelius.titan.graphdb.configuration.GraphDatabaseConfiguration;
 import com.thinkaurelius.titan.graphdb.database.EdgeSerializer;
 import com.thinkaurelius.titan.graphdb.database.idhandling.VariableLong;
@@ -3662,7 +3663,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
         assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
 
-        Thread.sleep(commitTime + (ttl1 * 1000L + 100) - System.currentTimeMillis());
+        Thread.sleep(commitTime + (ttl1 * 1000L + 200) - System.currentTimeMillis());
         graph.rollback();
 
         // e1 has dropped out
@@ -3670,7 +3671,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertTrue(v2.getVertices(Direction.OUT).iterator().hasNext());
         assertTrue(v3.getVertices(Direction.OUT).iterator().hasNext());
 
-        Thread.sleep(commitTime + (ttl2 * 1000L + 100) - System.currentTimeMillis());
+        Thread.sleep(commitTime + (ttl2 * 1000L + 500) - System.currentTimeMillis());
         graph.rollback();
 
         // both e1 and e2 have dropped out.  e3 has no TTL, and so remains
@@ -3724,7 +3725,6 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         int ttl = 1; // artificially low TTL for test
-
         final PropertyKey time = mgmt.makePropertyKey("time").dataType(Integer.class).make();
         EdgeLabel wavedAt = mgmt.makeEdgeLabel("wavedAt").signature(time).make();
         mgmt.createEdgeIndex(wavedAt, "timeindex", Direction.BOTH, Order.DESC, time);
@@ -3760,7 +3760,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         }
 
         PropertyKey edgeName = mgmt.makePropertyKey("edge-name").dataType(String.class).make();
-        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName)/*.unique()*/.buildCompositeIndex();
+        mgmt.buildIndex("edge-name", Edge.class).indexKey(edgeName).buildCompositeIndex();
         EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
         mgmt.setTTL(label, 1);
         assertEquals(0, mgmt.getTTL(edgeName));
@@ -3953,6 +3953,7 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         assertNull(v1LikesV2);
         assertNull(v1DislikesV2);
         assertNull(v1IndifferentToV2);
+        // TODO: System.out.println("leftover vertex: " + v2.getEdges(Direction.IN, "likes").iterator().next().getVertex(Direction.OUT));
         assertFalse(v2.getEdges(Direction.IN, "likes").iterator().hasNext());
         assertFalse(v2.getEdges(Direction.IN, "dislikes").iterator().hasNext());
         assertFalse(v2.getEdges(Direction.IN, "indifferentTo").iterator().hasNext());
@@ -4073,5 +4074,4 @@ public abstract class TitanGraphTest extends TitanGraphBaseTest {
         d = v2.getProperty("$ttl");
         assertEquals(0, d.getLength(TimeUnit.SECONDS));
     }
-
 }

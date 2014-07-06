@@ -757,6 +757,148 @@ public abstract class TitanIndexTest extends TitanGraphBaseTest {
         assertEquals(numV/strs.length*2,Iterables.size(graph.indexQuery(PINDEX,"ptext:ducks").properties()));
     }
 
+   /* ==================================================================================
+                                     TIME-TO-LIVE
+     ==================================================================================*/
+
+    @Test
+    public void testVertexTTLWithMixedIndices() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey name = makeKey("name", String.class);
+        PropertyKey time = makeKey("time", Long.class);
+        PropertyKey text = makeKey("text", String.class);
+
+        VertexLabel event = mgmt.makeVertexLabel("event").setStatic().make();
+        mgmt.setTTL(event, 2);
+
+        mgmt.buildIndex("index1",Vertex.class).
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+        mgmt.buildIndex("index2",Vertex.class).indexOnly(event).
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+
+        assertEquals(0, mgmt.getTTL(name));
+        assertEquals(0, mgmt.getTTL(time));
+        assertEquals(2, mgmt.getTTL(event));
+        mgmt.commit();
+
+        Vertex v1 = tx.addVertex("event");
+        v1.setProperty("name", "first event");
+        v1.setProperty("text", "this text will help to identify the first event");
+        long time1 = System.currentTimeMillis();
+        v1.setProperty("time", time1);
+        Vertex v2 = tx.addVertex("event");
+        v2.setProperty("name", "second event");
+        v2.setProperty("text", "this text won't match");
+        long time2 = time1 + 1;
+        v2.setProperty("time", time2);
+        tx.commit();
+        Object v1Id = v1.getId();
+        Object v2Id = v2.getId();
+
+        v1 = graph.getVertex(v1Id);
+        v2 = graph.getVertex(v1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.VERTEX,
+                1,new boolean[]{true});
+        evaluateQuery(graph.query().has("name",Text.CONTAINS,"event").orderBy(time,Order.DESC),ElementCategory.VERTEX,
+                2,new boolean[]{true}, time, Order.DESC);
+
+        Thread.sleep(2001);
+        graph.rollback();
+
+        v1 = graph.getVertex(v1Id);
+        v2 = graph.getVertex(v2Id);
+        assertNull(v1);
+        assertNull(v2);
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.VERTEX,
+                0,new boolean[]{true});
+        evaluateQuery(graph.query().has("name",Text.CONTAINS,"event").orderBy(time,Order.DESC),ElementCategory.VERTEX,
+                0,new boolean[]{true}, time, Order.DESC);
+    }
+
+    @Test
+    public void testEdgeTTLWithMixedIndices() throws Exception {
+        if (!features.hasCellTTL()) {
+            return;
+        }
+
+        PropertyKey name = mgmt.makePropertyKey("name").dataType(String.class).make();
+        PropertyKey text = mgmt.makePropertyKey("text").dataType(String.class).make();
+        PropertyKey time = makeKey("time", Long.class);
+
+        EdgeLabel label = mgmt.makeEdgeLabel("likes").make();
+        mgmt.setTTL(label, 2);
+
+        mgmt.buildIndex("index1",Edge.class).
+                indexKey(name,Mapping.STRING.getParameter()).indexKey(time).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+        mgmt.buildIndex("index2",Edge.class).indexOnly(label).
+                indexKey(text,Mapping.TEXT.getParameter()).buildMixedIndex(GraphOfTheGodsFactory.INDEX_NAME);
+
+        assertEquals(0, mgmt.getTTL(name));
+        assertEquals(2, mgmt.getTTL(label));
+        mgmt.commit();
+
+        Vertex v1 = graph.addVertex(null), v2 = graph.addVertex(null), v3 = graph.addVertex(null);
+
+        Edge e1 = graph.addEdge(null, v1, v2, "likes");
+        e1.setProperty("name", "v1 likes v2");
+        e1.setProperty("text", "this will help to identify the edge");
+        long time1 = System.currentTimeMillis();
+        e1.setProperty("time", time1);
+        Edge e2 = graph.addEdge(null, v2, v3, "likes");
+        e2.setProperty("name", "v2 likes v3");
+        e2.setProperty("text", "this won't match anything");
+        long time2 = time1 + 1;
+        e2.setProperty("time", time2);
+        Object e1Id = e1.getId();
+        Object e2Id = e2.getId();
+
+        graph.commit();
+
+        v1 = graph.getVertex(v1);
+        v2 = graph.getVertex(v2);
+        v3 = graph.getVertex(v2);
+        e1 = graph.getEdge(e1Id);
+        e2 = graph.getEdge(e1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v3);
+        assertNotNull(e1);
+        assertNotNull(e2);
+        assertTrue(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertTrue(v2.getEdges(Direction.OUT).iterator().hasNext());
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.EDGE,
+                1,new boolean[]{true});
+        evaluateQuery(graph.query().has("name",Text.CONTAINS,"likes").orderBy(time,Order.DESC),ElementCategory.EDGE,
+                2,new boolean[]{true}, time, Order.DESC);
+
+        Thread.sleep(2001);
+
+        graph.rollback();
+
+        v1 = graph.getVertex(v1);
+        v2 = graph.getVertex(v2);
+        v3 = graph.getVertex(v2);
+        e1 = graph.getEdge(e1Id);
+        e2 = graph.getEdge(e1Id);
+        assertNotNull(v1);
+        assertNotNull(v2);
+        assertNotNull(v3);
+        // edges have expired from the graph...
+        assertNull(e1);
+        assertNull(e2);
+        assertFalse(v1.getEdges(Direction.OUT).iterator().hasNext());
+        assertFalse(v2.getEdges(Direction.OUT).iterator().hasNext());
+        // ...and also from the indices
+        evaluateQuery(graph.query().has("text",Text.CONTAINS,"help"),ElementCategory.EDGE,
+                0,new boolean[]{true});
+        evaluateQuery(graph.query().has("name",Text.CONTAINS,"likes").orderBy(time,Order.DESC),ElementCategory.EDGE,
+                0,new boolean[]{true}, time, Order.DESC);
+    }
 
    /* ==================================================================================
                             SPECIAL CONCURRENT UPDATE CASES
